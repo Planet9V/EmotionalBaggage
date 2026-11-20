@@ -27,17 +27,19 @@
 | 3D printers | OctoPrint and Moonraker have documented HTTP APIs for upload and start. Bambu Lab's local MQTT/FTPS protocol is community reverse-engineered; since 2025 third-party control needs LAN mode with Developer Mode on, and Bambu printers need sliced files, so a slicer command-line step is required. | **unverified** (agent could not open any page; endpoints, ports and firmware details are from model knowledge to mid-2026) |
 | Password hashing and session cookies | OWASP parameters (Argon2id and scrypt settings, cookie flags). | **unverified** (pages not opened) |
 
-## Decisions needed from Jim before the phase that uses them
+## Decisions (Jim, 20 Nov 2026)
 
-| # | Decision | Needed by | My recommendation |
-|---|---|---|---|
-| D1 | Repository name: "EmotionalBagge" or "EmotionalBaggage" | Phase 1 | Confirm spelling |
-| D2 | Sign-in approach | Phase 3 | A small owner sign-in built in the app (password hash, session table in Postgres, HttpOnly cookie, check in every API route), with Better Auth as the upgrade path if a second user is ever needed. Judgment, not a standard. |
-| D3 | Where the master encryption key lives | Phase 3 | A key file mounted into the web container through Compose `secrets:`, outside the repo and backed up separately from the database |
-| D4 | Which 3D printer | Phase 8 | None; this decides the adapter |
-| D5 | What "NetworkX for routing" means | Phase 9 | None; options are decision-path analysis, wire routing, or both |
-| D6 | Gates block or warn | Phase 4 | Block, with an override that records the reason |
-| D7 | Local embeddings (adds an Ollama container) or none for now | Phase 8 | None for now; text search works |
+| # | Decision | Ruling |
+|---|---|---|
+| D1 | Repository | `Planet9V/EmotionalBaggage`, public for now. Pushed 20 Nov (commit `a073785`). |
+| D2 | Sign-in | This is a public test with nothing private. Default install credentials: user `demo`, password `demo`. |
+| D3 | Where credentials live | In PostgreSQL. No master encryption key. |
+| D4 | 3D printer | Several printer options must be supported and selectable. Worked on after the Claude Code session starts on the Mac. |
+| D5 | NetworkX | Wire routing; decision-path analysis as a possible second use. |
+| D6 | Gates | Warn, with an override. |
+| D7 | Models | Admin sets a reasoning model and an embedding model, each from Ollama, LM Studio or OpenRouter. |
+
+Consequence of D2 and D3, stated once: API keys saved in Admin sit unencrypted in the database behind a published password. That is acceptable for a local test; the app must not be reachable from the internet with real keys saved until this is revisited.
 
 ## Master list
 
@@ -51,7 +53,8 @@
 - [ ] 1.6 Planner tests (pytest): order, waves, critical path, a cycle. **Done when** they pass in CI.
 - [ ] 1.7 Browser tests (Playwright, against a production build): every route loads with no console errors for the seeded concept and for an empty one; six interactions (choose a decision, drag a part in the layout, move a kanban card, wizard create, mark a wire soldered, generate and save an STL). **Done when** they pass in CI.
 - [ ] 1.8 CI on GitHub Actions: typecheck, lint, unit, API with a Postgres service, planner, browser. **Done when** a push shows all green.
-- [ ] 1.9 Create the private repository and push. **Done when** the repo exists under Planet9V and CI has run once.
+- [x] 1.9a Push to `Planet9V/EmotionalBaggage`. Done 20 Nov, commit `a073785`.
+- [ ] 1.9b CI has run once on the repository.
 
 ### Phase 2: concept management (audit item 5, new requirement)
 
@@ -65,18 +68,18 @@
 
 ### Phase 3: owner sign-in and the admin area (new requirement; audit item 8 depends on it)
 
-- [ ] 3.1 Owner sign-in (per D2). First-run setup creates the owner; setup closes once an owner exists. Every API route checks the session; Proxy only redirects. **Done when** every API route returns 401 without a session and tests cover it.
-- [ ] 3.2 Secrets store: a `secrets` table holding ciphertext only. AES-256-GCM in the app, fresh nonce per write, the provider and field name bound in as associated data, key version stored. Master key per D3; the app refuses to start the admin area without it. **Done when** a database dump contains no plaintext key and a test proves a row copied to another name fails to decrypt.
+- [ ] 3.1 Sign-in with the default install account `demo` / `demo` (per D2). Every API route checks the session; Proxy only redirects. **Done when** every API route returns 401 without a session and tests cover it.
+- [ ] 3.2 Credentials store: a `credentials` table in PostgreSQL (provider, field, value, changed at), per D3. No encryption layer.
 - [ ] 3.3 Admin → Credentials page: one card per provider (AI reviewer, Perplexity, 3D printer, Amazon Seller Central, X, Instagram). Fields are write-only; the page shows "set", the last four characters and when it changed; blank means unchanged; remove clears it. **Done when** no API response ever contains a stored secret.
 - [ ] 3.4 Test connection per provider: one cheap read-only call, returns pass or a cleaned error; can test a value before saving it. **Done when** a wrong key shows a clear failure and a right key shows pass (needs Jim's keys).
-- [ ] 3.5 Integrations read from the secrets store first, environment second. `.env` keeps only the database password and the key file path.
+- [ ] 3.5 Integrations read from the credentials store first, environment second.
 - [ ] 3.6 Audit trail: who set, replaced, removed or tested which credential and when; never the value.
-- [ ] 3.7 Admin → Settings: model names, planner address, printer kind and address, default concept.
+- [ ] 3.7 Admin → Settings: reasoning model and embedding model, each with a provider (Ollama, LM Studio, OpenRouter), address and model name (per D7); planner address; printer kind and address; default concept. The AI reviewer and marketing generation use the reasoning model set here.
 
 ### Phase 4: integrity and gates (audit items 4, 11, 13 in part)
 
 - [ ] 4.1 Part delete is blocked while wires reference it, with the list of wires and a "delete the wires too" choice. Renaming a part's ref updates its wires in one transaction. **Done when** tests cover both.
-- [ ] 4.2 Stage gates: each stage has a gate with required evidence, a go / rework / stop decision, who and when (per D6). Decisions in the tree that "unlock" a section actually lock it until decided.
+- [ ] 4.2 Stage gates: each stage has a gate with required evidence, a go / rework / stop decision, who and when. An unmet gate warns and can be overridden; the override is recorded (per D6). Decisions in the tree that "unlock" a section warn the same way.
 - [ ] 4.3 Predictions on claims: prediction, threshold set before the test, test, result.
 - [ ] 4.4 "Next" on the overview: the cheapest open item that unblocks the current gate.
 - [ ] 4.5 Decisions appear on the overview and in the order of operations as milestones.
@@ -112,18 +115,18 @@
 
 ### Phase 8: outside integrations (audit item 8, in part 10)
 
-- [ ] 8.1 Printer adapter per D4. OctoPrint and Moonraker: upload and start, confirmed against their docs first. Bambu Lab: confirm the current rules (LAN mode, Developer Mode) on Bambu's wiki first; needs a slicer step; highest risk of breaking on a firmware update.
+- [ ] 8.1 Printer adapters, several, selectable in Admin (per D4): OctoPrint, Moonraker/Klipper, Bambu Lab, and file-only (download and print by hand). Each confirmed against its own docs before it is built. Bambu Lab needs a slicer step and carries the highest risk of breaking on a firmware update. Worked on from the Claude Code session on the Mac, where the printer is reachable.
 - [ ] 8.2 Amazon Seller Central: register as a private developer (needs a Professional selling account), self-authorize, store the three credentials in Admin, read orders and order metrics into the Sales monitor.
 - [ ] 8.3 Amazon buying stays as search and cart links unless a checked, permitted route turns up. Open research: Amazon Business ordering API, the cart URL's status, Conditions of Use on automation.
 - [ ] 8.4 X posting: approved drafts post through the API; cost shown before posting (a post with a link costs about thirteen times a plain one).
 - [ ] 8.5 Instagram posting: needs a Business or Creator account and Meta App Review; start the review early because it takes weeks.
-- [ ] 8.6 Embeddings per D7.
+- [ ] 8.6 Embeddings using the embedding model set in Admin (per D7); the vector column width must match the chosen model (768 or 1024 seen in research), so the column is created for the model chosen.
 
 ### Phase 9: housekeeping (audit items 10, 12, 14, 15)
 
 - [ ] 9.1 Split the four files over 500 lines.
 - [ ] 9.2 Build record in the Claude project and in the repo (`docs/STATUS.md`), updated at the end of each phase.
-- [ ] 9.3 NetworkX beyond build order, per D5.
+- [ ] 9.3 NetworkX wire routing (per D5): route each wire through the enclosure between its two pins, giving a path and a cut length for the build sheet. Decision-path analysis as a possible second use.
 - [ ] 9.4 English only is the rule: no translation layer is added. (Recorded so nobody adds one.)
 - [ ] 9.5 What was taken from Eigenia is written down (tokens, fonts, six UI components) and what was not (its app shell, tests, translation layer).
 
@@ -149,7 +152,7 @@
 
 ## What this plan does not know
 
-- Whether this session can create a GitHub repository. If not, Jim creates the empty repo and the push follows.
+- This cloud session could not create a repository (its GitHub CLI token is invalid); Jim created it and the push worked through the session's repository link.
 - Anything marked unverified above. The research agents could not open web pages in this session; only search results were readable.
 - How long the phases take. No estimates are given because none would be grounded.
 
