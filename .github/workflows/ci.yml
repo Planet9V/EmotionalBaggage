@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: planner/requirements-dev.txt
+          cache-dependency-path: planner/requirements.lock
       - run: python -m pip install -r planner/requirements-dev.txt
       - run: python -m pytest -q
         working-directory: planner

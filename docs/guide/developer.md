@@ -93,6 +93,8 @@ Tests for the hooks are in `tests/client/`. One of them checks the on-screen mer
 
 ## Third-party code
 
+The planner's Python packages are pinned exactly in `planner/requirements.lock`, which the image, the tests and the code-use record all install from. `planner/requirements.txt` states what is wanted; after changing it, install, rewrite the lock from what was installed, and run `npm run notices`.
+
 `npm run notices` regenerates `THIRD_PARTY_NOTICES.md` and the Code use page from the installed packages. `npm run notices:check` fails if either is out of date, and the test suite runs the same check. Anything a package manager does not know about (container images, fonts, copied source, tools run as separate processes) goes in `docs/third-party.manual.json`, in the same change that introduces it.
 
 ## The planner
