@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ready } from "@/lib/db";
 import { listIntegrations } from "@/lib/integrations";
+import { plannerHealth } from "@/lib/admin/planner";
 
 export async function GET() {
   let database: { connected: boolean; vector: boolean; version?: string; error?: string };
@@ -12,15 +13,15 @@ export async function GET() {
   } catch (e) {
     database = { connected: false, vector: false, error: (e as Error).message };
   }
-  let planner: { connected: boolean; networkx?: string; error?: string } = { connected: false, error: "PLANNER_URL is not set" };
-  if (process.env.PLANNER_URL) {
-    try {
-      const r = await fetch(`${process.env.PLANNER_URL.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(2500) });
-      const j = (await r.json()) as { networkx?: string };
-      planner = { connected: r.ok, networkx: j.networkx };
-    } catch (e) {
-      planner = { connected: false, error: (e as Error).message };
-    }
-  }
-  return NextResponse.json({ integrations: listIntegrations(), database, planner });
+  // The planner address saved in Admin wins over PLANNER_URL.
+  const h = await plannerHealth();
+  const planner: { connected: boolean; networkx?: string; error?: string; source: "admin" | "environment" | null } = {
+    connected: h.connected,
+    source: h.source,
+    ...(h.networkx ? { networkx: h.networkx } : {}),
+    ...(h.error ? { error: h.error } : {}),
+  };
+  // Without a database the integrations cannot be read; the page still gets the database and planner state.
+  const integrations = database.connected ? await listIntegrations().catch(() => []) : [];
+  return NextResponse.json({ integrations, database, planner });
 }
