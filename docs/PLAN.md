@@ -64,7 +64,7 @@ Scores are 1 to 10; the minimum for every topic is 8. "Now" is from the 20 Novem
 | Graph layout | @dagrejs/dagre for trees, elkjs for build order and pins-and-wires | three hand-computed layouts | licences unverified |
 | React Flow chrome | React Flow UI (base node, labelled handle, zoom) | hand-written node boxes | page read |
 | Schematic symbols | tscircuit `circuit-json` and `circuit-to-svg` | hand-drawn boxes, hand-written SVG export | **trial first**; symbol licence unverified |
-| Model providers | Vercel AI SDK 7 with the OpenAI-compatible provider | one-provider reviewer route | untested against the three providers; needs Node 22 |
+| Model providers | Vercel AI SDK 7 with the OpenAI-compatible provider | one-provider reviewer route | tested here against a stand-in; confirmed on the real host by Admin's Test button; needs Node 22 |
 | Vectors | `pgvector` package on `pg` | nothing fills the column today | page read |
 | Sign-in | Better Auth, username plugin | none | unverified on a raw `pg` pool; "demo" may be under its password minimum |
 | 3D editing | drei TransformControls, PivotControls, Bounds, Outlines | none | names read only |
@@ -85,21 +85,21 @@ Kept hand-written, with reason: the millimetre layout editor's geometry (no libr
 
 ## Master list
 
-### Phase 0: prove it runs
+### Phase 0: prove it runs, without anyone's machine
 
-- [ ] 0.1 `docker compose up --build` on the Mac. **Done when** three containers are healthy and the app loads.
-- [ ] 0.2 pgvector confirmed active in that database.
-- [ ] 0.3 One real chat call and one real embedding call against each of Ollama, LM Studio and OpenRouter through the AI SDK. **Done when** all six succeed or the failing ones are written down with the error.
-- [ ] 0.4 One real Perplexity query with citations saved.
-- [ ] 0.5 Move to Tailwind 4 and initialise shadcn/ui, carrying the Eigenia colours and fonts as variables. **Done when** every existing screen renders as before in light and dark.
-- [ ] 0.6 tscircuit trial: ten real parts from the Baggage Claims list rendered as a symbol schematic. **Done when** the result is shown side by side with the current view and the symbol licence is read. If it fails, item 5.3 falls back to our own SVG symbol set.
+Model hosts, model names, addresses, keys and printers are all set in Admin at or after install and saved in the local database (D3, D7, D14). Nothing in this plan needs them in advance. Each integration is built against its documented interface, tested here against a stand-in server, and confirmed on the real service by its Test button in Admin after install.
+
+- [ ] 0.1 GitHub Actions builds the three images and starts the stack with `docker compose up`. **Done when** the job shows all three containers healthy, the app answering, and pgvector active.
+- [ ] 0.2 Stand-in servers for tests: one OpenAI-compatible server (chat and embeddings), one Perplexity-shaped server, and one per printer family. Every integration test runs against these.
+- [ ] 0.3 tscircuit trial: ten real parts from the Baggage Claims list rendered as a symbol schematic. **Done when** the result is shown side by side with the current view and the symbol licence is read. If it fails, item 5.3 falls back to our own SVG symbol set.
+- [ ] 0.4 First-run setup screen: after the first sign-in, Admin opens with what is not yet configured (models, research, printers), each with a Test button. Everything is skippable; a feature that is not configured says so and links back to Admin.
 
 ### Phase 1: foundations, by replacement
 
 - [ ] 1.1 zod schema per section store; one typed `Part`, `Wire`, `Decision`, `Step` in `src/lib/domain`; the five duplicate readers deleted. Relations stored as arrays, not comma strings.
 - [ ] 1.2 Route wrapper: validates input, maps database errors to 400, 404 and 409, wraps multi-statement writes in a transaction, times out outbound calls. Fixes the known bugs: row corruption on PATCH, project ID collision, unknown concept returning 500.
 - [ ] 1.3 TanStack Query replaces the hand-written hooks. Fixes swallowed save errors and deletes that vanish without rollback.
-- [ ] 1.4 UI kit completed on shadcn/ui and the local copies deleted: field, select, textarea, modal, empty state, error line, toast, download helper.
+- [ ] 1.4 Move to Tailwind 4 and initialise shadcn/ui, carrying the Eigenia colours and fonts as variables; every existing screen renders as before in light and dark. UI kit completed on shadcn/ui and the local copies deleted: field, select, textarea, modal, empty state, error line, toast, download helper.
 - [ ] 1.5 Kanban, tables, wizard and forms moved to the adopted libraries.
 - [ ] 1.6 dagre and elkjs replace the three hand-computed layouts.
 - [ ] 1.7 One planner: the NetworkX service is the only implementation; decisions enter the plan as milestones with their dependencies; finished steps count as zero remaining time.
@@ -150,7 +150,7 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - [ ] 5.2 Geometry gains rotation; STL and STEP files can be attached as a part's real shape.
 - [ ] 5.3 Schematic with proper symbols (per 0.6) and a toggle to pins-and-wires; net labels, power and ground symbols, title block.
 - [ ] 5.4 Electrical checks: supply voltage against each part's range, unconnected power pins, missing pull-ups on shared buses.
-- [ ] 5.5 KiCad schematic export. **Done when** it opens in KiCad on the Mac.
+- [ ] 5.5 KiCad schematic export. **Done when** `kicad-cli` in CI loads the file without error.
 - [ ] 5.6 3D view: drag and rotate handles, section cut, measurement, STL from the built-in exporter.
 - [ ] 5.7 Enclosure, CaseMaker-based generator: forked into the app, driven by the concept's parts and layout. Standoffs, bosses, wall cutouts, lid types.
 - [ ] 5.8 Enclosure, YAPP_Box generator: OpenSCAD in the planner container, parameters written from the same parts and layout.
