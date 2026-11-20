@@ -17,7 +17,11 @@ export type Section = {
     | "sourcing"
     | "printing"
     | "monitor"
-    | "social";
+    | "social"
+    | "decisions"
+    | "schematic"
+    | "layout"
+    | "buildsheet";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -63,6 +67,13 @@ export const STAGES: Stage[] = [
         columns: [{ key: "kind", label: "Kind" }],
         statuses: ["candidate", "shortlist", "chosen", "rejected"],
         addLabel: "Add name or tagline",
+      },
+      {
+        key: "decisions",
+        label: "Decision tree",
+        blurb: "Every decision, its options, what each leads to and what it depends on.",
+        view: "decisions",
+        statuses: ["open", "decided", "blocked"],
       },
       {
         key: "questions",
@@ -121,6 +132,21 @@ export const STAGES: Stage[] = [
         view: "model",
       },
       {
+        key: "schematic",
+        label: "Schematic",
+        blurb: "Parts, pins and the wires between them. Drag to arrange, drag pin to pin to connect.",
+        view: "schematic",
+        store: "design/wiring",
+        statuses: ["to solder", "soldered", "tested"],
+      },
+      {
+        key: "layout",
+        label: "Physical layout",
+        blurb: "Where each part sits inside the envelope. Drag to move; the 3D model follows.",
+        view: "layout",
+        store: "design/bom",
+      },
+      {
         key: "bom",
         label: "Bill of materials",
         blurb: "Every part, its source and its cost.",
@@ -155,6 +181,14 @@ export const STAGES: Stage[] = [
         ],
         statuses: ["waiting on file", "ready", "printing", "printed", "failed"],
         addLabel: "Add print job",
+      },
+      {
+        key: "wiring",
+        label: "Wiring and soldering",
+        blurb: "The build sheet generated from the schematic: every joint, in order, with its check.",
+        view: "buildsheet",
+        store: "design/wiring",
+        statuses: ["to solder", "soldered", "tested"],
       },
       {
         key: "assembly",
@@ -333,4 +367,5 @@ export const CLOSED = new Set([
   "actual",
   "killed",
   "in hand",
+  "tested",
 ]);

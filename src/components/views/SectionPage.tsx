@@ -4,6 +4,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { useProject } from "@/lib/client";
 import { findSection, storeKey, type Section } from "@/lib/menu";
 import { BomView } from "./BomView";
+import { BuildSheetView } from "./BuildSheetView";
+import { DecisionsView } from "./DecisionsView";
+import { LayoutView } from "./LayoutView";
+import { SchematicView } from "./SchematicView";
 import { ChallengeView } from "./ChallengeView";
 import { ItemsView } from "./ItemsView";
 import { ModelView } from "./ModelView";
@@ -24,6 +28,10 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   printing: PrintingView,
   monitor: MonitorView,
   social: SocialView,
+  decisions: DecisionsView,
+  schematic: SchematicView,
+  layout: LayoutView,
+  buildsheet: BuildSheetView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

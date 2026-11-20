@@ -497,3 +497,114 @@ export const SEED_ITEMS: SeedItem[] = [
     status,
   })),
 ];
+
+// ───────── Decision tree. Options and consequences are the ones the source documents
+// state. `chosen` is set only where Jim has said so; everything else is undecided.
+const D = (
+  key: string,
+  parent: string,
+  title: string,
+  body: string,
+  options: { id: string; label: string; outcome: string }[],
+  extra: { chosen?: string; dependsOn?: string; unlocks?: string; source?: string } = {}
+): SeedItem => ({
+  section: "concept/decisions",
+  title,
+  body,
+  data: {
+    key,
+    parent,
+    options,
+    chosen: extra.chosen ?? "",
+    dependsOn: extra.dependsOn ?? "",
+    unlocks: extra.unlocks ?? "",
+    source: extra.source ?? "",
+  },
+  status: extra.chosen ? "decided" : "open",
+});
+
+export const SEED_DECISIONS: SeedItem[] = [
+  D("go", "", "Spend about $750 on the validation batch?", "Five units, one weekend of firmware tuning and a filmed airport test.", [
+    { id: "yes", label: "Build the 5 units", outcome: "$500 parts and $200 tooling; produces the unbranded clips the Phase 1 gate needs." },
+    { id: "no", label: "Stop here", outcome: "No spend. The concept stays on paper." },
+  ], { unlocks: "prototype/sourcing, prototype/printing, prototype/assembly", source: "PRD Rev A" }),
+  D("name", "go", "Which name ships?", "The documents say Baggage Claims; the project is called Emotional Baggage. No trademark or domain screen has been run.", [
+    { id: "baggage-claims", label: "Baggage Claims", outcome: "Matches every Rev A document, the video script and BaggageClaims.com." },
+    { id: "sass-case", label: "Sass Case", outcome: "Ranked first for retail in the naming note; SassCase.com named as a redirect." },
+    { id: "emotional-baggage", label: "Emotional Baggage", outcome: "The naming note warns it is hard to trademark cleanly and probably contested." },
+  ], { unlocks: "marketing/landing, sales/listing", source: "Naming note" }),
+  D("enclosure", "go", "Which enclosure build?", "Three levels of integration from the 3D printing note.", [
+    { id: "two-piece", label: "Two-piece shell plus mid-plate", outcome: "No redesign; both halves and the plate print in one job of about 4 h, about 100 g PETG." },
+    { id: "clamshell", label: "Print-in-place clamshell", outcome: "Hinge and snap latch printed in; posts, battery tray and strap slots built in; the mid-plate leaves the BOM. Needs the hinge coupon first." },
+    { id: "tpu-boot", label: "One-piece TPU boot", outcome: "Flexible sleeve with built-in strap loops; needs a rigid internal sled so the motion sensor stays rigidly mounted." },
+  ], { unlocks: "design/model, prototype/printing", source: "3D printing note" }),
+  D("gate1", "go", "Phase 1 gate: did the unbranded clips pass?", "Four 15-second verticals posted with no logo and no link.", [
+    { id: "pass", label: "50k organic views or 500 signups", outcome: "Go to Kickstarter prep ($2-3k). Any clip over 50k views in 72 h gets the $2k amplification." },
+    { id: "fail", label: "Under both after 30 days", outcome: "Stop, pivot the creative, do not fund production." },
+  ], { dependsOn: "go", unlocks: "marketing/campaigns", source: "PRD Rev A, Marketing Playbook Rev A" }),
+  D("channel", "gate1", "Primary sales channel?", "The Rev A documents lead with Kickstarter, then Shopify and TikTok Shop, with Amazon FBA as one channel.", [
+    { id: "amazon", label: "Amazon first", outcome: "$27.95 with about 30% all-in take, netting $19.55. The Rev A margin model has to be re-run on this basis." },
+    { id: "kickstarter", label: "Kickstarter first", outcome: "Tiers from $19 to $99; $24 standard nets $21.70 after about 8-10% fees." },
+  ], { chosen: "amazon", dependsOn: "gate1", unlocks: "sales/listing, sales/channels", source: "Stated 20 Nov 2026" }),
+  D("ks-goal", "channel", "If Kickstarter runs: which goal?", "The two documents disagree.", [
+    { id: "15k", label: "$15k goal", outcome: "The PRD figure." },
+    { id: "2000", label: "2,000 backers", outcome: "The playbook target; about $48k at a $24 average, contributing roughly $8-12k after product, fulfilment and marketing." },
+  ], { dependsOn: "channel", source: "PRD Rev A, Marketing Playbook Rev A" }),
+  D("stack", "gate1", "Which web stack for the product site?", "Three versions exist in the documents.", [
+    { id: "shopify", label: "Shopify plan", outcome: "About $90 a month in phase 1, $240 a month at a 5k list." },
+    { id: "rev-a", label: "Custom build, Blueprint Rev A", outcome: "Next.js 15, Postgres 16, Redis, S3, Stripe, Klaviyo." },
+    { id: "rev-b", label: "Custom build, Blueprint Rev B", outcome: "Next.js 16, Postgres with pgvector, no S3, Listmonk and Postiz; about $24-40 a month on one VPS." },
+  ], { dependsOn: "gate1", unlocks: "marketing/landing", source: "Website Platform Plan Rev A, Web Blueprint Rev A and Rev B" }),
+  D("gate2", "gate1", "Scale gate: enough emails before launch?", "Decides whether the first production run is funded.", [
+    { id: "pass", label: "2,000 or more emails", outcome: "Green-light the 1,000-unit run at about $19.00 landed per unit." },
+    { id: "hold", label: "Fewer than 2,000", outcome: "No production run yet." },
+  ], { dependsOn: "gate1", unlocks: "production/batches", source: "Marketing Playbook Rev A" }),
+];
+
+// ───────── Wiring, from the PRD pin table and Build Guide Phase 2. `order` is the
+// build guide's soldering sequence: power rail, motion sensor, audio module, button.
+const W = (
+  order: number,
+  title: string,
+  net: string,
+  netClass: "power" | "ground" | "signal" | "audio",
+  from: string,
+  fromPin: string,
+  to: string,
+  toPin: string,
+  note = "",
+  via = ""
+): SeedItem => ({
+  section: "design/wiring",
+  title,
+  body: note,
+  data: { order, net, netClass, from, fromPin, to, toPin, via },
+  status: "to solder",
+});
+
+export const SEED_WIRING: SeedItem[] = [
+  W(1, "Battery positive to switch", "BAT+", "power", "BT1", "RED", "S1", "IN"),
+  W(2, "Switch to VIN", "VIN", "power", "S1", "OUT", "U1", "5V/VIN", "Meter VIN to GND with the switch on: expect 4.5-4.9 V. Do not go on outside 4.2-5.2 V."),
+  W(3, "Battery negative to ground", "GND", "ground", "BT1", "BLACK", "U1", "GND", "Ground star point at one corner of the board."),
+  W(4, "Sensor power", "3V3", "power", "U1", "3V3", "U2", "VCC"),
+  W(5, "Sensor ground", "GND", "ground", "U1", "GND", "U2", "GND"),
+  W(6, "I2C clock", "I2C_0", "signal", "U1", "GPIO8", "U2", "SCL", "400 kHz, address 0x68."),
+  W(7, "I2C data", "I2C_0", "signal", "U1", "GPIO9", "U2", "SDA"),
+  W(8, "Motion interrupt", "MPU_INT", "signal", "U2", "INT", "U1", "GPIO6", "Latched."),
+  W(9, "Audio module power", "VIN", "power", "U1", "5V/VIN", "U3", "VCC", "4.5-5 V, not 3.3 V."),
+  W(10, "Audio module ground", "GND", "ground", "U1", "GND", "U3", "GND"),
+  W(11, "UART to audio module", "UART1", "signal", "U1", "GPIO17", "U3", "RX", "The resistor is mandatory; without it the module triggers at random.", "R1"),
+  W(12, "UART from audio module", "UART1", "signal", "U3", "TX", "U1", "GPIO16", "9600 baud, 8N1."),
+  W(13, "Busy line", "BUSY", "signal", "U3", "BUSY", "U1", "GPIO4"),
+  W(14, "Speaker lead 1", "AUDIO", "audio", "U3", "SPK_1", "SPK1", "+", "Either polarity."),
+  W(15, "Speaker lead 2", "AUDIO", "audio", "U3", "SPK_2", "SPK1", "-"),
+  W(16, "Mode button to GPIO", "MODE", "signal", "S2", "A", "U1", "GPIO5"),
+  W(17, "Mode button to ground", "GND", "ground", "S2", "B", "U1", "GND"),
+  W(18, "Mode button pull-up", "MODE", "signal", "U1", "3V3", "U1", "GPIO5", "10 kΩ between GPIO5 and 3V3.", "R2"),
+];
+
+/** Stores added after the first release; seeded into an existing example concept when empty. */
+export const SEED_ADDITIONS: Record<string, SeedItem[]> = {
+  "concept/decisions": SEED_DECISIONS,
+  "design/wiring": SEED_WIRING,
+};

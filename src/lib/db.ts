@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { SEED_ITEMS, SEED_PROJECT } from "./seed";
+import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "./seed";
 
 // One pool per process. DATABASE_URL points at PostgreSQL (pgvector image in Docker).
 const g = globalThis as unknown as { __c2rPool?: Pool; __c2rReady?: Promise<{ vector: boolean }> };
@@ -95,6 +95,7 @@ export function ready() {
       }
       const { rows } = await db.query("SELECT count(*)::int AS n FROM projects");
       if (rows[0].n === 0) await seed();
+      await seedAdditions();
       return { vector };
     })().catch((e) => {
       g.__c2rReady = undefined;
@@ -130,6 +131,30 @@ async function seed() {
     throw e;
   } finally {
     c.release();
+  }
+}
+
+/** Fills stores that were added later, only for the example concept and only when the store is empty. */
+async function seedAdditions() {
+  const db = pool();
+  const has = await db.query("SELECT 1 FROM projects WHERE id=$1", [SEED_PROJECT.id]);
+  if (!has.rowCount) return;
+  for (const [store, items] of Object.entries(SEED_ADDITIONS)) {
+    const marker = `seed.${store}`;
+    const done = await db.query("SELECT 1 FROM events WHERE project_id=$1 AND kind=$2", [SEED_PROJECT.id, marker]);
+    if (done.rowCount) continue;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      await db.query(
+        "INSERT INTO items (project_id, section, title, body, data, status, sort) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        [SEED_PROJECT.id, it.section, it.title, it.body ?? "", JSON.stringify(it.data ?? {}), it.status ?? "open", 1000 + i]
+      );
+    }
+    await db.query("INSERT INTO events (project_id, kind, summary) VALUES ($1,$2,$3)", [
+      SEED_PROJECT.id,
+      marker,
+      `Seeded ${items.length} rows into ${store} from the source documents`,
+    ]);
   }
 }
 
