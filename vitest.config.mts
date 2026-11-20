@@ -5,6 +5,8 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
     include: ["tests/**/*.test.ts"],
+    // Starts the real NetworkX planner (planner/) for the run; the plan API test talks to it.
+    globalSetup: ["tests/plan/planner.setup.ts"],
     // The API tests share one PostgreSQL database, so files run one after another.
     fileParallelism: false,
     testTimeout: 20_000,

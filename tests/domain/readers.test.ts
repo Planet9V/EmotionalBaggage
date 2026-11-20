@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Item } from "@/lib/types";
 import { decisionReady, partsByRef, pinsOf, readWires, stepsFromItems, sumLine, toDecision, toPart } from "@/lib/domain";
 import { SEED_ADDITIONS, SEED_ITEMS } from "@/lib/seed";
-import { planFallback } from "@/lib/plan";
+import { planGraph } from "@/lib/plan";
 
 let n = 0;
 const item = (section: string, data: Record<string, unknown>, extra: Partial<Item> = {}): Item => ({
@@ -69,10 +69,9 @@ describe("steps and the plan", () => {
     const steps = stepsFromItems([item("x/y", { key: "a", after: ["a", "ghost"] }), item("x/y", { key: "b", after: "a" })]);
     expect(steps.map((s) => s.after)).toEqual([[], ["a"]]);
   });
-  it("plans the seeded assembly: critical path p0, p1, p6, p7, p8 at 430 minutes", () => {
-    const plan = planFallback(stepsFromItems(seeded.filter((i) => i.section === "prototype/assembly")));
-    expect(plan.criticalPath).toEqual(["p0", "p1", "p6", "p7", "p8"]);
-    expect(plan.totalMinutes).toBe(430);
-    expect(plan.cycles).toEqual([]);
+  it("keeps decisions out of the steps of the seeded assembly; the plan graph reads them as milestones", () => {
+    const g = planGraph(seeded);
+    expect(g.nodes.filter((x) => x.section === "prototype/assembly").map((x) => x.id)).toEqual(["p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]);
+    expect(g.nodes.filter((x) => x.section === "concept/decisions").every((x) => x.kind === "decision" && x.minutes === 0)).toBe(true);
   });
 });

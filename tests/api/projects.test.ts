@@ -1,4 +1,6 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, inject, it } from "vitest";
+import { createServer } from "node:net";
+import type { Plan } from "@/lib/types";
 import { pool, q } from "@/lib/db";
 import { GET as listProjects, POST as addProject } from "@/app/api/projects/route";
 import { GET as listFiles, POST as addFile } from "@/app/api/projects/[id]/files/route";
@@ -114,10 +116,48 @@ describe("search, plan and the assistants", () => {
     expect(all.body.items.length).toBeLessThan(50);
   });
 
-  it("plans the seeded build", async () => {
-    const r = await read<{ nodes: unknown[]; criticalPath: string[] }>(await plan(json("GET"), ctx(SEEDED)));
-    expect(r.status).toBe(200);
-    expect(r.body.criticalPath).toEqual(["p0", "p1", "p6", "p7", "p8"]);
+  describe("plan", () => {
+    const before = process.env.PLANNER_URL;
+    afterEach(() => {
+      if (before === undefined) delete process.env.PLANNER_URL;
+      else process.env.PLANNER_URL = before;
+    });
+
+    it("plans the seeded build with the NetworkX planner when it is running", async () => {
+      process.env.PLANNER_URL = inject("plannerUrl");
+      const r = await read<Plan>(await plan(json("GET"), ctx(SEEDED)));
+      expect(r.status).toBe(200);
+      expect(r.body.engine).toBe("networkx");
+      expect(r.body.criticalPath).toEqual(["go", "p0", "p1", "p6", "p7", "p8"]);
+      expect([r.body.totalMinutes, r.body.plannedMinutes]).toEqual([430, 430]);
+      expect(r.body.order.length).toBe(r.body.nodes.length);
+      expect(r.body.note).toBeUndefined();
+    });
+
+    it("answers with the nodes and no order when the planner is not reachable", async () => {
+      // a port that was free a moment ago and has nothing listening on it
+      const port = await new Promise<number>((resolve) => {
+        const s = createServer().listen(0, "127.0.0.1", () => {
+          const a = s.address();
+          s.close(() => resolve(typeof a === "object" && a ? a.port : 9));
+        });
+      });
+      process.env.PLANNER_URL = `http://127.0.0.1:${port}`;
+      const r = await read<Plan>(await plan(json("GET"), ctx(SEEDED)));
+      expect(r.status).toBe(200);
+      expect(r.body.engine).toBe("unavailable");
+      expect(r.body.note).toMatch(/planner service is not running/);
+      expect([r.body.order, r.body.criticalPath, r.body.totalMinutes]).toEqual([[], [], 0]);
+      expect(r.body.nodes.length).toBeGreaterThan(0);
+      expect(r.body.nodes.every((x) => x.wave === -1 && x.start === 0 && x.finish === 0 && !x.critical)).toBe(true);
+    });
+
+    it("says so when PLANNER_URL is not set", async () => {
+      delete process.env.PLANNER_URL;
+      const r = await read<Plan>(await plan(json("GET"), ctx(SEEDED)));
+      expect([r.status, r.body.engine, r.body.order]).toEqual([200, "unavailable", []]);
+      expect(r.body.note).toMatch(/PLANNER_URL is not set/);
+    });
   });
 
   it("validates a challenge turn and a research question before anything else", async () => {
