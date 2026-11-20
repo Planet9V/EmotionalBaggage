@@ -1,0 +1,94 @@
+# Developer guide
+
+How the code is organised and how to change it. The system context is on its own page.
+
+## Stack
+
+| Part | What |
+|---|---|
+| Web app | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 3.4 |
+| 3D | three.js with React Three Fiber and drei |
+| Diagrams | React Flow (`@xyflow/react`) |
+| Database | PostgreSQL with pgvector, through `pg` |
+| Validation | zod 4 |
+| Planner | Python, FastAPI, NetworkX (`planner/`) |
+| Tests | Vitest; GitHub Actions runs typecheck, lint, tests and build |
+
+The plan (`docs/PLAN.md`) lists the libraries being adopted next and the hand-written code each replaces.
+
+## Run it locally
+
+```
+npm ci
+createdb c2r
+DATABASE_URL=postgresql://localhost/c2r npm run dev
+```
+
+The planner is optional: `cd planner && pip install -r requirements.txt && uvicorn main:app --port 8811`, then set `PLANNER_URL=http://localhost:8811`.
+
+## Tests
+
+```
+createdb c2r_test
+DATABASE_URL=postgresql://localhost/c2r_test npm test
+```
+
+The API tests call the route handlers directly against a real PostgreSQL, so point `DATABASE_URL` at a database you can throw away. `npm run typecheck` and `npm run lint` must also pass; CI runs all three plus the build.
+
+## Layout
+
+| Path | What lives there |
+|---|---|
+| `src/lib/menu.ts` | The seven stages and their sections. The menu is data. |
+| `src/lib/domain/` | The one definition of each object: zod schemas and readers for parts, wires, decisions and steps. |
+| `src/lib/api/` | The route wrapper and the request schemas. |
+| `src/lib/db.ts` | The connection pool, table creation, seeding, `q()` and `tx()`. |
+| `src/app/api/` | Route handlers. |
+| `src/app/` | Pages. |
+| `src/components/views/` | One view per kind of section. |
+| `src/components/ui/` | Shared UI components. |
+| `planner/` | The order-of-operations service. |
+| `tests/` | Vitest suites. |
+| `docs/guide/` | These pages. They are rendered in the app at `/docs`. |
+
+## The data model
+
+One table, `items`, holds every row of every section: `project_id`, `section`, `title`, `body`, `data` (JSON), `status`, `sort`. The `section` value is a store key such as `design/bom`. Other tables: `projects`, `files` (bytes in the database), `messages`, `research`, `events`.
+
+What goes inside `data` is defined per section in `src/lib/domain/schemas.ts`:
+
+- `design/bom`: a part (`ref`, `qty`, `source`, `search`, `line`, `asin`, `geometry`, `schematic`, `pins`)
+- `design/wiring`: a wire (`order`, `net`, `netClass`, `from`, `fromPin`, `to`, `toPin`, `via`)
+- `concept/decisions`: a decision (`key`, `parent`, `options`, `chosen`, `dependsOn`, `unlocks`)
+- every section: the step fields (`key`, `after`, `minutes`)
+
+Schemas are loose: columns a schema does not name are kept. TypeScript types are inferred from the schemas, so there is one source for each shape.
+
+**Read rows through the domain readers** (`toPart`, `readWires`, `toDecision`, `stepsFromItems`). Do not read `item.data` fields directly in a view.
+
+## The API
+
+Every handler is wrapped with `route()` from `src/lib/api/route.ts`:
+
+- a request body is parsed with `body(req, schema)`; a failure is a 400 that names the field
+- `requireProject(id)` answers 404 for an unknown concept
+- database errors map to 400, 404 or 409; anything else is a 500 with a plain message
+- writes that touch more than one row run inside `tx()`
+
+A row's `section` must be a store the menu defines, its `status` must be one that section allows, and its `data` must satisfy that section's schema.
+
+## Common changes
+
+**Add a section.** Add it to `STAGES` in `src/lib/menu.ts` with `view: "items"`. It gets a list, a board, validation and a place in the report with no other change.
+
+**Add a field to parts, wires or decisions.** Add it to the schema in `src/lib/domain/schemas.ts`, then to the reader beside it. Add a test in `tests/domain/`.
+
+**Add a kind of view.** Write the component in `src/components/views/`, add its name to the `view` union in `menu.ts`, and register it in `VIEWS` in `SectionPage.tsx`.
+
+**Add an API route.** Wrap it in `route()`, validate with a zod schema, and add a test in `tests/api/`.
+
+## Rules the plan sets
+
+- Use a maintained library where one exists; the exceptions are named in the plan.
+- One item of the plan at a time, with its test, before the next.
+- Documentation pages are updated in the same change as the behaviour they describe.

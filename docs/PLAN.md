@@ -23,7 +23,7 @@ Scores are 1 to 10; the minimum for every topic is 7 (owner, 20 November; first 
 | Technical features | 4 | Every design output can be handed to a tool or a person as it is: KiCad opens the schematic, the slicer accepts the enclosure, the build sheet has routed wire lengths. |
 | Support and process orientation | 3 | A defined process per product type with stages, gates, required evidence, named builds and a recorded history of what changed and why. |
 | Assistance from concept to production | 3 | The AI drafts each stage from the previous one (brief to requirements, to parts, to wiring, to assembly, to tests) and the user edits and approves. Works on a blank concept. |
-| Marketing and sales support | 2 | Taglines, ads, a rendered landing page and listing copy are generated from the concept and approved by the user. Sales figures arrive from Amazon. Posts and replies are drafted and sent on approval. |
+| Marketing and sales support | 2 | From an approved brief the app produces personas, a competitor table, positioning, a brand kit, names and taglines, ads per channel, a rendered landing page, the listing, a content calendar and a campaign plan, each approved by the user. Campaign results are compared with their targets. Sales figures arrive from Amazon. Posts and replies are drafted and sent on approval. |
 | Prototype assistance, sourcing to printing | 3 | From the parts list: sourced parts with price and alternates, a generated enclosure, a sliced file, a print started on the chosen printer, a tracked job, and a wiring sheet. |
 | Optimisation and realignment | 2 (est.) | Changing a decision or a part shows everything downstream that is affected and proposes the updates. Cost, part count and print time each have a "make this better" action with a measured before and after. |
 | Research assistance | 2 | Questions answered with citations and saved. A claim is marked verified only when a cited source supports it. Past research is searchable by meaning. |
@@ -117,6 +117,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 - [ ] 1.8 Migrations tool in place; seeding moved to a script.
 - [ ] 1.9 (started 20 Nov: `npm test` and a GitHub Actions run of typecheck, lint, tests and build are green on commit `c031e12`) Vitest on the domain layer and pure modules; route tests on a real PostgreSQL; Playwright smoke test per screen; GitHub Actions running all of it. **Done when** a push is green.
 - [ ] 1.10 The four oversized components split.
+- [x] 1.12 Documentation in the app for the user, the admin and the developer, plus a system-context page with a diagram, at Documentation in the sidebar. The pages are the markdown files in `docs/guide`, so the repository and the app show the same text. Each says what is not built yet. Tests fail if the user guide misses a menu section or the admin guide misses a setting. Done 20 Nov; pages and both diagrams checked in a browser. Rule from here on: a change to behaviour updates its guide in the same commit.
 - [ ] 1.11 Code use and attestation (D13): `THIRD_PARTY_NOTICES.md` in the repository and an About, Code use page in the app. For every third-party component: name, version, licence, source link, and how it is used (linked library, separate process, or forked code with our changes listed). Ends with a signed-off attestation statement. The library list is generated from the installed dependencies so it cannot go stale; tools run as separate processes (OrcaSlicer, WireViz, OpenSCAD) and forked code (CaseMaker, YAPP_Box) are listed by hand and updated in the same commit that adds them.
 
 ### Phase 2: concepts, sign-in and admin
@@ -190,14 +191,44 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - [ ] 7.2 Supplier and manufacturing-method records per product type.
 - [ ] 7.3 Production readiness gate drawing on tests, compliance and builds.
 
-### Phase 8: marketing and sales
+### Phase 8: going to market
 
-- [ ] 8.1 Positioning, taglines and ad copy generated from the approved press release.
-- [ ] 8.2 Landing page generated as structured sections and rendered with pre-built blocks at a preview address per concept.
-- [ ] 8.3 Amazon listing copy generated to Amazon's field limits.
-- [ ] 8.4 Amazon sales read through SP-API into the sales monitor. Needs a Professional selling account.
-- [ ] 8.5 X: approved drafts posted, cost shown first; replies drafted for approval.
-- [ ] 8.6 Instagram: posting after Meta App Review; replies drafted for approval. The review is started as soon as an account exists.
+The review found stages 5 to 7 are lists filled in by hand, and version 2 of this plan gave them six items at the very end. This is the full phase. It does not depend on the design tools in Phase 5: it needs the assistant (4.1) and an approved brief, so it is built alongside Phases 5 and 6, not after them. Every generated piece is a draft, records what it was generated from, and needs approval. Nothing is published or spent without an explicit approval in the app.
+
+**Market and positioning**
+
+- [ ] 8.1 Audience: personas drafted from the brief and research, each with the problem, the trigger to buy and the objection. Edited and approved by the owner.
+- [ ] 8.2 Competitors and alternatives: researched with citations (Perplexity), kept as a comparison table with price, claim and weakness.
+- [ ] 8.3 Positioning statement and message hierarchy: one positioning line, three supporting messages, proof for each, generated from 8.1 and 8.2 and attacked by the reviewer before approval.
+- [ ] 8.4 Pricing: price options against unit cost (3.6) and competitor prices, with margin per channel worked out, not typed.
+
+**Brand**
+
+- [ ] 8.5 Name and tagline generation, with a screening checklist per candidate (domain, marketplace, trademark search links). Marked clearly as a prompt for the owner's own checks, not a clearance.
+- [ ] 8.6 Brand kit per concept: voice and tone rules with do and do-not examples, colours, type, logo files uploaded by the owner. Stored once and applied to every generated piece and to the landing page.
+- [ ] 8.7 Product imagery list: the shots a listing and ads need, taken from the 3D model as renders where possible, with uploads for photographs.
+
+**Content and ads**
+
+- [ ] 8.8 Ad generation per channel (Amazon Sponsored, Meta, X, search): variants written to each channel's length limits, each tied to one message from 8.3, each with its stop and scale rule.
+- [ ] 8.9 Landing page: generated as structured sections, rendered with pre-built blocks at a preview address per concept, in the brand kit. Export as a static page.
+- [ ] 8.10 Amazon listing: title, bullets, description and search terms generated to Amazon's field limits, with an image checklist.
+- [ ] 8.11 Social posts and a content calendar: posts generated per channel and scheduled on a calendar view.
+- [ ] 8.12 Launch email and press note drafts from the press release (4.2).
+
+**Campaigns**
+
+- [ ] 8.13 Campaign planner: objective, audience, channel, budget, dates, creative, measure of success and the rule for stopping or scaling. Campaigns sit on a calendar and a board.
+- [ ] 8.14 Launch plan as a dated checklist per channel (the example concept's Kickstarter and Amazon route are its first two templates), with its steps in the order of operations.
+- [ ] 8.15 Results: spend, clicks, orders and cost per order entered or imported per campaign, compared with its target; the assistant proposes stop, hold or scale against the rule set in 8.13.
+- [ ] 8.16 Tracked links per campaign and creative, so results can be tied back to the piece that produced them.
+
+**Sales and channels**
+
+- [ ] 8.17 Amazon sales read through SP-API into the sales monitor. Needs a Professional selling account.
+- [ ] 8.18 X: approved posts sent, cost shown first; replies drafted for approval.
+- [ ] 8.19 Instagram: posting after Meta App Review; replies drafted for approval. The review is started as soon as an account exists.
+- [ ] 8.20 Reviews and questions log with drafted replies, and a list of what customers keep asking that feeds back into Requirements (4.8).
 
 ## Unverified, to be checked before the item that needs it
 

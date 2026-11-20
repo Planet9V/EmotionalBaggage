@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, GitBranch, Moon, Plug, Plus, Sun } from "lucide-react";
+import { FileText, GitBranch, Moon, Plug, Plus, Sun, BookOpen } from "lucide-react";
 import { api, ProjectContext } from "@/lib/client";
 import { STAGES } from "@/lib/menu";
 import type { Project } from "@/lib/types";
@@ -117,6 +117,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Link href="/plan" className={link("/plan", pathname === "/plan")}><GitBranch className="h-3.5 w-3.5" aria-hidden /> Order of operations</Link>
             <Link href="/report" className={link("/report", pathname === "/report")}><FileText className="h-3.5 w-3.5" aria-hidden /> Report</Link>
             <Link href="/integrations" className={link("/integrations", pathname === "/integrations")}><Plug className="h-3.5 w-3.5" aria-hidden /> Integrations</Link>
+            <Link href="/docs" className={link("/docs", pathname.startsWith("/docs"))}><BookOpen className="h-3.5 w-3.5" aria-hidden /> Documentation</Link>
             <button type="button" onClick={toggleTheme} className={`${link("", false)} w-full`}>
               {dark ? <Sun className="h-3.5 w-3.5" aria-hidden /> : <Moon className="h-3.5 w-3.5" aria-hidden />}
               {dark ? "Light theme" : "Dark theme"}
