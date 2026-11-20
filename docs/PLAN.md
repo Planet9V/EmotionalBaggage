@@ -158,7 +158,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 
 Every draft is saved as a draft, records what it was generated from, and needs approval.
 
-- [ ] 4.1 Reviewer works on whichever reasoning model Admin sets, and is reachable from any row ("challenge this", "verify this").
+- [ ] 4.1 Reviewer works on whichever reasoning model Admin sets, and is reachable from any row ("challenge this", "verify this"). **Done 20 Nov:** one model layer (`src/lib/ai/models.ts`) for Ollama, LM Studio and OpenRouter, with plain-sentence failures and time limits; the reviewer uses it and every Anthropic setting is gone; rows can be embedded and searched by meaning (`POST /api/index`, search `mode=meaning` or `auto`). 72 tests against the stand-in. **Still to do:** reach the reviewer from any row; a button for indexing; research answers embedded; a run against a real Ollama, LM Studio and OpenRouter (whether each accepts structured output is unconfirmed); the pgvector tests have only ever run in GitHub Actions.
 - [ ] 4.2 Brief to press release and FAQ; the reviewer attacks it.
 - [ ] 4.3 Brief to requirements.
 - [ ] 4.4 Requirements to a candidate parts list, with a kind, pins and typical size per part.

@@ -38,11 +38,22 @@ Every setting is optional except the database password. A feature without its se
 |---|---|
 | `PGPASSWORD` | The database password. It applies when the database is first created; changing it later does not change an existing database. |
 | `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
-| `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | The AI reviewer in Concept, Challenge. |
-| `PERPLEXITY_API_KEY`, `PERPLEXITY_MODEL` | Research, Ask. |
+| `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY` | Fallbacks only. A key saved in Admin is used first. |
 | `PRINTER_KIND`, `PRINTER_URL`, `PRINTER_API_KEY` | Printer status in Prototype, 3D printing. `PRINTER_KIND` is `octoprint` or `moonraker`. |
 
-The AI reviewer works with one provider today. Choosing a reasoning model and an embedding model from Ollama, LM Studio or OpenRouter is item 2.5 of the plan.
+## Models
+
+The reviewer and search by meaning use the models you choose: a reasoning model and an embedding model, each served by Ollama, LM Studio or OpenRouter. Nothing is chosen at install, and the features that need a model say so until one is.
+
+The Admin screens are not built yet (plan items 2.4 to 2.6). Until they are, the choice is saved with `PUT /api/admin/settings` and keys with `PUT /api/admin/credentials/<provider>`; `POST /api/admin/test` checks a connection.
+
+- Give the address of the server's OpenAI-compatible interface: Ollama `http://host.docker.internal:11434/v1`, LM Studio `http://host.docker.internal:1234/v1`, OpenRouter `https://openrouter.ai/api/v1`. Inside Docker, `localhost` is the app's own container, so a model server on this computer is reached at `host.docker.internal`.
+- OpenRouter needs a key. Ollama and LM Studio usually do not.
+- For the embedding model, also give its vector width (for example 768 or 1024). If it is wrong, indexing reports both widths.
+- After choosing or changing the embedding model, index each concept again (`POST /api/index` with the concept's id). Until then search falls back to matching text for that concept. Rows embedded with an earlier model stay in the database but are not used.
+- Search by meaning needs the pgvector extension, which the supplied database image has.
+
+None of this has been run against a real Ollama, LM Studio or OpenRouter yet; it is tested against a stand-in.
 
 After changing `.env`, run `docker compose up -d` again.
 

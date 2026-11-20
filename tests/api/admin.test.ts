@@ -451,7 +451,7 @@ describe("integrations report", () => {
     for (const i of r.integrations) {
       expect(Object.keys(i).sort()).toEqual(["admin", "built", "configured", "env", "key", "name", "note", "purpose", "source"]);
     }
-    expect(r.integrations.map((i) => i.key)).toEqual(expect.arrayContaining(["ai", "perplexity", "printer", "amazon-buy", "amazon-sell", "x", "instagram", "reasoning-model", "embedding-model"]));
+    expect(r.integrations.map((i) => i.key)).toEqual(expect.arrayContaining(["perplexity", "printer", "amazon-buy", "amazon-sell", "x", "instagram", "reasoning-model", "embedding-model"]));
   });
 
   it("reflects credentials saved in Admin, and environment values as environment", async () => {

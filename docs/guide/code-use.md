@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit f713313 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 73165be by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -56,7 +56,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 
 | Package | Version | Licence | How it is used | Imported in src/ |
 | --- | --- | --- | --- | --- |
-| @ai-sdk/openai-compatible | 3.0.94 | Apache-2.0 | linked library | no |
+| @ai-sdk/openai-compatible | 3.0.94 | Apache-2.0 | linked library | yes |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | font files | yes |
 | @fontsource-variable/jetbrains-mono | 5.3.0 | OFL-1.1 | font files | yes |
 | @radix-ui/react-dialog | 1.3.1 | MIT | linked library | yes |
@@ -65,7 +65,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @react-three/fiber | 9.8.2 | MIT | linked library | yes |
 | @tanstack/react-query | 5.108.2 | MIT | linked library | yes |
 | @xyflow/react | 13.0.2 | MIT | linked library | yes |
-| ai | 7.0.178 | Apache-2.0 | linked library | no |
+| ai | 7.0.178 | Apache-2.0 | linked library | yes |
 | class-variance-authority | 0.7.1 | Apache-2.0 | linked library | yes |
 | clsx | 2.1.1 | MIT | linked library | yes |
 | framer-motion | 14.14.0 | MIT | linked library | yes |

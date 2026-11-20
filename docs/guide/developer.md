@@ -107,6 +107,12 @@ The planner's Python packages are pinned exactly in `planner/requirements.lock`,
 
 `npm run notices` regenerates `THIRD_PARTY_NOTICES.md` and the Code use page from the installed packages. `npm run notices:check` fails if either is out of date, and the test suite runs the same check. Anything a package manager does not know about (container images, fonts, copied source, tools run as separate processes) goes in `docs/third-party.manual.json`, in the same change that introduces it.
 
+## Models
+
+Every AI feature talks to models through `src/lib/ai/models.ts`; no other file builds a model client or reads a model name. `getReasoning()` and `getEmbedding()` return the model chosen in Admin, or `{ ok: false, reason }` with a sentence to show the user. Build features on `complete`, `completeStream`, `completeJson` (a zod schema; structured output with a prompted fallback, and `path` says which ran) and `embed` (checks every vector's width). Failures are `ModelError`, an `HttpError`, so a route wrapped in `route()` answers 503 (not configured), 502 (provider or unreachable) or 504 (time limit) with a sentence that never contains a key. Limits: 60 s for completions, 30 s for embeddings, adjustable per call; one retry on network errors, 429 and 5xx.
+
+Embeddings for search are in `src/lib/ai/embeddings.ts`: `indexProject` and `indexItem` embed rows whose text changed (hash in `content_sha256`, per model), and `searchByMeaning` returns rows with cosine similarity; both return `{ ok: false, missing: "pgvector" }` when the database has no pgvector. Each vector width gets its own partial HNSW index the first time it is used; widths above 2,000 are searched exactly. Tests use `tests/standins/openai.ts`; `tests/ai/vector.test.ts` runs only where pgvector is installed, which means in GitHub Actions and not on a machine without it.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.
