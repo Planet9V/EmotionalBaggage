@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Eye, EyeOff, RotateCcw } from "lucide-react";
+import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
-import type { CanvasPart, ShellView } from "@/components/three/ModelCanvas";
+import { NET_COLOR, WIRING_STORE, toWire, type NetClass, type Wire } from "@/lib/design";
+import type { CanvasPart, CanvasWire, ShellView } from "@/components/three/ModelCanvas";
 import { describeSize, toPart, type Part, type PartGeometry } from "@/components/three/layout";
-import { PartPanel } from "@/components/three/PartPanel";
+import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
 import { SHELL_DEFAULTS, type ShellParams } from "@/components/three/stl";
 import type { ViewProps } from "./types";
@@ -21,6 +22,14 @@ const ModelCanvas = dynamic(() => import("@/components/three/ModelCanvas"), {
 
 const BOM_STORE = "design/bom";
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
+
+const CLASS_ORDER: NetClass[] = ["power", "ground", "signal", "audio"];
+const CLASS_LABEL: Record<NetClass, string> = { power: "Power", ground: "Ground", signal: "Signal", audio: "Audio" };
+const FADED = 0.12;
+const NEIGHBOUR = 0.6;
+const NO_WIRES = "No wires yet. Add them in Schematic to draw them here, pull one net apart and see a part's connections.";
+
+const pin = (ref: string, p: string) => (p ? `${ref}.${p}` : ref);
 
 function subscribeTheme(cb: () => void) {
   const mo = new MutationObserver(cb);
@@ -48,6 +57,12 @@ export function ModelView({ project }: ViewProps) {
   const [resetToken, setResetToken] = useState(0);
   const [params, setParams] = useState<ShellParams>(SHELL_DEFAULTS);
   const [loaded, setLoaded] = useState<LoadedStl | null>(null);
+  const [focusId, setFocusId] = useState<number | null>(null);
+  const [sub, setSub] = useState(false);
+  const [wiresOn, setWiresOn] = useState(false);
+  const [classOff, setClassOff] = useState<Set<NetClass>>(() => new Set());
+  const [explodeBy, setExplodeBy] = useState("");
+  const wiringItems = useItems(project.id, WIRING_STORE);
 
   const withGeometry = parts.filter((p) => p.geometry);
   const canvasParts = useMemo<CanvasPart[]>(
@@ -58,6 +73,124 @@ export function ModelView({ project }: ViewProps) {
     [parts, hidden]
   );
   const selected = parts.find((p) => p.item.id === selectedId) ?? null;
+
+  const wires = useMemo(
+    () =>
+      [...wiringItems.items]
+        .sort((a, b) => a.sort - b.sort || a.id - b.id)
+        .map(toWire)
+        .filter((w): w is Wire => w !== null),
+    [wiringItems.items]
+  );
+  const partByRef = useMemo(() => {
+    const m = new Map<string, Part>();
+    for (const p of parts) if (p.ref && !m.has(p.ref)) m.set(p.ref, p);
+    return m;
+  }, [parts]);
+  const classesPresent = useMemo(() => CLASS_ORDER.filter((c) => wires.some((w) => w.netClass === c)), [wires]);
+  const netsPresent = useMemo(() => [...new Set(wires.map((w) => w.net).filter(Boolean))].sort(), [wires]);
+
+  const focus = focusId === null ? null : (parts.find((p) => p.item.id === focusId && p.geometry) ?? null);
+  // A focused part that was deleted or lost its geometry simply stops being focused (focus is null).
+  const focused = focus !== null;
+
+  /** Wires that touch the focused part, as an end or in series. */
+  const touching = useMemo(() => (focus && focus.ref ? wires.filter((w) => w.from === focus.ref || w.to === focus.ref || w.via === focus.ref) : []), [focus, wires]);
+  const neighbourIds = useMemo(() => {
+    const ids = new Set<number>();
+    if (!focus) return ids;
+    for (const w of touching) {
+      for (const r of [w.from, w.to, w.via]) {
+        const p = r ? partByRef.get(r) : undefined;
+        if (p && p.item.id !== focus.item.id && p.geometry) ids.add(p.item.id);
+      }
+    }
+    return ids;
+  }, [focus, touching, partByRef]);
+
+  const fade = useMemo<ReadonlyMap<number, number> | null>(() => {
+    if (!focus) return null;
+    const m = new Map<number, number>();
+    for (const p of parts) {
+      const id = p.item.id;
+      m.set(id, id === focus.item.id ? 1 : neighbourIds.has(id) ? (sub ? 1 : NEIGHBOUR) : FADED);
+    }
+    return m;
+  }, [focus, parts, neighbourIds, sub]);
+  const focusIds = useMemo(() => (focus ? [focus.item.id, ...(sub ? [...neighbourIds] : [])] : null), [focus, sub, neighbourIds]);
+
+  // Explode by net: only parts on the chosen class or net move with the slider.
+  const explodeByValid = explodeBy.startsWith("class:") ? classesPresent.includes(explodeBy.slice(6) as NetClass) : explodeBy.startsWith("net:") ? netsPresent.includes(explodeBy.slice(4)) : false;
+  const weights = useMemo<ReadonlyMap<number, number> | null>(() => {
+    if (!explodeByValid) return null;
+    const match = (w: Wire) => (explodeBy.startsWith("class:") ? w.netClass === explodeBy.slice(6) : w.net === explodeBy.slice(4));
+    const refs = new Set<string>();
+    for (const w of wires) if (match(w)) for (const r of [w.from, w.to, w.via]) if (r) refs.add(r);
+    return new Map(parts.map((p) => [p.item.id, p.ref && refs.has(p.ref) ? 1 : 0]));
+  }, [explodeByValid, explodeBy, wires, parts]);
+
+  // Wires that can be drawn, and why the rest cannot.
+  const wirePlan = useMemo(() => {
+    const draw: CanvasWire[] = [];
+    let noGeometry = 0;
+    let unknown = 0;
+    let hiddenEnd = 0;
+    for (const w of wires) {
+      const a = partByRef.get(w.from);
+      const b = partByRef.get(w.to);
+      if (!a || !b) unknown++;
+      else if (!a.geometry || !b.geometry) noGeometry++;
+      else if (hidden.has(a.item.id) || hidden.has(b.item.id)) hiddenEnd++;
+      else if (!classOff.has(w.netClass)) {
+        draw.push({
+          id: w.item.id,
+          name: w.name || w.net || "Wire",
+          ends: `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}${w.via ? ` via ${w.via}` : ""}`,
+          color: NET_COLOR[w.netClass],
+          a: a.item.id,
+          b: b.item.id,
+          via: w.via,
+        });
+      }
+    }
+    const reasons: [number, string][] = [
+      [noGeometry, "a part has no geometry"],
+      [unknown, "a part is not in the bill of materials"],
+      [hiddenEnd, "a part is hidden"],
+    ];
+    const active = reasons.filter(([n]) => n > 0);
+    const total = noGeometry + unknown + hiddenEnd;
+    const note =
+      total === 0
+        ? ""
+        : active.length === 1
+          ? `${total} wire${total === 1 ? "" : "s"} not drawn: ${active[0][1]}.`
+          : `${total} wires not drawn: ${active.map(([n, r]) => `${n} where ${r}`).join(", ")}.`;
+    return { draw, note };
+  }, [wires, partByRef, hidden, classOff]);
+
+  const connections = useMemo<ConnectionRow[]>(() => {
+    if (!focus) return [];
+    return touching.map((w) => {
+      const end = w.from === focus.ref || w.to === focus.ref;
+      const fromSide = w.from === focus.ref;
+      const otherRef = end ? (fromSide ? w.to : w.from) : "";
+      const other = otherRef ? partByRef.get(otherRef) : undefined;
+      return {
+        key: w.item.id,
+        pin: end ? (fromSide ? w.fromPin : w.toPin) : "",
+        otherRef,
+        otherPin: end ? (fromSide ? w.toPin : w.fromPin) : "",
+        otherTitle: other ? other.item.title : otherRef ? "Not in the bill of materials" : "",
+        otherId: other && other.geometry ? other.item.id : null,
+        net: w.net,
+        color: NET_COLOR[w.netClass],
+        via: end ? w.via : "",
+        status: w.status,
+        series: end ? "" : `In series: ${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`,
+      };
+    });
+  }, [focus, touching, partByRef]);
 
   const saveGeometry = useCallback((p: Part, geometry: PartGeometry) => patch(p.item.id, { data: { geometry } }), [patch]);
   const togglePrint = useCallback(
@@ -83,6 +216,42 @@ export function ModelView({ project }: ViewProps) {
     setExplodePct(pct);
     setResetToken((n) => n + 1);
   };
+
+  /** Choosing a part while focused moves the focus with it. */
+  const choose = useCallback((id: number | null) => {
+    setSelectedId(id);
+    setFocusId((f) => (f === null ? f : id));
+  }, []);
+  const focusOn = useCallback(
+    (id: number) => {
+      const p = parts.find((x) => x.item.id === id);
+      if (!p?.geometry) return;
+      setSelectedId(id);
+      setFocusId(id);
+      setHidden((h) => {
+        if (!h.has(id)) return h;
+        const n = new Set(h);
+        n.delete(id);
+        return n;
+      });
+    },
+    [parts]
+  );
+  const exitFocus = useCallback(() => {
+    setFocusId(null);
+    setSub(false);
+  }, []);
+  useEffect(() => {
+    if (!focused) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+      exitFocus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focused, exitFocus]);
 
   const uploadedForCanvas = useMemo(() => (loaded && loaded.show ? { mesh: loaded.mesh, key: loaded.key } : null), [loaded]);
   const showCanvas = withGeometry.length > 0 || uploadedForCanvas !== null;
@@ -119,7 +288,13 @@ export function ModelView({ project }: ViewProps) {
                   <li key={p.item.id} className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedId(isSel ? null : p.item.id)}
+                      onClick={() => choose(isSel ? null : p.item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter" || !p.geometry) return;
+                        // Enter focuses the part; a click or Space still just selects it.
+                        e.preventDefault();
+                        focusOn(p.item.id);
+                      }}
                       aria-pressed={isSel}
                       className={`min-w-0 flex-1 rounded-md border px-2 py-1.5 text-left transition-colors duration-150 ${
                         isSel ? "border-dutchOrange/40 bg-dutchOrange/10" : "border-transparent hover:bg-subtle"
@@ -183,12 +358,95 @@ export function ModelView({ project }: ViewProps) {
             </Button>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant={wiresOn ? "subtle" : "outline"}
+              className="h-8"
+              aria-pressed={wiresOn}
+              disabled={!showCanvas || wires.length === 0}
+              onClick={() => setWiresOn((v) => !v)}
+            >
+              Wires {wiresOn ? "on" : "off"}
+            </Button>
+            {wiresOn &&
+              classesPresent.map((c) => {
+                const on = !classOff.has(c);
+                return (
+                  <Button
+                    key={c}
+                    size="chip"
+                    variant="outline"
+                    aria-pressed={on}
+                    className={on ? "" : "opacity-60"}
+                    onClick={() =>
+                      setClassOff((s) => {
+                        const n = new Set(s);
+                        if (n.has(c)) n.delete(c);
+                        else n.add(c);
+                        return n;
+                      })
+                    }
+                  >
+                    <span aria-hidden className="h-2 w-2 rounded-full" style={{ backgroundColor: NET_COLOR[c] }} />
+                    {CLASS_LABEL[c]}
+                  </Button>
+                );
+              })}
+            <label className="ml-auto flex items-center gap-2 text-xs text-secondary">
+              Explode by net
+              <select
+                className="h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-40"
+                value={explodeByValid ? explodeBy : ""}
+                disabled={!showCanvas || wires.length === 0}
+                onChange={(e) => setExplodeBy(e.target.value)}
+              >
+                <option value="">All parts</option>
+                {classesPresent.length > 0 && (
+                  <optgroup label="Net class">
+                    {classesPresent.map((c) => (
+                      <option key={c} value={`class:${c}`}>
+                        {CLASS_LABEL[c]}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {netsPresent.length > 0 && (
+                  <optgroup label="Net">
+                    {netsPresent.map((n) => (
+                      <option key={n} value={`net:${n}`}>
+                        {n}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </label>
+          </div>
+          {!wiringItems.loading && wires.length === 0 && parts.length > 0 && <p className="text-xs text-muted">{NO_WIRES}</p>}
+          {wiresOn && wirePlan.note && <p className="text-xs text-warning">{wirePlan.note}</p>}
+
+          {focus && (
+            <nav aria-label="Focus" className="flex flex-wrap items-center gap-1 text-sm">
+              <button type="button" className="text-link hover:underline" onClick={exitFocus}>
+                Whole product
+              </button>
+              <ChevronRight className="h-3.5 w-3.5 text-muted" aria-hidden />
+              <span className="font-medium text-primary">
+                {focus.ref && <span className="mr-1 font-mono text-xs text-link">{focus.ref}</span>}
+                {focus.item.title}
+                {sub && neighbourIds.size > 0 ? <span className="ml-1 text-xs font-normal text-muted">and {neighbourIds.size} wired to it</span> : null}
+              </span>
+              <span className="ml-auto font-mono text-[10px] text-muted">Esc to go back</span>
+            </nav>
+          )}
+
           <div className="relative h-[560px] overflow-hidden rounded-xl border border-hairline bg-subtle">
             {showCanvas ? (
               <ModelCanvas
                 parts={canvasParts}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={choose}
                 explode={explodePct / 100}
                 labels={labels}
                 shellView={shellView}
@@ -196,6 +454,12 @@ export function ModelView({ project }: ViewProps) {
                 resetToken={resetToken}
                 dark={dark}
                 uploaded={uploadedForCanvas}
+                wires={wirePlan.draw}
+                wiresOn={wiresOn}
+                fade={fade}
+                weights={weights}
+                focusIds={focusIds}
+                onFocusPart={focusOn}
               />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
@@ -253,7 +517,20 @@ export function ModelView({ project }: ViewProps) {
               >
                 <PartPanel
                   part={selected}
-                  onClose={() => setSelectedId(null)}
+                  onClose={() => {
+                    choose(null);
+                    exitFocus();
+                  }}
+                  focus={{
+                    focused: focus !== null && focus.item.id === selected.item.id,
+                    sub,
+                    reason: selected.geometry ? "" : "Add geometry below to focus this part.",
+                    onFocus: () => focusOn(selected.item.id),
+                    onExit: exitFocus,
+                    onToggleSub: setSub,
+                    connections,
+                    onOpenPart: focusOn,
+                  }}
                   onSave={(g) => saveGeometry(selected, g)}
                   onTogglePrint={(v) => togglePrint(selected, v)}
                 />

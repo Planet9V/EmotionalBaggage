@@ -2,10 +2,10 @@
 
 A workbench that takes any product concept through the same seven stages, with the same wiring for every concept:
 
-1. **Concept**: brief, AI challenge, names and taglines, open questions
+1. **Concept**: brief, AI challenge, names and taglines, decision tree, open questions
 2. **Research**: Perplexity research with citations, claims to verify
-3. **Design**: requirements, 3D model with exploded view, bill of materials
-4. **Prototype**: sourcing, 3D printing, assembly, acceptance tests
+3. **Design**: requirements, 3D model with exploded view and drill-down, schematic, physical layout, bill of materials
+4. **Prototype**: sourcing, 3D printing, wiring and soldering build sheet, assembly, acceptance tests
 5. **Production**: unit economics, batch plan
 6. **Marketing**: positioning, landing pages, ads, campaigns, social
 7. **Sales**: Amazon listing, sales monitor, channels and pricing
@@ -44,6 +44,8 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/c2r PLANNER_URL=http://localh
 One table, `items`, holds every row of every section. `section` is `stage/section` from `src/lib/menu.ts`; `data` (jsonb) carries that section's columns.
 
 - A **part** is an item in `design/bom`. `data.geometry` (mm) drives the 3D view, the exploded view and STL generation.
+- A **wire** is an item in `design/wiring` (`from`, `fromPin`, `to`, `toPin`, `net`, `netClass`, `via`, `order`). The schematic, the 3D wire overlay and the build sheet all read it through `src/lib/design.ts`.
+- A **decision** is an item in `concept/decisions` (`key`, `parent`, `options`, `chosen`, `dependsOn`, `unlocks`).
 - A **step** is any item with `data.key`. `data.after` lists the keys it waits on and `data.minutes` its duration; the planner turns these into the order of operations.
 - Every write is recorded in `events`; the report reads from it.
 

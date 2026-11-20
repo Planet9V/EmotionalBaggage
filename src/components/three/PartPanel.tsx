@@ -2,7 +2,8 @@
 
 /** Side panel for the selected part: what it is, its size and where that size comes from, and a geometry editor. */
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import Link from "next/link";
+import { Crosshair, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -12,6 +13,36 @@ import { bodyExtent, describeSize, fmt, type Part, type PartGeometry } from "./l
 export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
   doc: "Dimension stated in the source documents",
   typical: "Typical size for this kind of part; not measured",
+};
+
+/** One wire touching the focused part. */
+export type ConnectionRow = {
+  key: number;
+  /** pin on the focused part; "" for a wire that only passes through it in series */
+  pin: string;
+  otherRef: string;
+  otherPin: string;
+  otherTitle: string;
+  /** part to focus when the row is clicked; null when the other end has no part or no geometry */
+  otherId: number | null;
+  net: string;
+  color: string;
+  via: string;
+  status: string;
+  /** shown when the part is in series on the wire rather than an end of it */
+  series: string;
+};
+
+export type FocusControls = {
+  focused: boolean;
+  sub: boolean;
+  /** why Focus is unavailable, "" when it is available */
+  reason: string;
+  onFocus: () => void;
+  onExit: () => void;
+  onToggleSub: (v: boolean) => void;
+  connections: ConnectionRow[];
+  onOpenPart: (id: number) => void;
 };
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
@@ -25,11 +56,12 @@ function Row({ label, children, mono }: { label: string; children: React.ReactNo
   );
 }
 
-export function PartPanel({ part, onClose, onSave, onTogglePrint }: {
+export function PartPanel({ part, onClose, onSave, onTogglePrint, focus }: {
   part: Part;
   onClose: () => void;
   onSave: (g: PartGeometry) => Promise<void>;
   onTogglePrint: (v: boolean) => void;
+  focus?: FocusControls;
 }) {
   const g = part.geometry;
   return (
@@ -42,6 +74,33 @@ export function PartPanel({ part, onClose, onSave, onTogglePrint }: {
         <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close part details" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {focus && (
+            <Button
+              size="sm"
+              variant={focus.focused ? "subtle" : "primary"}
+              onClick={focus.focused ? focus.onExit : focus.onFocus}
+              disabled={!focus.focused && focus.reason !== ""}
+            >
+              <Crosshair className="h-3.5 w-3.5" /> {focus.focused ? "Back to whole product" : "Focus"}
+            </Button>
+          )}
+          <Button asChild size="sm" variant="outline">
+            <Link href="/s/design/schematic">Open in schematic</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/s/design/layout">Open in layout</Link>
+          </Button>
+        </div>
+        {focus && !focus.focused && focus.reason && <p className="text-[11px] text-muted">{focus.reason}</p>}
+        {focus?.focused && (
+          <label className="inline-flex items-center gap-2 text-xs text-secondary">
+            <input type="checkbox" className="h-4 w-4 accent-[#E05A10]" checked={focus.sub} onChange={(e) => focus.onToggleSub(e.target.checked)} />
+            Sub-assembly: include everything wired to this part
+          </label>
+        )}
       </div>
       <dl className="divide-y divide-[var(--border-hairline)]">
         <Row label="Spec">{part.item.body ? <span className="whitespace-pre-wrap">{part.item.body}</span> : <span className="text-muted">None written</span>}</Row>
@@ -70,8 +129,56 @@ export function PartPanel({ part, onClose, onSave, onTogglePrint }: {
           </Row>
         )}
       </dl>
+      {focus?.focused && <Connections rows={focus.connections} hasRef={part.ref !== ""} onOpenPart={focus.onOpenPart} />}
       <GeometryEditor key={part.item.id} geometry={g} onSave={onSave} />
     </div>
+  );
+}
+
+function Connections({ rows, hasRef, onOpenPart }: { rows: ConnectionRow[]; hasRef: boolean; onOpenPart: (id: number) => void }) {
+  return (
+    <section aria-label="Connections">
+      <div className="flex items-baseline justify-between">
+        <p className={eyebrow}>Connections</p>
+        <span className="font-mono text-[10px] text-muted">{rows.length}</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">{hasRef ? "No wire touches this part yet." : "This part has no reference, so wires cannot point at it. Set one in the bill of materials."}</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-1">
+          {rows.map((r) => {
+            const body = (
+              <>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
+                  <span className="truncate font-mono text-[11px] text-primary">
+                    {r.series ? r.series : `${r.pin || "pin ?"} \u2192 ${r.otherRef}${r.otherPin ? `.${r.otherPin}` : ""}`}
+                  </span>
+                </span>
+                {!r.series && <span className="block truncate text-xs text-secondary">{r.otherTitle}</span>}
+                <span className="block truncate font-mono text-[10px] text-muted">
+                  {r.net || "no net"}
+                  {r.via ? ` \u00b7 via ${r.via}` : ""}
+                  {r.status ? ` \u00b7 ${r.status}` : ""}
+                </span>
+              </>
+            );
+            const cls = "w-full rounded-md border border-hairline px-2 py-1.5 text-left transition-colors duration-150";
+            return (
+              <li key={r.key}>
+                {r.otherId !== null ? (
+                  <button type="button" className={`${cls} hover:border-dutchOrange/40 hover:bg-subtle`} onClick={() => onOpenPart(r.otherId as number)} aria-label={`Focus ${r.otherRef} ${r.otherTitle}`}>
+                    {body}
+                  </button>
+                ) : (
+                  <div className={cls}>{body}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
