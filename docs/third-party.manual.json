@@ -1,0 +1,92 @@
+{
+  "_about": "Third-party material no package manager knows about. Read by scripts/notices.mjs and shown on docs/guide/code-use.md and in THIRD_PARTY_NOTICES.md. Each entry was checked against the repository on 2026-11-20; add an entry in the same change that introduces the material, and remove it in the change that removes it. 'use' is one of: container image, separate process, font files, copied source, linked library.",
+  "entries": [
+    {
+      "name": "Node.js (official Docker image node)",
+      "version": "22-bookworm-slim",
+      "license": "MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences",
+      "licenseEvidence": "Node.js LICENSE (https://github.com/nodejs/node/blob/main/LICENSE, and the same file in a Node 22 install) opens 'Node.js is licensed for use as follows:' followed by the MIT text and a list of externally maintained libraries; nodejs/docker-node LICENSE is MIT, 'Copyright (c) 2015 Joyent, Inc.'",
+      "use": "container image",
+      "referencedIn": ["Dockerfile"],
+      "source": "https://github.com/nodejs/docker-node",
+      "notes": "Build and run stages of the web app image."
+    },
+    {
+      "name": "Python (official Docker image python)",
+      "version": "3.13-slim",
+      "license": "PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences",
+      "licenseEvidence": "Python's LICENSE.txt (in a Python 3.13 install) contains 'PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2'; the image's Docker Hub page points to that licence information for Python 3 and states the image contains other software under other licences. The licence of the docker-library/python build files could not be read (GitHub rate limit) and is unverified.",
+      "use": "container image",
+      "referencedIn": ["planner/Dockerfile"],
+      "source": "https://hub.docker.com/_/python",
+      "notes": "Base image of the planner service."
+    },
+    {
+      "name": "pgvector (Docker image pgvector/pgvector)",
+      "version": "0.8.7-pg19-trixie (default; PG_IMAGE may override it)",
+      "license": "PostgreSQL",
+      "licenseEvidence": "pgvector LICENSE (https://github.com/pgvector/pgvector/blob/master/LICENSE): 'Portions Copyright (c) 1996-2026, PostgreSQL Global Development Group ... Permission to use, copy, modify, and distribute this software and its documentation for any purpose, without fee, and without a written agreement is hereby granted', the PostgreSQL Licence text. pgvector's Dockerfile builds FROM postgres:$PG_MAJOR-$DEBIAN_CODENAME, so the image also contains the PostgreSQL entry below and Debian trixie packages under their own licences.",
+      "use": "container image",
+      "referencedIn": ["docker-compose.yml"],
+      "source": "https://github.com/pgvector/pgvector",
+      "notes": "The db service. The extension is loaded by the database server; the web app talks to it over the network."
+    },
+    {
+      "name": "PostgreSQL",
+      "version": "19 (inside pgvector/pgvector:0.8.7-pg19-trixie)",
+      "license": "PostgreSQL",
+      "licenseEvidence": "https://www.postgresql.org/about/license: 'PostgreSQL is released under the PostgreSQL License, a liberal Open Source license, similar to the BSD or MIT licenses.' The licence of the official postgres image's build files (docker-library/postgres) was not read.",
+      "use": "separate process",
+      "referencedIn": ["docker-compose.yml"],
+      "source": "https://www.postgresql.org",
+      "notes": "Runs as its own container; the web app connects to it over the network through the pg client library."
+    },
+    {
+      "name": "pgvector (Docker image pgvector/pgvector, CI only)",
+      "version": "pg17",
+      "license": "PostgreSQL",
+      "licenseEvidence": "Same project and licence file as the pgvector entry above.",
+      "use": "container image",
+      "referencedIn": [".github/workflows/ci.yml"],
+      "source": "https://github.com/pgvector/pgvector",
+      "notes": "Database service for the test job in GitHub Actions; not part of what is shipped."
+    },
+    {
+      "name": "Inter (typeface)",
+      "version": "Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0",
+      "license": "OFL-1.1",
+      "licenseEvidence": "node_modules/@fontsource-variable/inter/LICENSE: 'Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) ... This Font Software is licensed under the SIL Open Font License, Version 1.1.'; metadata.json license.type OFL-1.1.",
+      "use": "font files",
+      "referencedIn": ["src/app/globals.css"],
+      "source": "https://github.com/rsms/inter",
+      "notes": "The font files are copied unmodified into the built CSS assets and served to the browser."
+    },
+    {
+      "name": "JetBrains Mono (typeface)",
+      "version": "Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0",
+      "license": "OFL-1.1",
+      "licenseEvidence": "node_modules/@fontsource-variable/jetbrains-mono/LICENSE: 'Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) ... This Font Software is licensed under the SIL Open Font License, Version 1.1.'; metadata.json license.type OFL-1.1.",
+      "use": "font files",
+      "referencedIn": ["src/app/globals.css"],
+      "source": "https://github.com/JetBrains/JetBrainsMono",
+      "notes": "The font files are copied unmodified into the built CSS assets and served to the browser."
+    },
+    {
+      "name": "UI components (Button, Dialog, Input, Table, Card, StatusBadge)",
+      "version": "as committed in eb362b6 (2026-11-20)",
+      "license": "not established (see notes)",
+      "licenseEvidence": "None in the repository. button.tsx, dialog.tsx, input.tsx and table.tsx describe themselves as 'shadcn/ui ... themed to Eigenia's design tokens'; Card.tsx and StatusBadge.tsx carry no origin note. README.md says the UI kit comes from Planet9V/eigenia. git log --follow shows one commit, eb362b6, for each file. shadcn/ui itself is published under the MIT License ('Copyright (c) 2023 shadcn', https://github.com/shadcn-ui/ui/blob/main/LICENSE.md); whether any shadcn/ui source text is in these files has not been established.",
+      "use": "copied source",
+      "origin": "owner's own project (Planet9V/eigenia, per README.md); pattern follows shadcn/ui; third-party origin not established",
+      "referencedIn": ["src/components/ui/button.tsx", "src/components/ui/dialog.tsx", "src/components/ui/input.tsx", "src/components/ui/table.tsx", "src/components/ui/Card.tsx", "src/components/ui/StatusBadge.tsx"],
+      "source": "https://github.com/shadcn-ui/ui",
+      "changes": "Re-themed to Eigenia design tokens (per the file headers). No list of changes against an upstream file exists in the repository.",
+      "notes": "Question for the owner: confirm the origin, and whether shadcn/ui source was copied, so the licence can be recorded."
+    }
+  ],
+  "useOverrides": {
+    "@fontsource-variable/inter": "font files",
+    "@fontsource-variable/jetbrains-mono": "font files"
+  },
+  "unknownLicences": {}
+}

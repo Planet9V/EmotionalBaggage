@@ -7,6 +7,7 @@ export const DOC_PAGES = [
   { slug: "admin", title: "Admin guide", audience: "Whoever installs and maintains it", blurb: "Install, settings, health, backups, updating." },
   { slug: "developer", title: "Developer guide", audience: "Whoever changes the code", blurb: "Stack, layout, data model, API rules, tests, common changes." },
   { slug: "system-context", title: "System context", audience: "Everyone", blurb: "The people who use it and the outside systems it touches, with a diagram." },
+  { slug: "code-use", title: "Code use", audience: "Everyone", blurb: "Every third-party library, image, font and copied file, its licence and how it is used, with the draft attestation." },
 ] as const;
 
 export type DocSlug = (typeof DOC_PAGES)[number]["slug"];
