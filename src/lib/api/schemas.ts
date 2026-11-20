@@ -1,0 +1,92 @@
+import { z } from "zod";
+import { DEFAULT_STATUSES, STAGES, storeKey } from "@/lib/menu";
+
+/** Every backend store the menu defines, with the statuses its sections allow. */
+export const STORE_STATUSES: Record<string, string[]> = (() => {
+  // Several sections can show the same store (the parts list is also the layout and sourcing).
+  // The statuses a section declares win; the defaults apply only where no section declares any.
+  const declared: Record<string, string[]> = {};
+  const seen = new Set<string>();
+  for (const stage of STAGES) {
+    for (const section of stage.sections) {
+      const key = storeKey(stage, section);
+      seen.add(key);
+      if (!section.statuses) continue;
+      const list = (declared[key] ??= []);
+      for (const s of section.statuses) if (!list.includes(s)) list.push(s);
+    }
+  }
+  const out: Record<string, string[]> = {};
+  for (const key of seen) out[key] = declared[key] ?? [...DEFAULT_STATUSES];
+  return out;
+})();
+
+export const STORES = Object.keys(STORE_STATUSES);
+
+const text = (max: number) => z.string().max(max);
+
+/** `data` is always a plain object: never an array, a string or null. */
+export const dataObject = z.record(z.string(), z.unknown());
+
+export const sectionKey = z
+  .string()
+  .refine((s) => s in STORE_STATUSES, { message: `must be one of: ${STORES.join(", ")}` });
+
+function statusFor(section: string, status: string | undefined, ctx: z.RefinementCtx) {
+  if (status === undefined) return;
+  const allowed = STORE_STATUSES[section];
+  if (allowed && !allowed.includes(status)) {
+    ctx.addIssue({ code: "custom", path: ["status"], message: `must be one of: ${allowed.join(", ")}` });
+  }
+}
+
+export const newItem = z
+  .object({
+    section: sectionKey,
+    title: text(300).trim().min(1, "is required"),
+    body: text(20_000).optional(),
+    data: dataObject.optional(),
+    status: text(40).optional(),
+  })
+  .superRefine((v, ctx) => statusFor(v.section, v.status, ctx));
+
+export type NewItem = z.infer<typeof newItem>;
+
+/** The status is checked against the row's own section in the handler. */
+export const itemPatch = z
+  .object({
+    title: text(300).trim().min(1, "cannot be empty").optional(),
+    body: text(20_000).optional(),
+    data: dataObject.optional(),
+    status: text(40).optional(),
+    sort: z.number().int().min(-1_000_000).max(1_000_000).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: "nothing to change" });
+
+export const newProject = z.object({
+  name: text(120).trim().min(1, "A concept needs a name."),
+  oneLiner: text(400).trim().optional(),
+  items: z.array(newItem).max(2000).optional(),
+});
+
+export const challengeTurn = z.object({
+  projectId: text(80).min(1),
+  message: text(8000).trim().min(1, "is required"),
+});
+
+export const researchAsk = z.object({
+  projectId: text(80).min(1),
+  query: text(2000).trim().min(1, "is required"),
+});
+
+export function assertStatus(section: string, status: string | undefined) {
+  if (status === undefined) return;
+  const allowed = STORE_STATUSES[section];
+  if (allowed && !allowed.includes(status)) {
+    throw new z.ZodError([
+      { code: "custom", path: ["status"], message: `must be one of: ${allowed.join(", ")}`, input: status },
+    ]);
+  }
+}
+
+export const defaultStatus = (section: string) => STORE_STATUSES[section]?.[0] ?? "open";

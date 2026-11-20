@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
+import { requireProject, route } from "@/lib/api/route";
 import { planFallback, stepsFromItems } from "@/lib/plan";
 import type { Plan, PlanNode } from "@/lib/types";
 
 /** Order of operations for a concept: the step graph goes to the NetworkX planner service. */
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = route(async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
+  await requireProject(id);
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 ORDER BY sort, id`, [id]);
   const raw = stepsFromItems(rows.map(toItem));
   const url = process.env.PLANNER_URL;
@@ -34,4 +36,4 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   } catch (e) {
     return NextResponse.json(planFallback(raw, `The planner service did not answer (${(e as Error).message}); the order was computed in the web app.`));
   }
-}
+});

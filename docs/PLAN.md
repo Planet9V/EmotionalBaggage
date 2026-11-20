@@ -97,7 +97,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 ### Phase 1: foundations, by replacement
 
 - [ ] 1.1 zod schema per section store; one typed `Part`, `Wire`, `Decision`, `Step` in `src/lib/domain`; the five duplicate readers deleted. Relations stored as arrays, not comma strings.
-- [ ] 1.2 Route wrapper: validates input, maps database errors to 400, 404 and 409, wraps multi-statement writes in a transaction, times out outbound calls. Fixes the known bugs: row corruption on PATCH, project ID collision, unknown concept returning 500.
+- [x] 1.2 Route wrapper: every route validates its input with zod, answers 400, 404, 409 or 504 as JSON, runs multi-statement writes in one transaction, and times out outbound calls. Fixed: row corruption on PATCH, concept ID collision (including two creates at once), unknown concept returning 500, non-numeric IDs returning 500, search wildcards, missing `nosniff` on downloads, the wizard's pre-filled sales channel. Done 20 Nov: 34 tests pass against a real PostgreSQL (`npm test`). Per-section `data` schemas arrive with 1.1.
 - [ ] 1.3 TanStack Query replaces the hand-written hooks. Fixes swallowed save errors and deletes that vanish without rollback.
 - [ ] 1.4 Move to Tailwind 4 and initialise shadcn/ui, carrying the Eigenia colours and fonts as variables; every existing screen renders as before in light and dark. UI kit completed on shadcn/ui and the local copies deleted: field, select, textarea, modal, empty state, error line, toast, download helper.
 - [ ] 1.5 Kanban, tables, wizard and forms moved to the adopted libraries.

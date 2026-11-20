@@ -34,7 +34,7 @@ export const emptyAnswers = (): Answers => ({
   printed: "", w: "", h: "", d: "",
   parts: [{ key: nextKey(), name: "", qty: "", source: "", search: "", line: "" }],
   test: "", testCost: "", gate: "",
-  channel: "Amazon", price: "",
+  channel: "", price: "",
   names: [{ key: nextKey(), kind: "Name", text: "" }],
 });
 

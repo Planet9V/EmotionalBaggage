@@ -1,40 +1,48 @@
 import { NextResponse } from "next/server";
-import { ITEM_COLS, logEvent, q, toItem, type ItemRow } from "@/lib/db";
+import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
+import { body, notFound, recordId, route } from "@/lib/api/route";
+import { assertStatus, itemPatch } from "@/lib/api/schemas";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /** data is merged key by key, so a view can patch one field without resending the rest. */
-export async function PATCH(req: Request, { params }: Ctx) {
-  const { id } = await params;
-  const b = (await req.json().catch(() => ({}))) as {
-    title?: string; body?: string; data?: Record<string, unknown>; status?: string; sort?: number;
-  };
-  const before = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1`, [id]);
-  if (!before.length) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const rows = await q<ItemRow>(
-    `UPDATE items SET
-       title = COALESCE($2, title),
-       body = COALESCE($3, body),
-       data = data || COALESCE($4::jsonb, '{}'::jsonb),
-       status = COALESCE($5, status),
-       sort = COALESCE($6, sort),
-       updated_at = now()
-     WHERE id=$1 RETURNING ${ITEM_COLS}`,
-    [id, b.title ?? null, b.body ?? null, b.data ? JSON.stringify(b.data) : null, b.status ?? null, b.sort ?? null]
-  );
-  const was = before[0];
-  const now = rows[0];
-  if (b.status && b.status !== was.status) {
-    await logEvent(now.project_id, "item.status", `"${now.title}" moved from ${was.status} to ${now.status}`, { itemId: now.id });
-  } else {
-    await logEvent(now.project_id, "item.edited", `Edited "${now.title}" in ${now.section}`, { itemId: now.id });
-  }
+export const PATCH = route(async (req: Request, { params }: Ctx) => {
+  const id = recordId((await params).id, "That row");
+  const b = await body(req, itemPatch);
+  const now = await tx(async (c) => {
+    const before = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 FOR UPDATE`, [id]);
+    const was = before.rows[0];
+    if (!was) throw notFound("That row");
+    assertStatus(was.section, b.status);
+    const res = await c.query<ItemRow>(
+      `UPDATE items SET
+         title = COALESCE($2, title),
+         body = COALESCE($3, body),
+         data = data || COALESCE($4::jsonb, '{}'::jsonb),
+         status = COALESCE($5, status),
+         sort = COALESCE($6, sort),
+         updated_at = now()
+       WHERE id=$1 RETURNING ${ITEM_COLS}`,
+      [id, b.title ?? null, b.body ?? null, b.data ? JSON.stringify(b.data) : null, b.status ?? null, b.sort ?? null]
+    );
+    const row = res.rows[0];
+    if (b.status && b.status !== was.status) {
+      await logEventIn(c, row.project_id, "item.status", `"${row.title}" moved from ${was.status} to ${row.status}`, { itemId: row.id });
+    } else {
+      await logEventIn(c, row.project_id, "item.edited", `Edited "${row.title}" in ${row.section}`, { itemId: row.id });
+    }
+    return row;
+  });
   return NextResponse.json({ item: toItem(now) });
-}
+});
 
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const { id } = await params;
-  const rows = await q<ItemRow>(`DELETE FROM items WHERE id=$1 RETURNING ${ITEM_COLS}`, [id]);
-  if (rows.length) await logEvent(rows[0].project_id, "item.removed", `Removed "${rows[0].title}" from ${rows[0].section}`);
+export const DELETE = route(async (_req: Request, { params }: Ctx) => {
+  const id = recordId((await params).id, "That row");
+  await tx(async (c) => {
+    const res = await c.query<ItemRow>(`DELETE FROM items WHERE id=$1 RETURNING ${ITEM_COLS}`, [id]);
+    const row = res.rows[0];
+    if (!row) throw notFound("That row");
+    await logEventIn(c, row.project_id, "item.removed", `Removed "${row.title}" from ${row.section}`);
+  });
   return NextResponse.json({ ok: true });
-}
+});

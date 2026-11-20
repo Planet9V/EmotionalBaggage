@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "./seed";
 
 // One pool per process. DATABASE_URL points at PostgreSQL (pgvector image in Docker).
@@ -162,6 +162,30 @@ export async function q<T = Record<string, unknown>>(text: string, params: unkno
   await ready();
   const r = await pool().query(text, params);
   return r.rows as T[];
+}
+
+/** Runs several statements as one unit: all of them land, or none do. */
+export async function tx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
+  await ready();
+  const c = await pool().connect();
+  try {
+    await c.query("BEGIN");
+    const out = await fn(c);
+    await c.query("COMMIT");
+    return out;
+  } catch (e) {
+    await c.query("ROLLBACK").catch(() => undefined);
+    throw e;
+  } finally {
+    c.release();
+  }
+}
+
+const EVENT_SQL = "INSERT INTO events (project_id, kind, summary, data) VALUES ($1,$2,$3,$4)";
+
+/** Same as logEvent, inside a transaction. */
+export function logEventIn(c: PoolClient, projectId: string, kind: string, summary: string, data: unknown = {}) {
+  return c.query(EVENT_SQL, [projectId, kind, summary, JSON.stringify(data)]);
 }
 
 export function logEvent(projectId: string, kind: string, summary: string, data: unknown = {}) {

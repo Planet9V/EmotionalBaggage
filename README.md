@@ -54,3 +54,14 @@ Adding a stage or section is an edit to `src/lib/menu.ts` only.
 ## What is and is not built
 
 See the Integrations page in the app; it reads the live state. In short: the AI reviewer and Perplexity calls are written but have not been run against live keys; printer status reads exist for OctoPrint and Moonraker only; Amazon purchasing is search links plus an add-to-cart link; Amazon Seller Central, X and Instagram calls are not built; semantic search is not built (the pgvector column exists, nothing fills it).
+
+## Tests
+
+`npm test` runs the suite with Vitest. The API tests call every route handler against a real PostgreSQL, so `DATABASE_URL` must point at an empty database you can throw away:
+
+```
+createdb c2r_test
+DATABASE_URL=postgresql://localhost/c2r_test npm test
+```
+
+The plan and its master checklist are in `docs/PLAN.md`.
