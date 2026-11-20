@@ -162,7 +162,7 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
   const plan = data.plan;
   if (errors.plan) blocks.push({ t: "p", text: `Could not be loaded: ${errors.plan}` });
   if (plan) {
-    blocks.push({ t: "p", text: plan.engine === "networkx" ? "Computed by NetworkX." : `Computed in the web app. ${plan.note ?? ""}`.trim(), muted: true });
+    blocks.push({ t: "p", text: plan.engine === "networkx" ? "Computed by NetworkX." : `No order: ${plan.note ?? "the planner service is not running."}`, muted: true });
     if (!plan.nodes.length) blocks.push({ t: "empty" });
     else {
       const idx = new Map(plan.order.map((id, i) => [id, i]));
