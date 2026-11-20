@@ -1,5 +1,7 @@
 # Remediation plan: concept-to-realization workbench
 
+> Superseded by `docs/PLAN.md` on 20 November 2026. Kept for its research evidence table and sources.
+
 20 November 2026. Covers the 15 gaps found in the audit, plus three new requirements from Jim: an admin area for API keys and credentials, English only, and full concept management (many concepts; create, edit, delete).
 
 ## How to read this
