@@ -1,72 +1,120 @@
-// Stand-in for Perplexity's Sonar endpoint, POST /v1/sonar, as called by src/app/api/research/route.ts
-// (the route reads choices[0].message.content, then citations, falling back to search_results[].url,
-// and error.message on a non-2xx answer; its address is PERPLEXITY_URL).
+// Stand-in for Perplexity's Agent API, POST /v1/agent, as called by src/lib/research/perplexity.ts
+// (base address PERPLEXITY_BASE_URL). The Sonar interface (POST /v1/sonar) is not served: its
+// support ended on 27 Sep 2026 and the app no longer calls it.
 //
-// Documentation read (retrieved 20 Nov 2026):
-//   [PPLX] https://docs.perplexity.ai/api-reference/sonar-post (now redirects to "Migrate from Sonar to the Agent API",
-//          docs/agent-api/migrate-from-sonar/overview). It shows the Sonar request (POST https://api.perplexity.ai/v1/sonar,
-//          "Authorization: Bearer", body {model, messages}) and a Sonar response example with: id, choices[].message
-//          {content, role}, choices[].finish_reason, created, model, citations (array of URL strings), object
-//          "chat.completion", search_results[] {title, url, date, last_updated, snippet, source}.
-//          The same page says: "Sonar Chat Completions support ended on September 27, 2026. Synchronous and streaming
-//          requests keep working: they are being reformulated as Agent API requests".
-//
-// Unverified: the status and body of a wrong-key answer (401 with {"error":{"message"}} is assumed; the route reads
-// error.message), choices[].index, and streaming (not built here; the app does not stream).
+// Documentation read 20 Nov 2026 (details and the full unverified list: docs/research/perplexity-api.md):
+//   [REF]   https://docs.perplexity.ai/api-reference/agent-post  (OpenAPI: ResponsesResponse, MessageOutputItem,
+//           ContentPart, SearchResultsOutputItem, SearchResult, ErrorInfo, ResponsesUsage, ResponsesCost)
+//   [MIG]   https://docs.perplexity.ai/docs/agent-api/migrate-from-sonar/overview  (example Agent API response)
+//   [WEB]   https://docs.perplexity.ai/docs/agent-api/tools/web-search  ("Response Shape")
+//   [EFF]   https://docs.perplexity.ai/docs/agent-api/effort  (response `effort` as name@version; fast's models)
+//   [RATE]  https://docs.perplexity.ai/docs/admin/rate-limits-usage-tiers  (429 body and Retry-After)
+//   [FAQ]   https://docs.perplexity.ai/docs/resources/faq  (401 for a bad key; X-Request-ID header)
 import { bearer, json, startStandIn, type FailureOptions } from "./core";
 
 export type PerplexityOptions = FailureOptions & {
-  /** the key every request must carry as "Authorization: Bearer <apiKey>" */
+  /** the key every request must carry as "Authorization: Bearer <apiKey>" [REF HTTPBearer] */
   apiKey: string;
-  /** answer text; default echoes the last user message */
+  /** answer text; default echoes the input */
   reply?: string;
+  /** the sources returned in the search_results item, in id order from 1 */
   citations: string[];
-  /** include search_results in the answer (true) or leave them out (false) */
-  searchResults: boolean;
-  /** leave the top-level citations array out, to test the route's search_results fallback */
-  omitCitations?: boolean;
+  /** leave the search_results item out (an answer without sources) */
+  noSources?: boolean;
+  /** answer 429 with this error.type and Retry-After [RATE] */
+  rateLimit?: "request_rate_limit_exceeded" | "token_rate_limit_exceeded" | "overloaded";
+  /** answer 200 with a body that is not a valid response */
+  malformed?: "not-json" | "no-output";
+  /** answer 200 with status "failed" and an error object [REF ResponsesResponse.error] */
+  failedRun?: boolean;
+  /** usage.cost.total_cost to report [REF ResponsesCost]; undefined leaves usage out */
+  costUsd?: number;
 };
 
 const DEFAULTS: PerplexityOptions = {
   apiKey: "pplx-stand-in-key",
   citations: ["https://example.com/source-1", "https://example.org/source-2"],
-  searchResults: true,
 };
+
+const MODEL = "openai/gpt-6-luna"; // [EFF] fast's current model
 
 export function start(options?: Partial<PerplexityOptions>) {
   return startStandIn<PerplexityOptions>(DEFAULTS, (req, o) => {
+    const rid = { "x-request-id": `standin-${req.path.length}-${Date.now()}` }; // [FAQ] header name; value format unverified
     if (bearer(req.headers) !== o.apiKey) {
-      return json(401, { error: { message: "Invalid API key (stand-in)", type: "invalid_api_key", code: 401 } }); // unverified
+      // [FAQ] status 401 for a missing or wrong key; the body shape is unverified (assumed ErrorInfo as on the 400)
+      return json(401, { error: { message: "Invalid API key (stand-in)", type: "invalid_api_key", code: "401" } }, rid);
     }
-    if (!(req.method === "POST" && req.path === "/v1/sonar")) return json(404, { error: { message: `stand-in has no route ${req.method} ${req.path}` } }); // unverified
-    const b = (req.body ?? {}) as { model?: string; messages?: { role: string; content: string }[] };
-    if (!Array.isArray(b.messages)) return json(400, { error: { message: "messages is required (stand-in)" } }); // unverified
-    const lastUser = [...b.messages].reverse().find((m) => m.role === "user");
-    const content = o.reply ?? `Stand-in research answer to: ${lastUser?.content ?? ""}`;
+    if (!(req.method === "POST" && req.path === "/v1/agent")) {
+      return json(404, { error: { message: `stand-in has no route ${req.method} ${req.path}` } }, rid); // unverified
+    }
+    if (o.rateLimit) {
+      const message = o.rateLimit === "request_rate_limit_exceeded"
+        ? "Request rate limit exceeded, please try again later." // [RATE] verbatim
+        : o.rateLimit === "token_rate_limit_exceeded"
+          ? "Token rate limit exceeded (TPM). Retry after the Retry-After interval." // [RATE] verbatim
+          : "Upstream model overloaded (stand-in)"; // [RATE] names the type; message unverified
+      return json(429, { error: { message, type: o.rateLimit, code: 429 } }, { "retry-after": "7", ...rid }); // [RATE]
+    }
+    const b = (req.body ?? {}) as { input?: unknown; effort?: string };
+    if (b.input === undefined) {
+      return json(400, { error: { message: "input is required (stand-in)", type: "invalid_request_error" } }, rid); // [REF] 400 → {error: ErrorInfo}; text unverified
+    }
+    if (o.malformed === "not-json") return { status: 200, headers: { "content-type": "application/json", ...rid }, raw: "<html>not json</html>" };
+    if (o.malformed === "no-output") return json(200, { id: "resp_standin", object: "response", status: "completed" }, rid);
+
+    const effortName = typeof b.effort === "string" ? b.effort.split("@")[0] : undefined;
     const body: Record<string, unknown> = {
-      id: `standin-${Date.now()}`, // [PPLX]
-      model: b.model ?? "sonar", // [PPLX]
-      created: Math.floor(Date.now() / 1000), // [PPLX]
-      object: "chat.completion", // [PPLX]
-      choices: [
+      id: `resp_standin-${Date.now()}`, // [REF] required; "resp_" prefix as in [MIG]
+      object: "response", // [REF] ResponsesObjectType
+      created_at: Math.floor(Date.now() / 1000), // [REF] required, unix seconds
+      model: MODEL, // [REF] required
+      status: o.failedRun ? "failed" : "completed", // [REF] Status enum
+      output: [] as unknown[], // [REF] required
+    };
+    if (effortName) body.effort = `${effortName}@2026-10-16.0`; // [EFF] "name@<version>", present only when the request used an effort
+    if (o.failedRun) {
+      body.error = { message: "The run failed (stand-in)", type: "server_error", code: "run_failed" }; // [REF] ErrorInfo; values unverified
+      return json(200, body, rid);
+    }
+    const output = body.output as unknown[];
+    if (!o.noSources) {
+      output.push({
+        type: "search_results", // [REF] SearchResultsOutputItem
+        queries: ["stand-in query"], // [REF] optional
+        results: o.citations.map((url, i) => ({
+          id: i + 1, // [REF] required; [WEB] "Stable index used to reference the result in citations"
+          url, // [REF] required
+          title: `Stand-in source ${i + 1}`, // [REF] required
+          snippet: "Stand-in snippet.", // [REF] required
+          date: "2026-11-01", // [WEB] YYYY-MM-DD
+          last_updated: "2026-11-02", // [WEB]
+          source: "web", // [WEB]
+        })),
+      });
+    }
+    output.push({
+      type: "message", // [REF] MessageOutputItem
+      id: "msg_standin", // [REF] required
+      role: "assistant", // [REF] required
+      status: "completed", // [REF] required
+      content: [
         {
-          index: 0, // unverified (elided as "// ..." in the example)
-          message: { role: "assistant", content }, // [PPLX]
-          finish_reason: "stop", // [PPLX]
+          type: "output_text", // [REF] ContentPartType
+          text: o.reply ?? `Stand-in research answer to: ${typeof b.input === "string" ? b.input : JSON.stringify(b.input)}`, // [REF] required
+          annotations: [], // [MIG] example shows an empty array
         },
       ],
-    };
-    if (!o.omitCitations) body.citations = o.citations; // [PPLX] top-level array of URLs
-    if (o.searchResults) {
-      body.search_results = o.citations.map((url, i) => ({
-        title: `Stand-in source ${i + 1}`, // [PPLX]
-        url, // [PPLX]
-        date: "2026-11-01", // [PPLX]
-        last_updated: "2026-11-02", // [PPLX]
-        snippet: "Stand-in snippet.", // [PPLX]
-        source: "web", // [PPLX]
-      }));
+    });
+    if (o.costUsd !== undefined) {
+      body.usage = {
+        input_tokens: 1200, // [REF] required in ResponsesUsage; [WEB] example value
+        output_tokens: 300, // [REF] required; [WEB] example value
+        total_tokens: 1500, // [REF] required; [WEB] example value
+        tool_calls_details: { search_web: { invocation: 1 } }, // [WEB]
+        cost: { currency: "USD", input_cost: 0, output_cost: 0, total_cost: o.costUsd }, // [REF] ResponsesCost required fields; currency value unverified
+      };
     }
-    return json(200, body);
+    return json(200, body, rid);
   }, options);
 }

@@ -7,14 +7,24 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
+import { statusTone } from "@/lib/statusTones";
 import { selectClass } from "@/components/wizard/fields";
-import { NotConnected, hostname, stamp } from "@/components/wizard/shared";
+import { TEXTAREA_CLS } from "@/components/items/shared";
+import { hostname, stamp } from "@/components/wizard/shared";
+import { VERDICT_LABEL, evidenceOf, useEvidence } from "@/lib/research/client";
+import { VERDICTS, type Verdict } from "@/lib/research/schemas";
+import { isDisputed } from "@/lib/research/status";
+import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
-type Entry = { id: number; query: string; answer: string; citations: string[]; model: string; createdAt: string };
+type Source = { url: string; title?: string };
+type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
 type Resp = { configured: boolean; model: string; entries: Entry[] };
+type AskResp = { entry: Entry; effort: string | null; costUsd: number | null };
+type Claims = ReturnType<typeof useItems>;
 
 const day = (iso: string) => {
   const d = new Date(iso);
@@ -32,8 +42,11 @@ export function ResearchView({ project }: ViewProps) {
   const box = useRef<HTMLInputElement>(null);
   const claims = useItems(project.id, "research/claims");
 
+  const [cost, setCost] = useState("");
+  // Titles of sources are known only in the answer to the question just asked (the table keeps URLs).
+  const [titles, setTitles] = useState<Record<string, string>>({});
   const askM = useMutation({
-    mutationFn: (q: string) => api("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q }) }),
+    mutationFn: (q: string) => api<AskResp>("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q }) }),
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: keys.research(project.id) }), qc.invalidateQueries({ queryKey: keys.events(project.id) })]),
   });
   const pending = askM.isPending;
@@ -42,9 +55,13 @@ export function ResearchView({ project }: ViewProps) {
     const q = query.trim();
     if (!q || pending) return;
     setError("");
+    setCost("");
     try {
-      await askM.mutateAsync(q);
+      const r = await askM.mutateAsync(q);
       setQuery("");
+      const named = Object.fromEntries((r.entry.sources ?? []).filter((x) => x.title).map((x) => [x.url, x.title as string]));
+      setTitles((t) => ({ ...t, ...named }));
+      if (typeof r.costUsd === "number") setCost(`Perplexity estimated the cost of that answer at $${r.costUsd.toFixed(4)}${r.effort ? ` (effort ${r.effort})` : ""}.`);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -59,11 +76,15 @@ export function ResearchView({ project }: ViewProps) {
   return (
     <div className="max-w-4xl space-y-6">
       {!on && (
-        <NotConnected
-          title="Research is not connected"
-          does="Ask a question and Perplexity searches the web, answers with sources, and the answer is saved here with its citations. You can then turn a result into a claim or mark an existing claim verified."
-          envVar="PERPLEXITY_API_KEY"
-        />
+        <Card hoverEffect={false} innerClassName="p-[26px]" className="max-w-2xl">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Not connected</p>
+          <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-primary">Research is not connected</h2>
+          <p className="mt-2 text-sm text-secondary">
+            Ask a question and Perplexity searches the web, answers with sources, and the answer is saved here with its sources.
+            You can then use one source as evidence for or against a claim.
+          </p>
+          <p className="mt-3 text-sm text-secondary">Perplexity is not connected. Add a key in Admin, Credentials.</p>
+        </Card>
       )}
 
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
@@ -74,7 +95,12 @@ export function ResearchView({ project }: ViewProps) {
             <Search className="h-4 w-4" aria-hidden /> {pending ? "Searching" : "Ask"}
           </Button>
         </div>
+        <p className="text-xs text-muted">
+          Each question is billed to your Perplexity account: model tokens plus a fee for each web search
+          (Perplexity lists $0.001 per Fast Search, which the default effort uses). Perplexity reports an estimate after the answer. Effort: {state.model}.
+        </p>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+        {cost && !error && <p className="text-xs text-secondary">{cost}</p>}
         {unverified.length > 0 && (
           <div>
             <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-link">From your unverified claims</p>
@@ -97,11 +123,13 @@ export function ResearchView({ project }: ViewProps) {
         <ul className="space-y-4">
           {state.entries.map((e) => (
             <motion.li key={e.id} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
-              <EntryCard entry={e} claims={claims} />
+              <EntryCard entry={e} claims={claims} projectId={project.id} titles={titles} />
             </motion.li>
           ))}
         </ul>
       )}
+
+      <ClaimsEvidence claims={claims} projectId={project.id} />
     </div>
   );
 }
@@ -112,8 +140,8 @@ function Answer({ text, citations }: { text: string; citations: string[] }) {
     <div className="space-y-3 text-sm leading-relaxed text-primary">
       {paras.map((p, i) => (
         <p key={i}>
-          {p.split(/(\[\d+\])/g).map((part, j) => {
-            const m = /^\[(\d+)\]$/.exec(part);
+          {p.split(/(\[(?:web:)?\d+\])/g).map((part, j) => {
+            const m = /^\[(?:web:)?(\d+)\]$/.exec(part);
             const url = m ? citations[Number(m[1]) - 1] : undefined;
             return url ? (
               <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="align-super font-mono text-[10px] text-link hover:underline">{part}</a>
@@ -127,11 +155,12 @@ function Answer({ text, citations }: { text: string; citations: string[] }) {
   );
 }
 
-function EntryCard({ entry, claims }: { entry: Entry; claims: ReturnType<typeof useItems> }) {
+function EntryCard({ entry, claims, projectId, titles }: { entry: Entry; claims: Claims; projectId: string; titles: Record<string, string> }) {
   const [adding, setAdding] = useState<string | null>(null);
-  const [pick, setPick] = useState("");
+  const [using, setUsing] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
+  const sources: Source[] = (entry.sources ?? entry.citations.map((url): Source => ({ url }))).map((x) => ({ url: x.url, title: x.title ?? titles[x.url] }));
 
   const addClaim = async () => {
     const title = (adding ?? "").trim();
@@ -146,23 +175,6 @@ function EntryCard({ entry, claims }: { entry: Entry; claims: ReturnType<typeof 
     }
   };
 
-  const verify = async () => {
-    const c = claims.items.find((x) => String(x.id) === pick);
-    if (!c) return;
-    setErr("");
-    const urls = entry.citations.join("\n");
-    const body = [c.body, `Verified by Perplexity, ${day(entry.createdAt)}. Sources:\n${urls}`].filter(Boolean).join("\n\n");
-    try {
-      await claims.patch(c.id, { status: "verified", body });
-      setPick("");
-      setNote(`Marked verified: ${c.title}`);
-    } catch (e) {
-      setErr((e as Error).message);
-    }
-  };
-
-  const open = claims.items.filter((c) => c.status !== "verified");
-
   return (
     <Card hoverEffect={false} innerClassName="p-[22px]">
       <div className="flex items-start justify-between gap-4">
@@ -171,32 +183,42 @@ function EntryCard({ entry, claims }: { entry: Entry; claims: ReturnType<typeof 
       </div>
       <div className="mt-3"><Answer text={entry.answer} citations={entry.citations} /></div>
 
-      {entry.citations.length > 0 ? (
-        <ol className="mt-4 space-y-1 border-t border-hairline pt-3">
-          {entry.citations.map((u, i) => (
-            <li key={i} className="flex gap-2 text-xs">
-              <span className="font-mono text-muted">[{i + 1}]</span>
-              <span className="min-w-0">
-                <span className="text-primary">{hostname(u)}</span>{" "}
-                <a href={u} target="_blank" rel="noopener noreferrer" className="break-all text-link hover:underline">{u}</a>
-              </span>
+      {sources.length > 0 ? (
+        <ol className="mt-4 space-y-2 border-t border-hairline pt-3">
+          {sources.map((src, i) => (
+            <li key={src.url} className="text-xs">
+              <div className="flex flex-wrap items-start gap-2">
+                <span className="font-mono text-muted">[{i + 1}]</span>
+                <span className="min-w-0 flex-1">
+                  <span className="text-primary">{src.title ?? hostname(src.url)}</span>{" "}
+                  <a href={src.url} target="_blank" rel="noopener noreferrer" className="break-all text-link hover:underline">{src.url}</a>
+                </span>
+                <Button size="chip" variant="outline" aria-expanded={using === src.url} onClick={() => { setUsing(using === src.url ? null : src.url); setNote(""); }}>
+                  Use as evidence
+                </Button>
+              </div>
+              {using === src.url && (
+                <EvidenceForm
+                  key={src.url}
+                  claims={claims.items}
+                  source={src}
+                  researchId={entry.id}
+                  projectId={projectId}
+                  onCancel={() => setUsing(null)}
+                  onDone={(msg) => { setUsing(null); setNote(msg); }}
+                />
+              )}
             </li>
           ))}
         </ol>
       ) : (
-        <p className="mt-4 border-t border-hairline pt-3 text-xs text-muted">This answer came back without citations.</p>
+        <p className="mt-4 border-t border-hairline pt-3 text-xs text-muted">This answer came back without sources, so it cannot be used as evidence.</p>
       )}
 
       <div className="mt-4 space-y-3 border-t border-hairline pt-3">
         {adding === null ? (
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setAdding(entry.query)}>Add as claim</Button>
-            <select aria-label="Claim to mark verified" className={`${selectClass} h-8 w-auto max-w-xs text-xs`} value={pick} onChange={(e) => setPick(e.target.value)}>
-              <option value="">{open.length ? "Pick a claim" : "No claims to verify"}</option>
-              {open.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-            </select>
-            <Button size="sm" variant="outline" disabled={!pick || entry.citations.length === 0} onClick={() => void verify()}>Mark claim verified</Button>
-            {entry.citations.length === 0 && <span className="text-xs text-muted">No citations to attach.</span>}
           </div>
         ) : (
           <div className="space-y-2">
@@ -212,5 +234,119 @@ function EntryCard({ entry, claims }: { entry: Entry; claims: ReturnType<typeof 
         {note && !err && <p className="text-xs text-success">{note}</p>}
       </div>
     </Card>
+  );
+}
+
+function EvidenceForm({ claims, source, researchId, projectId, onCancel, onDone }: {
+  claims: Item[];
+  source: Source;
+  researchId: number;
+  projectId: string;
+  onCancel: () => void;
+  onDone: (message: string) => void;
+}) {
+  const { add } = useEvidence(projectId);
+  const [claimId, setClaimId] = useState("");
+  const [verdict, setVerdict] = useState<Verdict | "">("");
+  const [quote, setQuote] = useState("");
+  const [err, setErr] = useState("");
+  const base = `ev-${researchId}-${encodeURIComponent(source.url)}`;
+
+  const save = async () => {
+    const claim = claims.find((c) => String(c.id) === claimId);
+    if (!claim || !verdict) return;
+    setErr("");
+    try {
+      const r = await add.mutateAsync({ claimId: claim.id, url: source.url, title: source.title, quote: quote.trim() || undefined, researchId, verdict });
+      onDone(`Saved as evidence on "${claim.title}". The claim is now ${r.status}${r.disputed ? " (disputed: sources disagree)" : ""}.`);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  return (
+    <div className="mt-2 space-y-3 rounded-md border border-hairline p-3">
+      <div className="space-y-1">
+        <label htmlFor={`${base}-claim`} className="text-xs font-medium text-primary">Claim this source is evidence for</label>
+        <select id={`${base}-claim`} className={`${selectClass} h-8 text-xs`} value={claimId} onChange={(e) => setClaimId(e.target.value)}>
+          <option value="">{claims.length ? "Pick a claim" : "No claims in this concept yet"}</option>
+          {claims.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+        </select>
+      </div>
+      <fieldset className="space-y-1">
+        <legend className="text-xs font-medium text-primary">What does this source say about the claim?</legend>
+        {VERDICTS.map((v) => (
+          <label key={v} className="flex items-center gap-2 text-xs text-secondary">
+            <input type="radio" name={`${base}-verdict`} value={v} checked={verdict === v} onChange={() => setVerdict(v)} />
+            {VERDICT_LABEL[v]}
+          </label>
+        ))}
+      </fieldset>
+      <div className="space-y-1">
+        <label htmlFor={`${base}-quote`} className="text-xs font-medium text-primary">Quote from the source (optional)</label>
+        <textarea id={`${base}-quote`} rows={2} className={TEXTAREA_CLS} value={quote} onChange={(e) => setQuote(e.target.value)} />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" disabled={!claimId || !verdict || add.isPending} onClick={() => void save()}>{add.isPending ? "Saving" : "Save evidence"}</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+      </div>
+      {err && <p role="alert" className="text-xs text-danger">{err}</p>}
+    </div>
+  );
+}
+
+function ClaimsEvidence({ claims, projectId }: { claims: Claims; projectId: string }) {
+  const { remove } = useEvidence(projectId);
+  const [err, setErr] = useState("");
+  if (!claims.items.length) return null;
+
+  const drop = async (claimId: number, url: string) => {
+    setErr("");
+    try {
+      await remove.mutateAsync({ claimId, url });
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  return (
+    <section aria-labelledby="claims-evidence" className="space-y-3">
+      <h2 id="claims-evidence" className="text-base font-semibold tracking-tight text-primary">Claims and their evidence</h2>
+      <p className="text-xs text-muted">A claim is verified when at least one source supports it and none contradicts it, and wrong when a source contradicts it and none supports it.</p>
+      {err && <p role="alert" className="text-xs text-danger">{err}</p>}
+      <ul className="space-y-3">
+        {claims.items.map((c) => {
+          const ev = evidenceOf(c);
+          const disputed = isDisputed(ev);
+          return (
+            <li key={c.id} data-claim={c.id}>
+              <Card hoverEffect={false} innerClassName="p-[16px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-primary">{c.title}</span>
+                  <StatusBadge tone={statusTone(c.status)}>{c.status}</StatusBadge>
+                  {disputed && <StatusBadge tone="warning">Disputed: sources disagree</StatusBadge>}
+                </div>
+                {ev.length === 0 ? (
+                  <p className="mt-2 text-xs text-muted">No evidence yet.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {ev.map((x) => (
+                      <li key={x.url} className="text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-primary">{VERDICT_LABEL[x.verdict] ?? x.verdict}:</span>
+                          <a href={x.url} target="_blank" rel="noopener noreferrer" className="break-all text-link hover:underline">{x.title ?? hostname(x.url)}</a>
+                          <Button size="chip" variant="ghost" disabled={remove.isPending} onClick={() => void drop(c.id, x.url)}>Remove</Button>
+                        </div>
+                        {x.quote && <blockquote className="mt-1 border-l border-hairline pl-2 text-secondary">{x.quote}</blockquote>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
