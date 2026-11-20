@@ -1,26 +1,199 @@
-@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens below are Eigenia's (Planet9V/eigenia web/src/app/globals.css), unchanged.
+   Fonts are self-hosted from npm so the Docker build needs no font CDN. */
+:root {
+  --font-sans: "Inter Variable", "Inter";
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono";
+}
+
+/* ==========================================================================
+   MASTER DUAL-THEME DESIGN TOKEN ARCHITECTURE
+   ========================================================================== */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* LIGHT MODE (Warm Luxury Off-White Academic Monograph) */
+  --bg-canvas: #FAF8F5;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F3F0EC;
+  --bg-input: #EFECE6;
+
+  --text-primary: #18181B;
+  --text-secondary: #52525B;
+  --text-muted: #71717A;
+
+  --border-hairline: #E8E3DA;
+  --border-subtle: #F0ECE4;
+
+  --shadow-card: 0 4px 20px -2px rgba(24, 24, 27, 0.05);
+  --shadow-dropdown: 0 10px 30px -5px rgba(24, 24, 27, 0.08);
+  /* Double-bezel plate (ui/Card): soft layered ambient shadow and the inset top highlight. */
+  --shadow-plate: 0 1px 2px rgba(60, 40, 20, 0.04), 0 10px 24px -10px rgba(60, 40, 20, 0.09), 0 28px 48px -28px rgba(60, 40, 20, 0.12);
+  --bezel-highlight: rgba(255, 255, 255, 0.95);
+  /* Tray colour of the double bezel: darker than canvas AND bg-subtle so the 6px shell reads on every band. */
+  --bezel-shell: #E9E4DA;
+
+  --color-accent: #E05A10;
+  --color-accent-subtle: rgba(224, 90, 16, 0.08);
+  --color-accent-border: rgba(224, 90, 16, 0.3);
+
+  /* Contrast tokens (polish A3; Tailwind: bg-action, hover:bg-action-hover, text-link).
+     White on dutchOrange-500 is 3.72:1 and fails AA, so filled buttons use -600 (4.96:1) and step
+     to -700 on hover in both themes. Orange text links use -700 on the light canvas (6.9:1) and
+     -500 on the dark one (5.25:1). The focus ring is -500 in both themes: the only step that clears
+     3:1 against both canvases (3.51 light, 5.25 dark); -600 is 2.8:1 on #0B0C0E. */
+  --action-bg: #C64405;
+  --action-bg-hover: #9C3204;
+  --link: #9C3204;
+  --focus-ring: #E05A10;
+
+  /* Status tokens (admin polish 2; Tailwind: text-danger, bg-danger-soft, bg-danger-solid and the same for
+     success, warning, info). Text is checked against its soft background over both canvases at AA
+     (statusTokens.test.ts). Kept apart from the orange link and action colors so an error never reads as a link. */
+  --danger: #B42318;
+  --danger-soft: #FEF3F2;
+  --danger-solid: #B42318;
+  --success: #067647;
+  --success-soft: #ECFDF3;
+  --warning: #93370D;
+  --warning-soft: #FFFAEB;
+  --info: #1849A9;
+  --info-soft: #EFF4FF;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark,
+html.dark {
+  /* DARK MODE (Obsidian Cyber-Physical Command Center) */
+  --bg-canvas: #0B0C0E;
+  --bg-surface: #131519;
+  --bg-subtle: #121417;
+  --bg-input: #1C1F26;
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #D4D4D8;
+  --text-muted: #A1A1AA;
+
+  --border-hairline: #22252C;
+  --border-subtle: #1A1D24;
+
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --shadow-dropdown: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+  --shadow-plate: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -12px rgba(0, 0, 0, 0.6), 0 36px 64px -32px rgba(0, 0, 0, 0.75);
+  --bezel-highlight: rgba(255, 255, 255, 0.07);
+  --bezel-shell: #1D2027;
+
+  --color-accent: #E05A10;
+  --color-accent-subtle: rgba(224, 90, 16, 0.15);
+  --color-accent-border: rgba(224, 90, 16, 0.4);
+
+  --action-bg: #C64405;
+  --action-bg-hover: #9C3204;
+  --link: #E05A10;
+  --focus-ring: #E05A10;
+
+  --danger: #FDA29B;
+  --danger-soft: #2A1515;
+  --danger-solid: #B42318;
+  --success: #75E0A7;
+  --success-soft: #0F2219;
+  --warning: #FEC84B;
+  --warning-soft: #2A2010;
+  --info: #A4BCFD;
+  --info-soft: #131C33;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* One keyboard focus ring for the whole site (polish A3). Base layer, so a component that sets its
+   own focus-visible ring or outline-none still wins. Text fields are left out: they match
+   :focus-visible on a mouse click, and they keep their own border or ring styles. */
+@layer base {
+  :where(:not(input, textarea, select)):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 }
 
+/* ==========================================================================
+   MOTION SCALE (one set for the whole site)
+
+   Easing
+     --ease-spring  entrances and reveals, heavy and physical   (Tailwind: ease-spring)
+     --ease-out     hover, press, focus; the default feel        (Tailwind: ease-out-soft)
+   Duration
+     --dur-fast 150ms  colour, opacity, small state changes      (Tailwind: duration-150)
+     --dur-base 300ms  hover lifts, menus, card state             (Tailwind: duration-300)
+     --dur-slow 700ms  entrances, image zoom                      (Tailwind: duration-700)
+   Animate transform and opacity only. Marquees and tickers stay linear.
+   Tailwind's own DEFAULT easing and duration are deliberately not overridden.
+   ========================================================================== */
+:root {
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 150ms;
+  --dur-base: 300ms;
+  --dur-slow: 700ms;
+}
+
+:root {
+  --font-serif: "Charter", "Bitstream Charter", "Georgia", "Cambria", "Times New Roman", serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Unified Typography: Consistent Sans (Inter) for all Headers & Text */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* Structural Element Overrides */
+html.light body,
+html.light main {
+  background-color: #FAF8F5;
+  color: #18181B;
+}
+
+/* KaTeX Formula Adaptive Styling */
+.katex,
+.katex-display {
+  color: var(--text-primary) !important;
+}
+
+/* Scrollbar Custom Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hairline);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #E05A10;
+}
+
+
+/* React Flow on the Eigenia tokens */
+.react-flow { --xy-background-color: transparent; --xy-edge-stroke: var(--border-hairline); --xy-node-background-color: var(--bg-surface); --xy-node-color: var(--text-primary); --xy-node-border: 1px solid var(--border-hairline); --xy-controls-button-background-color: var(--bg-surface); --xy-controls-button-color: var(--text-primary); --xy-controls-button-border-color: var(--border-hairline); --xy-minimap-background-color: var(--bg-subtle); }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
 }
