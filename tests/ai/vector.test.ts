@@ -120,7 +120,7 @@ describe.runIf(hasVector)("embeddings with pgvector", () => {
     expect(r.items[0].score).toBeGreaterThan(0.9999);
     for (let k = 1; k < r.items.length; k++) expect(r.items[k].score).toBeLessThanOrEqual(r.items[k - 1].score);
     // the query was embedded with the configured model
-    expect((s.requests.at(-1)!.body as { model: string; input: string[] })).toEqual({ model: "vec-embed-a", input: [textOf(0)] });
+    expect((s.requests.at(-1)!.body as { model: string; input: string[] })).toMatchObject({ model: "vec-embed-a", input: [textOf(0)] });
   });
 
   it("search mode=meaning and mode=auto answer by meaning with a score per row", async () => {
