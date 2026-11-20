@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { q } from "@/lib/db";
+import { sessionFromRequest, type Session } from "@/lib/auth";
 
 /** Thrown inside a route to answer with a specific status and a plain message. */
 export class HttpError extends Error {
@@ -60,19 +61,106 @@ function fail(e: unknown) {
   return NextResponse.json({ error: "The server could not complete the request." }, { status: 500 });
 }
 
+const SIGN_IN_REQUIRED = "Sign in to continue.";
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/** The incoming request among a handler's arguments. Next.js passes it first to every handler, with or without parameters. */
+function requestOf(args: unknown[]): Request | null {
+  for (const a of args) {
+    if (a instanceof Request) return a;
+    const r = a as Partial<Request> | null;
+    if (r && typeof r === "object" && typeof r.method === "string" && typeof r.url === "string" && typeof r.headers?.get === "function") {
+      return a as Request;
+    }
+  }
+  return null;
+}
+
 /**
- * Wraps a route handler so every failure leaves as JSON with a real status:
- * validation → 400, missing → 404, conflict → 409, slow upstream → 504, anything else → 500.
+ * Cross-site request forgery defence, together with the cookie's SameSite=Lax.
+ *
+ * SameSite=Lax means the browser leaves the session cookie off any request another site starts
+ * with a method other than GET (a hidden form POST, a fetch from a script), so such a request
+ * arrives signed out and gets 401. This check is the second layer, for the cases Lax does not
+ * cover: an older browser that ignores SameSite, or another site on the same registrable domain
+ * (same-site but not same-origin, e.g. another port or sub-domain on this machine). Browsers send
+ * an Origin header on every cross-origin request that changes state, and a page cannot forge it;
+ * when it is present it must name this host, or the request is refused with 403. Requests with
+ * no Origin at all (curl, scripts, very old browsers) are allowed: they are not a browser being
+ * tricked into sending someone's cookie. GET and HEAD never change anything here, so they are not
+ * checked. Host comes from the request; a reverse proxy in front must pass the original Host.
  */
-export function route<A extends unknown[]>(handler: (...args: A) => Promise<Response>) {
-  return async (...args: A): Promise<Response> => {
+export function sameOrigin(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (origin === null) return true;
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host; // "null" (sandboxed pages, some redirects) is not a URL: refused
+  } catch {
+    return false;
+  }
+  let host = req.headers.get("host");
+  if (!host) {
     try {
-      return await handler(...args);
+      host = new URL(req.url).host;
+    } catch {
+      return false;
+    }
+  }
+  return originHost.toLowerCase() === host.toLowerCase();
+}
+
+const sessions = new WeakMap<Request, Session>();
+
+/** The session route() found for this request. Only for handlers wrapped in route() (not route.open). */
+export function sessionOf(req: Request): Session {
+  const s = sessions.get(req);
+  if (!s) throw new HttpError(401, SIGN_IN_REQUIRED);
+  return s;
+}
+
+/**
+ * What route() returns. A handler written without parameters still receives the request from
+ * Next.js (it passes the request first to every route handler), so the wrapped function takes it.
+ */
+type Wrapped<A extends unknown[]> = (...args: A extends [] ? [req: Request] : A) => Promise<Response>;
+
+function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, open: boolean): Wrapped<A> {
+  return async (...args): Promise<Response> => {
+    try {
+      const req = requestOf(args);
+      // No request to read a session from means no session: fail closed.
+      if (!req) throw new HttpError(open ? 400 : 401, open ? "The request could not be read." : SIGN_IN_REQUIRED);
+      if (!SAFE_METHODS.has(req.method.toUpperCase()) && !sameOrigin(req)) {
+        throw new HttpError(403, "This request came from another site and was refused.");
+      }
+      if (!open) {
+        const session = await sessionFromRequest(req);
+        if (!session) throw new HttpError(401, SIGN_IN_REQUIRED);
+        sessions.set(req, session);
+      }
+      return await handler(...(args as unknown as A));
     } catch (e) {
       return fail(e);
     }
   };
 }
+
+/**
+ * Wraps a route handler so that:
+ * - it requires a signed-in session (401 `{ "error": "Sign in to continue." }` without one);
+ * - a request that changes state (anything but GET, HEAD, OPTIONS) from another origin is refused (403);
+ * - every failure leaves as JSON with a real status:
+ *   validation → 400, missing → 404, conflict → 409, slow upstream → 504, anything else → 500.
+ *
+ * `route.open(handler)` is the same without the session requirement (the origin check stays).
+ * Only sign-in, sign-out and "who am I" are open; tests/auth/routes.test.ts fails if another
+ * route answers without a session.
+ */
+export const route = Object.assign(
+  <A extends unknown[]>(handler: (...args: A) => Promise<Response>) => wrap(handler, false),
+  { open: <A extends unknown[]>(handler: (...args: A) => Promise<Response>) => wrap(handler, true) }
+);
 
 /** Reads and validates a JSON body. A body that is not JSON is a 400, not an empty object. */
 export async function body<S extends z.ZodType>(req: Request, schema: S): Promise<z.infer<S>> {

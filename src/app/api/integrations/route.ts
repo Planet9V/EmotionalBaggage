@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { route } from "@/lib/api/route";
 import { ready } from "@/lib/db";
 import { listIntegrations } from "@/lib/integrations";
 
-export async function GET() {
+export const GET = route(async () => {
   let database: { connected: boolean; vector: boolean; version?: string; error?: string };
   try {
     const { vector } = await ready();
@@ -23,4 +24,4 @@ export async function GET() {
     }
   }
   return NextResponse.json({ integrations: listIntegrations(), database, planner });
-}
+});

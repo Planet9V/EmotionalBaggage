@@ -4,6 +4,7 @@ import * as openai from "./openai";
 import * as perplexity from "./perplexity";
 import * as octoprint from "./octoprint";
 import * as moonraker from "./moonraker";
+import { json } from "../api/helpers";
 
 // Every stand-in started in a test is closed after it, even when the test fails.
 const running: StandIn<unknown>[] = [];
@@ -159,7 +160,7 @@ describe("Perplexity stand-in", () => {
     process.env.PERPLEXITY_URL = `${s.url}/v1/sonar`;
     try {
       const { POST } = await import("@/app/api/research/route");
-      const res = await POST(new Request("http://test.local/api/research", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ projectId: "baggage-claims", query: "stand-in question" }) }));
+      const res = await POST(json("POST", { projectId: "baggage-claims", query: "stand-in question" }, "http://test.local/api/research"));
       expect(res.status).toBe(201);
       const { entry } = await res.json();
       expect(entry.answer).toBe("Routed answer.");
@@ -261,7 +262,7 @@ describe("OctoPrint stand-in", () => {
     Object.assign(process.env, { PRINTER_KIND: "octoprint", PRINTER_URL: s.url, PRINTER_API_KEY: "pk" });
     try {
       const { GET } = await import("@/app/api/printer/route");
-      const body = await (await GET()).json();
+      const body = await (await GET(json("GET", undefined, "http://test.local/api/printer"))).json();
       expect(body).toMatchObject({ configured: true, kind: "octoprint", state: "Printing", file: "route.gcode", secondsLeft: 912 });
       expect(typeof body.progress).toBe("number");
       expect(s.requests.at(-1)?.headers["x-api-key"]).toBe("pk");
@@ -329,7 +330,7 @@ describe("Moonraker stand-in", () => {
     Object.assign(process.env, { PRINTER_KIND: "moonraker", PRINTER_URL: s.url });
     try {
       const { GET } = await import("@/app/api/printer/route");
-      const body = await (await GET()).json();
+      const body = await (await GET(json("GET", undefined, "http://test.local/api/printer"))).json();
       expect(body).toMatchObject({ configured: true, kind: "moonraker", state: "printing", file: "route.gcode", progress: 0 });
       expect(s.requests.at(-1)?.query).toEqual({ print_stats: "", display_status: "" });
     } finally {

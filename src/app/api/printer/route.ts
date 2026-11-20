@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { route } from "@/lib/api/route";
 
 // Read-only printer status. OctoPrint and Moonraker (Klipper) answer over HTTP.
 // Bambu Lab printers speak MQTT on the local network; that adapter is not built yet.
-export async function GET() {
+export const GET = route(async () => {
   const kind = (process.env.PRINTER_KIND ?? "").toLowerCase();
   const url = (process.env.PRINTER_URL ?? "").replace(/\/$/, "");
   if (!kind || !url) {
@@ -26,4 +27,4 @@ export async function GET() {
   } catch (e) {
     return NextResponse.json({ configured: true, kind, error: (e as Error).message });
   }
-}
+});
