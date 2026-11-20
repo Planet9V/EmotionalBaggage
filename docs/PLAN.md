@@ -41,6 +41,16 @@ The owner asked for these to be used. Each is loaded at the start of the items i
 | mermaid-expert | Process and flow diagrams in the docs and in the app's help (stage flow, gates, data flow) |
 | 3d-web-experience | Items 5.2 and 5.6 to 5.12: the 3D view, enclosure preview and wire routing display |
 
+## Design decisions
+
+Three documents fix the decisions that the rest of the plan builds on. They are the lead's; items below implement them.
+
+| Document | Covers |
+|---|---|
+| `docs/design/database.md` | Tables, the rules the database enforces, migrations, and the tables still to come |
+| `docs/design/wiring.md` | Part kinds, pins, wires, nets, electrical checks, routing, the three schematic views |
+| `docs/design/visual-system.md` | Foundations, the frame, four page patterns, six states, diagrams, 3D |
+
 ## Decisions in force
 
 | # | Decision |
@@ -114,7 +124,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 - [ ] 1.5 Kanban, tables, wizard and forms moved to the adopted libraries.
 - [ ] 1.6 dagre and elkjs replace the three hand-computed layouts.
 - [ ] 1.7 One planner: the NetworkX service is the only implementation; decisions enter the plan as milestones with their dependencies; finished steps count as zero remaining time.
-- [ ] 1.8 Migrations tool in place; seeding moved to a script.
+- [x] 1.8 Migrations: SQL files in `migrations/`, applied at start-up by node-pg-migrate. An existing database adopts them without loss. The database now enforces: unique part references and unique keys per concept, object-shaped data, non-blank titles and names, cascade on concept delete. New tables for Phase 2: settings, credentials, printers, gates, and product type, stage and archive on concepts. The example concept loads once per database and does not return if deleted. Embeddings moved to their own table with no fixed width. Done 20 Nov: 85 tests pass, including an upgrade from a pre-migration database with repeated references, repeated keys and comma-string lists; the standalone build was started against a fresh database and against the older development database. Design: `docs/design/database.md`.
 - [ ] 1.9 (started 20 Nov: `npm test` and a GitHub Actions run of typecheck, lint, tests and build are green on commit `c031e12`) Vitest on the domain layer and pure modules; route tests on a real PostgreSQL; Playwright smoke test per screen; GitHub Actions running all of it. **Done when** a push is green.
 - [ ] 1.10 The four oversized components split.
 - [x] 1.12 Documentation in the app for the user, the admin and the developer, plus a system-context page with a diagram, at Documentation in the sidebar. The pages are the markdown files in `docs/guide`, so the repository and the app show the same text. Each says what is not built yet. Tests fail if the user guide misses a menu section or the admin guide misses a setting. Done 20 Nov; pages and both diagrams checked in a browser. Rule from here on: a change to behaviour updates its guide in the same commit.

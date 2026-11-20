@@ -149,3 +149,27 @@ describe("the fields inside a row", () => {
     expect(rows).toEqual([]);
   });
 });
+
+describe("unique references and keys, through the API", () => {
+  it("answers 409 with a plain reason for a repeated part reference and a repeated key", async () => {
+    const part = { section: "design/bom", title: "test: dup", data: { ref: "TDUP" } };
+    expect((await addItem(json("POST", part), ctx(SEEDED))).status).toBe(201);
+    const again = await read<ErrBody>(await addItem(json("POST", part), ctx(SEEDED)));
+    expect(again.status).toBe(409);
+    expect(again.body.error).toContain("already uses that reference");
+
+    const step = { section: "prototype/assembly", title: "test: dupkey", data: { key: "p0" } };
+    const clash = await read<ErrBody>(await addItem(json("POST", step), ctx(SEEDED)));
+    expect(clash.status).toBe(409);
+    expect(clash.body.error).toContain("already uses that key");
+  });
+
+  it("answers 409 when a change would repeat another part's reference, and leaves the row as it was", async () => {
+    const made = await make({ section: "design/bom", data: { ref: "TDUP2" } });
+    const id = String(made.body.item.id);
+    const res = await patchItem(json("PATCH", { data: { ref: "U1" } }), ctx(id));
+    expect(res.status).toBe(409);
+    const rows = await q<{ ref: string }>("SELECT data->>'ref' AS ref FROM items WHERE id=$1", [id]);
+    expect(rows[0].ref).toBe("TDUP2");
+  });
+});

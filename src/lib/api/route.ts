@@ -25,6 +25,13 @@ const PG: Record<string, [number, string]> = {
   "23514": [400, "A value in the request is not allowed."],
 };
 
+/** Unique rules the database enforces, in the user's terms. */
+const CONFLICT: Record<string, string> = {
+  items_part_ref_unique: "Another part in this concept already uses that reference. References must be unique because wires name parts by them.",
+  items_key_unique: "Another row in this concept already uses that key. Keys must be unique because the order of operations and the decision tree address rows by them.",
+  printers_name_unique: "A printer with that name already exists.",
+};
+
 function fail(e: unknown) {
   if (e instanceof HttpError) {
     return NextResponse.json({ error: e.message, ...(e.detail ? { detail: e.detail } : {}) }, { status: e.status });
@@ -39,6 +46,10 @@ function fail(e: unknown) {
   }
   const code = (e as { code?: unknown })?.code;
   if (typeof code === "string" && PG[code]) {
+    const constraint = (e as { constraint?: unknown })?.constraint;
+    if (code === "23505" && typeof constraint === "string" && CONFLICT[constraint]) {
+      return NextResponse.json({ error: CONFLICT[constraint] }, { status: 409 });
+    }
     const [status, error] = PG[code];
     return NextResponse.json({ error }, { status });
   }
