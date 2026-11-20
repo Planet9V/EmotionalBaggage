@@ -2,7 +2,7 @@
 
 20 November 2026. Replaces `docs/deep-dive/2026-11-20-remediation-plan.md`, which is kept only for its research evidence table and sources.
 
-Version 1 was mostly hygiene with the product capability last. A five-reviewer assessment on 20 November scored the application at about 3 out of 10. This version is ordered around what the owner asked for, uses existing libraries wherever one exists, and sets a minimum of 8 out of 10 on every topic below.
+Version 1 was mostly hygiene with the product capability last. A five-reviewer assessment on 20 November scored the application at about 3 out of 10. This version is ordered around what the owner asked for, uses existing libraries wherever one exists, and sets a minimum of 7 out of 10 on every topic below.
 
 ## How this plan is worked
 
@@ -13,9 +13,9 @@ Version 1 was mostly hygiene with the product capability last. A five-reviewer a
 
 ## The quality bar
 
-Scores are 1 to 10; the minimum for every topic is 8. "Now" is from the 20 November review. Where the reviewers did not score a topic directly the number is my own and is marked (est.).
+Scores are 1 to 10; the minimum for every topic is 7 (owner, 20 November; first set at 8). The right-hand column describes the passing standard. "Now" is from the 20 November review. Where the reviewers did not score a topic directly the number is my own and is marked (est.).
 
-| Topic | Now | What 8 means, testably |
+| Topic | Now | What passing means, testably |
 |---|---|---|
 | User experience | 4 (est.) | A new user creates a concept and reaches a first printed part and a first marketing draft without reading documentation. One loading, error and empty-state pattern everywhere. Works by keyboard and on a tablet. No dead ends. |
 | Visualisation | 5 (est.) | 3D model with real part geometry, rotation, drag handles, exploded view, section cut and routed wires. Schematic with proper symbols and a toggle to pins-and-wires. Decision tree, build order and layout laid out automatically. |
@@ -30,6 +30,17 @@ Scores are 1 to 10; the minimum for every topic is 8. "Now" is from the 20 Novem
 | Engineering robustness | 2 | Inputs validated on every route, typed data per section, tests and CI green, no known data-corrupting bug. |
 | Reuse of existing components | 3 | One UI kit, one data layer, one definition of each domain object. No duplicated helpers. |
 
+## Skills applied
+
+The owner asked for these to be used. Each is loaded at the start of the items it covers, not all at once.
+
+| Skill | Applied to |
+|---|---|
+| senior-frontend | Phase 1 (data layer, UI kit, component splits) and every screen after it |
+| design:research-synthesis | The review findings behind the quality bar, and each end-of-phase re-score |
+| mermaid-expert | Process and flow diagrams in the docs and in the app's help (stage flow, gates, data flow) |
+| 3d-web-experience | Items 5.2 and 5.6 to 5.12: the 3D view, enclosure preview and wire routing display |
+
 ## Decisions in force
 
 | # | Decision |
@@ -43,7 +54,7 @@ Scores are 1 to 10; the minimum for every topic is 8. "Now" is from the 20 Novem
 | D7 | Admin sets a reasoning model and an embedding model, each from Ollama, LM Studio or OpenRouter. |
 | D8 | Enclosure generator is a choice per concept: CaseMaker-based or YAPP_Box. No hand-written generator unless it is clearly better than both; if it is, it is published as its own repository. |
 | D9 | Slicer: OrcaSlicer, unless the check in item 6.5 finds one better aligned to current printers. |
-| D10 | Minimum score of 8 on every topic above. |
+| D10 | Minimum score of 7 on every topic above. |
 | D11 | English only. |
 | D12 | Move to Tailwind 4. The Eigenia colours and fonts carry over as variables. |
 | D13 | Legal sign-off is given to use OrcaSlicer and WireViz. The app and the repository carry a code-use section that lists every third-party component and attests to how each is used. |
@@ -104,7 +115,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 - [ ] 1.6 dagre and elkjs replace the three hand-computed layouts.
 - [ ] 1.7 One planner: the NetworkX service is the only implementation; decisions enter the plan as milestones with their dependencies; finished steps count as zero remaining time.
 - [ ] 1.8 Migrations tool in place; seeding moved to a script.
-- [ ] 1.9 Vitest on the domain layer and pure modules; route tests on a real PostgreSQL; Playwright smoke test per screen; GitHub Actions running all of it. **Done when** a push is green.
+- [ ] 1.9 (started 20 Nov: `npm test` and a GitHub Actions run of typecheck, lint, tests and build are green on commit `c031e12`) Vitest on the domain layer and pure modules; route tests on a real PostgreSQL; Playwright smoke test per screen; GitHub Actions running all of it. **Done when** a push is green.
 - [ ] 1.10 The four oversized components split.
 - [ ] 1.11 Code use and attestation (D13): `THIRD_PARTY_NOTICES.md` in the repository and an About, Code use page in the app. For every third-party component: name, version, licence, source link, and how it is used (linked library, separate process, or forked code with our changes listed). Ends with a signed-off attestation statement. The library list is generated from the installed dependencies so it cannot go stale; tools run as separate processes (OrcaSlicer, WireViz, OpenSCAD) and forked code (CaseMaker, YAPP_Box) are listed by hand and updated in the same commit that adds them.
 
