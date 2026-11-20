@@ -10,7 +10,7 @@ import { GET as plan } from "@/app/api/projects/[id]/plan/route";
 import { GET as search } from "@/app/api/search/route";
 import { GET as challengeState, POST as challenge } from "@/app/api/challenge/route";
 import { GET as researchState, POST as research } from "@/app/api/research/route";
-import { ctx, json, read, SEEDED } from "./helpers";
+import { ctx, form as formRequest, json, read, SEEDED } from "./helpers";
 
 type Created = { project: { id: string; name: string } };
 
@@ -22,7 +22,7 @@ afterAll(async () => {
 
 describe("concepts", () => {
   it("lists the seeded concept", async () => {
-    const r = await read<{ projects: { id: string }[] }>(await listProjects());
+    const r = await read<{ projects: { id: string }[] }>(await listProjects(json("GET")));
     expect(r.body.projects.map((p) => p.id)).toContain(SEEDED);
   });
 
@@ -84,7 +84,7 @@ describe("files", () => {
     form.set("file", new File([new Uint8Array([1, 2, 3, 4])], "test-file.bin", { type: "application/octet-stream" }));
     form.set("kind", "upload");
     form.set("meta", meta);
-    return addFile(new Request("http://t/api", { method: "POST", body: form }), ctx(project));
+    return addFile(formRequest("POST", form, "http://t/api"), ctx(project));
   };
 
   it("stores, serves and removes a file", async () => {

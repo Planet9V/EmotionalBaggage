@@ -11,7 +11,7 @@ import { POST as duplicate } from "@/app/api/projects/[id]/duplicate/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { SEED_PROJECT } from "@/lib/seed";
-import { ctx, json, read, SEEDED } from "./helpers";
+import { ctx, json, read, SEEDED, sessionCookieHeader } from "./helpers";
 
 type Concept = {
   id: string;
@@ -391,6 +391,12 @@ describe("the example concept stays deleted after a restart", () => {
     await admin(`CREATE DATABASE ${scratch}`);
     process.env.DATABASE_URL = scratchUrl;
     await ready();
+    // The session the helpers send was made in the main test database; give the scratch one the same session.
+    const token = sessionCookieHeader().split("=")[1];
+    await q(
+      "INSERT INTO sessions (user_id, token_sha256, expires_at) SELECT id, $1, now() + interval '1 hour' FROM users ORDER BY id LIMIT 1",
+      [createHash("sha256").update(token).digest("hex")],
+    );
   });
 
   afterAll(async () => {

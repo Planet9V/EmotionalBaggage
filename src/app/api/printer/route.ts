@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { route } from "@/lib/api/route";
 import { firstEnabledPrinter, valuesOf } from "@/lib/admin/printers";
 import { printerFamily } from "@/lib/admin/printerFamilies";
 
@@ -20,7 +21,7 @@ async function target(): Promise<Target | null> {
   return { kind, url, apiKey: process.env.PRINTER_API_KEY ?? "", source: "environment" };
 }
 
-export async function GET() {
+export const GET = route(async () => {
   let t: Target | null;
   try {
     t = await target();
@@ -56,4 +57,4 @@ export async function GET() {
     const msg = (e as Error).message;
     return NextResponse.json({ ...who, error: t.apiKey ? msg.split(t.apiKey).join("[hidden]") : msg });
   }
-}
+});

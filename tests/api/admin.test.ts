@@ -47,7 +47,7 @@ const prov = (provider: string) => ({ params: Promise.resolve({ provider }) });
 const provField = (provider: string, field: string) => ({ params: Promise.resolve({ provider, field }) });
 
 async function providers() {
-  return (await read<{ providers: ProviderView[] }>(await listCredentials())).body.providers;
+  return (await read<{ providers: ProviderView[] }>(await listCredentials(json("GET")))).body.providers;
 }
 async function field(provider: string, name: string) {
   return (await providers()).find((p) => p.id === provider)!.fields.find((f) => f.name === name)!;
@@ -159,7 +159,7 @@ describe("credentials audit", () => {
     await put("x", { accessToken: "x-token-first-value-1" });
     await put("x", { accessToken: "x-token-second-value-2" });
     await deleteCredential(json("DELETE"), provField("x", "accessToken"));
-    const r = await read<{ entries: { action: string; provider: string; field: string; at: string }[] }>(await auditLog());
+    const r = await read<{ entries: { action: string; provider: string; field: string; at: string }[] }>(await auditLog(json("GET")));
     expect(r.status).toBe(200);
     expect(r.body.entries.slice(0, 3).map((e) => e.action)).toEqual(["removed", "replaced", "set"]);
     expect(r.body.entries[0]).toMatchObject({ provider: "x", field: "accessToken" });
@@ -191,7 +191,7 @@ describe("settings", () => {
   const putS = async (b: unknown) => read<SettingsBody & { issues?: { field: string }[] }>(await putSettings(json("PUT", b)));
 
   it("starts empty and offers the default addresses", async () => {
-    const r = await read<SettingsBody>(await getSettings());
+    const r = await read<SettingsBody>(await getSettings(json("GET")));
     expect(r.body.settings).toMatchObject({ reasoningModel: null, embeddingModel: null, plannerUrl: null, defaultConcept: null });
     expect(r.body.settings.defaultBaseUrl.ollama).toBe("http://host.docker.internal:11434/v1");
   });
@@ -236,7 +236,7 @@ describe("settings", () => {
       expect(r.status, JSON.stringify(b)).toBe(400);
       expect(r.body.issues?.[0].field, JSON.stringify(b)).toBe(f);
     }
-    expect((await read<SettingsBody>(await getSettings())).body.settings.reasoningModel).toBeNull();
+    expect((await read<SettingsBody>(await getSettings(json("GET")))).body.settings.reasoningModel).toBeNull();
   });
 
   it("writes only its own keys", async () => {
@@ -268,7 +268,7 @@ describe("printers", () => {
   const KEY = "octoprint-api-key-ABCDEF0123456789";
 
   it("lists the families, with their status", async () => {
-    const r = await read<{ families: { id: string; status: string; fields: { name: string; secret: boolean; required: boolean }[] }[] }>(await families());
+    const r = await read<{ families: { id: string; status: string; fields: { name: string; secret: boolean; required: boolean }[] }[] }>(await families(json("GET")));
     expect(r.body.families.map((f) => f.id)).toEqual(["octoprint", "moonraker", "prusalink", "duet", "bambu", "creality", "elegoo", "file-only"]);
     const by = Object.fromEntries(r.body.families.map((f) => [f.id, f]));
     expect(by.octoprint.status).toBe("supported");
@@ -291,7 +291,7 @@ describe("printers", () => {
     const row = (await q<{ address: string; access: Record<string, string> }>("SELECT address, access FROM printers WHERE id=$1", [r.body.printer.id]))[0];
     expect(row).toEqual({ address: "http://octopi.local", access: { apiKey: KEY } });
 
-    const list = await read<{ printers: PrinterView[] }>(await listPrinters());
+    const list = await read<{ printers: PrinterView[] }>(await listPrinters(json("GET")));
     expect(list.body.printers.some((p) => p.id === r.body.printer.id)).toBe(true);
     expect(JSON.stringify(list.body)).not.toContain(KEY);
   });
@@ -396,7 +396,7 @@ describe("printer status route", () => {
   });
   beforeEach(clearAdmin);
 
-  const statusBody = async () => (await read<Record<string, unknown>>(await printerStatus())).body;
+  const statusBody = async () => (await read<Record<string, unknown>>(await printerStatus(json("GET")))).body;
 
   it("says not configured when the table and the environment are empty", async () => {
     expect(await statusBody()).toMatchObject({ configured: false });
@@ -442,7 +442,7 @@ describe("printer status route", () => {
 
 describe("integrations report", () => {
   beforeEach(clearAdmin);
-  const report = async () => (await read<{ integrations: Integration[]; database: { connected: boolean }; planner: { connected: boolean; source: string | null } }>(await integrations())).body;
+  const report = async () => (await read<{ integrations: Integration[]; database: { connected: boolean }; planner: { connected: boolean; source: string | null } }>(await integrations(json("GET")))).body;
   const row = (r: { integrations: Integration[] }, key: string) => r.integrations.find((i) => i.key === key)!;
 
   it("keeps the fields the browser reads and adds source and admin", async () => {
@@ -496,7 +496,7 @@ describe("integrations report", () => {
 describe("first-run status", () => {
   beforeEach(clearAdmin);
   const items = async () => {
-    const r = await read<{ complete: boolean; items: StatusItem[] }>(await status());
+    const r = await read<{ complete: boolean; items: StatusItem[] }>(await status(json("GET")));
     return { complete: r.body.complete, by: Object.fromEntries(r.body.items.map((i) => [i.key, i])) as Record<string, StatusItem> };
   };
 
@@ -543,14 +543,14 @@ describe("no full secret in any response", () => {
       await putSettings(json("PUT", { reasoningModel: { provider: "openrouter", baseUrl: "http://127.0.0.1:9/api/v1", model: "m" } }));
 
       const answers: Response[] = [
-        await listCredentials(),
-        await auditLog(),
-        await getSettings(),
-        await listPrinters(),
-        await families(),
-        await status(),
-        await integrations(),
-        await printerStatus(),
+        await listCredentials(json("GET")),
+        await auditLog(json("GET")),
+        await getSettings(json("GET")),
+        await listPrinters(json("GET")),
+        await families(json("GET")),
+        await status(json("GET")),
+        await integrations(json("GET")),
+        await printerStatus(json("GET")),
         await putCredentials(json("PUT", { fields: { apiKey: "" } }), prov("openrouter")),
         await patchPrinter(json("PATCH", { model: "MK4S" }), ctx(String(printer.body.printer.id))),
         await runTest(json("POST", { kind: "printer", id: printer.body.printer.id })),

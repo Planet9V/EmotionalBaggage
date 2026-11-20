@@ -130,17 +130,34 @@ jobs:
       - name: Assert compose up --wait succeeded
         run: test "${{ steps.up.outcome }}" = success
 
-      - name: Assert GET / answers 200
-        run: test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")" = 200
+      - name: Assert the health route answers without a session
+        run: curl -sf "$BASE/api/health" | jq -e '.ok == true'
+
+      - name: Assert a signed-out browser is sent to sign in, and the API answers 401
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")" = 307
+          curl -s -o /dev/null -w '%{redirect_url}' "$BASE/" | grep -q '/sign-in?next=%2F'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/sign-in")" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/projects")" = 401
+
+      - name: Sign in with the default account
+        run: |
+          code=$(curl -s -o /tmp/signin.json -w '%{http_code}' -c /tmp/jar -H 'content-type: application/json' -H "origin: $BASE" -d '{"username":"demo","password":"demo"}' "$BASE/api/auth/sign-in")
+          test "$code" = 200
+          jq -e '.user.username == "demo" and .user.usingDefaultPassword == true' /tmp/signin.json
+          grep -q c2r_session /tmp/jar
+
+      - name: Assert GET / answers 200 when signed in
+        run: test "$(curl -s -b /tmp/jar -o /dev/null -w '%{http_code}' "$BASE/")" = 200
 
       - name: Assert GET /api/projects lists baggage-claims
         run: |
-          curl -sf "$BASE/api/projects" | tee /tmp/projects.json
+          curl -sf -b /tmp/jar "$BASE/api/projects" | tee /tmp/projects.json
           jq -e '.projects | map(.id) | index("baggage-claims") != null' /tmp/projects.json
 
       - name: Fetch /api/integrations
         run: |
-          curl -sf "$BASE/api/integrations" > /tmp/integrations.json
+          curl -sf -b /tmp/jar "$BASE/api/integrations" > /tmp/integrations.json
           {
             echo "## /api/integrations (database and planner)"
             echo '```json'
@@ -167,7 +184,7 @@ jobs:
 
       - name: Assert plan is computed by the NetworkX planner
         run: |
-          code=$(curl -s -o /tmp/plan.json -w '%{http_code}' "$BASE/api/projects/baggage-claims/plan")
+          code=$(curl -s -b /tmp/jar -o /tmp/plan.json -w '%{http_code}' "$BASE/api/projects/baggage-claims/plan")
           echo "- plan: HTTP $code, engine \`$(jq -r .engine /tmp/plan.json)\`, $(jq '.nodes | length' /tmp/plan.json) steps, $(jq .totalMinutes /tmp/plan.json) minutes" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Plan::HTTP $code, engine=$(jq -r .engine /tmp/plan.json), steps=$(jq '.nodes | length' /tmp/plan.json), totalMinutes=$(jq .totalMinutes /tmp/plan.json)"
           test "$code" = 200
@@ -176,7 +193,7 @@ jobs:
       - name: Assert documentation pages are served
         run: |
           for p in user admin developer system-context; do
-            code=$(curl -s -o "/tmp/doc-$p.html" -w '%{http_code}' "$BASE/docs/$p")
+            code=$(curl -s -b /tmp/jar -o "/tmp/doc-$p.html" -w '%{http_code}' "$BASE/docs/$p")
             echo "/docs/$p -> $code"; test "$code" = 200
           done
           grep -q "User guide" /tmp/doc-user.html
@@ -211,7 +228,7 @@ jobs:
         run: test "$(docker compose exec -T db psql -U c2r -d c2r -tAc 'select v from ci_marker')" = survives
 
       - name: Assert app answers after restart
-        run: curl -sf "$BASE/api/projects" | jq -e '.projects | map(.id) | index("baggage-claims") != null'
+        run: curl -sf -b /tmp/jar "$BASE/api/projects" | jq -e '.projects | map(.id) | index("baggage-claims") != null'
 
       - name: Start again with .env copied from .env.example (the documented install)
         run: |
@@ -220,9 +237,19 @@ jobs:
 
       - name: Assert app works with .env from .env.example
         run: |
-          curl -sf "$BASE/api/integrations" > /tmp/integrations-env.json
+          curl -sf -b /tmp/jar "$BASE/api/integrations" > /tmp/integrations-env.json
           jq -e '.database.connected == true and .database.vector == true and .planner.connected == true' /tmp/integrations-env.json
-          curl -sf "$BASE/api/projects/baggage-claims/plan" | jq -e '.engine == "networkx"'
+          curl -sf -b /tmp/jar "$BASE/api/projects/baggage-claims/plan" | jq -e '.engine == "networkx"'
+
+      - name: Assert the lost-password steps from the admin guide put back demo / demo
+        run: |
+          docker compose exec -T db psql -v ON_ERROR_STOP=1 -U c2r c2r -c "DELETE FROM users;"
+          test "$(curl -s -b /tmp/jar -o /dev/null -w '%{http_code}' "$BASE/api/projects")" = 401
+          docker compose restart web
+          docker compose up -d --wait --wait-timeout 240
+          code=$(curl -s -o /dev/null -w '%{http_code}' -c /tmp/jar -H 'content-type: application/json' -H "origin: $BASE" -d '{"username":"demo","password":"demo"}' "$BASE/api/auth/sign-in")
+          test "$code" = 200
+          curl -sf -b /tmp/jar "$BASE/api/projects" | jq -e '.projects | map(.id) | index("baggage-claims") != null'
 
       - name: Remove .env again
         if: always()

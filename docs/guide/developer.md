@@ -78,6 +78,18 @@ Every handler is wrapped with `route()` from `src/lib/api/route.ts`:
 
 A row's `section` must be a store the menu defines, its `status` must be one that section allows, and its `data` must satisfy that section's schema.
 
+## Sign-in
+
+Every API route needs a session by default. Wrap handlers in `route()` from `src/lib/api/route.ts`: it answers 401 `{ "error": "Sign in to continue." }` without a session, and 403 to a state-changing request whose `Origin` is another site. Inside a handler, `sessionOf(req)` gives `{ sessionId, userId, username, usingDefaultPassword }`.
+
+A route that must work signed out is written `route.open(...)`. Four are open: sign-in, sign-out, `me`, and `/api/health` (the container health check; it says only whether the database answers). `tests/auth/routes.test.ts` finds every `route.ts` on disk and fails if a new one answers without a session; adding an open route means adding it to `OPEN` in that test on purpose. Do not export a bare `async function GET()`: it bypasses the check, and that test catches it.
+
+Pages: `src/proxy.ts` sends a browser with no session cookie to `/sign-in?next=...`. It only checks that the cookie exists (Next.js advises against database work there), so the real check is always `route()`. In the browser, `api()` in `src/lib/http.ts` sends the user to sign in on any 401. One download in `src/components/three/PrintPanel.tsx` calls `fetch` directly and does not.
+
+Passwords are hashed with scrypt from `node:crypto` (N = 2^17, r = 8, p = 1; the parameters are stored with the hash). Session tokens are 32 random bytes; only their SHA-256 is stored. The code is `src/lib/auth.ts`, the tables are in `migrations/0004_sign_in.sql`.
+
+Tests: `tests/auth/session.setup.ts` creates a real session for `demo` before each test file. `json(method, payload?, url?)` in `tests/api/helpers.ts` sends it; `anonymous(...)` sends none; `form(...)` is for uploads. Never call a handler with no argument. Tests must not change the `demo` password; create a `zz-...` user.
+
 ## Concepts and product types
 
 `/api/projects` lists concepts: active ones by default, `?archived=1` for archived only, `?archived=all` for both. Each comes with its product type, stage, timestamps, the time of its latest event and row counts by stage, from one query (`CONCEPT_SELECT` in `src/lib/api/concepts.ts`).

@@ -72,6 +72,7 @@ export function ready() {
   if (!g.__c2rReady) {
     g.__c2rReady = (async () => {
       await migrate();
+      await (await import("./auth")).ensureDefaultUser(pool());
       const vector = await vectorSupport();
       await seedOnce();
       await seedAdditions();

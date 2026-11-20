@@ -53,9 +53,9 @@ services:
       planner:
         condition: service_healthy
     healthcheck:
-      # The image has no curl or wget; Node 22 has fetch. /api/projects touches the database,
-      # so healthy means the app answers and can read its data.
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/projects',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      # The image has no curl or wget; Node 22 has fetch. /api/health needs no sign-in and reads
+      # the database, so healthy means the app answers and can reach its data.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 5s
       timeout: 6s
       retries: 24

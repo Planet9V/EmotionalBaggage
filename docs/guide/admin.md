@@ -30,6 +30,33 @@ The first request brings the database up to date, turns on pgvector and loads th
 
 **Database version:** the default image is PostgreSQL 19 with pgvector 0.8.7. A data volume created by one major version of PostgreSQL will not start under another, so choose before the first start (`PG_IMAGE` in `.env`).
 
+## Signing in
+
+A new install has one account: user `demo`, password `demo`. Opening the app takes you to the sign-in page, which reminds you of the default account while it is still in use. After signing in, the sidebar shows "Change the default password" until you do.
+
+**Changing the password.** Choose "Change the default password", or your user name at the foot of the sidebar, to open Account. Enter the current password and the new one twice. The new password must be at least 8 characters and cannot be `demo`. Every other browser signed in to the account is signed out; this one stays signed in.
+
+**Signing out.** "Sign out" at the foot of the sidebar ends the session on the server and removes the cookie.
+
+**Too many failed attempts.** After 5 wrong passwords for a name within 15 minutes, that name is refused until 15 minutes after the first failure. Wait, or clear the count:
+
+```
+docker compose exec db psql -U c2r c2r -c "DELETE FROM sign_in_attempts;"
+```
+
+**Lost password.** This puts the install back to `demo` / `demo`. It deletes the account and its sessions; concepts and their data do not belong to an account, so nothing else is lost. The app recreates the default account when it starts with no users:
+
+```
+docker compose exec db psql -U c2r c2r -c "DELETE FROM users;"
+docker compose restart web
+```
+
+**What sign-in does not protect.** This is a public test with a published default password, and keys saved in Admin are stored in the database unencrypted.
+
+- Over plain http, anyone on the same network can read the password as it is typed and the session cookie, and use that cookie for up to 30 days. To use the app beyond your own machine, put it behind an HTTPS reverse proxy that sends `X-Forwarded-Proto: https` and passes the original `Host` header (nginx: `proxy_set_header Host $host;`); the cookie is then marked Secure. A proxy that rewrites `Host` makes every save answer 403. This has not been run behind a real proxy.
+- Anyone who can reach the app can lock the account for 15 minutes by sending 5 wrong passwords, and can do it again. There is no limit per network address.
+- There is one account and no roles: whoever signs in can read and change everything, including saved keys (which the app never shows in full, but which sit readable in the database).
+
 ## Settings (`.env`)
 
 Every setting is optional except the database password. A feature without its setting is switched off and says so on screen.

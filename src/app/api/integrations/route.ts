@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { route } from "@/lib/api/route";
 import { ready } from "@/lib/db";
 import { listIntegrations } from "@/lib/integrations";
 import { plannerHealth } from "@/lib/admin/planner";
 
-export async function GET() {
+export const GET = route(async () => {
   let database: { connected: boolean; vector: boolean; version?: string; error?: string };
   try {
     const { vector } = await ready();
@@ -24,4 +25,4 @@ export async function GET() {
   // Without a database the integrations cannot be read; the page still gets the database and planner state.
   const integrations = database.connected ? await listIntegrations().catch(() => []) : [];
   return NextResponse.json({ integrations, database, planner });
-}
+});

@@ -9,11 +9,17 @@ import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
 import { STAGES } from "@/lib/menu";
 import type { Project } from "@/lib/types";
+import { SessionControls } from "@/app/account/SessionControls";
 
 const KEY = "c2r.project";
 const NO_PROJECTS: Project[] = [];
 
+// The sign-in page renders bare: no sidebar, and none of the shell's API calls (they would answer 401).
 export function Shell({ children }: { children: React.ReactNode }) {
+  return usePathname() === "/sign-in" ? <>{children}</> : <AppShell>{children}</AppShell>;
+}
+
+function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const conceptsQuery = useQuery(queries.concepts());
@@ -116,6 +122,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {dark ? <Sun className="h-3.5 w-3.5" aria-hidden /> : <Moon className="h-3.5 w-3.5" aria-hidden />}
               {dark ? "Light theme" : "Dark theme"}
             </button>
+            <SessionControls linkClass={link("", false)} />
           </div>
         </aside>
 
