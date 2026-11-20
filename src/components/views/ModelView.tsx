@@ -44,7 +44,7 @@ const useDark = () =>
   );
 
 export function ModelView({ project }: ViewProps) {
-  const { items, loading, error, patch } = useItems(project.id, BOM_STORE);
+  const { items, loading, error, writeError, patch } = useItems(project.id, BOM_STORE);
   const dark = useDark();
   const reduce = useReducedMotion();
 
@@ -192,7 +192,8 @@ export function ModelView({ project }: ViewProps) {
     });
   }, [focus, touching, partByRef]);
 
-  const saveGeometry = useCallback((p: Part, geometry: PartGeometry) => patch(p.item.id, { data: { geometry } }), [patch]);
+  // A failed save is shown in the error line (writeError) and the part goes back to its saved geometry.
+  const saveGeometry = useCallback((p: Part, geometry: PartGeometry) => patch(p.item.id, { data: { geometry } }).catch(() => undefined), [patch]);
   const togglePrint = useCallback(
     (p: Part, v: boolean) => {
       if (!p.geometry) return;
@@ -260,7 +261,7 @@ export function ModelView({ project }: ViewProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+      {(error || writeError) && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error || writeError}</p>}
 
       <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_320px]">
         {/* Parts list */}

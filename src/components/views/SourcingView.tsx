@@ -20,7 +20,7 @@ const PRINT_STEPS = ["to print", "in hand"];
 const DONE = new Set(["ordered", "in hand"]);
 
 export function SourcingView({ project, store }: ViewProps) {
-  const { items, loading, error, patch } = useItems(project.id, store);
+  const { items, loading, error, writeError, patch } = useItems(project.id, store);
   const reduce = useReducedMotion();
 
   const parts = useMemo(() => items.map(toPart), [items]);
@@ -50,6 +50,7 @@ export function SourcingView({ project, store }: ViewProps) {
 
   return (
     <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-6">
+      {writeError ? <ErrorLine>{writeError}</ErrorLine> : null}
       <p className="max-w-3xl text-sm text-secondary">
         You complete checkout on Amazon yourself; this app does not place orders. Search links open a search, not a specific listing, so check the part before you buy.
       </p>

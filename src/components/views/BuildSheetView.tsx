@@ -7,7 +7,7 @@ import { Download, Printer, RotateCcw, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorLine } from "@/components/parts/controls";
 import { Modal } from "@/components/parts/Modal";
-import { api, useItems } from "@/lib/client";
+import { api, useFilesChanged, useItems } from "@/lib/client";
 import { STORE } from "@/lib/domain";
 import { Checklist } from "@/components/buildsheet/Checklist";
 import { ConnectionsTable } from "@/components/buildsheet/ConnectionsTable";
@@ -68,6 +68,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
   const reduce = useReducedMotion();
   const wiring = useItems(project.id, store || STORE.wiring);
   const partItems = useItems(project.id, STORE.parts);
+  const filesChanged = useFilesChanged(project.id);
   const [mode, setMode] = useState<Mode>("order");
   const [routing, setRouting] = useState({ text: String(DEFAULT_ROUTING), value: DEFAULT_ROUTING });
   const [allowance, setAllowance] = useState({ text: String(DEFAULT_ALLOWANCE), value: DEFAULT_ALLOWANCE });
@@ -106,6 +107,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
       form.append("kind", "buildsheet");
       form.append("meta", JSON.stringify({ format: "markdown", wires: c.total, soldered: c.soldered, tested: c.tested }));
       const r = await api<{ file: { id: number; name: string } }>(`/api/projects/${project.id}/files`, { method: "POST", body: form });
+      void filesChanged();
       setSaved(`Saved as ${r.file.name} (file ${r.file.id}).`);
     } catch (e) {
       setActionError((e as Error).message);
@@ -120,6 +122,8 @@ export function BuildSheetView({ project, store }: ViewProps) {
     try {
       await Promise.all(wires.filter((w) => w.status !== "to solder").map((w) => wiring.patch(w.item.id, { status: "to solder" })));
       setConfirmReset(false);
+    } catch (e) {
+      setActionError((e as Error).message);
     } finally {
       setResetting(false);
     }
@@ -184,7 +188,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
       </div>
 
       {saved && <p role="status" className="no-print rounded-md bg-success-soft px-3 py-2 text-sm text-success">{saved}</p>}
-      {(actionError || wiring.error || partItems.error) && <ErrorLine>{actionError || wiring.error || partItems.error}</ErrorLine>}
+      {(actionError || wiring.writeError || wiring.error || partItems.error) && <ErrorLine>{actionError || wiring.writeError || wiring.error || partItems.error}</ErrorLine>}
 
       <Progress c={c} label="Whole sheet" />
 

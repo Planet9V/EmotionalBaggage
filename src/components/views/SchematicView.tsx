@@ -137,8 +137,12 @@ export function SchematicView({ project, section, store }: ViewProps) {
       if (n.kind === "part" && n.part) jobs.push(partsApi.patch(n.part.item.id, { data: { schematic: n.pos } }));
       if (n.kind === "via") jobs.push(wiresApi.patch(n.wire.item.id, { data: { schematic: n.pos } }));
     }
-    await Promise.all(jobs);
-    setLayoutMsg(`Saved ${jobs.length} ${jobs.length === 1 ? "position" : "positions"}.`);
+    try {
+      await Promise.all(jobs);
+      setLayoutMsg(`Saved ${jobs.length} ${jobs.length === 1 ? "position" : "positions"}.`);
+    } catch {
+      // the error line shows the failed write (writeError); the positions go back to the saved ones
+    }
   };
 
   const tidy = () => {
@@ -235,7 +239,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
 
   // ───────── render
   if (partsApi.loading || wiresApi.loading) return <p className="text-sm text-secondary">Loading the schematic.</p>;
-  const loadError = partsApi.error || wiresApi.error;
+  const loadError = partsApi.error || wiresApi.error || partsApi.writeError || wiresApi.writeError;
 
   const enter = { initial: reduce ? false : { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4, ease: "easeOut" as const } };
 

@@ -13,7 +13,7 @@ import { InlineEdit } from "@/components/parts/InlineEdit";
 import { Modal } from "@/components/parts/Modal";
 import { sumLine, toPart, type Part } from "@/lib/domain";
 import { mapImport, money, parseAmount, parseCsv, toCsv, groupParts, type ImportRow } from "@/components/parts/bom";
-import { useItems } from "@/lib/client";
+import { saveOrMessage, useItems } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
 import type { ViewProps } from "./types";
 
@@ -21,7 +21,7 @@ type GroupBy = "none" | "source" | "status";
 const SOURCES = ["Amazon", "Micro Center", "Own printer"];
 
 export function BomView({ project, section, store }: ViewProps) {
-  const { items, loading, error, add, patch, remove } = useItems(project.id, store);
+  const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
   const reduce = useReducedMotion();
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [adding, setAdding] = useState(false);
@@ -49,7 +49,7 @@ export function BomView({ project, section, store }: ViewProps) {
   const numberSave = (p: Part, key: "qty" | "line") => (v: string) => {
     const n = parseAmount(v);
     if (n === null) return "Enter a number, zero or more.";
-    void setData(p, { [key]: n });
+    return saveOrMessage(setData(p, { [key]: n }));
   };
 
   if (loading) return <p className="text-sm text-secondary">Loading the parts.</p>;
@@ -77,7 +77,7 @@ export function BomView({ project, section, store }: ViewProps) {
       </div>
 
       {error ? <ErrorLine>{error}</ErrorLine> : null}
-      {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
+      {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
 
       {!parts.length ? (
         <EmptyState title="No parts yet">
@@ -116,19 +116,19 @@ export function BomView({ project, section, store }: ViewProps) {
                   {g.parts.map((p) => (
                     <TableRow key={p.item.id}>
                       <TableCell>
-                        <InlineEdit mono label={`reference of ${p.item.title}`} value={p.ref} onSave={(v) => void setData(p, { ref: v.trim() })} />
+                        <InlineEdit mono label={`reference of ${p.item.title}`} value={p.ref} onSave={(v) => saveOrMessage(setData(p, { ref: v.trim() }))} />
                       </TableCell>
                       <TableCell>
-                        <InlineEdit label="part name" value={p.item.title} onSave={(v) => (v.trim() ? void patch(p.item.id, { title: v.trim() }) : "A part needs a name.")} />
+                        <InlineEdit label="part name" value={p.item.title} onSave={(v) => (v.trim() ? saveOrMessage(patch(p.item.id, { title: v.trim() })) : "A part needs a name.")} />
                       </TableCell>
                       <TableCell>
-                        <InlineEdit label={`specification of ${p.item.title}`} value={p.item.body} onSave={(v) => void patch(p.item.id, { body: v })} />
+                        <InlineEdit label={`specification of ${p.item.title}`} value={p.item.body} onSave={(v) => saveOrMessage(patch(p.item.id, { body: v }))} />
                       </TableCell>
                       <TableCell>
                         <InlineEdit mono numeric align="right" label={`quantity of ${p.item.title}`} value={p.qty === null ? "" : String(p.qty)} onSave={numberSave(p, "qty")} />
                       </TableCell>
                       <TableCell>
-                        <InlineEdit label={`source of ${p.item.title}`} value={p.source} onSave={(v) => void setData(p, { source: v.trim() })} />
+                        <InlineEdit label={`source of ${p.item.title}`} value={p.source} onSave={(v) => saveOrMessage(setData(p, { source: v.trim() }))} />
                       </TableCell>
                       <TableCell>
                         <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={p.line === null ? "" : money(p.line)} onSave={numberSave(p, "line")} />

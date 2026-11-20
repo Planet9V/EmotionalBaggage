@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/client";
+import { useCallback, useMemo } from "react";
+import { useQueries, useQueryClient, type UseQueryOptions, type UseQueryResult } from "@tanstack/react-query";
+import { messageOf, queries, type ChallengeMessage, type ResearchEntry } from "@/lib/queries";
 import type { EventRow, FileMeta, Item, Plan } from "@/lib/types";
 
-export type ResearchEntry = { id: number; query: string; answer: string; citations: string[]; model: string; createdAt: string };
-export type ChallengeMessage = { id: number; role: string; content: string; createdAt: string };
+export type { ChallengeMessage, ResearchEntry };
 
 export type ConceptData = {
   items: Item[];
@@ -20,55 +20,51 @@ export type ConceptPart = keyof ConceptData;
 
 const EMPTY: ConceptData = { items: [], files: [], plan: null, research: null, challenge: null, events: [] };
 
-async function loadAll(projectId: string, parts: ConceptPart[]) {
-  const id = encodeURIComponent(projectId);
-  const fetchers: Record<ConceptPart, () => Promise<unknown>> = {
-    items: () => api<{ items: Item[] }>(`/api/projects/${id}/items`).then((r) => r.items),
-    files: () => api<{ files: FileMeta[] }>(`/api/projects/${id}/files`).then((r) => r.files),
-    plan: () => api<Plan>(`/api/projects/${id}/plan`),
-    research: () => api<ConceptData["research"]>(`/api/research?projectId=${id}`),
-    challenge: () => api<ConceptData["challenge"]>(`/api/challenge?projectId=${id}`),
-    events: () => api<{ events: EventRow[] }>(`/api/projects/${id}/events`).then((r) => r.events),
-  };
-  const settled = await Promise.allSettled(parts.map((p) => fetchers[p]()));
-  const data: Partial<ConceptData> = {};
-  const errors: Partial<Record<ConceptPart, string>> = {};
-  settled.forEach((r, i) => {
-    const part = parts[i];
-    if (r.status === "fulfilled") (data as Record<string, unknown>)[part] = r.value;
-    else errors[part] = (r.reason as Error).message;
-  });
-  return { data, errors };
-}
+const optionsFor = (projectId: string, part: ConceptPart) => {
+  switch (part) {
+    case "items": return queries.items(projectId, null);
+    case "files": return queries.files(projectId);
+    case "plan": return queries.plan(projectId);
+    case "research": return queries.research(projectId);
+    case "challenge": return queries.challenge(projectId);
+    case "events": return queries.events(projectId);
+  }
+};
 
-/** Everything recorded for a concept, loaded in parallel; each part reports its own error. */
+type Combined = { data: ConceptData; errors: Partial<Record<ConceptPart, string>>; pending: boolean; updatedAt: number };
+
+/** Everything recorded for a concept, loaded in parallel; each part reports its own error. The parts share their cache with the views that show them. */
 export function useConcept(projectId: string | undefined, parts: ConceptPart[]) {
-  const [data, setData] = useState<ConceptData>(EMPTY);
-  const [errors, setErrors] = useState<Partial<Record<ConceptPart, string>>>({});
-  const [loading, setLoading] = useState(true);
-  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
   const key = parts.join(",");
+  const combine = useCallback(
+    (results: UseQueryResult<unknown>[]): Combined => {
+      const names = key.split(",") as ConceptPart[];
+      const data: ConceptData = { ...EMPTY };
+      const errors: Partial<Record<ConceptPart, string>> = {};
+      let updatedAt = 0;
+      results.forEach((r, i) => {
+        if (r.data !== undefined) (data as Record<string, unknown>)[names[i]] = r.data;
+        if (r.error) errors[names[i]] = messageOf(r.error);
+        updatedAt = Math.max(updatedAt, r.dataUpdatedAt, r.errorUpdatedAt);
+      });
+      return { data, errors, pending: results.some((r) => r.isPending), updatedAt };
+    },
+    [key]
+  );
+  const { data, errors, pending, updatedAt } = useQueries({
+    queries: parts.map((part) => ({ ...(optionsFor(projectId ?? "", part) as UseQueryOptions<unknown>), enabled: !!projectId })),
+    combine,
+  });
+  const qc = useQueryClient();
 
-  const apply = useCallback((r: Awaited<ReturnType<typeof loadAll>>) => {
-    setData((d) => ({ ...d, ...r.data }));
-    setErrors(r.errors);
-    setLoadedAt(new Date());
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!projectId) return;
-    let alive = true;
-    loadAll(projectId, key.split(",") as ConceptPart[]).then((r) => alive && apply(r));
-    return () => {
-      alive = false;
-    };
-  }, [projectId, key, apply]);
+  const loading = !!projectId && pending;
+  const loadedAt = useMemo(() => (loading || !updatedAt ? null : new Date(updatedAt)), [loading, updatedAt]);
 
   const reload = useCallback(async () => {
     if (!projectId) return;
-    apply(await loadAll(projectId, key.split(",") as ConceptPart[]));
-  }, [projectId, key, apply]);
+    const names = key.split(",") as ConceptPart[];
+    await Promise.all(names.map((part) => qc.refetchQueries({ queryKey: optionsFor(projectId, part).queryKey, exact: true })));
+  }, [projectId, key, qc]);
 
   return { data, errors, loading, loadedAt, reload };
 }
