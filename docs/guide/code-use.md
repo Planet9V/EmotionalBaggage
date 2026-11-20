@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 8aa8352 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit f4230ac by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -61,7 +61,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @radix-ui/react-slot | 1.5.0 | MIT | linked library | yes |
 | @react-three/drei | 10.7.9 | MIT | linked library | yes |
 | @react-three/fiber | 9.8.2 | MIT | linked library | yes |
-| @tanstack/react-query | 5.108.2 | MIT | linked library | no |
+| @tanstack/react-query | 5.108.2 | MIT | linked library | yes |
 | @xyflow/react | 13.0.2 | MIT | linked library | yes |
 | class-variance-authority | 0.7.1 | Apache-2.0 | linked library | yes |
 | clsx | 2.1.1 | MIT | linked library | yes |
@@ -69,7 +69,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | lucide-react | 1.77.0 | ISC | linked library | yes |
 | mermaid | 12.3.0 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
-| node-pg-migrate | 9.0.0 | MIT | linked library | no |
+| node-pg-migrate | 9.0.0 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
 | react | 19.3.0 | MIT | linked library | yes |
 | react-dom | 19.3.0 | MIT | linked library | no |

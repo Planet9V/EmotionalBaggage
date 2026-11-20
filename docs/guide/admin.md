@@ -78,4 +78,4 @@ Database changes are applied at start-up, in order, and each is recorded so it r
 
 ## Third-party code
 
-The list of third-party components and how each is used is item 1.11 of the plan and is not written yet.
+The **Code use** page under Documentation lists every third-party library, image and font, its licence and how it is used. It is generated from what is installed. Its attestation at the end is a draft until the person who gave the legal sign-off approves the wording.

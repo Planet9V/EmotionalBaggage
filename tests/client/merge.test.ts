@@ -13,12 +13,12 @@ afterAll(async () => {
 });
 
 const CASES: { name: string; start: Record<string, unknown>; change: ItemChange }[] = [
-  { name: "one data key, others kept", start: { ref: "U1", qty: 2, source: "Amazon" }, change: { data: { qty: 5 } } },
+  { name: "one data key, others kept", start: { ref: "TM1", qty: 2, source: "Amazon" }, change: { data: { qty: 5 } } },
   // Geometry is given in full: the server fills schema defaults (basis, explode) that the client cannot predict; see the note in useItems.
-  { name: "a nested value is replaced whole, not merged", start: { ref: "U2", geometry: { shape: "box", size: [1, 2, 3], pos: [0, 0, 0], explode: [0, 0, 0], basis: "doc" } }, change: { data: { geometry: { shape: "box", size: [1, 2, 3], pos: [4, 5, 6], explode: [0, 0, 0], basis: "doc" } } } },
-  { name: "a new key is added and an existing key is overwritten", start: { ref: "U3", asin: "B000" }, change: { data: { asin: "", search: "x" } } },
-  { name: "title, body and status without data", start: { ref: "U4" }, change: { title: "test-merge: renamed", body: "spec", status: "ordered" } },
-  { name: "an empty data object changes nothing", start: { ref: "U5", qty: 1 }, change: { data: {} } },
+  { name: "a nested value is replaced whole, not merged", start: { ref: "TM2", geometry: { shape: "box", size: [1, 2, 3], pos: [0, 0, 0], explode: [0, 0, 0], basis: "doc" } }, change: { data: { geometry: { shape: "box", size: [1, 2, 3], pos: [4, 5, 6], explode: [0, 0, 0], basis: "doc" } } } },
+  { name: "a new key is added and an existing key is overwritten", start: { ref: "TM3", asin: "B000" }, change: { data: { asin: "", search: "x" } } },
+  { name: "title, body and status without data", start: { ref: "TM4" }, change: { title: "test-merge: renamed", body: "spec", status: "ordered" } },
+  { name: "an empty data object changes nothing", start: { ref: "TM5", qty: 1 }, change: { data: {} } },
 ];
 
 describe("applyChange matches the PATCH route", () => {

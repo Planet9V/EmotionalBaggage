@@ -78,6 +78,23 @@ Every handler is wrapped with `route()` from `src/lib/api/route.ts`:
 
 A row's `section` must be a store the menu defines, its `status` must be one that section allows, and its `data` must satisfy that section's schema.
 
+## Loading and changing data in the browser
+
+The browser loads and changes data with TanStack Query. One provider sits at the root (`src/components/Providers.tsx`). Every query key and fetcher is in `src/lib/queries.ts`. Two components that ask for the same key share one request and one cached copy. Read data through these keys; do not fetch inside a `useEffect`.
+
+`useItems(projectId, store)` from `src/lib/client.ts` returns `{ items, loading, error, writeError, reload, add, patch, remove }`. Views on the same store share its cache: the parts list is shown by the parts, layout, 3D, sourcing and printing screens, so a change in one is visible in the others at once.
+
+- `patch` and `remove` change the screen first, then the server. If the server refuses, the screen goes back to what it was and the call **rejects**, so wrap it in `try/catch` when you show your own message.
+- A write you do not wait for puts its failure in `writeError`; show that in the screen's error line.
+- For an inline field, pass `saveOrMessage(patch(...))` so the field stays open and shows the error.
+- After uploading or deleting a file, call the function from `useFilesChanged(projectId)`.
+
+Tests for the hooks are in `tests/client/`. One of them checks the on-screen merge against the real route on PostgreSQL.
+
+## Third-party code
+
+`npm run notices` regenerates `THIRD_PARTY_NOTICES.md` and the Code use page from the installed packages. `npm run notices:check` fails if either is out of date, and the test suite runs the same check. Anything a package manager does not know about (container images, fonts, copied source, tools run as separate processes) goes in `docs/third-party.manual.json`, in the same change that introduces it.
+
 ## The planner
 
 The order of operations has one implementation: the NetworkX service in `planner/`.
