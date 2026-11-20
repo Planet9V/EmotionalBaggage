@@ -63,7 +63,8 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
         <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-primary">Sign in</h1>
         <p className="mt-1 text-sm text-secondary">Product workbench</p>
 
-        <form onSubmit={submit} noValidate className="mt-6 space-y-4 rounded-xl border border-hairline bg-surface p-5" aria-describedby={showDefault ? "sign-in-default" : undefined}>
+        {/* method="post": if the script has not loaded, a native submit must not put the password in the address. */}
+        <form method="post" onSubmit={submit} noValidate className="mt-6 space-y-4 rounded-xl border border-hairline bg-surface p-5" aria-describedby={showDefault ? "sign-in-default" : undefined}>
           {showDefault && (
             <p id="sign-in-default" className="rounded-md border border-hairline bg-warning-soft px-3 py-2 text-sm text-primary">
               This install still uses the default account: user <strong className="font-mono">demo</strong>, password{" "}

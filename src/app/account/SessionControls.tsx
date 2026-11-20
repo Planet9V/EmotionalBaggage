@@ -33,7 +33,7 @@ export function SessionControls({ linkClass }: { linkClass: string }) {
     <>
       {me.usingDefaultPassword && (
         <Link href="/account" className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-warning hover:bg-subtle">
-          <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden /> Default password in use. Change it
+          <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden /> Change the default password
         </Link>
       )}
       <Link href="/account" className={linkClass} title="Account">
