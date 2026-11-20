@@ -106,7 +106,7 @@ The routed length replaces the centre-to-centre estimate on the build sheet and 
 
 A toggle switches between them. Each view keeps its own positions. A wire added in one appears in the others.
 
-Where the symbols come from is not yet decided. A trial of an existing open-source symbol library is under way; if it is not good enough the app carries its own small symbol set, one per part kind. Symbols from KiCad's library are not bundled, because redistributing them carries that library's share-alike licence.
+**Symbols come from the `schematic-symbols` library (MIT), drawn inside our own schematic nodes.** Each symbol is plain data: its lines and where its pins are. Our editor keeps doing the dragging, connecting, saved positions and highlighting; switching view swaps what a node draws, not the data. The library's own layout engine, renderer and viewer are not used: in a trial on the example circuit its layout placed labels where they suggested wrong connections, rotated every symbol when one position was supplied, and rerouted unrelated wires when one wire was added. The trial and its evidence are in `docs/trials/tscircuit`. Before a symbol is copied in, its origin is checked in the library's history; where that cannot be shown, the shape from schemdraw (MIT) is used. Symbols from KiCad's library are not bundled, because redistributing them carries that library's share-alike licence.
 
 ## Outputs
 

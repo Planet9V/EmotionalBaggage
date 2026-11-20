@@ -84,7 +84,7 @@ Three documents fix the decisions that the rest of the plan builds on. They are 
 | Toasts | sonner | 32 separate error states | not read this session |
 | Graph layout | @dagrejs/dagre for trees, elkjs for build order and pins-and-wires | three hand-computed layouts | licences unverified |
 | React Flow chrome | React Flow UI (base node, labelled handle, zoom) | hand-written node boxes | page read |
-| Schematic symbols | tscircuit `circuit-json` and `circuit-to-svg` | hand-drawn boxes, hand-written SVG export | **trial first**; symbol licence unverified |
+| Schematic symbols | `schematic-symbols` drawings inside our own nodes (decided after trial 0.3) | plain boxes | MIT licence file read; each symbol's origin checked before it is copied |
 | Model providers | Vercel AI SDK 7 with the OpenAI-compatible provider | one-provider reviewer route | tested here against a stand-in; confirmed on the real host by Admin's Test button; needs Node 22 |
 | Vectors | `pgvector` package on `pg` | nothing fills the column today | page read |
 | Sign-in | Better Auth, username plugin | none | unverified on a raw `pg` pool; "demo" may be under its password minimum |
@@ -112,7 +112,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 
 - [x] 0.1 GitHub Actions builds the three images and starts the stack on every change. 33 named checks: all three containers healthy, the app answers, the example concept is listed, pgvector active (0.8.7 on PostgreSQL 19), the planner reachable from the app, the documentation pages served, backup and restore working, data surviving a restart, and the install working both with and without a `.env`. Done 20 Nov. Proven on Linux in Actions only; not yet run on a Mac.
 - [x] 0.2 Stand-in servers in `tests/standins`: OpenAI-compatible (chat, streaming, embeddings; covers Ollama, LM Studio and OpenRouter), Perplexity, OctoPrint and Moonraker. Each records what it was sent and can be told to fail or stall. Shapes were read from each maker's documentation; every field not read is marked unverified in the file. Done 20 Nov, 21 tests. The other printer families get theirs with item 6.2 to 6.4.
-- [ ] 0.3 tscircuit trial: ten real parts from the Baggage Claims list rendered as a symbol schematic. **Done when** the result is shown side by side with the current view and the symbol licence is read. If it fails, item 5.3 falls back to our own SVG symbol set.
+- [x] 0.3 Symbol library trial, on the real 18-wire example circuit. Decision: use the symbol drawings from `schematic-symbols` (MIT) inside our own schematic nodes; do not use tscircuit's layout, renderer or viewer. Evidence and reasons in `docs/trials/tscircuit`. Done 20 Nov. Carried into 5.3: check each copied symbol's origin in the library's history first.
 - [ ] 0.4 First-run setup screen: after the first sign-in, Admin opens with what is not yet configured (models, research, printers), each with a Test button. Everything is skippable; a feature that is not configured says so and links back to Admin.
 
 ### Phase 1: foundations, by replacement
@@ -171,7 +171,7 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 
 - [ ] 5.1 Part kinds and a part library with pin definitions and pin positions.
 - [ ] 5.2 Geometry gains rotation; STL and STEP files can be attached as a part's real shape.
-- [ ] 5.3 Schematic with proper symbols (per 0.6) and a toggle to pins-and-wires; net labels, power and ground symbols, title block.
+- [ ] 5.3 Schematic with proper symbols (per 0.3) and a toggle to pins-and-wires; net labels, power and ground symbols, title block.
 - [ ] 5.4 Electrical checks: supply voltage against each part's range, unconnected power pins, missing pull-ups on shared buses.
 - [ ] 5.5 KiCad schematic export. **Done when** `kicad-cli` in CI loads the file without error.
 - [ ] 5.6 3D view: drag and rotate handles, section cut, measurement, STL from the built-in exporter.
