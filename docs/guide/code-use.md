@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit f4230ac by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit f713313 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,18 +16,19 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 413 packages (23 direct, 390 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 423 packages (25 direct, 398 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 305 |
+| MIT | 307 |
 | ISC | 46 |
-| Apache-2.0 | 28 |
+| Apache-2.0 | 35 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
 | BlueOak-1.0.0 | 5 |
 | Apache-2.0 AND LGPL-3.0-or-later | 3 |
 | OFL-1.1 | 2 |
+| (AFL-2.1 OR BSD-3-Clause) | 1 |
 | (MPL-2.0 OR Apache-2.0) | 1 |
 | 0BSD | 1 |
 | Apache-2.0 AND LGPL-3.0-or-later AND MIT | 1 |
@@ -55,6 +56,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 
 | Package | Version | Licence | How it is used | Imported in src/ |
 | --- | --- | --- | --- | --- |
+| @ai-sdk/openai-compatible | 3.0.94 | Apache-2.0 | linked library | no |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | font files | yes |
 | @fontsource-variable/jetbrains-mono | 5.3.0 | OFL-1.1 | font files | yes |
 | @radix-ui/react-dialog | 1.3.1 | MIT | linked library | yes |
@@ -63,6 +65,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @react-three/fiber | 9.8.2 | MIT | linked library | yes |
 | @tanstack/react-query | 5.108.2 | MIT | linked library | yes |
 | @xyflow/react | 13.0.2 | MIT | linked library | yes |
+| ai | 7.0.178 | Apache-2.0 | linked library | no |
 | class-variance-authority | 0.7.1 | Apache-2.0 | linked library | yes |
 | clsx | 2.1.1 | MIT | linked library | yes |
 | framer-motion | 14.14.0 | MIT | linked library | yes |
