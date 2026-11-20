@@ -104,6 +104,7 @@ The order of operations has one implementation: the NetworkX service in `planner
 - `planGraph(items)` in `src/lib/plan.ts` builds the graph with no I/O. Nodes are steps (keyed rows outside the decision tree; zero remaining when the status is closed) and decisions (keyed rows in the decision tree; no duration; done when an option is chosen). Edges come from a step's `after`, a decision's `dependsOn`, and a decision's `unlocks` to every step in that section's store. Links to unknown keys and self-links go to `dropped`.
 - The plan route posts the graph to `POST /plan`. The service finds loops with strongly connected components, blocks every node in or downstream of a loop, and returns waves, earliest start and finish over remaining minutes, the critical path, and remaining and planned totals.
 - If `PLANNER_URL` is unset or the service does not answer, the route answers 200 with `engine: "unavailable"`, the nodes and a note, and no order.
+- The same service routes wires through an enclosure: `POST /route` (`planner/routing.py`). The method, its limits and its measured speed are in the wiring design page. The app does not call it yet.
 - `npm test` starts the planner itself and fails loudly if `python3` or uvicorn is missing: `pip install -r planner/requirements-dev.txt`. The service's own tests: `cd planner && python3 -m pytest -q`.
 
 ## Migrations

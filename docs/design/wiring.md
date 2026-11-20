@@ -86,13 +86,31 @@ Checks say what is wrong and why it matters. They do not claim a circuit is corr
 Decision D5: NetworkX does the routing, in the Python service.
 
 1. **Space.** The inside of the enclosure is cut into a grid of cells. Cells inside a part's body, grown by a clearance, are removed. What is left is where a wire may run.
-2. **Grid size.** 2 mm cells by default. If that would exceed about 150,000 cells the cell size grows until it does not. The size used is reported with the result. The speed of this must be measured on the example before the default is fixed.
+2. **Grid size.** 2 mm cells by default. If that would exceed 150,000 cells the cell size grows until it does not. The size used is reported with the result. These limits come from the measurements below.
 3. **One wire.** The shortest path between its two pins through the free cells (A*). Cells already used by another wire of the same harness cost less, so wires bundle and do not each take their own way.
 4. **A net with more than two pins** (ground, power) is routed as one tree joining all its pins (a Steiner tree), and the points where it branches are reported as splices.
 5. **Length.** The path is straightened where it can be, measured, and a service allowance is added at each end. The allowance is a setting. The result is rounded up to the next 5 mm.
 6. **When it cannot route.** A pin buried inside another part, or with no free path, is reported by name. Nothing is guessed.
 
 A route is stored on the wire with a fingerprint of what it was computed from (part positions, pin positions, enclosure size). When any of those change, the route is shown as out of date until it is recomputed.
+
+### Built and measured
+
+The router is built in the Python service (`planner/routing.py`, `POST /route`) with 16 tests of its own. It is **not yet connected to the app**: the app has no pin positions to give it until part kinds and pins exist (plan 5.1 and 5.2).
+
+Measured on 20 November 2026 on the build machine, routing 18 two-ended wires and one five-ended ground tree around nine parts:
+
+| Enclosure (mm) | Cell | Cells | Time |
+|---|---|---|---|
+| 80 × 42 × 60 (the example product) | 2 mm | 25,200 | 0.7 s |
+| 80 × 42 × 60 | 1 mm | 201,600 | 7.7 s |
+| 160 × 80 × 120 | 2 mm | 192,000 | 7.6 s |
+| 200 × 150 × 80 | 2 mm | 300,000 | 12.7 s |
+| 300 × 200 × 150 | 2 mm | 1,125,000 | 60 s |
+
+Time grows roughly in step with the number of cells, about 4 seconds per 100,000. The 150,000-cell limit therefore keeps a routing run to about six seconds. A product the size of the example routes in under a second at 2 mm.
+
+A finer grid gives a shorter, truer path: on the example-sized job the total run was 734 mm at 1 mm cells and 849 mm at 2 mm, a difference of about 15 per cent. Routed lengths are therefore an upper estimate that tightens as the cell shrinks, and the cell size used is always shown beside a length.
 
 The routed length replaces the centre-to-centre estimate on the build sheet and the cut list, and the path is drawn in the 3D view.
 

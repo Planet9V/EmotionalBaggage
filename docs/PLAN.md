@@ -180,7 +180,7 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - [ ] 5.9 Generator choice per concept, both shown side by side on the Baggage Claims example. **Done when** both produce a watertight base and lid whose cutouts line up with the parts.
 - [ ] 5.10 Only if 5.9 shows both fall short on a named need: write our own on Manifold and publish it as a separate repository.
 - [ ] 5.11 3MF export.
-- [ ] 5.12 NetworkX wire routing inside the enclosure, pin to pin around parts; routed lengths feed the build sheet and the 3D view. Speed measured on the example before the grid size is fixed.
+- [ ] 5.12 NetworkX wire routing inside the enclosure, pin to pin around parts; routed lengths feed the build sheet and the 3D view. Speed measured on the example before the grid size is fixed. **Service built and measured 20 Nov** (`POST /route`, 16 tests: paths go round parts, never through them; multi-pin nets as one tree with splices; buried or unreachable ends reported by name; 0.7 s for the example-sized job, about 4 s per 100,000 cells). Still to do: connect it to the app, which needs pin positions from 5.1 and 5.2.
 - [ ] 5.13 Harness drawing from the wiring through WireViz.
 - [ ] 5.14 Engineering-diagram view for non-electronic process products, only if a concept needs it.
 

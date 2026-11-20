@@ -15,6 +15,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field, model_validator
 import networkx as nx
 
+from routing import RouteRequest, route as route_wires
+
 app = FastAPI(title="Concept-to-realization planner")
 
 
@@ -127,3 +129,9 @@ def plan(g: Graph):
         "cycles": cycles,
         "blocked": sorted(blocked),
     }
+
+
+@app.post("/route")
+def route(req: RouteRequest):
+    """Routes wires through an enclosure. See routing.py for the method."""
+    return route_wires(req)
