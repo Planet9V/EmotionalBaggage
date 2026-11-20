@@ -4,11 +4,13 @@
  * 3D print files: binary STL generated in the browser from part envelopes, the concept's saved STL
  * files, and loading an existing STL into the model.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Download, Eye, EyeOff, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/client";
+import { useQuery } from "@tanstack/react-query";
+import { api, useFilesChanged } from "@/lib/client";
+import { messageOf, queries } from "@/lib/queries";
 import type { FileMeta } from "@/lib/types";
 import type { Part } from "@/lib/domain";
 import { describeSize, fmt, type PartGeometry } from "./layout";
@@ -82,6 +84,8 @@ function NumParam({ label, value, onChange, step }: { label: string; value: numb
   );
 }
 
+const onlyStl = (files: FileMeta[]) => files.filter((f) => f.kind === "stl");
+
 export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint, loaded, setLoaded }: {
   projectId: string;
   parts: Part[];
@@ -91,33 +95,16 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
   loaded: LoadedStl | null;
   setLoaded: (l: LoadedStl | null) => void;
 }) {
-  const [files, setFiles] = useState<FileMeta[] | null>(null);
-  const [filesError, setFilesError] = useState("");
+  const filesQuery = useQuery({ ...queries.files(projectId), select: onlyStl });
+  const files = filesQuery.data ?? null;
+  const filesError = messageOf(filesQuery.error);
+  const loadFiles = useFilesChanged(projectId);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const loadFiles = useCallback(async () => {
-    try {
-      const r = await api<{ files: FileMeta[] }>(`/api/projects/${projectId}/files`);
-      setFiles(r.files.filter((f) => f.kind === "stl"));
-      setFilesError("");
-    } catch (e) {
-      setFilesError((e as Error).message);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    let live = true;
-    api<{ files: FileMeta[] }>(`/api/projects/${projectId}/files`)
-      .then((r) => live && setFiles(r.files.filter((f) => f.kind === "stl")))
-      .catch((e: Error) => live && setFilesError(e.message));
-    return () => {
-      live = false;
-    };
-  }, [projectId]);
 
   const store = async (buf: ArrayBuffer, name: string, meta: Record<string, unknown>) => {
     const form = new FormData();

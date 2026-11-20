@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Copy, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { Modal } from "@/components/parts/Modal";
-import { api, useItems } from "@/lib/client";
+import { useItems } from "@/lib/client";
+import { messageOf, queries, type Integration, type IntegrationsReport } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { ViewProps } from "./types";
 
-type Integration = { key: string; name: string; configured: boolean; built: "yes" | "partial" | "no" };
+const NO_INTEGRATIONS: Integration[] = [];
+const socialOnly = (r: IntegrationsReport) => r.integrations.filter((i) => i.key === "x" || i.key === "instagram");
 
 const CHANNELS = ["X", "Instagram", "TikTok", "other"];
 const X_LIMIT = 280;
@@ -26,25 +29,18 @@ const firstLine = (t: string) => {
 };
 
 export function SocialView({ project, section, store }: ViewProps) {
-  const { items, loading, error, add, patch, remove } = useItems(project.id, store);
+  const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
   const reduce = useReducedMotion();
   const columns = section.statuses?.length ? section.statuses : FALLBACK;
-  const [integ, setInteg] = useState<Integration[]>([]);
-  const [integError, setIntegError] = useState("");
+  const integQuery = useQuery({ ...queries.integrations(), select: socialOnly });
+  const integ = integQuery.data ?? NO_INTEGRATIONS;
+  const integError = messageOf(integQuery.error);
   const [compose, setCompose] = useState<{ item: Item | null } | null>(null);
   const [del, setDel] = useState<Item | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
   const dragged = useRef<number | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    api<{ integrations: Integration[] }>("/api/integrations")
-      .then((r) => { if (alive) setInteg(r.integrations.filter((i) => i.key === "x" || i.key === "instagram")); })
-      .catch((e: Error) => { if (alive) setIntegError(e.message); });
-    return () => { alive = false; };
-  }, []);
 
   const move = (it: Item, status: string) => {
     if (it.status !== status) void patch(it.id, { status });
@@ -81,7 +77,7 @@ export function SocialView({ project, section, store }: ViewProps) {
         <Button onClick={() => setCompose({ item: null })}><Plus className="h-4 w-4" aria-hidden /> {section.addLabel ?? "Add draft post"}</Button>
       </div>
       {error ? <ErrorLine>{error}</ErrorLine> : null}
-      {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
+      {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
 
       {loading ? (
         <p className="text-sm text-secondary">Loading the posts.</p>

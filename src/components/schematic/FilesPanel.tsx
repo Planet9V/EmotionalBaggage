@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check as CheckIcon, Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/client";
+import { api, useFilesChanged } from "@/lib/client";
 import type { FileMeta } from "@/lib/types";
 import { EYEBROW, ErrorLine } from "./controls";
 
@@ -25,6 +25,7 @@ const kb = (n: number) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
 /** Download or store each generated file. Files are generated at the moment of the click. */
 export function FilesPanel({ projectId, specs, disabled }: { projectId: string; specs: Spec[]; disabled: boolean }) {
   const [busy, setBusy] = useState("");
+  const filesChanged = useFilesChanged(projectId);
   const [saved, setSaved] = useState<Record<string, FileMeta[]>>({});
   const [error, setError] = useState("");
 
@@ -42,6 +43,7 @@ export function FilesPanel({ projectId, specs, disabled }: { projectId: string; 
         out.push(r.file);
       }
       setSaved((x) => ({ ...x, [s.key]: out }));
+      void filesChanged();
     } catch (e) {
       setError(`${s.label} was not saved: ${(e as Error).message}`);
     } finally {

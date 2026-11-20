@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { api, useItems } from "@/lib/client";
+import { api, useFilesChanged, useItems } from "@/lib/client";
 import { toPart } from "@/lib/domain";
 import type { PartGeometry } from "@/components/three/layout";
 import { ChecksPanel, type NoGeometry } from "@/components/layout/ChecksPanel";
@@ -41,6 +41,7 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
 
 export function LayoutView({ project }: ViewProps) {
   const { items, loading, error, add, patch } = useItems(project.id, BOM_STORE);
+  const filesChanged = useFilesChanged(project.id);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [live, setLive] = useState<{ id: number; pos: number[] } | null>(null);
   const [drafts, setDrafts] = useState<Record<number, Draft>>({});
@@ -237,6 +238,7 @@ export function LayoutView({ project }: ViewProps) {
       form.append("kind", "layout");
       form.append("meta", JSON.stringify({ title: "Physical layout", scale: s.scaleNote, wall, parts: bodies.length }));
       await api(`/api/projects/${project.id}/files`, { method: "POST", body: form });
+      void filesChanged();
       setNotice({ tone: "ok", text: `Saved ${fileName()} to this concept.` });
     } catch (e) {
       fail(e);

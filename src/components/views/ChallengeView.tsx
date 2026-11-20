@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import { api, useItems } from "@/lib/client";
+import { keys, messageOf, queries } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import { areaClass } from "@/components/wizard/fields";
 import { NotConnected, stamp } from "@/components/wizard/shared";
@@ -21,10 +23,12 @@ const STARTERS = ["Attack the weakest assumption", "What would make this fail in
 
 export function ChallengeView({ project }: ViewProps) {
   const reduce = useReducedMotion();
-  const [state, setState] = useState<Resp | null>(null);
-  const [loadError, setLoadError] = useState("");
+  const qc = useQueryClient();
+  const challengeKey = keys.challenge(project.id);
+  const challenge = useQuery(queries.challenge(project.id));
+  const state: Resp | null = challenge.data ?? null;
+  const loadError = messageOf(challenge.error);
   const [text, setText] = useState("");
-  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<{ id: number | string; text: string } | null>(null);
   const [saved, setSaved] = useState<Set<number | string>>(new Set());
@@ -35,16 +39,21 @@ export function ChallengeView({ project }: ViewProps) {
   const questions = useItems(project.id, "concept/questions");
   const claims = useItems(project.id, "research/claims");
 
-  const fetchState = useCallback(() => api<Resp>(`/api/challenge?projectId=${encodeURIComponent(project.id)}`), [project.id]);
-  const load = useCallback(
-    () => fetchState().then((r) => { setState(r); setLoadError(""); }).catch((e: Error) => setLoadError(e.message)),
-    [fetchState]
-  );
-  useEffect(() => {
-    let live = true;
-    fetchState().then((r) => { if (live) setState(r); }).catch((e: Error) => { if (live) setLoadError(e.message); });
-    return () => { live = false; };
-  }, [fetchState]);
+  // The message shows at once; it is taken out again if the request fails, and the thread is refetched after either outcome.
+  const sendM = useMutation({
+    mutationFn: (message: string) => api<{ reply: string }>("/api/challenge", { method: "POST", body: JSON.stringify({ projectId: project.id, message }) }),
+    onMutate: async (message: string) => {
+      await qc.cancelQueries({ queryKey: challengeKey });
+      const tmp: Msg = { id: `tmp-${Date.now()}`, role: "user", content: message, createdAt: new Date().toISOString() };
+      qc.setQueryData<Resp>(challengeKey, (s) => (s ? { ...s, messages: [...s.messages, tmp] } : s));
+      return { tmp };
+    },
+    onError: (_e, _message, ctx) => {
+      qc.setQueryData<Resp>(challengeKey, (s) => (s && ctx ? { ...s, messages: s.messages.filter((m) => m.id !== ctx.tmp.id) } : s));
+    },
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: challengeKey }), qc.invalidateQueries({ queryKey: keys.events(project.id) })]),
+  });
+  const pending = sendM.isPending;
 
   const count = state?.messages.length ?? 0;
   useEffect(() => { end.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" }); }, [count, pending, reduce]);
@@ -52,20 +61,14 @@ export function ChallengeView({ project }: ViewProps) {
   const send = async () => {
     const message = text.trim();
     if (!message || pending || !state) return;
-    setPending(true);
     setError("");
     setText("");
-    const tmp: Msg = { id: `tmp-${Date.now()}`, role: "user", content: message, createdAt: new Date().toISOString() };
-    setState({ ...state, messages: [...state.messages, tmp] });
     try {
-      await api<{ reply: string }>("/api/challenge", { method: "POST", body: JSON.stringify({ projectId: project.id, message }) });
-      await load();
+      await sendM.mutateAsync(message);
     } catch (e) {
       setError((e as Error).message);
-      setState((s) => (s ? { ...s, messages: s.messages.filter((m) => m.id !== tmp.id) } : s));
       setText(message);
     } finally {
-      setPending(false);
       box.current?.focus();
     }
   };

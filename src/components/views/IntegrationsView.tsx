@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorLine } from "@/components/parts/controls";
-import { api } from "@/lib/client";
+import { messageOf, queries, type Integration } from "@/lib/queries";
 
-type Integration = { key: string; name: string; purpose: string; env: string[]; configured: boolean; built: "yes" | "partial" | "no"; note: string };
-type Report = {
-  integrations: Integration[];
-  database: { connected: boolean; vector: boolean; version?: string };
-  planner: { connected: boolean; networkx?: string; error?: string; reason?: string; note?: string };
-};
 
 const BUILT: Record<Integration["built"], { label: string; tone: "success" | "warning" | "neutral" }> = {
   yes: { label: "Built", tone: "success" },
@@ -22,17 +16,10 @@ const BUILT: Record<Integration["built"], { label: string; tone: "success" | "wa
 };
 
 export function IntegrationsView() {
-  const [data, setData] = useState<Report | null>(null);
-  const [error, setError] = useState("");
+  const report = useQuery(queries.integrations());
+  const data = report.data ?? null;
+  const error = messageOf(report.error);
   const reduce = useReducedMotion();
-
-  useEffect(() => {
-    let alive = true;
-    api<Report>("/api/integrations")
-      .then((r) => { if (alive) setData(r); })
-      .catch((e: Error) => { if (alive) setError(e.message); });
-    return () => { alive = false; };
-  }, []);
 
   const plannerWhy = data?.planner.error ?? data?.planner.reason ?? data?.planner.note;
 

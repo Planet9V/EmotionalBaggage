@@ -3,48 +3,40 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, GitBranch, Moon, Plug, Plus, Sun, BookOpen } from "lucide-react";
-import { api, ProjectContext } from "@/lib/client";
+import { ProjectContext } from "@/lib/client";
+import { messageOf, queries } from "@/lib/queries";
 import { STAGES } from "@/lib/menu";
 import type { Project } from "@/lib/types";
 
 const KEY = "c2r.project";
+const NO_PROJECTS: Project[] = [];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [current, setCurrent] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const conceptsQuery = useQuery(queries.concepts());
+  const projects = conceptsQuery.data ?? NO_PROJECTS;
+  const loading = conceptsQuery.isPending;
+  const error = messageOf(conceptsQuery.error);
+  const [chosen, setChosen] = useState<string>("");
   const [dark, setDark] = useState(false);
-
+  const { refetch } = conceptsQuery;
   const reload = useCallback(async () => {
-    try {
-      const r = await api<{ projects: Project[] }>("/api/projects");
-      setProjects(r.projects);
-      setCurrent((c) => {
-        const saved = c || (typeof window !== "undefined" ? window.localStorage.getItem(KEY) ?? "" : "");
-        return r.projects.some((p) => p.id === saved) ? saved : r.projects[0]?.id ?? "";
-      });
-      setError("");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await refetch();
+  }, [refetch]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the concept list and stored theme on mount
-    void reload();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the stored concept and theme on mount
+    setChosen(window.localStorage.getItem(KEY) ?? "");
     const d = window.localStorage.getItem("c2r.theme") === "dark";
     setDark(d);
     document.documentElement.classList.toggle("dark", d);
-  }, [reload]);
+  }, []);
 
   const select = useCallback((id: string) => {
-    setCurrent(id);
+    setChosen(id);
     window.localStorage.setItem(KEY, id);
   }, []);
 
@@ -55,7 +47,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem("c2r.theme", d ? "dark" : "light");
   };
 
-  const project = useMemo(() => projects.find((p) => p.id === current) ?? null, [projects, current]);
+  // The stored or chosen concept if it still exists, else the first one.
+  const project = useMemo(() => projects.find((p) => p.id === chosen) ?? projects[0] ?? null, [projects, chosen]);
+  const current = project?.id ?? "";
   const ctx = useMemo(() => ({ projects, project, loading, error, select, reload }), [projects, project, loading, error, select, reload]);
 
   const link = (href: string, active: boolean) =>

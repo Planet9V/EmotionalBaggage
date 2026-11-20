@@ -1,12 +1,14 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/input";
 import { api, useItems } from "@/lib/client";
+import { keys, messageOf, queries } from "@/lib/queries";
 import { selectClass } from "@/components/wizard/fields";
 import { NotConnected, hostname, stamp } from "@/components/wizard/shared";
 import type { ViewProps } from "./types";
@@ -21,34 +23,30 @@ const day = (iso: string) => {
 
 export function ResearchView({ project }: ViewProps) {
   const reduce = useReducedMotion();
-  const [state, setState] = useState<Resp | null>(null);
-  const [loadError, setLoadError] = useState("");
+  const qc = useQueryClient();
+  const research = useQuery(queries.research(project.id));
+  const state: Resp | null = research.data ?? null;
+  const loadError = messageOf(research.error);
   const [query, setQuery] = useState("");
-  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const box = useRef<HTMLInputElement>(null);
   const claims = useItems(project.id, "research/claims");
 
-  const fetchState = useCallback(() => api<Resp>(`/api/research?projectId=${encodeURIComponent(project.id)}`), [project.id]);
-  useEffect(() => {
-    let live = true;
-    fetchState().then((r) => { if (live) setState(r); }).catch((e: Error) => { if (live) setLoadError(e.message); });
-    return () => { live = false; };
-  }, [fetchState]);
+  const askM = useMutation({
+    mutationFn: (q: string) => api("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q }) }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: keys.research(project.id) }), qc.invalidateQueries({ queryKey: keys.events(project.id) })]),
+  });
+  const pending = askM.isPending;
 
   const ask = async () => {
     const q = query.trim();
     if (!q || pending) return;
-    setPending(true);
     setError("");
     try {
-      await api("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q }) });
-      setState(await fetchState());
+      await askM.mutateAsync(q);
       setQuery("");
     } catch (e) {
       setError((e as Error).message);
-    } finally {
-      setPending(false);
     }
   };
 

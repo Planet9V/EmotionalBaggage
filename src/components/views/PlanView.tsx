@@ -12,8 +12,8 @@ import { PlanGraph } from "@/components/plan/PlanGraph";
 import { PlanTimeline } from "@/components/plan/PlanTimeline";
 import { StepDetail, type ItemChange } from "@/components/plan/StepDetail";
 import { usePlan } from "@/components/plan/usePlan";
-import { api, useItems, useProject } from "@/lib/client";
-import type { Item, Project } from "@/lib/types";
+import { useItems, useProject } from "@/lib/client";
+import type { Project } from "@/lib/types";
 
 export function PlanView() {
   const { project, loading } = useProject();
@@ -32,7 +32,7 @@ export function PlanView() {
 
 function PlanBody({ project }: { project: Project }) {
   const { plan, error: planError, loading: planLoading, reload: reloadPlan } = usePlan(project.id);
-  const { items, error: itemsError, reload: reloadItems } = useItems(project.id, null);
+  const { items, error: itemsError, reload: reloadItems, patch, add: addItem } = useItems(project.id, null);
   const [selected, setSelected] = useState<string | null>(null);
   const [writeError, setWriteError] = useState("");
   const reduce = useReducedMotion();
@@ -41,24 +41,22 @@ function PlanBody({ project }: { project: Project }) {
     await Promise.all([reloadItems(), reloadPlan()]);
   };
 
+  // Each write refreshes the rows and the plan when it settles (see useItems).
   const save = async (itemId: number, change: ItemChange) => {
     setWriteError("");
     try {
-      await api<{ item: Item }>(`/api/items/${itemId}`, { method: "PATCH", body: JSON.stringify(change) });
+      await patch(itemId, change);
     } catch (e) {
       setWriteError((e as Error).message);
     }
-    await refresh();
   };
 
   const add = async (it: { section: string; title: string; data: Record<string, unknown> }) => {
-    await api<{ item: Item }>(`/api/projects/${project.id}/items`, { method: "POST", body: JSON.stringify(it) });
-    await refresh();
+    await addItem(it);
   };
 
   const convert = async (itemId: number, data: Record<string, unknown>) => {
-    await api<{ item: Item }>(`/api/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ data }) });
-    await refresh();
+    await patch(itemId, { data });
   };
 
   const byKey = new Map(plan?.nodes.map((n) => [n.id, n]) ?? []);

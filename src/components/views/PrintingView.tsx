@@ -1,7 +1,8 @@
 "use client";
 import { toPart } from "@/lib/domain";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { Download, Plus, Trash2 } from "lucide-react";
@@ -13,12 +14,12 @@ import { EmptyState, ErrorLine, Field, Select, statusOptions } from "@/component
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { Modal } from "@/components/parts/Modal";
 
-import { api, useItems } from "@/lib/client";
+import { api, saveOrMessage, useFilesChanged, useItems } from "@/lib/client";
+import { messageOf, queries } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
 import type { FileMeta, Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
-type Printer = { configured: boolean; kind?: string; state?: string; file?: string | null; progress?: number | null; secondsLeft?: number | null; error?: string; note?: string };
 
 const bytes = (n: number) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 const when = (iso: string) => {
@@ -34,33 +35,22 @@ const fileIdOf = (it: Item): number | null => {
   return typeof v === "number" ? v : v ? Number(v) || null : null;
 };
 
+const NO_FILES: FileMeta[] = [];
+const onlyStl = (files: FileMeta[]) => files.filter((f) => f.kind === "stl");
+
 export function PrintingView({ project, section, store }: ViewProps) {
   const jobs = useItems(project.id, store);
   const bom = useItems(project.id, "design/bom");
   const reduce = useReducedMotion();
-  const [files, setFiles] = useState<FileMeta[]>([]);
-  const [filesError, setFilesError] = useState("");
+  const filesQuery = useQuery({ ...queries.files(project.id), select: onlyStl });
+  const files = filesQuery.data ?? NO_FILES;
+  const filesError = messageOf(filesQuery.error);
+  const filesChanged = useFilesChanged(project.id);
   const [adding, setAdding] = useState(false);
   const [delJob, setDelJob] = useState<Item | null>(null);
   const [delFile, setDelFile] = useState<FileMeta | null>(null);
   const [actionError, setActionError] = useState("");
 
-  const loadFiles = useCallback(async () => {
-    try {
-      const r = await api<{ files: FileMeta[] }>(`/api/projects/${project.id}/files`);
-      setFiles(r.files.filter((f) => f.kind === "stl"));
-      setFilesError("");
-    } catch (e) {
-      setFilesError((e as Error).message);
-    }
-  }, [project.id]);
-  useEffect(() => {
-    let alive = true;
-    api<{ files: FileMeta[] }>(`/api/projects/${project.id}/files`)
-      .then((r) => { if (alive) { setFiles(r.files.filter((f) => f.kind === "stl")); setFilesError(""); } })
-      .catch((e: Error) => { if (alive) setFilesError(e.message); });
-    return () => { alive = false; };
-  }, [project.id]);
 
   const columns = section.columns ?? [];
   const statuses = section.statuses ?? [];
@@ -75,7 +65,7 @@ export function PrintingView({ project, section, store }: ViewProps) {
     <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8">
       <PrinterPanel />
 
-      {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
+      {actionError || jobs.writeError ? <ErrorLine>{actionError || jobs.writeError}</ErrorLine> : null}
 
       <section aria-labelledby="jobs-h" className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -107,11 +97,11 @@ export function PrintingView({ project, section, store }: ViewProps) {
                   return (
                     <TableRow key={j.id}>
                       <TableCell>
-                        <InlineEdit label="job name" value={j.title} onSave={(v) => (v.trim() ? void jobs.patch(j.id, { title: v.trim() }) : "A job needs a name.")} />
+                        <InlineEdit label="job name" value={j.title} onSave={(v) => (v.trim() ? saveOrMessage(jobs.patch(j.id, { title: v.trim() })) : "A job needs a name.")} />
                       </TableCell>
                       {columns.map((c) => (
                         <TableCell key={c.key}>
-                          <InlineEdit label={`${c.label} of ${j.title}`} value={typeof j.data[c.key] === "string" || typeof j.data[c.key] === "number" ? String(j.data[c.key]) : ""} onSave={(v) => void jobs.patch(j.id, { data: { [c.key]: v.trim() } })} />
+                          <InlineEdit label={`${c.label} of ${j.title}`} value={typeof j.data[c.key] === "string" || typeof j.data[c.key] === "number" ? String(j.data[c.key]) : ""} onSave={(v) => saveOrMessage(jobs.patch(j.id, { data: { [c.key]: v.trim() } }))} />
                         </TableCell>
                       ))}
                       <TableCell>
@@ -225,7 +215,7 @@ export function PrintingView({ project, section, store }: ViewProps) {
           <Button variant="outline" onClick={() => setDelFile(null)}>Keep it</Button>
           <Button onClick={async () => {
             if (!delFile) return;
-            try { setActionError(""); await api(`/api/files/${delFile.id}`, { method: "DELETE" }); await loadFiles(); } catch (e) { setActionError((e as Error).message); }
+            try { setActionError(""); await api(`/api/files/${delFile.id}`, { method: "DELETE" }); await filesChanged(); } catch (e) { setActionError((e as Error).message); }
             setDelFile(null);
           }}>Delete file</Button>
         </div>
@@ -235,23 +225,10 @@ export function PrintingView({ project, section, store }: ViewProps) {
 }
 
 function PrinterPanel() {
-  const [p, setP] = useState<Printer | null>(null);
-  const [fetchError, setFetchError] = useState("");
-
-  useEffect(() => {
-    let alive = true;
-    const tick = async () => {
-      try {
-        const r = await api<Printer>("/api/printer");
-        if (alive) { setP(r); setFetchError(""); }
-      } catch (e) {
-        if (alive) setFetchError((e as Error).message);
-      }
-    };
-    void tick();
-    const t = setInterval(tick, 10000);
-    return () => { alive = false; clearInterval(t); };
-  }, []);
+  // Polled every 10 s while shown (see queries.printer). The last good reading is replaced by the error if a poll fails, as before.
+  const printer = useQuery(queries.printer());
+  const fetchError = printer.isError ? messageOf(printer.error) : "";
+  const p = printer.data ?? null;
 
   return (
     <section aria-labelledby="printer-h" className="rounded-xl border border-hairline bg-surface p-5">

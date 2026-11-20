@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,11 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState, ErrorLine, Field } from "@/components/parts/controls";
 import { Modal } from "@/components/parts/Modal";
 import { money, parseAmount } from "@/components/parts/bom";
-import { api, useItems } from "@/lib/client";
+import { useItems } from "@/lib/client";
+import { messageOf, queries, type IntegrationsReport } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
-type Integration = { key: string; name: string; env: string[]; configured: boolean; built: "yes" | "partial" | "no"; note: string };
 type Sale = { item: Item; date: string; channel: string; units: number; revenue: number };
 
 const toSale = (item: Item): Sale => {
@@ -26,21 +27,17 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+const amazonSell = (r: IntegrationsReport) => r.integrations.find((i) => i.key === "amazon-sell") ?? null;
+
 export function MonitorView({ project, store }: ViewProps) {
   const { items, loading, error, add, remove } = useItems(project.id, store);
   const reduce = useReducedMotion();
-  const [integ, setInteg] = useState<Integration | null | undefined>(undefined);
-  const [integError, setIntegError] = useState("");
+  // One request for /api/integrations however many views read it; this one picks the Amazon seller row.
+  const integQuery = useQuery({ ...queries.integrations(), select: amazonSell });
+  const integ = integQuery.data;
+  const integError = messageOf(integQuery.error);
   const [del, setDel] = useState<Sale | null>(null);
   const [actionError, setActionError] = useState("");
-
-  useEffect(() => {
-    let alive = true;
-    api<{ integrations: Integration[] }>("/api/integrations")
-      .then((r) => { if (alive) setInteg(r.integrations.find((i) => i.key === "amazon-sell") ?? null); })
-      .catch((e: Error) => { if (alive) setIntegError(e.message); });
-    return () => { alive = false; };
-  }, []);
 
   const sales = useMemo(() => items.map(toSale).sort((a, b) => b.date.localeCompare(a.date)), [items]);
   const byChannel = useMemo(() => {
