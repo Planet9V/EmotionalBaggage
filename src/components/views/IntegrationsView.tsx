@@ -68,7 +68,7 @@ export function IntegrationsView() {
                   <div className="flex gap-2"><dt className="w-24 text-muted">NetworkX</dt><dd className="font-mono text-xs text-primary">{data.planner.connected ? data.planner.networkx ?? "unknown" : "not reachable"}</dd></div>
                 </dl>
                 {!data.planner.connected && (
-                  <p className="mt-3 text-sm text-secondary">{plannerWhy ? plannerWhy : "The planner service did not answer. The plan page uses its built-in fallback until it does."}</p>
+                  <p className="mt-3 text-sm text-secondary">{plannerWhy ? plannerWhy : "The planner service did not answer. The order of operations cannot be worked out until it does; the plan page lists the steps without an order."}</p>
                 )}
               </div>
             </section>

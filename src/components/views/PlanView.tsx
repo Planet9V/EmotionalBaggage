@@ -96,7 +96,7 @@ function PlanBody({ project }: { project: Project }) {
               <span className="text-link">Computed by NetworkX</span>
             ) : (
               <>
-                <span className="text-warning">Computed in the web app.</span> {plan.note ?? "The NetworkX planner did not answer."}
+                <span className="text-warning">No order worked out.</span> {plan.note ?? "The planner service did not answer."}
               </>
             )}
           </p>

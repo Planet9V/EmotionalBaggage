@@ -14,7 +14,7 @@ Three containers, started together by Docker Compose:
 |---|---|
 | `web` | The application, on port 3000. |
 | `db` | PostgreSQL with the pgvector extension. Holds every concept, every file and the activity history. |
-| `planner` | A small Python service that works out the order of operations. If it is down, the app works the order out itself and says so. |
+| `planner` | A small Python service that works out the order of operations. If it is down, the plan page lists the steps without an order and says so. |
 
 ## Install
 

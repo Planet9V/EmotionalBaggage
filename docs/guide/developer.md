@@ -24,7 +24,7 @@ createdb c2r
 DATABASE_URL=postgresql://localhost/c2r npm run dev
 ```
 
-The planner is optional: `cd planner && pip install -r requirements.txt && uvicorn main:app --port 8811`, then set `PLANNER_URL=http://localhost:8811`.
+The planner works out the order of operations: `cd planner && pip install -r requirements-dev.txt && uvicorn main:app --port 8811`, then set `PLANNER_URL=http://localhost:8811`. Without it the plan page shows the steps with no order.
 
 ## Tests
 
@@ -48,6 +48,7 @@ The API tests call the route handlers directly against a real PostgreSQL, so poi
 | `src/components/views/` | One view per kind of section. |
 | `src/components/ui/` | Shared UI components. |
 | `planner/` | The order-of-operations service. |
+| `migrations/` | Database migrations, applied at start-up. |
 | `tests/` | Vitest suites. |
 | `docs/guide/` | These pages. They are rendered in the app at `/docs`. |
 
@@ -76,6 +77,19 @@ Every handler is wrapped with `route()` from `src/lib/api/route.ts`:
 - writes that touch more than one row run inside `tx()`
 
 A row's `section` must be a store the menu defines, its `status` must be one that section allows, and its `data` must satisfy that section's schema.
+
+## The planner
+
+The order of operations has one implementation: the NetworkX service in `planner/`.
+
+- `planGraph(items)` in `src/lib/plan.ts` builds the graph with no I/O. Nodes are steps (keyed rows outside the decision tree; zero remaining when the status is closed) and decisions (keyed rows in the decision tree; no duration; done when an option is chosen). Edges come from a step's `after`, a decision's `dependsOn`, and a decision's `unlocks` to every step in that section's store. Links to unknown keys and self-links go to `dropped`.
+- The plan route posts the graph to `POST /plan`. The service finds loops with strongly connected components, blocks every node in or downstream of a loop, and returns waves, earliest start and finish over remaining minutes, the critical path, and remaining and planned totals.
+- If `PLANNER_URL` is unset or the service does not answer, the route answers 200 with `engine: "unavailable"`, the nodes and a note, and no order.
+- `npm test` starts the planner itself and fails loudly if `python3` or uvicorn is missing: `pip install -r planner/requirements-dev.txt`. The service's own tests: `cd planner && python3 -m pytest -q`.
+
+## Migrations
+
+Schema changes are SQL files in `migrations/`, applied in order at start-up and recorded in `schema_migrations`. Add a new numbered file; never edit a released one. A migration that tightens a rule first repairs the rows that would break it and logs what it changed. The design and its reasons are in `docs/design/database.md`.
 
 ## Common changes
 

@@ -20,7 +20,7 @@ export function PlanTimeline({ plan, selectedId, onSelect }: { plan: Plan; selec
         return (
           <li key={w}>
             <p className="flex items-baseline gap-2 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-              <span className="text-link">{w < 0 ? "Not scheduled" : `Wave ${w + 1}`}</span>
+              <span className="text-link">{w < 0 ? "No order" : `Wave ${w + 1}`}</span>
               {w >= 0 && list.length > 1 && <span>Can run in parallel</span>}
               {w < 0 && <span>Waiting on a loop</span>}
             </p>
@@ -46,7 +46,7 @@ export function PlanTimeline({ plan, selectedId, onSelect }: { plan: Plan; selec
                         )}
                       </span>
                       <span className="sr-only">
-                        {n.wave >= 0 ? `From minute ${n.start} to minute ${n.finish}` : "Not scheduled"}
+                        {n.wave >= 0 ? `From minute ${n.start} to minute ${n.finish}` : "No start time"}
                       </span>
                     </span>
                     <span className="flex items-center gap-2">

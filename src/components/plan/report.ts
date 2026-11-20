@@ -171,7 +171,7 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
         t: "table",
         head: ["Wave", "Key", "Step", "Section", "Waits on", "Minutes", "Start", "Finish", "Critical", "Status"],
         rows: nodes.map((n) => [
-          n.wave < 0 ? "loop" : String(n.wave + 1),
+          n.wave < 0 ? (plan.engine === "unavailable" ? "no order" : "blocked") : String(n.wave + 1),
           n.id,
           n.title,
           storeLabel(n.section),

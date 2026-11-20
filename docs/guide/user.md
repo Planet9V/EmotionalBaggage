@@ -104,7 +104,17 @@ Wire lengths on the cut list are estimates from the distance between parts, not 
 
 ## Order of operations and report
 
-**Order of operations** takes every row that has a key and works out the order to do them in, which steps can run side by side, and the longest chain (the critical path). Finished steps are still counted at their full time.
+**Order of operations.** Every row with a key takes part. A row in the Decision tree is a decision; every other keyed row is a step.
+
+- A step waits on the keys in its "waits on" list.
+- A decision waits on the decisions it depends on, and comes before every step in each section it unlocks. A decision takes no time; it is a milestone, and it counts as made once an option is chosen.
+- A finished step counts as zero. The total is the work left along the longest chain (the critical path); the planned figure beside it is the full time of that same chain.
+- If rows wait on each other in a loop, no order exists for them. They, and everything that waits on them, are marked blocked until the loop is broken.
+- A link to a key that does not exist is ignored and listed.
+
+The order is worked out by the planner service. If that service is not running, the page lists the steps and decisions without an order and says so. It never guesses one.
+
+The page does not yet draw decisions differently from steps, or the lines from a decision to the steps it unlocks.
 
 **Report** gathers the whole concept, with its history, for printing or download.
 
