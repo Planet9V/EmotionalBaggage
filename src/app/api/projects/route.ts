@@ -1,33 +1,31 @@
 import { NextResponse } from "next/server";
-import { logEventIn, q, slugify, tx } from "@/lib/db";
-import { body, HttpError, route } from "@/lib/api/route";
+import { logEventIn, q, tx } from "@/lib/db";
+import { body, route } from "@/lib/api/route";
 import { defaultStatus, newProject } from "@/lib/api/schemas";
+import { archivedFilter, CONCEPT_SELECT, insertConcept, loadConcept, productTypeField, toConcept, type ConceptRow } from "@/lib/api/concepts";
+import { DEFAULT_PRODUCT_TYPE } from "@/lib/productTypes";
 
-type Row = { id: string; name: string; one_liner: string };
-const shape = (r: Row) => ({ id: r.id, name: r.name, oneLiner: r.one_liner });
+const WHERE = {
+  active: "WHERE p.archived_at IS NULL",
+  archived: "WHERE p.archived_at IS NOT NULL",
+  all: "",
+} as const;
 
-export const GET = route(async () => {
-  const rows = await q<Row>("SELECT id, name, one_liner FROM projects ORDER BY created_at");
-  return NextResponse.json({ projects: rows.map(shape) });
+/** ?archived=1 lists only archived concepts, ?archived=all lists every concept; otherwise archived ones are left out. */
+export const GET = route(async (req?: Request) => {
+  const filter = archivedFilter(req ? new URL(req.url).searchParams.get("archived") : null);
+  const rows = await q<ConceptRow>(`${CONCEPT_SELECT} ${WHERE[filter]} ORDER BY p.created_at, p.id`);
+  return NextResponse.json({ projects: rows.map(toConcept) });
 });
 
+const createConcept = newProject.extend({ productType: productTypeField.optional() });
+
 export const POST = route(async (req: Request) => {
-  const b = await body(req, newProject);
+  const b = await body(req, createConcept);
   const oneLiner = b.oneLiner ?? "";
-  const base = slugify(b.name);
+  const productType = b.productType ?? DEFAULT_PRODUCT_TYPE;
   const id = await tx(async (c) => {
-    // The first free id wins: "foo", then "foo-2", "foo-3"… The insert itself is the check,
-    // so two people creating the same name at once cannot collide.
-    let made: string | null = null;
-    for (let n = 1; n <= 200 && !made; n++) {
-      const candidate = n === 1 ? base : `${base}-${n}`;
-      const res = await c.query<{ id: string }>(
-        "INSERT INTO projects (id, name, one_liner) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING RETURNING id",
-        [candidate, b.name, oneLiner]
-      );
-      made = res.rows[0]?.id ?? null;
-    }
-    if (!made) throw new HttpError(409, "Too many concepts already use that name. Choose a different one.");
+    const made = await insertConcept(c, { name: b.name, oneLiner, productType });
     const items = b.items ?? [];
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
@@ -36,8 +34,8 @@ export const POST = route(async (req: Request) => {
         [made, it.section, it.title, it.body ?? "", JSON.stringify(it.data ?? {}), it.status ?? defaultStatus(it.section), i]
       );
     }
-    await logEventIn(c, made, "project.created", `Concept "${b.name}" created`);
+    await logEventIn(c, made, "project.created", `Concept "${b.name}" created`, { productType });
     return made;
   });
-  return NextResponse.json({ project: { id, name: b.name, oneLiner } }, { status: 201 });
+  return NextResponse.json({ project: await loadConcept(id) }, { status: 201 });
 });
