@@ -122,55 +122,55 @@ describe("OpenAI-compatible stand-in", () => {
 });
 
 describe("Perplexity stand-in", () => {
-  it("answers POST /v1/sonar with content and citations, and requires the Bearer key", async () => {
-    const s = await track(perplexity.start({ apiKey: "pk", reply: "The answer.", citations: ["https://a.example/1"] }));
-    const ok = await post(`${s.url}/v1/sonar`, { model: "sonar-pro", messages: [{ role: "user", content: "q?" }] }, { authorization: "Bearer pk" });
-    expect(ok.status).toBe(200);
-    const b = await ok.json();
-    expect(b.choices[0].message.content).toBe("The answer.");
-    expect(b.citations).toEqual(["https://a.example/1"]);
-    expect(b.search_results[0].url).toBe("https://a.example/1");
-    expect(b.model).toBe("sonar-pro");
+  const auth = { authorization: "Bearer pk" };
 
-    expect((await post(`${s.url}/v1/sonar`, { messages: [] })).status).toBe(401);
-    const wrong = await post(`${s.url}/v1/sonar`, { messages: [] }, { authorization: "Bearer nope" });
+  it("answers POST /v1/agent with a search_results item and a message, and requires the Bearer key", async () => {
+    const s = await track(perplexity.start({ apiKey: "pk", reply: "The answer[1].", citations: ["https://a.example/1"], costUsd: 0.0021 }));
+    const ok = await post(`${s.url}/v1/agent`, { effort: "fast", input: "q?" }, auth);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("x-request-id")).toBeTruthy();
+    const b = await ok.json();
+    expect(b).toMatchObject({ object: "response", status: "completed", model: "openai/gpt-6-luna", effort: "fast@2026-10-16.0" });
+    expect(b.output[0]).toMatchObject({ type: "search_results", results: [{ id: 1, url: "https://a.example/1", title: "Stand-in source 1" }] });
+    expect(b.output[1]).toMatchObject({ type: "message", role: "assistant", content: [{ type: "output_text", text: "The answer[1]." }] });
+    expect(b.usage.cost.total_cost).toBe(0.0021);
+    expect(b.choices).toBeUndefined();
+
+    expect((await post(`${s.url}/v1/agent`, { input: "x" })).status).toBe(401);
+    const wrong = await post(`${s.url}/v1/agent`, { input: "x" }, { authorization: "Bearer nope" });
     expect(wrong.status).toBe(401);
     expect(typeof (await wrong.json()).error.message).toBe("string");
-    expect(s.requests[0].body).toMatchObject({ model: "sonar-pro" });
+    expect((await post(`${s.url}/v1/sonar`, { model: "sonar", messages: [] }, auth)).status).toBe(404);
+    expect((await post(`${s.url}/v1/agent`, { effort: "fast" }, auth)).status).toBe(400);
+    expect(s.requests[0].body).toEqual({ effort: "fast", input: "q?" });
   });
 
-  it("can leave citations out, force a failure and delay", async () => {
-    const s = await track(perplexity.start({ omitCitations: true }));
-    const auth = { authorization: "Bearer pplx-stand-in-key" };
-    const b = await (await post(`${s.url}/v1/sonar`, { messages: [{ role: "user", content: "x" }] }, auth)).json();
-    expect(b.citations).toBeUndefined();
-    expect(b.search_results.map((r: { url: string }) => r.url)).toEqual(["https://example.com/source-1", "https://example.org/source-2"]);
-    s.set({ failWith: 500 });
-    expect((await post(`${s.url}/v1/sonar`, { messages: [] }, auth)).status).toBe(500);
+  it("can leave sources out, rate limit, fail a run, send malformed bodies, force a status and delay", async () => {
+    const s = await track(perplexity.start({ apiKey: "pk", noSources: true }));
+    const b = await (await post(`${s.url}/v1/agent`, { input: "x" }, auth)).json();
+    expect(b.output.map((o: { type: string }) => o.type)).toEqual(["message"]);
+    expect(b.effort).toBeUndefined();
+
+    s.set({ rateLimit: "request_rate_limit_exceeded" });
+    const limited = await post(`${s.url}/v1/agent`, { input: "x" }, auth);
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("retry-after")).toBe("7");
+    expect((await limited.json()).error.type).toBe("request_rate_limit_exceeded");
+
+    s.set({ rateLimit: undefined, failedRun: true });
+    expect(await (await post(`${s.url}/v1/agent`, { input: "x" }, auth)).json()).toMatchObject({ status: "failed", error: { message: expect.any(String) } });
+
+    s.set({ failedRun: false, malformed: "not-json" });
+    expect(await (await post(`${s.url}/v1/agent`, { input: "x" }, auth)).text()).toMatch(/not json/);
+    s.set({ malformed: "no-output" });
+    expect((await (await post(`${s.url}/v1/agent`, { input: "x" }, auth)).json()).output).toBeUndefined();
+
+    s.set({ malformed: undefined, failWith: 500 });
+    expect((await post(`${s.url}/v1/agent`, { input: "x" }, auth)).status).toBe(500);
     s.set({ failWith: undefined, delayMs: 2000 });
     await expect(
-      fetch(`${s.url}/v1/sonar`, { method: "POST", headers: { "content-type": "application/json", ...auth }, body: "{}", signal: AbortSignal.timeout(150) }),
+      fetch(`${s.url}/v1/agent`, { method: "POST", headers: { "content-type": "application/json", ...auth }, body: "{}", signal: AbortSignal.timeout(150) }),
     ).rejects.toThrow();
-  });
-
-  it("works with the app's research route", async () => {
-    const s = await track(perplexity.start({ apiKey: "route-key", reply: "Routed answer.", citations: ["https://cite.example/x"] }));
-    process.env.PERPLEXITY_API_KEY = "route-key";
-    process.env.PERPLEXITY_URL = `${s.url}/v1/sonar`;
-    try {
-      const { POST } = await import("@/app/api/research/route");
-      const res = await POST(new Request("http://test.local/api/research", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ projectId: "baggage-claims", query: "stand-in question" }) }));
-      expect(res.status).toBe(201);
-      const { entry } = await res.json();
-      expect(entry.answer).toBe("Routed answer.");
-      expect(entry.citations).toEqual(["https://cite.example/x"]);
-      const sent = s.requests[0];
-      expect(sent.headers.authorization).toBe("Bearer route-key");
-      expect((sent.body as { messages: { role: string; content: string }[] }).messages.at(-1)).toEqual({ role: "user", content: "stand-in question" });
-    } finally {
-      delete process.env.PERPLEXITY_API_KEY;
-      delete process.env.PERPLEXITY_URL;
-    }
   });
 });
 

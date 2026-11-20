@@ -1,51 +1,61 @@
 import { NextResponse } from "next/server";
 import { logEvent, q } from "@/lib/db";
-import { body as readBody, outbound, requireProject, route } from "@/lib/api/route";
+import { body as readBody, requireProject, route } from "@/lib/api/route";
 import { researchAsk } from "@/lib/api/schemas";
-
-const MODEL = process.env.PERPLEXITY_MODEL ?? "sonar-pro";
-const URL_ = process.env.PERPLEXITY_URL ?? "https://api.perplexity.ai/v1/sonar";
+import { getCredential } from "@/lib/settings";
+import { ask, currentEffort, type Source } from "@/lib/research/perplexity";
 
 type Row = { id: string; query: string; answer: string; citations: string[]; model: string; created_at: string };
-const shape = (r: Row) => ({ id: Number(r.id), query: r.query, answer: r.answer, citations: r.citations, model: r.model, createdAt: r.created_at });
+
+/**
+ * `citations` stays an array of URL strings (what the browser and the report read).
+ * `sources` repeats them as objects; titles are known only in the answer to the POST,
+ * because the research table has no column for them.
+ */
+const shape = (r: Row, sources?: Source[]) => ({
+  id: Number(r.id),
+  query: r.query,
+  answer: r.answer,
+  citations: r.citations,
+  sources: sources ?? r.citations.map((url) => ({ url })),
+  model: r.model,
+  createdAt: r.created_at,
+});
+
+const NOT_CONNECTED = "Perplexity is not connected. Add a key in Admin, Credentials.";
 
 export const GET = route(async (req: Request) => {
   const projectId = new URL(req.url).searchParams.get("projectId") ?? "";
   await requireProject(projectId);
   const rows = await q<Row>("SELECT id, query, answer, citations, model, created_at FROM research WHERE project_id=$1 ORDER BY id DESC", [projectId]);
-  return NextResponse.json({ configured: !!process.env.PERPLEXITY_API_KEY, model: MODEL, entries: rows.map(shape) });
+  const configured = !!(await getCredential("perplexity", "apiKey"));
+  return NextResponse.json({ configured, model: await currentEffort(), entries: rows.map((r) => shape(r)) });
 });
 
 export const POST = route(async (req: Request) => {
   const b = await readBody(req, researchAsk);
   await requireProject(b.projectId);
-  const key = process.env.PERPLEXITY_API_KEY;
-  if (!key) return NextResponse.json({ error: "Perplexity is not connected. Set PERPLEXITY_API_KEY and restart." }, { status: 503 });
-  const res = await fetch(URL_, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: "Answer with specifics, dates and figures. Say plainly when sources disagree or when nothing reliable was found." },
-        { role: "user", content: b.query },
-      ],
-    }),
-    signal: outbound(),
-  });
-  const body = (await res.json().catch(() => ({}))) as {
-    choices?: { message?: { content?: string } }[];
-    citations?: string[];
-    search_results?: { url?: string }[];
-    error?: { message?: string };
-  };
-  if (!res.ok) return NextResponse.json({ error: `Perplexity answered ${res.status}: ${body.error?.message ?? "no detail"}` }, { status: 502 });
-  const answer = body.choices?.[0]?.message?.content ?? "";
-  const citations = body.citations ?? (body.search_results ?? []).map((s) => s.url).filter(Boolean);
+  const key = await getCredential("perplexity", "apiKey");
+  if (!key) return NextResponse.json({ error: NOT_CONNECTED }, { status: 503 });
+
+  const r = await ask({ question: b.query, apiKey: key, signal: req.signal });
+  if (!r.ok) {
+    const status = r.kind === "timeout" ? 504 : r.kind === "rate_limited" ? 429 : r.kind === "not_configured" ? 503 : 502;
+    return NextResponse.json({ error: r.message }, { status });
+  }
+
+  const citations = r.sources.map((s) => s.url);
   const rows = await q<Row>(
     "INSERT INTO research (project_id, query, answer, citations, model) VALUES ($1,$2,$3,$4,$5) RETURNING id, query, answer, citations, model, created_at",
-    [b.projectId, b.query, answer, JSON.stringify(citations), MODEL]
+    [b.projectId, b.query, r.answer, JSON.stringify(citations), r.model]
   );
-  await logEvent(b.projectId, "research.asked", `Researched: ${b.query.slice(0, 120)}`);
-  return NextResponse.json({ entry: shape(rows[0]) }, { status: 201 });
+  await logEvent(b.projectId, "research.asked", `Researched: ${b.query.slice(0, 120)}`, {
+    researchId: Number(rows[0].id),
+    effort: r.effort ?? null,
+    costUsd: r.costUsd ?? null,
+  });
+  return NextResponse.json(
+    { entry: shape(rows[0], r.sources.map(({ url, title }) => (title ? { url, title } : { url }))), effort: r.effort ?? null, costUsd: r.costUsd ?? null },
+    { status: 201 }
+  );
 });
