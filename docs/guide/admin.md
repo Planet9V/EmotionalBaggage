@@ -18,15 +18,17 @@ Three containers, started together by Docker Compose:
 
 ## Install
 
-1. Install Docker Desktop.
-2. Get the code: `git clone https://github.com/Planet9V/EmotionalBaggage`.
-3. In that folder, copy `.env.example` to `.env`.
-4. Run `docker compose up -d --build`.
+1. Install Docker Desktop, or Docker Engine with Compose 2.24 or later.
+2. Get the code: `git clone https://github.com/Planet9V/EmotionalBaggage` and open that folder.
+3. Optional: copy `.env.example` to `.env` and fill in the keys you have. Without a `.env` the stack starts with defaults (database password `c2r`, port 3000). To keep a default, leave its line out; do not set it to an empty value.
+4. Run `docker compose up -d --build --wait`. It returns once all three containers report healthy.
 5. Open `http://localhost:3000`.
 
-The first start creates the database tables and loads the example concept.
+The first request brings the database up to date, turns on pgvector and loads the example concept.
 
-**Status of this procedure:** the application build and its tests run on every change. The three-container start-up itself has not yet been run end to end (item 0.1 of the plan). If it fails, the error it prints is the thing to report.
+**Status of this procedure:** GitHub Actions starts the three containers on every change, both without a `.env` and with one copied from `.env.example`, and checks that they are healthy, that the app answers, that pgvector is active, that the planner is reachable, and that backup and restore work. It has been run on Linux there; it has not yet been run on a Mac.
+
+**Database version:** the default image is PostgreSQL 19 with pgvector 0.8.7. A data volume created by one major version of PostgreSQL will not start under another, so choose before the first start (`PG_IMAGE` in `.env`).
 
 ## Settings (`.env`)
 
@@ -34,7 +36,8 @@ Every setting is optional except the database password. A feature without its se
 
 | Setting | Used for |
 |---|---|
-| `PGPASSWORD` | The database password. |
+| `PGPASSWORD` | The database password. It applies when the database is first created; changing it later does not change an existing database. |
+| `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | The AI reviewer in Concept, Challenge. |
 | `PERPLEXITY_API_KEY`, `PERPLEXITY_MODEL` | Research, Ask. |
 | `PRINTER_KIND`, `PRINTER_URL`, `PRINTER_API_KEY` | Printer status in Prototype, 3D printing. `PRINTER_KIND` is `octoprint` or `moonraker`. |
@@ -45,14 +48,15 @@ After changing `.env`, run `docker compose up -d` again.
 
 ## Checking it is healthy
 
-Open **Integrations** in the sidebar. It shows, live, whether the database, pgvector and the planner are reachable, and which outside services have a key set. It also lists what is not built.
+- `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.
+- In the app, **Integrations** shows whether the database, pgvector and the planner are reachable, and which outside services have a key set. It also lists what is not built.
 
 ## Backups
 
 Everything lives in the database, including uploaded and generated files. To back up:
 
 ```
-docker compose exec db pg_dump -U c2r c2r > backup.sql
+docker compose exec -T db pg_dump -U c2r c2r > backup.sql
 ```
 
 To restore into an empty install:
@@ -61,7 +65,7 @@ To restore into an empty install:
 docker compose exec -T db psql -U c2r c2r < backup.sql
 ```
 
-These two commands are standard PostgreSQL and have not been exercised against this install yet.
+Both commands are run by the automated checks on every change. The data is kept in a Docker volume. It survives `docker compose down` and is deleted by `docker compose down -v`.
 
 ## Updating
 
@@ -70,7 +74,7 @@ git pull
 docker compose up -d --build
 ```
 
-Database changes are applied at start-up. There is no migration tool yet (item 1.8 of the plan), so back up before updating.
+Database changes are applied at start-up, in order, and each is recorded so it runs once. Back up before updating all the same.
 
 ## Third-party code
 

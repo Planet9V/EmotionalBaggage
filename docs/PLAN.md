@@ -110,8 +110,8 @@ Kept hand-written, with reason: the millimetre layout editor's geometry (no libr
 
 Model hosts, model names, addresses, keys and printers are all set in Admin at or after install and saved in the local database (D3, D7, D14). Nothing in this plan needs them in advance. Each integration is built against its documented interface, tested here against a stand-in server, and confirmed on the real service by its Test button in Admin after install.
 
-- [ ] 0.1 GitHub Actions builds the three images and starts the stack with `docker compose up`. **Done when** the job shows all three containers healthy, the app answering, and pgvector active.
-- [ ] 0.2 Stand-in servers for tests: one OpenAI-compatible server (chat and embeddings), one Perplexity-shaped server, and one per printer family. Every integration test runs against these.
+- [x] 0.1 GitHub Actions builds the three images and starts the stack on every change. 33 named checks: all three containers healthy, the app answers, the example concept is listed, pgvector active (0.8.7 on PostgreSQL 19), the planner reachable from the app, the documentation pages served, backup and restore working, data surviving a restart, and the install working both with and without a `.env`. Done 20 Nov. Proven on Linux in Actions only; not yet run on a Mac.
+- [x] 0.2 Stand-in servers in `tests/standins`: OpenAI-compatible (chat, streaming, embeddings; covers Ollama, LM Studio and OpenRouter), Perplexity, OctoPrint and Moonraker. Each records what it was sent and can be told to fail or stall. Shapes were read from each maker's documentation; every field not read is marked unverified in the file. Done 20 Nov, 21 tests. The other printer families get theirs with item 6.2 to 6.4.
 - [ ] 0.3 tscircuit trial: ten real parts from the Baggage Claims list rendered as a symbol schematic. **Done when** the result is shown side by side with the current view and the symbol licence is read. If it fails, item 5.3 falls back to our own SVG symbol set.
 - [ ] 0.4 First-run setup screen: after the first sign-in, Admin opens with what is not yet configured (models, research, printers), each with a Test button. Everything is skippable; a feature that is not configured says so and links back to Admin.
 
@@ -162,6 +162,7 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - [ ] 4.4 Requirements to a candidate parts list, with a kind, pins and typical size per part.
 - [ ] 4.5 Parts to candidate wiring, using each part's pin definitions.
 - [ ] 4.6 Parts and wiring to assembly steps with order and time, and to acceptance tests.
+- [ ] 4.6a Research client moved to Perplexity's current interface. Perplexity's own migration page says support for the interface this app calls ended on 27 September 2026 and that its Agent interface replaces it (read by a build agent on 20 Nov; not yet confirmed by a live call). The client and its stand-in are rewritten together.
 - [ ] 4.7 Research: answers saved with citations; a claim is marked verified only against a named citation the user confirms; embeddings filled; search by meaning.
 - [ ] 4.8 Realignment: when a decision, requirement or part changes, NetworkX lists everything downstream and the assistant proposes the edits.
 - [ ] 4.9 Optimisation actions with a measured before and after: lower parts cost, fewer parts (design-for-assembly check), shorter print time.
