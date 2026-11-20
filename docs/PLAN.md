@@ -45,8 +45,9 @@ Scores are 1 to 10; the minimum for every topic is 8. "Now" is from the 20 Novem
 | D9 | Slicer: OrcaSlicer, unless the check in item 6.5 finds one better aligned to current printers. |
 | D10 | Minimum score of 8 on every topic above. |
 | D11 | English only. |
-
-Open decisions are at the end.
+| D12 | Move to Tailwind 4. The Eigenia colours and fonts carry over as variables. |
+| D13 | Legal sign-off is given to use OrcaSlicer and WireViz. The app and the repository carry a code-use section that lists every third-party component and attests to how each is used. |
+| D14 | Printers: no specific models are owned. Support a wide variety, with the focus on models released new or within the last two years (November 2024 onward). |
 
 ## Libraries adopted, and what each replaces
 
@@ -55,7 +56,7 @@ Open decisions are at the end.
 | Validation and types | zod 4 | no validation; untyped `data` | page read |
 | Data loading | TanStack Query 5 | `useItems`, `usePlan`, `useConcept`, nine ad hoc effects | page read |
 | Forms | react-hook-form with zod | one state variable per field in eight forms | not read this session |
-| UI kit | shadcn/ui blocks and components | six copied primitives, four local kits, 73 hand-written cards | needs open decision O1 |
+| UI kit | shadcn/ui blocks and components | six copied primitives, four local kits, 73 hand-written cards | Tailwind 4 per D12 |
 | Tables | TanStack Table (Dice UI data table) | hand-written sorting | page read |
 | Kanban | dnd-kit based kanban (Dice UI or Kibo UI) | HTML5 drag and drop, no touch | licences unverified |
 | Wizard | Stepperize | hand-written steps | licence unverified |
@@ -90,7 +91,7 @@ Kept hand-written, with reason: the millimetre layout editor's geometry (no libr
 - [ ] 0.2 pgvector confirmed active in that database.
 - [ ] 0.3 One real chat call and one real embedding call against each of Ollama, LM Studio and OpenRouter through the AI SDK. **Done when** all six succeed or the failing ones are written down with the error.
 - [ ] 0.4 One real Perplexity query with citations saved.
-- [ ] 0.5 Decide O1 (Tailwind) with a one-hour trial of `shadcn add` in this repo.
+- [ ] 0.5 Move to Tailwind 4 and initialise shadcn/ui, carrying the Eigenia colours and fonts as variables. **Done when** every existing screen renders as before in light and dark.
 - [ ] 0.6 tscircuit trial: ten real parts from the Baggage Claims list rendered as a symbol schematic. **Done when** the result is shown side by side with the current view and the symbol licence is read. If it fails, item 5.3 falls back to our own SVG symbol set.
 
 ### Phase 1: foundations, by replacement
@@ -98,13 +99,14 @@ Kept hand-written, with reason: the millimetre layout editor's geometry (no libr
 - [ ] 1.1 zod schema per section store; one typed `Part`, `Wire`, `Decision`, `Step` in `src/lib/domain`; the five duplicate readers deleted. Relations stored as arrays, not comma strings.
 - [ ] 1.2 Route wrapper: validates input, maps database errors to 400, 404 and 409, wraps multi-statement writes in a transaction, times out outbound calls. Fixes the known bugs: row corruption on PATCH, project ID collision, unknown concept returning 500.
 - [ ] 1.3 TanStack Query replaces the hand-written hooks. Fixes swallowed save errors and deletes that vanish without rollback.
-- [ ] 1.4 UI kit completed per O1 and the local copies deleted: field, select, textarea, modal, empty state, error line, toast, download helper.
+- [ ] 1.4 UI kit completed on shadcn/ui and the local copies deleted: field, select, textarea, modal, empty state, error line, toast, download helper.
 - [ ] 1.5 Kanban, tables, wizard and forms moved to the adopted libraries.
 - [ ] 1.6 dagre and elkjs replace the three hand-computed layouts.
 - [ ] 1.7 One planner: the NetworkX service is the only implementation; decisions enter the plan as milestones with their dependencies; finished steps count as zero remaining time.
 - [ ] 1.8 Migrations tool in place; seeding moved to a script.
 - [ ] 1.9 Vitest on the domain layer and pure modules; route tests on a real PostgreSQL; Playwright smoke test per screen; GitHub Actions running all of it. **Done when** a push is green.
 - [ ] 1.10 The four oversized components split.
+- [ ] 1.11 Code use and attestation (D13): `THIRD_PARTY_NOTICES.md` in the repository and an About, Code use page in the app. For every third-party component: name, version, licence, source link, and how it is used (linked library, separate process, or forked code with our changes listed). Ends with a signed-off attestation statement. The library list is generated from the installed dependencies so it cannot go stale; tools run as separate processes (OrcaSlicer, WireViz, OpenSCAD) and forked code (CaseMaker, YAPP_Box) are listed by hand and updated in the same commit that adds them.
 
 ### Phase 2: concepts, sign-in and admin
 
@@ -162,8 +164,9 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 ### Phase 6: prototype, from sourcing to a finished print
 
 - [ ] 6.1 Sourcing: price, supplier, alternates and order status per part; search and cart links kept. No automated buying.
+- [ ] 6.0 Supported-printer list (D14): for each family, the models released from November 2024 onward, the connection each one uses, and what must be switched on at the printer. Built from the makers' own pages, not from memory. **Done when** every listed model names its adapter and its source page, and the list is shown in Admin, Printers.
 - [ ] 6.2 Printer adapters, one interface: OctoPrint, Moonraker and Klipper, PrusaLink, Duet. Each confirmed against its own documentation first.
-- [ ] 6.3 Bambu Lab adapter over the local network. Requires the printer in LAN-only and Developer Mode; setup steps shown in Admin. Confirmed against Bambu's wiki first.
+- [ ] 6.3 Bambu Lab adapter over the local network, covering the current A, P, X and H series as listed in 6.0. Requires the printer in LAN-only and Developer Mode; setup steps shown in Admin. Confirmed against Bambu's wiki first.
 - [ ] 6.4 Creality (through its Moonraker interface where exposed) and Elegoo adapters, marked experimental.
 - [ ] 6.5 Slicer check, then OrcaSlicer command line in a container with a pinned version and a profile per printer. The check compares it with Bambu Studio's command line for Bambu printers, which was not evaluated.
 - [ ] 6.6 Print flow: choose printer, slice, preview time and material, send, track to completion, record the result against the build.
@@ -192,17 +195,12 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - Licences of tscircuit's symbol set, the kanban kits, Stepperize, dagre and elkjs.
 - Better Auth on a raw `pg` pool, and its password minimum.
 - The AI SDK's OpenAI-compatible provider against all three model hosts.
-- Whether the current shadcn command line still produces Tailwind 3 output.
 - NetworkX routing speed at a useful grid size.
 - Amazon buying: no permitted automated route is known.
 
 ## Open decisions
 
-| # | Decision | Recommendation |
-|---|---|---|
-| O1 | Move from Tailwind 3.4 to Tailwind 4 | Move. The component kits assume it. The Eigenia colours and fonts carry over as variables. Confirmed by the trial in 0.5. |
-| O2 | The slicers and two printer tools are AGPL or GPL | Run each as its own process in its own container and do not copy their code into the app. A lawyer's view is needed before anything is sold or hosted for others. |
-| O3 | Bambu Lab: which models, and is losing the cloud and phone app on those printers acceptable | Needed before 6.3. |
+None. O1 (Tailwind), O2 (licences) and O3 (Bambu models) were settled on 20 November as D12, D13 and D14.
 
 ## Sources
 
