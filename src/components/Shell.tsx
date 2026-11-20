@@ -36,6 +36,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the concept list and stored theme on mount
     void reload();
     const d = window.localStorage.getItem("c2r.theme") === "dark";
     setDark(d);

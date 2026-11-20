@@ -1,7 +1,229 @@
 "use client";
 
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/Card";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { statusTone } from "@/lib/statusTones";
+import { api, useItems } from "@/lib/client";
+import type { Item } from "@/lib/types";
+import { areaClass } from "@/components/wizard/fields";
+import { NotConnected, stamp } from "@/components/wizard/shared";
 import type { ViewProps } from "./types";
 
-export function ChallengeView({ section }: ViewProps) {
-  return <p className="text-sm text-secondary">{section.label} is being built.</p>;
+type Msg = { id: number | string; role: string; content: string; createdAt?: string };
+type Resp = { configured: boolean; model: string; messages: Msg[] };
+
+const STARTERS = ["Attack the weakest assumption", "What would make this fail in the first 90 days?", "Which claim should I verify first?"];
+
+export function ChallengeView({ project }: ViewProps) {
+  const reduce = useReducedMotion();
+  const [state, setState] = useState<Resp | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [text, setText] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState<{ id: number | string; text: string } | null>(null);
+  const [saved, setSaved] = useState<Set<number | string>>(new Set());
+  const end = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
+
+  const brief = useItems(project.id, "concept/brief");
+  const questions = useItems(project.id, "concept/questions");
+  const claims = useItems(project.id, "research/claims");
+
+  const fetchState = useCallback(() => api<Resp>(`/api/challenge?projectId=${encodeURIComponent(project.id)}`), [project.id]);
+  const load = useCallback(
+    () => fetchState().then((r) => { setState(r); setLoadError(""); }).catch((e: Error) => setLoadError(e.message)),
+    [fetchState]
+  );
+  useEffect(() => {
+    let live = true;
+    fetchState().then((r) => { if (live) setState(r); }).catch((e: Error) => { if (live) setLoadError(e.message); });
+    return () => { live = false; };
+  }, [fetchState]);
+
+  const count = state?.messages.length ?? 0;
+  useEffect(() => { end.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" }); }, [count, pending, reduce]);
+
+  const send = async () => {
+    const message = text.trim();
+    if (!message || pending || !state) return;
+    setPending(true);
+    setError("");
+    setText("");
+    const tmp: Msg = { id: `tmp-${Date.now()}`, role: "user", content: message, createdAt: new Date().toISOString() };
+    setState({ ...state, messages: [...state.messages, tmp] });
+    try {
+      await api<{ reply: string }>("/api/challenge", { method: "POST", body: JSON.stringify({ projectId: project.id, message }) });
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+      setState((s) => (s ? { ...s, messages: s.messages.filter((m) => m.id !== tmp.id) } : s));
+      setText(message);
+    } finally {
+      setPending(false);
+      box.current?.focus();
+    }
+  };
+
+  const saveQuestion = async () => {
+    if (!saving) return;
+    const t = saving.text.trim();
+    if (!t) return;
+    const src = state?.messages.find((m) => m.id === saving.id);
+    try {
+      await questions.add({ section: "concept/questions", title: t.slice(0, 120), body: src?.content ?? "", status: "open" });
+      setSaved((s) => new Set(s).add(saving.id));
+      setSaving(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  if (loadError && !state) return <p role="alert" className="text-sm text-danger">{loadError}</p>;
+  if (!state) return <p className="text-sm text-secondary">Loading.</p>;
+
+  const on = state.configured;
+  const unverified = claims.items.filter((c) => c.status === "unverified");
+  const openQs = questions.items.filter((q) => q.status === "open");
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="min-w-0 space-y-4">
+        {!on && (
+          <NotConnected
+            title="The AI reviewer is not connected"
+            does="The reviewer reads your brief, open questions and unverified claims, then pushes back on the proposition: who buys it, what it replaces, what would make it fail."
+            envVar="ANTHROPIC_API_KEY"
+          />
+        )}
+
+        <Card hoverEffect={false} innerClassName="flex min-h-[420px] flex-col">
+          <div className="flex items-center justify-between border-b border-hairline px-5 py-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Reviewer</p>
+            <p className="font-mono text-xs text-muted">{state.model}</p>
+          </div>
+
+          <div className="max-h-[560px] flex-1 space-y-4 overflow-y-auto px-5 py-4" aria-live="polite">
+            {state.messages.length === 0 && !pending && (
+              <p className="text-sm text-secondary">
+                {on ? "No messages yet. Pick a prompt below or write your own." : "No messages. The conversation appears here once the reviewer is connected."}
+              </p>
+            )}
+            {state.messages.map((m) => {
+              const mine = m.role === "user";
+              return (
+                <motion.div
+                  key={m.id}
+                  initial={reduce ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
+                >
+                  <div className={`max-w-[85%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm ${mine ? "bg-subtle text-primary" : "border border-hairline bg-surface text-primary"}`}>
+                    {m.content}
+                  </div>
+                  <div className="mt-1 flex items-center gap-3">
+                    <span className="font-mono text-[10px] text-muted">{mine ? "You" : "Reviewer"} {stamp(m.createdAt)}</span>
+                    {!mine && typeof m.id === "number" && (
+                      saved.has(m.id) ? (
+                        <span className="text-xs text-success">Saved as open question</span>
+                      ) : (
+                        <button type="button" className="text-xs text-link hover:underline" onClick={() => setSaving({ id: m.id, text: m.content.slice(0, 120) })}>
+                          Save as open question
+                        </button>
+                      )
+                    )}
+                  </div>
+                  {saving?.id === m.id && (
+                    <div className="mt-2 w-full max-w-[85%] rounded-xl border border-hairline bg-subtle p-3">
+                      <label htmlFor="q-edit" className="text-xs font-medium text-primary">Question (the first 120 characters become the title)</label>
+                      <textarea id="q-edit" rows={3} className={`${areaClass} mt-1.5`} value={saving.text} onChange={(e) => setSaving({ id: saving.id, text: e.target.value })} />
+                      <div className="mt-2 flex gap-2">
+                        <Button size="sm" disabled={!saving.text.trim()} onClick={() => void saveQuestion()}>Save</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setSaving(null)}>Cancel</Button>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+            {pending && <p className="text-sm text-muted">The reviewer is thinking.</p>}
+            <div ref={end} />
+          </div>
+
+          <div className="border-t border-hairline px-5 py-4">
+            <div className="mb-3 flex flex-wrap gap-2">
+              {STARTERS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={!on || pending}
+                  onClick={() => { setText(s); box.current?.focus(); }}
+                  className="rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-secondary transition-colors duration-150 hover:border-dutchOrange hover:text-link disabled:opacity-40"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            {error && <p role="alert" className="mb-2 text-sm text-danger">{error}</p>}
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={box}
+                rows={2}
+                aria-label="Message to the reviewer"
+                disabled={!on || pending}
+                value={text}
+                placeholder={on ? "Write a message. Enter sends, Shift+Enter adds a line." : "Connect the reviewer to write here."}
+                className={areaClass}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); }
+                }}
+              />
+              <Button onClick={() => void send()} disabled={!on || pending || !text.trim()} aria-label="Send">
+                <Send className="h-4 w-4" aria-hidden /> Send
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <aside className="space-y-4" aria-label="What the reviewer is given">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Given to the reviewer</p>
+        <Rail title="Brief" href="/s/concept/brief" items={brief.items} empty="Nothing in the brief yet." />
+        <Rail title="Open questions" href="/s/concept/questions" items={openQs} empty="No open questions." />
+        <Rail title="Unverified claims" href="/s/research/claims" items={unverified} empty="No unverified claims." />
+      </aside>
+    </div>
+  );
+}
+
+function Rail({ title, href, items, empty }: { title: string; href: string; items: Item[]; empty: string }) {
+  return (
+    <section className="rounded-xl border border-hairline bg-surface p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-primary">{title} <span className="font-mono text-xs text-muted">{items.length}</span></h3>
+        <Link href={href} className="text-xs text-link hover:underline">Open</Link>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-2 text-xs text-muted">{empty}</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {items.map((i) => (
+            <li key={i.id} className="text-xs">
+              <Link href={href} className="block text-secondary hover:text-primary">
+                <span className="line-clamp-2">{i.title}</span>
+              </Link>
+              {title !== "Brief" && <StatusBadge tone={statusTone(i.status)} className="mt-1">{i.status}</StatusBadge>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }

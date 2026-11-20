@@ -1,0 +1,250 @@
+"use client";
+
+/** Side panel for the selected part: what it is, its size and where that size comes from, and a geometry editor. */
+import { useMemo, useState } from "react";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { statusTone } from "@/lib/statusTones";
+import { bodyExtent, describeSize, fmt, type Part, type PartGeometry } from "./layout";
+
+export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
+  doc: "Dimension stated in the source documents",
+  typical: "Typical size for this kind of part; not measured",
+};
+
+const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
+
+function Row({ label, children, mono }: { label: string; children: React.ReactNode; mono?: boolean }) {
+  return (
+    <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-2 py-1.5 text-sm">
+      <dt className="text-muted">{label}</dt>
+      <dd className={mono ? "font-mono text-xs leading-5 text-primary" : "text-primary"}>{children}</dd>
+    </div>
+  );
+}
+
+export function PartPanel({ part, onClose, onSave, onTogglePrint }: {
+  part: Part;
+  onClose: () => void;
+  onSave: (g: PartGeometry) => Promise<void>;
+  onTogglePrint: (v: boolean) => void;
+}) {
+  const g = part.geometry;
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={eyebrow}>{part.ref || "No reference"}</p>
+          <h3 className="mt-1 text-base font-semibold tracking-tight text-primary">{part.item.title}</h3>
+        </div>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close part details" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <dl className="divide-y divide-[var(--border-hairline)]">
+        <Row label="Spec">{part.item.body ? <span className="whitespace-pre-wrap">{part.item.body}</span> : <span className="text-muted">None written</span>}</Row>
+        <Row label="Qty" mono>{fmt(part.qty)}</Row>
+        <Row label="Source">{part.source || <span className="text-muted">Not set</span>}</Row>
+        <Row label="Line cost" mono>{part.line === null ? <span className="font-sans text-muted">Not set</span> : part.line.toFixed(2)}</Row>
+        <Row label="Status">{part.item.status ? <StatusBadge tone={statusTone(part.item.status)}>{part.item.status}</StatusBadge> : <span className="text-muted">None</span>}</Row>
+        {g ? (
+          <>
+            <Row label="Size" mono>
+              {describeSize(g)}
+              {(g.count ?? 1) > 1 ? ` (${g.count} bodies)` : ""}
+              {g.shape === "shell" ? <span className="block font-sans text-xs text-muted">Outer envelope of the enclosure</span> : null}
+            </Row>
+            <Row label="Basis">{BASIS_TEXT[g.basis]}</Row>
+            <Row label="Printed">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" className="h-4 w-4 accent-[#E05A10]" checked={g.print === true} onChange={(e) => onTogglePrint(e.target.checked)} />
+                {g.print ? "3D printed part" : "Bought or made elsewhere"}
+              </label>
+            </Row>
+          </>
+        ) : (
+          <Row label="Size">
+            <span className="text-muted">No geometry yet. Add it below to place this part in the model.</span>
+          </Row>
+        )}
+      </dl>
+      <GeometryEditor key={part.item.id} geometry={g} onSave={onSave} />
+    </div>
+  );
+}
+
+type Form = {
+  shape: PartGeometry["shape"];
+  size: string[];
+  axis: "" | "x" | "y" | "z";
+  pos: string[];
+  explode: string[];
+  count: string;
+  basis: "" | PartGeometry["basis"];
+  print: boolean;
+};
+
+const toForm = (g: PartGeometry | null): Form =>
+  g
+    ? {
+        shape: g.shape,
+        size: [0, 1, 2].map((i) => (g.size[i] === undefined ? "" : String(g.size[i]))),
+        axis: g.axis ?? "",
+        pos: g.pos.map(String),
+        explode: g.explode.map(String),
+        count: String(g.count ?? 1),
+        basis: g.basis,
+        print: g.print === true,
+      }
+    : { shape: "box", size: ["", "", ""], axis: "", pos: ["0", "", "0"], explode: ["0", "0", "0"], count: "1", basis: "", print: false };
+
+function fromForm(f: Form): { geometry: PartGeometry | null; problem: string } {
+  const n = f.shape === "cylinder" ? 2 : 3;
+  const size = f.size.slice(0, n).map((s) => Number(s));
+  if (f.size.slice(0, n).some((s) => s.trim() === "") || size.some((s) => !Number.isFinite(s) || s <= 0)) return { geometry: null, problem: "Every size must be a number above 0." };
+  if (!f.basis) return { geometry: null, problem: "Say where the size comes from." };
+  const count = f.count.trim() === "" ? 1 : Math.round(Number(f.count));
+  if (!Number.isFinite(count) || count < 1 || count > 200) return { geometry: null, problem: "Count must be a whole number from 1 to 200." };
+  const draft: PartGeometry = { shape: f.shape, size, pos: [0, 0, 0], explode: [0, 0, 0], basis: f.basis };
+  if (f.shape === "cylinder" && f.axis) draft.axis = f.axis;
+  const height = bodyExtent(draft)[1];
+  const pos = f.pos.map((s, i) => (s.trim() === "" ? (i === 1 ? height / 2 : 0) : Number(s)));
+  const explode = f.explode.map((s) => (s.trim() === "" ? 0 : Number(s)));
+  if ([...pos, ...explode].some((v) => !Number.isFinite(v))) return { geometry: null, problem: "Position and explode offsets must be numbers." };
+  const out: PartGeometry = { ...draft, pos, explode };
+  if (count > 1) out.count = count;
+  if (f.print) out.print = true;
+  return { geometry: out, problem: "" };
+}
+
+const canon = (g: PartGeometry | null) =>
+  g ? JSON.stringify([g.shape, g.size, g.pos, g.explode, g.basis, g.count ?? 1, g.print === true, g.shape === "cylinder" ? g.axis ?? "" : ""]) : "";
+const same = (a: PartGeometry | null, b: PartGeometry | null) => canon(a) === canon(b);
+
+function NumField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{label}</span>
+      <Input inputMode="decimal" className="h-8 px-2 font-mono text-xs" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+}
+
+const selectCls =
+  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange";
+
+function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; onSave: (g: PartGeometry) => Promise<void> }) {
+  const [open, setOpen] = useState(geometry !== null);
+  const [f, setF] = useState<Form>(() => toForm(geometry));
+  const [saving, setSaving] = useState(false);
+  const result = useMemo(() => fromForm(f), [f]);
+  const dirty = !same(result.geometry, geometry) || (result.geometry === null && geometry !== null);
+
+  if (!open) {
+    return (
+      <div className="rounded-xl border border-dashed border-hairline p-4">
+        <p className="text-sm text-secondary">Give this part a shape and size so it appears in the model.</p>
+        <Button size="sm" className="mt-3" onClick={() => setOpen(true)}>
+          Add geometry
+        </Button>
+      </div>
+    );
+  }
+
+  const set = (patch: Partial<Form>) => setF((x) => ({ ...x, ...patch }));
+  const setAt = (k: "size" | "pos" | "explode", i: number, v: string) => setF((x) => ({ ...x, [k]: x[k].map((s, j) => (j === i ? v : s)) }));
+  const sizeLabels = f.shape === "cylinder" ? ["Diameter", "Length"] : ["Width x", "Height y", "Depth z"];
+
+  const save = async () => {
+    if (!result.geometry) return;
+    setSaving(true);
+    try {
+      await onSave(result.geometry);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form
+      className="flex flex-col gap-3 rounded-xl border border-hairline bg-subtle p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <p className={eyebrow}>Geometry, mm</p>
+        <span className="text-[11px] text-muted">{saving ? "Saving" : dirty ? "Unsaved changes" : geometry ? "Saved" : ""}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Shape</span>
+          <select className={selectCls} value={f.shape} onChange={(e) => set({ shape: e.target.value as Form["shape"] })}>
+            <option value="box">Box</option>
+            <option value="cylinder">Cylinder</option>
+            <option value="shell">Enclosure shell</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Size basis</span>
+          <select className={selectCls} value={f.basis} onChange={(e) => set({ basis: e.target.value as Form["basis"] })}>
+            <option value="">Choose</option>
+            <option value="doc">Stated in source documents</option>
+            <option value="typical">Typical, not measured</option>
+          </select>
+        </label>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {sizeLabels.map((l, i) => (
+          <NumField key={l} label={l} value={f.size[i]} onChange={(v) => setAt("size", i, v)} />
+        ))}
+        {f.shape === "cylinder" && (
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Axis</span>
+            <select className={selectCls} value={f.axis} onChange={(e) => set({ axis: e.target.value as Form["axis"] })}>
+              <option value="">Auto</option>
+              <option value="x">x</option>
+              <option value="y">y (upright)</option>
+              <option value="z">z</option>
+            </select>
+          </label>
+        )}
+      </div>
+      {f.shape === "cylinder" && !f.axis && (
+        <p className="text-[11px] text-muted">Auto stands a cylinder upright when it is shorter than it is wide, otherwise lays it along z.</p>
+      )}
+      <div className="grid grid-cols-3 gap-2">
+        {["x", "y", "z"].map((a, i) => (
+          <NumField key={a} label={`Centre ${a}`} value={f.pos[i]} placeholder={i === 1 ? "on floor" : "0"} onChange={(v) => setAt("pos", i, v)} />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {["x", "y", "z"].map((a, i) => (
+          <NumField key={a} label={`Explode ${a}`} value={f.explode[i]} placeholder="0" onChange={(v) => setAt("explode", i, v)} />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 items-end gap-2">
+        <NumField label="Count" value={f.count} onChange={(v) => set({ count: v })} />
+        <label className="col-span-2 flex h-8 items-center gap-2 text-xs text-secondary">
+          <input type="checkbox" className="h-4 w-4 accent-[#E05A10]" checked={f.print} onChange={(e) => set({ print: e.target.checked })} />
+          3D printed part
+        </label>
+      </div>
+      <p className="text-[11px] leading-4 text-muted">Origin is the centre of the enclosure floor; y is up. A blank centre y rests the part on the floor.</p>
+      {result.problem && <p className="text-xs text-warning">{result.problem}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={!result.geometry || !dirty || saving}>
+          {geometry ? "Save geometry" : "Add to model"}
+        </Button>
+        {dirty && geometry && (
+          <Button type="button" size="sm" variant="ghost" onClick={() => setF(toForm(geometry))}>
+            Undo changes
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+}

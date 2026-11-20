@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Concept to realization
 
-## Getting Started
+A workbench that takes any product concept through the same seven stages, with the same wiring for every concept:
 
-First, run the development server:
+1. **Concept**: brief, AI challenge, names and taglines, open questions
+2. **Research**: Perplexity research with citations, claims to verify
+3. **Design**: requirements, 3D model with exploded view, bill of materials
+4. **Prototype**: sourcing, 3D printing, assembly, acceptance tests
+5. **Production**: unit economics, batch plan
+6. **Marketing**: positioning, landing pages, ads, campaigns, social
+7. **Sales**: Amazon listing, sales monitor, channels and pricing
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Plus: order of operations (dependency graph and critical path), a printable report of everything recorded, and an integrations page that says what is and is not connected.
+
+"Baggage Claims MK1" is the seeded example. Its rows come from the Rev A documents in the Google Drive folder "Emotional baggage"; outside facts are carried as unverified claims.
+
+## Stack
+
+- Next.js 16 (App Router), React 19, TypeScript, Tailwind 3.4
+- Design tokens and UI kit from `Planet9V/eigenia` (`web/tailwind.config.ts`, `globals.css` tokens, `components/ui`)
+- three.js through @react-three/fiber for the model, exploded view and STL generation
+- @xyflow/react for the order-of-operations graph
+- PostgreSQL with pgvector; files are stored in PostgreSQL (`files.bytes`), no object store
+- A small Python service using NetworkX computes build order, parallel waves and the critical path
+
+## Run
+
+```
+cp .env.example .env      # add the keys you have
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. The schema is created and the example concept seeded on first request.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Without Docker: start PostgreSQL, then
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+pip install -r planner/requirements.txt && (cd planner && uvicorn main:app --port 8000) &
+DATABASE_URL=postgresql://user:pass@localhost:5432/c2r PLANNER_URL=http://localhost:8000 npm run dev
+```
 
-## Learn More
+## How every concept is wired
 
-To learn more about Next.js, take a look at the following resources:
+One table, `items`, holds every row of every section. `section` is `stage/section` from `src/lib/menu.ts`; `data` (jsonb) carries that section's columns.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- A **part** is an item in `design/bom`. `data.geometry` (mm) drives the 3D view, the exploded view and STL generation.
+- A **step** is any item with `data.key`. `data.after` lists the keys it waits on and `data.minutes` its duration; the planner turns these into the order of operations.
+- Every write is recorded in `events`; the report reads from it.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Adding a stage or section is an edit to `src/lib/menu.ts` only.
 
-## Deploy on Vercel
+## What is and is not built
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See the Integrations page in the app; it reads the live state. In short: the AI reviewer and Perplexity calls are written but have not been run against live keys; printer status reads exist for OctoPrint and Moonraker only; Amazon purchasing is search links plus an add-to-cart link; Amazon Seller Central, X and Instagram calls are not built; semantic search is not built (the pgvector column exists, nothing fills it).

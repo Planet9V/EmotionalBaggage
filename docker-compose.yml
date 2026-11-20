@@ -1,0 +1,46 @@
+# Concept to realization: web (Next.js) + db (PostgreSQL with pgvector) + planner (NetworkX)
+#   docker compose up --build        then open http://localhost:3000
+name: concept-to-realization
+services:
+  db:
+    # PostgreSQL 19 with pgvector 0.8.7. To stay on 18: PG_IMAGE=pgvector/pgvector:0.8.7-pg18-trixie
+    image: ${PG_IMAGE:-pgvector/pgvector:0.8.7-pg19-trixie}
+    environment:
+      POSTGRES_DB: c2r
+      POSTGRES_USER: c2r
+      POSTGRES_PASSWORD: ${PGPASSWORD:-c2r}
+    volumes:
+      # PostgreSQL 18+ images keep their data under /var/lib/postgresql/<major>
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U c2r -d c2r"]
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+
+  planner:
+    build: ./planner
+    restart: unless-stopped
+
+  web:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://c2r:${PGPASSWORD:-c2r}@db:5432/c2r
+      PLANNER_URL: http://planner:8000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      planner:
+        condition: service_started
+    # lets the container reach a printer or OctoPrint on the host's network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  pgdata: {}

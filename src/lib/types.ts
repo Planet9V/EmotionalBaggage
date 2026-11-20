@@ -10,6 +10,8 @@ export type Geometry = {
   basis: "doc" | "typical";
   count?: number;
   print?: boolean;
+  /** cylinder only: which axis its length runs along */
+  axis?: "x" | "y" | "z";
 };
 
 export type Item = {

@@ -50,7 +50,8 @@ export function useItems(projectId: string | undefined, store: string | null) {
   }, [projectId, store]);
 
   useEffect(() => {
-    setLoading(true);
+    // Views are keyed by concept and section, so a new store always mounts a fresh hook.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads external data on mount
     void reload();
   }, [reload]);
 
