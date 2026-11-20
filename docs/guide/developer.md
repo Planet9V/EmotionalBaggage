@@ -107,6 +107,16 @@ The planner's Python packages are pinned exactly in `planner/requirements.lock`,
 
 `npm run notices` regenerates `THIRD_PARTY_NOTICES.md` and the Code use page from the installed packages. `npm run notices:check` fails if either is out of date, and the test suite runs the same check. Anything a package manager does not know about (container images, fonts, copied source, tools run as separate processes) goes in `docs/third-party.manual.json`, in the same change that introduces it.
 
+## Research
+
+Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.
+
+Claim evidence lives in a claim's `data.evidence` and changes only through `POST` and `DELETE /api/research/evidence`, which set the claim's status from `claimStatus()` (`src/lib/research/status.ts`) in the same transaction and record the change with before and after.
+
+## Admin
+
+Everything under `/api/admin/` is the Admin area's back end: credentials (`src/lib/admin/credentials.ts`; no response ever contains a full secret, and a test scans for it), settings, printers, and `POST /api/admin/test`, which makes one cheap read-only call per kind and always answers with `{ ok, message }`. The provider and printer-family registries (`src/lib/admin/providers.ts`, `printerFamilies.ts`) are what the screens build their forms from. Anything that talks to an outside service reads its key with `getCredential` and its address or model from `src/lib/settings.ts`, never from `process.env` directly.
+
 ## The planner
 
 The order of operations has one implementation: the NetworkX service in `planner/`.

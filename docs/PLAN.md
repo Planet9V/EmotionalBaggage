@@ -136,6 +136,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 - [ ] 2.1 Concepts page: list, search, open; concept in the URL.
 - [ ] 2.2 Edit, delete (type the name; JSON download offered first), duplicate, archive and restore.
 - [ ] 2.3 Sign-in with the default `demo` / `demo` account; every route checks the session.
+- [x] 2.3a Admin API: credentials (never returned in full; last four characters only for keys of 12 or more), model and planner settings, any number of printers by family, a connection test per kind, a first-run status, and a record of the last 200 saves, removals and tests. Done 20 Nov, 57 tests against the stand-ins. Printer families that can be tested today: OctoPrint, Moonraker and file-only. Prusa, Duet and Bambu can be saved but are not driven; Creality and Elegoo have no documented fields yet. The screens are items 2.4 to 2.6.
 - [ ] 2.4 Admin, Credentials: one card per provider, stored in PostgreSQL, with a test-connection button.
 - [ ] 2.5 Admin, Models: reasoning model and embedding model, each with provider, address and model name. Every AI feature reads from here.
 - [ ] 2.6 Admin, Printers: add any number of printers, each with a family, address and access details, and a test button.
@@ -163,8 +164,8 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - [ ] 4.4 Requirements to a candidate parts list, with a kind, pins and typical size per part.
 - [ ] 4.5 Parts to candidate wiring, using each part's pin definitions.
 - [ ] 4.6 Parts and wiring to assembly steps with order and time, and to acceptance tests.
-- [ ] 4.6a Research client moved to Perplexity's current interface. Perplexity's own migration page says support for the interface this app calls ended on 27 September 2026 and that its Agent interface replaces it (read by a build agent on 20 Nov; not yet confirmed by a live call). The client and its stand-in are rewritten together.
-- [ ] 4.7 Research: answers saved with citations; a claim is marked verified only against a named citation the user confirms; embeddings filled; search by meaning.
+- [x] 4.6a Research client moved to Perplexity's current interface. Read from Perplexity's own documentation on 20 Nov: support for the old interface ended 27 September 2026; old-style requests are still answered by being translated, with no end date given. The client, its stand-in and a page-by-page reference (`docs/research/perplexity-api.md`) are written to the new interface. Not run against the real service.
+- [ ] 4.7 Research: **done 20 Nov:** a claim is verified only against a named source the user judges (supports, contradicts, unclear); status follows from the evidence; disagreement shows as disputed. **Still to do:** source titles are lost on reload (the research table needs a column); evidence is shown on Ask but not on the claims board; embeddings filled and search by meaning.
 - [ ] 4.8 Realignment: when a decision, requirement or part changes, NetworkX lists everything downstream and the assistant proposes the edits.
 - [ ] 4.9 Optimisation actions with a measured before and after: lower parts cost, fewer parts (design-for-assembly check), shorter print time.
 

@@ -152,11 +152,11 @@ describe("search, plan and the assistants", () => {
       expect(r.body.nodes.every((x) => x.wave === -1 && x.start === 0 && x.finish === 0 && !x.critical)).toBe(true);
     });
 
-    it("says so when PLANNER_URL is not set", async () => {
+    it("says so when no planner address is set in Admin or in PLANNER_URL", async () => {
       delete process.env.PLANNER_URL;
       const r = await read<Plan>(await plan(json("GET"), ctx(SEEDED)));
       expect([r.status, r.body.engine, r.body.order]).toEqual([200, "unavailable", []]);
-      expect(r.body.note).toMatch(/PLANNER_URL is not set/);
+      expect(r.body.note).toMatch(/No planner address is set in Admin or in PLANNER_URL/);
     });
   });
 

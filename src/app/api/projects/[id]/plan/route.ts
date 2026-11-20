@@ -1,3 +1,4 @@
+import { plannerUrl } from "@/lib/admin/planner";
 import { NextResponse } from "next/server";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { requireProject, route } from "@/lib/api/route";
@@ -16,8 +17,8 @@ export const GET = route(async (_req: Request, { params }: { params: Promise<{ i
   await requireProject(id);
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 ORDER BY sort, id`, [id]);
   const graph = planGraph(rows.map(toItem));
-  const url = process.env.PLANNER_URL;
-  if (!url) return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} (PLANNER_URL is not set.)`));
+  const url = await plannerUrl();
+  if (!url) return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} (No planner address is set in Admin or in PLANNER_URL.)`));
   let res: Response;
   try {
     res = await fetch(`${url.replace(/\/$/, "")}/plan`, {

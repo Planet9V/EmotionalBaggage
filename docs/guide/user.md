@@ -46,10 +46,18 @@ After the wizard you land on the overview. The app does not yet tell you what to
 
 | Section | What you do there |
 |---|---|
-| Ask | Put a question to Perplexity and keep the answer with its sources. Needs a Perplexity key. |
-| Claims to verify | List the claims the concept rests on and mark each unverified, verified or wrong. |
+| Ask | Put a question to Perplexity and keep the answer with its sources. Needs a Perplexity key. Each question is billed to your Perplexity account; Perplexity's own estimate of the cost is shown after the answer. |
+| Claims to verify | The claims the concept rests on, each unverified, verified or wrong. |
 
-Marking a claim verified is your judgement. The app does not check that a source supports the claim.
+**Checking a claim.** Open a saved answer in Ask, choose **Use as evidence** beside one of its sources, pick the claim, and say whether that source supports it, contradicts it, or is unclear. You can add a quote.
+
+- A claim becomes **verified** when at least one source supports it and none contradicts it.
+- It becomes **wrong** when a source contradicts it and none supports it.
+- Otherwise it stays **unverified**. When sources disagree it is shown as *Disputed: sources disagree*.
+
+The verdict on each source is yours; the app records it and works the status out from it. Ask lists every claim with its evidence. The Claims to verify board shows each claim's status but not yet its evidence. You can still set a status by hand; the next change to that claim's evidence sets it again from the evidence.
+
+Nothing here has been run against the real Perplexity service yet. It is built to Perplexity's published documentation and tested against a stand-in.
 
 ### 3 Design
 
