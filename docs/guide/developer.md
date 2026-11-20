@@ -78,6 +78,16 @@ Every handler is wrapped with `route()` from `src/lib/api/route.ts`:
 
 A row's `section` must be a store the menu defines, its `status` must be one that section allows, and its `data` must satisfy that section's schema.
 
+## Concepts and product types
+
+`/api/projects` lists concepts: active ones by default, `?archived=1` for archived only, `?archived=all` for both. Each comes with its product type, stage, timestamps, the time of its latest event and row counts by stage, from one query (`CONCEPT_SELECT` in `src/lib/api/concepts.ts`).
+
+`/api/projects/[id]` answers GET, PATCH (name, one-liner, product type, stage; recorded with before and after) and DELETE (body `{ "confirm": "<exact name>" }`; the database removes everything the concept owns). `POST …/archive` and `…/restore` can be repeated safely. `GET …/export` is a JSON download of every owned row, with file bytes as base64. `POST …/duplicate` `{ name }` copies rows and files in one transaction, not history, chat, research or gates.
+
+Product types are defined in `src/lib/productTypes.ts`. Each lists the menu sections it hides. Use `sectionsFor(type)` to build a concept's menu and `sectionVisible(type, stage, section)` to guard a page. Hiding never deletes rows. Never edit `menu.ts` to hide a section for one type.
+
+The screens for all of this are not built yet.
+
 ## Loading and changing data in the browser
 
 The browser loads and changes data with TanStack Query. One provider sits at the root (`src/components/Providers.tsx`). Every query key and fetcher is in `src/lib/queries.ts`. Two components that ask for the same key share one request and one cached copy. Read data through these keys; do not fetch inside a `useEffect`.

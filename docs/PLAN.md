@@ -132,6 +132,7 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 
 ### Phase 2: concepts, sign-in and admin
 
+- [x] 2.0 Concept management API: read, edit, delete (the exact name must be typed), duplicate, archive and restore, and a full JSON export; three product types that hide the sections a product does not need. Done 20 Nov, 39 tests, including the example concept staying deleted across a restart. The screens are items 2.1 and 2.2.
 - [ ] 2.1 Concepts page: list, search, open; concept in the URL.
 - [ ] 2.2 Edit, delete (type the name; JSON download offered first), duplicate, archive and restore.
 - [ ] 2.3 Sign-in with the default `demo` / `demo` account; every route checks the session.
