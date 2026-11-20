@@ -1,7 +1,7 @@
 "use client";
 
 import { COLOUR_SWATCH, ROUND_TO, totalsByClass, type CutRow } from "./derive";
-import { NET_COLOR } from "@/lib/design";
+import { NET_COLOR } from "@/lib/domain";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 

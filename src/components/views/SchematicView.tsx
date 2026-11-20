@@ -7,7 +7,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { Cable, LayoutGrid, PanelRightClose, PanelRightOpen, Plus, Save, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
-import { PARTS_STORE, type NetClass, type Wire } from "@/lib/design";
+import { readXY, STORE, type NetClass, type Wire } from "@/lib/domain";
 import {
   buildGraph,
   computeChecks,
@@ -16,9 +16,8 @@ import {
   netlistText,
   nodeId,
   pinsFor,
-  readParts,
+  refParts,
   readWires,
-  readXY,
   schematicSvg,
   slug,
   wiringCsv,
@@ -47,7 +46,7 @@ const same = (a: XY | null, b: XY) => !!a && Math.round(a.x) === Math.round(b.x)
 
 export function SchematicView({ project, section, store }: ViewProps) {
   const reduce = useReducedMotion();
-  const partsApi = useItems(project.id, PARTS_STORE);
+  const partsApi = useItems(project.id, STORE.parts);
   const wiresApi = useItems(project.id, store);
 
   const [overlay, setOverlay] = useState<Record<string, XY>>({});
@@ -58,7 +57,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [layoutMsg, setLayoutMsg] = useState("");
 
-  const parts = useMemo(() => readParts(partsApi.items), [partsApi.items]);
+  const parts = useMemo(() => refParts(partsApi.items), [partsApi.items]);
   const wires = useMemo(() => readWires(wiresApi.items), [wiresApi.items]);
   const graph = useMemo(() => buildGraph(parts, wires, overlay), [parts, wires, overlay]);
   const checks = useMemo(() => computeChecks(parts, wires), [parts, wires]);
@@ -68,7 +67,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
 
   const pinsByRef = useMemo(() => {
     const m = new Map<string, string[]>();
-    for (const p of parts) m.set(p.ref, pinsFor(p.ref, wires, p.extraPins));
+    for (const p of parts) m.set(p.ref, pinsFor(p.ref, wires, p.pins));
     return m;
   }, [parts, wires]);
 
@@ -91,7 +90,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const unsaved = useMemo(
     () =>
       graph.nodes.filter((n) => {
-        if (n.kind === "part") return !!n.part && !same(n.part.saved, n.pos);
+        if (n.kind === "part") return !!n.part && !same(n.part.schematic, n.pos);
         return !same(readXY(n.wire.item.data.schematic), n.pos);
       }),
     [graph]
@@ -113,7 +112,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
     for (const id of pending.current) {
       const n = g.byId.get(id);
       if (!n) continue;
-      if (n.kind === "part" && n.part && !same(n.part.saved, n.pos)) void patchPart(n.part.item.id, { data: { schematic: n.pos } });
+      if (n.kind === "part" && n.part && !same(n.part.schematic, n.pos)) void patchPart(n.part.item.id, { data: { schematic: n.pos } });
       if (n.kind === "via" && !same(readXY(n.wire.item.data.schematic), n.pos)) void patchWire(n.wire.item.id, { data: { schematic: n.pos } });
     }
     pending.current.clear();
@@ -165,17 +164,17 @@ export function SchematicView({ project, section, store }: ViewProps) {
   };
 
   const addPin = async (part: Part, pin: string) => {
-    await partsApi.patch(part.item.id, { data: { pins: [...part.extraPins, pin] } });
+    await partsApi.patch(part.item.id, { data: { pins: [...part.pins, pin] } });
   };
 
   const placePart = async (part: Part, at: XY | null, pin: string) => {
-    await partsApi.patch(part.item.id, { data: at ? { pins: [...part.extraPins, pin], schematic: at } : { pins: [...part.extraPins, pin] } });
+    await partsApi.patch(part.item.id, { data: at ? { pins: [...part.pins, pin], schematic: at } : { pins: [...part.pins, pin] } });
     if (at) setOverlay((o) => ({ ...o, [nodeId(part.ref)]: at }));
     setSel({ kind: "part", ref: part.ref });
   };
 
   const removePin = (part: Part, pin: string) => {
-    void partsApi.patch(part.item.id, { data: { pins: part.extraPins.filter((x) => x !== pin) } });
+    void partsApi.patch(part.item.id, { data: { pins: part.pins.filter((x) => x !== pin) } });
   };
 
   const onConnect = useCallback((c: ConnectRequest) => setDialog({ kind: "wire", mode: { kind: "new", ...c } }), []);

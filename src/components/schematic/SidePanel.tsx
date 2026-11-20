@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
-import type { Wire } from "@/lib/design";
+import type { Wire } from "@/lib/domain";
 import { WIRE_STATUSES, pinKey, pinLabel, type Graph, type NetInfo, type Part } from "./model";
 import { EYEBROW, NetSwatch, Select } from "./controls";
 

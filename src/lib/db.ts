@@ -96,6 +96,7 @@ export function ready() {
       const { rows } = await db.query("SELECT count(*)::int AS n FROM projects");
       if (rows[0].n === 0) await seed();
       await seedAdditions();
+      await keyListsToArrays();
       return { vector };
     })().catch((e) => {
       g.__c2rReady = undefined;
@@ -155,6 +156,22 @@ async function seedAdditions() {
       marker,
       `Seeded ${items.length} rows into ${store} from the source documents`,
     ]);
+  }
+}
+
+/**
+ * Rows written before key lists became arrays hold "a, b" in one string.
+ * This rewrites them in place and does nothing once they are arrays.
+ */
+async function keyListsToArrays() {
+  for (const field of ["after", "dependsOn", "unlocks"]) {
+    await pool().query(
+      `UPDATE items SET data = jsonb_set(data, ARRAY[$1::text], COALESCE(
+         (SELECT jsonb_agg(btrim(x)) FROM unnest(string_to_array(data->>$1, ',')) AS x WHERE btrim(x) <> ''),
+         '[]'::jsonb))
+       WHERE jsonb_typeof(data->$1) = 'string'`,
+      [field]
+    );
   }
 }
 

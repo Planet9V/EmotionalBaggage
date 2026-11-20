@@ -11,7 +11,7 @@ import { ArrowUpRight, Check, Pencil, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
-import type { Decision } from "@/lib/design";
+import type { Decision } from "@/lib/domain";
 import { chosenOption, isDecided, stateOf, stateWord, unlockTarget, unmet, type DState, type Tree } from "./model";
 
 type Props = {

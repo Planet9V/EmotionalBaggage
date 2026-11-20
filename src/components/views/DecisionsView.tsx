@@ -11,7 +11,7 @@ import { useReducedMotion } from "framer-motion";
 import { GitBranch, ListTree, Pause, Play, Plus, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
-import { DECISION_STORE, toDecision, type Decision } from "@/lib/design";
+import { keys, STORE, toDecision, type Decision } from "@/lib/domain";
 import { DecisionFlow } from "@/components/decisions/DecisionFlow";
 import { DecisionDetail } from "@/components/decisions/DecisionDetail";
 import { DecisionEditor, type DecisionDraft } from "@/components/decisions/DecisionEditor";
@@ -23,7 +23,7 @@ const STEP_MS = 4000;
 type Editor = { open: boolean; editing: Decision | null; parent: string };
 
 export function DecisionsView({ project }: ViewProps) {
-  const { items, loading, error, add, patch, remove, reload } = useItems(project.id, DECISION_STORE);
+  const { items, loading, error, add, patch, remove, reload } = useItems(project.id, STORE.decisions);
   const reduce = !!useReducedMotion();
 
   const all = useMemo(() => items.map(toDecision).filter((d): d is Decision => !!d), [items]);
@@ -151,13 +151,9 @@ export function DecisionsView({ project }: ViewProps) {
       key: draft.key,
       parent: draft.parent,
       viaOption: draft.viaOption,
-      dependsOn: draft.dependsOn.join(", "),
+      dependsOn: draft.dependsOn,
       source: draft.source,
-      unlocks: draft.unlocks
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .join(", "),
+      unlocks: keys(draft.unlocks),
       options: draft.options,
     };
     const editing = editor.editing;
@@ -173,7 +169,7 @@ export function DecisionsView({ project }: ViewProps) {
       });
       show(editing.key);
     } else {
-      await add({ section: DECISION_STORE, title: draft.question, body: draft.context, status: "open", data: { ...data, chosen: "" } });
+      await add({ section: STORE.decisions, title: draft.question, body: draft.context, status: "open", data: { ...data, chosen: "" } });
       show(draft.key);
     }
   };
@@ -187,7 +183,7 @@ export function DecisionsView({ project }: ViewProps) {
     }
     // drop the deleted key from every decision that depended on it, so none waits forever on a decision that is gone
     for (const x of all) {
-      if (x.key !== d.key && x.dependsOn.includes(d.key)) await patch(x.item.id, { data: { dependsOn: x.dependsOn.filter((k) => k !== d.key).join(", ") } });
+      if (x.key !== d.key && x.dependsOn.includes(d.key)) await patch(x.item.id, { data: { dependsOn: x.dependsOn.filter((k) => k !== d.key) } });
     }
     setPicked(d.parent && byKey.has(d.parent) ? d.parent : null);
   };

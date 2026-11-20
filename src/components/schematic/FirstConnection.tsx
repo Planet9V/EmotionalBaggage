@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { NetClass } from "@/lib/design";
+import type { NetClass } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, type Part } from "./model";
 import { ErrorLine, Field, Select } from "./controls";
 import { autoName, type WireDraft } from "./WireDialog";

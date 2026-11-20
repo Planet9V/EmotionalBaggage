@@ -1,6 +1,6 @@
 "use client";
 
-import { NET_COLOR } from "@/lib/design";
+import { NET_COLOR } from "@/lib/domain";
 import { CHECK_TEXT, type PartLite, type Step } from "./derive";
 import { StatusControl } from "./StatusControl";
 

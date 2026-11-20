@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DEFAULT_STATUSES, STAGES, storeKey } from "@/lib/menu";
+import { dataSchemaFor } from "@/lib/domain/schemas";
 
 /** Every backend store the menu defines, with the statuses its sections allow. */
 export const STORE_STATUSES: Record<string, string[]> = (() => {
@@ -28,6 +29,25 @@ const text = (max: number) => z.string().max(max);
 /** `data` is always a plain object: never an array, a string or null. */
 export const dataObject = z.record(z.string(), z.unknown());
 
+/**
+ * Checks `data` against its section's schema and returns it normalised
+ * (numbers as numbers, key lists as arrays). Problems are reported under "data.<field>".
+ */
+function sectionData(section: string, data: Record<string, unknown>, ctx: z.RefinementCtx) {
+  const r = dataSchemaFor(section).safeParse(data);
+  if (r.success) return r.data;
+  for (const i of r.error.issues) ctx.addIssue({ code: "custom", path: ["data", ...i.path], message: i.message });
+  return z.NEVER;
+}
+
+/** The same check for a change to an existing row, whose section comes from the database. */
+export function parseData(section: string, data: Record<string, unknown> | undefined) {
+  if (data === undefined) return undefined;
+  const r = dataSchemaFor(section).safeParse(data);
+  if (r.success) return r.data;
+  throw new z.ZodError(r.error.issues.map((i) => ({ ...i, path: ["data", ...i.path] })));
+}
+
 export const sectionKey = z
   .string()
   .refine((s) => s in STORE_STATUSES, { message: `must be one of: ${STORES.join(", ")}` });
@@ -48,7 +68,8 @@ export const newItem = z
     data: dataObject.optional(),
     status: text(40).optional(),
   })
-  .superRefine((v, ctx) => statusFor(v.section, v.status, ctx));
+  .superRefine((v, ctx) => statusFor(v.section, v.status, ctx))
+  .transform((v, ctx) => ({ ...v, data: v.data === undefined ? undefined : sectionData(v.section, v.data, ctx) }));
 
 export type NewItem = z.infer<typeof newItem>;
 

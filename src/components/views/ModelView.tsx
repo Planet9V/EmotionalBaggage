@@ -7,9 +7,9 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
-import { NET_COLOR, WIRING_STORE, toWire, type NetClass, type Wire } from "@/lib/design";
+import { STORE, NET_COLOR, toPart, toWire, type NetClass, type Part, type Wire } from "@/lib/domain";
 import type { CanvasPart, CanvasWire, ShellView } from "@/components/three/ModelCanvas";
-import { describeSize, toPart, type Part, type PartGeometry } from "@/components/three/layout";
+import { describeSize, type PartGeometry } from "@/components/three/layout";
 import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
 import { SHELL_DEFAULTS, type ShellParams } from "@/components/three/stl";
@@ -62,7 +62,7 @@ export function ModelView({ project }: ViewProps) {
   const [wiresOn, setWiresOn] = useState(false);
   const [classOff, setClassOff] = useState<Set<NetClass>>(() => new Set());
   const [explodeBy, setExplodeBy] = useState("");
-  const wiringItems = useItems(project.id, WIRING_STORE);
+  const wiringItems = useItems(project.id, STORE.wiring);
 
   const withGeometry = parts.filter((p) => p.geometry);
   const canvasParts = useMemo<CanvasPart[]>(

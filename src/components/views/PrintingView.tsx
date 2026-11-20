@@ -1,4 +1,5 @@
 "use client";
+import { toPart } from "@/lib/domain";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState, ErrorLine, Field, Select, statusOptions } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { Modal } from "@/components/parts/Modal";
-import { toPart } from "@/components/parts/bom";
+
 import { api, useItems } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
 import type { FileMeta, Item } from "@/lib/types";

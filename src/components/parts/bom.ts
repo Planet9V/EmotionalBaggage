@@ -1,28 +1,4 @@
-import type { Geometry, Item } from "@/lib/types";
-
-/** A BOM item with its data fields read safely. Nothing is defaulted to a made-up value. */
-export type Part = {
-  item: Item;
-  ref: string;
-  qty: number;
-  source: string;
-  search: string;
-  line: number;
-  asin: string;
-  geometry?: Geometry;
-};
-
-const num = (v: unknown): number => {
-  const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
-  return Number.isFinite(n) ? n : 0;
-};
-const str = (v: unknown): string => (v == null ? "" : String(v));
-
-export function toPart(item: Item): Part {
-  const d = item.data ?? {};
-  const g = d.geometry && typeof d.geometry === "object" ? (d.geometry as Geometry) : undefined;
-  return { item, ref: str(d.ref), qty: num(d.qty), source: str(d.source), search: str(d.search), line: num(d.line), asin: str(d.asin), geometry: g };
-}
+import { sumLine, type Part } from "@/lib/domain";
 
 export const money = (n: number) => n.toFixed(2);
 
@@ -55,13 +31,13 @@ export function cartUrl(entries: { asin: string; qty: number }[]): string {
 export type Group = { key: string; parts: Part[]; total: number };
 
 export function groupParts(parts: Part[], by: "none" | "source" | "status"): Group[] {
-  if (by === "none") return [{ key: "", parts, total: parts.reduce((a, p) => a + p.line, 0) }];
+  if (by === "none") return [{ key: "", parts, total: sumLine(parts) }];
   const map = new Map<string, Part[]>();
   for (const p of parts) {
     const k = (by === "source" ? p.source.trim() : p.item.status.trim()) || "(none)";
     map.set(k, [...(map.get(k) ?? []), p]);
   }
-  return [...map.entries()].map(([key, ps]) => ({ key, parts: ps, total: ps.reduce((a, p) => a + p.line, 0) }));
+  return [...map.entries()].map(([key, ps]) => ({ key, parts: ps, total: sumLine(ps) }));
 }
 
 /* CSV */
@@ -74,7 +50,7 @@ const esc = (v: string) => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : 
 export function toCsv(parts: Part[]): string {
   const rows = [CSV_COLUMNS.join(",")];
   for (const p of parts) {
-    rows.push([p.ref, p.item.title, p.item.body, String(p.qty), p.source, p.search, money(p.line)].map(esc).join(","));
+    rows.push([p.ref, p.item.title, p.item.body, p.qty === null ? "" : String(p.qty), p.source, p.search, p.line === null ? "" : money(p.line)].map(esc).join(","));
   }
   return rows.join("\r\n") + "\r\n";
 }

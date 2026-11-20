@@ -358,7 +358,7 @@ export const SEED_ITEMS: SeedItem[] = [
     section: "prototype/assembly",
     title,
     body,
-    data: { key, after: after.join(","), minutes, time: `${minutes} min` },
+    data: { key, after: [...after], minutes, time: `${minutes} min` },
     status: "open",
   })),
   ...[
@@ -500,6 +500,8 @@ export const SEED_ITEMS: SeedItem[] = [
 
 // ───────── Decision tree. Options and consequences are the ones the source documents
 // state. `chosen` is set only where Jim has said so; everything else is undecided.
+const list = (s?: string) => (s ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+
 const D = (
   key: string,
   parent: string,
@@ -516,8 +518,8 @@ const D = (
     parent,
     options,
     chosen: extra.chosen ?? "",
-    dependsOn: extra.dependsOn ?? "",
-    unlocks: extra.unlocks ?? "",
+    dependsOn: list(extra.dependsOn),
+    unlocks: list(extra.unlocks),
     source: extra.source ?? "",
   },
   status: extra.chosen ? "decided" : "open",

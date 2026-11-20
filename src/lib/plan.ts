@@ -1,26 +1,11 @@
-import type { Item, Plan, PlanNode } from "./types";
+import type { Plan, PlanNode } from "./types";
+import type { Step } from "./domain/step";
 
-type RawNode = { id: string; itemId: number; title: string; section: string; status: string; minutes: number; after: string[] };
+export { stepsFromItems } from "./domain/step";
 
-/** Any item with data.key is a step; data.after lists the keys it waits on; data.minutes is its duration. */
-export function stepsFromItems(items: Item[]): RawNode[] {
-  const nodes = items
-    .filter((i) => typeof i.data.key === "string" && i.data.key)
-    .map((i) => ({
-      id: String(i.data.key),
-      itemId: i.id,
-      title: i.title,
-      section: i.section,
-      status: i.status,
-      minutes: Number(i.data.minutes) || 0,
-      after: String(i.data.after ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-    }));
-  const ids = new Set(nodes.map((n) => n.id));
-  return nodes.map((n) => ({ ...n, after: n.after.filter((a) => ids.has(a) && a !== n.id) }));
-}
 
 /** Same result shape as the NetworkX planner, computed in-process when that service is not reachable. */
-export function planFallback(raw: RawNode[], note?: string): Plan {
+export function planFallback(raw: Step[], note?: string): Plan {
   const byId = new Map(raw.map((n) => [n.id, n]));
   const indeg = new Map(raw.map((n) => [n.id, n.after.length]));
   const out = new Map<string, string[]>(raw.map((n) => [n.id, []]));

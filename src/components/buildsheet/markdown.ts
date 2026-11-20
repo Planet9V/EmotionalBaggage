@@ -1,4 +1,4 @@
-import type { Wire } from "@/lib/design";
+import type { Wire } from "@/lib/domain";
 import {
   CHECK_TEXT, ROUND_TO, beforePower, connectionsByPart, consumables, counts, cutList, totalsByClass,
   type PartLite, type Step,

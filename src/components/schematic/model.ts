@@ -1,8 +1,11 @@
 // Pure schematic logic: parts and wires in, graph, checks, nets and generated files out.
 // No React here, so the generators can be run and checked outside the browser.
 // Relative imports on purpose: a plain Node check can load this file without path aliases.
-import type { Item } from "../../lib/types";
-import { NET_COLOR, pinsOf, toWire, type NetClass, type Wire } from "../../lib/design";
+import type { Item } from "@/lib/types";
+import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type NetClass, readXY, type Part, type Wire, type XY } from "@/lib/domain";
+
+export { CLASS_LABEL, readWires };
+export type { Part, XY };
 
 // Shared geometry: the React nodes and the SVG export use the same numbers, so they match.
 export const NODE_W = 216;
@@ -12,51 +15,12 @@ export const FOOT_H = 30;
 export const VIA_W = 116;
 export const VIA_H = 42;
 
-export const CLASSES: NetClass[] = ["power", "ground", "signal", "audio"];
-export const CLASS_LABEL: Record<NetClass, string> = { power: "Power", ground: "Ground", signal: "Signal", audio: "Audio" };
+export const CLASSES = NET_CLASSES;
 export const WIRE_STATUSES = ["to solder", "soldered", "tested"];
 /** Shown in place of a pin name a wire leaves empty. */
 export const MISSING_PIN = "?";
 
-export type XY = { x: number; y: number };
-
-export type Part = {
-  item: Item;
-  ref: string;
-  title: string;
-  spec: string;
-  /** pins stored on the part (data.pins), wired or not */
-  extraPins: string[];
-  /** data.schematic, or null when the part has never been placed */
-  saved: XY | null;
-};
-
-export function readXY(v: unknown): XY | null {
-  if (!v || typeof v !== "object") return null;
-  const o = v as Record<string, unknown>;
-  const x = Number(o.x);
-  const y = Number(o.y);
-  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
-}
-
-export function toPart(item: Item): Part | null {
-  const ref = String(item.data.ref ?? "").trim();
-  if (!ref) return null;
-  const raw = Array.isArray(item.data.pins) ? (item.data.pins as unknown[]) : [];
-  const extraPins = [...new Set(raw.map((p) => String(p ?? "").trim()).filter(Boolean))];
-  return { item, ref, title: item.title, spec: item.body, extraPins, saved: readXY(item.data.schematic) };
-}
-
-export function readParts(items: Item[]): Part[] {
-  return items.map(toPart).filter((p): p is Part => !!p);
-}
-
-export function readWires(items: Item[]): Wire[] {
-  return items
-    .map(toWire)
-    .filter((w): w is Wire => !!w)
-    .sort((a, b) => a.order - b.order || a.item.id - b.item.id);
-}
+export const refParts = (items: Item[]): Part[] => readParts(items).filter((p) => p.ref);
 
 export const pinLabel = (p: string) => p || MISSING_PIN;
 export const pinKey = (ref: string, pin: string) => `${ref}.${pinLabel(pin)}`;
@@ -212,7 +176,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
   const refs: string[] = [];
   const pinList = new Map<string, string[]>();
   for (const p of byRef.values()) {
-    const pins = pinsFor(p.ref, wires, p.extraPins);
+    const pins = pinsFor(p.ref, wires, p.pins);
     if (pins.length) {
       refs.push(p.ref);
       pinList.set(p.ref, pins);
@@ -229,7 +193,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
 
   const auto = autoLayout(refs, wires, (r) => pinList.get(r)?.length ?? 1);
   const pos = new Map<string, XY>();
-  for (const r of refs) pos.set(r, overlay[nodeId(r)] ?? (ignoreSaved ? null : byRef.get(r)?.saved) ?? auto[r] ?? { x: 0, y: 0 });
+  for (const r of refs) pos.set(r, overlay[nodeId(r)] ?? (ignoreSaved ? null : byRef.get(r)?.schematic) ?? auto[r] ?? { x: 0, y: 0 });
 
   const pinY = (r: string, pin: string) => {
     const i = Math.max(0, (pinList.get(r) ?? []).indexOf(pin));
@@ -309,7 +273,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
   const nodes: SNode[] = [];
   for (const r of refs) {
     const part = byRef.get(r) ?? null;
-    const extra = new Set(part?.extraPins ?? []);
+    const extra = new Set(part?.pins ?? []);
     const pins: PinRow[] = (pinList.get(r) ?? []).map((name) => {
       const vs = votes.get(`${r}.${name}`) ?? [];
       return {
@@ -328,7 +292,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
       ghost: !part,
       pins,
       pos: pos.get(r)!,
-      saved: !!part?.saved,
+      saved: !!part?.schematic,
       part,
     });
   }
@@ -409,7 +373,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
 
   for (const p of parts) {
     const used = new Set(pinsOf(p.ref, wires));
-    const loose = p.extraPins.filter((pin) => !used.has(pin));
+    const loose = p.pins.filter((pin) => !used.has(pin));
     if (loose.length) {
       out.push({
         id: `loose:${p.ref}`,

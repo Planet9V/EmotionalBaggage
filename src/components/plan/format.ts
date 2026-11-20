@@ -1,7 +1,8 @@
 "use client";
 
+export { isStep, stepKeys } from "@/lib/domain";
+
 import { DEFAULT_STATUSES, STAGES, storeKey, type Section, type Stage } from "@/lib/menu";
-import type { Item } from "@/lib/types";
 
 /** 430 -> "7 h 10 min", 45 -> "45 min", 0 -> "0 min" */
 export function fmtMinutes(m: number) {
@@ -49,13 +50,6 @@ export function statusesFor(store: string, current?: string) {
   const list = BY_STORE.get(store)?.section.statuses ?? DEFAULT_STATUSES;
   return current && !list.includes(current) ? [...list, current] : list;
 }
-
-/** Keys already used by steps in the concept. */
-export function stepKeys(items: Item[]) {
-  return new Set(items.map((i) => (typeof i.data.key === "string" ? i.data.key : "")).filter(Boolean));
-}
-
-export const isStep = (i: Item) => typeof i.data.key === "string" && i.data.key !== "";
 
 /** A short slug from the title, made unique against the keys already in use. */
 export function uniqueKey(title: string, used: Set<string>) {

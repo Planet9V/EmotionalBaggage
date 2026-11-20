@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState, ErrorLine, Field, Select, Textarea, statusOptions } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { Modal } from "@/components/parts/Modal";
-import { mapImport, money, parseAmount, parseCsv, toCsv, toPart, groupParts, type ImportRow, type Part } from "@/components/parts/bom";
+import { sumLine, toPart, type Part } from "@/lib/domain";
+import { mapImport, money, parseAmount, parseCsv, toCsv, groupParts, type ImportRow } from "@/components/parts/bom";
 import { useItems } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
 import type { ViewProps } from "./types";
@@ -29,7 +30,7 @@ export function BomView({ project, section, store }: ViewProps) {
   const [actionError, setActionError] = useState("");
 
   const parts = useMemo(() => items.map(toPart), [items]);
-  const total = parts.reduce((a, p) => a + p.line, 0);
+  const total = sumLine(parts);
   const groups = useMemo(() => groupParts(parts, groupBy), [parts, groupBy]);
   const statuses = section.statuses ?? [];
 
@@ -124,13 +125,13 @@ export function BomView({ project, section, store }: ViewProps) {
                         <InlineEdit label={`specification of ${p.item.title}`} value={p.item.body} onSave={(v) => void patch(p.item.id, { body: v })} />
                       </TableCell>
                       <TableCell>
-                        <InlineEdit mono numeric align="right" label={`quantity of ${p.item.title}`} value={String(p.qty)} onSave={numberSave(p, "qty")} />
+                        <InlineEdit mono numeric align="right" label={`quantity of ${p.item.title}`} value={p.qty === null ? "" : String(p.qty)} onSave={numberSave(p, "qty")} />
                       </TableCell>
                       <TableCell>
                         <InlineEdit label={`source of ${p.item.title}`} value={p.source} onSave={(v) => void setData(p, { source: v.trim() })} />
                       </TableCell>
                       <TableCell>
-                        <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={money(p.line)} onSave={numberSave(p, "line")} />
+                        <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={p.line === null ? "" : money(p.line)} onSave={numberSave(p, "line")} />
                       </TableCell>
                       <TableCell>
                         <Select
@@ -212,7 +213,7 @@ export function BomView({ project, section, store }: ViewProps) {
       />
       <Modal open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)} title="Delete this part?" description="This removes the row from the bill of materials. It cannot be undone.">
         <p className="text-sm text-secondary">
-          {deleting ? <><span className="font-medium text-primary">{deleting.item.title}</span>{deleting.ref ? ` (${deleting.ref})` : ""}, {money(deleting.line)}</> : null}
+          {deleting ? <><span className="font-medium text-primary">{deleting.item.title}</span>{deleting.ref ? ` (${deleting.ref})` : ""}{deleting.line === null ? "" : `, ${money(deleting.line)}`}</> : null}
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => setDeleting(null)}>Keep it</Button>

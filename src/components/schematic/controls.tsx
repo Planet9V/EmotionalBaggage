@@ -4,7 +4,7 @@ import type { ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "re
 import { X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { NET_COLOR, type NetClass } from "@/lib/design";
+import { NET_COLOR, type NetClass } from "@/lib/domain";
 import { CLASS_LABEL } from "./model";
 
 export const EYEBROW = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";

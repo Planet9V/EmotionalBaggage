@@ -26,7 +26,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { Check, Maximize2 } from "lucide-react";
-import type { Decision } from "@/lib/design";
+import type { Decision } from "@/lib/domain";
 import {
   CARD_H,
   CARD_W,

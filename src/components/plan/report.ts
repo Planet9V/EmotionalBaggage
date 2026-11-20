@@ -1,5 +1,6 @@
 "use client";
 
+import { readGeometry, type Geometry } from "@/lib/domain";
 import { STAGES, storeKey, type Section } from "@/lib/menu";
 import type { Item, Project } from "@/lib/types";
 import { cellText, fmtBytes, fmtMinutes, fmtTime, storeLabel } from "./format";
@@ -78,7 +79,7 @@ function modelBlocks(bom: Item[], data: ConceptData): Block[] {
       t: "table",
       head: ["Ref", "Part", "Shape", "Size (mm)", "Position (mm)", "Basis", "Printed"],
       rows: parts.map((r) => {
-        const g = r.data.geometry as { shape?: string; size?: number[]; pos?: number[]; basis?: string; print?: boolean; count?: number };
+        const g = readGeometry(r.data.geometry) ?? ({} as Partial<Geometry>);
         return [
           cellText(r.data.ref),
           g.count && g.count > 1 ? `${r.title} (x${g.count})` : r.title,

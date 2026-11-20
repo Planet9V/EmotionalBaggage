@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
-import { bodyExtent, describeSize, fmt, type Part, type PartGeometry } from "./layout";
+import type { Part } from "@/lib/domain";
+import { bodyExtent, describeSize, fmt, type PartGeometry } from "./layout";
 
 export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
   doc: "Dimension stated in the source documents",
@@ -104,7 +105,7 @@ export function PartPanel({ part, onClose, onSave, onTogglePrint, focus }: {
       </div>
       <dl className="divide-y divide-[var(--border-hairline)]">
         <Row label="Spec">{part.item.body ? <span className="whitespace-pre-wrap">{part.item.body}</span> : <span className="text-muted">None written</span>}</Row>
-        <Row label="Qty" mono>{fmt(part.qty)}</Row>
+        <Row label="Qty" mono>{part.qty === null ? <span className="font-sans text-muted">Not set</span> : fmt(part.qty)}</Row>
         <Row label="Source">{part.source || <span className="text-muted">Not set</span>}</Row>
         <Row label="Line cost" mono>{part.line === null ? <span className="font-sans text-muted">Not set</span> : part.line.toFixed(2)}</Row>
         <Row label="Status">{part.item.status ? <StatusBadge tone={statusTone(part.item.status)}>{part.item.status}</StatusBadge> : <span className="text-muted">None</span>}</Row>

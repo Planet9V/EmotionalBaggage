@@ -1,5 +1,6 @@
 "use client";
 
+import { keys } from "@/lib/domain";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Field, SELECT_CLS, TEXTAREA_CLS, prim } from "./shared";
 
 type Change = { title: string; body: string; status: string; data: Record<string, unknown> };
 
-const afterText = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === "string").join(", ") : prim(v));
+const afterText = (v: unknown) => keys(v).join(", ");
 
 export function ItemDrawer({
   item,
@@ -88,8 +89,8 @@ function EditForm({
     for (const c of columns) if (editable(c.key) && cols[c.key] !== prim(item.data[c.key])) data[c.key] = cols[c.key]!.trim();
     if (key.trim() !== prim(item.data.key)) data.key = key.trim();
     if (mins !== prim(item.data.minutes) && mins !== "") data.minutes = Number(mins);
-    const cleanAfter = after.split(",").map((s) => s.trim()).filter(Boolean).join(",");
-    if (cleanAfter !== afterText(item.data.after).split(",").map((s) => s.trim()).filter(Boolean).join(",")) data.after = cleanAfter;
+    const cleanAfter = keys(after);
+    if (cleanAfter.join(",") !== keys(item.data.after).join(",")) data.after = cleanAfter;
     setBusy(true);
     setError("");
     try {

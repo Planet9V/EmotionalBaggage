@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/client";
 import type { FileMeta } from "@/lib/types";
-import { describeSize, fmt, type Part, type PartGeometry } from "./layout";
+import type { Part } from "@/lib/domain";
+import { describeSize, fmt, type PartGeometry } from "./layout";
 import { boxMesh, bounds, cylinderMesh, lidMesh, parseStl, shellDims, trayMesh, writeBinaryStl, type Mesh, type ShellParams } from "./stl";
 
 export type LoadedStl = {

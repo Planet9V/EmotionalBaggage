@@ -1,10 +1,10 @@
 // Everything the build sheet shows is derived here from the wiring and parts stores.
 // Nothing in this file holds a value typed by hand except the three generic check
 // sentences, the colour list and the two default estimate settings, all labelled as such in the UI.
-import { pinsOf, toWire, type NetClass, type Wire } from "@/lib/design";
-import type { Geometry, Item } from "@/lib/types";
+import { NET_CLASSES, partsByRef, pinsOf, toWire, type Geometry, type NetClass, type Part, type Wire } from "@/lib/domain";
+import type { Item } from "@/lib/types";
 
-export const CLASS_ORDER: NetClass[] = ["power", "ground", "signal", "audio"];
+export const CLASS_ORDER: readonly NetClass[] = NET_CLASSES;
 export const STATUS_FLOW = ["to solder", "soldered", "tested"] as const;
 
 /** Fixed generic bench practice, one sentence per class. */
@@ -19,23 +19,8 @@ export const DEFAULT_ROUTING = 1.5;
 export const DEFAULT_ALLOWANCE = 20;
 export const ROUND_TO = 5;
 
-export type PartLite = { ref: string; title: string; spec: string; geometry?: Geometry };
-
-export function toPartLite(item: Item): PartLite | null {
-  const ref = typeof item.data.ref === "string" ? item.data.ref : "";
-  if (!ref) return null;
-  const g = item.data.geometry && typeof item.data.geometry === "object" ? (item.data.geometry as Geometry) : undefined;
-  return { ref, title: item.title, spec: item.body, geometry: g };
-}
-
-export function partMap(items: Item[]): Map<string, PartLite> {
-  const m = new Map<string, PartLite>();
-  for (const it of items) {
-    const p = toPartLite(it);
-    if (p && !m.has(p.ref)) m.set(p.ref, p);
-  }
-  return m;
-}
+export type PartLite = Part;
+export const partMap = partsByRef;
 
 export type Step = { n: number; wire: Wire };
 
@@ -176,8 +161,8 @@ export function signalNetsOf(steps: Step[]): string[] {
   return out;
 }
 
-const validPos = (g?: Geometry) =>
-  !!g && Array.isArray(g.pos) && g.pos.length >= 3 && g.pos.slice(0, 3).every((v) => typeof v === "number" && Number.isFinite(v));
+/** The domain reader has already checked the position is three finite numbers. */
+const validPos = (g?: Geometry | null) => !!g;
 
 export type Length = { straight: number; raw: number; mm: number; from: number[]; to: number[] } | null;
 

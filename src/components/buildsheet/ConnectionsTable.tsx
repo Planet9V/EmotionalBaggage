@@ -1,6 +1,6 @@
 "use client";
 
-import { NET_COLOR } from "@/lib/design";
+import { NET_COLOR } from "@/lib/domain";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusTone } from "@/lib/statusTones";

@@ -135,7 +135,7 @@ export function StepDetail({
               size="sm"
               variant="outline"
               disabled={!afterChanged || !!busy}
-              onClick={() => void run("after", { data: { after: after.join(",") } })}
+              onClick={() => void run("after", { data: { after } })}
             >
               {busy === "after" ? "Saving" : "Save waits on"}
             </Button>

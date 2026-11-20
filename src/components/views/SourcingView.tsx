@@ -1,4 +1,5 @@
 "use client";
+import { sumLine, toPart, type Part } from "@/lib/domain";
 
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
@@ -8,7 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState, ErrorLine } from "@/components/parts/controls";
-import { ASIN_RE, amazonSearchUrl, cartUrl, microCenterSearchUrl, money, sourceKind, toPart, type Part } from "@/components/parts/bom";
+import { ASIN_RE, amazonSearchUrl, cartUrl, microCenterSearchUrl, money, sourceKind,  } from "@/components/parts/bom";
 import { useItems } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,7 @@ export function SourcingView({ project, store }: ViewProps) {
   const inCart = amazon.filter((p) => ASIN_RE.test(p.asin) && !DONE.has(p.item.status));
   const missing = amazon.filter((p) => !ASIN_RE.test(p.asin) && !DONE.has(p.item.status));
   const toBuyParts = parts.filter((p) => p.item.status === "to buy");
-  const toBuyTotal = toBuyParts.reduce((a, p) => a + p.line, 0);
+  const toBuyTotal = sumLine(toBuyParts);
 
   if (loading) return <p className="text-sm text-secondary">Loading the parts.</p>;
   if (error) return <ErrorLine>{error}</ErrorLine>;
@@ -70,7 +71,7 @@ export function SourcingView({ project, store }: ViewProps) {
           </div>
           {inCart.length > 0 && (
             <a
-              href={cartUrl(inCart.map((p) => ({ asin: p.asin, qty: p.qty })))}
+              href={cartUrl(inCart.map((p) => ({ asin: p.asin, qty: p.qty ?? 1 })))}
               target="_blank"
               rel="noopener noreferrer"
               className={buttonVariants({ variant: "primary" })}
@@ -87,8 +88,8 @@ export function SourcingView({ project, store }: ViewProps) {
       </section>
 
       {groups.map(([source, ps]) => {
-        const sub = ps.reduce((a, p) => a + p.line, 0);
-        const left = ps.filter((p) => p.item.status === "to buy").reduce((a, p) => a + p.line, 0);
+        const sub = sumLine(ps);
+        const left = ps.filter((p) => p.item.status === "to buy").reduce((a, p) => a + (p.line ?? 0), 0);
         return (
           <section key={source} aria-label={source} className="space-y-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-hairline pb-2">
@@ -125,7 +126,7 @@ function PartRow({ part: p, onStatus, onAsin }: { part: Part; onStatus: (s: stri
         </p>
         {p.item.body ? <p className="mt-0.5 text-xs text-secondary">{p.item.body}</p> : null}
         <p className="mt-1 font-mono text-xs text-muted">
-          qty {p.qty} · {money(p.line)}
+          qty {p.qty ?? "not set"} · {p.line === null ? "no cost set" : money(p.line)}
         </p>
       </div>
 

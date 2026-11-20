@@ -2,62 +2,11 @@
  * Scene layout for parts with geometry (Y up, mm, origin at the centre of the enclosure floor).
  * Pure functions, no three.js, shared by the canvas and the view.
  */
-import type { Geometry, Item } from "@/lib/types";
+import type { Geometry } from "@/lib/domain";
 
 /** Geometry as stored, plus an optional cylinder axis. Without one, a cylinder shorter than it is wide lies flat (axis y), otherwise it lies along z. */
-export type PartGeometry = Geometry & { axis?: "x" | "y" | "z" };
+export type PartGeometry = Geometry;
 export type Axis = "x" | "y" | "z";
-
-export type Part = {
-  item: Item;
-  ref: string;
-  qty: number;
-  source: string;
-  line: number | null;
-  geometry: PartGeometry | null;
-};
-
-const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : d);
-const vec = (v: unknown, n: number): number[] | null => {
-  if (!Array.isArray(v) || v.length < n) return null;
-  const out = v.slice(0, n).map((x) => num(x, NaN));
-  return out.every(Number.isFinite) ? out : null;
-};
-
-/** Reads data.geometry defensively. Returns null when it is missing or unusable. */
-export function readGeometry(raw: unknown): PartGeometry | null {
-  if (!raw || typeof raw !== "object") return null;
-  const g = raw as Record<string, unknown>;
-  const shape = g.shape === "box" || g.shape === "cylinder" || g.shape === "shell" ? g.shape : null;
-  if (!shape) return null;
-  const size = vec(g.size, shape === "cylinder" ? 2 : 3);
-  if (!size || size.some((s) => s <= 0)) return null;
-  const out: PartGeometry = {
-    shape,
-    size,
-    pos: vec(g.pos, 3) ?? [0, 0, 0],
-    explode: vec(g.explode, 3) ?? [0, 0, 0],
-    basis: g.basis === "doc" ? "doc" : "typical",
-  };
-  const count = Math.round(num(g.count, 1));
-  if (count > 1) out.count = count;
-  if (g.print === true) out.print = true;
-  if (g.axis === "x" || g.axis === "y" || g.axis === "z") out.axis = g.axis;
-  return out;
-}
-
-export function toPart(item: Item): Part {
-  const d = item.data ?? {};
-  const line = num(d.line, NaN);
-  return {
-    item,
-    ref: typeof d.ref === "string" ? d.ref : "",
-    qty: num(d.qty, 1),
-    source: typeof d.source === "string" ? d.source : "",
-    line: Number.isFinite(line) ? line : null,
-    geometry: readGeometry(d.geometry),
-  };
-}
 
 export function cylinderAxis(g: PartGeometry): Axis {
   if (g.axis) return g.axis;

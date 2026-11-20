@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, notFound, recordId, route } from "@/lib/api/route";
-import { assertStatus, itemPatch } from "@/lib/api/schemas";
+import { assertStatus, itemPatch, parseData } from "@/lib/api/schemas";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -14,6 +14,7 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     const was = before.rows[0];
     if (!was) throw notFound("That row");
     assertStatus(was.section, b.status);
+    const data = parseData(was.section, b.data);
     const res = await c.query<ItemRow>(
       `UPDATE items SET
          title = COALESCE($2, title),
@@ -23,7 +24,7 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
          sort = COALESCE($6, sort),
          updated_at = now()
        WHERE id=$1 RETURNING ${ITEM_COLS}`,
-      [id, b.title ?? null, b.body ?? null, b.data ? JSON.stringify(b.data) : null, b.status ?? null, b.sort ?? null]
+      [id, b.title ?? null, b.body ?? null, data ? JSON.stringify(data) : null, b.status ?? null, b.sort ?? null]
     );
     const row = res.rows[0];
     if (b.status && b.status !== was.status) {

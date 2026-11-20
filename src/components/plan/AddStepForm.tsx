@@ -52,11 +52,11 @@ export function AddStepForm({ items, steps, onAdd, onConvert }: Props) {
       const used = stepKeys(items);
       if (mode === "new") {
         const key = uniqueKey(title, used);
-        await onAdd({ section, title: title.trim(), data: { key, after: after.join(","), minutes: m } });
+        await onAdd({ section, title: title.trim(), data: { key, after, minutes: m } });
         setTitle("");
       } else if (picked) {
         const key = uniqueKey(picked.title, used);
-        await onConvert(picked.id, { key, after: after.join(","), minutes: m });
+        await onConvert(picked.id, { key, after, minutes: m });
         setItemId("");
       }
       setMinutes("");

@@ -17,7 +17,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import { GripVertical, MousePointerClick } from "lucide-react";
-import { NET_COLOR, type NetClass, type Wire } from "@/lib/design";
+import { NET_COLOR, type NetClass, type Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, MISSING_PIN, type Graph, type Part, type XY } from "./model";
 import { SchematicContext, edgeTypes, nodeTypes, type PartNodeType, type ViaNodeType, type WireEdgeType } from "./nodes";
 import type { Selection } from "./SidePanel";

@@ -11,7 +11,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Decision, DecisionOption } from "@/lib/design";
+import type { Decision, DecisionOption } from "@/lib/domain";
 import { parentOf, slugKey, slugOption, type Tree } from "./model";
 
 export type DecisionDraft = {

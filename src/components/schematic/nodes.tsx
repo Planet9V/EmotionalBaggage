@@ -14,7 +14,7 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { NET_COLOR, type Wire } from "@/lib/design";
+import { NET_COLOR, type Wire } from "@/lib/domain";
 import { FOOT_H, HEADER_H, NODE_W, ROW_H, VIA_H, VIA_W, handleId, type PinRow } from "./model";
 
 /** What nodes need from the view without carrying it in every node's data. */

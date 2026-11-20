@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { NetClass, Wire } from "@/lib/design";
+import type { NetClass, Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, WIRE_STATUSES, type NetInfo, type Part } from "./model";
 import { ErrorLine, Field, Modal, Select, Textarea } from "./controls";
 

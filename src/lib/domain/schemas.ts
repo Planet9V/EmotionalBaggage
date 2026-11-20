@@ -1,0 +1,132 @@
+// The one definition of what each section stores in Item.data.
+// The API validates writes with these; the readers in this folder parse with them;
+// the TypeScript types are inferred from them. Nothing else describes these shapes.
+import { z } from "zod";
+
+export const STORE = {
+  parts: "design/bom",
+  wiring: "design/wiring",
+  decisions: "concept/decisions",
+} as const;
+
+const text = (max = 400) => z.string().max(max);
+
+/** A number, or a string that is plainly a number ("12", " 3.5 "). Never "12abc", never "". */
+const numeric = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : v),
+  z.number().finite()
+);
+
+/**
+ * A list of keys. Stored as an array. Older rows held "a, b, c" in one string,
+ * so a string is still read, and is turned into an array on the way in.
+ */
+export const keyList = z.preprocess(
+  (v) => (typeof v === "string" ? v.split(",").map((s) => s.trim()).filter(Boolean) : v),
+  z.array(text(120)).max(500)
+);
+
+const vec3 = z.tuple([numeric, numeric, numeric]);
+
+/** Y up, millimetres, origin at the centre of the enclosure floor. */
+export const geometry = z
+  .object({
+    shape: z.enum(["box", "cylinder", "shell"]),
+    /** box and shell: [x, y, z]. cylinder: [diameter, length]. */
+    size: z.array(numeric.refine((n) => n > 0, "must be greater than zero")).min(2).max(3),
+    pos: vec3.default([0, 0, 0]),
+    explode: vec3.default([0, 0, 0]),
+    basis: z.enum(["doc", "typical"]).default("typical"),
+    count: numeric.optional(),
+    print: z.boolean().optional(),
+    /** cylinder only: which axis its length runs along */
+    axis: z.enum(["x", "y", "z"]).optional(),
+  })
+  .superRefine((g, ctx) => {
+    const need = g.shape === "cylinder" ? 2 : 3;
+    if (g.size.length < need) {
+      ctx.addIssue({ code: "custom", path: ["size"], message: `a ${g.shape} needs ${need} sizes` });
+    }
+  })
+  .transform((g) => {
+    const size = g.size.slice(0, g.shape === "cylinder" ? 2 : 3);
+    const count = g.count === undefined ? undefined : Math.round(g.count);
+    const out: {
+      shape: typeof g.shape; size: number[]; pos: number[]; explode: number[]; basis: typeof g.basis;
+      count?: number; print?: boolean; axis?: "x" | "y" | "z";
+    } = { shape: g.shape, size, pos: [...g.pos], explode: [...g.explode], basis: g.basis };
+    if (count !== undefined && count > 1) out.count = count;
+    if (g.print === true) out.print = true;
+    if (g.axis) out.axis = g.axis;
+    return out;
+  });
+
+export type Geometry = z.infer<typeof geometry>;
+
+export const xy = z.object({ x: numeric, y: numeric });
+export type XY = z.infer<typeof xy>;
+
+/** Any row can be a step in the order of operations: a key, what it waits on, how long it takes. */
+const step = {
+  key: text(120).optional(),
+  after: keyList.optional(),
+  minutes: numeric.refine((n) => n >= 0, "cannot be negative").optional(),
+};
+
+/** Sections without a schema of their own: free columns, plus the step fields. */
+export const genericData = z.looseObject(step);
+
+export const partData = z.looseObject({
+  ...step,
+  ref: text(40).optional(),
+  qty: numeric.refine((n) => n >= 0, "cannot be negative").optional(),
+  source: text(120).optional(),
+  search: text().optional(),
+  /** line cost, in the concept's currency */
+  line: numeric.refine((n) => n >= 0, "cannot be negative").optional(),
+  asin: text(20).optional(),
+  geometry: geometry.nullable().optional(),
+  /** where the part sits on the schematic */
+  schematic: xy.nullable().optional(),
+  /** pins the part has, wired or not */
+  pins: z.array(text(60)).max(400).optional(),
+});
+
+export const NET_CLASSES = ["power", "ground", "signal", "audio"] as const;
+export type NetClass = (typeof NET_CLASSES)[number];
+
+export const wireData = z.looseObject({
+  ...step,
+  order: numeric.optional(),
+  net: text(120).optional(),
+  netClass: z.enum(NET_CLASSES).optional(),
+  from: text(40).optional(),
+  fromPin: text(60).optional(),
+  to: text(40).optional(),
+  toPin: text(60).optional(),
+  via: text(40).optional(),
+  /** where a series part on this wire sits on the schematic */
+  schematic: xy.nullable().optional(),
+});
+
+export const decisionOption = z.object({ id: text(80).min(1), label: text(200).min(1), outcome: text(2000).default("") });
+
+export const decisionData = z.looseObject({
+  ...step,
+  parent: text(120).optional(),
+  viaOption: text(80).optional(),
+  options: z.array(decisionOption).max(40).optional(),
+  chosen: text(80).optional(),
+  dependsOn: keyList.optional(),
+  unlocks: keyList.optional(),
+  source: text().optional(),
+});
+
+const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
+  [STORE.parts]: partData,
+  [STORE.wiring]: wireData,
+  [STORE.decisions]: decisionData,
+};
+
+/** The schema a section's `data` must satisfy. */
+export const dataSchemaFor = (section: string): z.ZodType<Record<string, unknown>> => BY_STORE[section] ?? genericData;

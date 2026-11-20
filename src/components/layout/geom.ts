@@ -4,7 +4,7 @@
  * the enclosure floor. Placement of counted bodies comes from the 3D view's own helpers so both
  * views agree.
  */
-import type { Geometry } from "../../lib/types";
+import type { Geometry } from "@/lib/types";
 import { bodyExtent, bodyOffsets, cylinderAxis, totalExtent, type PartGeometry } from "../three/layout";
 
 export type ViewKey = "top" | "front" | "side";

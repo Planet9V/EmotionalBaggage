@@ -118,3 +118,34 @@ describe("changing a row", () => {
     expect((await removeItem(json("DELETE"), ctx(id))).status).toBe(404);
   });
 });
+
+describe("the fields inside a row", () => {
+  it("rejects a part whose geometry is malformed, naming the field", async () => {
+    const r = await read<ErrBody>(
+      await addItem(json("POST", { section: "design/bom", title: "test: bad", data: { ref: "T9", geometry: { shape: "box", size: [10, 0, 5] } } }), ctx(SEEDED))
+    );
+    expect(r.status).toBe(400);
+    expect(r.body.issues?.[0].field).toBe("data.geometry.size.1");
+  });
+
+  it("stores numbers as numbers and key lists as arrays, whatever was sent", async () => {
+    const r = await make({ section: "prototype/assembly", data: { key: "test-step", after: "p0, p1", minutes: "25" } });
+    expect(r.status).toBe(201);
+    expect(r.body.item.data).toEqual({ key: "test-step", after: ["p0", "p1"], minutes: 25 });
+  });
+
+  it("checks a change against the row's own section", async () => {
+    const made = await make({ section: "design/wiring", data: { from: "U1", to: "U2" } });
+    const id = String(made.body.item.id);
+    expect((await patchItem(json("PATCH", { data: { netClass: "nonsense" } }), ctx(id))).status).toBe(400);
+    const ok = await read<ItemBody>(await patchItem(json("PATCH", { data: { netClass: "power", order: "4" } }), ctx(id)));
+    expect(ok.body.item.data).toEqual({ from: "U1", to: "U2", netClass: "power", order: 4 });
+  });
+
+  it("holds no comma-string key list anywhere in the database after start-up", async () => {
+    const rows = await q(
+      "SELECT id FROM items WHERE jsonb_typeof(data->'after')='string' OR jsonb_typeof(data->'dependsOn')='string' OR jsonb_typeof(data->'unlocks')='string'"
+    );
+    expect(rows).toEqual([]);
+  });
+});

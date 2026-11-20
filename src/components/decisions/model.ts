@@ -1,7 +1,7 @@
 // Pure logic for the decision tree view: state of each decision, the tree,
 // the walkthrough order, the route taken so far, captions and the layout.
 // Nothing here invents a decision or an outcome; it only reads what the store holds.
-import { decisionReady, type Decision, type DecisionOption } from "@/lib/design";
+import { decisionReady, type Decision, type DecisionOption } from "@/lib/domain";
 import { findSection } from "@/lib/menu";
 
 export type DState = "decided" | "open" | "waiting" | "blocked";

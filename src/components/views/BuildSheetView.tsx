@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorLine } from "@/components/parts/controls";
 import { Modal } from "@/components/parts/Modal";
 import { api, useItems } from "@/lib/client";
-import { PARTS_STORE, WIRING_STORE } from "@/lib/design";
+import { STORE } from "@/lib/domain";
 import { Checklist } from "@/components/buildsheet/Checklist";
 import { ConnectionsTable } from "@/components/buildsheet/ConnectionsTable";
 import { CutList } from "@/components/buildsheet/CutList";
@@ -66,8 +66,8 @@ function download(name: string, text: string) {
 
 export function BuildSheetView({ project, store }: ViewProps) {
   const reduce = useReducedMotion();
-  const wiring = useItems(project.id, store || WIRING_STORE);
-  const partItems = useItems(project.id, PARTS_STORE);
+  const wiring = useItems(project.id, store || STORE.wiring);
+  const partItems = useItems(project.id, STORE.parts);
   const [mode, setMode] = useState<Mode>("order");
   const [routing, setRouting] = useState({ text: String(DEFAULT_ROUTING), value: DEFAULT_ROUTING });
   const [allowance, setAllowance] = useState({ text: String(DEFAULT_ALLOWANCE), value: DEFAULT_ALLOWANCE });
