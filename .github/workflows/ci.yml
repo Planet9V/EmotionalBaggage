@@ -31,3 +31,183 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # Item 0.1: build the three images, start them with Docker Compose exactly as the admin guide says
+  # (no .env file), and prove each container is healthy and the app works end to end.
+  # Each "Assert ..." step checks one thing, so the name of a failed step says what is wrong.
+  # Job logs need credentials to read, so findings also go to the job summary.
+  stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BASE: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record Docker and Compose versions
+        run: |
+          {
+            echo "## Tooling"
+            echo '```'
+            docker version --format 'docker {{.Server.Version}}'
+            docker compose version
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assert no .env file is present (CI starts without one)
+        run: test ! -e .env
+
+      - name: Assert compose file is valid without .env
+        run: docker compose config --quiet
+
+      - name: Assert database image tag exists on the registry
+        run: |
+          IMAGE=$(docker compose config --format json | jq -r '.services.db.image')
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "## Database image: \`$IMAGE\`" >> "$GITHUB_STEP_SUMMARY"
+          docker manifest inspect "$IMAGE" > /tmp/manifest.json
+          echo "Manifest found; platforms: $(jq -r '[.manifests[]?.platform | select(.os!="unknown") | "\(.os)/\(.architecture)"] | join(", ")' /tmp/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Pull database image
+        run: docker pull "$IMAGE"
+
+      - name: Assert database image keeps PGDATA inside the mounted volume
+        run: |
+          PGDATA=$(docker image inspect "$IMAGE" --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^PGDATA=//p')
+          VOLS=$(docker image inspect "$IMAGE" --format '{{json .Config.Volumes}}')
+          MOUNT=$(docker compose config --format json | jq -r '.services.db.volumes[0].target')
+          {
+            echo "## Data directory"
+            echo "- image PGDATA: \`$PGDATA\`"
+            echo "- image VOLUME: \`$VOLS\`"
+            echo "- compose mount target: \`$MOUNT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$PGDATA/" in "$MOUNT"/*) echo "PGDATA is inside the mount";; *) echo "PGDATA $PGDATA is NOT inside $MOUNT"; exit 1;; esac
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start stack and wait for health
+        id: up
+        continue-on-error: true
+        run: docker compose up -d --wait --wait-timeout 240
+
+      - name: Record container status after start
+        if: always()
+        run: |
+          {
+            echo "## Containers after start"
+            echo '```'
+            docker compose ps -a --format 'table {{.Service}}\t{{.State}}\t{{.Health}}\t{{.Status}}' || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assert db container is healthy
+        run: test "$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q db)")" = healthy
+
+      - name: Assert planner container is healthy
+        run: test "$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q planner)")" = healthy
+
+      - name: Assert web container is healthy
+        run: test "$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q web)")" = healthy
+
+      - name: Assert compose up --wait succeeded
+        run: test "${{ steps.up.outcome }}" = success
+
+      - name: Assert GET / answers 200
+        run: test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")" = 200
+
+      - name: Assert GET /api/projects lists baggage-claims
+        run: |
+          curl -sf "$BASE/api/projects" | tee /tmp/projects.json
+          jq -e '.projects | map(.id) | index("baggage-claims") != null' /tmp/projects.json
+
+      - name: Fetch /api/integrations
+        run: |
+          curl -sf "$BASE/api/integrations" > /tmp/integrations.json
+          {
+            echo "## /api/integrations (database and planner)"
+            echo '```json'
+            jq '{database, planner}' /tmp/integrations.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assert database is reachable
+        run: jq -e '.database.connected == true' /tmp/integrations.json
+
+      - name: Assert pgvector extension is active (app view)
+        run: jq -e '.database.vector == true' /tmp/integrations.json
+
+      - name: Assert pgvector extension is installed (database view)
+        run: |
+          V=$(docker compose exec -T db psql -U c2r -d c2r -tAc "select extversion from pg_extension where extname='vector'")
+          echo "- pgvector extension version in the database: \`$V\`" >> "$GITHUB_STEP_SUMMARY"
+          test -n "$V"
+
+      - name: Assert planner is reachable from web
+        run: jq -e '.planner.connected == true and (.planner.networkx | type == "string")' /tmp/integrations.json
+
+      - name: Assert plan is computed by the NetworkX planner
+        run: |
+          code=$(curl -s -o /tmp/plan.json -w '%{http_code}' "$BASE/api/projects/baggage-claims/plan")
+          echo "- plan: HTTP $code, engine \`$(jq -r .engine /tmp/plan.json)\`, $(jq '.nodes | length' /tmp/plan.json) steps, $(jq .totalMinutes /tmp/plan.json) minutes" >> "$GITHUB_STEP_SUMMARY"
+          test "$code" = 200
+          jq -e '.engine == "networkx"' /tmp/plan.json
+
+      - name: Assert documentation pages are served
+        run: |
+          for p in user admin developer system-context; do
+            code=$(curl -s -o "/tmp/doc-$p.html" -w '%{http_code}' "$BASE/docs/$p")
+            echo "/docs/$p -> $code"; test "$code" = 200
+          done
+          grep -q "User guide" /tmp/doc-user.html
+          grep -q "Admin guide" /tmp/doc-admin.html
+
+      - name: Assert backup command from the admin guide works
+        run: |
+          docker compose exec -T db pg_dump -U c2r c2r > /tmp/backup.sql
+          echo "- pg_dump: $(wc -c < /tmp/backup.sql) bytes" >> "$GITHUB_STEP_SUMMARY"
+          grep -q "baggage-claims" /tmp/backup.sql
+
+      - name: Assert restore command from the admin guide works
+        run: |
+          docker compose exec -T db createdb -U c2r c2r_restore
+          docker compose exec -T db psql -q -v ON_ERROR_STOP=1 -U c2r c2r_restore < /tmp/backup.sql
+          n=$(docker compose exec -T db psql -U c2r -d c2r_restore -tAc "select count(*) from items where project_id='baggage-claims'")
+          echo "- restored items for baggage-claims: $n" >> "$GITHUB_STEP_SUMMARY"
+          test "$n" -gt 0
+          docker compose exec -T db dropdb -U c2r c2r_restore
+
+      - name: Write a marker row before restart
+        run: docker compose exec -T db psql -v ON_ERROR_STOP=1 -U c2r -d c2r -c "create table ci_marker(v text); insert into ci_marker values ('survives')"
+
+      - name: Restart stack without removing volumes
+        run: |
+          docker compose down
+          docker compose up -d --wait --wait-timeout 240
+
+      - name: Assert data survives a restart (volume holds PGDATA)
+        run: test "$(docker compose exec -T db psql -U c2r -d c2r -tAc 'select v from ci_marker')" = survives
+
+      - name: Assert app answers after restart
+        run: curl -sf "$BASE/api/projects" | jq -e '.projects | map(.id) | index("baggage-claims") != null'
+
+      - name: Record container status and logs
+        if: always()
+        run: |
+          {
+            echo "## Containers at end"
+            echo '```'
+            docker compose ps -a --format 'table {{.Service}}\t{{.State}}\t{{.Health}}\t{{.Status}}' || true
+            echo '```'
+            for s in db planner web; do
+              echo "### Last 80 log lines: $s"
+              echo '```'
+              docker compose logs --no-color --tail 80 "$s" 2>&1 || true
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop stack and remove volumes
+        if: always()
+        run: docker compose down -v
