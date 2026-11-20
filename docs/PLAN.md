@@ -87,7 +87,7 @@ Three documents fix the decisions that the rest of the plan builds on. They are 
 | Schematic symbols | `schematic-symbols` drawings inside our own nodes (decided after trial 0.3) | plain boxes | MIT licence file read; each symbol's origin checked before it is copied |
 | Model providers | Vercel AI SDK 7 with the OpenAI-compatible provider | one-provider reviewer route | tested here against a stand-in; confirmed on the real host by Admin's Test button; needs Node 22 |
 | Vectors | `pgvector` package on `pg` | nothing fills the column today | page read |
-| Sign-in | Better Auth, username plugin | none | unverified on a raw `pg` pool; "demo" may be under its password minimum |
+| Sign-in | built in (scrypt from Node, sessions in PostgreSQL); a named exception, because the `demo` default password is below every framework's minimum | none | built and tested, item 2.3 |
 | 3D editing | drei TransformControls, PivotControls, Bounds, Outlines | none | names read only |
 | Solid modelling | manifold-3d | hand-written tray and lid mesh | page read |
 | STL | three.js STLExporter and STLLoader | hand-written writer and parser | page read |
@@ -249,9 +249,9 @@ The review found stages 5 to 7 are lists filled in by hand, and version 2 of thi
 - Printer protocols and Bambu's current rules were read from single pages; none was exercised.
 - OrcaSlicer's licence and whether a newer slicer suits current printers better.
 - Licences of tscircuit's symbol set, the kanban kits, Stepperize, dagre and elkjs.
-- Better Auth on a raw `pg` pool, and its password minimum.
-- The AI SDK's OpenAI-compatible provider against all three model hosts.
-- NetworkX routing speed at a useful grid size.
+- The model layer against a real Ollama, LM Studio and OpenRouter (tested against a stand-in only).
+- Research against the real Perplexity service (tested against a stand-in only).
+- Sign-in behind a real HTTPS reverse proxy.
 - Amazon buying: no permitted automated route is known.
 
 ## Open decisions
