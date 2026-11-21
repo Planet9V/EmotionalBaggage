@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plug } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/button";
 
@@ -16,7 +16,7 @@ export function NotConnected({ title, does, needs }: { title: string; does: stri
         {needs} Nothing is faked until then.
       </p>
       <Button asChild variant="outline" size="sm" className="mt-4">
-        <Link href="/integrations"><Plug className="h-3.5 w-3.5" aria-hidden /> Open integrations</Link>
+        <Link href="/admin?tab=models"><Settings className="h-3.5 w-3.5" aria-hidden /> Open Admin, Models</Link>
       </Button>
     </Card>
   );

@@ -1,5 +1,8 @@
 "use client"
 
+// shadcn/ui Sonner, changed to follow the app's own theme: the Shell puts the class "dark" on <html>
+// (no next-themes here), so the toaster watches that class. Colours are the Eigenia tokens.
+import * as React from "react"
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -7,15 +10,26 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
+function subscribe(onChange: () => void) {
+  const obs = new MutationObserver(onChange)
+  obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+  return () => obs.disconnect()
+}
+const htmlTheme = (): "light" | "dark" => (document.documentElement.classList.contains("dark") ? "dark" : "light")
+
+/** "dark" while <html> has the class dark, else "light". */
+export function useHtmlTheme(): "light" | "dark" {
+  return React.useSyncExternalStore(subscribe, htmlTheme, () => "light")
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const theme = useHtmlTheme()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={theme}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
@@ -26,10 +40,16 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "var(--bg-surface)",
+          "--normal-text": "var(--text-primary)",
+          "--normal-border": "var(--border-hairline)",
+          "--error-bg": "var(--danger-soft)",
+          "--error-text": "var(--danger)",
+          "--error-border": "var(--border-hairline)",
+          "--success-bg": "var(--success-soft)",
+          "--success-text": "var(--success)",
+          "--success-border": "var(--border-hairline)",
+          "--border-radius": "12px",
         } as React.CSSProperties
       }
       {...props}

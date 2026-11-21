@@ -101,7 +101,7 @@ export function ChallengeView({ project }: ViewProps) {
           <NotConnected
             title="The AI reviewer is not connected"
             does="The reviewer reads your brief, open questions and unverified claims, then pushes back on the proposition: who buys it, what it replaces, what would make it fail."
-            needs="It needs a reasoning model, served by Ollama, LM Studio or OpenRouter, chosen in Admin, Models. The Admin screen is not built yet; until it is, the choice is saved through the Admin API, as the Admin guide describes."
+            needs="It needs a reasoning model, served by Ollama, LM Studio or OpenRouter. Choose one in Admin, Models."
           />
         )}
 

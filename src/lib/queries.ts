@@ -15,7 +15,19 @@ export type ResearchEntry = { id: number; query: string; answer: string; citatio
 export type ResearchState = { configured: boolean; model: string; entries: ResearchEntry[] };
 export type ChallengeMessage = { id: number; role: string; content: string; createdAt: string };
 export type ChallengeState = { configured: boolean; model: string; messages: ChallengeMessage[] };
-export type Integration = { key: string; name: string; purpose: string; env: string[]; configured: boolean; built: "yes" | "partial" | "no"; note: string };
+export type Integration = {
+  key: string;
+  name: string;
+  purpose: string;
+  /** environment variables still honoured as fallbacks when Admin has nothing saved */
+  env: string[];
+  configured: boolean;
+  built: "yes" | "partial" | "no";
+  note: string;
+  source?: "admin" | "environment" | "mixed" | null;
+  /** the part of Admin where it is set; null when there is nothing to set */
+  admin?: "credentials" | "settings" | "printers" | null;
+};
 export type IntegrationsReport = {
   integrations: Integration[];
   database: { connected: boolean; vector: boolean; version?: string };
