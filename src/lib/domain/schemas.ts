@@ -147,12 +147,28 @@ export const buildData = z.looseObject({
   end: day.optional(),
 });
 
+/** The chosen enclosure generator and its parameters (plan 5.9). One row per concept; the numbers are range-checked again by the generator route. */
+export const enclosureData = z.looseObject({
+  enclosureGenerator: z.enum(["casemaker", "yapp"]).optional(),
+  params: z.looseObject({
+    wallThickness: numeric.optional(),
+    floorThickness: numeric.optional(),
+    lidThickness: numeric.optional(),
+    cornerRadius: numeric.optional(),
+    clearance: numeric.optional(),
+    openingMargin: numeric.optional(),
+    lidType: z.enum(["slip", "snap", "screw"]).optional(),
+    screwSize: z.enum(["M2", "M2.5", "M3"]).optional(),
+  }).optional(),
+});
+
 const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   [STORE.requirements]: requirementData,
   [STORE.builds]: buildData,
   [STORE.parts]: partData,
   [STORE.wiring]: wireData,
   [STORE.decisions]: decisionData,
+  "design/enclosure": enclosureData,
   // production, sales channels and compliance rows (plan 3.6, 3.8, 7.1, 7.2)
   ...economicsSchemas(step),
   ...MARKET_SCHEMAS,

@@ -1,0 +1,320 @@
+import type { Project, RackParams } from '@/types';
+import type { PrinterVolume } from '@/types/printer';
+import { PRINTER_PROFILES } from '@/engine/cnc/machine';
+import type { PlacementIssue } from './placementValidator';
+import {
+  computeRackDims,
+  accessorySlots,
+  SLOT_PITCH,
+  SIDE_T,
+  LONG_SHELF,
+  MID_BAR_MIN_DEPTH,
+  resolveShelfDepth,
+  FAN_SPECS,
+  fanCenter,
+  SIDE_FRONT_HOLE_Y,
+  REAR_HOLE_Y,
+  SCREW_BOSS_D,
+} from './rack';
+
+/**
+ * Printer build-volume fit checking for the rack archetype. The original
+ * sample ("Mini Rack", Prusa XL only) simply didn't fit smaller printers;
+ * our parametric version instead tells the user exactly WHICH part is the
+ * blocker and what rack dimensions their printer CAN produce.
+ *
+ * Footprints are computed in each part's PRINT orientation (flat on the
+ * bed), not its assembly orientation, and a part counts as fitting if it
+ * fits straight OR rotated diagonally across the bed.
+ */
+
+export interface PrinterPreset {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
+ * The printer picker's rows. These machines now live on the machine profile (#184,
+ * `PRINTER_PROFILES` in `engine/cnc/machine.ts`); this is the flat shape the stored
+ * `rack.printer` and the panel already speak, derived so the bed volumes have ONE source.
+ * The ids and names are unchanged, so a saved project's `printer.preset` still resolves.
+ */
+export const PRINTER_PRESETS: PrinterPreset[] = PRINTER_PROFILES.map((p) => ({
+  id: p.id,
+  name: p.name,
+  x: p.buildVolume.x,
+  y: p.buildVolume.y,
+  z: p.buildVolume.z,
+}));
+
+/**
+ * The bed a project starts on when the user enables the rack archetype and has
+ * not chosen one (issue #148).
+ *
+ * Read off the preset table rather than hard-coded, so the sample rack's
+ * 252 × 250 × 275 mm envelope (which needs the XL) and the numbers it is
+ * checked against can never drift apart. It lives here, next to the table,
+ * rather than in the picker component — a module that exports a component may
+ * not also export a value without breaking fast refresh.
+ */
+export const DEFAULT_PRINTER: PrinterVolume = (() => {
+  const p = PRINTER_PRESETS.find((x) => x.id === 'prusa-xl') ?? PRINTER_PRESETS[0]!;
+  return { preset: p.id, x: p.x, y: p.y, z: p.z };
+})();
+
+/**
+ * The bed this project is printed on, from either home.
+ *
+ * Issue #148 moved it to `Project.printer` so the shell and future archetypes
+ * can fit-check, not only the rack. Projects written before the move still
+ * carry it on `case.rack.printer`; read it through here so both work, and so
+ * there is exactly one place that knows about the old home.
+ */
+export function resolvePrinter(project: Project | null | undefined): PrinterVolume | undefined {
+  return project?.printer ?? project?.case?.rack?.printer;
+}
+
+import { rectFitsBed } from './bedFit';
+
+export { rectFitsBed };
+
+export interface PartFootprint {
+  id: string;
+  label: string;
+  /** Bed footprint in the part's print orientation. */
+  fx: number;
+  fy: number;
+  /** Print height. */
+  fz: number;
+}
+
+/**
+ * The generic per-part bed check (extracted for #155): one `printer-fit` error
+ * for every part that does not fit the bed, straight or diagonally, or that is
+ * too tall. Shared by every assembly archetype, so the rack and the toolbox
+ * report the same way — and so a third one is a list of footprints, not a
+ * third copy of this loop.
+ *
+ * Not exported from the barrel: it is rackFit's, and archetype fit modules
+ * import it directly.
+ */
+export function validateFootprints(
+  footprints: readonly PartFootprint[],
+  printer: PrinterVolume,
+): PlacementIssue[] {
+  const issues: PlacementIssue[] = [];
+  for (const part of footprints) {
+    const fitsBed = rectFitsBed(part.fx, part.fy, printer.x, printer.y);
+    const fitsZ = part.fz <= printer.z;
+    if (fitsBed && fitsZ) continue;
+    issues.push({
+      severity: 'error',
+      kind: 'printer-fit',
+      involves: [part.id],
+      message: `${part.label} needs ${Math.ceil(part.fx)}×${Math.ceil(part.fy)}×${Math.ceil(part.fz)} mm but the printer bed is ${printer.x}×${printer.y}×${printer.z} mm${
+        fitsBed ? '' : ' (even placed diagonally)'
+      }.`,
+    });
+  }
+  return issues;
+}
+
+/** Per-part print footprints for the current rack configuration. */
+export function rackPartFootprints(rack: RackParams): PartFootprint[] {
+  const dims = computeRackDims(rack);
+  const wallMount = rack.wallMount ?? 'none';
+  const sideH = wallMount === 'ears' ? SIDE_T + 28 : SIDE_T;
+  const out: PartFootprint[] = [
+    {
+      id: 'rack-side-left',
+      label: 'side panel',
+      fx: dims.depth,
+      fy: dims.totalH,
+      fz: sideH,
+    },
+    {
+      id: 'rack-top',
+      label: 'top/bottom plate',
+      fx: dims.plateW + 22,
+      fy: dims.depth,
+      fz: 5,
+    },
+  ];
+  // Accessories span BETWEEN the sides (recessed behind the front columns).
+  const accW = dims.plateW + 2;
+  (rack.accessories ?? []).forEach((acc, i) => {
+    const n = accessorySlots(acc);
+    if (acc.type === 'shelf') {
+      out.push({
+        id: `rack-shelf-${i}`,
+        label: `shelf (${n}-slot)`,
+        fx: accW,
+        fy: resolveShelfDepth(acc.shelfDepth, dims.depth),
+        fz: n * SLOT_PITCH,
+      });
+    } else if (acc.type === 'cable-tray') {
+      out.push({ id: `rack-cable-tray-${i}`, label: 'cable tray', fx: accW, fy: 104, fz: 33 });
+    } else {
+      out.push({
+        id: `rack-${acc.type}-${i}`,
+        label: acc.type === 'keystone' ? 'keystone plate' : `blank faceplate (${n}-slot)`,
+        fx: accW,
+        fy: n * SLOT_PITCH,
+        fz: acc.type === 'keystone' ? 10 : 16,
+      });
+    }
+  });
+  if (wallMount === 'cleat') {
+    out.push({ id: 'rack-wall-cleat', label: 'wall cleat', fx: dims.width, fy: 40, fz: 15 });
+  }
+  return out;
+}
+
+/** Largest rack width whose widest part still fits. The governing part is
+ *  now the top/bottom plate (width − 2·SIDE_T + snap tabs ≈ width − 8).
+ *  Also drives the RackPanel width slider's upper bound. */
+export function maxRackWidthForBed(bedX: number, bedY: number): number {
+  let lo = 120;
+  let hi = 600;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (rectFitsBed(mid - 8, 60, bedX, bedY)) lo = mid;
+    else hi = mid;
+  }
+  return Math.floor(lo);
+}
+
+/** Largest rack depth that still fits the bed at the given width and slot
+ *  count. Depth is governed by two parts: the side panel (depth × height)
+ *  and the top/bottom plate (≈width × depth). Drives the RackPanel depth
+ *  slider's upper bound. */
+export function maxRackDepthForBed(
+  width: number,
+  slots: number,
+  bedX: number,
+  bedY: number,
+): number {
+  const sideH = 5 + slots * SLOT_PITCH + 11;
+  const plateSpan = width - 2 * SIDE_T + 22; // plate + snap tabs
+  const fits = (d: number): boolean =>
+    rectFitsBed(d, sideH, bedX, bedY) && rectFitsBed(plateSpan, d, bedX, bedY);
+  if (!fits(80)) return 0;
+  let lo = 80;
+  let hi = 600;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  return Math.floor(lo);
+}
+
+/** Largest slot count whose side panel still fits the bed.
+ *  Also drives the RackPanel height slider's upper bound. */
+export function maxRackSlotsForBed(depth: number, bedX: number, bedY: number): number {
+  for (let s = 40; s >= 2; s--) {
+    const h = 5 + s * SLOT_PITCH + 11;
+    if (rectFitsBed(depth, h, bedX, bedY)) return s;
+  }
+  return 0;
+}
+
+/**
+ * Fit-check every part against the configured printer. Returns banner-ready
+ * placement issues: one error per non-fitting part plus a summary suggestion,
+ * and the wall-mount load guidance when relevant.
+ */
+export function validateRackFit(
+  rack: RackParams,
+  printerOverride?: PrinterVolume,
+): PlacementIssue[] {
+  const issues: PlacementIssue[] = [];
+  const dims = computeRackDims(rack);
+
+  const totalSlots = (rack.accessories ?? []).reduce((s, a) => s + accessorySlots(a), 0);
+  if (totalSlots > dims.slots) {
+    issues.push({
+      severity: 'warning',
+      kind: 'rack-config',
+      involves: ['rack'],
+      message: `Accessories occupy ${totalSlots} slots but the rack has ${dims.slots} — remove accessories or increase the rack height.`,
+    });
+  }
+
+  // NOTE: wall-mount usage guidance intentionally does NOT go through this
+  // report — a permanent warning banner blocks viewport controls. The
+  // RackPanel shows the guidance inline under the Mounting picker instead;
+  // this validator only reports actionable problems.
+
+  // Long/extra-deep shelves screw into the sides' mid bar — which only
+  // exists when the rack is deep enough to have one.
+  const hasLongShelf = (rack.accessories ?? []).some(
+    (a) => a.type === 'shelf' && resolveShelfDepth(a.shelfDepth, dims.depth) >= LONG_SHELF,
+  );
+  if (hasLongShelf && dims.depth < MID_BAR_MIN_DEPTH) {
+    issues.push({
+      severity: 'warning',
+      kind: 'rack-config',
+      involves: ['rack'],
+      message: `Long/extra-deep shelves anchor into the sides' middle bar, which needs a rack depth of at least ${MID_BAR_MIN_DEPTH} mm (currently ${Math.round(dims.depth)}) — deepen the rack or switch to short shelves.`,
+    });
+  }
+
+  // A fan opening is a 36–56 mm hole through the side panel. Park it over an
+  // accessory screw column and that column simply ceases to exist for the
+  // slots it covers — no geometry can prevent it, but the user should hear it
+  // from the app rather than from a shelf with nothing to bolt to.
+  for (const fan of rack.fans ?? []) {
+    const spec = FAN_SPECS[fan.size] ?? FAN_SPECS[80]!;
+    const { y: yC, z: zC } = fanCenter(fan, dims);
+    const reach = spec.opening / 2 + SCREW_BOSS_D / 2;
+    const columns: Array<[string, number]> = [
+      ['front', SIDE_FRONT_HOLE_Y],
+      ...(dims.depth >= MID_BAR_MIN_DEPTH
+        ? ([['middle', REAR_HOLE_Y]] as Array<[string, number]>)
+        : []),
+    ];
+    for (const [name, colY] of columns) {
+      if (Math.abs(yC - colY) >= reach) continue;
+      const lost: number[] = [];
+      for (let k = 0; k < dims.slots; k++) {
+        if (Math.hypot(yC - colY, dims.holeZ(k) - zC) < reach) lost.push(k + 1);
+      }
+      if (lost.length === 0) continue;
+      issues.push({
+        severity: 'warning',
+        kind: 'rack-config',
+        involves: ['rack'],
+        message: `The ${fan.side} ${fan.size} mm fan sits over the ${name} screw column — slot${
+          lost.length > 1 ? `s ${lost[0]}–${lost[lost.length - 1]}` : ` ${lost[0]}`
+        } lose that fixing point. Move the fan ${Math.ceil(reach - Math.abs(yC - colY))} mm further ${
+          yC >= colY ? 'back' : 'forward'
+        } to clear it.`,
+      });
+    }
+  }
+
+  // #148 — the project-level bed wins; the rack's own copy is the legacy
+  // fallback so a caller that still holds only `RackParams` keeps working.
+  const printer = printerOverride ?? rack.printer;
+  if (!printer) return issues;
+
+  const footprints = rackPartFootprints(rack);
+  const fitIssues = validateFootprints(footprints, printer);
+  issues.push(...fitIssues);
+  const blocked = fitIssues.map((i) => i.message);
+  if (blocked.length > 0) {
+    const maxW = maxRackWidthForBed(printer.x, printer.y);
+    const maxS = maxRackSlotsForBed(Math.min(dims.depth, maxW), printer.x, printer.y);
+    issues.push({
+      severity: 'error',
+      kind: 'printer-fit',
+      involves: ['rack'],
+      message: `This printer could fit a rack up to ≈${maxW} mm wide/deep with up to ${maxS} slots — reduce width/depth/slots, or pick a larger printer preset.`,
+    });
+  }
+  return issues;
+}

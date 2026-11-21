@@ -1,12 +1,12 @@
 # Third-party notices
 
-Generated from package-lock.json at commit adae465 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 4388de5 by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
 ## npm packages (production tree)
 
-557 packages: 40 direct, 517 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
+589 packages: 41 direct, 548 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
 
 | Package | Version | Licence | Repository | Kind |
 | --- | --- | --- | --- | --- |
@@ -33,6 +33,9 @@ Every third-party component this repository uses: the npm packages of the web ap
 | @floating-ui/utils | 0.2.12 | MIT | https://github.com/floating-ui/floating-ui | transitive |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | https://github.com/fontsource/font-files | direct |
 | @fontsource-variable/jetbrains-mono | 5.3.0 | OFL-1.1 | https://github.com/fontsource/font-files | direct |
+| @gltf-transform/core | 4.5.1 | MIT | https://github.com/donmccurdy/glTF-Transform | transitive |
+| @gltf-transform/extensions | 4.5.1 | MIT | https://github.com/donmccurdy/glTF-Transform | transitive |
+| @gltf-transform/functions | 4.5.1 | MIT | https://github.com/donmccurdy/glTF-Transform | transitive |
 | @iconify/types | 2.0.0 | MIT | https://github.com/iconify/iconify | transitive |
 | @iconify/utils | 3.1.7 | MIT | https://github.com/iconify/iconify | transitive |
 | @img/colour | 1.1.0 | MIT | https://github.com/lovell/colour | transitive |
@@ -62,6 +65,10 @@ Every third-party component this repository uses: the npm packages of the web ap
 | @img/sharp-win32-arm64 | 0.35.5 | Apache-2.0 AND LGPL-3.0-or-later | https://www.npmjs.com/package/@img/sharp-win32-arm64 | transitive, platform build |
 | @img/sharp-win32-ia32 | 0.35.5 | Apache-2.0 AND LGPL-3.0-or-later | https://www.npmjs.com/package/@img/sharp-win32-ia32 | transitive, platform build |
 | @img/sharp-win32-x64 | 0.35.5 | Apache-2.0 AND LGPL-3.0-or-later | https://www.npmjs.com/package/@img/sharp-win32-x64 | transitive, platform build |
+| @jridgewell/resolve-uri | 3.1.3 | MIT | https://github.com/jridgewell/resolve-uri | transitive |
+| @jridgewell/sourcemap-codec | 1.6.0 | MIT | https://github.com/jridgewell/sourcemaps | transitive |
+| @jridgewell/trace-mapping | 0.3.31 | MIT | https://github.com/jridgewell/sourcemaps | transitive |
+| @jscadui/3mf-export | 0.5.0 | MIT | https://www.npmjs.com/package/@jscadui/3mf-export | transitive |
 | @mediapipe/tasks-vision | 0.10.17 | Apache-2.0 | https://www.npmjs.com/package/@mediapipe/tasks-vision | transitive |
 | @mermaid-js/parser | 1.2.1 | MIT | https://github.com/mermaid-js/mermaid | transitive |
 | @mermaid-js/parser | 2.0.1 | MIT | https://github.com/mermaid-js/mermaid | transitive |
@@ -75,6 +82,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | @next/swc-linux-x64-musl | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-linux-x64-musl | transitive, platform build |
 | @next/swc-win32-arm64-msvc | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-win32-arm64-msvc | transitive, platform build |
 | @next/swc-win32-x64-msvc | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-win32-x64-msvc | transitive, platform build |
+| @nodable/entities | 3.1.0 | MIT | https://github.com/nodable/val-parsers | transitive |
 | @radix-ui/number | 1.1.3 | MIT | https://github.com/radix-ui/primitives | transitive |
 | @radix-ui/primitive | 1.2.0 | MIT | https://github.com/radix-ui/primitives | transitive |
 | @radix-ui/react-accessible-icon | 1.2.0 | MIT | https://github.com/radix-ui/primitives | transitive |
@@ -196,6 +204,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | @types/katex | 0.16.8 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
 | @types/mdast | 4.0.4 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
 | @types/ms | 2.1.0 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
+| @types/ndarray | 1.1.0 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
 | @types/offscreencanvas | 2019.7.3 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
 | @types/react | 19.3.0 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
 | @types/react-reconciler | 0.28.9 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped | transitive |
@@ -217,6 +226,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | ai | 7.0.179 | Apache-2.0 | https://github.com/vercel/ai | direct |
 | ansi-regex | 6.6.0 | MIT | https://github.com/chalk/ansi-regex | transitive |
 | ansi-styles | 6.2.3 | MIT | https://github.com/chalk/ansi-styles | transitive |
+| anynum | 1.0.1 | MIT | https://github.com/NaturalIntelligence/anynum | transitive |
 | aria-hidden | 1.2.6 | MIT | https://github.com/theKashey/aria-hidden | transitive |
 | bail | 2.0.2 | MIT | https://github.com/wooorm/bail | transitive |
 | balanced-match | 4.0.4 | MIT | https://github.com/juliangruber/balanced-match | transitive |
@@ -241,14 +251,17 @@ Every third-party component this repository uses: the npm packages of the web ap
 | cmdk | 1.1.1 | MIT | https://github.com/pacocoursey/cmdk | direct |
 | cn | 0.5.2 | MIT | https://github.com/shadcn-ui/cn | direct |
 | comma-separated-tokens | 2.0.3 | MIT | https://github.com/wooorm/comma-separated-tokens | transitive |
+| commander | 13.1.0 | MIT | https://github.com/tj/commander.js | transitive |
 | commander | 15.1.0 | MIT | https://github.com/tj/commander.js | transitive |
 | commander | 7.2.0 | MIT | https://github.com/tj/commander.js | transitive |
 | commander | 8.3.0 | MIT | https://github.com/tj/commander.js | transitive |
+| convert-source-map | 2.0.0 | MIT | https://github.com/thlorenz/convert-source-map | transitive |
 | cose-base | 1.0.3 | MIT | https://github.com/iVis-at-Bilkent/cose-base | transitive |
 | cose-base | 2.2.0 | MIT | https://github.com/iVis-at-Bilkent/cose-base | transitive |
 | cross-env | 7.0.3 | MIT | https://github.com/kentcdodds/cross-env | transitive |
 | cross-spawn | 7.0.6 | MIT | https://github.com/moxystudio/node-cross-spawn | transitive |
 | csstype | 3.2.4 | MIT | https://github.com/frenic/csstype | transitive |
+| cwise-compiler | 1.1.3 | MIT | https://github.com/scijs/cwise-compiler | transitive |
 | cytoscape | 3.35.0 | MIT | https://github.com/cytoscape/cytoscape.js | transitive |
 | cytoscape-cose-bilkent | 4.1.0 | MIT | https://github.com/cytoscape/cytoscape.js-cose-bilkent | transitive |
 | cytoscape-fcose | 2.2.0 | MIT | https://github.com/iVis-at-Bilkent/cytoscape.js-fcose | transitive |
@@ -295,6 +308,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | delaunator | 5.1.0 | ISC | https://github.com/mapbox/delaunator | transitive |
 | dequal | 2.0.3 | MIT | https://github.com/lukeed/dequal | transitive |
 | detect-gpu | 5.0.70 | MIT | https://github.com/pmndrs/detect-gpu | transitive |
+| detect-libc | 2.1.2 | Apache-2.0 | https://github.com/lovell/detect-libc | transitive |
 | detect-node-es | 1.1.0 | MIT | https://github.com/thekashey/detect-node | transitive |
 | devlop | 1.1.0 | MIT | https://github.com/wooorm/devlop | transitive |
 | dompurify | 3.4.18 | (MPL-2.0 OR Apache-2.0) | https://github.com/cure53/DOMPurify | transitive |
@@ -306,12 +320,15 @@ Every third-party component this repository uses: the npm packages of the web ap
 | emoji-regex | 10.6.0 | MIT | https://github.com/mathiasbynens/emoji-regex | transitive |
 | entities | 9.0.0 | BSD-2-Clause | https://github.com/fb55/entities | transitive |
 | es-toolkit | 1.53.2 | MIT | https://github.com/toss/es-toolkit | transitive |
+| esbuild-wasm | 0.27.7 | MIT | https://github.com/evanw/esbuild | transitive |
 | escalade | 3.2.0 | MIT | https://github.com/lukeed/escalade | transitive |
 | escape-string-regexp | 5.0.0 | MIT | https://github.com/sindresorhus/escape-string-regexp | transitive |
 | estree-util-is-identifier-name | 3.0.0 | MIT | https://github.com/syntax-tree/estree-util-is-identifier-name | transitive |
 | eventemitter3 | 5.0.4 | MIT | https://github.com/primus/eventemitter3 | transitive |
 | eventsource-parser | 3.1.1 | MIT | https://github.com/rexxars/eventsource-parser | transitive |
 | extend | 3.0.2 | MIT | https://github.com/justmoon/node-extend | transitive |
+| fast-xml-builder | 1.3.2 | MIT | https://github.com/NaturalIntelligence/fast-xml-builder | transitive |
+| fast-xml-parser | 5.12.1 | MIT | https://github.com/NaturalIntelligence/fast-xml-parser | transitive |
 | fastdom | 1.0.12 | MIT | https://github.com/wilsonpage/fastdom | transitive |
 | fflate | 0.6.11 | MIT | https://github.com/101arrowz/fflate | transitive |
 | fflate | 0.8.3 | MIT | https://github.com/101arrowz/fflate | transitive |
@@ -347,12 +364,15 @@ Every third-party component this repository uses: the npm packages of the web ap
 | inline-style-parser | 0.2.9 | MIT | https://github.com/remarkablemark/inline-style-parser | transitive |
 | internmap | 1.0.1 | ISC | https://github.com/mbostock/internmap | transitive |
 | internmap | 2.0.3 | ISC | https://github.com/mbostock/internmap | transitive |
+| iota-array | 1.0.0 | MIT | https://github.com/mikolalysenko/iota-array | transitive |
 | is-alphabetical | 2.0.1 | MIT | https://github.com/wooorm/is-alphabetical | transitive |
 | is-alphanumerical | 2.0.1 | MIT | https://github.com/wooorm/is-alphanumerical | transitive |
+| is-buffer | 1.1.6 | MIT | https://github.com/feross/is-buffer | transitive |
 | is-decimal | 2.0.1 | MIT | https://github.com/wooorm/is-decimal | transitive |
 | is-hexadecimal | 2.0.1 | MIT | https://github.com/wooorm/is-hexadecimal | transitive |
 | is-plain-obj | 4.1.0 | MIT | https://github.com/sindresorhus/is-plain-obj | transitive |
 | is-promise | 2.2.2 | MIT | https://github.com/then/is-promise | transitive |
+| is-unsafe | 2.0.3 | MIT | https://github.com/NaturalIntelligence/is-unsafe | transitive |
 | isexe | 2.0.0 | ISC | https://github.com/isaacs/isexe | transitive |
 | its-fine | 2.1.1 | MIT | https://github.com/pmndrs/its-fine | transitive |
 | jiti | 2.7.0 | MIT | https://github.com/unjs/jiti | transitive |
@@ -360,6 +380,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | katex | 0.16.47 | MIT | https://github.com/KaTeX/KaTeX | transitive |
 | katex | 0.18.10 | MIT | https://github.com/KaTeX/KaTeX | transitive |
 | khroma | 2.1.0 | MIT (from its licence file; package.json declares none) | https://github.com/fabiospampinato/khroma | transitive |
+| ktx-parse | 1.1.0 | MIT | https://github.com/donmccurdy/ktx-parse | transitive |
 | layout-base | 1.0.2 | MIT | https://github.com/iVis-at-Bilkent/layout-base | transitive |
 | layout-base | 2.0.1 | MIT | https://github.com/iVis-at-Bilkent/layout-base | transitive |
 | lie | 3.3.0 | MIT | https://github.com/calvinmetcalf/lie | transitive |
@@ -368,6 +389,8 @@ Every third-party component this repository uses: the npm packages of the web ap
 | lru-cache | 11.5.3 | BlueOak-1.0.0 | https://github.com/isaacs/node-lru-cache | transitive |
 | lucide-react | 1.77.0 | ISC | https://github.com/lucide-icons/lucide | direct |
 | maath | 0.10.8 | MIT | https://www.npmjs.com/package/maath | transitive |
+| magic-string | 0.30.21 | MIT | https://github.com/Rich-Harris/magic-string | transitive |
+| manifold-3d | 3.5.5 | Apache-2.0 | https://github.com/elalish/manifold | direct |
 | markdown-table | 3.1.0 | MIT | https://github.com/wooorm/markdown-table | transitive |
 | marked | 16.4.2 | MIT | https://github.com/markedjs/marked | transitive |
 | marked | 18.2.1 | MIT | https://github.com/markedjs/marked | transitive |
@@ -434,6 +457,10 @@ Every third-party component this repository uses: the npm packages of the web ap
 | ms | 2.1.3 | MIT | https://github.com/vercel/ms | transitive |
 | nanoid | 3.3.20 | MIT | https://github.com/ai/nanoid | transitive |
 | nanoid | 6.0.2 | MIT | https://github.com/ai/nanoid | direct |
+| ndarray | 1.1.1 | MIT | https://github.com/mikolalysenko/ndarray | transitive |
+| ndarray-lanczos | 0.3.0 | MIT | https://github.com/donmccurdy/ndarray-lanczos | transitive |
+| ndarray-ops | 1.2.2 | MIT | https://github.com/mikolalysenko/ndarray-ops | transitive |
+| ndarray-pixels | 5.2.0 | MIT | https://github.com/donmccurdy/ndarray-pixels | transitive |
 | next | 16.4.6 | MIT | https://github.com/vercel/next.js | direct |
 | node-pg-migrate | 9.0.0 | MIT | https://github.com/salsita/node-pg-migrate | direct |
 | oniguruma-parser | 0.12.2 | MIT | https://github.com/slevithan/oniguruma-parser | transitive |
@@ -442,6 +469,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | parse-entities | 4.0.2 | MIT | https://github.com/wooorm/parse-entities | transitive |
 | parse5 | 8.1.1 | MIT | https://github.com/inikulin/parse5 | transitive |
 | path-data-parser | 0.1.0 | MIT | https://github.com/pshihn/path-data-parser | transitive |
+| path-expression-matcher | 1.6.2 | MIT | https://github.com/NaturalIntelligence/path-expression-matcher | transitive |
 | path-key | 3.1.1 | MIT | https://github.com/sindresorhus/path-key | transitive |
 | path-scurry | 2.0.2 | BlueOak-1.0.0 | https://github.com/isaacs/path-scurry | transitive |
 | pg | 8.23.1 | MIT | https://github.com/brianc/node-postgres | direct |
@@ -463,6 +491,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | postgres-interval | 1.2.0 | MIT | https://github.com/bendrucker/postgres-interval | transitive |
 | potpack | 1.0.2 | ISC | https://github.com/mapbox/potpack | transitive |
 | promise-worker-transferable | 1.0.4 | Apache-2.0 | https://github.com/terikon/promise-worker-transferable | transitive |
+| property-graph | 4.1.0 | MIT | https://github.com/donmccurdy/property-graph | transitive |
 | property-information | 7.2.0 | MIT | https://github.com/wooorm/property-information | transitive |
 | radix-ui | 1.8.1 | MIT | https://github.com/radix-ui/primitives | direct |
 | react | 19.3.0 | MIT | https://github.com/react/react | direct |
@@ -516,6 +545,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | string-width | 7.2.0 | MIT | https://github.com/sindresorhus/string-width | transitive |
 | stringify-entities | 4.0.5 | MIT | https://github.com/wooorm/stringify-entities | transitive |
 | strip-ansi | 7.2.0 | MIT | https://github.com/chalk/strip-ansi | transitive |
+| strnum | 2.5.1 | MIT | https://github.com/NaturalIntelligence/strnum | transitive |
 | style-to-object | 2.0.2 | MIT | https://github.com/remarkablemark/style-to-object | transitive |
 | styled-jsx | 5.1.6 | MIT | https://github.com/vercel/styled-jsx | transitive |
 | stylis | 4.4.0 | MIT | https://github.com/thysultan/stylis.js | transitive |
@@ -538,6 +568,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | tslib | 2.9.1 | 0BSD | https://github.com/Microsoft/tslib | transitive |
 | tunnel-rat | 0.1.2 | MIT | https://github.com/pmndrs/tunnel-rat | transitive |
 | unified | 11.0.5 | MIT | https://github.com/unifiedjs/unified | transitive |
+| uniq | 1.0.1 | MIT | https://github.com/mikolalysenko/uniq | transitive |
 | unist-util-is | 6.0.1 | MIT | https://github.com/syntax-tree/unist-util-is | transitive |
 | unist-util-position | 5.0.0 | MIT | https://github.com/syntax-tree/unist-util-position | transitive |
 | unist-util-remove-position | 5.0.0 | MIT | https://github.com/syntax-tree/unist-util-remove-position | transitive |
@@ -559,6 +590,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | webgl-sdf-generator | 1.1.1 | MIT | https://github.com/lojjic/webgl-sdf-generator | transitive |
 | which | 2.0.2 | ISC | https://github.com/isaacs/node-which | transitive |
 | wrap-ansi | 9.0.2 | MIT | https://github.com/chalk/wrap-ansi | transitive |
+| xml-naming | 0.3.0 | MIT | https://github.com/NaturalIntelligence/xml-naming | transitive |
 | xtend | 4.0.2 | MIT | https://github.com/Raynos/xtend | transitive |
 | y18n | 5.0.8 | ISC | https://github.com/yargs/y18n | transitive |
 | yargs | 18.0.0 | MIT | https://github.com/yargs/yargs | transitive |
@@ -601,7 +633,7 @@ No package installed on every platform ships this licence's text in a licence fi
 
 #### Apache-2.0
 
-Used by: @ai-sdk/gateway@4.0.152, @ai-sdk/mcp@2.0.102, @ai-sdk/openai-compatible@3.0.94, @ai-sdk/provider@4.0.39, @ai-sdk/provider-utils@5.0.83, @ai-sdk/react@4.0.183, @chevrotain/cst-dts-gen@13.2.0, @chevrotain/gast@13.2.0, @chevrotain/regexp-to-ast@13.2.0, @chevrotain/types@11.1.2, @chevrotain/types@13.2.0, @chevrotain/utils@13.2.0, @dimforge/rapier3d-compat@0.12.0, @img/sharp-darwin-arm64@0.35.5, @img/sharp-darwin-x64@0.35.5, @img/sharp-freebsd-wasm32@0.35.5, @img/sharp-linux-arm@0.35.5, @img/sharp-linux-arm64@0.35.5, @img/sharp-linux-ppc64@0.35.5, @img/sharp-linux-riscv64@0.35.5, @img/sharp-linux-s390x@0.35.5, @img/sharp-linux-x64@0.35.5, @img/sharp-linuxmusl-arm64@0.35.5, @img/sharp-linuxmusl-x64@0.35.5, @img/sharp-wasm32@0.35.5, @img/sharp-webcontainers-wasm32@0.35.5, @img/sharp-win32-arm64@0.35.5, @img/sharp-win32-ia32@0.35.5, @img/sharp-win32-x64@0.35.5, @mediapipe/tasks-vision@0.10.17, @streamdown/cjk@1.0.5, @streamdown/code@2.0.1, @streamdown/math@1.0.4, @streamdown/mermaid@1.0.4, @swc/helpers@0.5.23, @vercel/oidc@3.2.0, @workflow/serde@4.1.0, ai@7.0.179, baseline-browser-mapping@2.11.39, chevrotain@13.2.0, class-variance-authority@0.7.1, dompurify@3.4.18, draco3d@1.5.9, hls.js@1.7.4, promise-worker-transferable@1.0.4, remend@1.5.0, sharp@0.35.5, streamdown@2.8.0.
+Used by: @ai-sdk/gateway@4.0.152, @ai-sdk/mcp@2.0.102, @ai-sdk/openai-compatible@3.0.94, @ai-sdk/provider@4.0.39, @ai-sdk/provider-utils@5.0.83, @ai-sdk/react@4.0.183, @chevrotain/cst-dts-gen@13.2.0, @chevrotain/gast@13.2.0, @chevrotain/regexp-to-ast@13.2.0, @chevrotain/types@11.1.2, @chevrotain/types@13.2.0, @chevrotain/utils@13.2.0, @dimforge/rapier3d-compat@0.12.0, @img/sharp-darwin-arm64@0.35.5, @img/sharp-darwin-x64@0.35.5, @img/sharp-freebsd-wasm32@0.35.5, @img/sharp-linux-arm@0.35.5, @img/sharp-linux-arm64@0.35.5, @img/sharp-linux-ppc64@0.35.5, @img/sharp-linux-riscv64@0.35.5, @img/sharp-linux-s390x@0.35.5, @img/sharp-linux-x64@0.35.5, @img/sharp-linuxmusl-arm64@0.35.5, @img/sharp-linuxmusl-x64@0.35.5, @img/sharp-wasm32@0.35.5, @img/sharp-webcontainers-wasm32@0.35.5, @img/sharp-win32-arm64@0.35.5, @img/sharp-win32-ia32@0.35.5, @img/sharp-win32-x64@0.35.5, @mediapipe/tasks-vision@0.10.17, @streamdown/cjk@1.0.5, @streamdown/code@2.0.1, @streamdown/math@1.0.4, @streamdown/mermaid@1.0.4, @swc/helpers@0.5.23, @vercel/oidc@3.2.0, @workflow/serde@4.1.0, ai@7.0.179, baseline-browser-mapping@2.11.39, chevrotain@13.2.0, class-variance-authority@0.7.1, detect-libc@2.1.2, dompurify@3.4.18, draco3d@1.5.9, hls.js@1.7.4, manifold-3d@3.5.5, promise-worker-transferable@1.0.4, remend@1.5.0, sharp@0.35.5, streamdown@2.8.0.
 
 Text from @chevrotain/cst-dts-gen@13.2.0, LICENSE.txt:
 
@@ -1652,7 +1684,7 @@ No package installed on every platform ships this licence's text in a licence fi
 
 #### MIT
 
-Used by: @antfu/install-pkg@2.1.0, @babel/runtime@7.29.15, @braintree/sanitize-url@7.1.2, @emnapi/runtime@1.11.3, @floating-ui/core@1.8.0, @floating-ui/dom@1.8.0, @floating-ui/react-dom@2.1.9, @floating-ui/utils@0.2.12, @iconify/types@2.0.0, @iconify/utils@3.1.7, @img/colour@1.1.0, @img/sharp-wasm32@0.35.5, @mermaid-js/parser@1.2.1, @mermaid-js/parser@2.0.1, @monogrid/gainmap-js@3.7.3, @next/env@16.4.6, @next/swc-darwin-arm64@16.4.6, @next/swc-darwin-x64@16.4.6, @next/swc-linux-arm64-gnu@16.4.6, @next/swc-linux-arm64-musl@16.4.6, @next/swc-linux-x64-gnu@16.4.6, @next/swc-linux-x64-musl@16.4.6, @next/swc-win32-arm64-msvc@16.4.6, @next/swc-win32-x64-msvc@16.4.6, @radix-ui/number@1.1.3, @radix-ui/primitive@1.2.0, @radix-ui/react-accessible-icon@1.2.0, @radix-ui/react-accordion@1.3.1, @radix-ui/react-alert-dialog@1.2.1, @radix-ui/react-arrow@1.1.17, @radix-ui/react-aspect-ratio@1.2.0, @radix-ui/react-avatar@1.3.1, @radix-ui/react-checkbox@1.4.1, @radix-ui/react-collapsible@1.2.1, @radix-ui/react-collection@1.2.0, @radix-ui/react-compose-refs@1.1.5, @radix-ui/react-context@1.3.0, @radix-ui/react-context-menu@2.4.1, @radix-ui/react-dialog@1.3.1, @radix-ui/react-direction@1.2.0, @radix-ui/react-dismissable-layer@1.2.1, @radix-ui/react-dropdown-menu@2.2.1, @radix-ui/react-focus-guards@1.2.0, @radix-ui/react-focus-scope@1.3.1, @radix-ui/react-form@0.3.0, @radix-ui/react-hover-card@1.2.1, @radix-ui/react-id@1.1.4, @radix-ui/react-label@2.1.17, @radix-ui/react-menu@2.2.1, @radix-ui/react-menubar@1.2.1, @radix-ui/react-navigation-menu@1.4.1, @radix-ui/react-one-time-password-field@0.2.1, @radix-ui/react-password-toggle-field@0.2.1, @radix-ui/react-popover@1.3.1, @radix-ui/react-popper@1.4.0, @radix-ui/react-portal@1.2.0, @radix-ui/react-presence@1.1.11, @radix-ui/react-primitive@2.2.0, @radix-ui/react-progress@1.2.1, @radix-ui/react-radio-group@1.5.1, @radix-ui/react-roving-focus@1.2.1, @radix-ui/react-scroll-area@1.4.0, @radix-ui/react-select@2.4.1, @radix-ui/react-separator@1.2.0, @radix-ui/react-slider@1.6.1, @radix-ui/react-slot@1.5.0, @radix-ui/react-switch@1.4.1, @radix-ui/react-tabs@1.2.1, @radix-ui/react-toast@1.3.1, @radix-ui/react-toggle@1.2.1, @radix-ui/react-toggle-group@1.2.1, @radix-ui/react-toolbar@1.2.1, @radix-ui/react-tooltip@1.4.1, @radix-ui/react-use-callback-ref@1.1.5, @radix-ui/react-use-controllable-state@1.3.0, @radix-ui/react-use-effect-event@0.0.5, @radix-ui/react-use-escape-keydown@1.1.6, @radix-ui/react-use-is-hydrated@0.1.3, @radix-ui/react-use-layout-effect@1.1.4, @radix-ui/react-use-previous@1.1.4, @radix-ui/react-use-rect@1.1.4, @radix-ui/react-use-size@1.1.5, @radix-ui/react-visually-hidden@1.2.13, @radix-ui/rect@1.1.3, @react-three/drei@10.7.9, @react-three/fiber@9.8.2, @reduxjs/toolkit@2.15.0, @shikijs/core@4.6.0, @shikijs/engine-javascript@4.6.0, @shikijs/engine-oniguruma@4.6.0, @shikijs/langs@4.6.0, @shikijs/primitive@4.6.0, @shikijs/themes@4.6.0, @shikijs/types@4.6.0, @shikijs/vscode-textmate@10.1.0, @standard-schema/spec@1.1.0, @standard-schema/utils@0.3.0, @tanstack/query-core@5.108.2, @tanstack/react-query@5.108.2, @tweenjs/tween.js@23.1.3, @types/d3@7.4.3, @types/d3-array@3.2.2, @types/d3-axis@3.0.6, @types/d3-brush@3.0.6, @types/d3-chord@3.0.6, @types/d3-color@3.1.3, @types/d3-contour@3.0.6, @types/d3-delaunay@6.0.4, @types/d3-dispatch@3.0.7, @types/d3-drag@3.0.7, @types/d3-dsv@3.0.7, @types/d3-ease@3.0.2, @types/d3-fetch@3.0.7, @types/d3-force@3.0.10, @types/d3-format@3.0.4, @types/d3-geo@3.1.1, @types/d3-hierarchy@3.1.7, @types/d3-interpolate@3.0.4, @types/d3-path@3.1.1, @types/d3-polygon@3.0.2, @types/d3-quadtree@3.0.6, @types/d3-random@3.0.4, @types/d3-scale@4.0.9, @types/d3-scale-chromatic@3.1.0, @types/d3-selection@3.0.12, @types/d3-shape@3.2.0, @types/d3-time@3.0.4, @types/d3-time-format@4.0.3, @types/d3-timer@3.0.2, @types/d3-transition@3.0.9, @types/d3-zoom@3.0.9, @types/debug@4.1.13, @types/draco3d@1.4.10, @types/estree@1.0.10, @types/estree-jsx@1.0.5, @types/geojson@7946.0.16, @types/hast@3.0.5, @types/katex@0.16.8, @types/mdast@4.0.4, @types/ms@2.1.0, @types/offscreencanvas@2019.7.3, @types/react@19.3.0, @types/react-reconciler@0.28.9, @types/stats.js@0.17.4, @types/three@0.187.0, @types/trusted-types@2.0.7, @types/unist@2.0.11, @types/unist@3.0.3, @types/use-sync-external-store@0.0.6, @types/webxr@0.5.24, @upsetjs/venn.js@2.0.0, @use-gesture/core@10.3.1, @use-gesture/react@10.3.1, @xyflow/react@13.0.2, @xyflow/system@1.0.0, ansi-regex@6.6.0, ansi-styles@6.2.3, aria-hidden@1.2.6, bail@2.0.2, balanced-match@4.0.4, base64-js@1.5.1, bidi-js@1.1.0, brace-expansion@5.0.13, buffer@6.0.3, camera-controls@3.1.2, ccount@2.0.1, character-entities@2.0.2, character-entities-html4@2.1.0, character-entities-legacy@3.0.0, character-reference-invalid@2.0.1, classcat@5.0.5, client-only@0.0.1, clsx@2.1.1, cmdk@1.1.1, cn@0.5.2, comma-separated-tokens@2.0.3, commander@15.1.0, commander@7.2.0, commander@8.3.0, cose-base@1.0.3, cose-base@2.2.0, cross-env@7.0.3, cross-spawn@7.0.6, csstype@3.2.4, cytoscape@3.35.0, cytoscape-cose-bilkent@4.1.0, cytoscape-fcose@2.2.0, dagre-d3-es@7.0.14, dayjs@1.11.23, debug@4.4.3, decimal.js-light@2.5.1, decode-named-character-reference@1.3.0, dequal@2.0.3, detect-gpu@5.0.70, detect-node-es@1.1.0, devlop@1.1.0, embla-carousel@8.6.0, embla-carousel-react@8.6.0, embla-carousel-reactive-utils@8.6.0, emoji-regex@10.6.0, es-toolkit@1.53.2, escalade@3.2.0, escape-string-regexp@5.0.0, estree-util-is-identifier-name@3.0.0, eventemitter3@5.0.4, eventsource-parser@3.1.1, extend@3.0.2, fastdom@1.0.12, fflate@0.6.11, fflate@0.8.3, framer-motion@14.14.0, get-east-asian-width@1.7.0, get-nonce@1.0.1, glsl-noise@0.0.0, hachure-fill@0.5.2, hast-util-from-html@2.1.0, hast-util-from-html-isomorphic@2.0.0, hast-util-from-parse5@8.0.4, hast-util-parse-selector@4.0.0, hast-util-raw@9.2.1, hast-util-sanitize@5.0.2, hast-util-to-html@9.0.7, hast-util-to-jsx-runtime@2.3.7, hast-util-to-parse5@8.0.1, hast-util-to-text@4.0.5, hast-util-whitespace@3.0.0, hastscript@9.0.3, html-url-attributes@3.0.1, html-void-elements@3.0.0, iconv-lite@0.6.3, immediate@3.0.6, immer@10.2.0, immer@11.2.10, import-meta-resolve@4.2.0, inline-style-parser@0.2.9, is-alphabetical@2.0.1, is-alphanumerical@2.0.1, is-decimal@2.0.1, is-hexadecimal@2.0.1, is-plain-obj@4.1.0, is-promise@2.2.2, its-fine@2.1.1, jiti@2.7.0, katex@0.16.47, katex@0.18.10, khroma@2.1.0, layout-base@1.0.2, layout-base@2.0.1, lie@3.3.0, lodash-es@4.18.1, longest-streak@3.1.0, maath@0.10.8, markdown-table@3.1.0, marked@16.4.2, marked@18.2.1, mdast-util-find-and-replace@3.0.5, mdast-util-from-markdown@2.1.0, mdast-util-gfm@3.1.0, mdast-util-gfm-autolink-literal@2.1.2, mdast-util-gfm-footnote@2.1.0, mdast-util-gfm-strikethrough@2.0.1, mdast-util-gfm-table@2.0.1, mdast-util-gfm-task-list-item@2.0.1, mdast-util-math@3.0.0, mdast-util-mdx-expression@2.0.1, mdast-util-mdx-jsx@3.2.2, mdast-util-mdxjs-esm@2.0.1, mdast-util-phrasing@4.1.0, mdast-util-to-hast@13.2.2, mdast-util-to-markdown@2.2.4, mdast-util-to-markdown-cjk-friendly@1.0.2, mdast-util-to-markdown-cjk-friendly-gfm-strikethrough@1.0.2, mdast-util-to-string@4.0.0, mermaid@11.17.2, mermaid@12.3.0, meshline@3.3.1, meshoptimizer@1.1.1, micromark@4.0.3, micromark-core-commonmark@2.0.4, micromark-extension-cjk-friendly@2.0.2, micromark-extension-cjk-friendly-gfm-strikethrough@2.0.1, micromark-extension-cjk-friendly-util@3.0.1, micromark-extension-gfm@3.0.0, micromark-extension-gfm-autolink-literal@2.1.0, micromark-extension-gfm-footnote@2.1.0, micromark-extension-gfm-strikethrough@2.1.0, micromark-extension-gfm-table@2.1.2, micromark-extension-gfm-tagfilter@2.0.0, micromark-extension-gfm-task-list-item@2.1.0, micromark-extension-math@3.1.0, micromark-factory-destination@2.0.1, micromark-factory-label@2.0.1, micromark-factory-space@2.1.0, micromark-factory-title@2.0.1, micromark-factory-whitespace@2.0.1, micromark-util-character@2.1.1, micromark-util-chunked@2.0.1, micromark-util-classify-character@2.0.1, micromark-util-combine-extensions@2.0.1, micromark-util-decode-numeric-character-reference@2.0.2, micromark-util-decode-string@2.0.1, micromark-util-edit-map@1.0.0, micromark-util-encode@2.0.1, micromark-util-html-tag-name@2.0.1, micromark-util-normalize-identifier@2.0.1, micromark-util-resolve-all@2.0.1, micromark-util-sanitize-uri@2.0.1, micromark-util-subtokenize@2.1.0, micromark-util-symbol@2.0.1, micromark-util-types@2.0.3, motion@14.14.0, motion-dom@14.14.0, motion-utils@14.7.0, ms@2.1.3, nanoid@3.3.20, nanoid@6.0.2, next@16.4.6, node-pg-migrate@9.0.0, oniguruma-parser@0.12.2, oniguruma-to-es@4.3.6, package-manager-detector@1.9.0, parse-entities@4.0.2, parse5@8.1.1, path-data-parser@0.1.0, path-key@3.1.1, pg@8.23.1, pg-cloudflare@1.4.1, pg-connection-string@2.14.1, pg-pool@3.14.0, pg-protocol@1.16.1, pg-types@2.2.0, pgpass@1.0.5, pkce-challenge@5.0.1, points-on-curve@0.2.0, points-on-path@0.2.1, postcss@8.5.23, postgres-array@2.0.0, postgres-bytea@1.0.1, postgres-date@1.0.7, postgres-interval@1.2.0, property-information@7.2.0, radix-ui@1.8.1, react@19.3.0, react-compiler-runtime@1.0.0, react-dom@19.3.0, react-is@16.13.1, react-markdown@10.1.0, react-redux@9.3.1, react-remove-scroll@2.7.2, react-remove-scroll-bar@2.3.8, react-style-singleton@2.2.3, react-use-measure@2.1.7, recharts@3.8.0, redux@5.0.1, redux-thunk@3.1.0, regex@6.1.0, regex-recursion@6.0.2, regex-utilities@2.3.0, rehype-harden@1.1.9, rehype-katex@7.0.1, rehype-raw@7.0.0, rehype-sanitize@6.0.0, remark-cjk-friendly@2.3.4, remark-cjk-friendly-gfm-strikethrough@2.3.3, remark-gfm@4.0.1, remark-math@6.0.0, remark-parse@11.0.0, remark-rehype@11.1.2, remark-stringify@11.0.0, require-from-string@2.0.2, reselect@5.1.1, roughjs@4.6.6, safer-buffer@2.1.2, scheduler@0.28.0, shebang-command@2.0.0, shebang-regex@3.0.0, shiki@4.6.0, sonner@2.0.8, space-separated-tokens@2.0.2, stats-gl@2.4.2, stats.js@0.17.0, strictdom@1.0.1, string-width@7.2.0, stringify-entities@4.0.5, strip-ansi@7.2.0, style-to-object@2.0.2, styled-jsx@5.1.6, stylis@4.4.0, suspend-react@0.1.3, swr@2.5.1, tailwind-merge@3.7.1, three@0.170.0, three@0.187.0, three-mesh-bvh@0.8.3, three-stdlib@2.36.1, throttleit@2.1.0, tiny-invariant@1.3.3, tinyexec@1.3.1, trim-lines@3.0.1, troika-three-text@0.52.5, troika-three-utils@0.52.5, troika-worker-utils@0.52.0, trough@2.2.0, ts-dedent@2.3.0, tunnel-rat@0.1.2, unified@11.0.5, unist-util-is@6.0.1, unist-util-position@5.0.0, unist-util-remove-position@5.0.0, unist-util-stringify-position@4.0.0, unist-util-visit@5.2.0, unist-util-visit-parents@6.1.0, use-callback-ref@1.3.3, use-sidecar@1.1.3, use-stick-to-bottom@1.1.6, use-sync-external-store@1.7.0, utility-types@3.11.0, uuid@14.0.3, vfile@6.0.3, vfile-location@5.0.4, vfile-message@4.0.4, victory-vendor@37.4.1, web-namespaces@2.0.1, webgl-constants@1.1.1, webgl-sdf-generator@1.1.1, wrap-ansi@9.0.2, xtend@4.0.2, yargs@18.0.0, zod@4.6.7, zustand@4.5.7, zustand@5.1.0, zwitch@2.0.4.
+Used by: @antfu/install-pkg@2.1.0, @babel/runtime@7.29.15, @braintree/sanitize-url@7.1.2, @emnapi/runtime@1.11.3, @floating-ui/core@1.8.0, @floating-ui/dom@1.8.0, @floating-ui/react-dom@2.1.9, @floating-ui/utils@0.2.12, @gltf-transform/core@4.5.1, @gltf-transform/extensions@4.5.1, @gltf-transform/functions@4.5.1, @iconify/types@2.0.0, @iconify/utils@3.1.7, @img/colour@1.1.0, @img/sharp-wasm32@0.35.5, @jridgewell/resolve-uri@3.1.3, @jridgewell/sourcemap-codec@1.6.0, @jridgewell/trace-mapping@0.3.31, @jscadui/3mf-export@0.5.0, @mermaid-js/parser@1.2.1, @mermaid-js/parser@2.0.1, @monogrid/gainmap-js@3.7.3, @next/env@16.4.6, @next/swc-darwin-arm64@16.4.6, @next/swc-darwin-x64@16.4.6, @next/swc-linux-arm64-gnu@16.4.6, @next/swc-linux-arm64-musl@16.4.6, @next/swc-linux-x64-gnu@16.4.6, @next/swc-linux-x64-musl@16.4.6, @next/swc-win32-arm64-msvc@16.4.6, @next/swc-win32-x64-msvc@16.4.6, @nodable/entities@3.1.0, @radix-ui/number@1.1.3, @radix-ui/primitive@1.2.0, @radix-ui/react-accessible-icon@1.2.0, @radix-ui/react-accordion@1.3.1, @radix-ui/react-alert-dialog@1.2.1, @radix-ui/react-arrow@1.1.17, @radix-ui/react-aspect-ratio@1.2.0, @radix-ui/react-avatar@1.3.1, @radix-ui/react-checkbox@1.4.1, @radix-ui/react-collapsible@1.2.1, @radix-ui/react-collection@1.2.0, @radix-ui/react-compose-refs@1.1.5, @radix-ui/react-context@1.3.0, @radix-ui/react-context-menu@2.4.1, @radix-ui/react-dialog@1.3.1, @radix-ui/react-direction@1.2.0, @radix-ui/react-dismissable-layer@1.2.1, @radix-ui/react-dropdown-menu@2.2.1, @radix-ui/react-focus-guards@1.2.0, @radix-ui/react-focus-scope@1.3.1, @radix-ui/react-form@0.3.0, @radix-ui/react-hover-card@1.2.1, @radix-ui/react-id@1.1.4, @radix-ui/react-label@2.1.17, @radix-ui/react-menu@2.2.1, @radix-ui/react-menubar@1.2.1, @radix-ui/react-navigation-menu@1.4.1, @radix-ui/react-one-time-password-field@0.2.1, @radix-ui/react-password-toggle-field@0.2.1, @radix-ui/react-popover@1.3.1, @radix-ui/react-popper@1.4.0, @radix-ui/react-portal@1.2.0, @radix-ui/react-presence@1.1.11, @radix-ui/react-primitive@2.2.0, @radix-ui/react-progress@1.2.1, @radix-ui/react-radio-group@1.5.1, @radix-ui/react-roving-focus@1.2.1, @radix-ui/react-scroll-area@1.4.0, @radix-ui/react-select@2.4.1, @radix-ui/react-separator@1.2.0, @radix-ui/react-slider@1.6.1, @radix-ui/react-slot@1.5.0, @radix-ui/react-switch@1.4.1, @radix-ui/react-tabs@1.2.1, @radix-ui/react-toast@1.3.1, @radix-ui/react-toggle@1.2.1, @radix-ui/react-toggle-group@1.2.1, @radix-ui/react-toolbar@1.2.1, @radix-ui/react-tooltip@1.4.1, @radix-ui/react-use-callback-ref@1.1.5, @radix-ui/react-use-controllable-state@1.3.0, @radix-ui/react-use-effect-event@0.0.5, @radix-ui/react-use-escape-keydown@1.1.6, @radix-ui/react-use-is-hydrated@0.1.3, @radix-ui/react-use-layout-effect@1.1.4, @radix-ui/react-use-previous@1.1.4, @radix-ui/react-use-rect@1.1.4, @radix-ui/react-use-size@1.1.5, @radix-ui/react-visually-hidden@1.2.13, @radix-ui/rect@1.1.3, @react-three/drei@10.7.9, @react-three/fiber@9.8.2, @reduxjs/toolkit@2.15.0, @shikijs/core@4.6.0, @shikijs/engine-javascript@4.6.0, @shikijs/engine-oniguruma@4.6.0, @shikijs/langs@4.6.0, @shikijs/primitive@4.6.0, @shikijs/themes@4.6.0, @shikijs/types@4.6.0, @shikijs/vscode-textmate@10.1.0, @standard-schema/spec@1.1.0, @standard-schema/utils@0.3.0, @tanstack/query-core@5.108.2, @tanstack/react-query@5.108.2, @tweenjs/tween.js@23.1.3, @types/d3@7.4.3, @types/d3-array@3.2.2, @types/d3-axis@3.0.6, @types/d3-brush@3.0.6, @types/d3-chord@3.0.6, @types/d3-color@3.1.3, @types/d3-contour@3.0.6, @types/d3-delaunay@6.0.4, @types/d3-dispatch@3.0.7, @types/d3-drag@3.0.7, @types/d3-dsv@3.0.7, @types/d3-ease@3.0.2, @types/d3-fetch@3.0.7, @types/d3-force@3.0.10, @types/d3-format@3.0.4, @types/d3-geo@3.1.1, @types/d3-hierarchy@3.1.7, @types/d3-interpolate@3.0.4, @types/d3-path@3.1.1, @types/d3-polygon@3.0.2, @types/d3-quadtree@3.0.6, @types/d3-random@3.0.4, @types/d3-scale@4.0.9, @types/d3-scale-chromatic@3.1.0, @types/d3-selection@3.0.12, @types/d3-shape@3.2.0, @types/d3-time@3.0.4, @types/d3-time-format@4.0.3, @types/d3-timer@3.0.2, @types/d3-transition@3.0.9, @types/d3-zoom@3.0.9, @types/debug@4.1.13, @types/draco3d@1.4.10, @types/estree@1.0.10, @types/estree-jsx@1.0.5, @types/geojson@7946.0.16, @types/hast@3.0.5, @types/katex@0.16.8, @types/mdast@4.0.4, @types/ms@2.1.0, @types/ndarray@1.1.0, @types/offscreencanvas@2019.7.3, @types/react@19.3.0, @types/react-reconciler@0.28.9, @types/stats.js@0.17.4, @types/three@0.187.0, @types/trusted-types@2.0.7, @types/unist@2.0.11, @types/unist@3.0.3, @types/use-sync-external-store@0.0.6, @types/webxr@0.5.24, @upsetjs/venn.js@2.0.0, @use-gesture/core@10.3.1, @use-gesture/react@10.3.1, @xyflow/react@13.0.2, @xyflow/system@1.0.0, ansi-regex@6.6.0, ansi-styles@6.2.3, anynum@1.0.1, aria-hidden@1.2.6, bail@2.0.2, balanced-match@4.0.4, base64-js@1.5.1, bidi-js@1.1.0, brace-expansion@5.0.13, buffer@6.0.3, camera-controls@3.1.2, ccount@2.0.1, character-entities@2.0.2, character-entities-html4@2.1.0, character-entities-legacy@3.0.0, character-reference-invalid@2.0.1, classcat@5.0.5, client-only@0.0.1, clsx@2.1.1, cmdk@1.1.1, cn@0.5.2, comma-separated-tokens@2.0.3, commander@13.1.0, commander@15.1.0, commander@7.2.0, commander@8.3.0, convert-source-map@2.0.0, cose-base@1.0.3, cose-base@2.2.0, cross-env@7.0.3, cross-spawn@7.0.6, csstype@3.2.4, cwise-compiler@1.1.3, cytoscape@3.35.0, cytoscape-cose-bilkent@4.1.0, cytoscape-fcose@2.2.0, dagre-d3-es@7.0.14, dayjs@1.11.23, debug@4.4.3, decimal.js-light@2.5.1, decode-named-character-reference@1.3.0, dequal@2.0.3, detect-gpu@5.0.70, detect-node-es@1.1.0, devlop@1.1.0, embla-carousel@8.6.0, embla-carousel-react@8.6.0, embla-carousel-reactive-utils@8.6.0, emoji-regex@10.6.0, es-toolkit@1.53.2, esbuild-wasm@0.27.7, escalade@3.2.0, escape-string-regexp@5.0.0, estree-util-is-identifier-name@3.0.0, eventemitter3@5.0.4, eventsource-parser@3.1.1, extend@3.0.2, fast-xml-builder@1.3.2, fast-xml-parser@5.12.1, fastdom@1.0.12, fflate@0.6.11, fflate@0.8.3, framer-motion@14.14.0, get-east-asian-width@1.7.0, get-nonce@1.0.1, glsl-noise@0.0.0, hachure-fill@0.5.2, hast-util-from-html@2.1.0, hast-util-from-html-isomorphic@2.0.0, hast-util-from-parse5@8.0.4, hast-util-parse-selector@4.0.0, hast-util-raw@9.2.1, hast-util-sanitize@5.0.2, hast-util-to-html@9.0.7, hast-util-to-jsx-runtime@2.3.7, hast-util-to-parse5@8.0.1, hast-util-to-text@4.0.5, hast-util-whitespace@3.0.0, hastscript@9.0.3, html-url-attributes@3.0.1, html-void-elements@3.0.0, iconv-lite@0.6.3, immediate@3.0.6, immer@10.2.0, immer@11.2.10, import-meta-resolve@4.2.0, inline-style-parser@0.2.9, iota-array@1.0.0, is-alphabetical@2.0.1, is-alphanumerical@2.0.1, is-buffer@1.1.6, is-decimal@2.0.1, is-hexadecimal@2.0.1, is-plain-obj@4.1.0, is-promise@2.2.2, is-unsafe@2.0.3, its-fine@2.1.1, jiti@2.7.0, katex@0.16.47, katex@0.18.10, khroma@2.1.0, ktx-parse@1.1.0, layout-base@1.0.2, layout-base@2.0.1, lie@3.3.0, lodash-es@4.18.1, longest-streak@3.1.0, maath@0.10.8, magic-string@0.30.21, markdown-table@3.1.0, marked@16.4.2, marked@18.2.1, mdast-util-find-and-replace@3.0.5, mdast-util-from-markdown@2.1.0, mdast-util-gfm@3.1.0, mdast-util-gfm-autolink-literal@2.1.2, mdast-util-gfm-footnote@2.1.0, mdast-util-gfm-strikethrough@2.0.1, mdast-util-gfm-table@2.0.1, mdast-util-gfm-task-list-item@2.0.1, mdast-util-math@3.0.0, mdast-util-mdx-expression@2.0.1, mdast-util-mdx-jsx@3.2.2, mdast-util-mdxjs-esm@2.0.1, mdast-util-phrasing@4.1.0, mdast-util-to-hast@13.2.2, mdast-util-to-markdown@2.2.4, mdast-util-to-markdown-cjk-friendly@1.0.2, mdast-util-to-markdown-cjk-friendly-gfm-strikethrough@1.0.2, mdast-util-to-string@4.0.0, mermaid@11.17.2, mermaid@12.3.0, meshline@3.3.1, meshoptimizer@1.1.1, micromark@4.0.3, micromark-core-commonmark@2.0.4, micromark-extension-cjk-friendly@2.0.2, micromark-extension-cjk-friendly-gfm-strikethrough@2.0.1, micromark-extension-cjk-friendly-util@3.0.1, micromark-extension-gfm@3.0.0, micromark-extension-gfm-autolink-literal@2.1.0, micromark-extension-gfm-footnote@2.1.0, micromark-extension-gfm-strikethrough@2.1.0, micromark-extension-gfm-table@2.1.2, micromark-extension-gfm-tagfilter@2.0.0, micromark-extension-gfm-task-list-item@2.1.0, micromark-extension-math@3.1.0, micromark-factory-destination@2.0.1, micromark-factory-label@2.0.1, micromark-factory-space@2.1.0, micromark-factory-title@2.0.1, micromark-factory-whitespace@2.0.1, micromark-util-character@2.1.1, micromark-util-chunked@2.0.1, micromark-util-classify-character@2.0.1, micromark-util-combine-extensions@2.0.1, micromark-util-decode-numeric-character-reference@2.0.2, micromark-util-decode-string@2.0.1, micromark-util-edit-map@1.0.0, micromark-util-encode@2.0.1, micromark-util-html-tag-name@2.0.1, micromark-util-normalize-identifier@2.0.1, micromark-util-resolve-all@2.0.1, micromark-util-sanitize-uri@2.0.1, micromark-util-subtokenize@2.1.0, micromark-util-symbol@2.0.1, micromark-util-types@2.0.3, motion@14.14.0, motion-dom@14.14.0, motion-utils@14.7.0, ms@2.1.3, nanoid@3.3.20, nanoid@6.0.2, ndarray@1.1.1, ndarray-lanczos@0.3.0, ndarray-ops@1.2.2, ndarray-pixels@5.2.0, next@16.4.6, node-pg-migrate@9.0.0, oniguruma-parser@0.12.2, oniguruma-to-es@4.3.6, package-manager-detector@1.9.0, parse-entities@4.0.2, parse5@8.1.1, path-data-parser@0.1.0, path-expression-matcher@1.6.2, path-key@3.1.1, pg@8.23.1, pg-cloudflare@1.4.1, pg-connection-string@2.14.1, pg-pool@3.14.0, pg-protocol@1.16.1, pg-types@2.2.0, pgpass@1.0.5, pkce-challenge@5.0.1, points-on-curve@0.2.0, points-on-path@0.2.1, postcss@8.5.23, postgres-array@2.0.0, postgres-bytea@1.0.1, postgres-date@1.0.7, postgres-interval@1.2.0, property-graph@4.1.0, property-information@7.2.0, radix-ui@1.8.1, react@19.3.0, react-compiler-runtime@1.0.0, react-dom@19.3.0, react-is@16.13.1, react-markdown@10.1.0, react-redux@9.3.1, react-remove-scroll@2.7.2, react-remove-scroll-bar@2.3.8, react-style-singleton@2.2.3, react-use-measure@2.1.7, recharts@3.8.0, redux@5.0.1, redux-thunk@3.1.0, regex@6.1.0, regex-recursion@6.0.2, regex-utilities@2.3.0, rehype-harden@1.1.9, rehype-katex@7.0.1, rehype-raw@7.0.0, rehype-sanitize@6.0.0, remark-cjk-friendly@2.3.4, remark-cjk-friendly-gfm-strikethrough@2.3.3, remark-gfm@4.0.1, remark-math@6.0.0, remark-parse@11.0.0, remark-rehype@11.1.2, remark-stringify@11.0.0, require-from-string@2.0.2, reselect@5.1.1, roughjs@4.6.6, safer-buffer@2.1.2, scheduler@0.28.0, shebang-command@2.0.0, shebang-regex@3.0.0, shiki@4.6.0, sonner@2.0.8, space-separated-tokens@2.0.2, stats-gl@2.4.2, stats.js@0.17.0, strictdom@1.0.1, string-width@7.2.0, stringify-entities@4.0.5, strip-ansi@7.2.0, strnum@2.5.1, style-to-object@2.0.2, styled-jsx@5.1.6, stylis@4.4.0, suspend-react@0.1.3, swr@2.5.1, tailwind-merge@3.7.1, three@0.170.0, three@0.187.0, three-mesh-bvh@0.8.3, three-stdlib@2.36.1, throttleit@2.1.0, tiny-invariant@1.3.3, tinyexec@1.3.1, trim-lines@3.0.1, troika-three-text@0.52.5, troika-three-utils@0.52.5, troika-worker-utils@0.52.0, trough@2.2.0, ts-dedent@2.3.0, tunnel-rat@0.1.2, unified@11.0.5, uniq@1.0.1, unist-util-is@6.0.1, unist-util-position@5.0.0, unist-util-remove-position@5.0.0, unist-util-stringify-position@4.0.0, unist-util-visit@5.2.0, unist-util-visit-parents@6.1.0, use-callback-ref@1.3.3, use-sidecar@1.1.3, use-stick-to-bottom@1.1.6, use-sync-external-store@1.7.0, utility-types@3.11.0, uuid@14.0.3, vfile@6.0.3, vfile-location@5.0.4, vfile-message@4.0.4, victory-vendor@37.4.1, web-namespaces@2.0.1, webgl-constants@1.1.1, webgl-sdf-generator@1.1.1, wrap-ansi@9.0.2, xml-naming@0.3.0, xtend@4.0.2, yargs@18.0.0, zod@4.6.7, zustand@4.5.7, zustand@5.1.0, zwitch@2.0.4.
 
 Text from @antfu/install-pkg@2.1.0, LICENSE:
 
@@ -1865,6 +1897,17 @@ Listed by hand in `docs/third-party.manual.json`.
 - Source: https://github.com/vercel/ai-elements
 - Licence evidence: https://raw.githubusercontent.com/vercel/ai-elements/main/LICENSE, read 20 November 2026: 'Copyright 2023 Vercel, Inc. Licensed under the Apache License, Version 2.0'.
 
+### CaseMaker (engine source)
+
+- Version or tag: commit 8988792b627dd646e5acd02017a871aee1d0616c, 2026-11-20
+- Licence: Apache-2.0
+- How it is used: copied source
+- Origin: Forked into this repository so the enclosure generator can run CaseMaker's engine headless on the server
+- Changes: None to the copied files. Added entry.ts, build.mjs, stubs/ and the committed bundle dist/engine.mjs; see vendor/casemaker/UPSTREAM.md.
+- Referenced in: `vendor/casemaker/entry.ts`, `vendor/casemaker/dist/engine.mjs`, `src/lib/enclosure/casemaker.ts`
+- Source: https://github.com/SlyWombat/CaseMaker
+- Licence evidence: vendor/casemaker/LICENSE is the Apache License 2.0 text and vendor/casemaker/NOTICE opens 'Case Maker, Copyright 2026 Electric RV Corporation'; both copied from https://github.com/SlyWombat/CaseMaker at that commit, read 21 November 2026. NOTICE also lists fonts, opentype.js and occt-import-js (LGPL-2.1); none of those is copied or bundled here (stubbed), see vendor/casemaker/UPSTREAM.md.
+
 ### Inter (typeface)
 
 - Version or tag: Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0
@@ -1894,6 +1937,17 @@ Listed by hand in `docs/third-party.manual.json`.
 - Source: https://github.com/nodejs/docker-node
 - Licence evidence: Node.js LICENSE (https://github.com/nodejs/node/blob/main/LICENSE, and the same file in a Node 22 install) opens 'Node.js is licensed for use as follows:' followed by the MIT text and a list of externally maintained libraries; nodejs/docker-node LICENSE is MIT, 'Copyright (c) 2015 Joyent, Inc.'
 - Notes: Build and run stages of the web app image.
+
+### OpenSCAD (Debian package openscad)
+
+- Version or tag: 2021.01 in the Debian package the planner image installs
+- Licence: GPL-2.0-or-later with the CGAL exception (as the Debian package states it)
+- How it is used: separate process
+- Origin: Installed by apt in planner/Dockerfile; the planner runs it as a command line program and reads the STL it writes
+- Referenced in: `planner/Dockerfile`, `planner/enclosure.py`
+- Source: https://openscad.org
+- Licence evidence: /usr/share/doc/openscad/copyright in the installed Debian package: 'Files: * ... License: GPL-2+ with CGAL exception', read 21 November 2026.
+- Notes: Not linked into the planner and not modified. The planner image ships it as a Debian package; the YAPP_Box file is passed to it as an input.
 
 ### pgvector (Docker image pgvector/pgvector)
 
@@ -1956,3 +2010,14 @@ Listed by hand in `docs/third-party.manual.json`.
 - Referenced in: `src/components/ui/button.tsx`, `src/components/ui/dialog.tsx`, `src/components/ui/input.tsx`, `src/components/ui/table.tsx`, `src/components/ui/Card.tsx`, `src/components/ui/StatusBadge.tsx`
 - Source: https://github.com/shadcn-ui/ui
 - Licence evidence: The owner stated on 20 November 2026 that all six components come from Eigenia, his own project (Planet9V/eigenia). button.tsx, dialog.tsx, input.tsx and table.tsx describe themselves as 'shadcn/ui ... themed to Eigenia's design tokens'; shadcn/ui is published under the MIT License ('Copyright (c) 2023 shadcn', https://github.com/shadcn-ui/ui/blob/main/LICENSE.md). Card.tsx and StatusBadge.tsx carry no third-party note.
+
+### YAPP_Box (YAPPgenerator_v3.scad)
+
+- Version or tag: commit f9400c419ef1dea7dc0b3607876989b4f3faa2b7 (3.3.8), 2025-08-24
+- Licence: MIT
+- How it is used: copied source
+- Origin: Vendored so the planner service can render a project box with OpenSCAD
+- Changes: None. The file is copied unchanged; see planner/vendor/yapp_box/UPSTREAM.md.
+- Referenced in: `planner/vendor/yapp_box/YAPPgenerator_v3.scad`, `planner/enclosure.py`, `planner/Dockerfile`
+- Source: https://github.com/mrWheel/YAPP_Box
+- Licence evidence: planner/vendor/yapp_box/LICENSE is the MIT licence, 'Copyright (c) 2022 Willem Aandewiel', copied from https://github.com/mrWheel/YAPP_Box at that commit, read 21 November 2026.
