@@ -150,7 +150,8 @@ describe("personas (8.1)", () => {
     expect(r.model).toBe("market-model");
     expect(r.items).toHaveLength(1);
     const p = r.items[0];
-    expect(p.status).toBe("draft");
+    // approving the draft is the approval: the row is approved, not a second draft (U21)
+    expect(p.status).toBe("approved");
     expect(p.section).toBe("marketing/personas");
     expect(p.data.theirWords).toEqual([{ quote: "it just never works the way I need it to", researchId: ids.research }]);
     expect(p.data.generatedFrom.model).toBe("market-model");
@@ -160,7 +161,7 @@ describe("personas (8.1)", () => {
     expect(r.notes.filter((n) => /quotation/.test(n))).toHaveLength(2);
 
     const row = (await q<{ status: string; data: Record<string, unknown> }>("SELECT status, data FROM items WHERE id=$1", [p.id]))[0];
-    expect(row.status).toBe("draft");
+    expect(row.status).toBe("approved");
     // the run is the drafting engine's, and the draft carried the same sources
     const ev = await q<{ data: { generator: string } }>("SELECT data FROM events WHERE project_id=$1 AND kind='draft.run' ORDER BY id DESC LIMIT 1", [P]);
     expect(ev[0].data.generator).toBe("market.personas");
@@ -195,7 +196,7 @@ describe("competitors (8.2)", () => {
     const r = await ok({ generator: "competitors", researchId: ids.research });
     const by = Object.fromEntries(r.items.map((i) => [i.title, i]));
     expect(Object.keys(by).sort()).toEqual(["Do nothing", "Gadget One", "Gadget Three", "Gadget Two"]);
-    expect(r.items.every((i) => i.status === "draft")).toBe(true);
+    expect(r.items.every((i) => i.status === "approved")).toBe(true);
 
     expect(by["Gadget One"].data).toMatchObject({ basis: "research", sourceUrl: "https://cite.example/one", priceText: "$29.99", priceMinor: 2999, currency: "USD", researchId: ids.research });
     expect(by["Gadget One"].data.generatedFrom.sources).toEqual([{ kind: "research", id: ids.research, title: "What do travellers use?" }]);
@@ -332,7 +333,7 @@ describe("names (8.5)", () => {
     const r = await ok({ generator: "names", count: 3 });
     expect(r.items.map((i) => i.title).sort()).toEqual(["Light as a lie", "Tare Bear"]);
     const tare = r.items.find((i) => i.title === "Tare Bear")!;
-    expect(tare).toMatchObject({ status: "draft", section: "concept/names" });
+    expect(tare).toMatchObject({ status: "candidate", section: "concept/names" });
     expect(tare.data).toMatchObject({ kind: "Name", reason: "Weighing, friendly" });
     expect(tare.data.generatedFrom.sources[0].kind).toBe("brief");
     // the prompt says the model does not know availability

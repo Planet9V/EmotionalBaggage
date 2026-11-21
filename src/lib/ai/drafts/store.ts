@@ -20,6 +20,19 @@ const PIN_KIND_OF_ROLE: Record<string, PinKind | undefined> = {
 import { currentActor } from "@/lib/actor";
 import { HttpError, notFound } from "@/lib/api/route";
 import { defaultStatus, STORE_STATUSES } from "@/lib/api/schemas";
+
+/**
+ * The status a row starts at when its draft is approved. Approving a persona or a competitor is the approval:
+ * the row is approved, not a second draft that needs a second Approve (U21). An approved name joins the
+ * candidates. Positioning stays a draft on purpose: the reviewer attacks it before it can be approved
+ * (src/lib/market/rules.ts). Every other section starts at its first status, as a hand-added row does.
+ */
+const APPROVED_AS: Record<string, string> = {
+  "marketing/personas": "approved",
+  "marketing/competitors": "approved",
+  "concept/names": "candidate",
+};
+export const approvedStatus = (store: string) => APPROVED_AS[store] ?? defaultStatus(store);
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { dataSchemaFor } from "@/lib/domain/schemas";
 import type { Item } from "@/lib/types";
@@ -214,7 +227,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
 
   // The marketing rules hold on this path too: a drafted positioning cannot arrive approved or carrying a
   // critique (only the reviewer writes one), and a replacement keeps the critique rule.
-  if (op.op === "add") assertNewMarket({ section: d.target_store, data: fields.data, status: defaultStatus(d.target_store) });
+  if (op.op === "add") assertNewMarket({ section: d.target_store, data: fields.data, status: approvedStatus(d.target_store) });
   if (op.op === "replace" && before) assertMarketChange({ section: before.section, status: before.status, data: before.data }, { data: fields.data });
 
   if (op.op === "remove") {
@@ -242,7 +255,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
       `INSERT INTO items (project_id, section, title, body, data, status, sort)
        VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort),0)+1 FROM items WHERE project_id=$1))
        RETURNING ${ITEM_COLS}`,
-      [d.project_id, d.target_store, fields.title, fields.body, JSON.stringify(fields.data), defaultStatus(d.target_store)]
+      [d.project_id, d.target_store, fields.title, fields.body, JSON.stringify(fields.data), approvedStatus(d.target_store)]
     );
     item = toItem(r.rows[0]);
   }
