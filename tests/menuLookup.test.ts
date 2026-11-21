@@ -3,6 +3,20 @@ import { describe, expect, it } from "vitest";
 import { STAGES, storeKey } from "@/lib/menu";
 import { sectionLabel, stageLabel, statusesFor, storeHref, storeLabel, storeLink, storeRef, STORE_REFS } from "@/lib/menuLookup";
 
+describe("statuses come from the menu, not from the screens", () => {
+  it("are the ones the menu declares for the stores the content, names and batch screens used to list by hand", () => {
+    expect(statusesFor("marketing/ads")).toEqual(["draft", "approved", "running", "paused", "killed"]);
+    expect(statusesFor("sales/listing")).toEqual(["draft", "ready", "live"]);
+    expect(statusesFor("concept/names")).toEqual(["draft", "candidate", "shortlist", "chosen", "rejected"]);
+    expect(statusesFor("production/batches")).toEqual(["planned", "funded", "building", "shipped"]);
+    expect(statusesFor("marketing/social")).toEqual(["draft", "approved", "scheduled", "posted"]);
+  });
+  it("match what the API accepts for each store (STORE_STATUSES)", async () => {
+    const { STORE_STATUSES } = await import("@/lib/api/schemas");
+    for (const r of STORE_REFS) expect(statusesFor(r.store), r.store).toEqual(STORE_STATUSES[r.store]);
+  });
+});
+
 describe("menu lookups", () => {
   it("names stages and sections, and returns the key for one the menu does not have", () => {
     expect(stageLabel("prototype")).toBe("Prototype");
@@ -11,6 +25,9 @@ describe("menu lookups", () => {
     expect(sectionLabel("design/wiring")).toBe("Schematic");
     expect(sectionLabel("research/ask")).toBeTruthy();
     expect(sectionLabel("zz/none")).toBe("zz/none");
+    // a section that shows another section's store is named by its own path
+    expect(sectionLabel("prototype/sourcing")).toBe("Sourcing");
+    expect(storeHref("prototype/sourcing")).toBe("/s/prototype/sourcing");
   });
 
   it("gives the parts list to the Bill of materials, not to Physical layout, which shows the same store", () => {

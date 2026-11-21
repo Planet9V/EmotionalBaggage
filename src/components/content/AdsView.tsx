@@ -19,8 +19,10 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Card } from "@/components/ui/Card";
+import { statusesFor } from "@/lib/menuLookup";
+import { CONTENT } from "@/lib/content/schemas";
 
-const STATUSES = ["draft", "approved", "running", "paused", "killed"];
+const STATUSES = statusesFor(CONTENT.ads);
 // Money is in the concept's one currency (projects.currency, set on Unit economics), in its own minor unit.
 const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : (parseMinor(s, cur) ?? undefined));
 const fromMinor = (n: unknown, cur: string) => (typeof n === "number" ? toInputText(n, cur) : "");

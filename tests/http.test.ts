@@ -47,7 +47,7 @@ describe("fetchFileBytes", () => {
     const f = reply(200, {}, new Uint8Array([1, 2, 3]).buffer);
     vi.stubGlobal("fetch", f);
     expect(new Uint8Array(await fetchFileBytes(7))).toEqual(new Uint8Array([1, 2, 3]));
-    expect(f.mock.calls[0][0]).toBe("/api/files/7");
+    expect((f.mock.calls as unknown as [string][])[0][0]).toBe("/api/files/7");
   });
   it("fails with the caller's sentence, or a plain one, and signs out on a 401", async () => {
     vi.stubGlobal("fetch", reply(404, {}));

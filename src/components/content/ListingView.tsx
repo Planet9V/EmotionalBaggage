@@ -15,8 +15,10 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Card } from "@/components/ui/Card";
+import { statusesFor } from "@/lib/menuLookup";
+import { CONTENT } from "@/lib/content/schemas";
 
-const STATUSES = ["draft", "ready", "live"];
+const STATUSES = statusesFor(CONTENT.listing);
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 
 export function ListingView({ project, store }: ViewProps) {
