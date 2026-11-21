@@ -37,6 +37,8 @@ export type OpenAIOptions = FailureOptions & {
   dimensions: number;
   /** assistant reply; default echoes the last user message */
   reply?: string | ((messages: { role: string; content: unknown }[]) => string);
+  /** a test's own vectors (for search by meaning between texts that share no word); default embeddingFor */
+  embed?: (text: string, dimensions: number) => number[];
 };
 
 const DEFAULTS: OpenAIOptions = { prefix: "/v1", models: ["stand-in-chat", "stand-in-embed"], dimensions: 8 };
@@ -134,7 +136,7 @@ export function start(options?: Partial<OpenAIOptions>) {
         object: "list", // [OAI-EMB]
         data: inputs.map((text, index) => ({
           object: "embedding", // [OAI-EMB]
-          embedding: embeddingFor(text, dim), // [OAI-EMB] (values are the stand-in's own)
+          embedding: (o.embed ?? embeddingFor)(text, dim), // [OAI-EMB] (values are the stand-in's own)
           index, // [OAI-EMB]
         })),
         model: b.model ?? o.models[1] ?? o.models[0], // [OAI-EMB]

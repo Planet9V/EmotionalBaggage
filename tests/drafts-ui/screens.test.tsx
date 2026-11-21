@@ -240,7 +240,7 @@ describe("helpers", () => {
   });
 
   it("Verify this fills the question and, for a claim, chooses it", () => {
-    expect(verifyHref({ id: 3, section: "research/claims", title: "AA cells last 6 months", body: "" })).toBe("/s/research/ask?ask=AA+cells+last+6+months&claim=3");
-    expect(verifyHref({ id: 4, section: "design/requirements", title: "Power", body: "Sleep under 200 µA" })).toBe("/s/research/ask?ask=Power%3A+Sleep+under+200+%C2%B5A");
+    expect(verifyHref({ id: 3, section: "research/claims", title: "AA cells last 6 months", body: "" })).toBe("/s/research/ask?ask=AA+cells+last+6+months&item=3&claim=3");
+    expect(verifyHref({ id: 4, section: "design/requirements", title: "Power", body: "Sleep under 200 µA" })).toBe("/s/research/ask?ask=Power%3A+Sleep+under+200+%C2%B5A&item=4");
   });
 });

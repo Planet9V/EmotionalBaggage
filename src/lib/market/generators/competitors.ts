@@ -81,7 +81,10 @@ export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
       notes.push(`"${x.name}": the price "${priceText}" is not in the answer and was removed.`);
       priceText = "";
     }
-    const price = priceText ? readPrice(priceText) : null;
+    // A price is stored as a number (what pricing compares against) only when the row has a source. An unsourced
+    // row keeps the words, shown as "unsourced: check this", and is never saved as a figure.
+    const price = priceText && src ? readPrice(priceText) : null;
+    if (priceText && !src) notes.push(`"${x.name}": the price "${priceText}" has no source, so it is kept as words, not as a figure.`);
     return [
       {
         section: "marketing/competitors",

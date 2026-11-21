@@ -14,7 +14,7 @@ const VERIFIABLE = new Set(["research/claims", "design/requirements"]);
 /** The address of Research, Ask with a row's text as the question and, for a claim, the claim chosen for evidence. */
 export function verifyHref(item: Pick<Item, "id" | "section" | "title" | "body">) {
   const question = [item.title, item.body].filter(Boolean).join(": ").slice(0, 600);
-  const p = new URLSearchParams({ ask: question });
+  const p = new URLSearchParams({ ask: question, item: String(item.id) });
   if (item.section === "research/claims") p.set("claim", String(item.id));
   return `/s/research/ask?${p.toString()}`;
 }
@@ -42,6 +42,7 @@ export function RowAssist({ item }: { item: Item }) {
           </Button>
         )}
       </div>
+      <AttachedResearch item={item} />
       {challenge.data && (
         <div role="status" className="space-y-1.5">
           <p className="whitespace-pre-wrap text-sm text-primary">{challenge.data.reply}</p>
@@ -56,5 +57,25 @@ export function RowAssist({ item }: { item: Item }) {
         </p>
       )}
     </fieldset>
+  );
+}
+
+/** Research answers "Verify this" attached to the row: the question, how many sources, and where to read it. */
+function AttachedResearch({ item }: { item: Item }) {
+  const list = Array.isArray(item.data.research) ? (item.data.research as { researchId: number; question: string; sources: number; askedAt: string }[]) : [];
+  if (!list.length) return null;
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-primary">Research attached</p>
+      <ul className="space-y-1 text-xs text-secondary">
+        {list.map((r) => (
+          <li key={r.researchId}>
+            <span className="wrap-anywhere">{r.question}</span>{" "}
+            <span className="text-muted">({r.sources} {r.sources === 1 ? "source" : "sources"}, {r.askedAt.slice(0, 10)})</span>{" "}
+            <Link href={`/s/research/ask#research-${r.researchId}`} className="text-link hover:underline">Read it</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
