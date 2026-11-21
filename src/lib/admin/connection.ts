@@ -1,8 +1,9 @@
-// "Test connection" for Admin. Each test makes ONE cheap read-only call with a time limit and answers
-// { ok, message, detail? }. A failed test is a normal answer, not an error. Secrets never appear in the answer:
+// "Test connection" for Admin. Each test makes ONE cheap call with a time limit and answers
+// { ok, message, detail? }. Every call is read-only except Perplexity's, which has no free call (see testPerplexity). A failed test is a normal answer, not an error. Secrets never appear in the answer:
 // any text that comes back from outside is cleaned of the key that was sent before it is shown.
 import { pool, ready } from "@/lib/db";
 import { getCredential } from "@/lib/settings";
+import { AGENT_PATH, baseUrl as perplexityBase, DEFAULT_EFFORT, readResponse } from "@/lib/research/perplexity";
 import { audit } from "./audit";
 import { plannerUrl } from "./planner";
 import { getPrinterRow, requireFamily, resolveAccess, valuesOf } from "./printers";
@@ -18,7 +19,7 @@ export function setConnectionTestLimit(ms: number | null) {
   limitMs = ms ?? DEFAULT_LIMIT_MS;
 }
 
-const seconds = () => (limitMs >= 1000 ? `${Math.round(limitMs / 1000)} seconds` : `${limitMs} ms`);
+const seconds = (ms = limitMs) => (ms >= 1000 ? `${Math.round(ms / 1000)} seconds` : `${ms} ms`);
 
 /** Replaces every secret in a text with [hidden]. */
 export function scrub(text: string, secrets: (string | null | undefined)[]): string {
@@ -29,9 +30,9 @@ export function scrub(text: string, secrets: (string | null | undefined)[]): str
   return out;
 }
 
-function networkFailure(e: unknown, secrets: (string | null | undefined)[]): TestResult {
+function networkFailure(e: unknown, secrets: (string | null | undefined)[], ms = limitMs): TestResult {
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
-  if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, message: `No answer within ${seconds()}.` };
+  if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, message: `No answer within ${seconds(ms)}.` };
   const code = err?.cause?.code;
   if (code === "ECONNREFUSED") return { ok: false, message: "Nothing answered at that address (connection refused). Check the address and that the service is running." };
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") return { ok: false, message: "That host name could not be found. Check the address." };
@@ -69,11 +70,11 @@ async function httpFailure(res: Response, who: string, secrets: (string | null |
 
 type Call = { res: Response } | { fail: TestResult };
 
-async function call(url: string, init: RequestInit, secrets: (string | null | undefined)[]): Promise<Call> {
+async function call(url: string, init: RequestInit, secrets: (string | null | undefined)[], ms = limitMs): Promise<Call> {
   try {
-    return { res: await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(limitMs) }) };
+    return { res: await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) }) };
   } catch (e) {
-    return { fail: networkFailure(e, secrets) };
+    return { fail: networkFailure(e, secrets, ms) };
   }
 }
 
@@ -129,11 +130,54 @@ async function testEmbedding(t: Extract<ConnectionTest, { kind: "embedding" }>):
   return { ok: true, message: `A vector came back, ${vec.length} wide, as expected.`, detail: { width: vec.length } };
 }
 
+/**
+ * Perplexity documents no free read-only call (no model list, no key check; docs/research/perplexity-api.md),
+ * so the test asks the smallest documented question: only `input` and `effort` (fast, the cheapest effort),
+ * no instructions and no tools. Perplexity bills it like any question, and the message says so.
+ * A real answer can take longer than the other tests' 10 seconds, so it gets 30 unless a test shortens the limit.
+ */
+export const PERPLEXITY_TEST_INPUT = "Reply with the single word: ok";
+const PERPLEXITY_LIMIT_MS = 30_000;
+const BILLED = "Perplexity bills each call, so this test was charged as one short question.";
+
 async function testPerplexity(t: Extract<ConnectionTest, { kind: "perplexity" }>): Promise<TestResult> {
   const given = t.apiKey?.trim();
   const key = given ? given : await getCredential("perplexity", "apiKey");
   if (!key) return { ok: false, message: "No key is saved." };
-  return { ok: false, message: "A connection test for Perplexity is not built yet." };
+  const ms = limitMs === DEFAULT_LIMIT_MS ? PERPLEXITY_LIMIT_MS : limitMs;
+  const c = await call(
+    `${perplexityBase()}${AGENT_PATH}`,
+    { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify({ effort: DEFAULT_EFFORT, input: PERPLEXITY_TEST_INPUT }) },
+    [key],
+    ms
+  );
+  if ("fail" in c) return c.fail;
+  const res = c.res;
+  if (res.status === 402) {
+    const says = await upstreamSays(res, [key]);
+    return { ok: false, message: "Perplexity accepted the key, but says the account has no credit left (HTTP 402). Add credit in the Perplexity console.", detail: { status: 402, ...(says ? { says } : {}) } };
+  }
+  if (res.status === 429) {
+    const says = await upstreamSays(res, [key]);
+    const wait = res.headers.get("retry-after");
+    return {
+      ok: false,
+      message: `Perplexity is limiting how fast this account can ask (HTTP 429).${wait && /^\d+$/.test(wait) ? ` Try again in ${wait} seconds.` : " Try again shortly."}`,
+      detail: { status: 429, ...(says ? { says } : {}) },
+    };
+  }
+  if (res.status !== 200) return httpFailure(res, "Perplexity", [key], "Check PERPLEXITY_BASE_URL, which should be https://api.perplexity.ai or empty.");
+  const body = await readJson(res);
+  const r = body === undefined ? { malformed: "not JSON" } : readResponse(body);
+  if ("malformed" in r) return { ok: false, message: "Something answered at that address, but not in the shape of Perplexity's Agent API. Check PERPLEXITY_BASE_URL." };
+  const detail = { model: r.model ?? null, effort: r.effort ?? null, costUsd: r.costUsd ?? null };
+  if (r.status && r.status !== "completed" && !(r.status === "incomplete" && r.answer)) {
+    const said = r.error ? scrub(r.error, [key]).trim().slice(0, 300) : "";
+    const why = said ? ` Perplexity said: ${said}${/[.!?]$/.test(said) ? "" : "."}` : "";
+    return { ok: false, message: `Perplexity accepted the key, but the test question did not complete (status ${r.status}).${why} ${BILLED}`, detail };
+  }
+  const cost = typeof r.costUsd === "number" ? ` Perplexity estimated it at $${r.costUsd.toFixed(4)}.` : "";
+  return { ok: true, message: `Perplexity accepted the key and answered${r.model ? ` with ${r.model}` : ""}. ${BILLED}${cost}`, detail };
 }
 
 async function testPrinter(t: Extract<ConnectionTest, { kind: "printer" }>): Promise<{ result: TestResult; family: string }> {

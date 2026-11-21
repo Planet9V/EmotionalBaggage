@@ -8,10 +8,11 @@ import { PUT as putCredentials } from "@/app/api/admin/credentials/[provider]/ro
 import { POST as addPrinter } from "@/app/api/admin/printers/route";
 import { PUT as putSettings } from "@/app/api/admin/settings/route";
 import { readAudit } from "@/lib/admin/audit";
-import { scrub, setConnectionTestLimit } from "@/lib/admin/connection";
+import { PERPLEXITY_TEST_INPUT, scrub, setConnectionTestLimit } from "@/lib/admin/connection";
 import * as openai from "../standins/openai";
 import * as octoprint from "../standins/octoprint";
 import * as moonraker from "../standins/moonraker";
+import * as perplexity from "../standins/perplexity";
 import { json as reply, startStandIn, type StandIn } from "../standins/core";
 import { json, read } from "../api/helpers";
 import { clearAdmin, restore, snapshot } from "./fixture";
@@ -161,11 +162,117 @@ describe("kind: embedding", () => {
 });
 
 describe("kind: perplexity", () => {
-  it("says no key is saved, or that the test is not built yet, and calls nothing", async () => {
+  const KEY = "pplx-conn-test-key-0123456789";
+  const savedBase = process.env.PERPLEXITY_BASE_URL;
+  afterEach(() => {
+    if (savedBase === undefined) delete process.env.PERPLEXITY_BASE_URL;
+    else process.env.PERPLEXITY_BASE_URL = savedBase;
+  });
+  const point = (url: string) => {
+    process.env.PERPLEXITY_BASE_URL = url;
+  };
+
+  it("says no key is saved and calls nothing", async () => {
+    const s = await track(perplexity.start({ apiKey: KEY }));
+    point(s.url);
     expect((await test({ kind: "perplexity" })).body).toEqual({ ok: false, message: "No key is saved." });
-    expect((await test({ kind: "perplexity", apiKey: "pplx-given-000000" })).body).toEqual({ ok: false, message: "A connection test for Perplexity is not built yet." });
-    await putCredentials(json("PUT", { fields: { apiKey: "pplx-saved-000000" } }), { params: Promise.resolve({ provider: "perplexity" }) });
-    expect((await test({ kind: "perplexity" })).body.message).toBe("A connection test for Perplexity is not built yet.");
+    expect(s.requests).toHaveLength(0);
+  });
+
+  it("asks the smallest documented question with the given key, then the saved one, and says it is billed", async () => {
+    const s = await track(perplexity.start({ apiKey: KEY, reply: "ok", costUsd: 0.0004 }));
+    point(s.url);
+    const r = await test({ kind: "perplexity", apiKey: KEY });
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({
+      ok: true,
+      message: "Perplexity accepted the key and answered with openai/gpt-6-luna. Perplexity bills each call, so this test was charged as one short question. Perplexity estimated it at $0.0004.",
+      detail: { model: "openai/gpt-6-luna", effort: "fast@2026-10-16.0", costUsd: 0.0004 },
+    });
+    expect(s.requests.map((x) => [x.method, x.path, x.headers.authorization, x.body])).toEqual([
+      ["POST", "/v1/agent", `Bearer ${KEY}`, { effort: "fast", input: PERPLEXITY_TEST_INPUT }],
+    ]);
+
+    await putCredentials(json("PUT", { fields: { apiKey: KEY } }), { params: Promise.resolve({ provider: "perplexity" }) });
+    const saved = await test({ kind: "perplexity" });
+    expect(saved.body.ok).toBe(true);
+    expect(s.requests[1].headers.authorization).toBe(`Bearer ${KEY}`);
+    // without a cost estimate the sentence about billing stays
+    s.set({ costUsd: undefined });
+    expect((await test({ kind: "perplexity" })).body.message).toBe("Perplexity accepted the key and answered with openai/gpt-6-luna. Perplexity bills each call, so this test was charged as one short question.");
+  });
+
+  it("explains a wrong key without ever showing it", async () => {
+    const s = await track(perplexity.start({ apiKey: KEY }));
+    point(s.url);
+    const WRONG = "pplx-wrong-key-9876543210";
+    const r = await test({ kind: "perplexity", apiKey: WRONG });
+    expect(r.body.ok).toBe(false);
+    expect(r.body.message).toBe("Perplexity refused the key (HTTP 401). Check the key.");
+    expect(JSON.stringify(r.body)).not.toContain(WRONG);
+  });
+
+  it("removes the key from anything Perplexity sends back", async () => {
+    const ECHO = "pplx-echoed-key-ABCDEFGHIJ";
+    const s = await track(startStandIn({}, (req) => reply(401, { error: { message: `Bad key: ${req.headers.authorization}` } })));
+    point(s.url);
+    const r = await test({ kind: "perplexity", apiKey: ECHO });
+    expect(r.body.detail!.says).toBe("Bad key: Bearer [hidden]");
+    expect(JSON.stringify(r.body)).not.toContain(ECHO);
+    // and from a failed run's error inside a 200
+    const s2 = await track(startStandIn({}, (req) => reply(200, { status: "failed", output: [], error: { message: `run failed for ${req.headers.authorization}` } })));
+    point(s2.url);
+    const f = await test({ kind: "perplexity", apiKey: ECHO });
+    expect(f.body.ok).toBe(false);
+    expect(f.body.message).toMatch(/did not complete \(status failed\)\. Perplexity said: run failed for Bearer \[hidden\]\. Perplexity bills each call/);
+    expect(JSON.stringify(f.body)).not.toContain(ECHO);
+  });
+
+  it("explains a time-out, an unreachable address and a refused connection", async () => {
+    const s = await track(perplexity.start({ apiKey: KEY, delayMs: 2000 }));
+    point(s.url);
+    setConnectionTestLimit(150);
+    const started = Date.now();
+    const slow = await test({ kind: "perplexity", apiKey: KEY });
+    expect(slow.body).toEqual({ ok: false, message: "No answer within 150 ms." });
+    expect(Date.now() - started).toBeLessThan(1500);
+    setConnectionTestLimit(null);
+
+    point(await deadAddress());
+    const dead = await test({ kind: "perplexity", apiKey: KEY });
+    expect(dead.body.ok).toBe(false);
+    expect(dead.body.message).toBe("Nothing answered at that address (connection refused). Check the address and that the service is running.");
+    expect(JSON.stringify(dead.body)).not.toContain(KEY);
+
+    point("http://perplexity-stand-in.invalid");
+    const unknown = await test({ kind: "perplexity", apiKey: KEY });
+    expect(unknown.body).toEqual({ ok: false, message: "That host name could not be found. Check the address." });
+  });
+
+  it("explains no credit, a rate limit, a server error and something that is not Perplexity", async () => {
+    const s = await track(perplexity.start({ apiKey: KEY, failWith: 402 }));
+    point(s.url);
+    const credit = await test({ kind: "perplexity", apiKey: KEY });
+    expect(credit.body).toMatchObject({ ok: false, message: "Perplexity accepted the key, but says the account has no credit left (HTTP 402). Add credit in the Perplexity console.", detail: { status: 402 } });
+
+    s.set({ failWith: undefined, rateLimit: "request_rate_limit_exceeded" });
+    const limited = await test({ kind: "perplexity", apiKey: KEY });
+    expect(limited.body).toMatchObject({ ok: false, message: "Perplexity is limiting how fast this account can ask (HTTP 429). Try again in 7 seconds." });
+
+    s.set({ rateLimit: undefined, failWith: 503 });
+    expect((await test({ kind: "perplexity", apiKey: KEY })).body.message).toBe("Perplexity answered with a server error (HTTP 503).");
+
+    s.set({ failWith: undefined, malformed: "no-output" });
+    expect((await test({ kind: "perplexity", apiKey: KEY })).body).toEqual({
+      ok: false,
+      message: "Something answered at that address, but not in the shape of Perplexity's Agent API. Check PERPLEXITY_BASE_URL.",
+    });
+
+    const other = await track(octoprint.start());
+    point(other.url);
+    const nothing = await test({ kind: "perplexity", apiKey: KEY });
+    expect(nothing.body.ok).toBe(false);
+    expect(nothing.body.message).toMatch(/^Perplexity (has nothing at that path \(HTTP 404\)|refused the key)/);
   });
 });
 
@@ -262,7 +369,12 @@ describe("kind: database", () => {
 
 describe("audit of tests", () => {
   it("records each test with its result and no values", async () => {
+    const s = await track(perplexity.start({ apiKey: "pplx-the-right-key-0000" }));
+    const savedBase = process.env.PERPLEXITY_BASE_URL;
+    process.env.PERPLEXITY_BASE_URL = s.url;
     await test({ kind: "perplexity", apiKey: "pplx-audit-secret-0000" });
+    if (savedBase === undefined) delete process.env.PERPLEXITY_BASE_URL;
+    else process.env.PERPLEXITY_BASE_URL = savedBase;
     await test({ kind: "database" });
     await test({ kind: "printer", family: "file-only" });
     const entries = (await readAudit()).slice(0, 3);
