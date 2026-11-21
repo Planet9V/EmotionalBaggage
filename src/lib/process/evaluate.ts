@@ -115,18 +115,26 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
     }
     case "decision-made": {
       const key = check.params.key;
-      const d = rows
+      const all = rows
         .filter((r) => r.section === DECISIONS_STORE)
         .map(toDecision)
-        .find((x) => x?.key === key);
+        .filter((x): x is NonNullable<typeof x> => !!x);
+      let d = all.find((x) => x.key === key);
+      let via = "";
+      if (!d && check.params.fallback === "root") {
+        d = all.find((x) => x.parent === "");
+        if (d) via = ` Read from the first decision in the tree, because none has the key "${key}".`;
+      }
       if (!d) {
-        return { ...base, met: false, detail: `No decision has the key "${key}" yet.`, action: `Add the "${key}" decision to the decision tree` };
+        return check.params.fallback === "root"
+          ? { ...base, met: false, detail: "The decision tree is empty.", action: "Add the go/no-go question as the first decision" }
+          : { ...base, met: false, detail: `No decision has the key "${key}" yet.`, action: `Add the "${key}" decision to the decision tree` };
       }
       const chosen = d.options.find((o) => o.id === d.chosen);
       return {
         ...base,
         met: d.chosen !== "",
-        detail: d.chosen ? `Chosen: ${chosen?.label ?? d.chosen}.` : "Not decided yet.",
+        detail: (d.chosen ? `Chosen: ${chosen?.label ?? d.chosen}.` : `"${d.question}" is not decided yet.`) + via,
         action: `Decide "${d.question}"`,
       };
     }

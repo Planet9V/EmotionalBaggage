@@ -50,7 +50,7 @@ function Body({ projectId, name }: { projectId: string; name: string }) {
       </PageHeader>
       <div className="grid gap-8 px-8 py-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-8">
-          <NextStepCard projectId={projectId} />
+          <NextStepCard projectId={projectId} showGate={false} />
           {loading ? (
             <div className="space-y-4" aria-busy="true" aria-label="Loading the stages">
               {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-16 w-full" />)}

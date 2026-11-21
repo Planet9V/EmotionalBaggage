@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { q } from "@/lib/db";
 import { POST as addProject } from "@/app/api/projects/route";
 import { GET as getProcess } from "@/app/api/projects/[id]/process/route";
@@ -21,7 +21,15 @@ const move = async (id: string, stage: string) => read<ProcessResponse & Err>(aw
 const add = (id: string, section: string, title: string, extra: Record<string, unknown> = {}) =>
   addItem(json("POST", { section, title, ...extra }), ctx(id));
 
+// The audit log outlives deleted concepts, and a concept's id comes from its name, so lines from an
+// earlier run can carry the same id: count only lines written by this run.
+let since = 0;
+
 describe("process API", () => {
+  beforeAll(async () => {
+    since = Number((await q<{ n: string | null }>("SELECT max(id) AS n FROM audit_log"))[0].n ?? 0);
+  });
+
   afterAll(async () => {
     await q("DELETE FROM projects WHERE name LIKE 'ZZ Process%'");
   });
@@ -79,8 +87,8 @@ describe("process API", () => {
     expect(o.body.history[0]).toMatchObject({ kind: "gate.overridden", summary: "Overrode the Concept gate: Validated with ten buyers in person" });
 
     const [line] = await q<{ actor: string; action: string; detail: { stage: string; reason: string; unmet: { id: string }[] } }>(
-      "SELECT actor, action, detail FROM audit_log WHERE project_id=$1 AND action='gate.overridden'",
-      [id]
+      "SELECT actor, action, detail FROM audit_log WHERE project_id=$1 AND action='gate.overridden' AND id > $2",
+      [id, since]
     );
     expect(line.actor).toBe("demo");
     expect(line.detail.stage).toBe("concept");
@@ -91,7 +99,7 @@ describe("process API", () => {
     expect(m.status).toBe(200);
     expect(m.body.stage).toBe("research");
     expect(m.body.history[0]).toMatchObject({ kind: "stage.advanced", data: { from: "concept", to: "research", passedBy: "override" } });
-    expect((await q("SELECT 1 FROM audit_log WHERE project_id=$1 AND action='stage.advanced'", [id])).length).toBe(1);
+    expect((await q("SELECT 1 FROM audit_log WHERE project_id=$1 AND action='stage.advanced' AND id > $2", [id, since])).length).toBe(1);
   });
 
   it("an override of a gate whose checks are all met is refused", async () => {
@@ -114,7 +122,7 @@ describe("process API", () => {
     expect(r.status).toBe(200);
     expect(r.body.stage).toBe("concept");
     expect(r.body.history[0]).toMatchObject({ kind: "stage.moved-back", summary: "Moved back from Prototype to Concept" });
-    expect((await q("SELECT 1 FROM audit_log WHERE project_id=$1 AND action='stage.moved-back'", [id])).length).toBe(1);
+    expect((await q("SELECT 1 FROM audit_log WHERE project_id=$1 AND action='stage.moved-back' AND id > $2", [id, since])).length).toBe(1);
   });
 
   it("refuses a request from another site", async () => {

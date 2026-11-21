@@ -42,9 +42,22 @@ describe("check kinds", () => {
   it("decision-made finds the decision by key and needs a chosen option", () => {
     const c = check({ id: "a", label: "Go", kind: "decision-made", params: { key: "go" } });
     expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: 'No decision has the key "go" yet.', href: "/s/concept/decisions" });
-    expect(evaluateCheck(c, [decision("go", "", [], "Build it?")])).toMatchObject({ met: false, detail: "Not decided yet.", action: 'Decide "Build it?"' });
+    expect(evaluateCheck(c, [decision("go", "", [], "Build it?")])).toMatchObject({ met: false, detail: '"Build it?" is not decided yet.', action: 'Decide "Build it?"' });
     expect(evaluateCheck(c, [decision("go", "yes")])).toMatchObject({ met: true, detail: "Chosen: Yes." });
     expect(evaluateCheck(c, [decision("other", "yes")]).met).toBe(false);
+  });
+
+  it("decision-made with fallback root reads the first top-level decision when no decision has the key", () => {
+    const c = check({ id: "a", label: "Go", kind: "decision-made", params: { key: "go", fallback: "root" } });
+    expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: "The decision tree is empty.", action: "Add the go/no-go question as the first decision" });
+    const child = { ...decision("child", "yes"), data: { key: "child", parent: "build-first-batch", chosen: "yes", options: [] } };
+    const root = decision("build-first-batch", "", [], "Build the first batch?");
+    const r = evaluateCheck(c, [child, root]);
+    expect(r.met).toBe(false);
+    expect(r.detail).toBe('"Build the first batch?" is not decided yet. Read from the first decision in the tree, because none has the key "go".');
+    expect(evaluateCheck(c, [decision("build-first-batch", "yes")]).met).toBe(true);
+    // A decision with the key wins over the root.
+    expect(evaluateCheck(c, [decision("first", "yes"), decision("go", "")]).met).toBe(false);
   });
 
   it("no-open counts open and blocked rows by default, or the statuses given", () => {
@@ -162,7 +175,7 @@ describe("nextStep", () => {
   it.each(PRODUCT_TYPE_KEYS)("%s: the first unmet check of the current stage, then Advance once the gate is met", (t) => {
     const def = processFor(t);
     const rows = [row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open")];
-    expect(nextStep(def, empty, rows, { oneLiner: "x" })).toMatchObject({ label: 'Add the "go" decision to the decision tree', href: "/s/concept/decisions" });
+    expect(nextStep(def, empty, rows, { oneLiner: "x" })).toMatchObject({ label: "Add the go/no-go question as the first decision", href: "/s/concept/decisions" });
     expect(nextStep(def, empty, [...rows, decision("go", "yes")], { oneLiner: "x" })).toEqual({
       label: "Advance to Research",
       reason: "Every check of the Concept gate is met.",

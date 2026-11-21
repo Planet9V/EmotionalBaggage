@@ -18,7 +18,12 @@ export type ConceptField = "name" | "oneLiner";
 export type Check =
   | { id: string; label: string; kind: "min-rows"; params: { section: string; min: number } }
   | { id: string; label: string; kind: "all-status"; params: { section: string; statuses: string[] } }
-  | { id: string; label: string; kind: "decision-made"; params: { key: string } }
+  /**
+   * `fallback: "root"`: when no decision has the key, the first top-level decision of the tree is
+   * read instead. The decision tree screen makes keys from the question, so a user cannot always
+   * type the key; the first decision of a tree is where the go/no-go question sits.
+   */
+  | { id: string; label: string; kind: "decision-made"; params: { key: string; fallback?: "root" } }
   | { id: string; label: string; kind: "no-open"; params: { section: string; statuses?: string[] } }
   | { id: string; label: string; kind: "claims-verified"; params: { share: number; section?: string } }
   | { id: string; label: string; kind: "field-set"; params: { field: ConceptField } };
@@ -37,7 +42,7 @@ export const GO_DECISION = "go";
 const conceptGate: Check[] = [
   { id: "concept.one-liner", label: "The concept has a one-line description", kind: "field-set", params: { field: "oneLiner" } },
   { id: "concept.brief", label: "The brief has at least three lines", kind: "min-rows", params: { section: "concept/brief", min: 3 } },
-  { id: "concept.go", label: `The go/no-go decision (key "${GO_DECISION}") is decided`, kind: "decision-made", params: { key: GO_DECISION } },
+  { id: "concept.go", label: "The go/no-go decision is decided", kind: "decision-made", params: { key: GO_DECISION, fallback: "root" } },
   { id: "concept.questions", label: "No open question is left open or blocked", kind: "no-open", params: { section: "concept/questions" } },
 ];
 

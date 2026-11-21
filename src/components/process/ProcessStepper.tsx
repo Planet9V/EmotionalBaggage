@@ -38,7 +38,8 @@ export function ProcessStepper({ projectId, view }: { projectId: string; view: P
       <ol aria-label="Stages and their gates" className="relative">
         {view.stages.map((s, i) => (
           <StageRow
-            key={s.key}
+            // Remounts when the stage changes position, so the new current stage opens and the old one closes.
+            key={`${s.key}:${s.position}`}
             stage={s}
             last={i === view.stages.length - 1}
             next={nextOf(i)}

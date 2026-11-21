@@ -9,7 +9,7 @@ import { CheckList } from "./CheckList";
 import { gateBadge } from "./gateBadge";
 
 /** The next step in full, for the overview: what to do, why, and the current stage's gate. */
-export function NextStepCard({ projectId }: { projectId: string }) {
+export function NextStepCard({ projectId, showGate = true }: { projectId: string; showGate?: boolean }) {
   const { view, loading, error, retry } = useProcess(projectId);
 
   if (loading) {
@@ -44,21 +44,23 @@ export function NextStepCard({ projectId }: { projectId: string }) {
         >
           {next.label} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
-        <Link href="/process" className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-link">
-          <ListChecks className="h-4 w-4" aria-hidden /> Open the process
-        </Link>
+        {showGate && (
+          <Link href="/process" className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-link">
+            <ListChecks className="h-4 w-4" aria-hidden /> Open the process
+          </Link>
+        )}
       </div>
       <p className="mt-2 max-w-3xl text-sm text-secondary">
         <span className="font-semibold text-primary">Why:</span> {next.reason}
       </p>
-      <div className="mt-4">
+      {showGate && <div className="mt-4">
         <h3 id="current-gate-h" className="flex items-center gap-2 text-sm font-semibold text-primary">
           The {current.label} gate <StatusBadge tone={badge.tone}>{badge.text}</StatusBadge>
         </h3>
         <div className="mt-2">
           <CheckList checks={current.result.checks} labelledBy="current-gate-h" />
         </div>
-      </div>
+      </div>}
     </section>
   );
 }
