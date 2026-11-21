@@ -54,7 +54,8 @@ function certificate() {
   return { key: readFileSync(join(certDir, "k.pem")), cert: readFileSync(join(certDir, "c.pem")) };
 }
 
-export async function start(options?: Partial<BambuStandInOptions>) {
+/** `ports` pins the MQTT and FTPS ports (the printer's real 8883 and 990) for a browser check against the app, which has no port setting. Tests use random ports. */
+export async function start(options?: Partial<BambuStandInOptions>, ports?: { mqtt: number; ftp: number }) {
   const opts: BambuStandInOptions = { serial: "01P00A000000001", accessCode: "12345678", developerMode: true, silent: false, mute: false, partial: false, ...(options ?? {}) };
   const events: Recorded[] = [];
   const commands: Record<string, unknown>[] = [];
@@ -140,7 +141,7 @@ export async function start(options?: Partial<BambuStandInOptions>) {
     socket.on("error", () => undefined);
     broker.handle(socket);
   });
-  await new Promise<void>((r) => mqttServer.listen(0, "127.0.0.1", r));
+  await new Promise<void>((r) => mqttServer.listen(ports?.mqtt ?? 0, "127.0.0.1", r));
   const mqttPort = (mqttServer.address() as AddressInfo).port;
 
   // ftp-srv adds a listener for each of these signals per server and never removes it; take back the ones this server added.
@@ -157,7 +158,7 @@ export async function start(options?: Partial<BambuStandInOptions>) {
       reject(new Error("530 Login incorrect"));
     }
   });
-  const ftpPort = await listenFtp(ftp);
+  const ftpPort = await listenFtp(ftp, ports?.ftp);
 
   const uploads = () => readdirSync(root).map((n) => ({ name: n, size: statSync(join(root, n)).size }));
 
@@ -199,18 +200,18 @@ function silentLog() {
   return l;
 }
 
-async function listenFtp(ftp: FtpSrv): Promise<number> {
+async function listenFtp(ftp: FtpSrv, fixed?: number): Promise<number> {
   // ftp-srv binds the port in its url; port 0 is not supported by its listen(), so pick a free one first.
   const { createServer } = await import("node:net");
   for (let i = 0; i < 20; i++) {
-    const port = await new Promise<number>((resolve, reject) => {
+    const port = fixed ?? (await new Promise<number>((resolve, reject) => {
       const s = createServer();
       s.once("error", reject);
       s.listen(0, "127.0.0.1", () => {
         const p = (s.address() as AddressInfo).port;
         s.close(() => resolve(p));
       });
-    });
+    }));
     (ftp as unknown as { url: { port: string; host: string; hostname: string } }).url.port = String(port);
     try {
       await ftp.listen();

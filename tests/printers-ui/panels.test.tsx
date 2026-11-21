@@ -76,17 +76,17 @@ describe("Printers panel", () => {
     expect(await within(card).findByText("PrusaLink paused the print.")).toBeTruthy();
     expect(server.calls.find((c) => c.method === "POST")!.body).toEqual({ action: "pause" });
 
-    fireEvent.click(within(card).getByRole("button", { name: "Cancel print" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Stop print" }));
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Cancel the print on Bench Prusa?")).toBeTruthy();
+    expect(within(dialog).getByText("Stop the print on Bench Prusa?")).toBeTruthy();
     expect(dialog.textContent).toContain("bracket.bgcode");
     expect(server.calls.filter((c) => c.method === "POST")).toHaveLength(1); // nothing sent while the dialog is open
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" })); // "Cancel" here means "do not"
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" })); // "Cancel" here means "do not stop it"
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(server.calls.filter((c) => c.method === "POST")).toHaveLength(1);
 
-    fireEvent.click(within(card).getByRole("button", { name: "Cancel print" }));
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel the print" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Stop print" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Stop the print" }));
     await waitFor(() => expect(server.calls.filter((c) => c.method === "POST")).toHaveLength(2));
     expect(server.calls.filter((c) => c.method === "POST")[1].body).toEqual({ action: "cancel", confirm: true });
   });
@@ -97,7 +97,7 @@ describe("Printers panel", () => {
     const paused = await screen.findByTestId("printer-card-1");
     expect(within(paused).getByRole("button", { name: /Resume/ })).toBeTruthy();
     const idle = screen.getByTestId("printer-card-2");
-    expect(within(idle).queryByRole("button", { name: /Pause|Resume|Cancel print/ })).toBeNull();
+    expect(within(idle).queryByRole("button", { name: /Pause|Resume|Stop print/ })).toBeNull();
     expect(within(idle).getByText("Ready")).toBeTruthy();
   });
 

@@ -359,7 +359,7 @@ export function PrintersTab() {
         title="Printers"
         description={
           <>
-            Prototype, 3D printing shows every printer that is switched on, with its status, and Pause and Cancel for a running print.{" "}
+            Prototype, 3D printing shows every printer that is switched on, with its status, and Pause and Stop for a running print.{" "}
             <Link href="/printers" className="text-link underline underline-offset-2">Supported printers</Link>
           </>
         }

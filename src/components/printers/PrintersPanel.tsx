@@ -128,10 +128,10 @@ function Card({ r }: { r: PrinterReading }) {
           ) : null}
           {r.capabilities.cancel && (state === "printing" || state === "paused") ? (
             <ConfirmButton
-              label="Cancel print"
-              title={`Cancel the print on ${r.name}?`}
-              body={`${r.status?.file ? `"${r.status.file}" stops where it is. ` : "The print stops where it is. "}A cancelled print cannot be resumed, and the line goes into the audit log.`}
-              confirmLabel="Cancel the print"
+              label="Stop print"
+              title={`Stop the print on ${r.name}?`}
+              body={`${r.status?.file ? `"${r.status.file}" stops where it is. ` : "The print stops where it is. "}A stopped print cannot be resumed, and the line goes into the audit log.`}
+              confirmLabel="Stop the print"
               disabled={control.isPending}
               onConfirm={() => control.mutate("cancel")}
             />
