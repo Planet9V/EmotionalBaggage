@@ -22,12 +22,6 @@ export function NotConnected({ title, does, needs }: { title: string; does: stri
   );
 }
 
-export function stamp(iso: string | undefined) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
 export function hostname(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
 }

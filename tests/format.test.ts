@@ -1,6 +1,6 @@
 // The shared text helpers in src/lib/format.ts.
 import { describe, expect, it } from "vitest";
-import { fileSlug, plural, slugify } from "@/lib/format";
+import { fileSlug, fmtDate, fmtDateTime, fmtFileStamp, fmtStamp, fmtTime, plural, slugify } from "@/lib/format";
 import { fileSafe } from "@/lib/content/http";
 
 describe("slugify", () => {
@@ -44,5 +44,25 @@ describe("plural", () => {
     expect(plural(12, "wire")).toBe("12 wires");
     expect(plural(2, "category", "categories")).toBe("2 categories");
     expect(plural(1200, "part")).toBe("1,200 parts");
+  });
+});
+
+describe("dates and times", () => {
+  const iso = "2026-11-03T12:05:09Z";
+  it("write a readable value for a date and give back or blank a value that is not one", () => {
+    expect(fmtDateTime(iso)).toMatch(/2026/);
+    expect(fmtDateTime("not a date")).toBe("not a date");
+    expect(fmtDateTime(null)).toBe("");
+    expect(fmtDate(iso)).toMatch(/2026/);
+    expect(fmtDate(iso, "short")).not.toMatch(/2026/);
+    expect(fmtStamp(iso)).toMatch(/\d{2}:\d{2}/);
+    expect(fmtTime(iso)).toMatch(/\d{2}:\d{2}:\d{2}/);
+    for (const f of [fmtDate, fmtStamp, fmtTime]) {
+      expect(f("not a date")).toBe("");
+      expect(f(undefined)).toBe("");
+    }
+  });
+  it("keep the layout of a generated file fixed", () => {
+    expect(fmtFileStamp(new Date(2026, 0, 2, 3, 4))).toBe("2026-01-02 03:04");
   });
 });

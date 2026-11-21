@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fieldValue, sameValue, valueText, type HistoryChange, type HistoryEntry } from "@/lib/trace/history";
 import type { Item } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
-
-/** Written the way people read a date: the time in their own zone, with the full stamp in the tooltip. */
-export function when(at: string) {
-  const d = new Date(at);
-  return Number.isNaN(d.getTime()) ? at : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
+import { fmtDateTime } from "@/lib/format";
 
 const isLong = (...v: unknown[]) => v.some((x) => {
   const t = valueText(x);
@@ -102,7 +97,7 @@ export function HistoryEntryView({
           <span className="font-normal text-secondary">{entry.summary}</span>
         </p>
         <p className="shrink-0 text-xs text-muted">
-          <span className="text-secondary">{entry.actor || "The app"}</span> · <time dateTime={entry.at} title={entry.at}>{when(entry.at)}</time>
+          <span className="text-secondary">{entry.actor || "The app"}</span> · <time dateTime={entry.at} title={entry.at}>{fmtDateTime(entry.at)}</time>
         </p>
       </div>
       {entry.changes.length > 0 && (

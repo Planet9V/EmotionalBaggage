@@ -15,6 +15,7 @@ import { ApiError, draftQueries, useDraftActions } from "./api";
 import { DraftCard } from "./DraftCard";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Card } from "@/components/ui/Card";
+import { fmtDateTime, fmtStamp } from "@/lib/format";
 
 export const MODELS_HREF = "/admin?tab=models";
 
@@ -55,10 +56,10 @@ export function WaitingDrafts({ projectId, store, drafts }: { projectId: string;
   return (
     <div className="space-y-5">
       {byRun(drafts).map((r) => (
-        <section key={r.runId} aria-label={`Run of ${new Date(r.at).toLocaleString()}`} className="space-y-3">
+        <section key={r.runId} aria-label={`Run of ${fmtDateTime(r.at)}`} className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-              Run of {new Date(r.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · {r.drafts.length} waiting
+              Run of {fmtStamp(r.at)} · {r.drafts.length} waiting
             </p>
             {r.drafts.length > 1 && <ApproveRunButton projectId={projectId} runId={r.runId} count={r.drafts.length} />}
           </div>

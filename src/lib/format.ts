@@ -26,11 +26,42 @@ export function fileSlug(text: string, fallback = "concept"): string {
   return slugify(text, { max: 48, fallback });
 }
 
-/** "3 Nov 2026, 14:05" in the browser's locale. The input is returned as it is when it is not a date. */
-export function fmtDateTime(iso: string | null | undefined): string {
-  if (!iso) return "";
+const asDate = (iso: string | null | undefined): Date | null => {
+  if (!iso) return null;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+// Dates and times for the screens: one module. All of them use the browser's own locale and time zone,
+// and none throws on a value that is not a date.
+
+/** "3 Nov 2026, 14:05". The input is returned as it is when it is not a date. */
+export function fmtDateTime(iso: string | null | undefined): string {
+  const d = asDate(iso);
+  return d ? d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : (iso ?? "");
+}
+
+/** "3 Nov, 14:05" for a list row or a message. Empty when there is no time or it cannot be read. */
+export function fmtStamp(iso: string | null | undefined): string {
+  return asDate(iso)?.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) ?? "";
+}
+
+/** "14:05:09": the time of a status reading. Empty when it cannot be read. */
+export function fmtTime(iso: string | null | undefined): string {
+  return asDate(iso)?.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }) ?? "";
+}
+
+/** "3 Nov 2026" (medium) or "3 Nov" (short). Empty when it cannot be read. */
+export function fmtDate(iso: string | null | undefined, style: "medium" | "short" = "medium"): string {
+  const d = asDate(iso);
+  if (!d) return "";
+  return style === "short" ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : d.toLocaleDateString(undefined, { dateStyle: "medium" });
+}
+
+/** "2026-01-02 03:04" in local time: a fixed layout for a generated file, not for a screen. */
+export function fmtFileStamp(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 export function fmtBytes(n: number): string {

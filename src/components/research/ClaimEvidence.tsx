@@ -13,6 +13,7 @@ import type { EvidenceEntry, Verdict } from "@/lib/research/schemas";
 import { statusReason } from "@/lib/research/status";
 import type { StatusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
+import { fmtDate } from "@/lib/format";
 
 const VERDICT: Record<Verdict, { word: string; tone: StatusTone }> = {
   supports: { word: "Supports", tone: "success" },
@@ -22,8 +23,7 @@ const VERDICT: Record<Verdict, { word: string; tone: StatusTone }> = {
 
 /** "20 Nov 2026", or "" when the stored time cannot be read. */
 export function judgedOn(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return fmtDate(iso);
 }
 
 const sourceName = (e: EvidenceEntry) => e.title?.trim() || hostname(e.url);

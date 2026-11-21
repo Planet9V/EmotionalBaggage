@@ -14,10 +14,11 @@ import { ResultForm } from "./ResultForm";
 import { ErrorLine } from "@/components/ui/states";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
+import { fmtDateTime } from "@/lib/format";
 
 type Pending = null | { kind: "send" | "start" | "cancel"; printer: string; file: string };
 
-const dt = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "");
+const dt = fmtDateTime;
 
 export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeue }: { projectId: string; job: Item; buildTitle?: string; onDelete: () => void; onEdit: () => void; onRequeue: () => Promise<unknown> }) {
   const status = normaliseStatus(job.status) as PrintStatus;

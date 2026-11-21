@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
-import { hostname, stamp } from "@/components/wizard/shared";
+import { hostname } from "@/components/wizard/shared";
 import { ClaimEvidence } from "@/components/research/ClaimEvidence";
 import { VERDICT_LABEL, useEvidence } from "@/lib/research/client";
 import { VERDICTS, type Verdict } from "@/lib/research/schemas";
@@ -20,6 +20,7 @@ import { FromUrl } from "@/components/drafts/FromUrl";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingBlocks } from "@/components/ui/states";
+import { fmtStamp } from "@/lib/format";
 
 type Source = { url: string; title?: string; snippet?: string; date?: string };
 type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
@@ -202,7 +203,7 @@ function EntryCard({ entry, claims, projectId, preferClaim = "" }: { entry: Entr
     <Card hoverEffect={false} innerClassName="p-[22px]">
       <div className="flex items-start justify-between gap-4">
         <h3 className="text-base font-semibold tracking-tight text-primary">{entry.query}</h3>
-        <span className="shrink-0 font-mono text-[10px] text-muted">{stamp(entry.createdAt)} · {entry.model}</span>
+        <span className="shrink-0 font-mono text-[10px] text-muted">{fmtStamp(entry.createdAt)} · {entry.model}</span>
       </div>
       <div className="mt-3"><Answer text={entry.answer} citations={entry.citations} /></div>
 

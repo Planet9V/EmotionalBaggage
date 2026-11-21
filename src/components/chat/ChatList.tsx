@@ -5,11 +5,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatSummary } from "./api";
 import { NativeSelect } from "@/components/ui/native-select";
-
-const when = (iso: string) => {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-};
+import { fmtStamp } from "@/lib/format";
 
 const titleOf = (c: ChatSummary) => c.title || "New chat";
 
@@ -88,7 +84,7 @@ export function ChatList({
                     className="min-w-0 flex-1 rounded-md px-2.5 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
                   >
                     <span className={`block truncate text-sm ${active ? "font-medium text-primary" : "text-secondary"}`}>{titleOf(c)}</span>
-                    <span className="block font-mono text-[10px] text-muted">{when(c.updatedAt)}</span>
+                    <span className="block font-mono text-[10px] text-muted">{fmtStamp(c.updatedAt)}</span>
                   </button>
                   <div className="py-1.5 pr-1">
                     <DeleteButton
