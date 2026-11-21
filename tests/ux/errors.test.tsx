@@ -78,3 +78,11 @@ describe("the source", () => {
     expect(readFileSync("src/components/plan/PlanGraph.tsx", "utf8")).toContain("no time yet");
   });
 });
+
+describe("U18: every planner-down and model error links to where it is fixed", () => {
+  it("the plan page, the integrations page and the draft dialog carry the Admin link", () => {
+    expect(readFileSync("src/components/views/PlanView.tsx", "utf8")).toMatch(/ADMIN_PLANNER/);
+    expect(readFileSync("src/components/views/IntegrationsView.tsx", "utf8")).toMatch(/ADMIN_PLANNER/);
+    expect(readFileSync("src/components/drafts/DraftPanel.tsx", "utf8")).toMatch(/MODELS_HREF, label: "Open Admin, Models"/);
+  });
+});
