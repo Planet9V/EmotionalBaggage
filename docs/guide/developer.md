@@ -189,6 +189,10 @@ Part kinds are code (`src/lib/parts/kinds.ts`) and are the one list the parts li
 
 Import from `@/lib/printers`: `createAdapter`, `adapterForRow`, `runPrinterAction`, `uploadToPrinter`, `printerStatuses`. Every adapter implements `test, status, upload, start, pause, resume, cancel` and throws `PrinterError` with a safe sentence. Start and cancel need `confirm: true`; upload never starts a print. Add a model in `models.ts`; every fact needs an https source (`validateModels()`). Stand-ins for tests are in `tests/standins/`.
 
+## Slicing, the print flow and sourcing
+
+`slicer/` is a FastAPI wrapper round the OrcaSlicer command line (`POST /slice`); time and material come from OrcaSlicer's `statistics.json`, with the G-code header as fallback. `slicer/profiles.json` is keyed by maker and model, the same strings as `src/lib/printers/models.ts` (a test keeps them in step); regenerate it with `slicer/tools/gen_profiles.py` when moving OrcaSlicer version. Boolean OrcaSlicer flags are written `--flag=1`. The print job state machine is `src/lib/slicing/jobState.ts`; the only ways to a hardware state are the action routes under `src/app/api/print-jobs/[id]/`, and `rules.ts` guards the plain row routes. The flow reaches printers through `src/lib/slicing/printerPort.ts`, which wraps `adapterForRow`; tests swap it with `setPortFactory`. Sourcing data lives on the part (`data.sourcing`, `src/lib/sourcing/schemas.ts`).
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

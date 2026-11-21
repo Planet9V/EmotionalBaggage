@@ -200,7 +200,7 @@ export const STAGES: Stage[] = [
       {
         key: "sourcing",
         label: "Sourcing",
-        blurb: "Buy links for every part, and an Amazon cart once ASINs are filled in.",
+        blurb: "Suppliers, prices and order status for every part, search links, and a shopping list by supplier.",
         view: "sourcing",
         store: "design/bom",
         statuses: ["to buy", "to print", "ordered", "in hand"],
@@ -208,14 +208,14 @@ export const STAGES: Stage[] = [
       {
         key: "printing",
         label: "3D printing",
-        blurb: "Printer status, print settings and the job queue.",
+        blurb: "Slice a file for one of your printers, send it, follow the print and record how it came out.",
         view: "printing",
         columns: [
           { key: "material", label: "Material" },
           { key: "settings", label: "Settings" },
           { key: "estimate", label: "Estimate" },
         ],
-        statuses: ["waiting on file", "ready", "printing", "printed", "failed"],
+        statuses: ["queued", "slicing", "sliced", "sent", "printing", "done", "failed", "cancelled"],
         addLabel: "Add print job",
       },
       {

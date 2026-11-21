@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 83702eb by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 61992e7 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 636 packages (46 direct, 590 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 637 packages (47 direct, 590 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 502 |
+| MIT | 503 |
 | ISC | 49 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
@@ -95,6 +95,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | next | 16.4.6 | MIT | linked library | yes |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
 | occt-import-js | 0.0.23 | LGPL-2.1 | linked library | no |
+| papaparse | 5.7.1 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |
 | react | 19.3.0 | MIT | linked library | yes |
@@ -130,6 +131,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | --- | --- | --- | --- | --- |
 | AI Elements components | as fetched from https://elements.ai-sdk.dev/api/registry on 2026-11-20 | Apache-2.0 | copied source | https://github.com/vercel/ai-elements |
 | CaseMaker (engine source) | commit 8988792b627dd646e5acd02017a871aee1d0616c, 2026-11-20 | Apache-2.0 | copied source | https://github.com/SlyWombat/CaseMaker |
+| FastAPI, Uvicorn and python-multipart (Python packages) | fastapi 0.115.x, uvicorn 0.32.x, python-multipart 0.0.x | MIT (fastapi), BSD-3-Clause (uvicorn), Apache-2.0 (python-multipart) | linked library | https://pypi.org/project/fastapi/ |
 | Graphviz (apt package graphviz) | as installed by apt in the planner image (Debian) | EPL-1.0 (Graphviz; the Debian package also contains libraries under their own licences) | separate process | https://graphviz.org/ |
 | Inter (typeface) | Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0 | OFL-1.1 | font files | https://github.com/rsms/inter |
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
@@ -137,12 +139,14 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
 | occt-import-js (OpenCascade STEP reader, WebAssembly) | as copied from the npm package occt-import-js | LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it) | copied source | https://github.com/kovacsv/occt-import-js |
 | OpenSCAD (Debian package openscad) | 2021.01 in the Debian package the planner image installs | GPL-2.0-or-later with the CGAL exception (as the Debian package states it) | separate process | https://openscad.org |
+| OrcaSlicer | 2.5.0 (tag v2.5.0, commit 40ecc66f78ed72dc368e0c1ebe40d77f00cc8a19) | AGPL-3.0 | separate process | https://github.com/OrcaSlicer/OrcaSlicer |
 | pgvector (Docker image pgvector/pgvector) | 0.8.7-pg19-trixie (default; PG_IMAGE may override it) | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | pgvector (Docker image pgvector/pgvector, CI only) | pg17 | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | PostgreSQL | 19 (inside pgvector/pgvector:0.8.7-pg19-trixie) | PostgreSQL | separate process | https://www.postgresql.org |
 | Python (official Docker image python) | 3.13-slim | PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences | container image | https://hub.docker.com/_/python |
 | schematic-symbols drawings | 0.0.251 | MIT | copied source | https://github.com/tscircuit/schematic-symbols |
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
+| Ubuntu (official Docker image ubuntu) | 24.04 | Debian-style per-package licences (the image holds many packages, each under its own licence) | container image | https://hub.docker.com/_/ubuntu |
 | UI components (Button, Dialog, Input, Table, Card, StatusBadge) | as committed in eb362b6 (2026-11-20) | owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT) | copied source | https://github.com/shadcn-ui/ui |
 | WireViz (Python package, run as a command) | 0.4.1 | GPL-3.0 | separate process | https://github.com/wireviz/WireViz |
 | YAPP_Box (YAPPgenerator_v3.scad) | commit f9400c419ef1dea7dc0b3607876989b4f3faa2b7 (3.3.8), 2025-08-24 | MIT | copied source | https://github.com/mrWheel/YAPP_Box |
@@ -181,6 +185,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @testing-library/dom | 10.4.2 | MIT |
 | @testing-library/react | 16.3.3 | MIT |
 | @types/node | 22.20.5 | MIT |
+| @types/papaparse | 5.5.2 | MIT |
 | @types/pg | 8.23.1 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |

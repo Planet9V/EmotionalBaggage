@@ -7,6 +7,7 @@ import { changedDetail, itemDiff, removedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
 import { keyOf } from "@/lib/trace/spec";
 import { assertMarketChange } from "@/lib/market/rules";
+import { assertPrintChange } from "@/lib/slicing/rules";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -23,6 +24,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     assertClaimChange(was, b);
     // Positioning: approval needs the reviewer's critique, which only its own route writes.
     assertMarketChange(was, b);
+    // Print jobs: slicing, sending and starting only through their own routes.
+    assertPrintChange(was, b);
     const data = parseData(was.section, b.data);
     await assertLinks(c, was.project_id, was.section, data);
     await assertBuildMayPass(c, was.project_id, { section: was.section, title: b.title ?? was.title, status: b.status ?? was.status, data: { ...was.data, ...(data ?? {}) } });

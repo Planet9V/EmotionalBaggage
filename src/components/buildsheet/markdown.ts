@@ -1,4 +1,5 @@
 import type { Wire } from "@/lib/domain";
+import { AMPACITY_SOURCE, DEFAULT_STRIP, specRows, stripSummary, totalsByColour } from "./wiresheet";
 import {
   CHECK_TEXT, ROUND_TO, beforePower, connectionsByPart, consumables, counts, cutList, totalsByClass,
   type PartLite, type Step,
@@ -14,8 +15,10 @@ export function buildMarkdown(opts: {
   parts: Map<string, PartLite>;
   routing: number;
   allowance: number;
+  strips?: Record<string, number>;
 }): string {
   const { projectName, steps, parts, routing, allowance } = opts;
+  const strips = opts.strips ?? DEFAULT_STRIP;
   const wires = steps.map((s) => s.wire);
   const c = counts(steps);
   const title = (ref: string) => parts.get(ref)?.title ?? "not in the bill of materials";
@@ -63,6 +66,20 @@ export function buildMarkdown(opts: {
   for (const t of totalsByClass(cuts)) {
     L.push(`- ${t.netClass}: ${t.mm} mm (${t.routed} routed, ${t.counted - t.routed} estimated)${t.counted < t.wires ? ` (${t.counted} of ${t.wires} wires have geometry)` : ""}`);
   }
+  L.push("");
+
+  const spec = specRows(steps, parts, routing, allowance, strips);
+  L.push("## Wire gauge, colour and strip lengths", "");
+  L.push(`Gauge is the thinnest AWG whose chassis-wiring current limit carries the wire's current (${AMPACITY_SOURCE.label}, ${AMPACITY_SOURCE.url}). Single wires in free air; a tight bundle needs a thicker wire. Where no current is set the gauge is not set. Strip lengths are starting values from general bench practice, not from a data sheet.`, "");
+  L.push(row("Colour", "Gauge", "Step", "From", "To", "Current", "Cut length", "Strip from / to (mm)"));
+  L.push(row("---", "---", "---", "---", "---", "---", "---", "---"));
+  for (const r of spec) {
+    L.push(row(`${r.colour}${r.colourSet ? "" : " (suggested)"}`, r.gauge.label, r.step, `${r.wire.from}.${r.wire.fromPin}`, `${r.wire.to}.${r.wire.toPin}`, r.current.mA === null ? "not set" : `${r.current.mA} mA`, r.length ? `${r.length.mm} mm (${r.length.source})` : "no length", `${r.stripFrom ?? "?"} / ${r.stripTo ?? "?"}`));
+  }
+  L.push("");
+  for (const t of totalsByColour(spec)) L.push(`- ${t.colour}, ${t.gauge}: ${t.mm} mm (${t.wires} wires${t.withLength < t.wires ? `, ${t.wires - t.withLength} with no length` : ""})`);
+  L.push("");
+  for (const u of stripSummary(spec, parts, strips).used) L.push(`- ${u.label}: strip ${u.strip} mm (${u.ends} wire ends)`);
   L.push("");
 
   const k = consumables(wires);

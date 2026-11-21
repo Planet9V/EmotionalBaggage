@@ -1,0 +1,153 @@
+{
+ "version": 1,
+ "generator": "OrcaSlicer 2.5.0",
+ "units": {
+  "time": "s",
+  "length": "mm",
+  "volume": "mm3",
+  "weight": "g"
+ },
+ "summary": {
+  "time": 1191.216,
+  "prepare_time": 375.646,
+  "travel_time": 603.951,
+  "travel_distance": 43905.98,
+  "layer_count": 100,
+  "volume": 2937.829,
+  "weight": 3.7017,
+  "filament_cost": 0.06,
+  "filament_changes": 0,
+  "filaments": [
+   {
+    "id": 1,
+    "length": 1221.41,
+    "volume": 2937.829,
+    "weight": 3.7017,
+    "cost": 0.06,
+    "model": {
+     "volume": 2937.829,
+     "weight": 3.7017
+    },
+    "support": {
+     "volume": 0.0,
+     "weight": 0.0
+    },
+    "prime_tower": {
+     "volume": 0.0,
+     "weight": 0.0
+    },
+    "flush": {
+     "volume": 0.0,
+     "weight": 0.0
+    }
+   }
+  ],
+  "features": {
+   "Inner wall": {
+    "time": 100.106,
+    "volume": 591.451,
+    "weight": 0.7452
+   },
+   "Outer wall": {
+    "time": 106.27,
+    "volume": 579.695,
+    "weight": 0.7304
+   },
+   "Sparse infill": {
+    "time": 210.497,
+    "volume": 1146.895,
+    "weight": 1.4451
+   },
+   "Internal solid infill": {
+    "time": 35.476,
+    "volume": 337.095,
+    "weight": 0.4247
+   },
+   "Top surface": {
+    "time": 10.646,
+    "volume": 73.366,
+    "weight": 0.0924
+   },
+   "Bottom surface": {
+    "time": 16.939,
+    "volume": 64.279,
+    "weight": 0.081
+   },
+   "Internal Bridge": {
+    "time": 12.288,
+    "volume": 92.752,
+    "weight": 0.1169
+   },
+   "Custom": {
+    "time": 4.106,
+    "volume": 52.296,
+    "weight": 0.0659
+   }
+  }
+ },
+ "layers": [
+  {
+   "z": 0.2,
+   "time": 399.861,
+   "travel_time": 303.224,
+   "volume": 130.077,
+   "weight": 0.1639,
+   "features": {
+    "Inner wall": {
+     "time": 1.746,
+     "volume": 6.572,
+     "weight": 0.0083
+    },
+    "Outer wall": {
+     "time": 1.819,
+     "volume": 6.93,
+     "weight": 0.0087
+    },
+    "Bottom surface": {
+     "time": 16.939,
+     "volume": 64.279,
+     "weight": 0.081
+    },
+    "Custom": {
+     "time": 4.106,
+     "volume": 52.296,
+     "weight": 0.0659
+    }
+   }
+  },
+  {
+   "z": 0.4,
+   "time": 11.116,
+   "travel_time": 2.92,
+   "volume": 78.216,
+   "weight": 0.0986,
+   "features": {
+    "Inner wall": {
+     "time": 0.449,
+     "volume": 5.968,
+     "weight": 0.0075
+    },
+    "Outer wall": {
+     "time": 0.539,
+     "volume": 5.785,
+     "weight": 0.0073
+    },
+    "Internal solid infill": {
+     "time": 6.923,
+     "volume": 66.463,
+     "weight": 0.0837
+    }
+   }
+  }
+ ],
+ "objects": [
+  {
+   "name": "cube.stl",
+   "instance": 0,
+   "volume": 2885.534,
+   "weight": 3.6358,
+   "support_volume": 0.0,
+   "support_weight": 0.0
+  }
+ ]
+}

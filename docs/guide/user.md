@@ -81,6 +81,18 @@ On the schematic, switch between **Symbols** and **Pins and wires**; selecting a
 
 Printers are added in Admin, Printers by choosing the model from the supported list, which is also at `/printers` with the source for every fact. **Prototype, 3D printing** shows each printer's state, file, progress, time left and temperatures. Pause and Resume act directly; Stop asks first and names the printer and the file. Test checks the connection. A printer marked Experimental is built from documentation that does not name your model: run Test before relying on it. A file-only printer gets the file and the steps to carry it over.
 
+## Slicing and printing
+
+On **Prototype, 3D printing** choose New print job: pick a stored STL or 3MF (the enclosure is listed first), a printer from Admin, material, layer height and infill. **Slice** sends it to OrcaSlicer; the print time and material shown come from OrcaSlicer's own output, never an estimate of ours. If the printer has a connection, **Send** puts the file on it and **Start** begins the print; both open a dialog that names the printer and the file, and nothing moves until you press the button in that dialog. If the printer has no connection, download the file and follow the steps, then press Record result. Record how it came out (good, flawed or failed, the real time and grams, photos, notes); the planned numbers stay beside the actual ones.
+
+## Sourcing
+
+Open a part to see search links for Digi-Key, Mouser, LCSC, Adafruit, SparkFun, Amazon, AliExpress and McMaster-Carr. Search yourself and add offers by hand: price of one pack, pack size, stock, lead time, link, date checked. **Check prices** and **Find alternates** ask Perplexity (billed, so it asks first) and save drafts with the page each came from; a line with no cited page is dropped, and a draft counts as nothing until you accept it. The chosen offer sets the part's unit price. The shopping list groups what is left to order by supplier in whole packs with totals, and downloads as CSV. The app never places an order.
+
+## Build sheet wire details
+
+Wire length uses the routed length plus the service allowance when the 3D model has routed the wire, otherwise an estimate, and says which. Wire gauge is chosen from the current the part draws using a named table; with no current set it says "not set" and does not guess. Strip lengths are starting values from general bench practice, not from a data sheet: change them to match your connector's data sheet.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

@@ -98,8 +98,8 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
       <ul className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-secondary" aria-label="Total length per class">
         {totals.map((t) => (
           <li key={t.netClass} className="font-mono">
-            {t.netClass}: <span className="text-primary">{t.mm} mm</span> ({t.routed} routed, {t.counted - t.routed} estimated)
-            {t.counted < t.wires && <span className="text-muted"> ({t.counted} of {t.wires} wires have geometry)</span>}
+            {t.netClass}: <span className="text-primary">{t.mm} mm</span>
+            <span className="text-muted"> ({t.routed} routed, {t.estimated} estimated{t.counted < t.wires ? `, ${t.wires - t.counted} with no length` : ""})</span>
           </li>
         ))}
       </ul>

@@ -6,6 +6,8 @@ import { economicsSchemas, partPricingFields } from "@/lib/economics/schemas";
 import { MARKET_SCHEMAS } from "@/lib/market/schemas";
 import { PART_KIND_IDS } from "@/lib/parts/kinds";
 import { libraryEntryById } from "@/lib/parts/library";
+import { printJobData } from "@/lib/slicing/jobState";
+import { sourcingData } from "@/lib/sourcing/schemas";
 
 export const STORE = {
   parts: "design/bom",
@@ -14,6 +16,7 @@ export const STORE = {
   requirements: "design/requirements",
   tests: "prototype/tests",
   builds: "prototype/builds",
+  printing: "prototype/printing",
 } as const;
 
 const text = (max = 400) => z.string().max(max);
@@ -129,6 +132,8 @@ export const partData = z.looseObject({
   symbolPos: xy.nullable().optional(),
   /** unit price, supplier key and quantity price breaks (plan 3.6, 7.2) */
   ...partPricingFields(),
+  /** suppliers, alternates, research drafts and order status (plan 6.1) */
+  sourcing: sourcingData.optional(),
 });
 
 export const NET_CLASSES = ["power", "ground", "signal", "audio"] as const;
@@ -207,6 +212,7 @@ export const enclosureData = z.looseObject({
 const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   [STORE.requirements]: requirementData,
   [STORE.builds]: buildData,
+  [STORE.printing]: printJobData,
   [STORE.parts]: partData,
   [STORE.wiring]: wireData,
   [STORE.decisions]: decisionData,

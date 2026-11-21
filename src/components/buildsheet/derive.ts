@@ -184,6 +184,13 @@ export type Length = {
   stale?: boolean;
 } | null;
 
+/** The routed path length written on the wire row (data.routedLengthMm), or null. Zero, negative and non-numbers are not a route. */
+export function routedLengthMm(w: Wire): number | null {
+  const v = (w.item.data as Record<string, unknown>).routedLengthMm;
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 const roundUp = (raw: number) => Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO;
 
 /** Current route fingerprint per wire row id, from the parts and wires as they are now. */
@@ -205,7 +212,8 @@ export function estimateLength(w: Wire, parts: Map<string, PartLite>, routing: n
   const pb = b?.pos.slice(0, 3) ?? [];
   let stale = false;
   if (w.routed) {
-    const state = current === undefined ? "current" : routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, current);
+    // A length with no fingerprint was not written by the router (typed in, or imported): there is nothing to compare, so it stands.
+    const state = current === undefined || !w.routed.fingerprint ? "current" : routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, current);
     if (state === "current") {
       const raw = w.routed.lengthMm + allowance;
       return { source: "routed", straight: w.routed.lengthMm, raw, mm: roundUp(raw), from: pa, to: pb, cellMm: w.routed.cellMm };
@@ -236,11 +244,14 @@ export function cutList(steps: Step[], parts: Map<string, PartLite>, routing: nu
   }));
 }
 
-export type ClassTotal = { netClass: NetClass; mm: number; counted: number; wires: number; routed: number };
+export type ClassTotal = { netClass: NetClass; mm: number; counted: number; wires: number; routed: number; estimated: number };
 export function totalsByClass(rows: CutRow[]): ClassTotal[] {
   return CLASS_ORDER.map((c) => {
     const of = rows.filter((r) => r.wire.netClass === c);
-    return { netClass: c, mm: of.reduce((a, r) => a + (r.length?.mm ?? 0), 0), counted: of.filter((r) => r.length).length, wires: of.length, routed: of.filter((r) => r.length?.source === "routed").length };
+    return {
+      netClass: c, mm: of.reduce((a, r) => a + (r.length?.mm ?? 0), 0), counted: of.filter((r) => r.length).length, wires: of.length,
+      routed: of.filter((r) => r.length?.source === "routed").length, estimated: of.filter((r) => r.length?.source === "estimate").length,
+    };
   }).filter((t) => t.wires > 0);
 }
 

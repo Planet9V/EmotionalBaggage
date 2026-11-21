@@ -62,6 +62,13 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  # Plan 6.5: OrcaSlicer behind a small HTTP wrapper, for the print flow. Off by default (the image is large and downloads
+  # OrcaSlicer at build time): `docker compose --profile slicer up -d --build`, then set SLICER_URL=http://slicer:8000 for web.
+  slicer:
+    profiles: ["slicer"]
+    build: ./slicer
+    restart: unless-stopped
+
   web:
     build: .
     env_file:
@@ -70,6 +77,7 @@ services:
     environment:
       DATABASE_URL: postgresql://c2r:${PGPASSWORD:-c2r}@db:5432/c2r
       PLANNER_URL: http://planner:8000
+      SLICER_URL: ${SLICER_URL:-}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:

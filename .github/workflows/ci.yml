@@ -99,6 +99,46 @@ jobs:
   # (no .env file), and prove each container is healthy and the app works end to end.
   # Each "Assert ..." step checks one thing, so the name of a failed step says what is wrong.
   # Job logs need credentials to read, so findings also go to the job summary.
+  # Plan 6.5: build the slicer image (pinned OrcaSlicer) and slice a small cube for one Bambu and one Prusa profile.
+  # Not run on the build machine that wrote it (no Docker there): it is unproven until it has run on GitHub.
+  slicer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the slicer image
+        run: docker build -t c2r-slicer slicer
+      - name: Run the slicer's own tests inside the image, with the real OrcaSlicer
+        run: docker run --rm c2r-slicer python3 -m pytest -q /srv/tests
+      - name: Start the service
+        run: |
+          docker run -d --name slicer -p 8811:8000 c2r-slicer
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8811/health && break; sleep 2; done
+      - name: Slice a 20 mm cube for a Bambu Lab A1 and a Prusa MK4S
+        run: |
+          python3 - <<'PY'
+          v=[(0,0,0),(20,0,0),(20,20,0),(0,20,0),(0,0,20),(20,0,20),(20,20,20),(0,20,20)]
+          f=[(0,2,1),(0,3,2),(4,5,6),(4,6,7),(0,1,5),(0,5,4),(1,2,6),(1,6,5),(2,3,7),(2,7,6),(3,0,4),(3,4,7)]
+          o=["solid cube"]
+          for a,b,c in f:
+              o.append("facet normal 0 0 0\n outer loop")
+              o+=[" vertex %g %g %g"%v[i] for i in (a,b,c)]
+              o.append(" endloop\nendfacet")
+          o.append("endsolid cube")
+          open("cube.stl","w").write("\n".join(o))
+          PY
+          for p in "Bambu Lab|A1" "Prusa Research|MK4S"; do
+            maker="${p%%|*}"; model="${p##*|}"
+            curl -fsS -F file=@cube.stl -F "maker=$maker" -F "model=$model" -F material=PLA -F layer_height=0.2 -F infill=15 -F supports=false http://127.0.0.1:8811/slice -o out.json
+            cat out.json
+            jq -e '.result.seconds > 60 and .result.filamentG > 0.5' out.json
+            curl -fsS "http://127.0.0.1:8811$(jq -r .files.gcode.url out.json)" -o out.gcode
+            test "$(wc -c < out.gcode)" -gt 10000
+          done
+      - name: Logs on failure
+        if: failure()
+        run: docker logs slicer || true
+
   stack:
     runs-on: ubuntu-latest
     timeout-minutes: 40
