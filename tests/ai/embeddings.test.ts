@@ -3,6 +3,18 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pool, q, ready } from "@/lib/db";
 import {
   batches,
+  binaryIndexName,
+  binaryIndexSql,
+  candidateLimit,
+  EXACT_SEARCH_MAX_ROWS,
+  countSql,
+  MAX_BINARY_DIMS,
+  nearestSourcesSql,
+  plannedSearch,
+  questionWords,
+  researchText,
+  TEXT_SOURCES_SQL,
+  UPSERT_RESEARCH_SQL,
   hnswIndexSql,
   indexItem,
   indexName,
@@ -96,6 +108,91 @@ describe("generated SQL", () => {
     expect(sql).toContain("WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 8");
     expect(sql).toContain("ORDER BY e.embedding::vector(8) <=> $3::vector(8) LIMIT $4");
     expect(sql).toContain("i.id, i.project_id, i.section");
+  });
+
+  it("above 2,000 and up to 64,000 numbers, makes a binary-quantized index in the form the pgvector README gives", () => {
+    expect(MAX_BINARY_DIMS).toBe(64_000);
+    expect(binaryIndexSql(4096)).toBe(
+      "CREATE INDEX IF NOT EXISTS embeddings_bq_4096 ON embeddings USING hnsw ((binary_quantize(embedding::vector(4096))::bit(4096)) bit_hamming_ops) WHERE dims = 4096"
+    );
+    expect(binaryIndexName(4096)).toBe("embeddings_bq_4096");
+    expect(binaryIndexSql(2000)).toBeNull();
+    expect(binaryIndexSql(2001)).not.toBeNull();
+    expect(binaryIndexSql(64_000)).not.toBeNull();
+    expect(binaryIndexSql(64_001)).toBeNull();
+    expect(plannedSearch(768)).toBe("hnsw");
+    expect(plannedSearch(2000)).toBe("hnsw");
+    expect(plannedSearch(2001)).toBe("binary");
+    expect(plannedSearch(4096)).toBe("binary");
+    expect(plannedSearch(64_001)).toBe("exact");
+    expect(() => binaryIndexSql(0)).toThrow();
+  });
+
+  it("the binary scan takes candidates by Hamming distance with the index's own expression, then re-ranks by cosine distance", () => {
+    const sql = nearestSql(4096, "binary");
+    // inner select: this concept, this model, this width, rows only; candidates ordered by the index expression
+    expect(sql).toContain(
+      "SELECT e.item_id, e.embedding FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096 AND e.item_id IS NOT NULL " +
+        "ORDER BY binary_quantize(e.embedding::vector(4096))::bit(4096) <~> binary_quantize($3::vector(4096)) LIMIT least(greatest($4 * 10, 100), 1000)"
+    );
+    // outer select: re-ranked on the full vectors, real limit
+    expect(sql).toContain(") c JOIN items i ON i.id = c.item_id ORDER BY c.embedding::vector(4096) <=> $3::vector(4096) LIMIT $4");
+    expect(sql).toContain("1 - (c.embedding::vector(4096) <=> $3::vector(4096)) AS score");
+    expect(sql).toContain("i.id, i.project_id, i.section");
+    // the plain form is unchanged
+    expect(nearestSql(4096)).toBe(nearestSql(4096, "plain"));
+    expect(nearestSql(4096)).not.toContain("binary_quantize");
+    expect(candidateLimit(8)).toBe(100);
+    expect(candidateLimit(20)).toBe(200);
+    expect(candidateLimit(100)).toBe(1000); // pgvector's largest ef_search
+    expect(candidateLimit(500)).toBe(1000);
+    expect(EXACT_SEARCH_MAX_ROWS).toBe(5000);
+  });
+
+  it("the exact scan computes the distance under an OFFSET 0 fence, so no index can serve the ordering", () => {
+    for (const n of [8, 768, 4096]) {
+      const sql = nearestSql(n, "exact");
+      expect(sql).toContain(
+        `SELECT e.item_id, e.embedding::vector(${n}) <=> $3::vector(${n}) AS dist FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = ${n} AND e.item_id IS NOT NULL OFFSET 0`
+      );
+      expect(sql).toContain(") c JOIN items i ON i.id = c.item_id ORDER BY c.dist LIMIT $4");
+      expect(sql).toContain("1 - c.dist AS score");
+      expect(sql).not.toContain("binary_quantize");
+    }
+    expect(nearestSourcesSql(4096, "exact")).toBe(
+      "SELECT c.item_id, c.research_id, 1 - c.dist AS score FROM (SELECT e.item_id, e.research_id, e.embedding::vector(4096) <=> $3::vector(4096) AS dist FROM embeddings e " +
+        "WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096 OFFSET 0) c ORDER BY c.dist LIMIT $4"
+    );
+  });
+
+  it("chat's sources query covers rows and research answers, in both scans", () => {
+    const plain = nearestSourcesSql(8);
+    expect(plain).toBe(
+      "SELECT e.item_id, e.research_id, 1 - (e.embedding::vector(8) <=> $3::vector(8)) AS score FROM embeddings e " +
+        "WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 8 ORDER BY e.embedding::vector(8) <=> $3::vector(8) LIMIT $4"
+    );
+    const bq = nearestSourcesSql(4096, "binary");
+    expect(bq).toContain("SELECT e.item_id, e.research_id, e.embedding FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096 ORDER BY binary_quantize(");
+    expect(bq).toContain("LIMIT least(greatest($4 * 10, 100), 1000)) c ORDER BY c.embedding::vector(4096) <=> $3::vector(4096) LIMIT $4");
+    expect(bq).not.toContain("item_id IS NOT NULL");
+    expect(countSql(4096, "all")).toBe("SELECT count(*)::int AS n FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096");
+    expect(countSql(4096, "items")).toContain("AND e.item_id IS NOT NULL");
+  });
+
+  it("embeds a research answer as its question and answer, and upserts on the (research, model) unique index", () => {
+    expect(researchText({ query: " Weight limits? ", answer: "23 kg. " })).toBe("Weight limits?\n23 kg.");
+    expect(researchText({ query: "Only a question", answer: "" })).toBe("Only a question");
+    expect(UPSERT_RESEARCH_SQL).toContain("(project_id, research_id, model, dims, content_sha256, embedding)");
+    expect(UPSERT_RESEARCH_SQL).toContain("ON CONFLICT (research_id, model) WHERE research_id IS NOT NULL DO UPDATE");
+  });
+
+  it("text search for chat matches a question's useful words in rows and research answers", () => {
+    expect(questionWords("What does the load-cell weigh, and what is the 50 kg limit? What?")).toEqual(["load", "cell", "weigh", "limit"]);
+    expect(questionWords("is it ok")).toEqual([]);
+    expect(questionWords("Batería ÜBER")).toEqual(["batería", "über"]);
+    expect(TEXT_SOURCES_SQL).toContain("FROM items i WHERE i.project_id = $1");
+    expect(TEXT_SOURCES_SQL).toContain("FROM research r WHERE r.project_id = $1");
+    expect(TEXT_SOURCES_SQL).toContain("WHERE hits > 0 ORDER BY hits DESC");
   });
 
   it("upserts on the (item, model) unique index", () => {

@@ -58,7 +58,7 @@ afterAll(async () => {
 describe("upgrading a database from before migrations", () => {
   it("records each migration once, and a second start changes nothing", async () => {
     const first = await db.q<{ name: string }>("SELECT name FROM schema_migrations ORDER BY id");
-    expect(first.map((r) => r.name)).toEqual(["0001_baseline", "0002_integrity", "0003_concepts_and_admin", "0004_sign_in", "0005_audit_log"]);
+    expect(first.map((r) => r.name)).toEqual(["0001_baseline", "0002_integrity", "0003_concepts_and_admin", "0004_sign_in", "0005_audit_log", "0007_chat"]);
     const g = globalThis as { __c2rReady?: unknown };
     g.__c2rReady = undefined;
     await db.ready();
