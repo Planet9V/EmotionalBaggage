@@ -28,7 +28,6 @@ export type Answers = {
   names: NameRow[];
 };
 
-export const SOURCES = ["Amazon", "Micro Center", "Own printer", "Other"] as const;
 
 let keySeed = 1;
 export const nextKey = () => keySeed++;

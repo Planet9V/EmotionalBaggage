@@ -17,6 +17,7 @@ import { channelQueries, useChannelActions, useChannelStatus } from "@/lib/chann
 import type { SendKind } from "@/lib/channels/send";
 import type { ChannelStatus } from "@/lib/channels/status";
 import { messageOf } from "@/lib/queries";
+import { channelName } from "@/lib/channels/registry";
 
 export const CREDENTIALS_HREF = "/admin?tab=credentials";
 
@@ -93,8 +94,6 @@ export function CostStatement({ projectId, status }: { projectId: string; status
   );
 }
 
-const WHERE = { x: "X", instagram: "Instagram" } as const;
-
 /**
  * The confirmation for one send. It shows exactly what goes where (the text, the account, the images,
  * the cost), every reason it cannot go yet, and one button. The server checks the same things again,
@@ -109,7 +108,7 @@ export function SendDialog({ projectId, kind, itemId, onClose }: { projectId: st
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [alt, setAlt] = useState<string | null>(null);
   const p = prev.data;
-  const where = p ? WHERE[p.channel] : "";
+  const where = p ? channelName(p.channel) : "";
 
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={p ? `Send this ${kind} to ${where}?` : "Send"} description="Nothing is sent until you press the button at the bottom." wide>

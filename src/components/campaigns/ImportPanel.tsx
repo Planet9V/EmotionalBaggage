@@ -55,7 +55,7 @@ export function ImportPanel({ projectId, campaignId, campaignTitle, creatives, m
     let ord: DateOrder = "mdy";
     let remembered = false;
     try {
-      const r = await fetchMapping(projectId, layout.channel);
+      const r = await fetchMapping(projectId, layout.memoryKey);
       if (r.saved) {
         // the remembered mapping wins where its columns exist in this file
         const kept = Object.fromEntries(Object.entries(r.saved.mapping).filter(([, h]) => parsed.headers.includes(h)));
@@ -99,7 +99,7 @@ export function ImportPanel({ projectId, campaignId, campaignTitle, creatives, m
     }
     try {
       const out = await save.mutateAsync({ campaignId, source, rows: [...merged.values()] });
-      if (layout) await saveMapping(projectId, layout.channel, { layout: layout.id, dateOrder: order, mapping: mapping as Record<string, string> }).catch(() => {});
+      if (layout) await saveMapping(projectId, layout.memoryKey, { layout: layout.id, dateOrder: order, mapping: mapping as Record<string, string> }).catch(() => {});
       onDone(`Saved ${out.added} new and ${out.replaced} replaced days for ${campaignTitle}.`);
       setFile(null);
       setText("");

@@ -14,8 +14,8 @@ import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
+import { PURCHASE_SOURCES } from "@/lib/channels/registry";
 
-const SOURCES = ["Amazon", "Micro Center", "Own printer"];
 
 export function StatusLegend({ statuses }: { statuses: string[] }) {
   if (!statuses.length) return null;
@@ -70,7 +70,7 @@ export function AddPartDialog({ open, onOpenChange, statuses, onCreate }: { open
           <Field label="Qty"><Input value={f.qty} onChange={set("qty")} inputMode="decimal" className="font-mono" /></Field>
           <Field label="Source">
             <Input value={f.source} onChange={set("source")} list="bom-sources" />
-            <datalist id="bom-sources">{SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
+            <datalist id="bom-sources">{PURCHASE_SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
           </Field>
           <Field label="Line cost"><Input value={f.line} onChange={set("line")} inputMode="decimal" className="font-mono" placeholder="0.00" /></Field>
         </div>

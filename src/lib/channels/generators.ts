@@ -2,6 +2,8 @@
 // src/lib/ai/drafts/registry.ts. Every reply and every suggested tag is a draft until a person approves
 // it; an approved reply is still sent only by its own "Send" button (src/lib/channels/send.ts).
 // The brand voice comes from the brand kit (the same text brandContext gives other generators).
+import { channelName } from "./registry";
+import { channelOf } from "./channelName";
 import { z } from "zod";
 import { brandText, findKit } from "@/lib/market/brandKit";
 import type { Item } from "@/lib/types";
@@ -80,7 +82,7 @@ export const replies: Generator<z.infer<typeof replyRow>> = {
     const text = row.text.trim();
     const why = row.reasoning ? { reasoning: row.reasoning.trim() } : {};
     if (src.section === CHANNEL.inbox) {
-      const channel = src.data.channel === "Instagram" ? "Instagram" : "X";
+      const channel = channelName(channelOf(src.data.channel) === "instagram" ? "instagram" : "x");
       const len = Array.from(text).length;
       if (channel === "X" && len > X_REPLY_MAX) return { ok: false, reason: `the reply is ${len} characters; X allows ${X_REPLY_MAX}` };
       const who = typeof src.data.author === "string" && src.data.author ? ` @${src.data.author}` : "";

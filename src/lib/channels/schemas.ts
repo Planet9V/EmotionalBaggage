@@ -3,6 +3,7 @@
 // Every schema is loose and every field optional, like the market schemas: a row typed by hand, an
 // imported row and an approved draft all pass.
 import { z } from "zod";
+import { namesWith } from "./registry";
 
 const text = (max = 2000) => z.string().max(max);
 const day = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date like 2026-12-31")]);
@@ -67,7 +68,7 @@ export const reviewData = z.looseObject({
   requirements: z.array(text(120)).max(50).optional(),
 });
 
-export const INBOX_CHANNELS = ["X", "Instagram"] as const;
+export const INBOX_CHANNELS = namesWith("inbox");
 
 /** A mention, reply or comment read from X or Instagram. Only what a reply needs: no follower data. */
 export const inboxData = z.looseObject({
@@ -82,7 +83,7 @@ export const inboxData = z.looseObject({
   parent: text(60).optional(),
 });
 
-export const REPLY_CHANNELS = ["X", "Instagram", "Amazon", "Other"] as const;
+export const REPLY_CHANNELS = namesWith("replies");
 
 /** A reply waiting to be sent, or sent. The text is the row body. */
 export const replyData = z.looseObject({

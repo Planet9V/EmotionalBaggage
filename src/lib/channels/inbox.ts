@@ -1,6 +1,7 @@
 // Reading mentions (X) and comments (Instagram) into Marketing, Replies and comments (plan 8.18, 8.19).
 // Read only. One row per mention or comment (externalId, kept unique by migration 0021). Only what a
 // reply needs is kept: the text, the author's public handle, the time, the link and the id to reply to.
+import { channelName } from "./registry";
 import { HttpError } from "@/lib/api/route";
 import { currentActor } from "@/lib/actor";
 import { audit, logEventIn, q, tx } from "@/lib/db";
@@ -11,7 +12,7 @@ import { xAccount, xCostAck, X_COST_ACK } from "./state";
 import { X_COST_STATEMENT } from "./xCost";
 import { xMe, xMentions } from "./x";
 
-export type InboundRow = { channel: "X" | "Instagram"; externalId: string; replyTo: string; author: string; at: string; url: string; parent: string; text: string };
+export type InboundRow = { channel: string; externalId: string; replyTo: string; author: string; at: string; url: string; parent: string; text: string };
 
 /** Writes inbound rows; a row already read is left as it is. Answers how many were new. */
 export async function upsertInbound(projectId: string, rows: InboundRow[]) {
@@ -53,10 +54,10 @@ export async function fetchInbox(projectId: string, channel: "x" | "instagram"):
       [projectId, CHANNEL.inbox]
     );
     const mentions = await xMentions(me.id, newest[0]?.id ?? undefined);
-    rows = mentions.map((m) => ({ channel: "X", externalId: `x:${m.id}`, replyTo: m.id, author: m.author, at: m.at, url: m.url, parent: m.conversationId, text: m.text }));
+    rows = mentions.map((m) => ({ channel: channelName("x"), externalId: `x:${m.id}`, replyTo: m.id, author: m.author, at: m.at, url: m.url, parent: m.conversationId, text: m.text }));
   } else {
     const comments = await igRecentComments();
-    rows = comments.map((cm) => ({ channel: "Instagram", externalId: `ig:${cm.id}`, replyTo: cm.id, author: cm.author, at: cm.at, url: cm.url, parent: cm.mediaId, text: cm.text }));
+    rows = comments.map((cm) => ({ channel: channelName("instagram"), externalId: `ig:${cm.id}`, replyTo: cm.id, author: cm.author, at: cm.at, url: cm.url, parent: cm.mediaId, text: cm.text }));
   }
   const added = await upsertInbound(projectId, rows);
   const where = channel === "x" ? "X mentions" : "Instagram comments";

@@ -5,6 +5,8 @@
 //
 // A field is a text, a list of texts, a choice from a list, or a web address.
 
+import { channelName, channelsWith } from "@/lib/channels/registry";
+
 export type FieldSpec = {
   key: string;
   label: string;
@@ -34,6 +36,8 @@ export type FieldSpec = {
 export type ChannelSpec = {
   id: string;
   label: string;
+  /** the id in lib/channels/registry.ts; `platform` below is that channel's display name */
+  channel: string;
   platform: string;
   /** what the channel's copy is */
   summary: string;
@@ -62,11 +66,11 @@ const REDDIT_API = "https://ads-api.reddit.com/api/v3/openapi.json";
 const TIKTOK_CTAS = ["Shop Now", "View Now", "Get it Now", "Buy Today", "Buy Here", "Learn More", "Order Here", "Shop", "Buy it Now", "Buy Now", "Download", "Visit Store", "Book Now", "Contact Us", "Apply Now", "Play Game", "Watch Now", "Get Quote", "Interested", "Install Now", "Get Showtimes"];
 const REDDIT_CTAS = ["Apply Now", "Contact Us", "Download", "Get a Quote", "Get Showtimes", "Install", "Learn More", "Order Now", "Play Now", "Pre-order Now", "See Menu", "Shop Now", "Sign Up", "View More", "Watch Now", "Book Now", "Buy Tickets", "Get Directions", "Listen Now", "Read More", "Subscribe", "Visit Store", "Donate Now", "Remind Me"];
 
-export const AD_CHANNELS: ChannelSpec[] = [
+const AD_SPECS: Omit<ChannelSpec, "platform">[] = [
   {
     id: "amazon-sponsored-products",
     label: "Amazon Sponsored Products",
-    platform: "Amazon",
+    channel: "amazon",
     summary: "No ad copy: the ad shows your listing's title, image and price. What you write is the product to advertise and the keywords to bid on.",
     fields: [
       { key: "adGroupName", label: "Ad group name", kind: "text", required: true, max: 128, enforce: false },
@@ -83,7 +87,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "amazon-sponsored-brands",
     label: "Amazon Sponsored Brands",
-    platform: "Amazon",
+    channel: "amazon",
     summary: "A brand name, a headline, up to three products and the keywords to bid on.",
     fields: [
       { key: "campaignName", label: "Campaign name", kind: "text", required: true, max: 128, enforce: true, source: AMAZON_SB },
@@ -100,7 +104,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "meta-facebook-feed",
     label: "Meta, Facebook feed",
-    platform: "Meta",
+    channel: "meta",
     summary: "Primary text above the image, a headline under it, a button and a link.",
     fields: [
       { key: "primaryText", label: "Primary text", kind: "text", required: true, max: 150, shown: 125, enforce: false, note: "Meta recommends 50 to 150 characters." },
@@ -116,7 +120,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "meta-instagram-feed",
     label: "Meta, Instagram feed",
-    platform: "Meta",
+    channel: "meta",
     summary: "Primary text under the image and a headline.",
     fields: [
       { key: "primaryText", label: "Primary text", kind: "text", required: true, max: 125, enforce: false, note: "Meta recommends 125 characters." },
@@ -132,7 +136,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "meta-stories",
     label: "Meta, Stories (Facebook and Instagram)",
-    platform: "Meta",
+    channel: "meta",
     summary: "Full-screen vertical. Most of the message is on the image; the text here is the short line and the button.",
     fields: [
       { key: "primaryText", label: "Short line", kind: "text", required: true, max: 125, enforce: false },
@@ -147,7 +151,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "x-ads",
     label: "X",
-    platform: "X",
+    channel: "x",
     summary: "The post text, with an optional video title and description, and a link.",
     fields: [
       { key: "postText", label: "Post text", kind: "text", required: true, max: 280, xWeight: true, enforce: true, source: X_COUNT, note: "Emoji and CJK count 2; a web address counts 23." },
@@ -166,7 +170,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "google-search-rsa",
     label: "Google Search responsive ad",
-    platform: "Google",
+    channel: "google",
     summary: "Up to 15 headlines and 4 descriptions that Google combines, two display path words and a final address.",
     fields: [
       { key: "headlines", label: "Headlines", kind: "list", required: true, minItems: 3, maxItems: 15, max: 30, enforce: true, source: GOOGLE },
@@ -190,7 +194,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "tiktok-ads",
     label: "TikTok",
-    platform: "TikTok",
+    channel: "tiktok",
     summary: "A display name, a caption and a button over your video.",
     fields: [
       { key: "displayName", label: "Display name", kind: "text", required: true, max: 20, enforce: false, note: "TikTok's page gives 20 characters for its reservation ads; the self-serve limit was not found." },
@@ -209,7 +213,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "reddit-ads",
     label: "Reddit",
-    platform: "Reddit",
+    channel: "reddit",
     summary: "A headline (the post's title), optional text and a button.",
     fields: [
       { key: "headline", label: "Headline", kind: "text", required: true, max: 300, enforce: false },
@@ -225,7 +229,7 @@ export const AD_CHANNELS: ChannelSpec[] = [
   {
     id: "pinterest-ads",
     label: "Pinterest",
-    platform: "Pinterest",
+    channel: "pinterest",
     summary: "A title and a description on a Pin, and the address it opens.",
     fields: [
       { key: "title", label: "Title", kind: "text", required: true, max: 100, shown: 40, enforce: true, source: PIN, note: "Only the first 40 characters may show in the feed." },
@@ -238,6 +242,8 @@ export const AD_CHANNELS: ChannelSpec[] = [
     costWord: "cost per order",
   },
 ];
+
+export const AD_CHANNELS: ChannelSpec[] = AD_SPECS.map((s) => ({ ...s, platform: channelName(s.channel) }));
 
 export const adChannel = (id: string) => AD_CHANNELS.find((c) => c.id === id);
 
@@ -327,15 +333,17 @@ export type SocialSpec = {
   note: string;
 };
 
-export const SOCIAL_CHANNELS: SocialSpec[] = [
-  { id: "x", label: "X", max: 280, enforce: true, xWeight: true, source: X_COUNT, note: "Emoji and CJK count 2; a web address counts 23." },
-  { id: "instagram", label: "Instagram", max: 2200, enforce: false, note: "2,200 is Instagram's caption length as generally published; Instagram's own help page could not be read here, so it is a soft guide." },
-  { id: "facebook", label: "Facebook", max: 2000, enforce: false, note: "Facebook publishes no short limit for a Page post; 2,000 is a soft guide for reading length." },
-  { id: "pinterest", label: "Pinterest", max: 800, enforce: true, title: { max: 100, enforce: true }, source: PIN, note: "Title 100 characters (the first 40 may show) and description 800." },
-  { id: "tiktok", label: "TikTok", max: 150, enforce: false, source: TIKTOK_SPEC, note: "150 is the caption length TikTok gives for Spark Ads; for a plain post it is a soft guide." },
-  { id: "reddit", label: "Reddit", max: 300, enforce: false, title: { max: 300, enforce: false }, note: "Reddit's help pages could not be read; 300 is a post title's usual limit and a soft guide." },
-  { id: "linkedin", label: "LinkedIn", max: 3000, enforce: false, note: "3,000 is LinkedIn's post length as generally published; its help page could not be read here, so it is a soft guide." },
-];
+const SOCIAL_LIMITS: Record<string, Omit<SocialSpec, "id" | "label">> = {
+  x: { max: 280, enforce: true, xWeight: true, source: X_COUNT, note: "Emoji and CJK count 2; a web address counts 23." },
+  instagram: { max: 2200, enforce: false, note: "2,200 is Instagram's caption length as generally published; Instagram's own help page could not be read here, so it is a soft guide." },
+  facebook: { max: 2000, enforce: false, note: "Facebook publishes no short limit for a Page post; 2,000 is a soft guide for reading length." },
+  pinterest: { max: 800, enforce: true, title: { max: 100, enforce: true }, source: PIN, note: "Title 100 characters (the first 40 may show) and description 800." },
+  tiktok: { max: 150, enforce: false, source: TIKTOK_SPEC, note: "150 is the caption length TikTok gives for Spark Ads; for a plain post it is a soft guide." },
+  reddit: { max: 300, enforce: false, title: { max: 300, enforce: false }, note: "Reddit's help pages could not be read; 300 is a post title's usual limit and a soft guide." },
+  linkedin: { max: 3000, enforce: false, note: "3,000 is LinkedIn's post length as generally published; its help page could not be read here, so it is a soft guide." },
+};
+
+export const SOCIAL_CHANNELS: SocialSpec[] = channelsWith("social").map((c) => ({ id: c.id, label: c.name, ...SOCIAL_LIMITS[c.id] }));
 
 /** By id ("x") or by the name the board shows ("X"), any case. */
 export const socialChannel = (id: string) => SOCIAL_CHANNELS.find((c) => c.id === id.toLowerCase() || c.label.toLowerCase() === id.toLowerCase());

@@ -31,8 +31,10 @@ export type Mapping = Partial<Record<Field, string>>;
 export type Layout = {
   id: string;
   label: string;
-  /** the channel the mapping is remembered under */
+  /** the id in lib/channels/registry.ts; that channel must support "import" */
   channel: string;
+  /** the key a remembered column mapping is stored under (kept as first saved, so saved mappings still match) */
+  memoryKey: string;
   synonyms: Record<Field, string[]>;
   /** where the column names were read from */
   source: string;
@@ -45,7 +47,8 @@ export const LAYOUTS: Layout[] = [
   {
     id: "amazon-ads",
     label: "Amazon Ads report",
-    channel: "amazon-ads",
+    channel: "amazon",
+    memoryKey: "amazon-ads",
     synonyms: {
       day: ["Date", "Start Date"],
       campaign: ["Campaign Name"],
@@ -64,6 +67,7 @@ export const LAYOUTS: Layout[] = [
     id: "meta-ads",
     label: "Meta Ads Manager export (Facebook and Instagram)",
     channel: "meta",
+    memoryKey: "meta",
     synonyms: {
       day: ["Day", "Reporting starts"],
       campaign: ["Campaign name"],
@@ -82,6 +86,7 @@ export const LAYOUTS: Layout[] = [
     id: "google-ads",
     label: "Google Ads report",
     channel: "google",
+    memoryKey: "google",
     synonyms: {
       day: ["Day", "Date"],
       campaign: ["Campaign"],
@@ -100,6 +105,7 @@ export const LAYOUTS: Layout[] = [
     id: "generic",
     label: "Any other file",
     channel: "other",
+    memoryKey: "other",
     synonyms: {
       day: ["Date", "Day"],
       campaign: ["Campaign"],
