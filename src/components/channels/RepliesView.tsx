@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Check, Copy, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Card } from "@/components/ui/Card";
 import type { ViewProps } from "@/components/views/types";

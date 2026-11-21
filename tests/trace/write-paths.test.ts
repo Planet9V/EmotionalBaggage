@@ -7,7 +7,6 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pool, q } from "@/lib/db";
-import { POST as confirm } from "@/app/api/items/[id]/confirm/route";
 import { POST as override } from "@/app/api/projects/[id]/gates/route";
 import { POST as moveStage } from "@/app/api/projects/[id]/stage/route";
 import { POST as launch } from "@/app/api/projects/[id]/campaigns/launch/route";
@@ -70,8 +69,8 @@ const WRITE_PATHS: Record<string, string> = {
   "drafts/run/route.ts": "src/lib/ai/drafts/run.ts",
   "files/[id]/route.ts": "self",
   "index/route.ts": "none: stores search vectors worked out from rows; no row or setting changes",
-  "items/[id]/confirm/route.ts": "self",
   "items/[id]/pins/route.ts": "self",
+  "items/[id]/reason/route.ts": "src/lib/trace/reason.ts",
   "items/[id]/route.ts": "self",
   "print-jobs/[id]/control/route.ts": "src/lib/slicing/flow.ts",
   "print-jobs/[id]/result/route.ts": "src/lib/slicing/flow.ts",
@@ -111,7 +110,6 @@ const WRITE_PATHS: Record<string, string> = {
 
 /** Write paths the twelve features added (or the integration changed): each recording call must carry before and after. */
 const BEFORE_AFTER = new Set([
-  "items/[id]/confirm/route.ts",
   "items/[id]/pins/route.ts",
   "projects/[id]/campaigns/csv-mapping/route.ts",
   "projects/[id]/campaigns/launch/route.ts",
@@ -203,13 +201,6 @@ describe("the new write paths, called one by one", () => {
   afterAll(async () => {
     await drop(project);
     await pool().end();
-  });
-
-  it("confirming a compliance row", async () => {
-    const id = await add("production/compliance", "Batteries", { why: "x", check: "y", generated: { model: "m" } }, "draft");
-    expect((await confirm(json("POST", { status: "applies" }), ctx(String(id)))).status).toBe(200);
-    const d = await last("compliance.confirmed");
-    expect(d).toMatchObject({ itemId: id, before: { status: "draft" }, after: { status: "applies" } });
   });
 
   it("overriding a gate and moving the stage", async () => {

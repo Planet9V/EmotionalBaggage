@@ -16,7 +16,7 @@ import { CampaignDialog } from "./CampaignDialog";
 import { Section } from "./fields";
 import { useMoney, useSummary } from "./hooks";
 import { PlanCard } from "./PlanCard";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 
 export function CampaignsView({ project, section }: ViewProps) {
   const { items, loading, error, reload, patch, remove } = useItems(project.id, CAMPAIGN_STORE);

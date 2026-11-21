@@ -18,6 +18,8 @@ export const auditQuery = z.object({
   project: z.string().trim().max(200).optional(),
   /** only lines whose action starts with this, e.g. "project." or "credential." */
   action: z.string().trim().max(80).optional(),
+  /** leave out lines whose action starts with this (the screen hides "session.started" sign-ins by default) */
+  hide: z.string().trim().max(80).optional(),
   /** text to find in the summary, the concept name or the actor */
   q: z.string().trim().max(200).optional(),
   /** lines older than this id: pass the last id of the previous page */
@@ -39,6 +41,7 @@ function where(f: Omit<AuditQuery, "limit">) {
   };
   if (f.project) add("project_id = ?", f.project);
   if (f.action) add("action LIKE ?", `${f.action.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+  if (f.hide) add("action NOT LIKE ?", `${f.hide.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
   if (f.q) add("(summary ILIKE ? OR project_name ILIKE ? OR actor ILIKE ?)", like(f.q));
   if (f.before) add("id < ?", f.before);
   return { sql: cond.length ? `WHERE ${cond.join(" AND ")}` : "", args };

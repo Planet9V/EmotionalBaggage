@@ -21,6 +21,7 @@ import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { sectionWhy } from "@/lib/sectionWhy";
+import { announceMove } from "@/components/trace/movedToast";
 import { EmptyState, LoadingShape } from "@/components/ui/states";
 
 type Layout = "board" | "table";
@@ -241,7 +242,11 @@ export function ItemsView({ project, stage, section, store }: ViewProps) {
           No row has this text or status. Clear the search to see every row.
         </EmptyState>
       ) : layout === "board" ? (
-        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={(id, status) => patch(id, { status })} cardExtra={cardExtra} />
+        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={async (id, status) => {
+          await patch(id, { status });
+          const moved = items.find((i) => i.id === id);
+          if (moved) announceMove(moved, status);
+        }} cardExtra={cardExtra} />
       ) : (
         <ItemsTable items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onStatus={move} extraColumn={extraColumn} />
       )}

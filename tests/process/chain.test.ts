@@ -103,8 +103,14 @@ describe("the Prototype chain", () => {
     expect(n()).toMatchObject({ label: "Add a build with its exit criteria and tests", href: "/s/prototype/builds#add-build" });
     const b = row("prototype/builds", "testing", {}, "EVT");
     rows.push(b);
+    // a build with nothing to prove cannot pass: the step says to give it evidence first
+    expect(n()).toMatchObject({ label: 'Add exit criteria and tests to the build "EVT"', href: "/s/prototype/builds" });
+    const evidence = { criteria: [{ text: "Boots", met: true }], tests: ["t1"] };
+    rows.splice(rows.indexOf(b), 1, { ...b, data: evidence });
+    rows.splice(rows.indexOf(rows.find((r) => r.id === t.id)!), 1, { ...t, status: "pass", data: { key: "t1" } });
     expect(n()).toMatchObject({ label: 'Pass the build "EVT" in Builds', href: "/s/prototype/builds" });
-    rows.splice(rows.indexOf(b), 1, { ...b, status: "passed" });
+    const ready = rows.find((r) => r.id === b.id)!;
+    rows.splice(rows.indexOf(ready), 1, { ...ready, status: "passed" });
     expect(n()).toMatchObject({ label: "Advance to Production", href: "/process#advance" });
   });
 

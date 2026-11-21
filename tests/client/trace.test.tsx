@@ -22,6 +22,8 @@ import { LinkPicker } from "@/components/trace/LinkPicker";
 import { TraceabilityView } from "@/components/trace/TraceabilityView";
 import { ActivityView } from "@/components/trace/ActivityView";
 import { BuildsView } from "@/components/builds/BuildsView";
+import { ReportProcess } from "@/components/process/ReportProcess";
+import { ComplianceView } from "@/components/compliance/ComplianceView";
 import { findSection } from "@/lib/menu";
 
 const P = "p1";
@@ -33,6 +35,7 @@ let db: Item[] = [];
 let history: Record<number, HistoryEntry[]> = {};
 let activityPages: HistoryEntry[][] = [];
 let refuse: Record<number, string> = {};
+let processState: Record<string, unknown> | null = null;
 
 function install() {
   calls = [];
@@ -47,6 +50,9 @@ function install() {
       const one = /^\/api\/items\/(\d+)$/.exec(url.pathname);
       const hist = /^\/api\/items\/(\d+)\/history$/.exec(url.pathname);
       if (hist) return reply(200, { entries: history[Number(hist[1])] ?? [], next: null });
+      if (/^\/api\/items\/\d+\/reason$/.test(url.pathname) && method === "POST") return reply(200, { ok: true });
+      if (/^\/api\/projects\/p1\/process$/.test(url.pathname)) return reply(200, processState);
+      if (/^\/api\/projects\/p1\/production-settings$/.test(url.pathname)) return reply(200, { currency: "USD", regions: ["eu"], productType: "electronics" });
       if (/^\/api\/projects\/p1\/activity$/.test(url.pathname)) {
         const before = Number(url.searchParams.get("before") ?? 0);
         const page = before ? 1 : 0;
@@ -103,7 +109,7 @@ afterEach(() => {
 });
 
 const entry = (id: number, extra: Partial<HistoryEntry> = {}): HistoryEntry => ({
-  id, at: "2026-11-20T10:00:00.000Z", actor: "demo", kind: "item.edited", summary: `Edited "Row" in concept/brief`, itemId: 1, section: "concept/brief", title: "Row", changes: [], ...extra,
+  id, at: "2026-11-20T10:00:00.000Z", actor: "demo", kind: "item.edited", summary: `Edited "Row" in concept/brief`, itemId: 1, section: "concept/brief", title: "Row", changes: [], reason: "", reasonLater: null, canAddReason: false, ...extra,
 });
 
 describe("History panel", () => {
@@ -279,6 +285,20 @@ describe("traceability", () => {
     expect(screen.getByRole("region", { name: /Parts no requirement needs/ }).textContent).not.toContain("MCU");
   });
 
+  it("links each gap row, and each requirement in the matrix, to its row with ?item=<id>", async () => {
+    db = [
+      item(1, "design/requirements", "Sleeps at idle"),
+      item(2, "prototype/tests", "Orphan test", { data: { key: "t9" } }),
+      item(3, "design/bom", "Spare strap", { data: { ref: "S1" } }),
+    ];
+    renderWith(<TraceabilityView />);
+    const hrefOf = async (region: RegExp, name: string) => within(await screen.findByRole("region", { name: region })).getByRole("link", { name }).getAttribute("href");
+    expect(await hrefOf(/Requirements with no test/, "Sleeps at idle")).toBe("/s/design/requirements?item=1");
+    expect(await hrefOf(/Tests that check no requirement/, "Orphan test")).toBe("/s/prototype/tests?item=2");
+    expect(await hrefOf(/Parts no requirement needs/, "S1 Spare strap")).toBe("/s/design/bom?item=3");
+    expect(within(screen.getByRole("table")).getByRole("link", { name: "Sleeps at idle" }).getAttribute("href")).toBe("/s/design/requirements?item=1");
+  });
+
   it("says so when every requirement is covered, and when there are no requirements at all", async () => {
     db = [item(1, "design/requirements", "R", { data: { tests: ["t1"], parts: ["p1"] } }), item(2, "prototype/tests", "T", { data: { key: "t1" } }), item(3, "design/bom", "P", { data: { key: "p1" } })];
     renderWith(<TraceabilityView />);
@@ -289,6 +309,62 @@ describe("traceability", () => {
     db = [];
     renderWith(<TraceabilityView />);
     expect(await screen.findByText("No requirements yet")).toBeTruthy();
+  });
+});
+
+describe("process on the report", () => {
+  it("shows the current stage, each gate, the override with its reason and who, and each build with its evidence", async () => {
+    processState = {
+      projectId: P, name: "Probe", oneLiner: "A lamp", productType: "electronics", stage: "research",
+      gates: [{ stage: "concept", status: "go", overridden: true, note: "Checked by phone with the buyer", decidedBy: "demo", decidedAt: "2026-11-20T10:00:00.000Z" }],
+      history: [], facts: { currency: "USD", erc: null }, skipped: [],
+    };
+    db = [
+      item(1, "prototype/builds", "EVT", { status: "passed", data: { tests: ["t1"], criteria: [{ text: "Dims", met: true }] } }),
+      item(2, "prototype/builds", "DVT", { status: "planned", data: {} }),
+      item(3, "prototype/tests", "Dark room", { status: "fail", data: { key: "t1" } }),
+    ];
+    renderWith(<ReportProcess projectId={P} />);
+    const root = await screen.findByTestId("report-process");
+    await within(root).findByText("EVT");
+    expect(root.textContent).toContain("Current stage: Research");
+    expect(within(screen.getByTestId("report-gate-concept")).getByText(/Overridden/)).toBeTruthy();
+    expect(root.textContent).toContain("Checked by phone with the buyer");
+    expect(root.textContent).toContain("by demo");
+    const evt = screen.getByTestId("report-build-1");
+    expect(evt.textContent).toContain("1 of 1 exit criteria met; 0 of 1 linked tests passed.");
+    expect(evt.textContent).toContain("Marked passed, but the evidence no longer supports it.");
+    expect(screen.getByTestId("report-build-2").textContent).toContain("Add at least one exit criterion and one test");
+  });
+
+  it("says so when nothing was overridden and no build exists", async () => {
+    processState = { projectId: P, name: "Probe", oneLiner: "", productType: "electronics", stage: "concept", gates: [], history: [], facts: { currency: "USD", erc: null }, skipped: [] };
+    db = [];
+    renderWith(<ReportProcess projectId={P} />);
+    expect(await screen.findByText("No gate has been overridden.")).toBeTruthy();
+    expect(screen.getByText("No builds recorded.")).toBeTruthy();
+  });
+});
+
+describe("compliance page", () => {
+  it("has no second draft button, no confirm step and no 'to confirm' counter; a row at draft is edited like any row", async () => {
+    db = [
+      item(1, "production/compliance", "Radio rules", { status: "to check" }),
+      item(2, "production/compliance", "Batteries", { status: "done" }),
+      item(3, "production/compliance", "Older draft row", { status: "draft" }),
+    ];
+    const found = findSection("production", "compliance")!;
+    renderWith(<ComplianceView project={project as never} stage={found.stage} section={found.section} store="production/compliance" />);
+    await screen.findByText("Radio rules");
+    expect(screen.queryByRole("button", { name: /Draft a checklist/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Confirm/ })).toBeNull();
+    expect(screen.queryByText(/to confirm/)).toBeNull();
+    expect(screen.getByText(/1 to check, 1 decided, 1 with no decision yet/)).toBeTruthy();
+    expect(screen.getByText(/Draft with AI, at the top of this page/)).toBeTruthy();
+    const select = screen.getByLabelText("Status of Older draft row") as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(["to check", "applies", "does not apply", "done", "draft"]);
+    fireEvent.change(select, { target: { value: "applies" } });
+    await waitFor(() => expect(calls.some((c) => c.method === "PATCH" && c.path === "/api/items/3" && (c.body as { status: string }).status === "applies")).toBe(true));
   });
 });
 
@@ -330,7 +406,9 @@ describe("builds", () => {
     expect(within(card).getByText("1 of 2 tests passed")).toBeTruthy();
     expect(within(card).getByText("Drop").closest("li")?.textContent).toContain("pass");
     expect(within(card).getByText("Idle").closest("li")?.textContent).toContain("fail");
-    expect(within(card).getByText(/Not ready to pass/).textContent).toContain('"Plays a clip"');
+    expect(within(card).getByText(/cannot be marked passed/).textContent).toContain('"Plays a clip"');
+    // a build that cannot pass has its button disabled, with the reason beside it
+    expect((within(card).getByRole("button", { name: "Mark EVT passed" }) as HTMLButtonElement).disabled).toBe(true);
     // ticking a criterion saves the whole list
     fireEvent.click(within(card).getByRole("checkbox", { name: "Plays a clip" }));
     await waitFor(() =>
@@ -339,7 +417,8 @@ describe("builds", () => {
   });
 
   it("shows the server's reason when Mark passed is refused, on that card", async () => {
-    db = [item(1, "prototype/builds", "EVT", { status: "testing" }), item(2, "prototype/builds", "DVT", { status: "planned" })];
+    const ready = { criteria: [{ text: "Boots", met: true }], tests: ["t1"] };
+    db = [item(1, "prototype/builds", "EVT", { status: "testing", data: ready }), item(2, "prototype/builds", "DVT", { status: "planned", data: ready }), item(3, "prototype/tests", "Drop", { data: { key: "t1" }, status: "pass" })];
     refuse[1] = "This build cannot be marked passed: 1 of 2 exit criteria is not met (for example \"Plays a clip\").";
     renderWith(<BuildsView {...props} />);
     const card = await screen.findByRole("listitem", { name: "EVT" });
@@ -350,10 +429,20 @@ describe("builds", () => {
   });
 
   it("marks a build passed when the server allows it", async () => {
-    db = [item(1, "prototype/builds", "PVT", { status: "testing" })];
+    db = [item(1, "prototype/builds", "PVT", { status: "testing", data: { criteria: [{ text: "Boots", met: true }], tests: ["t1"] } }), item(2, "prototype/tests", "Drop", { data: { key: "t1" }, status: "pass" })];
     renderWith(<BuildsView {...props} />);
     fireEvent.click(await screen.findByRole("button", { name: "Mark PVT passed" }));
     expect(await screen.findByText("Passed")).toBeTruthy();
+  });
+
+  it("disables Mark passed on a build with no criteria or tests, and says why beside it (process review 1)", async () => {
+    db = [item(1, "prototype/builds", "Empty", { status: "planned" })];
+    renderWith(<BuildsView {...props} />);
+    const card = await screen.findByRole("listitem", { name: "Empty" });
+    const button = within(card).getByRole("button", { name: "Mark Empty passed" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(within(card).getByText("Add at least one exit criterion and one test before marking this build passed.")).toBeTruthy();
+    expect(button.getAttribute("aria-describedby")).toBeTruthy();
   });
 
   it("has an empty state that adds the first build", async () => {
@@ -361,5 +450,60 @@ describe("builds", () => {
     expect(await screen.findByText("No builds yet")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Add build/ }));
     expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+});
+
+describe("the why (process review 3)", () => {
+  const row = item(1, "concept/brief", "Row", { body: "two", status: "open" });
+
+  it("shows the reason on a change, and says when it was added later", async () => {
+    history[1] = [
+      entry(4, { reason: "Decided in the review" }),
+      entry(3, { reason: "Added afterwards", reasonLater: { by: "ana", at: "2026-11-21T09:00:00.000Z" } }),
+    ];
+    renderWith(<HistoryPanel item={row} onRestore={vi.fn()} />);
+    expect(await screen.findByText("Decided in the review")).toBeTruthy();
+    expect(screen.getByText(/added later by ana/)).toBeTruthy();
+  });
+
+  it("offers Add reason only on the line the server marks, and saves it against that line", async () => {
+    history[1] = [entry(4, { canAddReason: true }), entry(3)];
+    renderWith(<HistoryPanel item={row} onRestore={vi.fn()} />);
+    const buttons = await screen.findAllByRole("button", { name: "Add reason" });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]);
+    fireEvent.change(screen.getByLabelText("Why (kept in the history)"), { target: { value: "Agreed with the client" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save reason" }));
+    await waitFor(() => expect(calls.find((c) => c.path === "/api/items/1/reason")?.body).toEqual({ why: "Agreed with the client", forEvent: 4 }));
+  });
+
+  it("sends the optional why with a restore, and nothing when the field is empty", async () => {
+    history[1] = [entry(2, { changes: [{ field: "body", label: "Details", before: "one", after: "two", restorable: true }] })];
+    const onRestore = vi.fn(async () => {});
+    renderWith(<HistoryPanel item={row} onRestore={onRestore} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Restore this value of Details/ }));
+    await waitFor(() => expect(onRestore).toHaveBeenLastCalledWith(1, { body: "one" }));
+    fireEvent.change(screen.getByLabelText(/Why you are restoring/), { target: { value: "The new text was wrong" } });
+    fireEvent.click(screen.getByRole("button", { name: /Restore this value of Details/ }));
+    await waitFor(() => expect(onRestore).toHaveBeenLastCalledWith(1, { body: "one", why: "The new text was wrong" }));
+  });
+
+  it("the row editor asks for a why only when the status changes, and sends it with the save", async () => {
+    const onSave = vi.fn(async () => {});
+    renderWith(<ItemDrawer item={row} onClose={() => {}} sectionLabel="Brief" columns={[]} statuses={["open", "done"]} onSave={onSave} onDelete={async () => {}} />);
+    expect(screen.queryByLabelText("Why (kept in the history)")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "done" } });
+    fireEvent.change(screen.getByLabelText("Why (kept in the history)"), { target: { value: "Shipped" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(1, expect.objectContaining({ status: "done", why: "Shipped" })));
+  });
+
+  it("a status change with no reason sends none", async () => {
+    const onSave = vi.fn(async () => {});
+    renderWith(<ItemDrawer item={row} onClose={() => {}} sectionLabel="Brief" columns={[]} statuses={["open", "done"]} onSave={onSave} onDelete={async () => {}} />);
+    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "done" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect((onSave.mock.calls[0] as unknown[])[1]).not.toHaveProperty("why");
   });
 });

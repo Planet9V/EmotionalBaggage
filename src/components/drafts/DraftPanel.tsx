@@ -80,6 +80,7 @@ export function DraftPanel({
   configured,
   reason,
   model,
+  only,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -90,6 +91,8 @@ export function DraftPanel({
   configured: boolean;
   reason: string;
   model: string;
+  /** show only the waiting drafts of this generator (Traceability shares the requirements store with Draft requirements) */
+  only?: string;
 }) {
   const [picked, setPicked] = useState(generators[0]?.id ?? "");
   const g = generators.find((x) => x.id === picked) ?? generators[0];
@@ -97,7 +100,7 @@ export function DraftPanel({
   const waiting = useQuery({ ...draftQueries.list(projectId, store, "draft"), enabled: open });
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const abort = useRef<AbortController | null>(null);
-  const drafts = useMemo(() => waiting.data?.drafts ?? [], [waiting.data]);
+  const drafts = useMemo(() => (waiting.data?.drafts ?? []).filter((d) => !only || d.generator === only), [waiting.data, only]);
 
   const go = async (supersede = false) => {
     if (!g) return;

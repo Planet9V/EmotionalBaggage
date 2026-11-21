@@ -12,6 +12,7 @@ import { statusTone } from "@/lib/statusTones";
 import { traceOf } from "@/lib/trace/coverage";
 import type { Item, Project } from "@/lib/types";
 import { Coverage } from "./Coverage";
+import { DraftLinks } from "./DraftLinks";
 import { EmptyState, NoConcept, LoadingShape } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
@@ -35,6 +36,9 @@ export function TraceabilityView() {
   );
 }
 
+/** The link to one row: its section with ?item=<id>, which opens that row's editor (the parts list marks the row). */
+export const rowHref = (href: string, row: Pick<Item, "id">) => `${href}?item=${row.id}`;
+
 function Gap({ title, empty, rows, href, label }: { title: string; empty: string; rows: Item[]; href: string; label: (i: Item) => string }) {
   return (
     <Card variant="flat" as="section" aria-label={title} className="p-4">
@@ -43,7 +47,7 @@ function Gap({ title, empty, rows, href, label }: { title: string; empty: string
         <ul className="mt-2 space-y-1">
           {rows.map((r) => (
             <li key={r.id} className="text-sm">
-              <Link href={href} className="text-secondary hover:text-link wrap-anywhere">
+              <Link href={rowHref(href, r)} className="text-secondary hover:text-link wrap-anywhere">
                 {label(r)}
               </Link>
             </li>
@@ -97,6 +101,7 @@ function TraceBody({ project }: { project: Project }) {
 
   return (
     <div className="space-y-6">
+      <DraftLinks projectId={project.id} gaps={t.untested.length + t.orphanTests.length + t.unusedParts.length} />
       <section aria-label="Requirements by test">
         <h2 className="mb-2 text-sm font-semibold tracking-tight text-primary">Requirements by test</h2>
         {t.tests.length ? (
@@ -121,7 +126,7 @@ function TraceBody({ project }: { project: Project }) {
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium text-primary">
-                        <Link href="/s/design/requirements" className="hover:text-link wrap-anywhere">
+                        <Link href={rowHref("/s/design/requirements", r)} className="hover:text-link wrap-anywhere">
                           {r.title}
                         </Link>
                         <div className="mt-0.5">

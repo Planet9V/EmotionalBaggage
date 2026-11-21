@@ -120,6 +120,23 @@ describe("Audit log", () => {
     expect(auditQueryString({})).toBe("");
     expect(auditQueryString({ project: "p 1", action: "item.", q: "  battery " }, { before: 40, limit: 100 })).toBe("?project=p+1&action=item.&q=battery&before=40&limit=100");
     expect(auditQueryString({ q: "   " })).toBe("");
+    expect(auditQueryString({ hide: "session.started", action: "item." })).toBe("?action=item.&hide=session.started");
+  });
+
+  it("hides sign-in lines by default, says so, shows them on request, and shows them when the Sign-in kind is chosen", async () => {
+    const server = adminServer([on("GET", "/api/admin/audit", () => ({ body: { entries: [{ id: 5, at: "2026-11-20T10:00:00.000Z", actor: "demo", projectId: "", projectName: "", action: "item.added", summary: "line 5", detail: {} }], next: null, concepts: [] } }), true)]);
+    renderWithClient(<AuditTab />);
+    await screen.findByTestId("audit-5");
+    expect(screen.getByText(/Sign-ins hidden\./)).toBeTruthy();
+    expect(server.calls.some((c) => c.path === "/api/admin/audit?hide=session.started&limit=100")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Show" }));
+    await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?limit=100")).toBe(true));
+    expect(screen.getByText(/Sign-ins shown\./)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+    fireEvent.click(screen.getByLabelText("Kind of change"));
+    fireEvent.click(await screen.findByRole("option", { name: "Sign-in" }));
+    await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?action=session.&limit=100")).toBe(true));
+    expect(screen.queryByText(/Sign-ins hidden\./)).toBeNull();
   });
 
   it("marks deleted concepts and filters by one with the right query", async () => {
@@ -146,7 +163,7 @@ describe("Audit log", () => {
     const option = await screen.findByRole("option", { name: "Old speaker (deleted)" });
     expect(screen.getByRole("option", { name: "Desk lamp" })).toBeTruthy();
     fireEvent.click(option);
-    await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?project=gone-1&limit=100")).toBe(true));
+    await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?project=gone-1&hide=session.started&limit=100")).toBe(true));
     await waitFor(() => expect(screen.queryByTestId("audit-3")).toBeNull());
 
     fireEvent.click(within(screen.getByTestId("audit-2")).getByRole("button", { name: /Show details/ }));

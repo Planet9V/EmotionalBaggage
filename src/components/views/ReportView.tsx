@@ -14,6 +14,7 @@ import type { FileMeta, Project } from "@/lib/types";
 import { downloadFile } from "@/lib/download";
 import { fileSlug, fmtBytes } from "@/lib/format";
 import { NoConcept } from "@/components/ui/states";
+import { ReportProcess } from "@/components/process/ReportProcess";
 
 const PARTS: ConceptPart[] = ["items", "files", "plan", "research", "challenge", "events"];
 
@@ -146,6 +147,7 @@ function ReportBody({ project }: { project: Project }) {
               {blocks.map((b, i) => (
                 <Fragment key={i}>{renderBlock(b)}</Fragment>
               ))}
+              <ReportProcess projectId={project.id} />
             </div>
           </>
         )}

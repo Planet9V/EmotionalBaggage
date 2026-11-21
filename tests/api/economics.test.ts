@@ -1,10 +1,11 @@
 // The production routes: settings, validation of the new row kinds, compliance drafting and confirming.
 // Drafting runs against the OpenAI-compatible stand-in, not a real model.
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { pool, q } from "@/lib/db";
 import { GET as getSettings, PATCH as patchSettings } from "@/app/api/projects/[id]/production-settings/route";
 import { POST as draft } from "@/app/api/projects/[id]/compliance/draft/route";
-import { POST as confirm } from "@/app/api/items/[id]/confirm/route";
 import { POST as approveRun } from "@/app/api/drafts/approve-run/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
@@ -177,43 +178,23 @@ describe("drafting the compliance checklist", () => {
   });
 });
 
-describe("confirming a draft", () => {
-  // A compliance row left at "draft" by the earlier drafting path (before the drafting engine): the
-  // confirm route still turns it into a normal row.
-  async function drafted() {
+describe("a compliance row left at draft by the earlier drafting path", () => {
+  // The drafting engine never leaves a row at "draft" (approval makes a row at "to check"), so there is no
+  // confirm step. An older row at "draft" is an ordinary row: its status is changed like any other.
+  it("is changed with an ordinary edit, which records before and after", async () => {
     const r = await q<{ id: string }>(
       "INSERT INTO items (project_id, section, title, body, data, status) VALUES ($1,'production/compliance','test: radio rules','',$2,'draft') RETURNING id",
       [PROJECT, JSON.stringify({ why: "W1 transmits.", check: "Certificates.", generated: { model: "stand-in-chat", at: new Date().toISOString(), sources: [] } })]
     );
-    return { id: Number(r[0].id) };
-  }
-  it("turns the draft into a normal row with the chosen status and keeps where it came from", async () => {
-    const d = await drafted();
-    const r = await read<{ item: Item & { data: { generated: { model: string; confirmedAt: string } } } }>(await confirm(json("POST", { status: "applies" }), ctx(String(d.id))));
-    expect(r.status).toBe(200);
-    expect(r.body.item.status).toBe("applies");
-    expect(r.body.item.data.generated.model).toBe("stand-in-chat");
-    expect(r.body.item.data.generated.confirmedAt).toBeTruthy();
-    expect((await q("SELECT 1 FROM events WHERE project_id=$1 AND kind='compliance.confirmed'", [PROJECT])).length).toBe(1);
-  });
-  it("defaults to 'to check', refuses 'draft', and refuses a second confirmation", async () => {
-    const d = await drafted();
-    expect((await read<Err>(await confirm(json("POST", { status: "draft" }), ctx(String(d.id))))).status).toBe(400);
-    const ok = await read<{ item: Item }>(await confirm(json("POST", {}), ctx(String(d.id))));
-    expect(ok.body.item.status).toBe("to check");
-    expect((await confirm(json("POST", {}), ctx(String(d.id)))).status).toBe(409);
-  });
-  it("refuses a row that is not a compliance row, and an unknown row", async () => {
-    const other = await read<{ item: Item }>(await add("concept/brief", "test: other"));
-    expect((await confirm(json("POST", {}), ctx(String(other.body.item.id)))).status).toBe(400);
-    expect((await confirm(json("POST", {}), ctx("99999999"))).status).toBe(404);
-    expect((await confirm(anonymous("POST", {}), ctx("1"))).status).toBe(401);
+    const out = await read<{ item: Item }>(await patchItem(json("PATCH", { status: "applies" }), ctx(r[0].id)));
+    expect(out.status).toBe(200);
+    expect(out.body.item.status).toBe("applies");
+    expect(out.body.item.data).toMatchObject({ generated: { model: "stand-in-chat" } });
+    const ev = await q<{ data: { before: { status: string }; after: { status: string } } }>("SELECT data FROM events WHERE project_id=$1 AND kind='item.status' ORDER BY id DESC LIMIT 1", [PROJECT]);
+    expect(ev[0].data).toMatchObject({ before: { status: "draft" }, after: { status: "applies" } });
     await q("DELETE FROM items WHERE project_id=$1 AND title LIKE 'test:%'", [PROJECT]);
   });
-  it("is the same row afterwards: an ordinary edit still works", async () => {
-    const d = await drafted();
-    await confirm(json("POST", {}), ctx(String(d.id)));
-    const r = await read<{ item: Item }>(await patchItem(json("PATCH", { status: "done" }), ctx(String(d.id))));
-    expect(r.body.item.status).toBe("done");
+  it("has no confirm route any more", async () => {
+    expect(existsSync(join(process.cwd(), "src/app/api/items/[id]/confirm/route.ts"))).toBe(false);
   });
 });

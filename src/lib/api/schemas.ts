@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DEFAULT_STATUSES, STAGES, storeKey } from "@/lib/menu";
 import { dataSchemaFor } from "@/lib/domain/schemas";
+import { whyField } from "@/lib/trace/why";
 
 /** Every backend store the menu defines, with the statuses its sections allow. */
 export const STORE_STATUSES: Record<string, string[]> = (() => {
@@ -115,8 +116,10 @@ export const itemPatch = z
     data: dataObject.optional(),
     status: text(40).optional(),
     sort: z.number().int().min(-1_000_000).max(1_000_000).optional(),
+    /** why the change was made; optional, kept on the event and never on the row */
+    why: whyField,
   })
-  .refine((v) => Object.keys(v).length > 0, { message: "nothing to change" });
+  .refine((v) => Object.keys(v).filter((k) => k !== "why").length > 0, { message: "nothing to change" });
 
 export const newProject = z.object({
   name: text(120).trim().min(1, "A concept needs a name."),

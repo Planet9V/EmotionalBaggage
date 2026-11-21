@@ -51,6 +51,15 @@ Not verified: chat has been run against a stand-in model only, so nothing here s
 - **Activity** (in the sidebar) lists every change in the concept, filtered by section and kind.
 - **Traceability.** In a requirement's editor, pick the tests that check it and the parts it needs; a pick saves at once. Requirements then show "2 tests, 1 part" or "No test covers this". The Traceability page shows the requirement-by-test matrix with each test's status, and three lists of gaps: requirements with no test, tests that check no requirement, and parts no requirement needs. Deleting a test or part asks first and removes it from every requirement and build that named it.
 
+### Reasons, builds and skipped gates
+
+- You can add a short **Why** when you change a row's status, move a card on a board, archive or delete a concept, approve a draft, or move a stage back. On a History line you can add one afterwards with **Add reason**. Overriding a gate always needs a reason.
+- A build needs at least one exit criterion and one linked test before it can be marked passed. If a linked test later fails, is unlinked or is deleted, or a criterion is removed, a passed build goes back to testing and the history says why.
+- If a stage was entered without passing the gate before it, the Process page and the next-step strip say so, with **Show what is missing** and **Move back**.
+- On Traceability, **Draft links with AI** (it needs a reasoning model) proposes links from requirements to tests and parts, each with a reason. Approve the ones you want; both ends are updated. The example concept starts with its links already made.
+- Compliance has one drafting button, **Draft with AI**, at the top. Approve the drafts you want, then decide each row.
+- The Report page ends with a process section: the current stage, each gate and what it still lacks, overrides with who, when and why, and the builds. This section prints with the page but is not yet in the Markdown or JSON downloads.
+
 ## Drafting with AI, challenge and impact
 
 Sections a generator can fill have a **Draft with AI** button. It says what it will read; when you run it, the rows it proposes wait for review as drafts, each with the rows it came from. Edit, approve or reject each one, or approve a whole run. A draft never counts as a row until you approve it. Running again asks before marking older waiting drafts superseded. Generators read approved rows only.

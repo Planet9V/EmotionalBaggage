@@ -56,7 +56,7 @@ export type Generator<Row = Record<string, unknown>> = {
   /** the store it writes */
   to: string;
   /** "section": a Draft with AI button on the target section; "optimise": run from /optimise */
-  kind: "section" | "optimise";
+  kind: "section" | "optimise" | "links";
   /** reads what the prompt needs beyond rows of `from` (research answers, settings); server only */
   load?(concept: ConceptInfo, params: Record<string, unknown>): Promise<Record<string, unknown>>;
   applies(productType: string): boolean;

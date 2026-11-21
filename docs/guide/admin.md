@@ -85,6 +85,8 @@ Every change is recorded with the time, the signed-in user, the concept and what
 
 Read it in Admin, Audit log, and download it there as a file (one JSON object per line). Taking a copy is recorded too. The log is in the database, so the backup below includes it; an existing install starts with what was already in each concept's activity list.
 
+Sign-in lines are hidden until you choose **Show** or pick the Sign-in kind; refused sign-ins are always listed. A download follows the filters on screen, hidden sign-ins included. The log can only be added to: the database itself refuses to change, delete or empty it, even from SQL.
+
 ## Settings (`.env`)
 
 Every setting is optional except the database password. Keys, models, the planner address and printers are set in Admin; the matching environment variables are fallbacks, used only when Admin has nothing saved.

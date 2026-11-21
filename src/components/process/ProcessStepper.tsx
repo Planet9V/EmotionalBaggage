@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ArrowRight, Undo2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { messageOf } from "@/lib/queries";
 import { useMoveStage, useWithdrawOverride, type ProcessView, type StageView } from "@/lib/process/client";
 import { CheckList } from "./CheckList";
 import { OverrideDialog } from "./OverrideDialog";
+import { ReasonDialog } from "./ReasonDialog";
+import { REVEAL_EVENT } from "./SkippedGates";
 import { gateBadge } from "./gateBadge";
 import { fmtDateTime } from "@/lib/format";
 
@@ -20,16 +22,10 @@ import { fmtDateTime } from "@/lib/format";
  */
 export function ProcessStepper({ projectId, view }: { projectId: string; view: ProcessView }) {
   const [overriding, setOverriding] = useState<StageView | null>(null);
+  // Moving back and withdrawing an override ask for an optional reason first.
+  const [asking, setAsking] = useState<{ kind: "back" | "withdraw"; stage: StageView } | null>(null);
   const move = useMoveStage(projectId);
   const withdraw = useWithdrawOverride(projectId);
-  const withdrawOf = async (stage: StageView) => {
-    try {
-      await withdraw.mutateAsync(stage.key);
-      toast.success(`Withdrew the override of the ${stage.label} gate.`);
-    } catch (e) {
-      toast.error(messageOf(e) || "The override was not withdrawn.");
-    }
-  };
 
   const goTo = async (stage: StageView, verb: string) => {
     try {
@@ -54,13 +50,41 @@ export function ProcessStepper({ projectId, view }: { projectId: string; view: P
             next={nextOf(i)}
             busy={move.isPending || withdraw.isPending}
             onAdvance={() => nextOf(i) && goTo(nextOf(i)!, "Moved to")}
-            onBack={() => goTo(s, "Moved back to")}
+            onBack={() => setAsking({ kind: "back", stage: s })}
             onOverride={() => setOverriding(s)}
-            onWithdraw={() => void withdrawOf(s)}
+            onWithdraw={() => setAsking({ kind: "withdraw", stage: s })}
           />
         ))}
       </ol>
       {overriding && <OverrideDialog projectId={projectId} stage={overriding} onClosed={() => setOverriding(null)} />}
+      {asking?.kind === "back" && (
+        <ReasonDialog
+          eyebrow={`Stage ${String(asking.stage.n).padStart(2, "0")} · ${asking.stage.label}`}
+          title={`Move back to ${asking.stage.label}?`}
+          description="The later stages keep their rows. Only the stage the concept is in changes."
+          confirm="Move back"
+          busyLabel="Moving..."
+          onConfirm={async (why) => {
+            await move.mutateAsync({ stage: asking.stage.key, why });
+            toast.success(`Moved back to ${asking.stage.label}.`);
+          }}
+          onClosed={() => setAsking(null)}
+        />
+      )}
+      {asking?.kind === "withdraw" && (
+        <ReasonDialog
+          eyebrow={`Stage ${String(asking.stage.n).padStart(2, "0")} · ${asking.stage.label}`}
+          title={`Withdraw the override of the ${asking.stage.label} gate?`}
+          description="The gate is judged on its checks again. The stage does not move."
+          confirm="Withdraw override"
+          busyLabel="Withdrawing..."
+          onConfirm={async (why) => {
+            await withdraw.mutateAsync({ stage: asking.stage.key, why });
+            toast.success(`Withdrew the override of the ${asking.stage.label} gate.`);
+          }}
+          onClosed={() => setAsking(null)}
+        />
+      )}
     </>
   );
 }
@@ -72,6 +96,24 @@ function StageRow({
   onAdvance: () => void; onBack: () => void; onOverride: () => void; onWithdraw: () => void;
 }) {
   const [open, setOpen] = useState(stage.position === "current");
+  const li = useRef<HTMLLIElement>(null);
+  // "Show what is missing" (from here, the overview or the strip) opens this stage's checks and brings it into view.
+  useEffect(() => {
+    const reveal = () => {
+      setOpen(true);
+      li.current?.scrollIntoView?.({ block: "start" });
+      li.current?.querySelector<HTMLElement>("h2")?.focus();
+    };
+    const onEvent = (e: Event) => (e as CustomEvent<string>).detail === stage.key && reveal();
+    const onHash = () => window.location.hash === `#gate-${stage.key}` && reveal();
+    onHash();
+    window.addEventListener(REVEAL_EVENT, onEvent);
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      window.removeEventListener(REVEAL_EVENT, onEvent);
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, [stage.key]);
   const badge = gateBadge(stage);
   const current = stage.position === "current";
   const headId = `stage-${stage.key}-h`;
@@ -86,6 +128,8 @@ function StageRow({
 
   return (
     <li
+      ref={li}
+      id={`gate-${stage.key}`}
       className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 pb-6"
       aria-current={current ? "step" : undefined}
       data-position={stage.position}
@@ -98,7 +142,7 @@ function StageRow({
       </span>
       <Collapsible open={open} onOpenChange={setOpen} className="min-w-0 pt-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 id={headId} className="text-base font-semibold tracking-tight text-primary">{stage.label}</h2>
+          <h2 id={headId} tabIndex={-1} className="text-base font-semibold tracking-tight text-primary focus:outline-hidden">{stage.label}</h2>
           {current && <StatusBadge tone="info">Current</StatusBadge>}
           <StatusBadge tone={badge.tone}>{badge.text}</StatusBadge>
           {stage.position === "done" && (

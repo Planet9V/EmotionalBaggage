@@ -20,6 +20,12 @@ export type HistoryEntry = {
   section: string | null;
   title: string | null;
   changes: HistoryChange[];
+  /** why the change was made: given with it, or added afterwards ("" when none) */
+  reason: string;
+  /** set when the reason was added after the change */
+  reasonLater: { by: string; at: string } | null;
+  /** the signed-in person may add a reason to this line now (their latest change to the row, no reason yet) */
+  canAddReason: boolean;
 };
 
 export type HistoryPage = { entries: HistoryEntry[]; next: number | null };

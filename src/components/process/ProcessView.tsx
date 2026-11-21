@@ -75,6 +75,9 @@ function Body({ projectId, name }: { projectId: string; name: string }) {
                     {typeof e.data.by === "string" && e.data.by ? ` · ${e.data.by}` : ""}
                   </p>
                   <p className="mt-0.5 text-secondary">{e.summary}</p>
+                  {typeof e.data.reason === "string" && e.data.reason && !e.summary.includes(e.data.reason) && (
+                    <p className="mt-0.5 text-xs text-secondary wrap-anywhere"><span className="font-medium text-primary">Why:</span> {e.data.reason}</p>
+                  )}
                 </li>
               ))}
             </ul>
