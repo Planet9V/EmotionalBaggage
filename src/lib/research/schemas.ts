@@ -22,7 +22,7 @@ export const httpUrl = z
   }, { message: "must be an http or https address" });
 
 /**
- * One source of a saved research answer (column research.sources, migrations/0007_research_sources.sql).
+ * One source of a saved research answer (column research.sources, migrations/0006_research_sources.sql).
  * title is "" when Perplexity gave none; snippet and date only when Perplexity supplied them.
  */
 export const researchSource = z.object({

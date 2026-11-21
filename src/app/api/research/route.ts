@@ -12,7 +12,7 @@ const COLS = "id, query, answer, citations, sources, model, created_at";
 /**
  * `citations` stays an array of URL strings (what the report and the evidence check read).
  * `sources` holds the same sources in the same order with Perplexity's title ("" when it gave none),
- * and its snippet and date when it gave them. Both are stored (migrations/0007_research_sources.sql).
+ * and its snippet and date when it gave them. Both are stored (migrations/0006_research_sources.sql).
  */
 const shape = (r: Row) => ({
   id: Number(r.id),
