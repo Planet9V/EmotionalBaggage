@@ -7,6 +7,7 @@ import { changedDetail, itemDiff, removedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
 import { keyOf } from "@/lib/trace/spec";
 import { assertMarketChange } from "@/lib/market/rules";
+import { assertAttackUntouched } from "@/lib/ai/drafts/attack";
 import { assertPrintChange } from "@/lib/slicing/rules";
 import { assertContentAllowed, withFlags } from "@/lib/content/rules";
 import { CONTENT_STORES } from "@/lib/content/schemas";
@@ -26,6 +27,7 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     assertClaimChange(was, b);
     // Positioning: approval needs the reviewer's critique, which only its own route writes.
     assertMarketChange(was, b);
+    assertAttackUntouched(was.section, b.data);
     // Print jobs: slicing, sending and starting only through their own routes.
     assertPrintChange(was, b);
     let data = parseData(was.section, b.data);

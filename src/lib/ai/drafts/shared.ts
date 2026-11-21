@@ -122,3 +122,15 @@ export const STORE_HREF: Record<string, string> = {
 };
 
 export const storeHref = (store: string) => STORE_HREF[store] ?? `/s/${store}`;
+
+/** The words the reviewer is asked with when an approved press release or FAQ entry is attacked (once, by the server). */
+export const ATTACK_MESSAGE: Record<string, string> = {
+  "concept/press": "Attack this press release. What would a sceptical buyer, journalist or investor say is wrong with it?",
+  "concept/faq": "Attack this FAQ answer. Is it straight, and what question does it dodge?",
+};
+
+/** What the server keeps on an attacked row (data.attack). Written only by src/lib/ai/drafts/attack.ts. */
+export type AttackRecord =
+  | { state: "running"; at: string; by: string }
+  | { state: "done"; at: string; by: string; model: string; messageId: number }
+  | { state: "failed"; at: string; by: string; reason: string };

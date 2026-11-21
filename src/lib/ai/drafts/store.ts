@@ -216,11 +216,13 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
   if (op.op === "remove") {
     await c.query("DELETE FROM items WHERE id=$1", [d.item_id]);
   } else if (op.op === "replace") {
+    // The reviewer's attack record stays with the row: a revision that answers it is not attacked again.
+    const kept = before && before.data.attack !== undefined ? { ...fields.data, attack: before.data.attack } : fields.data;
     const r = await c.query<ItemRow>(`UPDATE items SET title=$2, body=$3, data=$4, updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [
       d.item_id,
       fields.title,
       fields.body,
-      JSON.stringify(fields.data),
+      JSON.stringify(kept),
     ]);
     item = toItem(r.rows[0]);
   } else {

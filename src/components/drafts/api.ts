@@ -5,7 +5,7 @@
 // what depends on it (an approved draft changes the section's rows, the plan and the activity list).
 import { queryOptions, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { keys as appKeys } from "@/lib/queries";
-import type { Draft, GeneratorsReply, RunResult } from "@/lib/ai/drafts/shared";
+import { ATTACK_MESSAGE, type Draft, type GeneratorsReply, type RunResult } from "@/lib/ai/drafts/shared";
 import type { ImpactReply } from "@/lib/ai/drafts/impact";
 import type { OptimiseState } from "@/lib/ai/drafts/service";
 import type { Item } from "@/lib/types";
@@ -74,22 +74,14 @@ export function refreshAfterDecision(qc: QueryClient, projectId: string, itemsTo
 type Approved = { draft: Draft; item: Item | null };
 
 /**
- * An approved press release or FAQ entry is put to the reviewer once, right after approval, through the
- * one reviewer route. It runs here, at the mutation, not in a component: the card that was approved is
- * gone from the screen by the time the approval answers. A failure is not an error of the approval;
- * the section's critique panel then offers "Attack it".
+ * An approved press release or FAQ entry is attacked once by the reviewer on the server, after the
+ * approval answers (src/lib/ai/drafts/attack.ts), so leaving the page loses nothing. Here the screen
+ * only refreshes what will show it: the row (its data.attack) and the reviewer's thread.
  */
 function attackApproved(qc: QueryClient, projectId: string, approved: Approved[]) {
-  for (const a of approved) {
-    const message = ATTACK_MESSAGE[a.draft.targetStore];
-    if (!message || !a.item) continue;
-    void call("/api/challenge", { method: "POST", body: JSON.stringify({ projectId, itemId: a.item.id, message }) })
-      .catch(() => undefined)
-      .finally(() => {
-        void qc.invalidateQueries({ queryKey: appKeys.challenge(projectId) });
-        void qc.invalidateQueries({ queryKey: appKeys.events(projectId) });
-      });
-  }
+  if (!approved.some((a) => a.item && a.draft.targetStore in ATTACK_MESSAGE)) return;
+  void qc.invalidateQueries({ queryKey: appKeys.challenge(projectId) });
+  void qc.invalidateQueries({ queryKey: appKeys.itemsOf(projectId) });
 }
 
 export type RunInput = { generator: string; supersede?: boolean; reviseIds?: number[]; why?: string; critique?: string; signal?: AbortSignal };
@@ -160,8 +152,14 @@ export function useChallengeRow(projectId: string) {
   });
 }
 
-/** The words the reviewer is asked with when an approved press release or FAQ entry is attacked. */
-export const ATTACK_MESSAGE: Record<string, string> = {
-  "concept/press": "Attack this press release. What would a sceptical buyer, journalist or investor say is wrong with it?",
-  "concept/faq": "Attack this FAQ answer. Is it straight, and what question does it dodge?",
-};
+/** "Attack it" when the attack after approval did not happen: the server attacks the row once, never twice. */
+export function useAttackRow(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { itemId: number }) => call<{ ran: boolean; reason: string }>("/api/drafts/attack", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: appKeys.challenge(projectId) }), qc.invalidateQueries({ queryKey: appKeys.events(projectId) }), qc.invalidateQueries({ queryKey: appKeys.itemsOf(projectId) })]),
+  });
+}
+
+/** Moved to the server's shared shapes, where the attack after approval now runs. */
+export { ATTACK_MESSAGE };
