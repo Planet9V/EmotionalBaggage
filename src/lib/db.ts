@@ -13,6 +13,9 @@ export function pool() {
       connectionString: process.env.DATABASE_URL ?? "postgresql://c2r:c2r@localhost:5432/c2r",
       max: 10,
     });
+    // An idle connection reports an error when the database restarts or drops it. Without a listener
+    // Node treats that as fatal and the app stops; the pool replaces the connection by itself.
+    g.__c2rPool.on("error", (e) => console.error(`database connection dropped: ${e.message}`));
   }
   return g.__c2rPool;
 }

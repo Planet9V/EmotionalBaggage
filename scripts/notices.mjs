@@ -79,7 +79,9 @@ async function collectNpm(root) {
     const platform = Boolean(entry.os || entry.cpu || entry.libc);
     const installed = existsSync(join(root, path));
     const prev = byId.get(id);
-    const dev = Boolean(entry.dev);
+    // devOptional: installed only because a development dependency asks for it (Playwright, which Next.js
+    // names as an optional peer). It is not part of what ships.
+    const dev = Boolean(entry.dev || entry.devOptional);
     if (prev) {
       prev.dev = prev.dev && dev;
       continue;

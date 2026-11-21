@@ -24,6 +24,8 @@ createdb c2r
 DATABASE_URL=postgresql://localhost/c2r npm run dev
 ```
 
+Use PostgreSQL 19 with pgvector 0.8.7, the versions the stack runs (`apt install postgresql-19 postgresql-19-pgvector` from the PostgreSQL project's repository, or the `pgvector/pgvector:0.8.7-pg19-trixie` image). Without pgvector the app runs, but search by meaning is off and its tests are skipped.
+
 The planner works out the order of operations: `cd planner && pip install -r requirements-dev.txt && uvicorn main:app --port 8811`, then set `PLANNER_URL=http://localhost:8811`. Without it the plan page shows the steps with no order.
 
 ## Tests
@@ -33,7 +35,21 @@ createdb c2r_test
 DATABASE_URL=postgresql://localhost/c2r_test npm test
 ```
 
-The API tests call the route handlers directly against a real PostgreSQL, so point `DATABASE_URL` at a database you can throw away. `npm run typecheck` and `npm run lint` must also pass; CI runs all three plus the build.
+The API tests call the route handlers directly against a real PostgreSQL, so point `DATABASE_URL` at a database you can throw away. Component tests are `*.test.tsx` under `tests/` and run in jsdom. `npm run typecheck` and `npm run lint` must also pass.
+
+**Browser smoke test (Playwright).** `tests/e2e/` opens the production build in Chromium and checks every screen. Build first, then run it:
+
+```
+npm run build
+npx playwright install chromium        # once per machine
+E2E_DATABASE_URL=postgresql://c2r:c2r@localhost:5432/c2r_e2e npm run test:e2e
+```
+
+`tests/e2e/server.mjs` drops and recreates the database named in `E2E_DATABASE_URL` (the name must contain `e2e`), starts the planner, and serves `.next/standalone` on `127.0.0.1:$E2E_PORT` (default 3210). If Playwright's browser cannot be downloaded, set `E2E_CHROME=system` to use the installed Google Chrome. It checks: signed out (the redirect, a wrong password, `demo`/`demo`, the form by keyboard); signed in, every page once in the light theme and once in the dark (status 200, its own address, an `h1`, no uncaught error, no console error, no failed same-origin request); one status change that must survive a reload; sign out; and an axe-core check on three pages, where critical violations fail the run and serious ones are listed.
+
+Pages come from the rendered sidebar and the `/docs` index, so a new section is covered without editing the test. Pages not in the sidebar go in `FIXED_ROUTES` in `tests/e2e/helpers.ts`. A request a page is meant to make and that answers 4xx or 5xx goes in `ALLOWED_FAILED_REQUESTS`, with a reason.
+
+CI runs three jobs on every change: `web` (planner tests, typecheck, lint, Vitest, build), `e2e` (the browser smoke test) and `stack` (the Docker stack, with its checks).
 
 ## Layout
 
@@ -116,7 +132,7 @@ Tailwind 4. There is no `tailwind.config`; the theme is in `src/app/globals.css`
 
 Product types are defined in `src/lib/productTypes.ts`. Each lists the menu sections it hides. Use `sectionsFor(type)` to build a concept's menu and `sectionVisible(type, stage, section)` to guard a page. Hiding never deletes rows. Never edit `menu.ts` to hide a section for one type.
 
-The screens for all of this are not built yet.
+Concept changes in the browser go through the mutations in `src/lib/conceptsClient.ts`; the page is `src/app/concepts/page.tsx`. `?concept=<id>` on any address is resolved by `src/components/concepts/ConceptFromUrl.tsx`. Deleting the default concept clears `concepts.default` in the same transaction.
 
 ## Loading and changing data in the browser
 
@@ -147,11 +163,15 @@ Embeddings for search are in `src/lib/ai/embeddings.ts`: `indexProject` and `ind
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.
 
-Claim evidence lives in a claim's `data.evidence` and changes only through `POST` and `DELETE /api/research/evidence`, which set the claim's status from `claimStatus()` (`src/lib/research/status.ts`) in the same transaction and record the change with before and after.
+Each research row keeps `citations` (the URLs) and `sources` (`[{ url, title, snippet?, date? }]`, `title` empty when Perplexity gave none; `migrations/0006_research_sources.sql`). Read them with `readSources()` in `src/lib/research/schemas.ts`. Claim evidence lives in a claim's `data.evidence` and changes only through `POST` and `DELETE /api/research/evidence`, which set the status from `claimStatus()` in the same transaction and record before and after. `src/lib/research/rules.ts` enforces this on the generic routes: `PATCH /api/items/[id]` answers 400 to any change of a claim's `data.evidence`, and to a status change the evidence contradicts; both create routes refuse a claim that starts verified or carries evidence. `statusReason()` in `status.ts` words a status for the screen.
 
 ## Admin
 
 Everything under `/api/admin/` is the Admin area's back end: credentials (`src/lib/admin/credentials.ts`; no response ever contains a full secret, and a test scans for it), settings, printers, and `POST /api/admin/test`, which makes one cheap read-only call per kind and always answers with `{ ok, message }`. The provider and printer-family registries (`src/lib/admin/providers.ts`, `printerFamilies.ts`) are what the screens build their forms from. Anything that talks to an outside service reads its key with `getCredential` and its address or model from `src/lib/settings.ts`, never from `process.env` directly.
+
+The screens are `src/app/admin/page.tsx` and `src/components/admin/`. Hooks and keys are in `src/lib/admin/client.ts`. Forms are built from `/api/admin/credentials` and `/api/admin/printer-families`, so adding a provider or a family needs no screen change. A secret typed in a form goes only in a request body; it never goes in a query key, the cache, a URL or a log, and optimistic updates leave the last four characters empty until the server answers. Component tests are `tests/admin-ui/*.test.tsx`. The toaster (`components/ui/sonner.tsx`) follows the `dark` class on `<html>`.
+
+The Perplexity connection test is the exception to "read-only": Perplexity documents no free call, so it sends the smallest documented `POST /v1/agent`, says in its message that the call is billed, and has a 30-second limit.
 
 ## The planner
 

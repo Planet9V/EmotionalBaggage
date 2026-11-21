@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, GitBranch, Moon, Plug, Plus, Sun, BookOpen } from "lucide-react";
+import { FileText, GitBranch, LayoutList, Moon, Plug, Plus, Settings, Sun, BookOpen } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
 import { STAGES } from "@/lib/menu";
@@ -93,6 +93,13 @@ function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Plus className="h-3.5 w-3.5" aria-hidden /> New concept
             </button>
+            <Link
+              href="/concepts"
+              aria-current={pathname === "/concepts" ? "page" : undefined}
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-xs font-medium text-secondary hover:text-link"
+            >
+              <LayoutList className="h-3.5 w-3.5" aria-hidden /> All concepts
+            </Link>
           </div>
 
           <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Stages">
@@ -118,6 +125,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/plan" className={link("/plan", pathname === "/plan")}><GitBranch className="h-3.5 w-3.5" aria-hidden /> Order of operations</Link>
             <Link href="/report" className={link("/report", pathname === "/report")}><FileText className="h-3.5 w-3.5" aria-hidden /> Report</Link>
             <Link href="/integrations" className={link("/integrations", pathname === "/integrations")}><Plug className="h-3.5 w-3.5" aria-hidden /> Integrations</Link>
+            <Link href="/admin" className={link("/admin", pathname === "/admin")}><Settings className="h-3.5 w-3.5" aria-hidden /> Admin</Link>
             <Link href="/docs" className={link("/docs", pathname.startsWith("/docs"))}><BookOpen className="h-3.5 w-3.5" aria-hidden /> Documentation</Link>
             <button type="button" onClick={toggleTheme} className={`${link("", false)} w-full`}>
               {dark ? <Sun className="h-3.5 w-3.5" aria-hidden /> : <Moon className="h-3.5 w-3.5" aria-hidden />}

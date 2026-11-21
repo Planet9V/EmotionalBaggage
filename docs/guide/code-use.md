@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit de6b694 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 6de0eb9 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,13 +16,13 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 551 packages (40 direct, 511 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 542 packages (39 direct, 503 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 421 |
-| Apache-2.0 | 47 |
+| MIT | 416 |
 | ISC | 47 |
+| Apache-2.0 | 43 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
 | BlueOak-1.0.0 | 5 |
@@ -83,7 +83,6 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | motion | 14.14.0 | MIT | linked library | yes |
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
-| next-themes | 0.4.6 | MIT | linked library | no |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |

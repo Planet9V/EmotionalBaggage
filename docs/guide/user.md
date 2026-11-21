@@ -17,12 +17,25 @@ The dotted lines are the links that work today: the parts list and the wiring yo
 
 ## Getting around
 
-- **Concept switcher** (top of the sidebar): choose which concept you are working on. **New concept** starts the wizard.
+- **Concept switcher** (top of the sidebar): choose which concept you are working on. **New concept** starts the wizard. **All concepts** opens the Concepts page.
 - **Stages and sections** (sidebar): the seven stages, each with its sections.
 - **Order of operations**: the build order worked out from your steps.
 - **Report**: everything recorded for the concept on one printable page.
-- **Integrations**: what is and is not connected to outside services.
+- **Integrations**: what is and is not connected to outside services, each with a link to where it is set.
+- **Admin**: keys, models, printers and the audit log. Features that need a model, key or printer say so and link to the right tab.
 - **Dark theme**: bottom of the sidebar.
+
+## Concepts
+
+The Concepts page lists every concept with its name, one line, product type, stage, when it last changed and how many rows it has. Search covers names and descriptions. Sort by last changed or by name.
+
+- **Open** makes a concept the current one and takes you to its overview.
+- The menu on each row has Edit, Duplicate, Export as JSON, Archive (or Restore) and Delete.
+- **Edit** changes the name, the one line, the product type and the stage. Changing the product type tells you which sections will be hidden. Their rows are kept, not deleted; change the type back to see them again.
+- **Duplicate** copies every row and file into a new concept. Activity history, reviewer messages, research answers and stage decisions stay with the original.
+- **Archive** takes a concept out of the sidebar. It stays under Archived on this page, where you can export, restore or delete it. Nothing is deleted.
+- **Delete** lists what will go and offers a JSON download first. It needs the concept's exact name typed. The deletion is recorded in the audit log, which is kept. If the deleted concept was open, the app opens another. If it was Admin's default concept, that setting is cleared.
+- **Linking to a concept:** add `?concept=<id>` to any address, for example `/report?concept=baggage-claims`, to open that concept there.
 
 ## Starting a concept
 
@@ -55,7 +68,7 @@ After the wizard you land on the overview. The app does not yet tell you what to
 - It becomes **wrong** when a source contradicts it and none supports it.
 - Otherwise it stays **unverified**. When sources disagree it is shown as *Disputed: sources disagree*.
 
-The verdict on each source is yours; the app records it and works the status out from it. Ask lists every claim with its evidence. The Claims to verify board shows each claim's status but not yet its evidence. You can still set a status by hand; the next change to that claim's evidence sets it again from the evidence.
+The verdict on each source is yours; the app records it and works the status out from it. The Claims to verify board shows each claim's evidence on its card and in its editor: every source's title, what it says about the claim, the quote, and the day it was judged, with the status and its reason in words, for example "Verified: 1 source supports it, none contradicts". Remove a source there or in Ask. You can still set a status by hand, but only to one the evidence allows: verified needs at least one supporting source and none contradicting; wrong is refused while sources support the claim and none contradicts it; unverified is always allowed. A new claim cannot start as verified. The next change to a claim's evidence sets its status from the evidence again. Saved answers keep each source's title, so they read the same after a reload; answers saved before this change show the address instead.
 
 Nothing here has been run against the real Perplexity service yet. It is built to Perplexity's published documentation and tested against a stand-in.
 

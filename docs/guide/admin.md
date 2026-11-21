@@ -2,9 +2,25 @@
 
 For the person who installs and looks after the workbench.
 
-> **Not built yet:** the Admin area in the app. Today every setting below is a line in a file, and changing one means restarting. The Admin area (credentials, model choice, printers, each with a Test button) is items 2.4 to 2.6 of the plan. This page will be rewritten when it lands.
+> **A public test.** One account with a published default password, and keys stored in the database unencrypted. Change the password after the first sign-in, and read "What sign-in does not protect" below before using it beyond your own machine.
 
-> **No sign-in yet.** Anyone who can reach the app's address can read and change everything, and can use any AI or research key you have set. Keep it on your own machine or network. Sign-in is item 2.3 of the plan.
+## Admin
+
+Open **Admin** from the sidebar. Everything set there is saved in this install's database and used at once; no restart is needed. A link can open one tab directly: `/admin?tab=credentials`, `models`, `printers` or `audit`.
+
+**Setup** lists what is not set up yet: the reasoning model, the embedding model, the research key, a printer, the planner and your own password. Each line says what it switches on and has a button to the place it is set. Nothing is required; skip anything and come back later.
+
+**Credentials** has one card per service. Paste a key and choose Save. The app never shows a saved key again; it shows at most its last four characters (only for keys of 12 characters or more). Remove deletes the saved value after you confirm. Test connection checks the key you typed, or the saved one, and says in plain words whether it worked. Below the cards is the recent activity: saves, removals and tests, never values. A key saved here is used before any environment variable.
+
+Perplexity's Test connection asks Perplexity one very short question with the cheapest effort, because Perplexity offers no free way to check a key. Each test is billed to your Perplexity account like any question, a fraction of a cent at Perplexity's listed rates, and the result shows Perplexity's own estimate when it gives one.
+
+**Models** sets the reasoning model and the embedding model: the provider (Ollama, LM Studio or OpenRouter), its address, the model name and, for embeddings, the vector width. Choosing a provider fills in its usual address when the box is empty or still holds a default. **Start from** fills the embedding form from a preset (Qwen3 Embedding 8B at 4,096 on each provider) and shows what to do first; nothing is saved until Save. Test checks the values in the form, saved or not. After saving an embedding model, every concept must be indexed again; the page offers "Index the current concept" and shows the counts or the reason it could not run. The planner address is set on the same tab; when it is empty, the `PLANNER_URL` environment variable applies.
+
+**Printers** lists your printers with a switch to turn each on or off, Edit, Test and Remove. Add printer asks for a name and a family, then shows exactly the fields that family needs. Every family says what the app can do with it today: *Testable today* (OctoPrint, Klipper/Moonraker), *Saved but not driven* (Prusa, Duet, Bambu Lab: saved, but not tested or sent anything yet), *No documented fields* (Creality, Elegoo: use File only), or *No connection needed* (File only). When editing, leave a secret empty to keep the saved one.
+
+**Audit log** lists every change, newest first: time, user, concept, action and summary. Filter by concept (deleted concepts are marked "deleted"), by kind of change, or by text. Load more shows older lines. Open a line to see its full detail. Download saves the lines that match the filters as a file, one JSON object per line; taking a copy is itself recorded.
+
+Not verified: none of the connection tests has been pressed against a real OpenRouter, Ollama, LM Studio, Perplexity or printer; they are tested against stand-ins.
 
 ## What gets installed
 
@@ -61,11 +77,11 @@ docker compose restart web
 
 Every change is recorded with the time, the signed-in user, the concept and what changed: rows added, edited and removed, files, research, decisions, keys set or removed (never their values), settings, printers, sign-ins and password changes. Deleting a concept deletes its rows and files but not its lines in the audit log, and the deletion is itself a line. Nothing in the app edits or removes a line.
 
-Until the Admin screen for it is built, read it at `/api/admin/audit` and download it as a file (one JSON object per line) at `/api/admin/audit/export` while signed in. Taking a copy is recorded too. The log is in the database, so the backup below includes it; an existing install starts with what was already in each concept's activity list.
+Read it in Admin, Audit log, and download it there as a file (one JSON object per line). Taking a copy is recorded too. The log is in the database, so the backup below includes it; an existing install starts with what was already in each concept's activity list.
 
 ## Settings (`.env`)
 
-Every setting is optional except the database password. A feature without its setting is switched off and says so on screen.
+Every setting is optional except the database password. Keys, models, the planner address and printers are set in Admin; the matching environment variables are fallbacks, used only when Admin has nothing saved.
 
 | Setting | Used for |
 |---|---|
@@ -78,13 +94,14 @@ Every setting is optional except the database password. A feature without its se
 
 The reviewer and search by meaning use the models you choose: a reasoning model and an embedding model, each served by Ollama, LM Studio or OpenRouter. Nothing is chosen at install, and the features that need a model say so until one is.
 
-The Admin screens are not built yet (plan items 2.4 to 2.6). Until they are, the choice is saved with `PUT /api/admin/settings` and keys with `PUT /api/admin/credentials/<provider>`; `POST /api/admin/test` checks a connection.
+They are chosen in Admin, Models.
 
 - Give the address of the server's OpenAI-compatible interface: Ollama `http://host.docker.internal:11434/v1`, LM Studio `http://host.docker.internal:1234/v1`, OpenRouter `https://openrouter.ai/api/v1`. Inside Docker, `localhost` is the app's own container, so a model server on this computer is reached at `host.docker.internal`.
 - OpenRouter needs a key. Ollama and LM Studio usually do not.
 - For the embedding model, also give its vector width (for example 768 or 1024). If it is wrong, indexing reports both widths.
-- After choosing or changing the embedding model, index each concept again (`POST /api/index` with the concept's id). Until then search falls back to matching text for that concept. Rows embedded with an earlier model stay in the database but are not used.
+- After choosing or changing the embedding model, index each concept again (the button in Admin, Models, or `POST /api/index` with the concept's id). Until then search falls back to matching text for that concept. Rows embedded with an earlier model stay in the database but are not used.
 - Search by meaning needs the pgvector extension, which the supplied database image has.
+- Qwen3 Embedding 8B gives 4,096 numbers per text, more than pgvector's ordinary index accepts. The app searches a small concept exactly and a large one through a one-bit index followed by a second pass on the full vectors. The measurements are on the Vector search page under Documentation.
 
 None of this has been run against a real Ollama, LM Studio or OpenRouter yet; it is tested against a stand-in.
 
