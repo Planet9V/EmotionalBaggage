@@ -38,7 +38,7 @@ export const CHANNELS: readonly ChannelDef[] = [
   { id: "other", name: "Other", supports: ["replies", "import", "purchase"] },
 ];
 
-export const channelById = (id: string) => CHANNELS.find((c) => c.id === id) ?? null;
+const channelById = (id: string) => CHANNELS.find((c) => c.id === id) ?? null;
 
 /** By id, display name or alias, any case. */
 export function findChannel(raw: unknown): ChannelDef | null {

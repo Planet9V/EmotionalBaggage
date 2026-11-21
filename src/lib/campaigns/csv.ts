@@ -22,9 +22,7 @@ export const FIELD_LABEL: Record<Field, string> = {
   orders: "Orders",
   revenue: "Sales (revenue)",
 };
-/** A file can be imported with a date and at least one of these. */
-export const REQUIRED: Field[] = ["day"];
-export const MEASURES = ["spend", "impressions", "clicks", "orders", "revenue"] as const satisfies readonly Field[];
+const MEASURES = ["spend", "impressions", "clicks", "orders", "revenue"] as const satisfies readonly Field[];
 
 export type Mapping = Partial<Record<Field, string>>;
 
@@ -266,7 +264,7 @@ export type ImportRecord = {
   revenue: number;
 };
 
-export type ImportProblem = { line: number; problem: string };
+type ImportProblem = { line: number; problem: string };
 
 export type ImportOptions = {
   currency: string;
@@ -355,9 +353,6 @@ export function applyMapping(headers: string[], rows: string[][], mapping: Mappi
   });
   return { records: [...out.values()].sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : a.creativeName.localeCompare(b.creativeName))), problems, rowsRead: rows.length, skipped, rowsUsed: used, campaigns: [...campaigns] };
 }
-
-/** Pasted lines are read as one more file: a header line and rows, tab or comma separated. */
-export const parsePaste = parseReport;
 
 /** Whole days covered by the records, first to last. */
 export function dateSpan(records: ImportRecord[]): { from: string; to: string; days: number } | null {

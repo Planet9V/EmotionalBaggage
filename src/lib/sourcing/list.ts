@@ -6,7 +6,7 @@ import { readSourcing, type Offer } from "./schemas";
 
 export type ListPart = { id: number; ref: string; title: string; qty: number | null; status: string; data: Record<string, unknown> };
 
-export type Line = {
+type Line = {
   partId: number;
   ref: string;
   title: string;
@@ -24,7 +24,7 @@ export type Line = {
   totalMinor: number;
 };
 
-export type Group = { supplier: string; lines: Line[]; totalMinor: number };
+type Group = { supplier: string; lines: Line[]; totalMinor: number };
 export type Shopping = { groups: Group[]; unchosen: { partId: number; ref: string; title: string; need: number; offers: number }[]; totalMinor: number; excluded: { partId: number; ref: string; title: string; why: string }[] };
 
 /** Printed parts, parts in hand and parts already ordered are not on the list. A part with a received quantity needs only the rest. */
@@ -40,7 +40,7 @@ export function needOf(p: ListPart): { need: number; why?: string } {
   return need === 0 ? { need: 0, why: "received" } : { need };
 }
 
-export const chosenOffer = (p: ListPart): Offer | null => {
+const chosenOffer = (p: ListPart): Offer | null => {
   const s = readSourcing(p.data);
   return s.offers.find((o) => o.id === s.chosen) ?? null;
 };

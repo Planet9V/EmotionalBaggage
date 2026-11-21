@@ -16,7 +16,7 @@ const channel = (v: number) => {
   return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
 };
 
-export function luminance(rgb: Rgb): number {
+function luminance(rgb: Rgb): number {
   return 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
 }
 

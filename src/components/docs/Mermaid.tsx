@@ -8,7 +8,7 @@ import { useEffect, useId, useState } from "react";
  * read as the page computes them rather than passed as var() references. Edge labels sit on the surface
  * colour with the primary text colour, which clears 4.5:1 in both themes.
  */
-export function mermaidThemeVariables(css: (name: string) => string) {
+function mermaidThemeVariables(css: (name: string) => string) {
   const surface = css("--bg-surface");
   const subtle = css("--bg-subtle");
   const text = css("--text-primary");

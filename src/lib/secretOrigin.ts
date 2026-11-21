@@ -40,7 +40,7 @@ type ModelProvider = (typeof MODEL_PROVIDERS)[number];
 export const isModelProvider = (p: string): p is ModelProvider => (MODEL_PROVIDERS as readonly string[]).includes(p);
 
 /** The built-in address a provider's secrets go to when nothing else says so. */
-export function builtInOrigin(provider: Provider): string | null {
+function builtInOrigin(provider: Provider): string | null {
   if (isModelProvider(provider)) return originOf(DEFAULT_BASE_URL[provider]);
   if (provider === "perplexity") return originOf(perplexityBaseUrl());
   if (provider === "amazon-sp") return originOf(lwaTokenUrl());

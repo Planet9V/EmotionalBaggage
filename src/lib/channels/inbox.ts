@@ -12,10 +12,10 @@ import { xAccount, xCostAck, X_COST_ACK } from "./state";
 import { X_COST_STATEMENT } from "./xCost";
 import { xMe, xMentions } from "./x";
 
-export type InboundRow = { channel: string; externalId: string; replyTo: string; author: string; at: string; url: string; parent: string; text: string };
+type InboundRow = { channel: string; externalId: string; replyTo: string; author: string; at: string; url: string; parent: string; text: string };
 
 /** Writes inbound rows; a row already read is left as it is. Answers how many were new. */
-export async function upsertInbound(projectId: string, rows: InboundRow[]) {
+async function upsertInbound(projectId: string, rows: InboundRow[]) {
   let added = 0;
   await tx(async (c) => {
     for (const r of rows) {

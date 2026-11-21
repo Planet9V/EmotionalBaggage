@@ -23,7 +23,7 @@ function fieldGuide(spec: ChannelSpec) {
     .join("\n");
 }
 
-export function adGenerator(spec: ChannelSpec): Generator<Row> {
+function adGenerator(spec: ChannelSpec): Generator<Row> {
   return {
     id: `ads-${spec.id}`,
     label: spec.label,
@@ -74,4 +74,3 @@ export function adGenerator(spec: ChannelSpec): Generator<Row> {
 }
 
 export const adGenerators = AD_CHANNELS.map(adGenerator);
-export { approvedMessages };

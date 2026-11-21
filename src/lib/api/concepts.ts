@@ -8,12 +8,12 @@ import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS } from "@/lib/productTypes";
 
 // Schemas and shared SQL for the concept routes (/api/projects and /api/projects/[id]/*).
 
-export const STAGE_KEYS = STAGES.map((s) => s.key) as [string, ...string[]];
+const STAGE_KEYS = STAGES.map((s) => s.key) as [string, ...string[]];
 
 const name = z.string().max(120).trim().min(1, "A concept needs a name.");
 const oneLiner = z.string().max(400).trim();
 export const productTypeField = z.enum(PRODUCT_TYPE_KEYS, { message: `must be one of: ${PRODUCT_TYPE_KEYS.join(", ")}` });
-export const stageField = z.enum(STAGE_KEYS, { message: `must be one of: ${STAGE_KEYS.join(", ")}` });
+const stageField = z.enum(STAGE_KEYS, { message: `must be one of: ${STAGE_KEYS.join(", ")}` });
 
 /** Unknown keys (an `id` sent back with the whole concept, say) are ignored: the id never changes. */
 export const conceptPatch = z

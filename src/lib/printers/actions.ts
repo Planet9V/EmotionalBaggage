@@ -16,7 +16,7 @@ const VERB: Record<PrinterActionName, string> = { start: "started", pause: "paus
 const HTTP: Record<string, number> = { refused: 502, unreachable: 502, timeout: 504, busy: 409, unsupported: 400, "bad-response": 502, "not-found": 502, invalid: 400, failed: 502 };
 
 /** Turns a PrinterError into the HttpError route() answers with. The message is already clean. */
-export function httpErrorOf(e: unknown): HttpError {
+function httpErrorOf(e: unknown): HttpError {
   if (e instanceof HttpError) return e;
   if (e instanceof PrinterError) return new HttpError(HTTP[e.kind] ?? 502, e.message);
   throw e;

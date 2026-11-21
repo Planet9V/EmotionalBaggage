@@ -369,7 +369,7 @@ const SELLER_PESTICIDE = "https://sellercentral.amazon.com/forums/t/reminder-act
 const SELLER_CLAIMS = "https://sellercentral.amazon.com/gp/help/G202115120";
 const SELLER_RULES = "https://sellercentral.amazon.com/help/hub/reference/external/G202024200";
 
-export type ListingLimits = {
+type ListingLimits = {
   title: { max: number; enforce: boolean; source?: string };
   bullets: { count: number; max: number; enforce: boolean; source?: string };
   description: { max: number; enforce: boolean; source?: string };
@@ -396,12 +396,10 @@ export const LISTING_CATEGORIES: ListingCategory[] = [
 
 export const listingCategory = (id: string) => LISTING_CATEGORIES.find((c) => c.id === id) ?? LISTING_CATEGORIES[0];
 
-export const LISTING_SOURCES = { AMAZON_DETAIL_PDF, SELLER_TITLE, SELLER_PESTICIDE, SELLER_CLAIMS, SELLER_RULES };
-
-export type ListingRule = { id: string; label: string; pattern: RegExp; message: string; source: string; sourceNote: string };
+type ListingRule = { id: string; label: string; pattern: RegExp; message: string; source: string; sourceNote: string };
 
 /** Claims Amazon documents as not allowed or as needing registration. These are warnings: the writer decides. */
-export const LISTING_RULES: ListingRule[] = [
+const LISTING_RULES: ListingRule[] = [
   {
     id: "pesticide",
     label: "Pesticidal claim",

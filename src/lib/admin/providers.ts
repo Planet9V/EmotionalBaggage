@@ -90,7 +90,7 @@ export function fieldDef(provider: string, field: string): CredentialField | und
 }
 
 /** Secrets of 12 characters or more show their last four; shorter secrets show nothing. */
-export const LAST_FOUR_MIN_LENGTH = 12;
+const LAST_FOUR_MIN_LENGTH = 12;
 
 export function lastFour(value: string | null | undefined): string | null {
   if (!value || value.length < LAST_FOUR_MIN_LENGTH) return null;

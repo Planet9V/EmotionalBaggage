@@ -14,16 +14,15 @@ export const MAX_QUESTION = 4000;
 export const SOURCE_CHARS = 1500;
 
 /** One numbered source as stored on an assistant message and sent to the browser. */
-export const chatSource = z.object({
-  n: z.number().int().positive(),
-  kind: z.enum(["item", "research"]),
-  id: z.number().int().positive(),
+export type ChatSource = {
+  n: number;
+  kind: "item" | "research";
+  id: number;
   /** the row's store key (`design/bom`), or `research/ask` for a research answer */
-  section: z.string(),
-  title: z.string(),
-  score: z.number(),
-});
-export type ChatSource = z.infer<typeof chatSource>;
+  section: string;
+  title: string;
+  score: number;
+};
 
 /** "both": found by meaning and by matching words, with the two rankings joined. */
 export type Retrieval = "meaning" | "text" | "both";

@@ -29,7 +29,7 @@ export type Campaign = {
   legacy: string[];
 };
 
-export const isPlanRow = (i: Item) => i.section === CAMPAIGN_STORE && i.data?.kind === "plan";
+const isPlanRow = (i: Item) => i.section === CAMPAIGN_STORE && i.data?.kind === "plan";
 
 const n = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const s = (v: unknown) => (typeof v === "string" ? v : "");

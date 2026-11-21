@@ -8,7 +8,7 @@ import { toCsvText } from "@/lib/csv";
 import { esc } from "@/lib/html";
 
 /** Rows as CSV through the one CSV writer (src/lib/csv.ts), which neutralises formula-looking cells. */
-export const csv = (rows: unknown[][]) => toCsvText(rows);
+const csv = (rows: unknown[][]) => toCsvText(rows);
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : typeof v === "string" && v ? [v] : []);
 const moneyIn = (currency: string) => (minor: unknown) => (typeof minor === "number" ? toMajor(minor, currency).toFixed(minorDigits(currency)) : "");

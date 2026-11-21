@@ -18,7 +18,7 @@ import type { toLink } from "@/lib/campaigns/linkRows";
 const enc = encodeURIComponent;
 const base = (p: string) => `/api/projects/${enc(p)}/campaigns`;
 
-export const campaignKeys = {
+const campaignKeys = {
   all: (p: string) => ["campaigns", p] as const,
   summary: (p: string) => ["campaigns", p, "summary"] as const,
   results: (p: string) => ["campaigns", p, "results"] as const,
@@ -31,9 +31,9 @@ export type ResultsPayload = { rows: ResultRow[]; linkClicks: LinkClickRow[] };
 export type LinkView = ReturnType<typeof toLink>;
 export type LinksPayload = { links: LinkView[]; convention: string[] };
 
-export const summaryQuery = (p: string) => queryOptions({ queryKey: campaignKeys.summary(p), queryFn: ({ signal }) => api<Summary>(`${base(p)}/summary`, { signal }) });
-export const resultsQuery = (p: string) => queryOptions({ queryKey: campaignKeys.results(p), queryFn: ({ signal }) => api<ResultsPayload>(`${base(p)}/results`, { signal }) });
-export const linksQuery = (p: string) => queryOptions({ queryKey: campaignKeys.links(p), queryFn: ({ signal }) => api<LinksPayload>(`${base(p)}/links`, { signal }) });
+const summaryQuery = (p: string) => queryOptions({ queryKey: campaignKeys.summary(p), queryFn: ({ signal }) => api<Summary>(`${base(p)}/summary`, { signal }) });
+const resultsQuery = (p: string) => queryOptions({ queryKey: campaignKeys.results(p), queryFn: ({ signal }) => api<ResultsPayload>(`${base(p)}/results`, { signal }) });
+const linksQuery = (p: string) => queryOptions({ queryKey: campaignKeys.links(p), queryFn: ({ signal }) => api<LinksPayload>(`${base(p)}/links`, { signal }) });
 
 export function useSummary(projectId: string) {
   const q = useQuery(summaryQuery(projectId));

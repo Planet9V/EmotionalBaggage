@@ -10,7 +10,7 @@ const env = (name: string) => process.env[name]?.trim().replace(/\/+$/, "") || n
 export const lwaTokenUrl = () => env("AMAZON_LWA_TOKEN_URL") ?? "https://api.amazon.com/auth/o2/token";
 
 /** SP-API regional endpoints. https://developer-docs.amazon.com/sp-api/docs/sp-api-endpoints */
-export const SP_REGION_HOST = {
+const SP_REGION_HOST = {
   na: "https://sellingpartnerapi-na.amazon.com",
   eu: "https://sellingpartnerapi-eu.amazon.com",
   fe: "https://sellingpartnerapi-fe.amazon.com",
@@ -29,7 +29,7 @@ export const xAuthorizeUrl = () => env("X_AUTHORIZE_URL") ?? "https://x.com/i/oa
  */
 export const igGraphBase = () => env("INSTAGRAM_GRAPH_BASE_URL") ?? "https://graph.instagram.com/v27.0";
 
-export const CALL_LIMIT_MS = 30_000;
+const CALL_LIMIT_MS = 30_000;
 
 export class ChannelError extends HttpError {
   /** true when the call may have reached the service before it failed (a time-out, a dropped connection) */

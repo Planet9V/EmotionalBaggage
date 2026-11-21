@@ -24,17 +24,15 @@ import { xCreatePost, xUploadImage, X_MAX_IMAGES } from "./x";
 import { xCostAck, xAccount } from "./state";
 import { ChannelError } from "./http";
 
-export type { SendChannel };
 export type SendKind = "post" | "reply";
 
-export { channelOf };
 
 const SECTION: Record<SendKind, string> = { post: CHANNEL.social, reply: CHANNEL.replies };
 const SENDABLE: Record<SendKind, Set<string>> = { post: new Set(["approved", "scheduled"]), reply: new Set(["approved"]) };
 const DONE_STATUS: Record<SendKind, string> = { post: "posted", reply: "sent" };
 const SENDING_STALE_MS = 5 * 60_000;
 
-export const confirmSchema = z
+const confirmSchema = z
   .object({
     channel: z.enum(["x", "instagram"]),
     itemId: z.number().int().positive(),
@@ -104,9 +102,9 @@ const sendingFresh = (data: Record<string, unknown>) => {
  * stopped mid-send). Such a row is never sent again until the user records, by a separate action, what the
  * channel shows (resolveUnknown).
  */
-export const outcomeUnknown = (data: Record<string, unknown>) => !!data.sendUnknown || (!!data.sending && !sendingFresh(data));
+const outcomeUnknown = (data: Record<string, unknown>) => !!data.sendUnknown || (!!data.sending && !sendingFresh(data));
 
-export const UNKNOWN_OUTCOME = "Outcome unknown: check the channel. The last send may have reached it. Look at the account, then record whether it was posted before sending again.";
+const UNKNOWN_OUTCOME = "Outcome unknown: check the channel. The last send may have reached it. Look at the account, then record whether it was posted before sending again.";
 
 /** What would be sent, with its hash and every reason it could not be sent now. */
 export async function preview(projectId: string, kind: SendKind, itemId: number): Promise<Preview> {

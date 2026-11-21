@@ -14,7 +14,7 @@ import { STORE_BATCHES, STORE_COMPLIANCE, STORE_ECONOMICS, STORE_CHANNELS, STORE
 
 export type ProductionSettings = { currency: string; regions: Region[]; productType: string };
 
-export const settingsKey = (projectId: string) => ["production-settings", projectId] as const;
+const settingsKey = (projectId: string) => ["production-settings", projectId] as const;
 
 const NONE: Item[] = [];
 

@@ -28,7 +28,7 @@ export async function saveAmazonState(projectId: string, next: AmazonState) {
 }
 
 export type XAccount = { userId: string; username: string; expiresAt: number | null; scope: string; connectedAt: string };
-export const X_ACCOUNT = "channels.x.account";
+const X_ACCOUNT = "channels.x.account";
 export const xAccount = () => getSetting<XAccount | null>(X_ACCOUNT, null);
 export const saveXAccount = (a: XAccount | null) => setSetting(X_ACCOUNT, a);
 

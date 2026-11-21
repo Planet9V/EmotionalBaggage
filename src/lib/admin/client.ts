@@ -20,7 +20,7 @@ import type { AuditRow } from "@/lib/auditLog";
 import type { ModelChoice } from "@/lib/settings";
 import { downloadFile } from "@/lib/download";
 
-export type { ProviderView, AuditEntry, AdminSettings, PrinterView, PrinterFamily, PrinterField, StatusItem, AuditRow, ModelChoice };
+export type { ProviderView, AuditEntry, AdminSettings, PrinterView, PrinterFamily, ModelChoice };
 
 export type AdminStatus = { complete: boolean; items: StatusItem[]; defaultPassword: boolean };
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
@@ -63,7 +63,7 @@ export function auditQueryString(f: AuditFilters, extra: { before?: number | nul
   return s ? `?${s}` : "";
 }
 
-export const adminKeys = {
+const adminKeys = {
   all: () => ["admin"] as const,
   status: () => ["admin", "status"] as const,
   credentials: () => ["admin", "credentials"] as const,
@@ -76,7 +76,7 @@ export const adminKeys = {
 
 type Ctx = { signal?: AbortSignal };
 
-export const adminFetchers = {
+const adminFetchers = {
   status: ({ signal }: Ctx = {}) => api<AdminStatus>("/api/admin/status", { signal }),
   credentials: ({ signal }: Ctx = {}) => api<{ providers: ProviderView[] }>("/api/admin/credentials", { signal }).then((r) => r.providers),
   credentialsAudit: ({ signal }: Ctx = {}) => api<{ entries: AuditEntry[] }>("/api/admin/credentials/audit", { signal }).then((r) => r.entries),
@@ -87,7 +87,7 @@ export const adminFetchers = {
     api<AuditPage>(`/api/admin/audit${auditQueryString(f, { before, limit: PAGE })}`, { signal }),
 };
 
-export const adminQueries = {
+const adminQueries = {
   status: () => queryOptions({ queryKey: adminKeys.status(), queryFn: ({ signal }) => adminFetchers.status({ signal }) }),
   credentials: () => queryOptions({ queryKey: adminKeys.credentials(), queryFn: ({ signal }) => adminFetchers.credentials({ signal }) }),
   credentialsAudit: () => queryOptions({ queryKey: adminKeys.credentialsAudit(), queryFn: ({ signal }) => adminFetchers.credentialsAudit({ signal }) }),

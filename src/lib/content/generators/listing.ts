@@ -9,7 +9,7 @@ import { BASE_FROM, CONTENT_RULES, blockedNoMessage, clean, cleanBlock, commonRo
 const row = z.object({ ...commonRow, title: z.string().min(1).max(400), bullets: z.array(z.string().max(1000)).min(1).max(10), description: z.string().max(5000), searchTerms: z.string().max(1000).default("") });
 type Row = z.infer<typeof row>;
 
-export function listingGenerator(cat: ListingCategory): Generator<Row> {
+function listingGenerator(cat: ListingCategory): Generator<Row> {
   const L = cat.limits;
   return {
     id: `listing-${cat.id}`,

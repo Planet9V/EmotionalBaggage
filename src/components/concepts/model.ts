@@ -6,7 +6,7 @@ import { lastChanged, type Concept } from "@/lib/conceptsClient";
 export type SortKey = "changed" | "name";
 
 /** Case-insensitive match on name and one-line description. Blank search matches everything. */
-export function matches(c: Pick<Concept, "name" | "oneLiner">, search: string) {
+function matches(c: Pick<Concept, "name" | "oneLiner">, search: string) {
   const term = search.trim().toLowerCase();
   if (!term) return true;
   return c.name.toLowerCase().includes(term) || c.oneLiner.toLowerCase().includes(term);
@@ -33,7 +33,7 @@ export function groupConcepts(list: Concept[], search: string, key: SortKey) {
 }
 
 /** "design/schematic" -> '"Schematic" (Design)'. Quoted, because a label can itself contain "and". */
-export function sectionName(hiddenKey: string) {
+function sectionName(hiddenKey: string) {
   const [stageKey, sectionKey] = hiddenKey.split("/");
   const stage = STAGES.find((s) => s.key === stageKey);
   const section = stage?.sections.find((s) => s.key === sectionKey);
@@ -47,7 +47,7 @@ export function joinWords(words: string[]) {
 }
 
 /** One sentence per product type on what it hides, built from the type's own list so it cannot drift. */
-export function typeSentence(key: string) {
+function typeSentence(key: string) {
   const t = productType(key);
   if (!t.hidden.length) return "Shows every section. Nothing is hidden.";
   return `Hides ${joinWords(t.hidden.map(sectionName))}.`;

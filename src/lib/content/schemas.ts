@@ -18,10 +18,10 @@ export const CONTENT = {
 } as const;
 
 /** The ONE approved message a piece is tied to: the positioning row and the message's place in it. */
-export const messageRef = z.object({ positioningId: z.number().int(), index: z.number().int().min(0).max(20), text: text(600) });
+const messageRef = z.object({ positioningId: z.number().int(), index: z.number().int().min(0).max(20), text: text(600) });
 export type MessageRef = z.infer<typeof messageRef>;
 
-export const flag = z.object({ field: text(80), text: text(200), kind: z.enum(["number", "superlative"]), reason: text(400) });
+const flag = z.object({ field: text(80), text: text(200), kind: z.enum(["number", "superlative"]), reason: text(400) });
 
 const base = {
   message: messageRef.optional(),
@@ -32,7 +32,7 @@ const base = {
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, "must be a date like 2026-12-31 or 2026-12-31T09:00");
 
-export const adData = z.looseObject({
+const adData = z.looseObject({
   ...base,
   channel: text(60).optional(),
   fields: z.record(z.string().max(60), z.union([text(2000), z.array(text(500)).max(60)])).optional(),
@@ -46,7 +46,7 @@ export const adData = z.looseObject({
 export const LANDING_KINDS = ["hero", "problem", "how", "proof", "comparison", "faq", "price", "footer"] as const;
 export type LandingKind = (typeof LANDING_KINDS)[number];
 
-export const landingData = z.looseObject({
+const landingData = z.looseObject({
   ...base,
   page: text(60).optional(),
   kind: z.enum(LANDING_KINDS).optional(),
@@ -54,7 +54,7 @@ export const landingData = z.looseObject({
   content: z.record(z.string().max(60), z.unknown()).optional(),
 });
 
-export const listingData = z.looseObject({
+const listingData = z.looseObject({
   ...base,
   category: text(40).optional(),
   fields: z
@@ -65,7 +65,7 @@ export const listingData = z.looseObject({
   imagesChecked: z.record(z.string().max(60), z.boolean()).optional(),
 });
 
-export const socialData = z.looseObject({
+const socialData = z.looseObject({
   ...base,
   channel: text(40).optional(),
   /** Pinterest and Reddit carry a title as well as text; the post's text is the row body */
@@ -75,7 +75,7 @@ export const socialData = z.looseObject({
   campaignId: z.number().int().optional(),
 });
 
-export const launchData = z.looseObject({
+const launchData = z.looseObject({
   ...base,
   kind: z.enum(["email", "press-note", "sequence"]).optional(),
   subjects: z.array(text(200)).max(10).optional(),
@@ -88,7 +88,7 @@ export const launchData = z.looseObject({
   pressReleaseId: z.number().int().optional(),
 });
 
-export const campaignDates = z.looseObject({ start: day.optional(), end: day.optional() });
+const campaignDates = z.looseObject({ start: day.optional(), end: day.optional() });
 
 export const CONTENT_SCHEMAS: Record<string, z.ZodType<Record<string, unknown>>> = {
   [CONTENT.ads]: adData,

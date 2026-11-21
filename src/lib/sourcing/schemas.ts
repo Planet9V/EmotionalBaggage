@@ -5,11 +5,10 @@ import { z } from "zod";
 
 const text = (n: number) => z.string().max(n);
 const num = z.preprocess((v) => (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : v), z.number().finite());
-export const day = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date like 2026-12-31")]);
+const day = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date like 2026-12-31")]);
 const link = z.union([z.literal(""), z.string().max(600).regex(/^https?:\/\/[^\s]+$/i, "must be an http or https address")]);
 
 export const ORDER_STATUSES = ["to order", "ordered", "shipped", "received", "short"] as const;
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const offerSchema = z
   .object({
@@ -44,10 +43,9 @@ export const alternateSchema = z.object({
   citation: link.optional(),
   researchId: num.optional(),
 });
-export type Alternate = z.infer<typeof alternateSchema>;
 
 /** A suggestion from research that waits for the user. It never counts as a fact until accepted. */
-export const draftSchema = z.object({
+const draftSchema = z.object({
   id: text(40).min(1),
   kind: z.enum(["offer", "alternate"]),
   createdAt: text(40),
@@ -69,7 +67,6 @@ export const orderSchema = z.object({
   receivedOn: day.optional(),
   note: text(500).optional(),
 });
-export type Order = z.infer<typeof orderSchema>;
 
 export const sourcingData = z.object({
   offers: z.array(offerSchema).max(30).default([]),
@@ -80,7 +77,7 @@ export const sourcingData = z.object({
 });
 export type Sourcing = z.infer<typeof sourcingData>;
 
-export const EMPTY_SOURCING: Sourcing = { offers: [], alternates: [], drafts: [] };
+const EMPTY_SOURCING: Sourcing = { offers: [], alternates: [], drafts: [] };
 
 /** A part's sourcing, tolerant of rows written before it existed. */
 export function readSourcing(data: Record<string, unknown>): Sourcing {

@@ -117,5 +117,3 @@ export function safeFileName(name: string, allowed: string[]): string {
   }
   return n;
 }
-
-export const NO_PUSH: Pick<Capabilities, "pushedStatus"> = { pushedStatus: false };

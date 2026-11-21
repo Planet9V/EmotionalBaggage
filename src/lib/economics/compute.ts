@@ -234,7 +234,7 @@ export function unitCost(inputs: EconomicsInputs, batchSize: number): UnitCost {
  * that has a size, or 1 when none is planned. Pricing, campaigns, content and the report all use it,
  * so the same concept never shows two unit costs.
  */
-export function referenceBatchSize(inputs: EconomicsInputs): number {
+function referenceBatchSize(inputs: EconomicsInputs): number {
   return wholeBatch(inputs.batches.find((b) => b.units !== null)?.units ?? 1);
 }
 
@@ -268,7 +268,7 @@ export function fixedCosts(inputs: EconomicsInputs): FixedCosts {
   return { lines, total: lines.reduce((a, l) => a + l.amount, 0), missing };
 }
 
-export type BreakEven = { units: number | null; reason: string };
+type BreakEven = { units: number | null; reason: string };
 
 export type ChannelResult = {
   id: number;

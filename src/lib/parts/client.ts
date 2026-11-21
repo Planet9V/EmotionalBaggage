@@ -10,9 +10,9 @@ import { messageOf } from "@/lib/queries";
 import type { PinRow } from "./pins";
 import type { PinDef } from "./schema";
 
-export const pinKeys = { of: (projectId: string) => ["pins", projectId] as const };
+const pinKeys = { of: (projectId: string) => ["pins", projectId] as const };
 
-export const pinQueries = {
+const pinQueries = {
   of: (projectId: string) =>
     queryOptions({
       queryKey: pinKeys.of(projectId),

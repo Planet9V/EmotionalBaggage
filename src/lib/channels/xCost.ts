@@ -10,8 +10,8 @@
 //   user and that user owns the developer app. Resources are de-duplicated within a 24-hour UTC day.
 //   "Prices are subject to change. Current rates are always available in the Developer Console."
 
-export const X_PRICING_URL = "https://docs.x.com/x-api/getting-started/pricing";
-export const X_PRICING_READ = "2026-11-21";
+const X_PRICING_URL = "https://docs.x.com/x-api/getting-started/pricing";
+const X_PRICING_READ = "2026-11-21";
 
 export const X_RATES = {
   postCreate: 0.015,
@@ -37,7 +37,7 @@ export const X_COST_STATEMENT = {
 } as const;
 
 /** X counts a link in a post: anything that looks like a web address. */
-export const hasUrl = (text: string) => /\bhttps?:\/\/\S+|\bwww\.\S+\.\S+|\b[a-z0-9-]+\.(com|net|org|io|co|ai|app|dev|shop|store)\b/i.test(text);
+const hasUrl = (text: string) => /\bhttps?:\/\/\S+|\bwww\.\S+\.\S+|\b[a-z0-9-]+\.(com|net|org|io|co|ai|app|dev|shop|store)\b/i.test(text);
 
 /** The price of sending one post or reply with this text, per the statement. */
 export function postCost(text: string): { usd: number; rule: string } {

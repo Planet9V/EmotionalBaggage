@@ -18,9 +18,9 @@ type DbPin = {
   sort: number;
 };
 
-export const PIN_COLS = "id, item_id, name, kind, side, position, voltage, data, sort";
+const PIN_COLS = "id, item_id, name, kind, side, position, voltage, data, sort";
 
-export function toPinRow(r: DbPin): PinRow {
+function toPinRow(r: DbPin): PinRow {
   const d = r.data ?? {};
   const out: PinRow = { id: Number(r.id), itemId: Number(r.item_id), sort: r.sort, name: r.name, kind: r.kind ?? null };
   if (r.side) out.side = r.side;
@@ -36,7 +36,7 @@ export function toPinRow(r: DbPin): PinRow {
 }
 
 /** What goes in the `data` column: everything a pin says that has no column of its own. */
-export function pinDataOf(p: PinDef): Record<string, unknown> {
+function pinDataOf(p: PinDef): Record<string, unknown> {
   const d: Record<string, unknown> = {};
   if (p.number) d.number = p.number;
   if (p.current) d.current = p.current;

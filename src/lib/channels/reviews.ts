@@ -135,7 +135,7 @@ export type Group = { label: string; count: number; reviewIds: number[]; questio
 export type Grouping = { method: "meaning" | "tags"; note: string; groups: Group[]; untagged: number; total: number };
 
 /** Groups by the user's own topic tags. Rows without a tag are counted, not guessed. */
-export function groupByTag(items: Item[]): Grouping {
+function groupByTag(items: Item[]): Grouping {
   const map = new Map<string, Item[]>();
   let untagged = 0;
   for (const i of items) {
@@ -177,7 +177,7 @@ const cosine = (a: number[], b: number[]) => {
   return na && nb ? dot / Math.sqrt(na * nb) : 0;
 };
 
-export const SIMILARITY = 0.8;
+const SIMILARITY = 0.8;
 
 /**
  * Greedy grouping by meaning: each row joins the first group whose first row is at least SIMILARITY
@@ -203,7 +203,7 @@ export function groupVectors(items: Item[], vectors: number[][], threshold = SIM
   return groups.sort((a, b) => b.count - a.count);
 }
 
-export async function reviewRows(projectId: string): Promise<Item[]> {
+async function reviewRows(projectId: string): Promise<Item[]> {
   return (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, CHANNEL.reviews])).map(toItem);
 }
 

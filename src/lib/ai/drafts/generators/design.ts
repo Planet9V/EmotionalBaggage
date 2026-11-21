@@ -9,7 +9,7 @@ import { RULES, basedOn, block, clip, conceptHeader, critiqueBlock, nextKey, rep
 
 const always = () => true;
 /** Wiring exists for product types that show the schematic. */
-export const hasElectronics = (productType: string) => sectionVisible(productType, "design", "schematic");
+const hasElectronics = (productType: string) => sectionVisible(productType, "design", "schematic");
 
 // ---------------------------------------------------------------------------------------------
 // Requirements
@@ -194,7 +194,7 @@ const wireRow = z.object({
 });
 
 /** "U1.GPIO8" to ["U1", "GPIO8"]. The pin is everything after the first dot, so "U1.5V/VIN" works. */
-export function splitEnd(end: string): [string, string] | null {
+function splitEnd(end: string): [string, string] | null {
   const s = end.trim();
   const dot = s.indexOf(".");
   if (dot <= 0 || dot === s.length - 1) return null;

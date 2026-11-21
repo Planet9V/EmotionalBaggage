@@ -27,7 +27,7 @@ export function parseCsvRecords(text: string): { records: Record<string, string>
   return { records: res.data, headers: res.meta.fields ?? [], errors: res.errors.map((e) => ({ row: e.row ?? 0, message: e.message })) };
 }
 
-export const FORMULA_START = /^[=+\-@\t\r]/;
+const FORMULA_START = /^[=+\-@\t\r]/;
 
 /** Rows to CSV text with CRLF line ends; `trailingNewline` (default true) ends the last row with CRLF too. */
 export function toCsvText(rows: readonly (readonly unknown[])[], opts: { trailingNewline?: boolean } = {}): string {

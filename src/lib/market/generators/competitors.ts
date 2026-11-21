@@ -39,7 +39,7 @@ export function readPrice(text: string): { minor: number; currency: string } | n
 
 const norm = (u: string) => u.trim().replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
 
-export const generator: Generator<typeof schema> = {
+const generator: Generator<typeof schema> = {
   id: "competitors",
   label: "Extract competitors from a research answer",
   from: ["research"],
@@ -61,7 +61,7 @@ export const generator: Generator<typeof schema> = {
   schema,
 };
 
-export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
+const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const r = c.research.find((x) => x.id === c.params.researchId)!;
   const answer = squash(r.answer);

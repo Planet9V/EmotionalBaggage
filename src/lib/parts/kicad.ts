@@ -19,7 +19,7 @@ import { GRID, symbolLayout, type SymbolLayout } from "./symbols";
 import { slugify } from "@/lib/format";
 
 export const KICAD_SCH_VERSION = "20260306";
-export const KICAD_GENERATOR = "concept_to_realization";
+const KICAD_GENERATOR = "concept_to_realization";
 
 export type KicadMeta = {
   title: string;
@@ -55,7 +55,7 @@ const stroke = (width = 0.254): SNode => ["stroke", ["width", fmt(width)], ["typ
 const fill = (type: "none" | "outline" | "background"): SNode => ["fill", ["type", type]];
 
 /** Deterministic UUIDs (version 4 layout) from a seed string, so the same circuit writes the same file. */
-export function uuidFrom(seed: string): string {
+function uuidFrom(seed: string): string {
   const h = (salt: number) => {
     let x = 0x811c9dc5 ^ salt;
     for (let i = 0; i < seed.length; i++) {
@@ -156,7 +156,7 @@ function libSymbol(pl: Placed): SNode {
 }
 
 /** Where each pin's connection point lands on the sheet (schematic coordinates are y down, like ours). */
-export function pinPoint(pl: { at: { x: number; y: number } }, p: { x: number; y: number }) {
+function pinPoint(pl: { at: { x: number; y: number } }, p: { x: number; y: number }) {
   return { x: Math.round((pl.at.x + p.x) * 10000) / 10000, y: Math.round((pl.at.y + p.y) * 10000) / 10000 };
 }
 

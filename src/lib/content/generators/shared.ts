@@ -30,7 +30,7 @@ export function approvedMessages(ctx: GenContext): Message[] {
   return out;
 }
 
-export const NO_MESSAGE = "Approve a positioning with at least one message first (Marketing, Positioning). Everything written here is tied to one approved message.";
+const NO_MESSAGE = "Approve a positioning with at least one message first (Marketing, Positioning). Everything written here is tied to one approved message.";
 
 export const blockedNoMessage = (ctx: GenContext) => (approvedMessages(ctx).length ? "" : NO_MESSAGE);
 
@@ -111,6 +111,3 @@ export function withProof(ctx: GenContext, section: string, title: string, body:
 }
 
 export const header = (ctx: GenContext) => conceptHeader(ctx);
-export { block };
-
-export type DraftOut = { ok: true; drafts: Proposed[]; notes?: string[] } | { ok: false; reason: string };

@@ -2,16 +2,14 @@ import type { Item, Plan, PlanDropped, PlanEdge, PlanNode } from "./types";
 import { isStep, keys, toDecision } from "./domain";
 import { CLOSED, STAGES, storeKey } from "./menu";
 
-export { stepsFromItems } from "./domain/step";
-
 /** The section that holds the decision tree. */
 export const DECISIONS_STORE = "concept/decisions";
 
 /** Sections whose rows carry a key so other rows can name them, but which are not work to schedule. */
-export const NOT_STEPS = new Set(["design/requirements"]);
+const NOT_STEPS = new Set(["design/requirements"]);
 
 /** A node of the plan graph before it is scheduled. */
-export type GraphNode = Omit<PlanNode, "start" | "finish" | "wave" | "critical" | "blocked">;
+type GraphNode = Omit<PlanNode, "start" | "finish" | "wave" | "critical" | "blocked">;
 
 export type PlanGraphResult = {
   nodes: GraphNode[];

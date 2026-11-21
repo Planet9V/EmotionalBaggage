@@ -8,7 +8,7 @@
 //      token, a provider key such as sk-..., a key in a URL query, a password in a URL
 //      (https://user:pass@host), and a key inside JSON ("api_key": "...").
 
-export const HIDDEN = "[hidden]";
+const HIDDEN = "[hidden]";
 
 /** A saved value, a list of them, or none. A null, undefined or empty value is ignored. */
 export type Secrets = string | null | undefined | readonly (string | null | undefined)[];

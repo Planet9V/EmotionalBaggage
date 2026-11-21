@@ -19,7 +19,7 @@ import type { ChannelStatus } from "@/lib/channels/status";
 import { messageOf } from "@/lib/queries";
 import { channelName } from "@/lib/channels/registry";
 
-export const CREDENTIALS_HREF = "/admin?tab=credentials";
+const CREDENTIALS_HREF = "/admin?tab=credentials";
 
 /** Said plainly on every channel screen. */
 export function NotRealNote({ service }: { service: string }) {

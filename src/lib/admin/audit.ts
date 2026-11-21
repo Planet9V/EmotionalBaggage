@@ -2,7 +2,7 @@
 // Kept in the settings row "audit.credentials" (there is no install-wide event table). Never holds a value.
 import { audit as auditLine, q } from "@/lib/db";
 
-export const AUDIT_KEY = "audit.credentials";
+const AUDIT_KEY = "audit.credentials";
 export const AUDIT_LIMIT = 200;
 
 export type AuditEntry = {

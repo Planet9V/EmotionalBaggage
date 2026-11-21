@@ -18,8 +18,6 @@ export type ParsedShape = {
   encoding?: "binary" | "ascii";
 };
 
-export const SHAPE_EXT = /\.(stl|stp|step)$/i;
-
 export const formatOf = (name: string): ShapeFormat | null => {
   const m = /\.(stl|stp|step)$/i.exec(name);
   if (!m) return null;
@@ -67,14 +65,14 @@ type OcctFactory = (o?: { locateFile?: (f: string) => string }) => Promise<Occt>
 let occtPromise: Promise<Occt> | null = null;
 
 /** Where the browser finds the reader and its WebAssembly file (copied into /public/vendor/occt). */
-export const OCCT_BASE = "/vendor/occt/";
+const OCCT_BASE = "/vendor/occt/";
 
 /**
  * Loads occt-import-js once. In the browser it is a script tag from /vendor/occt (the library is a
  * classic script that fetches its .wasm at run time); in Node it is the npm package. A failure
  * resets so the next try starts again.
  */
-export function loadOcct(): Promise<Occt> {
+function loadOcct(): Promise<Occt> {
   if (!occtPromise) {
     const p: Promise<Occt> =
       typeof window === "undefined"

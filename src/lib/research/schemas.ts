@@ -8,7 +8,7 @@ export type Verdict = (typeof VERDICTS)[number];
 
 export const CLAIMS_SECTION = "research/claims";
 
-export const httpUrl = z
+const httpUrl = z
   .string()
   .trim()
   .max(2000)
@@ -25,7 +25,7 @@ export const httpUrl = z
  * One source of a saved research answer (column research.sources, migrations/0006_research_sources.sql).
  * title is "" when Perplexity gave none; snippet and date only when Perplexity supplied them.
  */
-export const researchSource = z.object({
+const researchSource = z.object({
   url: httpUrl,
   title: z.string().max(500),
   snippet: z.string().max(2000).optional(),
@@ -57,7 +57,7 @@ export function toStoredSource(s: { url: string; title?: string; snippet?: strin
 
 const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 
-export const evidenceEntry = z.object({
+const evidenceEntry = z.object({
   url: httpUrl,
   title: z.string().max(500).optional(),
   quote: z.string().max(4000).optional(),

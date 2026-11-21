@@ -92,7 +92,7 @@ export function ImpactNotice({ projectId }: { projectId: string }) {
   );
 }
 
-export function ImpactPanel({ projectId, reply, open, onOpenChange }: { projectId: string; reply: Extract<ImpactReply, { engine: "networkx" }>; open: boolean; onOpenChange: (o: boolean) => void }) {
+function ImpactPanel({ projectId, reply, open, onOpenChange }: { projectId: string; reply: Extract<ImpactReply, { engine: "networkx" }>; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { propose } = useImpact(projectId);
   const [runs, setRuns] = useState<RunResult[] | null>(null);
   const [error, setError] = useState("");

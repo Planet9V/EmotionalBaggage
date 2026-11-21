@@ -1,9 +1,9 @@
 // A launch template: a dated checklist for one way of launching a product. Templates are code, so
 // they are reviewed and tested like code. Using one copies its steps into the concept as rows
 // (marketing/launch); from then on the rows are the user's to edit, and the template is not read again.
-export type TemplateRequirement = { kind: "gate"; stage: "concept" | "research" | "design" | "prototype" | "production" | "marketing" | "sales" };
+type TemplateRequirement = { kind: "gate"; stage: "concept" | "research" | "design" | "prototype" | "production" | "marketing" | "sales" };
 
-export type TemplateStep = {
+type TemplateStep = {
   /** unique within the template; the row's key is "<launch key>-<this>" */
   key: string;
   title: string;

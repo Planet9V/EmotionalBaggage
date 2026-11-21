@@ -75,7 +75,7 @@ export function parseAnswer(kind: Kind, answer: string, sources: Source[], curre
 export type ResearchOutcome = { researchId: number; drafts: EngineDraft[]; dropped: string[]; costUsd: number | null; sources: number };
 
 /** The engine generator ids, one per kind. */
-export const SOURCING_GENERATOR: Record<Kind, string> = { prices: "sourcing.prices", alternates: "sourcing.alternates" };
+const SOURCING_GENERATOR: Record<Kind, string> = { prices: "sourcing.prices", alternates: "sourcing.alternates" };
 
 /** Asks, stores the answer as a research row, and saves the drafts on the part. `confirm` must be true: the call is billed. */
 export async function researchPart(projectId: string, partId: number, kind: Kind, confirm: boolean, signal?: AbortSignal): Promise<ResearchOutcome> {

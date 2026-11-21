@@ -38,7 +38,7 @@ function bodyObjects(p: ExportPart): THREE.Mesh[] {
 }
 
 /** One part as it sits in the model: rotated and placed at its position. Shells become a tray and a lid. */
-export function partObject(p: ExportPart, shell: ShellParams): THREE.Group {
+function partObject(p: ExportPart, shell: ShellParams): THREE.Group {
   const g = p.geometry;
   const group = new THREE.Group();
   group.name = p.ref || p.title;
@@ -66,7 +66,7 @@ export function partObject(p: ExportPart, shell: ShellParams): THREE.Group {
 }
 
 /** The assembled model, or one part, in scene coordinates (Y up). */
-export function assemblyGroup(parts: ExportPart[], shell: ShellParams, onlyId?: number): THREE.Group {
+function assemblyGroup(parts: ExportPart[], shell: ShellParams, onlyId?: number): THREE.Group {
   const root = new THREE.Group();
   for (const p of parts) if (onlyId === undefined || p.id === onlyId) root.add(partObject(p, shell));
   root.updateMatrixWorld(true);
@@ -105,7 +105,7 @@ export type PrintBody = { name: string; mesh: Mesh };
  * Printed bodies side by side on one bed, 10 mm apart along x, each already in print orientation.
  * Used for 3MF: every body is its own object so a slicer can move them.
  */
-export function bedGroup(bodies: PrintBody[], gap = 10): THREE.Group {
+function bedGroup(bodies: PrintBody[], gap = 10): THREE.Group {
   const root = new THREE.Group();
   let x = 0;
   for (const b of bodies) {

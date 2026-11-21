@@ -111,7 +111,7 @@ export const toChat = (r: ChatRow) => ({
   updatedAt: r.updated_at,
   ...(r.messages !== undefined ? { messages: Number(r.messages) } : {}),
 });
-export const toMessage = (r: MessageRow) => ({
+const toMessage = (r: MessageRow) => ({
   id: Number(r.id),
   role: r.role,
   content: r.content,

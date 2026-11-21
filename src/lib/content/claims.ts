@@ -10,7 +10,7 @@ import { toInputText } from "@/lib/economics/money";
 export type ProofRow = { id: number; section: string; title: string; body: string; status: string; data: Record<string, unknown> };
 export type Flag = { field: string; text: string; kind: "number" | "superlative"; reason: string };
 
-export const SUPERLATIVES = [
+const SUPERLATIVES = [
   "best", "fastest", "cheapest", "lowest", "greatest", "biggest", "strongest", "safest", "smartest", "lightest", "quietest", "most", "only", "first", "perfect", "ultimate",
   "unbeatable", "guaranteed", "never", "always", "number one", "world's", "world-class", "leading", "revolutionary", "unmatched", "flawless", "zero", "100%", "#1",
 ];
@@ -41,7 +41,7 @@ export function numbersIn(text: string): string[] {
 }
 
 /** Removes words that may hold digits but are not claims: the product's own name and brand, and web addresses. */
-export function stripNonClaims(text: string, names: string[]): string {
+function stripNonClaims(text: string, names: string[]): string {
   let t = text.replace(/https?:\/\/\S+/g, " ").replace(/\b[\w.-]+\.(?:com|nl|org|net|io|co|app)\b\S*/gi, " ");
   for (const n of names.filter((x) => x && x.trim().length > 1)) t = t.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
   return t;
@@ -71,11 +71,6 @@ export function evaluate(fields: CopyField[], links: ProofRow[], names: string[]
   }
   return out;
 }
-
-export const noProof = (flags: Flag[]) => flags.length > 0;
-
-/** Links as the rows store them. */
-export type Links = ProofRef[];
 
 export function flagSummary(flags: Flag[]): string {
   if (!flags.length) return "";

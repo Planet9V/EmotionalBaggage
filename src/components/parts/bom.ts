@@ -45,8 +45,8 @@ export function groupParts(parts: Part[], by: "none" | "source" | "status"): Gro
 
 /* CSV */
 
-export const CSV_COLUMNS = ["ref", "title", "spec", "qty", "source", "search", "line"] as const;
-export type CsvColumn = (typeof CSV_COLUMNS)[number];
+const CSV_COLUMNS = ["ref", "title", "spec", "qty", "source", "search", "line"] as const;
+type CsvColumn = (typeof CSV_COLUMNS)[number];
 
 /** The parts list as CSV, through the one CSV writer (src/lib/csv.ts), which neutralises formula-looking cells. */
 export function toCsv(parts: Part[]): string {

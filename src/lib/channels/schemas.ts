@@ -25,7 +25,7 @@ export const CHANNEL = {
 } as const;
 
 /** What a send recorded on the row: the id the service gave back, when, and a link. Written only by src/lib/channels/send.ts. */
-export const sentRecord = z.object({
+const sentRecord = z.object({
   id: text(200),
   at: text(40),
   url: text(500).optional(),
@@ -37,8 +37,8 @@ export const sentRecord = z.object({
  * Amazon add the order id (also in externalId, which a unique index keeps to one row per order), the
  * marketplace, the currency and the items (ASIN, SKU, quantity, amount). Nothing about the buyer.
  */
-export const saleItem = z.object({ asin: text(20).optional(), sku: text(200).optional(), quantity: z.number().int().min(0), amount: z.number().finite() });
-export const saleData = z.looseObject({
+const saleItem = z.object({ asin: text(20).optional(), sku: text(200).optional(), quantity: z.number().int().min(0), amount: z.number().finite() });
+const saleData = z.looseObject({
   date: day.optional(),
   channel: text(80).optional(),
   units: num.optional(),
@@ -101,6 +101,3 @@ export const CHANNEL_SCHEMAS: Record<string, z.ZodType<Record<string, unknown>>>
   [CHANNEL.inbox]: inboxData,
   [CHANNEL.replies]: replyData,
 };
-
-export type SaleData = z.infer<typeof saleData>;
-export type ReviewData = z.infer<typeof reviewData>;

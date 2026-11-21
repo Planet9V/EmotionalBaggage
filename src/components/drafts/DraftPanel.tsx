@@ -23,14 +23,14 @@ export const MODELS_HREF = "/admin?tab=models";
 type Phase = { kind: "idle" } | { kind: "running"; started: number } | { kind: "confirm"; pending: number } | { kind: "error"; message: string } | { kind: "done"; result: RunResult };
 
 /** The drafts waiting in one store, grouped by run, newest run first. */
-export function byRun(drafts: Draft[]) {
+function byRun(drafts: Draft[]) {
   const runs = new Map<string, Draft[]>();
   for (const d of drafts) runs.set(d.runId, [...(runs.get(d.runId) ?? []), d]);
   return [...runs.entries()].map(([runId, list]) => ({ runId, drafts: list.sort((a, b) => a.id - b.id), at: list[0]?.createdAt ?? "" })).sort((a, b) => b.at.localeCompare(a.at));
 }
 
 /** Approve every waiting draft of a run, after a confirm. */
-export function ApproveRunButton({ projectId, runId, count }: { projectId: string; runId: string; count: number }) {
+function ApproveRunButton({ projectId, runId, count }: { projectId: string; runId: string; count: number }) {
   const { approveRun } = useDraftActions(projectId);
   const [error, setError] = useState("");
   return (

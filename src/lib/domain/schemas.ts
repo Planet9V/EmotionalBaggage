@@ -45,13 +45,13 @@ const vec3 = z.tuple([numeric, numeric, numeric]);
 const angle = numeric.refine((n) => Math.abs(n) <= 3600, "must be within 3600 degrees");
 
 /** A file attached as a part's shape. `scale` is a unit choice the user confirmed; 1 means the file is already in millimetres. */
-export const shapeFile = z.object({
+const shapeFile = z.object({
   id: z.number().int().positive(),
   name: text(200),
   format: z.enum(["stl", "step"]),
   scale: numeric.refine((n) => n > 0 && n <= 1e6, "must be above zero").default(1),
 });
-export type ShapeFile = z.infer<typeof shapeFile>;
+type ShapeFile = z.infer<typeof shapeFile>;
 
 /** Y up, millimetres, origin at the centre of the enclosure floor. */
 export const geometry = z
@@ -112,7 +112,7 @@ const step = {
 };
 
 /** Sections without a schema of their own: free columns, plus the step fields. */
-export const genericData = z.looseObject(step);
+const genericData = z.looseObject(step);
 
 export const partData = z.looseObject({
   ...step,
@@ -167,9 +167,9 @@ export const wireData = z.looseObject({
   routedPath: z.array(z.tuple([numeric, numeric, numeric])).max(2000).optional(),
 });
 
-export const decisionOption = z.object({ id: text(80).min(1), label: text(200).min(1), outcome: text(2000).default("") });
+const decisionOption = z.object({ id: text(80).min(1), label: text(200).min(1), outcome: text(2000).default("") });
 
-export const decisionData = z.looseObject({
+const decisionData = z.looseObject({
   ...step,
   parent: text(120).optional(),
   viaOption: text(80).optional(),
@@ -181,7 +181,7 @@ export const decisionData = z.looseObject({
 });
 
 /** A requirement links to the acceptance tests that check it and the parts it needs, by key (checked in src/lib/trace/links.ts). */
-export const requirementData = z.looseObject({
+const requirementData = z.looseObject({
   ...step,
   tests: keyList.optional(),
   parts: keyList.optional(),
@@ -190,7 +190,7 @@ export const requirementData = z.looseObject({
 const day = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date like 2026-12-31")]);
 
 /** A named build: its exit criteria, the tests it must pass, and its dates. The name is the title and the goal is the body. */
-export const buildData = z.looseObject({
+const buildData = z.looseObject({
   ...step,
   criteria: z.array(z.object({ text: text(300).trim().min(1, "a criterion needs text"), met: z.boolean().default(false) })).max(50).optional(),
   tests: keyList.optional(),
@@ -199,7 +199,7 @@ export const buildData = z.looseObject({
 });
 
 /** The chosen enclosure generator and its parameters (plan 5.9). One row per concept; the numbers are range-checked again by the generator route. */
-export const enclosureData = z.looseObject({
+const enclosureData = z.looseObject({
   enclosureGenerator: z.enum(["casemaker", "yapp"]).optional(),
   params: z.looseObject({
     wallThickness: numeric.optional(),

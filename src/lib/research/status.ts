@@ -25,7 +25,7 @@ const sources = (n: number) => `${n} source${n === 1 ? "" : "s"}`;
 const verb = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 /** What the evidence alone says, as one plain phrase: "1 source supports it, none contradicts". */
-export function evidenceSummary(evidence: readonly HasVerdict[]): string {
+function evidenceSummary(evidence: readonly HasVerdict[]): string {
   const s = evidence.filter((e) => e.verdict === "supports").length;
   const c = evidence.filter((e) => e.verdict === "contradicts").length;
   const u = evidence.filter((e) => e.verdict === "unclear").length;

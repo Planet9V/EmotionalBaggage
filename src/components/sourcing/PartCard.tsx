@@ -21,7 +21,7 @@ import { Card } from "@/components/ui/Card";
 export type Change = { status?: string; data?: Record<string, unknown> };
 
 /** The part's own status follows the order: it is what the bill of materials and the old cart read. */
-export const STATUS_FOR_ORDER: Record<string, string> = { "to order": "to buy", ordered: "ordered", shipped: "ordered", short: "ordered", received: "in hand" };
+const STATUS_FOR_ORDER: Record<string, string> = { "to order": "to buy", ordered: "ordered", shipped: "ordered", short: "ordered", received: "in hand" };
 
 export function PartCard({ part, currency, onSave, onResearch }: {
   part: Part;

@@ -5,7 +5,7 @@
 import { derive, type Counts } from "./metrics";
 import { TARGET_INFO, type StopScaleRule, type Target } from "./schemas";
 
-export type Verdict = "stop" | "hold" | "scale" | "not_enough_data" | "no_rule";
+type Verdict = "stop" | "hold" | "scale" | "not_enough_data" | "no_rule";
 
 export type Evaluation = {
   verdict: Verdict;

@@ -22,7 +22,7 @@ const VERDICT: Record<Verdict, { word: string; tone: StatusTone }> = {
 };
 
 /** "20 Nov 2026", or "" when the stored time cannot be read. */
-export function judgedOn(iso: string): string {
+function judgedOn(iso: string): string {
   return fmtDate(iso);
 }
 

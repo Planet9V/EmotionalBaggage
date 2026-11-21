@@ -7,7 +7,7 @@ import { lastFour, PROVIDER_DEFS, providerDef, type ProviderDef } from "./provid
 import { invalid } from "./schemas";
 import { boundOrigin, currentOrigin, originOf } from "@/lib/secretOrigin";
 
-export type CredentialFieldView = {
+type CredentialFieldView = {
   name: string;
   label: string;
   secret: boolean;

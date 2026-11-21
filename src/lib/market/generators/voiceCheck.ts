@@ -7,9 +7,9 @@ const schema = z.object({
   suggestions: z.array(z.object({ before: z.string().max(600), after: z.string().max(600), why: z.string().max(300) })).max(10),
 });
 
-export const MAX_TEXT = 6000;
+const MAX_TEXT = 6000;
 
-export const generator: Generator<typeof schema> = {
+const generator: Generator<typeof schema> = {
   id: "voice-check",
   label: "Check text against the brand voice",
   from: ["marketing/brand"],
@@ -27,7 +27,7 @@ export const generator: Generator<typeof schema> = {
   schema,
 };
 
-export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
+const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const text = String(c.params.text).slice(0, MAX_TEXT);
   const squash = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();

@@ -84,7 +84,7 @@ export type GeneratorsReply = {
 };
 
 /** Plain names of stores, singular and plural, for "from 9 requirements". */
-export const STORE_NOUN: Record<string, [string, string]> = {
+const STORE_NOUN: Record<string, [string, string]> = {
   "concept/brief": ["brief line", "brief lines"],
   "concept/press": ["press release", "press releases"],
   "concept/faq": ["FAQ entry", "FAQ entries"],
@@ -105,7 +105,7 @@ export const STORE_NOUN: Record<string, [string, string]> = {
   "marketing/brand": ["brand note", "brand notes"],
 };
 
-export const noun = (store: string, n: number) => {
+const noun = (store: string, n: number) => {
   const pair = STORE_NOUN[store] ?? ["row", "rows"];
   return `${n} ${n === 1 ? pair[0] : pair[1]}`;
 };

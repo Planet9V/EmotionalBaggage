@@ -22,7 +22,7 @@ import { LAUNCH_STORE } from "@/lib/campaigns/schemas";
 import { loadLinkClicks, loadResults } from "@/lib/campaigns/server";
 import { plural } from "@/lib/format";
 
-export type ReportBlock =
+type ReportBlock =
   | { t: "p"; text: string; muted?: boolean }
   | { t: "table"; head: string[]; rows: string[][]; foot?: string[]; mono?: number[] };
 

@@ -58,7 +58,7 @@ export const MARKETPLACES: Marketplace[] = [
 export const marketplace = (id: string) => MARKETPLACES.find((m) => m.id === id);
 
 /** Documented default rates per operation [RATES] [SALES]. One bucket per operation for this install. */
-export const AMAZON_RATES = { searchOrders: { rate: 0.0056, burst: 20 }, getOrderMetrics: { rate: 0.5, burst: 15 } } as const;
+const AMAZON_RATES = { searchOrders: { rate: 0.0056, burst: 20 }, getOrderMetrics: { rate: 0.5, burst: 15 } } as const;
 type Op = keyof typeof AMAZON_RATES;
 let buckets: Record<Op, TokenBucket> | null = null;
 const bucket = (op: Op) => {

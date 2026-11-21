@@ -45,15 +45,15 @@ export const PROVIDER_LABEL: Record<ProviderId, string> = {
 };
 
 /** Providers that refuse requests without a key. Local Ollama and LM Studio usually have none. */
-export const KEY_REQUIRED: Record<ProviderId, boolean> = { ollama: false, lmstudio: false, openrouter: true };
+const KEY_REQUIRED: Record<ProviderId, boolean> = { ollama: false, lmstudio: false, openrouter: true };
 
-export const COMPLETION_TIMEOUT_MS = 60_000;
-export const EMBEDDING_TIMEOUT_MS = 30_000;
+const COMPLETION_TIMEOUT_MS = 60_000;
+const EMBEDDING_TIMEOUT_MS = 30_000;
 /** Retries on a network error, 429 or 5xx (the SDK decides what is retryable). Adjustable per call. */
-export const DEFAULT_MAX_RETRIES = 1;
+const DEFAULT_MAX_RETRIES = 1;
 
 /** Which model answers, and where. Never carries the key. */
-export type ModelInfo = { provider: ProviderId; model: string; baseUrl: string };
+type ModelInfo = { provider: ProviderId; model: string; baseUrl: string };
 export type EmbeddingInfo = ModelInfo & { dims: number };
 
 export type NotConfigured = { ok: false; missing: "model" | "key" | "dims" | "setting"; reason: string };
@@ -163,7 +163,7 @@ export async function getEmbedding(): Promise<ReadyEmbedding | NotConfigured> {
 // ---------------------------------------------------------------------------------------------
 // Errors in plain words
 
-export function formatMs(ms: number) {
+function formatMs(ms: number) {
   return ms < 1000 ? `${ms} ms` : `${Number((ms / 1000).toFixed(1))} s`;
 }
 
@@ -247,7 +247,7 @@ async function keyFor(info: ModelInfo) {
 // Completions
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
-export type Usage = { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null };
+type Usage = { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null };
 
 export type CompleteOptions = {
   /** instructions for the model (sent as the system message) */
@@ -428,7 +428,7 @@ export async function completeStream(o: CompleteOptions): Promise<StreamResult> 
 // ---------------------------------------------------------------------------------------------
 // Structured answers
 
-export type JsonPath = "structured" | "prompted";
+type JsonPath = "structured" | "prompted";
 
 export type CompleteJsonOptions<S extends z.ZodType> = Omit<CompleteOptions, "temperature"> & {
   schema: S;
@@ -475,7 +475,7 @@ export function extractJson(text: string): unknown {
   throw new SyntaxError("no JSON value found");
 }
 
-export function jsonInstruction(schema: z.ZodType) {
+function jsonInstruction(schema: z.ZodType) {
   return `Answer with one JSON value only: no prose, no code fence. It must match this JSON Schema:\n${JSON.stringify(z.toJSONSchema(schema))}`;
 }
 

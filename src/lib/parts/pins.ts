@@ -10,7 +10,7 @@ import type { BusRef, PinDef, PinPosition, Voltage } from "./schema";
 export type PinRow = PinDef & { id: number; itemId: number; sort: number };
 
 /** Where a part's pin list came from. "wires": nobody described the part; its pins are the names its wires use. */
-export type PinSource = "own" | "library" | "kind" | "wires";
+type PinSource = "own" | "library" | "kind" | "wires";
 
 export type Pin = {
   name: string;
@@ -28,7 +28,7 @@ export type Pin = {
 
 export type PartPins = { pins: Pin[]; source: PinSource; symbol: SymbolId; kindId: string | null; libraryId: string | null };
 
-export function toPin(d: PinDef, i: number): Pin {
+function toPin(d: PinDef, i: number): Pin {
   const kind = d.kind ?? null;
   return {
     name: d.name.trim(),
@@ -48,7 +48,7 @@ export function toPin(d: PinDef, i: number): Pin {
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 /** The kind and library entry a part row names (data.kind, data.library). Unknown values read as none. */
-export function partTypeOf(item: Item): { kindId: string | null; libraryId: string | null } {
+function partTypeOf(item: Item): { kindId: string | null; libraryId: string | null } {
   const lib = libraryEntryById(str(item.data.library));
   const kind = partKind(str(item.data.kind)) ?? (lib ? partKind(lib.kind) : null);
   return { kindId: kind?.id ?? null, libraryId: lib?.id ?? null };
@@ -77,12 +77,6 @@ export function pinsByItem(rows: PinRow[]): Map<number, PinRow[]> {
   const m = new Map<number, PinRow[]>();
   for (const r of rows) m.set(r.itemId, [...(m.get(r.itemId) ?? []), r]);
   return m;
-}
-
-/** A library entry's pins as rows to store on a part (the "use these pins and change them" path). */
-export function libraryPinsAsInput(libraryId: string): PinDef[] {
-  const lib = libraryEntryById(libraryId);
-  return lib ? lib.pins.map((p) => ({ ...p })) : [];
 }
 
 /** A pin as worked out, back as a definition to store (the "make these pins the part's own" path). */

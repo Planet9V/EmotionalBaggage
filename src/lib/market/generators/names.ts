@@ -7,7 +7,7 @@ const schema = z.object({
   candidates: z.array(z.object({ text: z.string().min(1).max(120), kind: z.enum(["Name", "Tagline"]), reason: z.string().max(300) })).min(1).max(12),
 });
 
-export const generator: Generator<typeof schema> = {
+const generator: Generator<typeof schema> = {
   id: "names",
   label: "Suggest names and taglines",
   from: ["concept/brief", "concept/names", "marketing/personas", "marketing/brand"],
@@ -27,7 +27,7 @@ export const generator: Generator<typeof schema> = {
   schema,
 };
 
-export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
+const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const have = new Set(c.names.map((i) => i.title.trim().toLowerCase()));
   const sources = c.brief.slice(0, 6).map((i) => ({ kind: "brief", id: i.id, title: i.title }));

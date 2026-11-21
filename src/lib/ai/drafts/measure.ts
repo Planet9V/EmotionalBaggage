@@ -51,7 +51,7 @@ export function measureCost(bom: Item[]): CostMeasure {
 
 const FASTENER = /\b(screws?|bolts?|nuts?|washers?|rivets?|standoffs?|inserts?|fasteners?)\b/i;
 
-export function isFastener(i: Item) {
+function isFastener(i: Item) {
   return i.data.kind === "fastener" || FASTENER.test(i.title);
 }
 

@@ -30,7 +30,7 @@ const SRC = {
 // the enclosure floor. basis "doc" = dimension stated in the source documents;
 // "typical" = a common size for that kind of part, not stated in the documents and
 // not measured. The internal layout is illustrative.
-export type Geometry = {
+type Geometry = {
   shape: "box" | "cylinder" | "shell";
   size: number[];
   pos: number[];
@@ -40,7 +40,7 @@ export type Geometry = {
   print?: boolean;
 };
 
-export const GEOMETRY: Record<string, Geometry> = {
+const GEOMETRY: Record<string, Geometry> = {
   ENC1: { shape: "shell", size: [80, 42, 60], pos: [0, 21, 0], explode: [0, 0, 0], basis: "doc", print: true },
   BT1: { shape: "box", size: [58, 17, 48], pos: [0, 10.5, 0], explode: [0, -34, 0], basis: "typical" },
   BAT: { shape: "cylinder", size: [14.5, 50.5], pos: [0, 10.5, 0], explode: [0, -62, 0], basis: "typical", count: 3 },
@@ -546,7 +546,7 @@ const D = (
   status: extra.chosen ? "decided" : "open",
 });
 
-export const SEED_DECISIONS: SeedItem[] = [
+const SEED_DECISIONS: SeedItem[] = [
   D("go", "", "Spend about $750 on the validation batch?", "Five units, one weekend of firmware tuning and a filmed airport test.", [
     { id: "yes", label: "Build the 5 units", outcome: "$500 parts and $200 tooling; produces the unbranded clips the Phase 1 gate needs." },
     { id: "no", label: "Stop here", outcome: "No spend. The concept stays on paper." },
@@ -606,7 +606,7 @@ const W = (
   status: "to solder",
 });
 
-export const SEED_WIRING: SeedItem[] = [
+const SEED_WIRING: SeedItem[] = [
   W(1, "Battery positive to switch", "BAT+", "power", "BT1", "+", "S1", "1"),
   W(2, "Switch to VIN", "VIN", "power", "S1", "2", "U1", "5V/VIN", "Meter VIN to GND with the switch on: expect 4.5-4.9 V. Do not go on outside 4.2-5.2 V."),
   W(3, "Battery negative to ground", "GND", "ground", "BT1", "-", "U1", "GND", "Ground star point at one corner of the board."),

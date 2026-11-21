@@ -7,14 +7,12 @@ import { getSetting } from "@/lib/settings";
 import { getSecretFor, PERPLEXITY_DEFAULT_BASE_URL, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { safeFetch } from "@/lib/net/outbound";
 
-/** Address of the Perplexity API; tests point it at the stand-in. */
-export const DEFAULT_BASE_URL = PERPLEXITY_DEFAULT_BASE_URL;
 export const AGENT_PATH = "/v1/agent";
 /** Setting that holds the effort level (Perplexity's pre-configured model and search setup). */
-export const MODEL_SETTING = "research.model";
+const MODEL_SETTING = "research.model";
 /** `fast` is Perplexity's documented replacement for `sonar-pro`, which this app used before. */
 export const DEFAULT_EFFORT = "fast";
-export const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 60_000;
 
 /**
  * The migration guide's instructions for numbered inline citations ("Inline citations" on
@@ -26,7 +24,7 @@ export const INSTRUCTIONS =
 
 export type Source = { url: string; title?: string; snippet?: string; date?: string; id?: number };
 
-export type AskSuccess = {
+type AskSuccess = {
   ok: true;
   answer: string;
   sources: Source[];
@@ -39,7 +37,7 @@ export type AskSuccess = {
   raw: unknown;
 };
 
-export type AskFailure = {
+type AskFailure = {
   ok: false;
   kind: "not_configured" | "http" | "rate_limited" | "timeout" | "network" | "malformed" | "failed" | "aborted";
   /** HTTP status of Perplexity's answer, when there was one */

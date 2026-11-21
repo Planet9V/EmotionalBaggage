@@ -6,7 +6,7 @@ import { scrub } from "@/lib/secrets/scrub";
 export const secondsText = (ms: number) => (ms >= 1000 ? `${Math.round(ms / 1000)} seconds` : `${ms} ms`);
 
 /** The sentence for a failed network call. */
-export function networkSentence(e: unknown, secrets: (string | null | undefined)[], ms: number): { kind: PrinterError["kind"]; message: string } {
+function networkSentence(e: unknown, secrets: (string | null | undefined)[], ms: number): { kind: PrinterError["kind"]; message: string } {
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
   if (err?.name === "TimeoutError" || err?.name === "AbortError") return { kind: "timeout", message: `No answer within ${secondsText(ms)}.` };
   const refused = blockedIn(e);
@@ -52,8 +52,6 @@ export async function httpSentence(
   if (res.status >= 500) return { kind: "failed", message: `${who} answered with a server error (HTTP ${res.status}).`, detail };
   return { kind: "failed", message: `${who} answered HTTP ${res.status}.`, detail };
 }
-
-export type Sent = { res: Response };
 
 /** Base for the HTTP adapters. */
 export abstract class HttpAdapterBase {

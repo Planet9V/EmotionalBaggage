@@ -2,8 +2,8 @@
 import { z } from "zod";
 import { REVIEW_KINDS } from "./schemas";
 
-export const projectId = z.string().trim().min(1, "is required").max(80);
-export const recordId = z.coerce.number().int().positive();
+const projectId = z.string().trim().min(1, "is required").max(80);
+const recordId = z.coerce.number().int().positive();
 
 export const amazonPut = z.object({ projectId, marketplaceId: z.string().trim().min(1).max(40) }).strict();
 export const projectOnly = z.object({ projectId }).strict();

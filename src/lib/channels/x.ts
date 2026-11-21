@@ -28,10 +28,10 @@ import { ChannelError, channelFetch, readJson, upstreamError, xApiBase, xAuthori
 import { limited, TokenBucket, channelClock } from "./rateLimit";
 import { saveXAccount, xAccount, type XAccount } from "./state";
 
-export const X_SCOPES = ["tweet.read", "tweet.write", "users.read", "media.write", "offline.access"];
+const X_SCOPES = ["tweet.read", "tweet.write", "users.read", "media.write", "offline.access"];
 export const X_MAX_IMAGES = 4;
-export const X_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
-export const X_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+const X_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const X_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
 
 /** Per-user rates from [LIMITS], as token buckets (rate per second, burst). */
 const BUCKETS = {
@@ -58,7 +58,7 @@ export function resetX() {
   buckets = null;
 }
 
-export async function xClient() {
+async function xClient() {
   const [clientId, clientSecret, callbackUrl] = await Promise.all([getCredential("x", "clientId"), getSecretFor("x", "clientSecret", xApiBase()), getCredential("x", "callbackUrl")]);
   return { clientId, clientSecret, callbackUrl };
 }
@@ -76,7 +76,7 @@ export function browserOrigin(req: Request): string {
 }
 
 /** Where X sends the browser back: the saved callback address, else this app's own address. */
-export function callbackFor(origin: string, saved: string | null) {
+function callbackFor(origin: string, saved: string | null) {
   return saved?.trim() || `${origin.replace(/\/+$/, "")}/api/channels/x/callback`;
 }
 
@@ -159,7 +159,7 @@ export async function finishXSignIn(code: string, p: Pending): Promise<XAccount>
 }
 
 /** The saved access token, refreshed first when it has expired (or is about to) and a refresh token is saved. */
-export async function xAccessToken(force = false): Promise<string> {
+async function xAccessToken(force = false): Promise<string> {
   const [token, refresh, account] = await Promise.all([getSecretFor("x", "accessToken", xApiBase()), getSecretFor("x", "refreshToken", xApiBase()), xAccount()]);
   if (!token && !refresh) throw new HttpError(503, "X is not connected. Save the client ID in Admin, Credentials, then press Connect X account.");
   const expired = account?.expiresAt != null && account.expiresAt - 60_000 < channelClock().now();

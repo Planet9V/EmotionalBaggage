@@ -20,7 +20,7 @@ export type PrinterRow = {
 
 export const PRINTER_COLS = "id, name, family, model, address, access, enabled, created_at, updated_at";
 
-export type PrinterAccessView = { set: boolean; secret: boolean; value: string | null; last4: string | null };
+type PrinterAccessView = { set: boolean; secret: boolean; value: string | null; last4: string | null };
 
 export type PrinterView = {
   id: number;
@@ -79,7 +79,7 @@ export function requireFamily(id: string, path: string = "family"): PrinterFamil
  * Returns the address (for the column) and the rest (for the access object).
  */
 /** The host a printer's values point at: the origin of a url address, the lower-case name of a host address. */
-export function printerTarget(fam: PrinterFamily, values: Record<string, string>): string | null {
+function printerTarget(fam: PrinterFamily, values: Record<string, string>): string | null {
   const f = fam.fields.find((x) => x.name === "address");
   const v = values.address;
   if (!f || !v) return null;
@@ -93,7 +93,7 @@ export function printerTarget(fam: PrinterFamily, values: Record<string, string>
   return v.trim().toLowerCase();
 }
 
-export const SECRET_NEEDS_REENTRY =
+const SECRET_NEEDS_REENTRY =
   "type it again: the address now points to a different host, and a saved secret is only sent to the host it was saved for";
 
 /**

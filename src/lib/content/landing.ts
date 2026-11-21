@@ -64,7 +64,7 @@ const safeHref = (h: unknown) => {
 const hex = (rgb: [number, number, number]) => `#${rgb.map((c) => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, "0")).join("").toUpperCase()}`;
 
 /** Moves a colour towards black (on a light ground) or white (on a dark one) until it reads at 4.5 to 1. */
-export function readable(colour: string, ground: string, min = 4.5): string {
+function readable(colour: string, ground: string, min = 4.5): string {
   const rgb = parseHex(colour);
   if (!rgb) return colour;
   const target: [number, number, number] = (contrastRatio("#000000", ground) ?? 0) > (contrastRatio("#FFFFFF", ground) ?? 0) ? [0, 0, 0] : [255, 255, 255];
@@ -78,7 +78,7 @@ export function readable(colour: string, ground: string, min = 4.5): string {
 
 export type Palette = { primary: string; onPrimary: string; ink: string; paper: string; subtle: string; muted: string; rule: string; accentLight: string; accentDark: string; dInk: string; dPaper: string; dSubtle: string; dMuted: string; dRule: string; dPrimaryOn: string };
 
-export function palette(primary: string | null): Palette {
+function palette(primary: string | null): Palette {
   const p = primary && parseHex(primary) ? primary.toUpperCase() : "#1F5FBF";
   return {
     primary: p,
@@ -265,5 +265,3 @@ ${foot}
 </html>`;
   return { html, images: k.images, problems: k.problems, unapproved: ordered.filter((s) => s.status !== "approved").map((s) => s.id) };
 }
-
-export const orderedKinds = LANDING_KINDS;

@@ -15,11 +15,6 @@ export function matches(item: Item, q: string): boolean {
   return Object.values(item.data).some((v) => prim(v).toLowerCase().includes(needle));
 }
 
-export const SELECT_CLS =
-  "h-9 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
-export const TEXTAREA_CLS =
-  "w-full rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
-
 export function Field({ label, htmlFor, hint, children }: { label: string; htmlFor: string; hint?: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">

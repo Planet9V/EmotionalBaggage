@@ -64,13 +64,13 @@ export const CATEGORIES = [
   "mechanical",
   "other",
 ] as const;
-export type Category = (typeof CATEGORIES)[number];
+type Category = (typeof CATEGORIES)[number];
 
 /** Symbol drawings this app has (see ./symbols.ts). "box" is a rectangle with the part's pins around it. */
 export const SYMBOL_IDS = ["resistor", "capacitor", "capacitor_polarized", "diode", "led", "switch", "push_button", "battery", "speaker", "motor", "box"] as const;
 export type SymbolId = (typeof SYMBOL_IDS)[number];
 
-export type KindPin = { name: string; kind: PinKind };
+type KindPin = { name: string; kind: PinKind };
 
 export type PartKindInfo = {
   id: string;

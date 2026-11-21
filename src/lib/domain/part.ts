@@ -33,7 +33,7 @@ export function readGeometry(raw: unknown): Geometry | null {
   return r.success ? r.data : null;
 }
 
-export function readXY(raw: unknown): XY | null {
+function readXY(raw: unknown): XY | null {
   const r = xy.safeParse(raw);
   return r.success ? r.data : null;
 }

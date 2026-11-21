@@ -44,7 +44,7 @@ export const draftQueries = {
 };
 
 /** After a draft is decided or a run saved: drafts, the concept's rows, the plan and the activity list. */
-export function refreshAfterDecision(qc: QueryClient, projectId: string, itemsToo = true) {
+function refreshAfterDecision(qc: QueryClient, projectId: string, itemsToo = true) {
   const keys = [draftKeys.all(projectId), appKeys.events(projectId), ...(itemsToo ? [appKeys.itemsOf(projectId), appKeys.plan(projectId)] : [])];
   return Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey })));
 }
@@ -140,4 +140,3 @@ export function useAttackRow(projectId: string) {
 }
 
 /** Moved to the server's shared shapes, where the attack after approval now runs. */
-export { ATTACK_MESSAGE };

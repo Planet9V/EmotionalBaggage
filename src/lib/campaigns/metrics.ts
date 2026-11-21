@@ -8,7 +8,7 @@ export type Counts = { spend: number; impressions: number; clicks: number; order
 
 export const NO_COUNTS: Counts = { spend: 0, impressions: 0, clicks: 0, orders: 0, revenue: 0 };
 
-export const addCounts = (a: Counts, b: Counts): Counts => ({
+const addCounts = (a: Counts, b: Counts): Counts => ({
   spend: a.spend + b.spend,
   impressions: a.impressions + b.impressions,
   clicks: a.clicks + b.clicks,

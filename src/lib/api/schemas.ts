@@ -27,7 +27,7 @@ export const STORES = Object.keys(STORE_STATUSES);
 const text = (max: number) => z.string().max(max);
 
 /** Longest data.externalId: a service's id with its prefix ("amazon:", "x:", "review:"); a unique index reads it. */
-export const EXTERNAL_ID_MAX = 120;
+const EXTERNAL_ID_MAX = 120;
 
 /** `data` is always a plain object: never an array, a string or null. data.externalId, when present, is a short text. */
 export const dataObject = z.record(z.string(), z.unknown()).superRefine((d, ctx) => {
@@ -47,7 +47,7 @@ export const dataObject = z.record(z.string(), z.unknown()).superRefine((d, ctx)
  * (about 9 KB) and a landing section up to 60 items of 500 characters, so those sections get more room.
  */
 export const DATA_LIMIT_BYTES = 64 * 1024;
-export const DATA_LIMIT_BY_SECTION: Record<string, number> = {
+const DATA_LIMIT_BY_SECTION: Record<string, number> = {
   "design/wiring": 128 * 1024,
   "marketing/landing": 256 * 1024,
 };
@@ -82,7 +82,7 @@ export function parseData(section: string, data: Record<string, unknown> | undef
   throw new z.ZodError(r.error.issues.map((i) => ({ ...i, path: ["data", ...i.path] })));
 }
 
-export const sectionKey = z
+const sectionKey = z
   .string()
   .refine((s) => s in STORE_STATUSES, { message: `must be one of: ${STORES.join(", ")}` });
 
@@ -104,8 +104,6 @@ export const newItem = z
   })
   .superRefine((v, ctx) => statusFor(v.section, v.status, ctx))
   .transform((v, ctx) => ({ ...v, data: v.data === undefined ? undefined : sectionData(v.section, v.data, ctx) }));
-
-export type NewItem = z.infer<typeof newItem>;
 
 /** The status is checked against the row's own section in the handler. */
 export const itemPatch = z
