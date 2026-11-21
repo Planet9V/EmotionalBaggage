@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { route } from "@/lib/api/route";
 import { firstEnabledPrinter, valuesOf } from "@/lib/admin/printers";
 import { printerFamily } from "@/lib/admin/printerFamilies";
-import { PrinterError, scrub, type PrinterAdapter } from "@/lib/printers/adapter";
+import { PrinterError, type PrinterAdapter } from "@/lib/printers/adapter";
 import { adapterForRow, createAdapter } from "@/lib/printers/factory";
+import { scrub } from "@/lib/secrets/scrub";
 
 // Read-only status of the first enabled printer saved in Admin. When Admin has no printer, the old environment settings
 // (PRINTER_KIND, PRINTER_URL, PRINTER_API_KEY) still apply. The answer keeps the shape the Printing screen has always read

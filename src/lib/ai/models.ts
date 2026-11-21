@@ -34,6 +34,7 @@ import { DEFAULT_BASE_URL, embeddingModel, getCredential, reasoningModel, type M
 import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
 import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 import { savedModelChoice } from "./schemas";
+import { scrub } from "@/lib/secrets/scrub";
 
 export type ProviderId = ModelChoice["provider"];
 
@@ -167,15 +168,6 @@ export function formatMs(ms: number) {
 }
 
 const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|::1)$/i;
-
-/** Removes anything key-like from a message: the saved key itself, bearer values, sk- style tokens. */
-export function scrub(text: string, key?: string | null) {
-  let out = text;
-  if (key) out = out.split(key).join("[key]");
-  return out
-    .replace(/Bearer\s+[^\s"',]+/gi, "Bearer [key]")
-    .replace(/\b(sk|or|lm)-[A-Za-z0-9_\-*]{8,}/g, "[key]");
-}
 
 function providerDetail(e: APICallError): string {
   const body = e.responseBody ?? "";

@@ -118,11 +118,4 @@ export function safeFileName(name: string, allowed: string[]): string {
   return n;
 }
 
-/** Replaces every secret in a text with [hidden]. A secret shorter than four characters is not replaced. */
-export function scrub(text: string, secrets: (string | null | undefined)[]): string {
-  let out = text;
-  for (const s of secrets) if (s && s.length >= 4) out = out.split(s).join("[hidden]");
-  return out;
-}
-
 export const NO_PUSH: Pick<Capabilities, "pushedStatus"> = { pushedStatus: false };

@@ -2,13 +2,7 @@
 // the addresses (overridable by environment for the stand-ins in tests/standins), and for turning a
 // failed answer into a sentence that never contains a key or token.
 import { HttpError } from "@/lib/api/route";
-
-/** Replaces every secret in a text with [hidden] (same rule as src/lib/admin/connection.ts, kept here to avoid an import cycle). */
-export function scrub(text: string, secrets: (string | null | undefined)[]): string {
-  let out = text;
-  for (const s of secrets) if (s && s.length >= 4) out = out.split(s).join("[hidden]");
-  return out;
-}
+import { scrub } from "@/lib/secrets/scrub";
 
 const env = (name: string) => process.env[name]?.trim().replace(/\/+$/, "") || null;
 

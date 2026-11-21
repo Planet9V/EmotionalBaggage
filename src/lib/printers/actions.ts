@@ -3,10 +3,11 @@
 import { audit } from "@/lib/db";
 import { HttpError } from "@/lib/api/route";
 import { getPrinterRow } from "@/lib/admin/printers";
-import { PrinterError, scrub, type ActionResult, type PrinterFile, type StartOptions, type UploadResult } from "./adapter";
+import { PrinterError, type ActionResult, type PrinterFile, type StartOptions, type UploadResult } from "./adapter";
 import { adapterForRow } from "./factory";
 import { printerFamily } from "@/lib/admin/printerFamilies";
 import { assertConfirm, followPrinterAction, type Confirm } from "@/lib/slicing/flow";
+import { scrub } from "@/lib/secrets/scrub";
 
 export type PrinterActionName = "start" | "pause" | "resume" | "cancel";
 

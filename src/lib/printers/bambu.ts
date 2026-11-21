@@ -35,11 +35,12 @@ import mqtt, { type MqttClient } from "mqtt";
 import { Client as FtpClient } from "basic-ftp";
 import { blockedIn, blockedSentence, resolveAllowed } from "@/lib/net/outbound";
 import {
-  PrinterError, safeFileName, scrub, DEFAULT_TIMEOUT_MS,
+  PrinterError, safeFileName, DEFAULT_TIMEOUT_MS,
   type ActionResult, type AdapterOptions, type Capabilities, type PrinterAdapter, type PrinterFile, type PrinterState, type PrinterStatus,
   type PrinterValues, type StartOptions, type TestOutcome, type UploadResult,
 } from "./adapter";
 import { num, secondsText, str } from "./http";
+import { scrub } from "@/lib/secrets/scrub";
 
 export type BambuOptions = AdapterOptions & {
   /** MQTT port; the printer's is 8883. Only tests change it. */

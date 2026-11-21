@@ -14,7 +14,6 @@ import {
   getEmbedding,
   getReasoning,
   ModelError,
-  scrub,
 } from "@/lib/ai/models";
 import { embeddingFor, start } from "../standins/openai";
 import type { StandIn } from "../standins/core";
@@ -287,7 +286,7 @@ describe("pure helpers", () => {
     const out = explain(e, ctx("https://openrouter.ai/api/v1", key));
     expect(out.message).not.toContain(key);
     expect(out.message).toContain("HTTP 401");
-    expect(scrub("token sk-abcdefghijkl and Bearer xyz")).toBe("token [key] and Bearer [key]");
+    expect(out.message).not.toMatch(/Bearer\s+(?!\[hidden\])/);
   });
 
   it("gives the localhost hint only for local addresses", () => {

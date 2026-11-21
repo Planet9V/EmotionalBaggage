@@ -40,7 +40,7 @@ export function numbersIn(text: string): string[] {
 }
 
 /** Removes words that may hold digits but are not claims: the product's own name and brand, and web addresses. */
-export function scrub(text: string, names: string[]): string {
+export function stripNonClaims(text: string, names: string[]): string {
   let t = text.replace(/https?:\/\/\S+/g, " ").replace(/\b[\w.-]+\.(?:com|nl|org|net|io|co|app)\b\S*/gi, " ");
   for (const n of names.filter((x) => x && x.trim().length > 1)) t = t.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
   return t;
@@ -55,7 +55,7 @@ export function evaluate(fields: CopyField[], links: ProofRow[], names: string[]
   const strong = states.some((x) => x.s === "verified claim" || x.s === "passing test");
   const out: Flag[] = [];
   for (const f of fields) {
-    const clean = scrub(f.text, names);
+    const clean = stripNonClaims(f.text, names);
     for (const n of new Set(numbersIn(clean))) {
       if (!states.length) {
         out.push({ field: f.field, text: n, kind: "number", reason: `"${n}" is a number with no proof row linked.` });

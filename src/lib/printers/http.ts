@@ -1,6 +1,7 @@
 // Shared HTTP plumbing for the adapters that talk HTTP: time limit, plain-sentence failures, secrets scrubbed.
-import { DEFAULT_TIMEOUT_MS, PrinterError, scrub, type AdapterOptions, type PrinterValues, type TestOutcome } from "./adapter";
+import { DEFAULT_TIMEOUT_MS, PrinterError, type AdapterOptions, type PrinterValues, type TestOutcome } from "./adapter";
 import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
+import { scrub } from "@/lib/secrets/scrub";
 
 export const secondsText = (ms: number) => (ms >= 1000 ? `${Math.round(ms / 1000)} seconds` : `${ms} ms`);
 

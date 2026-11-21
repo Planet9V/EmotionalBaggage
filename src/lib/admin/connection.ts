@@ -12,6 +12,7 @@ import { createAdapter } from "@/lib/printers/factory";
 import type { ConnectionTest } from "./schemas";
 import { testChannel } from "@/lib/channels/connection";
 import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
+import { scrub } from "@/lib/secrets/scrub";
 
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
 
@@ -24,15 +25,6 @@ export function setConnectionTestLimit(ms: number | null) {
 }
 
 const seconds = (ms = limitMs) => (ms >= 1000 ? `${Math.round(ms / 1000)} seconds` : `${ms} ms`);
-
-/** Replaces every secret in a text with [hidden]. */
-export function scrub(text: string, secrets: (string | null | undefined)[]): string {
-  let out = text;
-  for (const s of secrets) {
-    if (s && s.length >= 4) out = out.split(s).join("[hidden]");
-  }
-  return out;
-}
 
 function networkFailure(e: unknown, secrets: (string | null | undefined)[], ms = limitMs): TestResult {
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
