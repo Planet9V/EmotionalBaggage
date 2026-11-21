@@ -22,7 +22,7 @@
 //   [RDT]     Buyer name, e-mail and addresses are restricted data that needs a Restricted Data Token.
 //             This code never asks for BUYER or RECIPIENT and never requests a Restricted Data Token.
 //   [MKT]     https://developer-docs.amazon.com/sp-api/docs/marketplace-ids
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import { HttpError } from "@/lib/api/route";
 import { getSecretFor } from "@/lib/secretOrigin";
 import { ChannelError, channelFetch, lwaTokenUrl, readJson, saysOf, spApiBase, upstreamError, type SpRegion } from "./http";
@@ -93,7 +93,7 @@ export async function amazonCredentials(): Promise<AmazonCredentials | null> {
 
 export const NOT_CONNECTED = "Amazon is not connected. Save the refresh token, client ID and client secret in Admin, Credentials, then press Test connection.";
 
-const fingerprint = (c: AmazonCredentials) => createHash("sha256").update(`${c.clientId}\n${c.refreshToken}\n${c.clientSecret}`).digest("hex");
+const fingerprint = (c: AmazonCredentials) => sha256(`${c.clientId}\n${c.refreshToken}\n${c.clientSecret}`);
 
 /** Exchanges the refresh token for an access token [LWA], cached until a minute before it expires. */
 export async function amazonAccessToken(creds?: AmazonCredentials): Promise<string> {

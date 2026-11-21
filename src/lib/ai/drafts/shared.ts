@@ -120,14 +120,6 @@ export function readsText(counts: Record<string, number>): string {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
-/** Where a store's rows are shown, for links. */
-export const STORE_HREF: Record<string, string> = {
-  "design/bom": "/s/design/bom",
-  "design/wiring": "/s/design/schematic",
-};
-
-export const storeHref = (store: string) => STORE_HREF[store] ?? `/s/${store}`;
-
 /** The words the reviewer is asked with when an approved press release or FAQ entry is attacked (once, by the server). */
 export const ATTACK_MESSAGE: Record<string, string> = {
   "concept/press": "Attack this press release. What would a sceptical buyer, journalist or investor say is wrong with it?",

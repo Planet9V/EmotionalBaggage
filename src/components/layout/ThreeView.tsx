@@ -21,6 +21,7 @@ import {
   type LayoutPart,
   type ViewDef,
 } from "./geom";
+import { clamp } from "@/lib/math";
 
 export type Marker = { id: number; label: string; pos: number[] };
 type Cam = { cx: number; cy: number; ppm: number };
@@ -34,7 +35,6 @@ const RULER_TOP = 16;
 const RULER_LEFT = 32;
 export const DRAG_MIME = "application/x-layout-part";
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 type Props = {
   view: ViewDef;

@@ -3,7 +3,6 @@ import { plannerUrl } from "@/lib/admin/planner";
 import { HttpError } from "@/lib/api/route";
 import { getReasoning } from "@/lib/ai/models";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
-import { STAGES, storeKey } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { BUILD_SHEET, impactGraph, type ImpactGroup, type ImpactReply, type PlannerImpact } from "./impact";
 import { applyDrafts, describe, measure, MEASURE_STORE, OPTIMISE_ACTIONS, type Measure, type OptimiseAction } from "./measure";
@@ -13,6 +12,7 @@ import { listDrafts } from "./store";
 import { readsText, type Draft, type GeneratorInfo, type GeneratorsReply, type RunResult } from "./shared";
 import { safeFetch } from "@/lib/net/outbound";
 import { currencyOf } from "@/lib/economics/currency";
+import { sectionLabel } from "@/lib/menuLookup";
 
 /** The generators for a concept (optionally only those writing one store), with what each would read. */
 export async function generatorsInfo(projectId: string, opts: { store?: string; kind?: "section" | "optimise" } = {}): Promise<GeneratorsReply> {
@@ -43,15 +43,6 @@ export async function generatorsInfo(projectId: string, opts: { store?: string; 
     });
   }
   return { configured: reasoning.ok, reason: reasoning.ok ? "" : reasoning.reason, model: reasoning.ok ? reasoning.info.model : "", generators };
-}
-
-/** The menu label of the section that shows a store. */
-export function storeLabel(store: string) {
-  if (store === BUILD_SHEET) return "Wiring and soldering";
-  // The section that owns the store by its own path first (design/bom is "Bill of materials", not "Physical layout").
-  for (const st of STAGES) for (const s of st.sections) if (`${st.key}/${s.key}` === store) return s.label;
-  for (const st of STAGES) for (const s of st.sections) if (storeKey(st, s) === store) return s.label;
-  return store;
 }
 
 const PLANNER_DOWN = "The planner is not reachable, so what this change affects cannot be worked out. Start the planner service, or set its address in Admin.";
@@ -94,7 +85,7 @@ export async function impactFor(projectId: string, itemId: number, timeoutMs = 4
     const store = n.section;
     const g = groups.get(store) ?? {
       section: store,
-      label: storeLabel(store),
+      label: store === BUILD_SHEET ? "Wiring and soldering" : sectionLabel(store),
       rows: [],
       // The build sheet is the wires seen in another section: the wiring generator revises them.
       generator: generatorsFor(store === BUILD_SHEET ? "design/wiring" : store, concept.productType)[0]?.id ?? null,

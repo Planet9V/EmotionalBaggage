@@ -3,7 +3,8 @@
 import { itemText, meaningReady, fuseRanked, searchSourcesByMeaning, searchSourcesByText, type SourceHit } from "@/lib/ai/embeddings";
 import { q } from "@/lib/db";
 import { notFound } from "@/lib/api/route";
-import { clip, cut, RESEARCH_SECTION, sectionLabel, SOURCE_CHARS, TOP_SOURCES, type ChatSource, type Retrieval } from "./shared";
+import { clip, cut, RESEARCH_SECTION, SOURCE_CHARS, TOP_SOURCES, type ChatSource, type Retrieval } from "./shared";
+import { sectionLabel } from "@/lib/menuLookup";
 
 /** A source with the text given to the model. */
 export type NumberedSource = ChatSource & { text: string };

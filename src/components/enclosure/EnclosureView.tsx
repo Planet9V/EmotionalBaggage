@@ -4,13 +4,13 @@
  * Design > Enclosure (plan 5.9): pick a generator, set the parameters, generate a base and a lid around the parts,
  * and see what was checked on the result. Only offered when at least one part has a box.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
-import { sectionHref } from "@/lib/chat/shared";
+import { storeHref as sectionHref } from "@/lib/menuLookup";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { validateParams, withDefaults } from "@/lib/enclosure/validate";
 import { DEFAULT_PARAMS, FACE_AXES, GENERATORS, GENERATOR_KEYS, type EnclosureParams, type GeneratorKey } from "@/lib/enclosure/types";
@@ -22,21 +22,11 @@ import { SendToPrinting } from "./SendToPrinting";
 import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { fileSlug } from "@/lib/format";
+import { useDark } from "@/lib/useDark";
 
 const BOM = "design/bom";
 const SAVE_STORE = "design/enclosure";
 
-function subscribeTheme(cb: () => void) {
-  const mo = new MutationObserver(cb);
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => mo.disconnect();
-}
-const useDark = () =>
-  useSyncExternalStore(
-    subscribeTheme,
-    () => document.documentElement.classList.contains("dark"),
-    () => false
-  );
 
 const mm = (n: number) => `${Math.round(n * 10) / 10}`;
 

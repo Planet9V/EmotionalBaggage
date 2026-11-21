@@ -29,7 +29,8 @@
 // updates"; no version number for P and A was found on a Bambu page. Treat any current firmware as needing Developer Mode for control.
 // Read-only status: Bambu says MQTT status pushes are not affected by the authorization mechanism, but whether the broker answers
 // at all without Developer Mode on the newest firmware was not confirmed. Test it with the Test button.
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import { Readable } from "node:stream";
 import mqtt, { type MqttClient } from "mqtt";
 import { Client as FtpClient } from "basic-ftp";
@@ -150,7 +151,7 @@ export class BambuAdapter implements PrinterAdapter {
 
   private async session(): Promise<Session> {
     this.need();
-    const key = `${this.host}:${this.mqttPort}|${this.serial}|${createHash("sha256").update(this.code).digest("hex").slice(0, 8)}`;
+    const key = `${this.host}:${this.mqttPort}|${this.serial}|${sha256(this.code).slice(0, 8)}`;
     const found = pool.get(key);
     if (found && found.client.connected) {
       found.lastUsedAt = Date.now();

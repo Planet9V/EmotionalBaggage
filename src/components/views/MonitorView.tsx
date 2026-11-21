@@ -23,12 +23,8 @@ import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
-import { fmtDateTime } from "@/lib/format";
+import { fmtDateTime, todayLocal } from "@/lib/format";
 
-const today = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 const COLOURS = ["var(--color-dutchOrange-500)", "var(--color-charcoal-400)", "var(--color-info)", "var(--color-success)", "var(--color-warning)", "var(--color-dutchOrange-200)"];
 const DAY_MS = 86_400_000;
 
@@ -231,7 +227,7 @@ export function MonitorView({ project, store }: ViewProps) {
 
 function AddSale({ channels, onCreate }: { channels: string[]; onCreate: (v: { date: string; channel: string; units: number; revenue: number }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ date: today(), channel: "", units: "", revenue: "" });
+  const [f, setF] = useState({ date: todayLocal(), channel: "", units: "", revenue: "" });
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 

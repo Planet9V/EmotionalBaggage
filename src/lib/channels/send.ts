@@ -8,7 +8,7 @@
 //   - a row already sent, or being sent, is refused, so a double click cannot post twice.
 // The confirmation, the send and any failure are recorded in the concept's activity and the audit log,
 // with the channel, the row, the text's hash and the id the service gave back. Never a token.
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import { currentActor } from "@/lib/actor";
@@ -26,7 +26,6 @@ import { ChannelError } from "./http";
 export type { SendChannel };
 export type SendKind = "post" | "reply";
 
-export const sha256 = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 export { channelOf };
 
 const SECTION: Record<SendKind, string> = { post: CHANNEL.social, reply: CHANNEL.replies };

@@ -62,9 +62,6 @@ export function monthsBetween(start: string, end: string): string[] {
   return out;
 }
 
-/** Today in UTC as a day. */
-export const todayUtc = () => new Date().toISOString().slice(0, 10);
-
 /** "12 Dec 2026" for a day, in English and UTC. */
 export function formatDay(day: string): string {
   const n = dayNumber(day);

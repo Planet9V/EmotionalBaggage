@@ -62,5 +62,4 @@ export function newlyHidden(fromType: string, toType: string) {
 }
 
 export const typeLabel = (key: string) => productType(key).label;
-export const stageLabel = (key: string) => STAGES.find((s) => s.key === key)?.label ?? key;
 

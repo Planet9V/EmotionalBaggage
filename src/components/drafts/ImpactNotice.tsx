@@ -7,7 +7,8 @@ import { GitBranch, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { messageOf } from "@/lib/queries";
-import { storeHref, type RunResult } from "@/lib/ai/drafts/shared";
+import { type RunResult } from "@/lib/ai/drafts/shared";
+import { storeLink } from "@/lib/menuLookup";
 import { WATCHED_STORES, type ImpactReply } from "@/lib/ai/drafts/impact";
 import type { Item } from "@/lib/types";
 import { ApiError, draftKeys, useImpact } from "./api";
@@ -138,7 +139,7 @@ export function ImpactPanel({ projectId, reply, open, onOpenChange }: { projectI
               <section key={g.section} aria-labelledby={`imp-${g.section}`}>
                 <div className="flex items-baseline justify-between gap-2">
                   <h2 id={`imp-${g.section}`} className="text-sm font-semibold text-primary">
-                    <Link href={storeHref(g.section)} className="hover:text-link hover:underline">{g.label}</Link>
+                    <Link href={storeLink(g.section)} className="hover:text-link hover:underline">{g.label}</Link>
                     <span className="ml-2 font-mono text-[10px] text-muted">{g.rows.length}</span>
                   </h2>
                   <span className="text-xs text-muted">{g.generator ? "Can be proposed" : "Review by hand"}</span>

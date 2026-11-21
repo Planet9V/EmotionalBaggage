@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
@@ -29,6 +29,7 @@ import { downloadFile } from "@/lib/download";
 import { fileSlug } from "@/lib/format";
 import { LoadingBlocks } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
+import { useDark } from "@/lib/useDark";
 
 const ModelCanvas = dynamic(() => import("@/components/three/ModelCanvas"), {
   ssr: false,
@@ -43,17 +44,6 @@ const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 const CLASS_LABEL: Record<NetClass, string> = { power: "Power", ground: "Ground", signal: "Signal", audio: "Audio" };
 const NO_WIRES = "No wires yet. Add them in Schematic to draw them here, pull one net apart and see a part's connections.";
 
-function subscribeTheme(cb: () => void) {
-  const mo = new MutationObserver(cb);
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => mo.disconnect();
-}
-const useDark = () =>
-  useSyncExternalStore(
-    subscribeTheme,
-    () => document.documentElement.classList.contains("dark"),
-    () => false
-  );
 
 export function ModelView({ project }: ViewProps) {
   const { items, loading, error, writeError, patch } = useItems(project.id, BOM_STORE);

@@ -6,7 +6,8 @@ import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { storeHref, type Draft } from "@/lib/ai/drafts/shared";
+import { type Draft } from "@/lib/ai/drafts/shared";
+import { storeLink } from "@/lib/menuLookup";
 import type { Item } from "@/lib/types";
 import { messageOf } from "@/lib/queries";
 import { useDraftActions } from "./api";
@@ -200,7 +201,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
           <ul className="mt-1.5 space-y-0.5">
             {draft.sources.map((s) => (
               <li key={`${s.kind}-${s.id}`}>
-                {s.section ? <Link href={storeHref(s.section)} className="text-link hover:underline">{s.title}</Link> : s.title}
+                {s.section ? <Link href={storeLink(s.section)} className="text-link hover:underline">{s.title}</Link> : s.title}
                 {s.section && <span className="font-mono text-muted"> · {s.section}</span>}
               </li>
             ))}

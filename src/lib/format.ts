@@ -58,6 +58,16 @@ export function fmtDate(iso: string | null | undefined, style: "medium" | "short
   return style === "short" ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 
+/** Today as "2026-11-21" in UTC: the day a stored date is compared with. */
+export const todayUtc = (): string => new Date().toISOString().slice(0, 10);
+
+/** Today as "2026-11-21" in the browser's own time zone: the day a person typing a date means. */
+export function todayLocal(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 /** "2026-01-02 03:04" in local time: a fixed layout for a generated file, not for a screen. */
 export function fmtFileStamp(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");

@@ -34,16 +34,12 @@ import { schematicFileSpecs } from "./schematic/fileSpecs";
 import { NoParts, StartSchematic } from "./schematic/SchematicEmpty";
 import { SchematicDialogs, type DialogState } from "./schematic/SchematicDialogs";
 import { Card } from "@/components/ui/Card";
+import { todayLocal } from "@/lib/format";
 
 const same = (a: XY | null, b: XY) => !!a && Math.round(a.x) === Math.round(b.x) && Math.round(a.y) === Math.round(b.y);
 
 type ViewMode = "symbols" | "pins";
 const VIEW_KEY = "c2r.schematic.view";
-const today = () => {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
 
 /** `?select=wire:12`, `?select=pin:U1.GND` or `?select=part:U1`, as the electrical checks link to. */
 function selectionFromUrl(): Selection {
@@ -76,7 +72,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   // the canvas mounts once the first layout settles, so its fit uses real positions
   const [laid, setLaid] = useState({ pins: false, sym: false });
   const [revisionPick, setRevisionPick] = useState("");
-  const [date] = useState(today);
+  const [date] = useState(todayLocal);
 
   useEffect(() => {
     // a link from a check selects its row; the view choice is remembered in this browser

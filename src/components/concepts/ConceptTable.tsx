@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { exportHref, lastChanged, type Concept } from "@/lib/conceptsClient";
-import { stageLabel, typeLabel } from "./model";
+import { typeLabel } from "./model";
+import { stageLabel } from "@/lib/menuLookup";
 import { fmtDateTime, plural } from "@/lib/format";
 
 type ActionKind = "edit" | "delete" | "duplicate" | "archive";

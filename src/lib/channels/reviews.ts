@@ -5,7 +5,7 @@
 // The Customer Feedback API (https://developer-docs.amazon.com/sp-api/docs/customer-feedback-api, read
 // 21 Nov 2026) gives weekly, English-only review *topics* per ASIN or browse node in seven stores, not the
 // reviews themselves. Reviews are typed, pasted or imported here from a CSV the user exported.
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import { parseCsvRecords } from "@/lib/csv";
 import { HttpError } from "@/lib/api/route";
 import { currentActor } from "@/lib/actor";
@@ -95,7 +95,7 @@ export function parseReviews(input: string, defaults: { source?: string; kind?: 
   return { rows, problems, columns };
 }
 
-const externalIdOf = (r: ImportRow) => `review:${createHash("sha256").update(`${r.source.toLowerCase()}\n${r.date}\n${r.text.trim()}`).digest("hex").slice(0, 32)}`;
+const externalIdOf = (r: ImportRow) => `review:${sha256(`${r.source.toLowerCase()}\n${r.date}\n${r.text.trim()}`).slice(0, 32)}`;
 
 export async function importReviews(projectId: string, input: string, defaults: { source?: string; kind?: "review" | "question" } = {}) {
   const { rows, problems, columns } = parseReviews(input, defaults);

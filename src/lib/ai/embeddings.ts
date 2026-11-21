@@ -18,7 +18,7 @@
 //     ORDER BY embedding <=> '[1,-2,3]' LIMIT 5;
 // Qwen3 Embedding 8B gives 4,096 numbers per text, so it takes this path. Above 64,000 a width is
 // searched exactly, without an index.
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import { ITEM_COLS, q, ready, toItem, tx, type ItemRow } from "@/lib/db";
 import { STAGES, storeKey } from "@/lib/menu";
 import { embed, getEmbedding, ModelError, type EmbeddingInfo, type NotConfigured, type ReadyEmbedding } from "./models";
@@ -91,7 +91,6 @@ export function itemText(row: { title: string; body?: string | null; data?: unkn
   return parts.join("\n");
 }
 
-export const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
 export function batches<T>(list: T[], size: number): T[][] {
   if (!Number.isInteger(size) || size < 1) throw new RangeError("batch size must be a positive whole number");

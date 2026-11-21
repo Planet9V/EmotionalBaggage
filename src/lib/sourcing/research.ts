@@ -12,6 +12,7 @@ import { ask, type Source } from "@/lib/research/perplexity";
 import { toStoredSource } from "@/lib/research/schemas";
 import { newId, offerSchema, alternateSchema, type Draft } from "./schemas";
 import { currencyOf } from "@/lib/economics/currency";
+import { todayUtc } from "@/lib/format";
 
 export type Kind = "prices" | "alternates";
 
@@ -89,7 +90,7 @@ export async function researchPart(projectId: string, partId: number, kind: Kind
   const question = questionFor(kind, p, cur);
   const r = await ask({ question, apiKey: key, signal });
   if (!r.ok) throw new HttpError(r.kind === "timeout" ? 504 : r.kind === "rate_limited" ? 429 : r.kind === "not_configured" ? 503 : 502, r.message);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayUtc();
   const parsed = parseAnswer(kind, r.answer, r.sources, cur, today);
   return tx(async (c) => {
     const res = await c.query<{ id: string }>(
