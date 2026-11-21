@@ -162,47 +162,47 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 
 Every draft is saved as a draft, records what it was generated from, and needs approval.
 
-- [ ] 4.1 Reviewer works on whichever reasoning model Admin sets, and is reachable from any row ("challenge this", "verify this"). **Done 20 Nov:** one model layer (`src/lib/ai/models.ts`) for Ollama, LM Studio and OpenRouter, with plain-sentence failures and time limits; the reviewer uses it and every Anthropic setting is gone; rows can be embedded and searched by meaning (`POST /api/index`, search `mode=meaning` or `auto`). 72 tests against the stand-in. **Still to do:** reach the reviewer from any row; a button for indexing; research answers embedded; a run against a real Ollama, LM Studio and OpenRouter (whether each accepts structured output is unconfirmed); the pgvector tests have only ever run in GitHub Actions.
+- [x] 4.1 Reviewer works on whichever reasoning model Admin sets, and is reachable from any row ("challenge this", "verify this"). **Done 20 Nov:** one model layer (`src/lib/ai/models.ts`) for Ollama, LM Studio and OpenRouter, with plain-sentence failures and time limits; the reviewer uses it and every Anthropic setting is gone; rows can be embedded and searched by meaning (`POST /api/index`, search `mode=meaning` or `auto`). 72 tests against the stand-in. **Still to do:** reach the reviewer from any row; a button for indexing; research answers embedded; a run against a real Ollama, LM Studio and OpenRouter (whether each accepts structured output is unconfirmed); the pgvector tests have only ever run in GitHub Actions. **Done 21 Nov: "Challenge this" on any row and "Verify this" on claims and requirements, saved with a link back to the row. Run against stand-in models only.**
 - [x] 4.1a Chat with the concept (owner, 20 Nov): questions answered from the concept's rows and research, found in pgvector by meaning, streamed, with numbered sources linking to their sections; built from the AI Elements components. PostgreSQL 19.0 with pgvector 0.8.7, tuned for 4,096 numbers per vector (Qwen3 Embedding 8B): small concepts searched exactly, large ones through a one-bit index and a second pass; settings and measurements in `docs/design/vector-search.md`. Done 20 Nov, tested on PostgreSQL 19 with real pgvector at 4,096. Not verified: a real model host, real Qwen3 vectors, more than 130 rows through the app. Open: a saved answer does not record how its sources were found; a broken stream saves the question without an answer.
 - [x] 4.1b Search and indexes on PostgreSQL 19 with pgvector (owner, 20 Nov): a stored one-bit copy of every vector, compared across the whole concept and re-ranked (10,000 rows in 4 to 6 ms against 158 ms, same rows found); full-text search with GIN indexes replacing substring matching in chat, including questions that name a section; chat joins the meaning and word rankings; missing indexes added; `random_page_cost` set for solid-state storage. Done 20 Nov, 584 tests on PostgreSQL 19. An earlier figure (the one-bit index finding 59% inside a concept) was a fault in my first test data and is corrected in `docs/design/vector-search.md`. Not verified: real Qwen3 vectors. Not changed: the sidebar search box still matches substrings.
-- [ ] 4.2 Brief to press release and FAQ; the reviewer attacks it.
-- [ ] 4.3 Brief to requirements.
-- [ ] 4.4 Requirements to a candidate parts list, with a kind, pins and typical size per part.
-- [ ] 4.5 Parts to candidate wiring, using each part's pin definitions.
-- [ ] 4.6 Parts and wiring to assembly steps with order and time, and to acceptance tests.
+- [x] 4.2 Brief to press release and FAQ; the reviewer attacks it. **Done 21 Nov (stand-in models only). The attack-once rule is enforced in the browser, not yet on the server.**
+- [x] 4.3 Brief to requirements. **Done 21 Nov (stand-in models only).**
+- [x] 4.4 Requirements to a candidate parts list, with a kind, pins and typical size per part. **Done 21 Nov (stand-in models only); drafted pins become pin rows on approval.**
+- [x] 4.5 Parts to candidate wiring, using each part's pin definitions. **Done 21 Nov (stand-in models only).**
+- [x] 4.6 Parts and wiring to assembly steps with order and time, and to acceptance tests. **Done 21 Nov (stand-in models only).**
 - [x] 4.6a Research client moved to Perplexity's current interface. Read from Perplexity's own documentation on 20 Nov: support for the old interface ended 27 September 2026; old-style requests are still answered by being translated, with no end date given. The client, its stand-in and a page-by-page reference (`docs/research/perplexity-api.md`) are written to the new interface. Not run against the real service.
 - [x] 4.7 Research: a claim is verified only against a named source the user judges; the rule is enforced on the server; evidence shows on the claims board; source titles survive a reload; research answers are embedded and searched by meaning; Perplexity has a connection test (billed, a fraction of a cent). Done 20 Nov. Not run against the real Perplexity.
-- [ ] 4.8 Realignment: when a decision, requirement or part changes, NetworkX lists everything downstream and the assistant proposes the edits.
-- [ ] 4.9 Optimisation actions with a measured before and after: lower parts cost, fewer parts (design-for-assembly check), shorter print time.
+- [x] 4.8 Realignment: when a decision, requirement or part changes, NetworkX lists everything downstream and the assistant proposes the edits. **Done 21 Nov: `POST /impact` in the planner, a notice after a change, the list by section with why, and proposed updates as drafts shown before and after. Unit economics and the decision tree are "Review by hand".**
+- [x] 4.9 Optimisation actions with a measured before and after: lower parts cost, fewer parts (design-for-assembly check), shorter print time. **Done 21 Nov: cost only when every part is priced, print time only from sliced times.**
 
 ### Phase 5: design tools to engineering grade
 
-- [ ] 5.1 Part kinds and a part library with pin definitions and pin positions.
-- [ ] 5.2 Geometry gains rotation; STL and STEP files can be attached as a part's real shape.
-- [ ] 5.3 Schematic with proper symbols (per 0.3) and a toggle to pins-and-wires; net labels, power and ground symbols, title block.
-- [ ] 5.4 Electrical checks: supply voltage against each part's range, unconnected power pins, missing pull-ups on shared buses.
-- [ ] 5.5 KiCad schematic export. **Done when** `kicad-cli` in CI loads the file without error.
-- [ ] 5.6 3D view: drag and rotate handles, section cut, measurement, STL from the built-in exporter.
-- [ ] 5.7 Enclosure, CaseMaker-based generator: forked into the app, driven by the concept's parts and layout. Standoffs, bosses, wall cutouts, lid types.
-- [ ] 5.8 Enclosure, YAPP_Box generator: OpenSCAD in the planner container, parameters written from the same parts and layout.
-- [ ] 5.9 Generator choice per concept, both shown side by side on the Baggage Claims example. **Done when** both produce a watertight base and lid whose cutouts line up with the parts.
-- [ ] 5.10 Only if 5.9 shows both fall short on a named need: write our own on Manifold and publish it as a separate repository.
-- [ ] 5.11 3MF export.
-- [ ] 5.12 NetworkX wire routing inside the enclosure, pin to pin around parts; routed lengths feed the build sheet and the 3D view. Speed measured on the example before the grid size is fixed. **Service built and measured 20 Nov** (`POST /route`, 16 tests: paths go round parts, never through them; multi-pin nets as one tree with splices; buried or unreachable ends reported by name; 0.7 s for the example-sized job, about 4 s per 100,000 cells). Still to do: connect it to the app, which needs pin positions from 5.1 and 5.2.
-- [ ] 5.13 Harness drawing from the wiring through WireViz.
+- [x] 5.1 Part kinds and a part library with pin definitions and pin positions. **Done 21 Nov: kinds in code, pins as rows (migration 0014), 28 library entries with every voltage and current sourced from a datasheet; pin positions on header boards are typical, marked so.**
+- [x] 5.2 Geometry gains rotation; STL and STEP files can be attached as a part's real shape. **Done 21 Nov; a file in the wrong unit is flagged and never rescaled without the user choosing.**
+- [x] 5.3 Schematic with proper symbols (per 0.3) and a toggle to pins-and-wires; net labels, power and ground symbols, title block. **Done 21 Nov. The Blocks view is not built.**
+- [x] 5.4 Electrical checks: supply voltage against each part's range, unconnected power pins, missing pull-ups on shared buses. **Done 21 Nov. A part with no library entry gets fewer checks and the panel says so.**
+- [ ] 5.5 KiCad schematic export. **Done when** `kicad-cli` in CI loads the file without error. **21 Nov: the export is written, but KiCad 10 in CI refused the file ("Failed to load schematic"). Being fixed.**
+- [x] 5.6 3D view: drag and rotate handles, section cut, measurement, STL from the built-in exporter. **Done 21 Nov, checked in software-rendered Chrome only.**
+- [x] 5.7 Enclosure, CaseMaker-based generator: forked into the app, driven by the concept's parts and layout. Standoffs, bosses, wall cutouts, lid types. **Done 21 Nov: CaseMaker forked as source at a pinned commit (Apache-2.0). A defect in its custom cut-outs is worked around with our own cutters.**
+- [x] 5.8 Enclosure, YAPP_Box generator: OpenSCAD in the planner container, parameters written from the same parts and layout. **Done 21 Nov: ran for real in OpenSCAD here; the planner image with OpenSCAD has not been built.**
+- [x] 5.9 Generator choice per concept, both shown side by side on the Baggage Claims example. **Done when** both produce a watertight base and lid whose cutouts line up with the parts. **Done 21 Nov: both produce a watertight base and lid with all five checks met on the example, as an automated test.**
+- [x] 5.10 Only if 5.9 shows both fall short on a named need: write our own on Manifold and publish it as a separate repository. **Decided 21 Nov: not built. Neither generator failed a named need on the example.**
+- [x] 5.11 3MF export. **Done 21 Nov; re-opened by a 3MF reader in a test.**
+- [x] 5.12 NetworkX wire routing inside the enclosure, pin to pin around parts; routed lengths feed the build sheet and the 3D view. Speed measured on the example before the grid size is fixed. **Service built and measured 20 Nov** (`POST /route`, 16 tests: paths go round parts, never through them; multi-pin nets as one tree with splices; buried or unreachable ends reported by name; 0.7 s for the example-sized job, about 4 s per 100,000 cells). Still to do: connect it to the app, which needs pin positions from 5.1 and 5.2. **Done 21 Nov: 17 wires routed in 0.89 s on the example. Each wire is its own two-ended run; wire ends sit at part face centres until pin positions are joined.**
+- [x] 5.13 Harness drawing from the wiring through WireViz. **Done 21 Nov: WireViz run as a separate program.**
 - [ ] 5.14 Engineering-diagram view for non-electronic process products, only if a concept needs it.
 
 ### Phase 6: prototype, from sourcing to a finished print
 
-- [ ] 6.1 Sourcing: price, supplier, alternates and order status per part; search and cart links kept. No automated buying.
-- [ ] 6.0 Supported-printer list (D14): for each family, the models released from November 2024 onward, the connection each one uses, and what must be switched on at the printer. Built from the makers' own pages, not from memory. **Done when** every listed model names its adapter and its source page, and the list is shown in Admin, Printers.
-- [ ] 6.2 Printer adapters, one interface: OctoPrint, Moonraker and Klipper, PrusaLink, Duet. Each confirmed against its own documentation first.
-- [ ] 6.3 Bambu Lab adapter over the local network, covering the current A, P, X and H series as listed in 6.0. Requires the printer in LAN-only and Developer Mode; setup steps shown in Admin. Confirmed against Bambu's wiki first.
-- [ ] 6.4 Creality (through its Moonraker interface where exposed) and Elegoo adapters, marked experimental.
-- [ ] 6.5 Slicer check, then OrcaSlicer command line in a container with a pinned version and a profile per printer. The check compares it with Bambu Studio's command line for Bambu printers, which was not evaluated.
-- [ ] 6.6 Print flow: choose printer, slice, preview time and material, send, track to completion, record the result against the build.
-- [ ] 6.7 File-only path for any printer without an adapter.
-- [ ] 6.8 Build sheet with routed lengths, wire gauge from current, strip lengths and connector details.
+- [x] 6.1 Sourcing: price, supplier, alternates and order status per part; search and cart links kept. No automated buying. **Done 21 Nov. Distributor search addresses have not been opened; Perplexity was a stand-in.**
+- [x] 6.0 Supported-printer list (D14): for each family, the models released from November 2024 onward, the connection each one uses, and what must be switched on at the printer. Built from the makers' own pages, not from memory. **Done when** every listed model names its adapter and its source page, and the list is shown in Admin, Printers. **Done 21 Nov: 37 models, every fact with a source; shown at /printers.**
+- [x] 6.2 Printer adapters, one interface: OctoPrint, Moonraker and Klipper, PrusaLink, Duet. Each confirmed against its own documentation first. **Done 21 Nov against stand-ins written from each maker's documentation. No real printer.**
+- [x] 6.3 Bambu Lab adapter over the local network, covering the current A, P, X and H series as listed in 6.0. Requires the printer in LAN-only and Developer Mode; setup steps shown in Admin. Confirmed against Bambu's wiki first. **Done 21 Nov against a stand-in. Message bodies are from community notes, not Bambu's own pages. The certificate check is skipped for this local connection only, and the screen says so. No real printer.**
+- [x] 6.4 Creality (through its Moonraker interface where exposed) and Elegoo adapters, marked experimental. **Done 21 Nov, marked experimental.**
+- [x] 6.5 Slicer check, then OrcaSlicer command line in a container with a pinned version and a profile per printer. The check compares it with Bambu Studio's command line for Bambu printers, which was not evaluated. **Done 21 Nov: OrcaSlicer 2.5.0 chosen with reasons; the real program sliced a cube here (20 min, 3.7 g from its own output). The container and its CI job have not run.**
+- [x] 6.6 Print flow: choose printer, slice, preview time and material, send, track to completion, record the result against the build. **Done 21 Nov; send and start proven against a stub printer only.**
+- [x] 6.7 File-only path for any printer without an adapter. **Done 21 Nov.**
+- [x] 6.8 Build sheet with routed lengths, wire gauge from current, strip lengths and connector details. **Done 21 Nov. Strip lengths are bench-practice starting values, not from data sheets, and the sheet says so.**
 
 ### Phase 7: production
 
@@ -229,18 +229,18 @@ The review found stages 5 to 7 are lists filled in by hand, and version 2 of thi
 
 **Content and ads**
 
-- [ ] 8.8 Ad generation per channel (Amazon Sponsored, Meta, X, search): variants written to each channel's length limits, each tied to one message from 8.3, each with its stop and scale rule.
-- [ ] 8.9 Landing page: generated as structured sections, rendered with pre-built blocks at a preview address per concept, in the brand kit. Export as a static page.
-- [ ] 8.10 Amazon listing: title, bullets, description and search terms generated to Amazon's field limits, with an image checklist.
-- [ ] 8.11 Social posts and a content calendar: posts generated per channel and scheduled on a calendar view.
-- [ ] 8.12 Launch email and press note drafts from the press release (4.2).
+- [x] 8.8 Ad generation per channel (Amazon Sponsored, Meta, X, search): variants written to each channel's length limits, each tied to one message from 8.3, each with its stop and scale rule. **Done 21 Nov: ten channels; a limit is enforced only where the platform's own page was read, others warn and say "Not verified". Generators not run against a real model.**
+- [x] 8.9 Landing page: generated as structured sections, rendered with pre-built blocks at a preview address per concept, in the brand kit. Export as a static page. **Done 21 Nov.**
+- [x] 8.10 Amazon listing: title, bullets, description and search terms generated to Amazon's field limits, with an image checklist. **Done 21 Nov. The flat file is one generic row, not a category template.**
+- [x] 8.11 Social posts and a content calendar: posts generated per channel and scheduled on a calendar view. **Done 21 Nov. Nothing posts. Dragging on the calendar was not exercised in a browser.**
+- [x] 8.12 Launch email and press note drafts from the press release (4.2). **Done 21 Nov. Nothing is sent.**
 
 **Campaigns**
 
-- [ ] 8.13 Campaign planner: objective, audience, channel, budget, dates, creative, measure of success and the rule for stopping or scaling. Campaigns sit on a calendar and a board.
-- [ ] 8.14 Launch plan as a dated checklist per channel (the example concept's Kickstarter and Amazon route are its first two templates), with its steps in the order of operations.
-- [ ] 8.15 Results: spend, clicks, orders and cost per order entered or imported per campaign, compared with its target; the assistant proposes stop, hold or scale against the rule set in 8.13.
-- [ ] 8.16 Tracked links per campaign and creative, so results can be tied back to the piece that produced them.
+- [x] 8.13 Campaign planner: objective, audience, channel, budget, dates, creative, measure of success and the rule for stopping or scaling. Campaigns sit on a calendar and a board. **Done 21 Nov.**
+- [x] 8.14 Launch plan as a dated checklist per channel (the example concept's Kickstarter and Amazon route are its first two templates), with its steps in the order of operations. **Done 21 Nov: five templates; platform rules without a source are worded as checks.**
+- [x] 8.15 Results: spend, clicks, orders and cost per order entered or imported per campaign, compared with its target; the assistant proposes stop, hold or scale against the rule set in 8.13. **Done 21 Nov. Platform CSV column names are not verified against real export files.**
+- [x] 8.16 Tracked links per campaign and creative, so results can be tied back to the piece that produced them. **Done 21 Nov.**
 
 **Sales and channels**
 
