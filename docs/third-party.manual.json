@@ -111,7 +111,6 @@
       "use": "copied source",
       "origin": "https://ui.shadcn.com registry, written into this repository by the shadcn CLI",
       "referencedIn": [
-        "src/components/ui/alert.tsx",
         "src/components/ui/badge.tsx",
         "src/components/ui/button-group.tsx",
         "src/components/ui/carousel.tsx",
@@ -134,6 +133,36 @@
       ],
       "source": "https://github.com/shadcn-ui/ui",
       "changes": "None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css."
+    },
+    {
+      "name": "shadcn/ui Calendar and Chart",
+      "version": "shadcn/ui registry, new-york-v4 style, compared with the files in this repository on 21 November 2026",
+      "license": "MIT",
+      "licenseEvidence": "https://github.com/shadcn-ui/ui/blob/main/LICENSE.md ('MIT License. Copyright (c) 2023 shadcn'), the same licence the other shadcn/ui entry records. https://ui.shadcn.com/r/styles/new-york-v4/calendar.json and chart.json were fetched on 21 November 2026 and compared line by line with src/components/ui/calendar.tsx and chart.tsx.",
+      "use": "copied source",
+      "origin": "https://ui.shadcn.com registry (calendar and chart). calendar.tsx first appears in 6206f41 (21 November 2026) and chart.tsx in 141cf7e (20 November 2026).",
+      "referencedIn": [
+        "src/components/ui/calendar.tsx",
+        "src/components/ui/chart.tsx"
+      ],
+      "source": "https://github.com/shadcn-ui/ui",
+      "changes": "chart.tsx: the cn import points at @/lib/utils instead of the package 'cn' (the only difference from the registry file). calendar.tsx: the same import change, the Button import points at @/components/ui/button, and a labels prop gives each day button an accessible name that starts with the day number."
+    },
+    {
+      "name": "Popover, Modal, ConfirmButton and NativeSelect (components written in this repository on shadcn/ui and Radix)",
+      "version": "popover.tsx from ef72d69 (20 November 2026); modal.tsx from 52cb8f0 (20 November 2026), rewritten in ef17b98 (21 November 2026) with confirm-button.tsx and native-select.tsx",
+      "license": "this repository's own code (Apache-2.0, see LICENSE) where it is written here; the shadcn/ui structure it follows is MIT (shadcn); Radix UI is MIT and is recorded with the npm packages",
+      "licenseEvidence": "Read from the files and the repository history on 21 November 2026, not from a statement by the owner. popover.tsx's header says 'shadcn/ui Popover over Radix, themed to Eigenia's tokens'; it uses Radix Popover's Root, Trigger, Anchor, Portal and Content, but is not the registry file (the new-york-v4 popover.json of 21 November 2026 differs in its parts, wrapper functions and classes). modal.tsx and confirm-button.tsx compose the Dialog parts exported by dialog.tsx (shadcn/ui structure over Radix Dialog). native-select.tsx is a themed native select element and names no third-party source. The owner's statement of 20 November 2026 covers six other files (Button, Dialog, Input, Table, Card, StatusBadge) and none of these four.",
+      "use": "copied source",
+      "origin": "Written in this repository (git author 'Claude') on top of shadcn/ui's structure and Radix primitives. Not attributed to the owner's Eigenia project: no statement covers these files.",
+      "referencedIn": [
+        "src/components/ui/popover.tsx",
+        "src/components/ui/modal.tsx",
+        "src/components/ui/confirm-button.tsx",
+        "src/components/ui/native-select.tsx"
+      ],
+      "source": "https://github.com/shadcn-ui/ui",
+      "changes": "Not applicable: not copied unchanged from a published file. popover.tsx is a reduced rewrite of the shadcn/ui Popover; the other three are this project's wrappers."
     },
     {
       "name": "AI Elements components",
