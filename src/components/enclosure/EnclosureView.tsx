@@ -323,6 +323,9 @@ export function EnclosureView({ project }: ViewProps) {
       <Link href="/s/prototype/printing#new-print-job" className="underline">3D printing</Link>. Use this page only if the product also has parts to box.
     </NotSetUp>
   ) : null;
+  // Nothing to box but the printed body itself: the page offers no generator, only the way to print it.
+  const onlyPrinted = bom.items.filter((i) => (i.data as { geometry?: unknown }).geometry).every((i) => (i.data as { geometry?: { print?: boolean } }).geometry?.print === true);
+  if (notice && onlyPrinted) return notice;
   if (!enclosureOffered(bom.items)) {
     const layout = sectionHref(BOM);
     if (notice) return notice;

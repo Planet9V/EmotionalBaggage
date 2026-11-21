@@ -23,7 +23,8 @@ export function storeOfPath(path: string): string | null {
   return UNLOCK_STORES.get(m[1]) ?? m[1];
 }
 
-const isDraftStep = (s: Pick<NextStep, "label" | "href">) => /with AI\b/.test(s.label) || s.href.endsWith("#draft-with-ai");
+// Only a step that says it drafts with AI: "Write the press release" can be done by hand, so it is left as it is.
+const isDraftStep = (s: Pick<NextStep, "label" | "href">) => /with AI\b/.test(s.label);
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 

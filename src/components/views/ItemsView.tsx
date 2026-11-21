@@ -21,6 +21,7 @@ import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { sectionWhy } from "@/lib/sectionWhy";
+import { STORE_NOUN } from "@/lib/ai/drafts/shared";
 import { announceMove } from "@/components/trace/movedToast";
 import { EmptyState, LoadingShape } from "@/components/ui/states";
 
@@ -177,7 +178,7 @@ export function ItemsView({ project, stage, section, store }: ViewProps) {
   if (!items.length) {
     return (
       <>
-        <SectionEmpty projectId={project.id} store={store} sectionLabel={section.label} icon={ListPlus} title={`No ${section.label.toLowerCase()} rows yet`} action={addButton}>
+        <SectionEmpty projectId={project.id} store={store} sectionLabel={section.label} icon={ListPlus} title={`No ${(STORE_NOUN[store]?.[1] ?? `${section.label.toLowerCase()} rows`)} yet`} action={addButton}>
           {sectionWhy(store, stage.label, stage.goal)}
         </SectionEmpty>
         {dialogs}
