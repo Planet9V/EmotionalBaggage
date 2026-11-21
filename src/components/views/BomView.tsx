@@ -101,7 +101,7 @@ export function BomView({ project, section, store }: ViewProps) {
                 <TableHead className="min-w-56">Specification</TableHead>
                 <TableHead className="w-16 text-right">Qty</TableHead>
                 <TableHead className="w-36">Source</TableHead>
-                <TableHead className="w-36 text-right">Line cost</TableHead>
+                <TableHead className="min-w-40 text-right">Line cost</TableHead>
                 <TableHead className="min-w-[9.5rem]">Status</TableHead>
                 {electrical && <TableHead className="w-40">Kind and pins</TableHead>}
                 <TableHead className="w-14">3D</TableHead>
@@ -147,8 +147,9 @@ export function BomView({ project, section, store }: ViewProps) {
                               </TableCell>
                               <TableCell className="text-right">
                                 <p className="font-mono text-sm text-primary">{money(pr.line)}</p>
-                                <p className="font-mono text-[11px] text-muted" data-testid={`price-basis-${p.item.id}`}>
-                                  {money(pr.unit)} x {pr.qty}{pr.qtyAssumed ? " (qty not set)" : ""} from {pr.supplier}{pr.checkedAt ? `, checked ${pr.checkedAt}` : ""}
+                                <p className="whitespace-nowrap font-mono text-[11px] text-muted" data-testid={`price-basis-${p.item.id}`}>
+                                  {money(pr.unit)} x {pr.qty}{pr.qtyAssumed ? " (qty not set)" : ""} from {pr.supplier}
+                                  {pr.checkedAt ? <>{" "}<span className="block">checked {pr.checkedAt}</span></> : null}
                                 </p>
                               </TableCell>
                             </>

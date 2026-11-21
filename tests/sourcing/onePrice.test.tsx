@@ -55,7 +55,7 @@ describe("one price per part", () => {
     const stage = STAGES.find((s) => s.key === "design")!;
     const section = stage.sections.find((s) => s.key === "bom")!;
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><BomView project={{ id: "p1", name: "T", oneLiner: "" } as never} stage={stage} section={section} store="design/bom" /></QueryClientProvider>);
-    expect((await screen.findByTestId("price-basis-1")).textContent).toBe("7.50 x 1 from DigiKey, checked 2026-11-20");
+    expect((await screen.findByTestId("price-basis-1")).textContent).toBe("7.50 x 1 from DigiKey checked 2026-11-20");
     expect(screen.getByRole("link", { name: "DigiKey" })).toBeTruthy();
     expect(screen.queryByText("Micro Center")).toBeNull();
     expect(screen.queryByText("8.99")).toBeNull();
