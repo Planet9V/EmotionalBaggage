@@ -3,6 +3,7 @@
 //  - fit: each part sits inside the cavity measured from the result, with the stated clearance, and touches no printed material.
 //  - openings: the hole found in the wall is where the part is, and the size that was asked for.
 //  - lid: base and lid have the same footprint, meet without a gap and make the stated height.
+import { relationOf } from "@/lib/geometry/overlap";
 import type { Manifold } from "manifold-3d";
 import { fromManifold, getKernel, toManifold } from "./kernel";
 import { FACE_AXES, type Box, type CheckResult, type EnclosureSpec, type GeneratorOutput, type Opening, type Vec3 } from "./types";
@@ -154,6 +155,9 @@ export async function computeChecks(spec: EnclosureSpec, out: GeneratorOutput): 
     const g = Math.min(...gaps);
     worst.push({ ref: label, gap: g });
     if (g < spec.params.clearance - 0.01) fitFails.push(`${label} has ${mm(g)} to the wall or lid`);
+    // the floor: a part may rest on it, never go into it
+    const below = cavity.min[1] - p.box.min[1];
+    if (below > 0.01) fitFails.push(`${label} goes ${mm(below)} into the floor`);
     if (p.kind !== "pcb") {
       const pb = await boxSolid(shrink(p.box));
       const hit = pb.intersect(solid);
@@ -163,12 +167,26 @@ export async function computeChecks(spec: EnclosureSpec, out: GeneratorOutput): 
       if (vol > TOL.interference) fitFails.push(`${label} runs into printed material (${Math.round(vol)} mm3)`);
     }
   }
+  // part against part: two parts in the same space are a collision, unless one is held in the other
+  const inside = spec.parts.filter((x) => x.role === "inside" || x.role === "through");
+  const held: string[] = [];
+  for (let i = 0; i < inside.length; i++)
+    for (let j = i + 1; j < inside.length; j++) {
+      const a = inside[i], b = inside[j];
+      const d = [0, 1, 2].map((k) => Math.min(a.box.max[k], b.box.max[k]) - Math.max(a.box.min[k], b.box.min[k]));
+      if (!d.every((v) => v > 0.1)) continue;
+      const rel = relationOf({ ref: a.ref || a.title, box: a.box, insideOf: a.insideOf }, { ref: b.ref || b.title, box: b.box, insideOf: b.insideOf });
+      if (rel.kind === "contained") held.push(`${rel.inner} in ${rel.outer}`);
+      else fitFails.push(`${a.ref || a.title} and ${b.ref || b.title} overlap by ${d.map((v) => Math.round(v * 10) / 10).join(" x ")} mm`);
+    }
   worst.sort((a, b) => a.gap - b.gap);
   results.push({
     key: "parts-fit",
     label: "Every part fits inside with the clearance",
     ok: fitFails.length === 0,
-    detail: fitFails.length ? fitFails.join("; ") + "." : `${worst.length} parts checked against the cavity measured from the result (${mm(cavity.max[0] - cavity.min[0])} by ${mm(cavity.max[2] - cavity.min[2])} by ${mm(cavity.max[1] - cavity.min[1])} high); the tightest is ${worst[0]?.ref ?? "none"} at ${mm(worst[0]?.gap ?? 0)} against ${mm(spec.params.clearance)} required.`,
+    detail:
+      (fitFails.length ? fitFails.join("; ") + "." : `${worst.length} parts checked against the cavity measured from the result (${mm(cavity.max[0] - cavity.min[0])} by ${mm(cavity.max[2] - cavity.min[2])} by ${mm(cavity.max[1] - cavity.min[1])} high), the floor and each other; the tightest is ${worst[0]?.ref ?? "none"} at ${mm(worst[0]?.gap ?? 0)} against ${mm(spec.params.clearance)} required.`) +
+      (held.length ? ` Held one inside the other, not a collision: ${held.join(", ")}.` : ""),
   });
 
   // Openings line up.

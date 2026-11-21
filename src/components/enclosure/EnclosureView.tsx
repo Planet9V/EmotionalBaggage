@@ -19,6 +19,8 @@ import { generate, getStatus, type GenerateAnswer, type ResultFailed, type Resul
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
 import { ResultPanel } from "./ResultPanel";
 import { SendToPrinting } from "./SendToPrinting";
+import { PartOpeningEditor } from "./PartOpeningEditor";
+import { NativeSelect } from "@/components/ui/native-select";
 import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { fileSlug } from "@/lib/format";
@@ -60,6 +62,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
   const [runError, setRunError] = useState("");
   const [compare, setCompare] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [editPart, setEditPart] = useState<number | null>(null);
 
   const typed = useMemo(() => fromDraft(draft), [draft]);
   const paramIssues = useMemo(() => validateParams(typed as unknown as EnclosureParams), [typed]);
@@ -247,13 +250,28 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
         {spec.standoffs ? (
           <p className="mt-3 text-sm text-secondary">
             {spec.standoffs.partRef} stands on {spec.standoffs.holes.length} standoffs, {mm(spec.standoffs.height)} mm tall
-            {spec.standoffs.assumed ? ". The mounting holes are assumed (four, 3.5 mm in from the corners) because the part row has none; set data.mountingHoles on it to use the real ones" : ""}
+            {spec.standoffs.assumed ? ". The mounting holes are assumed (four, 3.5 mm in from the corners) because none are entered for the board; enter its own holes below" : ""}
             {spec.standoffs.dropped.length ? `. Assumed holes under ${spec.standoffs.dropped.join(", ")} were left out` : ""}.
           </p>
         ) : null}
-        <p className="mt-3 text-xs text-muted">
-          Which wall a cut-out goes in, and its size, can be overridden on a part row with data.opening (face, shape, width, height, shift, or off). Faces: {Object.keys(FACE_AXES).join(", ")}.
-        </p>
+        {(() => {
+          const editable = spec.parts.filter((p) => p.role === "inside" || p.role === "through");
+          if (!editable.length) return null;
+          const chosen = editable.find((p) => p.id === editPart) ?? null;
+          const item = chosen ? bom.items.find((i) => i.id === chosen.id) ?? null : null;
+          return (
+            <div className="mt-4 space-y-3 border-t border-hairline pt-3">
+              <label className="block max-w-sm text-xs font-medium text-secondary" htmlFor="enclosure-part-pick">
+                Change a part&apos;s opening{spec.standoffs ? " or the board's mounting holes" : ""}
+                <NativeSelect id="enclosure-part-pick" className="mt-1" value={editPart ?? ""} onChange={(e) => setEditPart(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">Choose a part</option>
+                  {editable.map((p) => <option key={p.id} value={p.id}>{p.ref ? `${p.ref} ` : ""}{p.title}</option>)}
+                </NativeSelect>
+              </label>
+              {chosen && item ? <PartOpeningEditor key={item.id} item={item} isBoard={chosen.kind === "pcb"} onSave={(data) => bom.patch(item.id, { data })} /> : null}
+            </div>
+          );
+        })()}
       </Panel>
 
       <div className="flex flex-wrap items-center gap-3">
