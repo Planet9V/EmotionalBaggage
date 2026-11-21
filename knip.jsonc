@@ -1,0 +1,73 @@
+// Dead code check: `npm run deadcode`. CI runs it in the web job and fails on a new unused file,
+// export, type or dependency. Test files are entry points, so an export that only a test imports
+// still counts as unused: either it is used by the app or it is not exported.
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // tests/e2e/auth.setup.ts is the Playwright setup project (playwright.config.ts); tests/walk is the
+  // hand-run browser walk (run with tsx, not by Vitest).
+  "entry": ["scripts/*.{mjs,cjs}", "tests/e2e/auth.setup.ts", "tests/walk/*.ts"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs}", "tests/**/*.{ts,tsx,mjs}"],
+  // Third-party and generated code that is not ours to prune:
+  //  - src/components/ai-elements: the AI Elements library's own files (copied in by its CLI)
+  "ignore": ["src/components/ai-elements/**"],
+  // shadcn/ui primitives are copied in by the shadcn CLI with their whole export surface (every
+  // part of a menu, select or dialog). An unused part is there on purpose, so a later screen can
+  // use it without re-running the CLI; their exports and types are not reported.
+  "ignoreIssues": {
+    "src/components/ui/**": ["exports", "types"],
+    // HELD, to be removed: the exports below are unused but sit in files another engineer's branch is
+    // changing (design tools, process and trace). Pruned after those branches merge; the list may only
+    // shrink, and a file leaves it as soon as its unused exports are gone.
+    "src/components/admin/AuditTab.tsx": ["exports", "types"],
+    "src/components/buildsheet/derive.ts": ["exports", "types"],
+    "src/components/buildsheet/wiresheet.ts": ["exports", "types"],
+    "src/components/decisions/DecisionFlow.tsx": ["exports", "types"],
+    "src/components/decisions/model.ts": ["exports", "types"],
+    "src/components/enclosure/EnclosureCanvas.tsx": ["exports", "types"],
+    "src/components/enclosure/ResultPanel.tsx": ["exports", "types"],
+    "src/components/enclosure/client.ts": ["exports", "types"],
+    "src/components/layout/geom.ts": ["exports", "types"],
+    "src/components/plan/format.ts": ["exports", "types"],
+    "src/components/plan/useConcept.ts": ["exports", "types"],
+    "src/components/printing/NewJobDialog.tsx": ["exports", "types"],
+    "src/components/schematic/model.ts": ["exports", "types"],
+    "src/components/schematic/nodes.tsx": ["exports", "types"],
+    "src/components/schematic/symbolGraph.ts": ["exports", "types"],
+    "src/components/three/PartPanel.tsx": ["exports", "types"],
+    "src/components/three/PrintPanel.tsx": ["exports", "types"],
+    "src/components/three/ViewTools.tsx": ["exports", "types"],
+    "src/lib/enclosure/boxspec.ts": ["exports", "types"],
+    "src/lib/enclosure/casemaker.ts": ["exports", "types"],
+    "src/lib/enclosure/checks.ts": ["exports", "types"],
+    "src/lib/enclosure/run.ts": ["exports", "types"],
+    "src/lib/enclosure/spec.ts": ["exports", "types"],
+    "src/lib/enclosure/types.ts": ["exports", "types"],
+    "src/lib/process/definitions.ts": ["exports", "types"],
+    "src/lib/process/evaluate.ts": ["exports", "types"],
+    "src/lib/process/server.ts": ["exports", "types"],
+    "src/lib/slicing/client.ts": ["exports", "types"],
+    "src/lib/slicing/config.ts": ["exports", "types"],
+    "src/lib/slicing/flow.ts": ["exports", "types"],
+    "src/lib/slicing/jobState.ts": ["exports", "types"],
+    "src/lib/slicing/printerPort.ts": ["exports", "types"],
+    "src/lib/slicing/queries.ts": ["exports", "types"],
+    "src/lib/trace/builds.ts": ["exports", "types"],
+    "src/lib/trace/changes.ts": ["exports", "types"],
+    "src/lib/trace/coverage.ts": ["exports", "types"],
+    "src/lib/trace/history.ts": ["exports", "types"],
+    "src/lib/trace/historyRead.ts": ["exports", "types"],
+    "tests/admin/fixture.ts": ["exports", "types"],
+    "tests/client/mockServer.ts": ["exports", "types"],
+    "tests/e2e/helpers.ts": ["exports", "types"],
+    "tests/parts/kicadShape.ts": ["exports", "types"],
+    "tests/printers/rigs.ts": ["exports", "types"],
+    "tests/standins/bambu.ts": ["exports", "types"],
+    "tests/standins/channels.ts": ["exports", "types"],
+    "tests/standins/core.ts": ["exports", "types"],
+    "tests/trace/helpers.ts": ["exports", "types"]
+  },
+  // Used from CSS (@import / @plugin in globals.css), not from code, or only named in a type comment.
+  "ignoreDependencies": ["@fontsource-variable/inter", "@fontsource-variable/jetbrains-mono", "tailwindcss", "tw-animate-css", "postcss-load-config"],
+  // Programs the tests call when the machine has them (the test skips when it does not).
+  "ignoreBinaries": ["kicad-cli", "openssl"]
+}
