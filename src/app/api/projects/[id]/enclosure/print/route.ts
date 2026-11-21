@@ -10,6 +10,8 @@ import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { GENERATOR_KEYS, GENERATORS, type GeneratedMesh, type GeneratorKey } from "@/lib/enclosure/types";
 import { ENCLOSURE_STORE } from "@/lib/process/computed";
 import type { Item } from "@/lib/types";
+import type { EnclosureChecked } from "@/lib/process/computed";
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -65,6 +67,14 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
       const fileId = Number(res.rows[0].id);
       await logEventIn(c, id, "file.stored", `Stored ${name} from the ${GENERATORS[gen].label} enclosure for printing`, { fileId, sha256: sha, after: { name, kind: "stl", size: bytes.length, sha256: sha, piece: p.piece, generator: gen } });
       out.push({ id: fileId, name, size: bytes.length });
+    }
+    // the checks measured on this build are kept on the saved choice too, as the generate route keeps them, for the Design gate
+    const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 FOR UPDATE`, [saved.id])).rows[0];
+    if (was) {
+      const record: EnclosureChecked = { fingerprint, at: new Date().toISOString(), checks: r.checks.map((x) => ({ key: x.key, label: x.label, ok: x.ok, detail: x.detail })) };
+      const prev = ((was.data ?? {}) as { checked?: Record<string, EnclosureChecked> }).checked ?? {};
+      const now = (await c.query<ItemRow>(`UPDATE items SET data = data || jsonb_build_object('checked', $2::jsonb), updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [saved.id, JSON.stringify({ ...prev, [gen]: record })])).rows[0];
+      await logEventIn(c, id, "enclosure.checked", `Measured the ${GENERATORS[gen].label} enclosure's checks while sending it to printing`, changedDetail(now, itemDiff(was, now)));
     }
     return out;
   });

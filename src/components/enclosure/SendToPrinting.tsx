@@ -13,7 +13,8 @@ import { keys, messageOf } from "@/lib/queries";
 
 type Answer = { generator: string; files: { id: number; name: string }[]; failed: number };
 
-export function SendToPrinting({ projectId, disabled, reason }: { projectId: string; disabled: boolean; reason: string }) {
+/** `beforeSend` saves the generator and settings on screen first, so what is built is what is shown. */
+export function SendToPrinting({ projectId, disabled, reason, beforeSend }: { projectId: string; disabled: boolean; reason: string; beforeSend: () => Promise<void> }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Answer | null>(null);
@@ -23,6 +24,7 @@ export function SendToPrinting({ projectId, disabled, reason }: { projectId: str
     setErr("");
     setDone(null);
     try {
+      await beforeSend();
       const r = await api<Answer>(`/api/projects/${encodeURIComponent(projectId)}/enclosure/print`, { method: "POST" });
       setDone(r);
       await Promise.all([qc.invalidateQueries({ queryKey: keys.files(projectId) }), qc.invalidateQueries({ queryKey: keys.events(projectId) })]);

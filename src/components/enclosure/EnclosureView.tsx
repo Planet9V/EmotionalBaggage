@@ -78,7 +78,8 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
       setSaveState("saving");
       try {
         const data = { enclosureGenerator: g, params: p };
-        if (row) await patch(row.id, { data: { ...row.data, ...data } });
+        // only the choice: the server merges it, so the checks it keeps on the row (data.checked) are never written back stale
+        if (row) await patch(row.id, { data });
         else await add({ section: SAVE_STORE, title: "Enclosure settings", data });
         setSaveState("saved");
       } catch {
@@ -181,7 +182,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </p>
         ) : null}
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
-        <div className="mt-3"><SendToPrinting projectId={project.id} disabled={blocked || !row || saveState === "saving"} reason={blocked ? "Fix the problems listed below first." : !row ? "The choice is saved a moment after you pick a generator." : "Saving the choice."} /></div>
+        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => persist(generator, usable)} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
       </Panel>
 
       <Panel title="Parameters" note="Defaults are shown under each field. The checks hold the result to the clearance you set." action={

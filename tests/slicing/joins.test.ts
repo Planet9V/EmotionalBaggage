@@ -62,6 +62,9 @@ describe("Send to printing from the Enclosure page", () => {
     expect(Math.round(maxY - minY)).toBe(60);
     const ev = await q("SELECT 1 FROM events WHERE project_id=$1 AND kind='file.stored' AND (data->>'fileId')::bigint = $2", [SEEDED, r.body.files[1].id]);
     expect(ev).toHaveLength(1);
+    // the checks of this build are kept on the saved choice, where the Design gate reads them
+    const savedRow = (await q<{ data: { checked?: Record<string, { checks: unknown[] }> } }>("SELECT data FROM items WHERE project_id=$1 AND section='design/enclosure'", [SEEDED]))[0];
+    expect(savedRow.data.checked?.casemaker.checks.length).toBeGreaterThanOrEqual(5);
   }, 90_000);
 });
 
