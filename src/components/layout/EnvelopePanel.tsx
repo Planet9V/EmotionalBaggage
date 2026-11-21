@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { PartGeometry } from "../three/layout";
 import { NumField } from "./NumField";
 import { BasisPicker } from "./SelectionPanel";
-import { BASIS_TEXT, round3 } from "./geom";
+import { basisText, round3 } from "./geom";
 import { Card } from "@/components/ui/Card";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
@@ -38,7 +38,7 @@ export function EnvelopePanel({
               <NumField key={l} label={l} value={shell.size[i]} positive onCommit={(n) => onResize(shell.size.map((v, k) => (k === i ? round3(n) : v)))} />
             ))}
           </div>
-          <p className="text-xs text-muted">{BASIS_TEXT[shell.basis]}</p>
+          <p className="text-xs text-muted">{basisText(shell)}</p>
           <NumField label="Wall and floor thickness" value={wall} min={0} onCommit={onWall} />
           <p className="-mt-1 text-xs text-muted">Used by the outside check and by Rest on floor. It is a setting here and is not saved on the part.</p>
         </div>

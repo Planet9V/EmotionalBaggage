@@ -95,3 +95,13 @@ export const partSource = (p: Part) => {
 };
 
 export const sumLine = (parts: Part[]) => parts.reduce((a, p) => a + (partPrice(p).line ?? 0), 0);
+
+/**
+ * Where a part's size comes from, in words. A size said to be "stated in a document" names that document;
+ * when none is named it reads as entered by hand, so the screen never claims a source it cannot show.
+ */
+export function basisText(g: { basis: "doc" | "typical" | "library"; basisSource?: string }): string {
+  if (g.basis === "library") return g.basisSource ? `Taken from the parts library: ${g.basisSource}` : "Taken from the parts library";
+  if (g.basis === "doc") return g.basisSource ? `Stated in ${g.basisSource}` : "Entered by hand; no document is named";
+  return "Typical size for this kind of part; not measured";
+}

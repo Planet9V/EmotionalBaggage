@@ -30,7 +30,7 @@ export type ReportSection = { id: string; title: string; href: string; blocks: R
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function economics(by: (s: string) => Item[], currency: string): ReportSection | null {
-  const rows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES) };
+  const rows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES), printJobs: by("prototype/printing") };
   if (!rows.economics.length && !rows.channels.length && !rows.batches.length) return null;
   const inputs = readEconomics(rows, currency);
   const u = referenceUnitCost(inputs);

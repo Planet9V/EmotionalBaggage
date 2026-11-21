@@ -29,6 +29,7 @@ export function EconomicsView({ project }: ViewProps) {
   const settings = useProductionSettings(project.id);
   const { rows, loading, error, reload } = useEconomicsRows(project.id);
   const costs = useItems(project.id, STORE_ECONOMICS);
+  const bom = useItems(project.id, "design/bom");
   const [size, setSize] = useState<string | null>(null);
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [message, setMessage] = useState("");
@@ -71,6 +72,29 @@ export function EconomicsView({ project }: ViewProps) {
     );
   }
 
+  // a printed part's material price per kg, set here, works its cost out from the newest slice
+  const printedRows = new Map<number, React.ReactNode>(
+    inputs.parts.filter((p) => p.printed).map((p) => [
+      p.id,
+      <span key={p.id} className="mt-1 flex items-center gap-2 text-xs text-secondary">
+        <label htmlFor={`perkg-${p.id}`}>Material price per kg ({currency})</label>
+        <Input
+          id={`perkg-${p.id}`}
+          inputMode="decimal"
+          className="h-7 w-24 font-mono text-xs"
+          defaultValue={p.printed?.pricePerKg ?? ""}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            const n = v === "" ? null : Number(v);
+            if (n !== null && (!Number.isFinite(n) || n < 0)) return setMessage("The material price per kg is a number, zero or more.");
+            if (n === (p.printed?.pricePerKg ?? null)) return;
+            setMessage("");
+            bom.patch(p.id, { data: { printPricePerKg: n } }).catch((err: Error) => setMessage(err.message));
+          }}
+        />
+      </span>,
+    ])
+  );
   const editingRow = typeof editing === "number" ? rows.economics.find((r) => r.id === editing) ?? null : null;
   const remove = async (id: number) => {
     setMessage("");
@@ -124,9 +148,9 @@ export function EconomicsView({ project }: ViewProps) {
       </div>
       {message || costs.writeError ? <ErrorLine>{message || costs.writeError}</ErrorLine> : null}
 
-      <Panel compact id="build-up" title="Unit cost build-up" description="Every figure is worked out from the parts list and the lines below. Nothing here is typed in.">
+      <Panel compact id="build-up" title="Unit cost build-up" description="Worked out from the parts list, the chosen offers, the slices of printed parts and the lines below. Under each part it says where its figure comes from: a chosen offer with the day it was checked, a slice, or an estimate typed on the parts list.">
         <div className="space-y-3">
-          <BuildUpTable unit={unit} onEdit={setEditing} onRemove={(id) => void remove(id)} />
+          <BuildUpTable unit={unit} onEdit={setEditing} onRemove={(id) => void remove(id)} printedRows={printedRows} />
           <MissingList items={unit.missing} />
         </div>
       </Panel>

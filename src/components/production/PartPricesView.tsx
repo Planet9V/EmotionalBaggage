@@ -28,7 +28,7 @@ export function PartPricesView({ project, store }: ViewProps) {
   const [message, setMessage] = useState("");
 
   const currency = settings.currency;
-  const inputs = useMemo(() => parts.items.map(readPartInput), [parts.items]);
+  const inputs = useMemo(() => parts.items.map((i) => readPartInput(i, rows.printJobs ?? [])), [parts.items, rows.printJobs]);
   const suppliers = useMemo(() => rows.suppliers.map(readSupplier).filter((s) => s.code), [rows.suppliers]);
   const withoutCode = rows.suppliers.length - suppliers.length;
 

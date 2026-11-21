@@ -159,7 +159,7 @@ export function LayoutView({ project }: ViewProps) {
     if (sizes.every((s) => s !== null && s > 0) && next.basis) {
       const sz = sizes as number[];
       const y = next.y ?? floor + sz[1] / 2;
-      const geometry: PartGeometry = { shape: "box", size: sz, pos: [next.x, y, next.z].map(round3), explode: [0, 0, 0], basis: next.basis };
+      const geometry: PartGeometry = { shape: "box", size: sz, pos: [next.x, y, next.z].map(round3), explode: [0, 0, 0], basis: next.basis, ...(next.basisSource ? { basisSource: next.basisSource } : {}) };
       setDrafts((d) => {
         const { [id]: _gone, ...rest } = d;
         void _gone;

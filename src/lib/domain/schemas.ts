@@ -60,7 +60,9 @@ export const geometry = z
     size: z.array(numeric.refine((n) => n > 0, "must be greater than zero")).min(2).max(3),
     pos: vec3.default([0, 0, 0]),
     explode: vec3.default([0, 0, 0]),
-    basis: z.enum(["doc", "typical"]).default("typical"),
+    basis: z.enum(["doc", "typical", "library"]).default("typical"),
+    /** doc: the document the size is stated in; library: the library entry it was taken from */
+    basisSource: z.string().trim().max(300).optional(),
     count: numeric.optional(),
     print: z.boolean().optional(),
     /** cylinder only: which axis its length runs along */
@@ -87,9 +89,10 @@ export const geometry = z
     const count = g.count === undefined ? undefined : Math.round(g.count);
     const out: {
       shape: typeof g.shape; size: number[]; pos: number[]; explode: number[]; basis: typeof g.basis;
-      count?: number; print?: boolean; axis?: "x" | "y" | "z";
+      basisSource?: string; count?: number; print?: boolean; axis?: "x" | "y" | "z";
       rotation?: [number, number, number]; file?: ShapeFile;
     } = { shape: g.shape, size, pos: [...g.pos], explode: [...g.explode], basis: g.basis };
+    if (g.basisSource) out.basisSource = g.basisSource;
     if (count !== undefined && count > 1) out.count = count;
     if (g.print === true) out.print = true;
     if (g.axis) out.axis = g.axis;

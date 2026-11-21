@@ -87,6 +87,22 @@ export function partLine(p: PartInput, batchSize: number, currency: string): Cos
     missing: { key: base.key, what: `${name}: not priced`, reason, href: HREF.parts, rowId: p.id },
   });
 
+  if (p.printed) {
+    const sl = p.printed.slice;
+    const per = p.printed.pricePerKg;
+    if (sl && per !== null) {
+      const perKg = toMinor(per, currency);
+      const qty = p.qty ?? 1;
+      const amount = roundHalfUp((qty * sl.grams * perKg) / 1000);
+      return { ...base, amount, how: `${qty} x ${sl.grams} g (slice of print job "${sl.job}", ${sl.by}) x ${fm(perKg, currency)} per kg / 1000 = ${fm(amount, currency)}${p.qty === null ? " (quantity not set, counted as 1)" : ""}`, missing: null };
+    }
+    const why = sl ? `set the material price per kilogram to work it out from the slice of "${sl.job}" (${sl.grams} g)` : "slice a print job tied to this part to work it out from grams";
+    if (p.line !== null) {
+      const amount = toMinor(p.line, currency);
+      return { ...base, amount, how: `Entered estimate on the parts list: ${fm(amount, currency)}; ${why}`, missing: null };
+    }
+    return miss(`${why}, or enter an estimate on the parts list.`);
+  }
   if (p.qty !== null && (p.unit !== null || p.breaks.length)) {
     const ordered = p.qty * batchSize;
     const hit = [...p.breaks].reverse().find((b) => b.qty <= ordered);
