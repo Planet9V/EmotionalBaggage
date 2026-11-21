@@ -297,10 +297,12 @@ jobs:
       - name: Assert the health route answers without a session
         run: curl -sf "$BASE/api/health" | jq -e '.ok == true'
 
-      - name: Assert a signed-out browser is sent to sign in, and the API answers 401
+      - name: Assert a signed-out browser is sent to the welcome page or to sign in, and the API answers 401
         run: |
           test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")" = 307
-          curl -s -o /dev/null -w '%{redirect_url}' "$BASE/" | grep -q '/sign-in?next=%2F'
+          curl -s -o /dev/null -w '%{redirect_url}' "$BASE/" | grep -q '/welcome$'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/welcome")" = 200
+          curl -s -o /dev/null -w '%{redirect_url}' "$BASE/plan" | grep -q '/sign-in?next=%2Fplan'
           test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/sign-in")" = 200
           test "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/projects")" = 401
 
