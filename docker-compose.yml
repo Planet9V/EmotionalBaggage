@@ -26,6 +26,10 @@ services:
       # Sorting the re-ranked candidates, and the ceiling for pgvector's iterative scans.
       - -c
       - work_mem=${PG_WORK_MEM:-32MB}
+      # The data is on solid-state storage, where reading a page out of order costs about the same as
+      # reading the next one. PostgreSQL's default of 4 assumes a spinning disk and makes it avoid indexes.
+      - -c
+      - random_page_cost=${PG_RANDOM_PAGE_COST:-1.1}
     # Parallel index builds and parallel scans share memory through /dev/shm, which Docker limits to
     # 64 MB unless told otherwise; an index build with maintenance_work_mem above that would fail.
     shm_size: ${PG_SHM_SIZE:-1gb}

@@ -12,7 +12,8 @@ import { linkCitations, sectionHref, sectionLabel, type ChatMetadata, type ChatS
 const SEARCH_LABEL: Record<string, string> = {
   hnsw: "HNSW index",
   binary: "binary-quantized index, re-ranked",
-  exact: "exact search",
+  exact: "every vector compared",
+  bits: "one-bit copies compared, the best re-ranked",
 };
 
 function hrefOf(s: ChatSource) {
@@ -124,7 +125,9 @@ export function AnswerFooter({ metadata }: { metadata?: ChatMetadata }) {
   const how =
     metadata.retrieval === "meaning"
       ? `Sources found by meaning${metadata.search ? ` (${SEARCH_LABEL[metadata.search] ?? metadata.search})` : ""}.`
-      : metadata.retrieval === "text"
+      : metadata.retrieval === "both"
+        ? `Sources found by meaning${metadata.search ? ` (${SEARCH_LABEL[metadata.search] ?? metadata.search})` : ""} and by matching words, joined.`
+        : metadata.retrieval === "text"
         ? "Sources found by matching words, not by meaning."
         : null;
   return (

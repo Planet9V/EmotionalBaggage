@@ -65,6 +65,13 @@ async function vectorSupport() {
     await db.query("CREATE UNIQUE INDEX IF NOT EXISTS embeddings_item_model ON embeddings (item_id, model) WHERE item_id IS NOT NULL");
     await db.query("CREATE UNIQUE INDEX IF NOT EXISTS embeddings_research_model ON embeddings (research_id, model) WHERE research_id IS NOT NULL");
     await db.query("ALTER TABLE items DROP COLUMN IF EXISTS embedding");
+    // One bit per number, kept beside each vector and maintained by PostgreSQL. At 4,096 numbers it is
+    // 512 bytes and sits in the table itself, while the vector (16 KB) is stored out of line; a search
+    // compares these first and reads only the best candidates' full vectors.
+    // Measured in docs/design/vector-search.md.
+    await db.query("ALTER TABLE embeddings ADD COLUMN IF NOT EXISTS bq bit varying GENERATED ALWAYS AS (binary_quantize(embedding)::bit varying) STORED");
+    // Every search is for one concept, one model and one width.
+    await db.query("CREATE INDEX IF NOT EXISTS embeddings_scope ON embeddings (project_id, model, dims)");
     return true;
   } catch {
     return false;

@@ -25,7 +25,8 @@ export const chatSource = z.object({
 });
 export type ChatSource = z.infer<typeof chatSource>;
 
-export type Retrieval = "meaning" | "text";
+/** "both": found by meaning and by matching words, with the two rankings joined. */
+export type Retrieval = "meaning" | "text" | "both";
 
 /** What the server attaches to a streamed (and a saved) assistant message. */
 export type ChatMetadata = {
@@ -37,7 +38,7 @@ export type ChatMetadata = {
   /** the reasoning model that answered */
   model?: string;
   provider?: string;
-  /** "hnsw", "binary" or "exact" when retrieval was by meaning */
+  /** "exact", "bits", "hnsw" or "binary" when retrieval was by meaning */
   search?: string;
   /** the saved message's id, sent when the answer has been stored */
   savedId?: number;

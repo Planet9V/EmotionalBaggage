@@ -1,6 +1,6 @@
 // The server side of chat with a concept: find the sources for a question, build the instructions
 // for the reasoning model, and read and write chats. Model calls go through src/lib/ai/models.ts.
-import { itemText, meaningReady, searchSourcesByMeaning, searchSourcesByText, type SourceHit } from "@/lib/ai/embeddings";
+import { itemText, meaningReady, fuseRanked, searchSourcesByMeaning, searchSourcesByText, type SourceHit } from "@/lib/ai/embeddings";
 import { q } from "@/lib/db";
 import { notFound } from "@/lib/api/route";
 import { clip, cut, RESEARCH_SECTION, sectionLabel, SOURCE_CHARS, TOP_SOURCES, type ChatSource, type Retrieval } from "./shared";
@@ -77,8 +77,14 @@ export async function retrieve(projectId: string, question: string, o: { signal?
   let note: string;
   if (ready.ok) {
     try {
-      const r = await searchSourcesByMeaning(projectId, question, TOP_SOURCES, { use: ready.emb, signal: o.signal });
-      return { sources: numberSources(r.hits), retrieval: "meaning", search: r.search };
+      // Both searches run, and their rankings are joined: meaning finds what is related, words find what
+      // is named exactly (a part number, a supplier). Each list is longer than what is finally kept.
+      const [byMeaning, byText] = await Promise.all([
+        searchSourcesByMeaning(projectId, question, TOP_SOURCES * 3, { use: ready.emb, signal: o.signal }),
+        searchSourcesByText(projectId, question, TOP_SOURCES * 3),
+      ]);
+      const hits = byText.length ? fuseRanked([byMeaning.hits, byText], TOP_SOURCES) : byMeaning.hits.slice(0, TOP_SOURCES);
+      return { sources: numberSources(hits), retrieval: byText.length ? "both" : "meaning", search: byMeaning.search };
     } catch (e) {
       if (o.signal?.aborted) throw e;
       note = `Search by meaning failed, so sources were found by text: ${e instanceof Error ? e.message : String(e)}`;

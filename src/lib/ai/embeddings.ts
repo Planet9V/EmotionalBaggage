@@ -20,29 +20,32 @@
 // searched exactly, without an index.
 import { createHash } from "node:crypto";
 import { ITEM_COLS, q, ready, toItem, tx, type ItemRow } from "@/lib/db";
+import { STAGES, storeKey } from "@/lib/menu";
 import { embed, getEmbedding, ModelError, type EmbeddingInfo, type NotConfigured, type ReadyEmbedding } from "./models";
 
 /** pgvector README: "vector - up to 2,000 dimensions" for HNSW and IVFFlat. */
 export const MAX_INDEXED_DIMS = 2000;
 /** pgvector README: "bit - up to 64,000 dimensions" for HNSW. The binary-quantized index covers widths up to this. */
 export const MAX_BINARY_DIMS = 64_000;
-// Search rules, from measurements on PostgreSQL 19 with pgvector 0.8.7 (20,000 clustered vectors
-// 4,096 wide, 2 cores; measured by the lead on 20 November 2026):
-// - Index path (binary-quantized HNSW, then re-rank by cosine): hnsw.ef_search must be at least the
-//   candidate limit, or recall collapses. Recall@10 with 100 candidates: 0.76 at ef_search 40, 1.00
-//   at ef_search 100 (4.2 ms a query). Exact search over the same 20,000 rows: 509 to 700 ms.
-// - Filtered to one concept, the index is the wrong tool while the concept is small: with 1,000 of
-//   the 20,000 rows in the concept, exact search took 25 ms with recall 1.00; the index path took
-//   44 to 53 ms with recall 0.59, with or without iterative scan. Every search here is filtered to
-//   one concept, so a concept with at most EXACT_SEARCH_MAX_ROWS vectors for the model is searched
-//   exactly, at every width; the per-width index is still built at index time for when it grows.
+// Search rules, from measurements on PostgreSQL 19 with pgvector 0.8.7 (20,000 test vectors 4,096 wide
+// with graded similarity, 2 cores; 20 November 2026; the tables are in docs/design/vector-search.md).
+// Every search here is for one concept, so the choice is made from the size of that concept:
+// - Small concept: compare every full vector. 1,000 rows took 10 ms; nothing is approximated.
+// - Larger concept: compare the stored one-bit copies of every row of the concept (they sit in the
+//   table itself, 512 bytes at 4,096), then order the best candidates by the full vectors. 10,000 rows
+//   took 4 to 6 ms against 158 ms for the full comparison, and found the same ten rows. It reads every
+//   row of the concept, so the concept filter costs nothing and no graph can miss a row.
+// - Very large concept: the width's HNSW index, with hnsw.ef_search raised to the candidate count
+//   (at ef_search 40, 100 candidates found 76% of the true ten; at 100 they found all).
 // - Building the 4,096-bit index over 20,000 rows took 143 s at maintenance_work_mem 64MB and 11 s at
 //   1GB, so ensureWidthIndex raises it to INDEX_BUILD_MEMORY for the build when it is lower.
 // - pgvector already stores vector columns out of line and uncompressed (typstorage 'e'): no SET STORAGE.
-// - Forcing a parallel scan for exact search was slower on 2 cores (817 ms against 509 ms): not done.
+// - Forcing a parallel scan for exact search was slower on 2 cores: not done.
 
-/** At or below this many vectors (one concept, one model) a search is exact; above it the index path runs. */
-export const EXACT_SEARCH_MAX_ROWS = 5000;
+/** At or below this many vectors (one concept, one model) every full vector is compared. */
+export const EXACT_SEARCH_MAX_ROWS = 2000;
+/** Above EXACT_SEARCH_MAX_ROWS and at or below this, the stored one-bit copies are compared, then the best re-ranked. */
+export const BIT_SCAN_MAX_ROWS = 100_000;
 /** pgvector's largest hnsw.ef_search. */
 export const MAX_EF_SEARCH = 1000;
 /** maintenance_work_mem for building a per-width index (when the server's is lower). */
@@ -55,8 +58,12 @@ export const INDEX_BUILD_MEMORY = "1GB";
  */
 export const candidateLimit = (limit: number) => Math.min(Math.max(limit * 10, 100), MAX_EF_SEARCH);
 
-/** How a width is searched: its own HNSW index, a binary-quantized HNSW index with re-ranking, or exactly. */
-export type SearchKind = "hnsw" | "binary" | "exact";
+/**
+ * How a search ran: every full vector compared ("exact"), the stored one-bit copies compared and the
+ * best re-ranked ("bits"), the width's HNSW index ("hnsw"), or its binary-quantized HNSW index with
+ * re-ranking ("binary").
+ */
+export type SearchKind = "hnsw" | "binary" | "exact" | "bits";
 export const DEFAULT_BATCH_SIZE = 32;
 
 export type Unavailable = { ok: false; missing: "pgvector" | "unindexed" | NotConfigured["missing"]; reason: string };
@@ -134,14 +141,23 @@ const ITEM_COLS_I = ITEM_COLS.split(",").map((c) => `i.${c.trim()}`).join(", ");
  * "binary": candidates from the binary-quantized index, re-ranked by the full vectors.
  * "exact": every vector of the concept compared; the distance is computed under an OFFSET 0 fence,
  * so the planner cannot hand the ordering to an index.
+ * "bits": the stored one-bit copy of every row of the concept compared (Hamming distance, under the
+ * same fence), then the best least(greatest($4 * 20, 200), 1000) re-ranked by the full vectors.
  */
-export type Scan = "plain" | "binary" | "exact";
+export type Scan = "plain" | "binary" | "exact" | "bits";
 /** "items": rows only (search). "all": rows and saved research answers (chat). */
 export type Kinds = "items" | "all";
 
 function where(n: number, kinds: Kinds) {
   return `e.project_id = $1 AND e.model = $2 AND e.dims = ${n}` + (kinds === "items" ? " AND e.item_id IS NOT NULL" : "");
 }
+
+/** Candidates the one-bit comparison hands to the re-ranking step. Mirrors the SQL. */
+export const bitCandidates = (limit: number) => Math.min(Math.max(limit * 20, 200), 1000);
+const bitsInner = (n: number, cols: string, kinds: Kinds) =>
+  `SELECT ${cols}, x.embedding FROM (` +
+  `SELECT ${cols.replaceAll("x.", "e.")}, e.embedding, e.bq::bit(${n}) <~> binary_quantize($3::vector(${n})) AS h FROM embeddings e WHERE ${where(n, kinds)} OFFSET 0` +
+  `) x ORDER BY x.h LIMIT least(greatest($4 * 20, 200), 1000)`;
 
 const bqOrder = (n: number, col: string) => `binary_quantize(${col}::vector(${n}))::bit(${n}) <~> binary_quantize($3::vector(${n}))`;
 
@@ -163,6 +179,10 @@ export function nearestSql(dims: number, scan: Scan = "plain") {
       `SELECT e.item_id, e.embedding::vector(${n}) <=> $3::vector(${n}) AS dist FROM embeddings e WHERE ${where(n, "items")} OFFSET 0` +
       `) c JOIN items i ON i.id = c.item_id ORDER BY c.dist LIMIT $4`
     );
+  }
+  if (scan === "bits") {
+    const dist = `c.embedding::vector(${n}) <=> $3::vector(${n})`;
+    return `SELECT ${ITEM_COLS_I}, 1 - (${dist}) AS score FROM (${bitsInner(n, "x.item_id", "items")}) c JOIN items i ON i.id = c.item_id ORDER BY ${dist} LIMIT $4`;
   }
   if (scan === "binary") {
     const dist = `c.embedding::vector(${n}) <=> $3::vector(${n})`;
@@ -193,6 +213,10 @@ export function nearestSourcesSql(dims: number, scan: Scan = "plain") {
       `SELECT e.item_id, e.research_id, e.embedding::vector(${n}) <=> $3::vector(${n}) AS dist FROM embeddings e WHERE ${where(n, "all")} OFFSET 0` +
       `) c ORDER BY c.dist LIMIT $4`
     );
+  }
+  if (scan === "bits") {
+    const dist = `c.embedding::vector(${n}) <=> $3::vector(${n})`;
+    return `SELECT c.item_id, c.research_id, 1 - (${dist}) AS score FROM (${bitsInner(n, "x.item_id, x.research_id", "all")}) c ORDER BY ${dist} LIMIT $4`;
   }
   if (scan === "binary") {
     const dist = `c.embedding::vector(${n}) <=> $3::vector(${n})`;
@@ -313,9 +337,9 @@ type Target = { kind: "item" | "research"; id: string; projectId: string; text: 
 
 /** What a search of this concept would run now (see nearest()). */
 async function searchFor(projectId: string | null, info: EmbeddingInfo, index: SearchKind): Promise<SearchKind> {
-  if (index === "exact" || !projectId) return "exact";
-  const r = await q<{ n: number }>(countSql(info.dims, "all"), [projectId, info.model]);
-  return (r[0]?.n ?? 0) > EXACT_SEARCH_MAX_ROWS ? index : "exact";
+  if (!projectId) return "exact";
+  const n = (await q<{ n: number }>(countSql(info.dims, "all"), [projectId, info.model]))[0]?.n ?? 0;
+  return n <= EXACT_SEARCH_MAX_ROWS ? "exact" : n <= BIT_SCAN_MAX_ROWS || index === "exact" ? "bits" : index;
 }
 
 async function indexTargets(projectId: string | null, targets: Target[], emb: ReadyEmbedding, o: IndexOptions): Promise<IndexCounts> {
@@ -428,17 +452,17 @@ export async function meaningReady(projectId: string): Promise<Ready | Unavailab
 
 export type MeaningHit = ReturnType<typeof toItem> & { score: number };
 
-export type SearchOptions = { signal?: AbortSignal; timeoutMs?: number; use?: ReadyEmbedding; exactThreshold?: number };
+export type SearchOptions = { signal?: AbortSignal; timeoutMs?: number; use?: ReadyEmbedding; exactThreshold?: number; bitThreshold?: number };
 
 /**
  * Runs one nearest-neighbour statement with the scan settings it needs, in one transaction, and
  * says which search ran: "exact", "hnsw" or "binary".
  *
  * The concept's vectors for this model are counted first. At or below `exactThreshold` (default
- * EXACT_SEARCH_MAX_ROWS) the search is exact, at every width; above it the width's index runs
- * (HNSW up to 2,000 numbers, binary-quantized with re-ranking above), with hnsw.ef_search raised to
- * the candidate limit. A width with no index (over 64,000, or the index could not be made) is
- * always searched exactly.
+ * EXACT_SEARCH_MAX_ROWS) every full vector is compared. Above it and at or below `bitThreshold`
+ * (default BIT_SCAN_MAX_ROWS) the stored one-bit copies are compared and the best re-ranked. Above
+ * that the width's index runs (HNSW up to 2,000 numbers, binary-quantized with re-ranking above),
+ * with hnsw.ef_search raised to the candidate limit; a width with no index stays on the one-bit scan.
  */
 async function nearest<T>(
   projectId: string,
@@ -447,18 +471,16 @@ async function nearest<T>(
   limit: number,
   kinds: Kinds,
   sqlFor: (dims: number, scan: Scan) => string,
-  exactThreshold = EXACT_SEARCH_MAX_ROWS
+  exactThreshold = EXACT_SEARCH_MAX_ROWS,
+  bitThreshold = BIT_SCAN_MAX_ROWS
 ): Promise<{ rows: T[]; search: SearchKind }> {
   const dims = emb.info.dims;
   const index = await ensureWidthIndex(dims);
   return tx(async (c) => {
-    let search: SearchKind = "exact";
-    if (index !== "exact") {
-      const r = await c.query<{ n: number }>(countSql(dims, kinds), [projectId, emb.info.model]);
-      if ((r.rows[0]?.n ?? 0) > exactThreshold) search = index;
-    }
-    const scan: Scan = search === "exact" ? "exact" : search === "binary" ? "binary" : "plain";
-    if (scan !== "exact") {
+    const count = (await c.query<{ n: number }>(countSql(dims, kinds), [projectId, emb.info.model])).rows[0]?.n ?? 0;
+    const search: SearchKind = count <= exactThreshold ? "exact" : count <= bitThreshold || index === "exact" ? "bits" : index;
+    const scan: Scan = search === "hnsw" ? "plain" : search;
+    if (scan === "plain" || scan === "binary") {
       // The index covers every concept and the concept filter applies after the index scan;
       // iterative scans (pgvector 0.8+) keep reading until enough rows of this concept are found.
       // Relaxed order may return rows slightly out of order, so callers sort again. An HNSW scan
@@ -497,7 +519,7 @@ export async function searchByMeaning(
   }
   const n = Math.max(1, Math.min(100, Math.floor(limit)));
   const vector = await embedQuery(query, emb, o);
-  const { rows, search } = await nearest<ItemRow & { score: number }>(projectId, emb, vector, n, "items", nearestSql, o.exactThreshold);
+  const { rows, search } = await nearest<ItemRow & { score: number }>(projectId, emb, vector, n, "items", nearestSql, o.exactThreshold, o.bitThreshold);
   const items = rows.map((r) => ({ ...toItem(r), score: Number(r.score) })).sort((a, b) => b.score - a.score);
   return { ok: true, items, model: emb.info.model, dims: emb.info.dims, search };
 }
@@ -547,7 +569,7 @@ export async function searchSourcesByMeaning(
 ): Promise<{ hits: SourceHit[]; search: SearchKind; model: string; dims: number }> {
   const n = Math.max(1, Math.min(100, Math.floor(limit)));
   const vector = await embedQuery(query, o.use, o);
-  const { rows, search } = await nearest<{ item_id: string | null; research_id: string | null; score: number }>(projectId, o.use, vector, n, "all", nearestSourcesSql, o.exactThreshold);
+  const { rows, search } = await nearest<{ item_id: string | null; research_id: string | null; score: number }>(projectId, o.use, vector, n, "all", nearestSourcesSql, o.exactThreshold, o.bitThreshold);
   rows.sort((a, b) => Number(b.score) - Number(a.score));
   return { hits: await loadHits(projectId, rows), search, model: o.use.info.model, dims: o.use.info.dims };
 }
@@ -574,26 +596,61 @@ const STOP_WORDS = new Set(
 );
 
 /**
- * Rows and research answers ranked by how many of the question's words they contain ($2, a text
- * array of plain words), best first; rows with none are left out. Score = share of words matched.
+ * Rows and research answers found by PostgreSQL full-text search (the `search` columns and their GIN
+ * indexes, migrations/0008_search.sql), best first. $2 is the question's words joined with " | ", so a
+ * source matches when it contains any of them; ts_rank_cd ranks by how many, how often and where
+ * (title above body above fields). $4 lists sections the question names ("Bill of materials"): their
+ * rows match too and rank higher. Score = rank / (1 + rank), between 0 and 1.
  */
 export const TEXT_SOURCES_SQL =
-  "SELECT * FROM (" +
+  "SELECT item_id, research_id, rank / (1 + rank) AS hits FROM (" +
   "SELECT i.id::text AS item_id, NULL::text AS research_id, " +
-  "(SELECT count(*) FROM unnest($2::text[]) w WHERE i.title ILIKE '%' || w || '%' OR i.body ILIKE '%' || w || '%' OR i.data::text ILIKE '%' || w || '%')::float8 AS hits, i.sort AS sort " +
-  "FROM items i WHERE i.project_id = $1 " +
+  "(ts_rank_cd(i.search, t.query) + CASE WHEN i.section = ANY($4::text[]) THEN 1 ELSE 0 END)::float8 AS rank, i.sort AS sort " +
+  "FROM items i, to_tsquery('english', $2) AS t(query) WHERE i.project_id = $1 AND (i.search @@ t.query OR i.section = ANY($4::text[])) " +
   "UNION ALL " +
-  "SELECT NULL::text, r.id::text, " +
-  "(SELECT count(*) FROM unnest($2::text[]) w WHERE r.query ILIKE '%' || w || '%' OR r.answer ILIKE '%' || w || '%')::float8, 100000 " +
-  "FROM research r WHERE r.project_id = $1" +
-  ") s WHERE hits > 0 ORDER BY hits DESC, sort, item_id NULLS LAST, research_id LIMIT $3";
+  "SELECT NULL::text, r.id::text, ts_rank_cd(r.search, t.query)::float8, 100000 " +
+  "FROM research r, to_tsquery('english', $2) AS t(query) WHERE r.project_id = $1 AND r.search @@ t.query" +
+  ") s ORDER BY rank DESC, sort, item_id NULLS LAST, research_id LIMIT $3";
+
+/** The stores (as kept on rows, e.g. "design/bom") whose section name appears in the question. */
+export function sectionsNamed(question: string): string[] {
+  const text = question.toLowerCase();
+  const out = new Set<string>();
+  for (const stage of STAGES) {
+    for (const section of stage.sections) {
+      const label = section.label.toLowerCase();
+      if (label.length >= 4 && text.includes(label)) out.add(storeKey(stage, section));
+    }
+  }
+  return [...out];
+}
 
 export async function searchSourcesByText(projectId: string, question: string, limit: number): Promise<SourceHit[]> {
   const words = questionWords(question);
-  if (!words.length) return [];
-  const rows = await q<{ item_id: string | null; research_id: string | null; hits: number }>(TEXT_SOURCES_SQL, [projectId, words, limit]);
+  const sections = sectionsNamed(question);
+  if (!words.length && !sections.length) return [];
+  const rows = await q<{ item_id: string | null; research_id: string | null; hits: number }>(TEXT_SOURCES_SQL, [projectId, words.join(" | "), limit, sections]);
   return loadHits(
     projectId,
-    rows.map((r) => ({ item_id: r.item_id, research_id: r.research_id, score: Number(r.hits) / words.length }))
+    rows.map((r) => ({ item_id: r.item_id, research_id: r.research_id, score: Number(r.hits) }))
   );
+}
+
+/**
+ * Joins two ranked lists by reciprocal rank fusion: a source scores 1 / (60 + its place) in each list
+ * it appears in. A source both searches found rises; one found by exact words only (a part number)
+ * still gets in. 60 is the constant from the method's paper and pgvector's hybrid-search example.
+ */
+export function fuseRanked(lists: SourceHit[][], limit: number): SourceHit[] {
+  const keyOf = (h: SourceHit) => (h.kind === "item" ? `i${h.item.id}` : `r${h.research.id}`);
+  const seen = new Map<string, { hit: SourceHit; score: number }>();
+  for (const list of lists) {
+    list.forEach((hit, place) => {
+      const k = keyOf(hit);
+      const e = seen.get(k) ?? { hit, score: 0 };
+      e.score += 1 / (60 + place + 1);
+      seen.set(k, e);
+    });
+  }
+  return [...seen.values()].sort((a, b) => b.score - a.score).slice(0, limit).map((e) => ({ ...e.hit, score: e.score }));
 }

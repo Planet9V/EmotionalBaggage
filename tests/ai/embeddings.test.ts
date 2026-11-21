@@ -6,7 +6,11 @@ import {
   binaryIndexName,
   binaryIndexSql,
   candidateLimit,
+  BIT_SCAN_MAX_ROWS,
+  bitCandidates,
   EXACT_SEARCH_MAX_ROWS,
+  fuseRanked,
+  sectionsNamed,
   countSql,
   MAX_BINARY_DIMS,
   nearestSourcesSql,
@@ -146,7 +150,7 @@ describe("generated SQL", () => {
     expect(candidateLimit(20)).toBe(200);
     expect(candidateLimit(100)).toBe(1000); // pgvector's largest ef_search
     expect(candidateLimit(500)).toBe(1000);
-    expect(EXACT_SEARCH_MAX_ROWS).toBe(5000);
+    expect(EXACT_SEARCH_MAX_ROWS).toBe(2000);
   });
 
   it("the exact scan computes the distance under an OFFSET 0 fence, so no index can serve the ordering", () => {
@@ -190,9 +194,36 @@ describe("generated SQL", () => {
     expect(questionWords("What does the load-cell weigh, and what is the 50 kg limit? What?")).toEqual(["load", "cell", "weigh", "limit"]);
     expect(questionWords("is it ok")).toEqual([]);
     expect(questionWords("Batería ÜBER")).toEqual(["batería", "über"]);
-    expect(TEXT_SOURCES_SQL).toContain("FROM items i WHERE i.project_id = $1");
-    expect(TEXT_SOURCES_SQL).toContain("FROM research r WHERE r.project_id = $1");
-    expect(TEXT_SOURCES_SQL).toContain("WHERE hits > 0 ORDER BY hits DESC");
+    expect(TEXT_SOURCES_SQL).toContain("i.search @@ t.query OR i.section = ANY($4::text[])");
+    expect(TEXT_SOURCES_SQL).toContain("r.search @@ t.query");
+    expect(TEXT_SOURCES_SQL).toContain("ORDER BY rank DESC");
+  });
+
+  it("recognises a section named in the question", () => {
+    expect(sectionsNamed("What is still open in Bill of materials?")).toEqual(["design/bom"]);
+    // the Schematic section keeps its rows under the wiring store
+    expect(sectionsNamed("what does the SCHEMATIC say")).toEqual(["design/wiring"]);
+    expect(sectionsNamed("How heavy is it?")).toEqual([]);
+  });
+
+  it("joins two rankings: found by both rises, found by one still gets in", () => {
+    const item = (id: number) => ({ kind: "item" as const, score: 0, item: { id } as never });
+    const fused = fuseRanked([[item(1), item(2), item(3)], [item(3), item(4)]], 4);
+    const ids = fused.map((h) => (h.kind === "item" ? h.item.id : 0));
+    expect(ids.slice(0, 2)).toEqual([3, 1]);
+    expect(ids).toContain(4);
+    expect(fuseRanked([[item(1), item(2), item(3)], [item(3), item(4)]], 2)).toHaveLength(2);
+    expect(fused[0].score).toBeCloseTo(1 / 63 + 1 / 61, 10);
+  });
+
+  it("compares the stored one-bit copies under a fence, then re-ranks the best by the full vectors", () => {
+    const sql = nearestSql(4096, "bits");
+    expect(sql).toContain("e.bq::bit(4096) <~> binary_quantize($3::vector(4096)) AS h");
+    expect(sql).toContain("OFFSET 0) x ORDER BY x.h LIMIT least(greatest($4 * 20, 200), 1000)");
+    expect(sql).toContain("ORDER BY c.embedding::vector(4096) <=> $3::vector(4096) LIMIT $4");
+    expect(nearestSourcesSql(8, "bits")).toContain("e.research_id, e.embedding, e.bq::bit(8)");
+    expect([bitCandidates(1), bitCandidates(8), bitCandidates(20), bitCandidates(100)]).toEqual([200, 200, 400, 1000]);
+    expect(BIT_SCAN_MAX_ROWS).toBe(100_000);
   });
 
   it("upserts on the (item, model) unique index", () => {

@@ -225,10 +225,10 @@ jobs:
 
       - name: Assert the vector-search settings from docker-compose.yml are in force
         run: |
-          S=$(docker compose exec -T db psql -U c2r -d c2r -tAc "select string_agg(name || '=' || current_setting(name), ' ' order by name) from pg_settings where name in ('shared_buffers','effective_cache_size','maintenance_work_mem','max_parallel_maintenance_workers','work_mem','jit','default_toast_compression','io_method')")
+          S=$(docker compose exec -T db psql -U c2r -d c2r -tAc "select string_agg(name || '=' || current_setting(name), ' ' order by name) from pg_settings where name in ('shared_buffers','effective_cache_size','maintenance_work_mem','max_parallel_maintenance_workers','work_mem','jit','default_toast_compression','io_method','random_page_cost')")
           echo "- database settings: \`$S\`" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Database settings::$S"
-          for want in shared_buffers=1GB effective_cache_size=3GB maintenance_work_mem=1GB max_parallel_maintenance_workers=4 work_mem=32MB jit=off; do
+          for want in shared_buffers=1GB effective_cache_size=3GB maintenance_work_mem=1GB max_parallel_maintenance_workers=4 work_mem=32MB jit=off random_page_cost=1.1; do
             echo "$S" | grep -q "$want" || { echo "missing $want in: $S"; exit 1; }
           done
           SHM=$(docker compose exec -T db df -m /dev/shm | awk 'NR==2 {print $2}')

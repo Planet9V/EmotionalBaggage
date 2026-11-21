@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { messageOf } from "@/lib/queries";
 import { chatKeys, indexConcept, type ChatSetup, type IndexResult } from "./api";
 
-const SEARCH: Record<string, string> = { hnsw: "an HNSW index", binary: "a binary-quantized index with re-ranking", exact: "exact search" };
+const SEARCH: Record<string, string> = { hnsw: "an HNSW index", binary: "a binary-quantized index with re-ranking", exact: "a comparison of every vector", bits: "a comparison of one-bit copies, the best re-ranked" };
 
 function counts(r: IndexResult) {
   const rows = { indexed: r.indexed - r.research.indexed, skipped: r.skipped - r.research.skipped, failed: r.failed - r.research.failed };
-  return `Rows: ${rows.indexed} embedded, ${rows.skipped} unchanged, ${rows.failed} failed. Research answers: ${r.research.indexed} embedded, ${r.research.skipped} unchanged, ${r.research.failed} failed. Model ${r.model}, ${r.dims.toLocaleString()} numbers per text. Index for this width: ${r.index === "exact" ? "none" : (SEARCH[r.index] ?? r.index)}. This concept is searched with ${SEARCH[r.search] ?? r.search}${r.search === "exact" ? " while it has 5,000 vectors or fewer" : ""}.`;
+  return `Rows: ${rows.indexed} embedded, ${rows.skipped} unchanged, ${rows.failed} failed. Research answers: ${r.research.indexed} embedded, ${r.research.skipped} unchanged, ${r.research.failed} failed. Model ${r.model}, ${r.dims.toLocaleString()} numbers per text. Index for this width: ${r.index === "exact" ? "none" : (SEARCH[r.index] ?? r.index)}. This concept is searched with ${SEARCH[r.search] ?? r.search}${r.search === "exact" ? " while it has 2,000 vectors or fewer" : ""}.`;
 }
 
 /**

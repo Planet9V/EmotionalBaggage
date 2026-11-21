@@ -125,7 +125,7 @@ describe.runIf(hasVector)("embeddings with pgvector", () => {
     const exact = await searchByMeaning(PROJECT, textOf(1), 3);
     expect(exact.ok && exact.search).toBe("exact");
     expect(exact.ok && exact.items[0].id).toBe(ids[1]);
-    const viaIndex = await searchByMeaning(PROJECT, textOf(1), 3, { exactThreshold: 1 });
+    const viaIndex = await searchByMeaning(PROJECT, textOf(1), 3, { exactThreshold: 1, bitThreshold: 0 });
     expect(viaIndex.ok && viaIndex.search).toBe("hnsw");
     expect(viaIndex.ok && viaIndex.items[0].id).toBe(ids[1]);
   });
@@ -275,17 +275,17 @@ describe.runIf(hasVector)("embeddings at 4,096 numbers (binary quantization with
     expect(await explain(nearestSql(4096, "exact"))).not.toContain("embeddings_bq_4096");
   });
 
-  it("searches exactly while the concept is at or under the threshold (5,000 by default)", async () => {
+  it("searches exactly while the concept is at or under the threshold (2,000 by default)", async () => {
     const r = await searchByMeaning(WIDE, text(42), 5);
     expect(r.ok && r.search).toBe("exact");
     expect(r.ok && r.items[0].id).toBe(wideIds[42]);
-    const atThreshold = await searchByMeaning(WIDE, text(42), 5, { exactThreshold: N });
+    const atThreshold = await searchByMeaning(WIDE, text(42), 5, { exactThreshold: N, bitThreshold: 0 });
     expect(atThreshold.ok && atThreshold.search).toBe("exact");
   });
 
   it("above the threshold, finds the nearest row through the binary scan, re-ranked by the full vectors", async () => {
     for (const k of [0, 77, N - 1]) {
-      const r = await searchByMeaning(WIDE, text(k), 5, { exactThreshold: 50 });
+      const r = await searchByMeaning(WIDE, text(k), 5, { exactThreshold: 50, bitThreshold: 0 });
       expect(r.ok).toBe(true);
       if (!r.ok) return;
       expect(r.search).toBe("binary");
@@ -296,8 +296,31 @@ describe.runIf(hasVector)("embeddings at 4,096 numbers (binary quantization with
     }
   });
 
+  it("between the two thresholds, compares the stored one-bit copies and re-ranks: same first row, only this concept's rows", async () => {
+    for (const k of [0, 77, N - 1]) {
+      const r = await searchByMeaning(WIDE, text(k), 5, { exactThreshold: 50 });
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.search).toBe("bits");
+      expect(r.items).toHaveLength(5);
+      expect(r.items[0].id).toBe(wideIds[k]);
+      expect(r.items[0].score).toBeGreaterThan(0.9999);
+      expect(r.items.every((i) => i.projectId === WIDE)).toBe(true);
+      const exact = await searchByMeaning(WIDE, text(k), 5);
+      expect(exact.ok && exact.items.map((i) => i.id)).toEqual(r.items.map((i) => i.id));
+    }
+  });
+
+  it("keeps a one-bit copy beside every vector, in the table itself, and an index on concept, model and width", async () => {
+    const rows = await q<{ bits: number; dims: number }>("SELECT bit_length(bq)::int AS bits, dims FROM embeddings WHERE project_id = $1 LIMIT 3", [WIDE]);
+    expect(rows.length).toBe(3);
+    expect(rows.every((r) => r.bits === 4096 && r.dims === 4096)).toBe(true);
+    const idx = await q<{ indexdef: string }>("SELECT indexdef FROM pg_indexes WHERE indexname = 'embeddings_scope'");
+    expect(idx[0].indexdef).toContain("(project_id, model, dims)");
+  });
+
   it("a concept with few vectors gets its own rows back (exact search), not the large concept's", async () => {
-    const r = await searchByMeaning(WIDE_SMALL, text(5), 10, { exactThreshold: 50 });
+    const r = await searchByMeaning(WIDE_SMALL, text(5), 10, { exactThreshold: 50, bitThreshold: 0 });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.search).toBe("exact");

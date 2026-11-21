@@ -246,12 +246,20 @@ describe.runIf(hasVector)("asking with pgvector", () => {
     const { meta } = await readAnswer(
       await ask(json("POST", { message: "Airline weight limits for checked bags\nMost budget airlines allow 20 to 23 kg per checked bag." }, url(`/api/chats/${id}/messages`)), ctx(String(id)))
     );
-    expect(meta.retrieval).toBe("meaning");
+    // the question's words also occur in the sources, so both searches found them and the rankings were joined
+    expect(meta.retrieval).toBe("both");
     expect(meta.note).toBeUndefined();
     expect(meta.search).toBe("exact"); // four vectors: far under the exact-search threshold
     expect(meta.sources?.[0]).toMatchObject({ n: 1, kind: "research", id: researchId });
-    expect(meta.sources?.[0].score).toBeGreaterThan(0.9999);
     expect(meta.sources).toHaveLength(4);
+  });
+
+  it("uses meaning alone when no word of the question occurs in any source", async () => {
+    await reindex(json("POST", { projectId: PROJECT }));
+    const id = await newChat();
+    const { meta } = await readAnswer(await ask(json("POST", { message: "zzqx yyvv?" }, url(`/api/chats/${id}/messages`)), ctx(String(id))));
+    expect(meta.retrieval).toBe("meaning");
+    expect(meta.sources?.length).toBeGreaterThan(0);
   });
 
   it("falls back to text, and says why, when the embedding call fails", async () => {

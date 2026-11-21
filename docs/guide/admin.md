@@ -44,7 +44,7 @@ The first request brings the database up to date, turns on pgvector and loads th
 
 **Status of this procedure:** GitHub Actions starts the three containers on every change, both without a `.env` and with one copied from `.env.example`, and checks that they are healthy, that the app answers, that pgvector is active, that the planner is reachable, and that backup and restore work. It has been run on Linux there; it has not yet been run on a Mac.
 
-**Database version:** the default image is PostgreSQL 19.0 (the current release, 19 November 2026) with pgvector 0.8.7. Its memory settings are tuned for vector search and can be changed in `.env` (`PG_SHARED_BUFFERS`, `PG_EFFECTIVE_CACHE_SIZE`, `PG_MAINTENANCE_WORK_MEM`, `PG_MAX_PARALLEL_MAINTENANCE_WORKERS`, `PG_WORK_MEM`, `PG_SHM_SIZE`); the defaults suit a machine that gives Docker 4 GB or more. The reasons and measurements are on the Vector search page under Documentation. A data volume created by one major version of PostgreSQL will not start under another, so choose before the first start (`PG_IMAGE` in `.env`).
+**Database version:** the default image is PostgreSQL 19.0 (the current release, 19 November 2026) with pgvector 0.8.7. Its memory settings are tuned for vector search and can be changed in `.env` (`PG_SHARED_BUFFERS`, `PG_EFFECTIVE_CACHE_SIZE`, `PG_MAINTENANCE_WORK_MEM`, `PG_MAX_PARALLEL_MAINTENANCE_WORKERS`, `PG_WORK_MEM`, `PG_RANDOM_PAGE_COST`, `PG_SHM_SIZE`); the defaults suit a machine that gives Docker 4 GB or more. The reasons and measurements are on the Vector search page under Documentation. A data volume created by one major version of PostgreSQL will not start under another, so choose before the first start (`PG_IMAGE` in `.env`).
 
 ## Signing in
 
@@ -101,7 +101,7 @@ They are chosen in Admin, Models.
 - For the embedding model, also give its vector width (for example 768 or 1024). If it is wrong, indexing reports both widths.
 - After choosing or changing the embedding model, index each concept again (the button in Admin, Models, or `POST /api/index` with the concept's id). Until then search falls back to matching text for that concept. Rows embedded with an earlier model stay in the database but are not used.
 - Search by meaning needs the pgvector extension, which the supplied database image has.
-- Qwen3 Embedding 8B gives 4,096 numbers per text, more than pgvector's ordinary index accepts. The app searches a small concept exactly and a large one through a one-bit index followed by a second pass on the full vectors. The measurements are on the Vector search page under Documentation.
+- Qwen3 Embedding 8B gives 4,096 numbers per text, more than pgvector's ordinary index accepts. The app compares every vector in a small concept, and in a larger one compares a stored one-bit copy of each vector and then re-ranks the best by their full vectors. The measurements are on the Vector search page under Documentation.
 
 None of this has been run against a real Ollama, LM Studio or OpenRouter yet; it is tested against a stand-in.
 
