@@ -18,8 +18,16 @@ CREATE TABLE sign_in_attempts (
 );
 CREATE INDEX sign_in_attempts_last ON sign_in_attempts (last_attempt_at);
 
+-- D1: the foreign keys these columns hold are followed on every delete of the row they point at (an item, a
+-- campaign row), and drafts are looked up by the item they changed. tracked_links_project covers
+-- (project_id, campaign_id) but not campaign_id alone.
+CREATE INDEX drafts_item_id ON drafts (item_id) WHERE item_id IS NOT NULL;
+CREATE INDEX tracked_links_campaign ON tracked_links (campaign_id);
+
 -- Down Migration
 
+DROP INDEX IF EXISTS tracked_links_campaign;
+DROP INDEX IF EXISTS drafts_item_id;
 DROP TABLE IF EXISTS sign_in_attempts;
 CREATE TABLE sign_in_attempts (
   username_key text PRIMARY KEY,

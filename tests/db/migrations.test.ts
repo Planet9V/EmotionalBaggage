@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { runner } from "node-pg-migrate";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -148,5 +149,101 @@ describe("rules the database enforces from now on", () => {
     await db.q("INSERT INTO credentials (provider, field, value) VALUES ('openrouter','apiKey','k1')");
     await expect(db.q("INSERT INTO credentials (provider, field, value) VALUES ('openrouter','apiKey','k2')")).rejects.toMatchObject({ code: "23505" });
     await expect(db.q("INSERT INTO credentials (provider, field, value) VALUES ('openrouter','other',' ')")).rejects.toMatchObject({ code: "23514" });
+  });
+});
+
+// D1 (robustness review): an install stopped at an older migration, with rows the code of that time wrote,
+// is brought up to date by the remaining migrations without losing a row. Each case applies the migrations up
+// to N with node-pg-migrate (as the app does), writes representative rows through SQL, then applies the rest.
+describe("upgrading from a database stopped at 0012 and at 0018", () => {
+  const files = readdirSync("migrations").filter((f) => /^\d{4}_.+\.sql$/.test(f)).sort();
+  const countTo = (prefix: string) => files.findIndex((f) => f.startsWith(prefix)) + 1;
+
+  async function stepped(name: string, stopAt: string, write: (c: Client) => Promise<void>) {
+    const a = admin();
+    await a.connect();
+    await a.query(`DROP DATABASE IF EXISTS ${name}`);
+    await a.query(`CREATE DATABASE ${name}`);
+    await a.end();
+    const u = new URL(base.toString());
+    u.pathname = `/${name}`;
+    const c = new Client({ connectionString: u.toString() });
+    await c.connect();
+    const run = (count: number) => runner({ dbClient: c, dir: "migrations", direction: "up", migrationsTable: "schema_migrations", checkOrder: true, count, log: () => undefined });
+    await run(countTo(stopAt));
+    const applied = (await c.query<{ name: string }>("SELECT name FROM schema_migrations ORDER BY id")).rows.map((r) => r.name);
+    expect(applied.at(-1)).toBe(files[countTo(stopAt) - 1].replace(/\.sql$/, ""));
+    await write(c);
+    await run(Infinity);
+    return { c, drop: async () => {
+      await c.end();
+      const b = admin();
+      await b.connect();
+      await b.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+      await b.end();
+    } };
+  }
+
+  async function commonRows(c: Client) {
+    await c.query("INSERT INTO projects (id, name) VALUES ('p', 'Stepped concept')");
+    await c.query("INSERT INTO items (project_id, section, title, data, sort) VALUES ('p','design/bom','Board','{\"ref\":\"U1\"}',1), ('p','design/bom','Module','{\"ref\":\"U3\"}',2), ('p','concept/brief','Brief','{}',3)");
+    await c.query("INSERT INTO research (project_id, query, answer, citations) VALUES ('p','q','a','[\"https://a.example\"]')");
+    await c.query("INSERT INTO credentials (provider, field, value) VALUES ('openrouter','apiKey','sk-old-key-000000')");
+    await c.query("INSERT INTO settings (key, value) VALUES ('models.reasoning', '{\"provider\":\"openrouter\",\"baseUrl\":\"https://openrouter.ai/api/v1\",\"model\":\"m\"}')");
+    await c.query("INSERT INTO users (username, password_hash) VALUES ('zz-old', 'scrypt$x')");
+    await c.query("INSERT INTO sign_in_attempts (username_key, failures, window_started_at) VALUES ('zz-old', 2, now())");
+    const item = (await c.query<{ id: string }>("SELECT id FROM items WHERE title='Brief'")).rows[0].id;
+    await c.query(
+      "INSERT INTO drafts (project_id, generator, target_store, title, run_id, status, decided_at, item_id) VALUES ('p','requirements','design/requirements','A draft',gen_random_uuid(),'approved',now(),$1)",
+      [item]
+    );
+  }
+
+  async function checkCommon(c: Client) {
+    const names = (await c.query<{ name: string }>("SELECT name FROM schema_migrations ORDER BY id")).rows.map((r) => r.name);
+    expect(names).toEqual(files.map((f) => f.replace(/\.sql$/, "")));
+    expect((await c.query("SELECT 1 FROM items WHERE project_id='p'")).rowCount).toBeGreaterThanOrEqual(3);
+    expect((await c.query<{ citations: unknown }>("SELECT citations FROM research WHERE project_id='p'")).rows[0].citations).toEqual(["https://a.example"]);
+    // the key is kept, not yet bound: the app binds it to the address in use on its first read (S1)
+    expect((await c.query("SELECT value, bound_origin FROM credentials WHERE provider='openrouter'")).rows).toEqual([{ value: "sk-old-key-000000", bound_origin: null }]);
+    expect((await c.query("SELECT 1 FROM users WHERE username='zz-old'")).rowCount).toBe(1);
+    // throttling counts are state, not data: the new table starts empty, with the new shape (S4)
+    const cols = (await c.query<{ column_name: string }>("SELECT column_name FROM information_schema.columns WHERE table_name='sign_in_attempts' ORDER BY ordinal_position")).rows.map((r) => r.column_name);
+    expect(cols).toEqual(["username_key", "client", "failures", "last_attempt_at", "next_allowed_at"]);
+    expect((await c.query("SELECT 1 FROM drafts WHERE title='A draft' AND item_id IS NOT NULL")).rowCount).toBe(1);
+    const idx = (await c.query<{ indexname: string }>("SELECT indexname FROM pg_indexes WHERE indexname IN ('drafts_item_id','tracked_links_campaign') ORDER BY 1")).rows.map((r) => r.indexname);
+    expect(idx).toEqual(["drafts_item_id", "tracked_links_campaign"]);
+  }
+
+  it("from 0012, with drafts, credentials and sign-in counts of that time", async () => {
+    const { c, drop } = await stepped(`c2r_step12_${process.pid}`, "0012_", async (c) => {
+      await commonRows(c);
+      // a wire through a part in series: 0014 splits it into two wires
+      await c.query("INSERT INTO items (project_id, section, title, data, sort) VALUES ('p','design/wiring','Through R1','{\"order\":1,\"from\":\"U1\",\"fromPin\":\"TX\",\"to\":\"U3\",\"toPin\":\"RX\",\"via\":\"R1\"}',4)");
+    });
+    try {
+      await checkCommon(c);
+      const wires = (await c.query<{ data: Record<string, unknown> }>("SELECT data FROM items WHERE section='design/wiring' ORDER BY id")).rows;
+      expect(wires).toHaveLength(2);
+      for (const w of wires) expect(w.data.via).toBeUndefined();
+    } finally {
+      await drop();
+    }
+  });
+
+  it("from 0018, with pins and a print job of that time", async () => {
+    const { c, drop } = await stepped(`c2r_step18_${process.pid}`, "0018_", async (c) => {
+      await commonRows(c);
+      const part = (await c.query<{ id: string }>("SELECT id FROM items WHERE title='Board'")).rows[0].id;
+      await c.query("INSERT INTO pins (project_id, item_id, name, sort) VALUES ('p', $1, 'TX', 1), ('p', $1, 'RX', 2)", [part]);
+      await c.query("INSERT INTO items (project_id, section, title, data, status, sort) VALUES ('p','prototype/printing','Bracket','{\"printerId\":1,\"sentName\":\"bracket.gcode\"}','sent',5)");
+    });
+    try {
+      await checkCommon(c);
+      expect((await c.query("SELECT name FROM pins ORDER BY sort")).rows.map((r) => r.name)).toEqual(["TX", "RX"]);
+      expect((await c.query("SELECT status FROM items WHERE section='prototype/printing'")).rows).toEqual([{ status: "sent" }]);
+    } finally {
+      await drop();
+    }
   });
 });
