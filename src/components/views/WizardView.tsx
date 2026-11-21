@@ -89,6 +89,17 @@ export function WizardView() {
   useEffect(() => {
     idRef.current = currentId;
   }, [currentId]);
+  // A new step moves focus to its heading, so a keyboard or screen reader user starts at the top of it
+  // instead of on the page body or on Continue (U7). Not on the first render: the page's own order applies.
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    heading.current?.focus();
+  }, [currentId]);
   const index = stepper.index + 1;
   const last = stepper.isLast;
 
@@ -142,7 +153,7 @@ export function WizardView() {
         <div className="min-w-0 max-w-3xl">
           <Card hoverEffect={false} innerClassName="p-[26px]">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step {String(index).padStart(2, "0")} of {String(stepper.steps.length).padStart(2, "0")}</p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-primary">{stepper.current.title}</h2>
+            <h2 ref={heading} tabIndex={-1} className="mt-1.5 text-xl font-semibold tracking-tight text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange rounded-sm">{stepper.current.title}</h2>
             <p className="mt-1 text-sm text-secondary">{stepper.current.blurb}</p>
 
             <form className="mt-6" noValidate onSubmit={(e) => void submit(e)}>

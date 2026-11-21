@@ -61,4 +61,17 @@ describe("WizardView", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/concept/questions"));
     expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ name: "Lamp", productType: "printed" }));
   });
+
+  it("moves focus to the new step's heading on every step change (U7)", async () => {
+    renderIt();
+    fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: "Lamp" } });
+    fireEvent.change(screen.getByLabelText(/^One-line description/), { target: { value: "A desk lamp" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Who and why"));
+    expect(document.activeElement?.tagName).toBe("H2");
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Product"));
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Who and why"));
+  });
 });

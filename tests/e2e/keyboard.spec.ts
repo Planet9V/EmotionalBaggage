@@ -126,6 +126,10 @@ test.describe("wizard", () => {
     await page.getByLabel(/^Name/).fill(name);
     await page.getByLabel(/^One-line description/).fill("A lamp that is typed in without a mouse");
     await page.keyboard.press("Enter"); // submits the step
+    // focus moves to the new step's heading, and one Tab reaches its first field (U7)
+    await expect.poll(() => page.evaluate(() => document.activeElement?.tagName + ":" + document.activeElement?.textContent)).toBe("H2:Who and why");
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName)).toMatch(/INPUT|TEXTAREA|SELECT/);
     for (let i = 2; i <= 5; i++) {
       await expect(page.getByText(new RegExp(`Step 0${i} of 06`))).toBeVisible();
       await page.getByRole("button", { name: /Continue/ }).focus();
