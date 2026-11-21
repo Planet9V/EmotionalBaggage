@@ -46,6 +46,18 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       [newId, sourceId, JSON.stringify(fileMap)]
     );
 
+    // Pins belong to part rows; parts are matched by their reference, which is unique per concept.
+    // Pins of a part with no reference are not copied (nothing can be wired to such a part).
+    await c.query(
+      `INSERT INTO pins (project_id, item_id, name, kind, side, position, voltage, data, sort)
+       SELECT $1, dst.id, p.name, p.kind, p.side, p.position, p.voltage, p.data, p.sort
+         FROM pins p
+         JOIN items src ON src.id = p.item_id
+         JOIN items dst ON dst.project_id = $1 AND dst.section = 'design/bom' AND dst.data->>'ref' = src.data->>'ref'
+        WHERE p.project_id = $2 AND COALESCE(src.data->>'ref', '') <> ''`,
+      [newId, sourceId]
+    );
+
     const copied = { items: items.rowCount ?? 0, files: fileIds.rows.length };
     await logEventIn(
       c,

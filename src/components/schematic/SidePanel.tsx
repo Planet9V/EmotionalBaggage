@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Wire } from "@/lib/domain";
+import { pinKey as circuitPinKey, type Circuit } from "@/lib/parts/circuit";
+import { PIN_KIND_LABEL } from "@/lib/parts/kinds";
 import { WIRE_STATUSES, pinKey, pinLabel, type Graph, type NetInfo, type Part } from "./model";
 import { EYEBROW, NetSwatch, Select } from "./controls";
 
-export type Selection = { kind: "wire"; id: number } | { kind: "part"; ref: string } | null;
+export type Selection = { kind: "wire"; id: number } | { kind: "part"; ref: string } | { kind: "pin"; ref: string; pin: string } | null;
 
 type Props = {
   sel: Selection;
@@ -26,6 +28,8 @@ type Props = {
   onEditWire: (w: Wire) => void;
   onPatchWire: (w: Wire, change: { status?: string; order?: number }) => void;
   onRemovePin: (p: Part, pin: string) => void;
+  /** parts with their pins and the nets the wires make (src/lib/parts/circuit.ts) */
+  circuit: Circuit;
 };
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -63,6 +67,7 @@ export function SidePanel(p: Props) {
     const w = p.wires.find((x) => x.item.id === sel.id);
     if (w) return <WirePanel {...p} wire={w} />;
   }
+  if (sel?.kind === "pin") return <PinPanel {...p} refName={sel.ref} pin={sel.pin} />;
   if (sel?.kind === "part") {
     const onCanvas = p.graph.nodes.some((n) => n.kind === "part" && n.ref === sel.ref);
     if (onCanvas || p.parts.some((x) => x.ref === sel.ref)) return <PartPanel {...p} refName={sel.ref} />;
@@ -120,7 +125,6 @@ function WirePanel({ wire: w, parts, statuses, onSelect, onEditWire, onPatchWire
             {end(w.to, w.toPin)}
           </span>
         </Row>
-        <Row label="Via">{w.via ? `${w.via}${title(w.via) ? ` · ${title(w.via)}` : " · not in the bill of materials"}` : "None"}</Row>
         <Row label="Note">{w.note ? <span className="text-secondary">{w.note}</span> : <span className="text-muted">None</span>}</Row>
         <Row label="Status">
           <span className="flex items-center gap-2">
@@ -224,6 +228,52 @@ function PartPanel({ refName, parts, wires, graph, onSelect, onRemovePin }: Prop
           </Link>
         </Button>
       </div>
+    </div>
+  );
+}
+
+function PinPanel({ refName, pin, circuit, onSelect }: Props & { refName: string; pin: string }) {
+  const part = circuit.byRef.get(refName);
+  const def = part?.pins.find((x) => x.name === pin) ?? null;
+  const net = circuit.netOf.get(circuitPinKey(refName, pin));
+  const v = def?.voltage;
+  const volts = v ? [v.min !== undefined && v.max !== undefined ? `${v.min} V to ${v.max} V` : v.max !== undefined ? `at most ${v.max} V` : v.min !== undefined ? `at least ${v.min} V` : "", v.nominal !== undefined ? `${v.nominal} V` : ""].filter(Boolean).join(", ") : "";
+  return (
+    <div className="space-y-3">
+      <Header eyebrow={`Pin of ${refName}`} title={`${refName}.${pin}`} onClose={() => onSelect(null)} />
+      <dl className="divide-y divide-hairline">
+        <Row label="Kind">{def?.kind ? PIN_KIND_LABEL[def.kind] : <span className="text-muted">Not stated</span>}</Row>
+        <Row label="Voltage">{volts || <span className="text-muted">Not stated</span>}</Row>
+        {def?.currentMax != null && <Row label="Current">{`${def.currentMax} mA at most`}</Row>}
+        {def?.bus && <Row label="Bus">{`${def.bus.type.toUpperCase()} ${def.bus.line}`}</Row>}
+        <Row label="Net">{net ? <span className="font-mono">{net.name}</span> : <span className="text-muted">No wire</span>}</Row>
+      </dl>
+      {net && (
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Also on this net</p>
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {net.members.filter((m) => !(m.ref === refName && m.pin === pin)).map((m) => (
+              <li key={`${m.ref}.${m.pin}`}>
+                <button type="button" onClick={() => onSelect({ kind: "pin", ref: m.ref, pin: m.pin })} className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[11px] text-link hover:border-dutchOrange/40">
+                  {m.ref}.{m.pin}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <ul className="mt-2 space-y-0.5">
+            {net.wires.filter((w) => (w.from === refName && w.fromPin === pin) || (w.to === refName && w.toPin === pin)).map((w) => (
+              <li key={w.item.id}>
+                <button type="button" onClick={() => onSelect({ kind: "wire", id: w.item.id })} className="text-left text-xs text-secondary hover:text-link">
+                  Wire {w.order}: {w.name || "unnamed"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <button type="button" onClick={() => onSelect({ kind: "part", ref: refName })} className="text-xs text-link hover:underline">
+        Show all of {refName}
+      </button>
     </div>
   );
 }

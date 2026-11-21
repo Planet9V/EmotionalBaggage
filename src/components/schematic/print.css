@@ -1,0 +1,42 @@
+/* Print the schematic sheet through the browser (Print, then Save as PDF): only the canvas and its
+   title block, landscape, no controls. Loaded by SchematicView. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .schematic-print-area,
+  .schematic-print-area * {
+    visibility: visible;
+  }
+  .schematic-print-area {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    /* paper is white in both themes */
+    color-scheme: light;
+    --bg-canvas: #ffffff;
+    --bg-surface: #ffffff;
+    --bg-subtle: #f3f0ec;
+    --text-primary: #18181b;
+    --text-secondary: #52525b;
+    --text-muted: #71717a;
+    --border-hairline: #d9d2c5;
+  }
+  .schematic-print-area .schematic-canvas {
+    height: 100vh !important;
+    border: 0 !important;
+  }
+  .schematic-noprint,
+  .schematic-print-area .react-flow__controls,
+  .schematic-print-area .react-flow__minimap,
+  .schematic-print-area .react-flow__background {
+    display: none !important;
+  }
+  .schematic-printonly {
+    display: inline !important;
+  }
+}

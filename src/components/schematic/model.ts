@@ -168,7 +168,8 @@ export type Segment = {
 export type Graph = { nodes: SNode[]; segments: Segment[]; byId: Map<string, SNode> };
 
 /** `ignoreSaved` lays every node out afresh (the Tidy action); the overlay still wins. */
-export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string, XY>, ignoreSaved = false): Graph {
+/** `layout`: positions by ref from the elkjs layout (./elk.ts); refs it lacks fall back to `autoLayout`. */
+export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string, XY>, ignoreSaved = false, layout?: Record<string, XY>): Graph {
   const byRef = new Map<string, Part>();
   for (const p of parts) if (!byRef.has(p.ref)) byRef.set(p.ref, p);
 
@@ -191,7 +192,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
     }
   }
 
-  const auto = autoLayout(refs, wires, (r) => pinList.get(r)?.length ?? 1);
+  const auto = { ...autoLayout(refs, wires, (r) => pinList.get(r)?.length ?? 1), ...(layout ?? {}) };
   const pos = new Map<string, XY>();
   for (const r of refs) pos.set(r, overlay[nodeId(r)] ?? (ignoreSaved ? null : byRef.get(r)?.schematic) ?? auto[r] ?? { x: 0, y: 0 });
 

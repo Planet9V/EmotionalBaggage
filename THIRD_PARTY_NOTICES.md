@@ -1,12 +1,12 @@
 # Third-party notices
 
-Generated from package-lock.json at commit adae465 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 4388de5 by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
 ## npm packages (production tree)
 
-557 packages: 40 direct, 517 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
+557 packages: 41 direct, 516 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
 
 | Package | Version | Licence | Repository | Kind |
 | --- | --- | --- | --- | --- |
@@ -299,7 +299,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | devlop | 1.1.0 | MIT | https://github.com/wooorm/devlop | transitive |
 | dompurify | 3.4.18 | (MPL-2.0 OR Apache-2.0) | https://github.com/cure53/DOMPurify | transitive |
 | draco3d | 1.5.9 | Apache-2.0 | https://github.com/google/draco | transitive |
-| elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | https://github.com/kieler/elkjs | transitive |
+| elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | https://github.com/kieler/elkjs | direct |
 | embla-carousel | 8.6.0 | MIT | https://github.com/davidjerleke/embla-carousel | transitive |
 | embla-carousel-react | 8.6.0 | MIT | https://github.com/davidjerleke/embla-carousel | direct |
 | embla-carousel-reactive-utils | 8.6.0 | MIT | https://github.com/davidjerleke/embla-carousel | transitive |
@@ -1885,6 +1885,16 @@ Listed by hand in `docs/third-party.manual.json`.
 - Licence evidence: node_modules/@fontsource-variable/jetbrains-mono/LICENSE: 'Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) ... This Font Software is licensed under the SIL Open Font License, Version 1.1.'; metadata.json license.type OFL-1.1.
 - Notes: The font files are copied unmodified into the built CSS assets and served to the browser.
 
+### KiCad command-line tool (kicad-cli), CI only
+
+- Version or tag: 10.0 (Ubuntu package from ppa:kicad/kicad-10.0-releases)
+- Licence: GPL-3.0-or-later (KiCad); its libraries are not installed or used
+- How it is used: separate process
+- Referenced in: `.github/workflows/ci.yml`, `tests/parts/kicad.test.ts`
+- Source: https://gitlab.com/kicad/code/kicad
+- Licence evidence: https://www.kicad.org/about/licenses/ states KiCad's source code is licensed under the GNU GPL version 3 or later; not re-read in full for this entry.
+- Notes: Installed in CI only, run as its own program to load the exported .kicad_sch (sch export netlist, sch erc). Not part of the app or its image. Installed without recommended packages, so KiCad's symbol libraries are not installed.
+
 ### Node.js (official Docker image node)
 
 - Version or tag: 22-bookworm-slim
@@ -1934,6 +1944,18 @@ Listed by hand in `docs/third-party.manual.json`.
 - Source: https://hub.docker.com/_/python
 - Licence evidence: Python's LICENSE.txt (in a Python 3.13 install) contains 'PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2'; the image's Docker Hub page points to that licence information for Python 3 and states the image contains other software under other licences. The licence of the docker-library/python build files could not be read (GitHub rate limit) and is unverified.
 - Notes: Base image of the planner service.
+
+### schematic-symbols drawings
+
+- Version or tag: 0.0.251
+- Licence: MIT
+- How it is used: copied source
+- Origin: the symbol drawings (lines, circles and pin points only) of resistor_right, capacitor_polarized_right, diode_right, led_right, spst_switch_right, push_button_normally_open_momentary_horz, battery_horz, speaker_right, ground_down and vcc_up, copied by scripts/extract-symbols.mjs from schematic-symbols 0.0.251 (https://github.com/tscircuit/schematic-symbols). Each one's history was read in the repository on 21 November 2026: resistor added in 419e439 (#272, Inkscape SVG); capacitor_polarized in d89e83a (#212) and refined in #384; diode and led split in 8c4f2af from the combined Inkscape symbols.svg first committed in 85f3d35 by the package's author; spst_switch in 9962748 (#254); push_button_normally_open_momentary in 495c76e; battery in 4a4c906 (#174); speaker in 8c4e6fc (#444, hand-written SVG by the package's author); ground in e130627; vcc reworked in 7a0855e. None of these commits or files names KiCad or another symbol set as a source; most SVGs carry an Inkscape mark. That is evidence they were drawn by contributors, not proof. Not used: the package's capacitor and boxresistor, whose dimensions were matched to KiCad's Device:C and Device:R in 993737d (#434) and 2592db4 (#435); the capacitor and motor symbols are this project's own drawings instead.
+- Changes: Coordinates rounded to four decimals; text placeholders dropped; orientation fixed to the listed variant. Scaled and placed on a 2.54 mm grid at run time by src/lib/parts/symbols.ts.
+- Referenced in: `src/lib/parts/symbols.data.json`, `src/lib/parts/symbols.ts`, `scripts/extract-symbols.mjs`
+- Source: https://github.com/tscircuit/schematic-symbols
+- Licence evidence: node_modules/schematic-symbols/LICENSE (0.0.251): 'MIT License. Copyright (c) 2024 tscircuit'. The package is also a dev dependency, listed with the npm packages.
+- Notes: Only drawings are used. tscircuit's layout engine, renderer and viewer are not used (docs/trials/tscircuit). No symbol from KiCad's library is bundled; the KiCad export embeds these drawings and boxes drawn by src/lib/parts/symbols.ts.
 
 ### shadcn/ui components added by its CLI
 

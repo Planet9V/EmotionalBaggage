@@ -20,8 +20,10 @@ import { FOOT_H, HEADER_H, NODE_W, ROW_H, VIA_H, VIA_W, handleId, type PinRow } 
 /** What nodes need from the view without carrying it in every node's data. */
 export type CanvasCtx = {
   onAddPin: (ref: string) => void;
-  /** "REF.PIN" keys to emphasise (hovered net) */
+  /** "REF.PIN" keys to emphasise (hovered net, selected pin or wire) */
   highlight: Set<string>;
+  /** select one pin (lights it up in both views) */
+  onPickPin?: (ref: string, pin: string) => void;
 };
 export const SchematicContext = createContext<CanvasCtx>({ onAddPin: () => {}, highlight: new Set() });
 
@@ -35,7 +37,7 @@ export type WireEdgeType = Edge<WireData, "wire">;
 const HANDLE = "h-[10px]! w-[10px]! rounded-full! border-2! bg-surface!";
 
 function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
-  const { onAddPin, highlight } = useContext(SchematicContext);
+  const { onAddPin, highlight, onPickPin } = useContext(SchematicContext);
   const update = useUpdateNodeInternals();
   const sides = data.pins.map((p) => `${p.name}:${p.side}`).join("|");
   // handles move when a pin changes side or a pin is added; React Flow has to re-measure them
@@ -68,7 +70,14 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
             }`}
             style={{ height: ROW_H }}
           >
-            <span className="truncate" title={p.wired ? p.name : `${p.name} (no wire)`}>
+            <span
+              className="nodrag cursor-pointer truncate"
+              title={p.wired ? p.name : `${p.name} (no wire)`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPickPin?.(data.ref, p.name);
+              }}
+            >
               {p.name}
               {!p.wired && <span className="ml-1 text-[9px] uppercase tracking-[0.15em] text-warning">open</span>}
             </span>

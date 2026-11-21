@@ -34,6 +34,10 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
       `SELECT id::int AS id, name, mime, kind, size, sha256, meta, created_at AS "createdAt", encode(bytes, 'base64') AS "bytesBase64"
          FROM files WHERE project_id=$1 ORDER BY id`
     );
+    // Pins belong to part rows (plan 5.1); `itemId` is the part's id in `items` above.
+    const pins = await all<Record<string, unknown>>(
+      `SELECT id::int AS id, item_id::int AS "itemId", name, kind, side, position, voltage, data, sort FROM pins WHERE project_id=$1 ORDER BY item_id, sort, id`
+    );
     // PostgreSQL's base64 breaks lines every 76 characters; the document carries it unbroken.
     for (const f of files) f.bytesBase64 = String(f.bytesBase64).replace(/\n/g, "");
     return {
@@ -47,6 +51,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
       messages,
       gates,
       files,
+      pins,
     };
   });
   return new Response(JSON.stringify(doc, null, 2), {

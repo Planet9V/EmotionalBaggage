@@ -54,6 +54,27 @@ export const GEOMETRY: Record<string, Geometry> = {
   STR1: { shape: "box", size: [25, 1.5, 96], pos: [0, -1.5, 0], explode: [0, -84, 0], basis: "doc", count: 2 },
 };
 
+/**
+ * Part kinds and library entries for the example (plan 5.1). Only entries that are the same part
+ * as the bill of materials line; U1 (a Waveshare board) has no library entry, so its pins stay the
+ * names its wires use until someone describes it.
+ */
+const PART_TYPE: Record<string, { kind: string; library?: string }> = {
+  U1: { kind: "microcontroller" },
+  U2: { kind: "sensor", library: "gy-521-mpu6050" },
+  U3: { kind: "module", library: "dfplayer-mini" },
+  SPK1: { kind: "speaker", library: "speaker-small" },
+  BT1: { kind: "battery", library: "battery-holder-3xaa" },
+  S1: { kind: "switch", library: "slide-switch-spst" },
+  S2: { kind: "button", library: "tactile-button-6mm" },
+  R1: { kind: "resistor", library: "resistor-axial" },
+  R2: { kind: "resistor", library: "resistor-axial" },
+  PCB1: { kind: "mechanical" },
+  HW1: { kind: "mechanical" },
+  ENC1: { kind: "mechanical" },
+  STR1: { kind: "mechanical" },
+};
+
 export const SEED_ITEMS: SeedItem[] = [
   // ───────── 1 Concept
   {
@@ -316,7 +337,7 @@ export const SEED_ITEMS: SeedItem[] = [
     section: "design/bom",
     title,
     body: spec,
-    data: { ref, qty, source, search, line, asin: "", ...(GEOMETRY[ref] ? { geometry: GEOMETRY[ref] } : {}) },
+    data: { ref, qty, source, search, line, asin: "", ...(GEOMETRY[ref] ? { geometry: GEOMETRY[ref] } : {}), ...(PART_TYPE[ref] ?? {}) },
     status: ref === "ENC1" ? "to print" : "to buy",
   })),
 
@@ -565,6 +586,8 @@ export const SEED_DECISIONS: SeedItem[] = [
 
 // ───────── Wiring, from the PRD pin table and Build Guide Phase 2. `order` is the
 // build guide's soldering sequence: power rail, motion sensor, audio module, button.
+// A series resistor is its own part with a wire to each of its pins (docs/design/wiring.md).
+// Pin names follow the library entry each part names (see PART_TYPE above).
 const W = (
   order: number,
   title: string,
@@ -574,35 +597,36 @@ const W = (
   fromPin: string,
   to: string,
   toPin: string,
-  note = "",
-  via = ""
+  note = ""
 ): SeedItem => ({
   section: "design/wiring",
   title,
   body: note,
-  data: { order, net, netClass, from, fromPin, to, toPin, via },
+  data: { order, net, netClass, from, fromPin, to, toPin },
   status: "to solder",
 });
 
 export const SEED_WIRING: SeedItem[] = [
-  W(1, "Battery positive to switch", "BAT+", "power", "BT1", "RED", "S1", "IN"),
-  W(2, "Switch to VIN", "VIN", "power", "S1", "OUT", "U1", "5V/VIN", "Meter VIN to GND with the switch on: expect 4.5-4.9 V. Do not go on outside 4.2-5.2 V."),
-  W(3, "Battery negative to ground", "GND", "ground", "BT1", "BLACK", "U1", "GND", "Ground star point at one corner of the board."),
+  W(1, "Battery positive to switch", "BAT+", "power", "BT1", "+", "S1", "1"),
+  W(2, "Switch to VIN", "VIN", "power", "S1", "2", "U1", "5V/VIN", "Meter VIN to GND with the switch on: expect 4.5-4.9 V. Do not go on outside 4.2-5.2 V."),
+  W(3, "Battery negative to ground", "GND", "ground", "BT1", "-", "U1", "GND", "Ground star point at one corner of the board."),
   W(4, "Sensor power", "3V3", "power", "U1", "3V3", "U2", "VCC"),
   W(5, "Sensor ground", "GND", "ground", "U1", "GND", "U2", "GND"),
-  W(6, "I2C clock", "I2C_0", "signal", "U1", "GPIO8", "U2", "SCL", "400 kHz, address 0x68."),
-  W(7, "I2C data", "I2C_0", "signal", "U1", "GPIO9", "U2", "SDA"),
+  W(6, "I2C clock", "I2C_SCL", "signal", "U1", "GPIO8", "U2", "SCL", "400 kHz, address 0x68."),
+  W(7, "I2C data", "I2C_SDA", "signal", "U1", "GPIO9", "U2", "SDA"),
   W(8, "Motion interrupt", "MPU_INT", "signal", "U2", "INT", "U1", "GPIO6", "Latched."),
   W(9, "Audio module power", "VIN", "power", "U1", "5V/VIN", "U3", "VCC", "4.5-5 V, not 3.3 V."),
   W(10, "Audio module ground", "GND", "ground", "U1", "GND", "U3", "GND"),
-  W(11, "UART to audio module", "UART1", "signal", "U1", "GPIO17", "U3", "RX", "The resistor is mandatory; without it the module triggers at random.", "R1"),
-  W(12, "UART from audio module", "UART1", "signal", "U3", "TX", "U1", "GPIO16", "9600 baud, 8N1."),
+  W(11, "UART to the series resistor", "UART_TX", "signal", "U1", "GPIO17", "R1", "1", "The resistor is mandatory; without it the module triggers at random."),
+  W(11, "Series resistor to audio module RX", "UART_TX_R", "signal", "R1", "2", "U3", "RX"),
+  W(12, "UART from audio module", "UART_RX", "signal", "U3", "TX", "U1", "GPIO16", "9600 baud, 8N1."),
   W(13, "Busy line", "BUSY", "signal", "U3", "BUSY", "U1", "GPIO4"),
-  W(14, "Speaker lead 1", "AUDIO", "audio", "U3", "SPK_1", "SPK1", "+", "Either polarity."),
-  W(15, "Speaker lead 2", "AUDIO", "audio", "U3", "SPK_2", "SPK1", "-"),
-  W(16, "Mode button to GPIO", "MODE", "signal", "S2", "A", "U1", "GPIO5"),
-  W(17, "Mode button to ground", "GND", "ground", "S2", "B", "U1", "GND"),
-  W(18, "Mode button pull-up", "MODE", "signal", "U1", "3V3", "U1", "GPIO5", "10 kΩ between GPIO5 and 3V3.", "R2"),
+  W(14, "Speaker lead 1", "SPK_P", "audio", "U3", "SPK_1", "SPK1", "+", "Either polarity."),
+  W(15, "Speaker lead 2", "SPK_N", "audio", "U3", "SPK_2", "SPK1", "-"),
+  W(16, "Mode button to GPIO", "MODE", "signal", "S2", "1", "U1", "GPIO5"),
+  W(17, "Mode button to ground", "GND", "ground", "S2", "2", "U1", "GND"),
+  W(18, "Pull-up from 3V3", "3V3", "power", "U1", "3V3", "R2", "1", "10 kΩ between GPIO5 and 3V3."),
+  W(18, "Pull-up to the mode GPIO", "MODE", "signal", "R2", "2", "U1", "GPIO5"),
 ];
 
 /** Stores added after the first release; seeded into an existing example concept when empty. */

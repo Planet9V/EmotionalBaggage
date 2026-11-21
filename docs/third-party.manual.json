@@ -153,6 +153,35 @@
       ],
       "source": "https://github.com/vercel/ai-elements",
       "changes": "None. The files are as the CLI wrote them."
+    },
+    {
+      "name": "schematic-symbols drawings",
+      "version": "0.0.251",
+      "license": "MIT",
+      "licenseEvidence": "node_modules/schematic-symbols/LICENSE (0.0.251): 'MIT License. Copyright (c) 2024 tscircuit'. The package is also a dev dependency, listed with the npm packages.",
+      "use": "copied source",
+      "origin": "the symbol drawings (lines, circles and pin points only) of resistor_right, capacitor_polarized_right, diode_right, led_right, spst_switch_right, push_button_normally_open_momentary_horz, battery_horz, speaker_right, ground_down and vcc_up, copied by scripts/extract-symbols.mjs from schematic-symbols 0.0.251 (https://github.com/tscircuit/schematic-symbols). Each one's history was read in the repository on 21 November 2026: resistor added in 419e439 (#272, Inkscape SVG); capacitor_polarized in d89e83a (#212) and refined in #384; diode and led split in 8c4f2af from the combined Inkscape symbols.svg first committed in 85f3d35 by the package's author; spst_switch in 9962748 (#254); push_button_normally_open_momentary in 495c76e; battery in 4a4c906 (#174); speaker in 8c4e6fc (#444, hand-written SVG by the package's author); ground in e130627; vcc reworked in 7a0855e. None of these commits or files names KiCad or another symbol set as a source; most SVGs carry an Inkscape mark. That is evidence they were drawn by contributors, not proof. Not used: the package's capacitor and boxresistor, whose dimensions were matched to KiCad's Device:C and Device:R in 993737d (#434) and 2592db4 (#435); the capacitor and motor symbols are this project's own drawings instead.",
+      "changes": "Coordinates rounded to four decimals; text placeholders dropped; orientation fixed to the listed variant. Scaled and placed on a 2.54 mm grid at run time by src/lib/parts/symbols.ts.",
+      "referencedIn": [
+        "src/lib/parts/symbols.data.json",
+        "src/lib/parts/symbols.ts",
+        "scripts/extract-symbols.mjs"
+      ],
+      "source": "https://github.com/tscircuit/schematic-symbols",
+      "notes": "Only drawings are used. tscircuit's layout engine, renderer and viewer are not used (docs/trials/tscircuit). No symbol from KiCad's library is bundled; the KiCad export embeds these drawings and boxes drawn by src/lib/parts/symbols.ts."
+    },
+    {
+      "name": "KiCad command-line tool (kicad-cli), CI only",
+      "version": "10.0 (Ubuntu package from ppa:kicad/kicad-10.0-releases)",
+      "license": "GPL-3.0-or-later (KiCad); its libraries are not installed or used",
+      "licenseEvidence": "https://www.kicad.org/about/licenses/ states KiCad's source code is licensed under the GNU GPL version 3 or later; not re-read in full for this entry.",
+      "use": "separate process",
+      "referencedIn": [
+        ".github/workflows/ci.yml",
+        "tests/parts/kicad.test.ts"
+      ],
+      "source": "https://gitlab.com/kicad/code/kicad",
+      "notes": "Installed in CI only, run as its own program to load the exported .kicad_sch (sch export netlist, sch erc). Not part of the app or its image. Installed without recommended packages, so KiCad's symbol libraries are not installed."
     }
   ],
   "useOverrides": {

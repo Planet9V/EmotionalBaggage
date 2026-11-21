@@ -69,9 +69,9 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
 
   const refs = useMemo(() => {
     const list = parts.map((p) => p.ref);
-    for (const r of [d.from, d.to, d.via]) if (r && !list.includes(r)) list.push(r);
+    for (const r of [d.from, d.to]) if (r && !list.includes(r)) list.push(r);
     return list;
-  }, [parts, d.from, d.to, d.via]);
+  }, [parts, d.from, d.to]);
   const netClassOf = useMemo(() => new Map(nets.map((n) => [n.name, n.classes[0]])), [nets]);
   const statusList = d.status && !statuses.includes(d.status) ? [...statuses, d.status] : statuses.length ? statuses : WIRE_STATUSES;
 
@@ -199,19 +199,6 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
                     {CLASS_LABEL[c]}
                   </option>
                 ))}
-              </Select>
-            </Field>
-            <Field label="In series (via)" hint="A part the wire runs through, such as a resistor.">
-              <Select value={d.via} onChange={(e) => set("via", e.target.value)}>
-                <option value="">None</option>
-                {refs
-                  .filter((r) => r !== d.from && r !== d.to)
-                  .map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                      {parts.find((p) => p.ref === r) ? ` · ${parts.find((p) => p.ref === r)!.title}` : ""}
-                    </option>
-                  ))}
               </Select>
             </Field>
             <div className="grid grid-cols-[88px_1fr] gap-3">
