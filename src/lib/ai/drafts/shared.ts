@@ -103,6 +103,26 @@ export const STORE_NOUN: Record<string, [string, string]> = {
   "sales/reviews": ["review or question", "reviews and questions"],
   "marketing/replies": ["reply", "replies"],
   "marketing/brand": ["brand note", "brand notes"],
+  // the rest of the stores the gates count, so a gate never says "rows" (U25)
+  "concept/names": ["name or tagline", "names and taglines"],
+  "prototype/builds": ["build", "builds"],
+  "production/batches": ["batch", "batches"],
+  "production/compliance": ["compliance row", "compliance rows"],
+  "production/suppliers": ["supplier", "suppliers"],
+  "production/methods": ["method", "methods"],
+  "marketing/personas": ["persona", "personas"],
+  "marketing/competitors": ["competitor or alternative", "competitors and alternatives"],
+  "marketing/positioning": ["positioning", "positionings"],
+  "marketing/pricing": ["price", "prices"],
+  "marketing/imagery": ["shot", "shots"],
+  "marketing/ads": ["ad", "ads"],
+  "marketing/landing": ["landing page section", "landing page sections"],
+  "marketing/social": ["post", "posts"],
+  "marketing/announce": ["launch piece", "launch pieces"],
+  "marketing/campaigns": ["campaign", "campaigns"],
+  "marketing/launch": ["launch step", "launch steps"],
+  "sales/listing": ["listing", "listings"],
+  "sales/channels": ["sales channel", "sales channels"],
 };
 
 export const noun = (store: string, n: number) => {
