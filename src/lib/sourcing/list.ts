@@ -29,12 +29,14 @@ export type Shopping = { groups: Group[]; unchosen: { partId: number; ref: strin
 export const cents = (price: number) => Math.round(price * 100);
 export const fromCents = (c: number) => c / 100;
 
-/** Printed parts and parts already in hand are not bought. A part with a received quantity needs only the rest. */
+/** Printed parts, parts in hand and parts already ordered are not on the list. A part with a received quantity needs only the rest. */
 export function needOf(p: ListPart): { need: number; why?: string } {
   const qty = p.qty ?? 1;
   if (p.status === "to print") return { need: 0, why: "printed, not bought" };
   if (p.status === "in hand") return { need: 0, why: "already in hand" };
   const o = readSourcing(p.data).order;
+  // Already ordered and not yet reported short: nothing is left to order. A short order needs the rest.
+  if (o?.status !== "short" && (p.status === "ordered" || o?.status === "ordered" || o?.status === "shipped")) return { need: 0, why: "already ordered" };
   const got = o?.status === "received" ? (o.qtyReceived ?? qty) : (o?.qtyReceived ?? 0);
   const need = Math.max(0, qty - got);
   return need === 0 ? { need: 0, why: "received" } : { need };
