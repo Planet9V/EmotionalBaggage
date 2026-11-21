@@ -35,4 +35,13 @@ describe("the new-concept wizard", () => {
     expect(go[0].body).toContain("Ten pre-orders in a week");
     expect(newProject.safeParse({ name: a.name, items: buildItems(a) }).success).toBe(true);
   });
+
+  it("labels sizes typed in the wizard as entered by you, not as stated in source documents (U24)", async () => {
+    const a = emptyAnswers();
+    Object.assign(a, { name: "Box", oneLiner: "A box", printed: "yes", w: "80", h: "40", d: "60" });
+    const shell = buildItems(a).find((i) => (i.data as { geometry?: { print?: boolean } } | undefined)?.geometry?.print);
+    expect((shell!.data as { geometry: { basis: string } }).geometry.basis).toBe("entered");
+    const { BASIS_TEXT } = await import("@/components/layout/geom");
+    expect(BASIS_TEXT.entered).toBe("Entered by you");
+  });
 });

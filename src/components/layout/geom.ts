@@ -222,14 +222,15 @@ export function niceStep(pxPerMm: number, minPx = 60) {
 /** A BOM part being placed from the tray: not saved until three sizes and a basis are set. */
 export type Draft = {
   size: (number | null)[];
-  basis: "doc" | "typical" | "";
+  basis: "doc" | "typical" | "entered" | "";
   x: number;
   /** null until set: the part then rests on the floor once sized */
   y: number | null;
   z: number;
 };
 
-export const BASIS_TEXT: Record<"doc" | "typical", string> = {
+export const BASIS_TEXT: Record<"doc" | "typical" | "entered", string> = {
   doc: "Dimension stated in the source documents",
   typical: "Typical size for this kind of part; not measured",
+  entered: "Entered by you",
 };

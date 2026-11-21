@@ -60,7 +60,7 @@ export const geometry = z
     size: z.array(numeric.refine((n) => n > 0, "must be greater than zero")).min(2).max(3),
     pos: vec3.default([0, 0, 0]),
     explode: vec3.default([0, 0, 0]),
-    basis: z.enum(["doc", "typical"]).default("typical"),
+    basis: z.enum(["doc", "typical", "entered"]).default("typical"),
     count: numeric.optional(),
     print: z.boolean().optional(),
     /** cylinder only: which axis its length runs along */

@@ -177,7 +177,7 @@ export function LayoutView({ project }: ViewProps) {
       return rest;
     });
 
-  const createEnclosure = async (size: number[], basis: "doc" | "typical") => {
+  const createEnclosure = async (size: number[], basis: "doc" | "typical" | "entered") => {
     const refs = new Set(parts.map((p) => p.ref));
     let n = 1;
     while (refs.has(`ENC${n}`)) n++;

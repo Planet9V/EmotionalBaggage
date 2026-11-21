@@ -17,6 +17,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
   doc: "Dimension stated in the source documents",
   typical: "Typical size for this kind of part; not measured",
+  entered: "Entered by you",
 };
 
 /** One wire touching the focused part. */

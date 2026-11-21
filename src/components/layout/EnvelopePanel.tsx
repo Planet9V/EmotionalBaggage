@@ -18,10 +18,10 @@ export function EnvelopePanel({
   wall: number;
   onWall: (n: number) => void;
   onResize: (size: number[]) => void;
-  onCreate: (size: number[], basis: "doc" | "typical") => Promise<void>;
+  onCreate: (size: number[], basis: "doc" | "typical" | "entered") => Promise<void>;
 }) {
   const [size, setSize] = useState<(number | null)[]>([null, null, null]);
-  const [basis, setBasis] = useState<"doc" | "typical" | "">("");
+  const [basis, setBasis] = useState<"doc" | "typical" | "entered" | "">("");
   const [busy, setBusy] = useState(false);
   const ready = size.every((s) => s !== null && s > 0) && basis !== "";
 
@@ -50,7 +50,7 @@ export function EnvelopePanel({
             if (!ready) return;
             setBusy(true);
             try {
-              await onCreate(size as number[], basis as "doc" | "typical");
+              await onCreate(size as number[], basis as "doc" | "typical" | "entered");
               setSize([null, null, null]);
               setBasis("");
             } finally {

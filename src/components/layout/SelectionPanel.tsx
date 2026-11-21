@@ -13,11 +13,11 @@ import { NativeSelect } from "@/components/ui/native-select";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
-export function BasisPicker({ value, onChange, name }: { value: "doc" | "typical" | ""; onChange: (b: "doc" | "typical") => void; name: string }) {
+export function BasisPicker({ value, onChange, name }: { value: "doc" | "typical" | "entered" | ""; onChange: (b: "doc" | "typical" | "entered") => void; name: string }) {
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="mb-1 text-xs text-muted">Where the size comes from</legend>
-      {(["doc", "typical"] as const).map((b) => (
+      {(["entered", "doc", "typical"] as const).map((b) => (
         <label key={b} className="flex cursor-pointer items-start gap-2 text-sm text-primary">
           <input
             type="radio"

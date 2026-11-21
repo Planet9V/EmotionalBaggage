@@ -186,7 +186,7 @@ export function buildGroups(a: Answers): Group[] {
       title: "Enclosure",
       data: {
         ref: `P${ref}`, qty: 1, source: "Own printer", search: "", asin: "",
-        geometry: { shape: "shell", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "doc", print: true },
+        geometry: { shape: "shell", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "entered", print: true },
       },
       status: "to print",
     });

@@ -99,7 +99,7 @@ function modelBlocks(bom: Item[], data: ConceptData): Block[] {
           g.shape ?? "",
           (g.size ?? []).join(" x "),
           (g.pos ?? []).join(", "),
-          g.basis === "doc" ? "stated in source" : g.basis === "typical" ? "typical, not measured" : g.basis ?? "",
+          g.basis === "doc" ? "stated in source" : g.basis === "typical" ? "typical, not measured" : g.basis === "entered" ? "entered by you" : g.basis ?? "",
           g.print ? "yes" : "",
         ];
       }),
