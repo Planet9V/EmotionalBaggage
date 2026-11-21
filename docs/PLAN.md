@@ -181,7 +181,7 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 - [x] 5.2 Geometry gains rotation; STL and STEP files can be attached as a part's real shape. **Done 21 Nov; a file in the wrong unit is flagged and never rescaled without the user choosing.**
 - [x] 5.3 Schematic with proper symbols (per 0.3) and a toggle to pins-and-wires; net labels, power and ground symbols, title block. **Done 21 Nov. The Blocks view is not built.**
 - [x] 5.4 Electrical checks: supply voltage against each part's range, unconnected power pins, missing pull-ups on shared buses. **Done 21 Nov. A part with no library entry gets fewer checks and the panel says so.**
-- [ ] 5.5 KiCad schematic export. **Done when** `kicad-cli` in CI loads the file without error. **21 Nov: the export is written, but KiCad 10 in CI refused the file ("Failed to load schematic"). Being fixed.**
+- [x] 5.5 KiCad schematic export. **Done when** `kicad-cli` in CI loads the file without error. **Done 21 Nov: KiCad 10.0.8 in CI loads the exported schematic and its netlist matches the circuit. The first failure was CI installing KiCad 9. Power flags are not exported, so KiCad's own ERC is expected to report undriven power inputs; its findings are kept as a CI file and do not fail the run.**
 - [x] 5.6 3D view: drag and rotate handles, section cut, measurement, STL from the built-in exporter. **Done 21 Nov, checked in software-rendered Chrome only.**
 - [x] 5.7 Enclosure, CaseMaker-based generator: forked into the app, driven by the concept's parts and layout. Standoffs, bosses, wall cutouts, lid types. **Done 21 Nov: CaseMaker forked as source at a pinned commit (Apache-2.0). A defect in its custom cut-outs is worked around with our own cutters.**
 - [x] 5.8 Enclosure, YAPP_Box generator: OpenSCAD in the planner container, parameters written from the same parts and layout. **Done 21 Nov: ran for real in OpenSCAD here; the planner image with OpenSCAD has not been built.**
@@ -244,10 +244,10 @@ The review found stages 5 to 7 are lists filled in by hand, and version 2 of thi
 
 **Sales and channels**
 
-- [ ] 8.17 Amazon sales read through SP-API into the sales monitor. Needs a Professional selling account.
-- [ ] 8.18 X: approved posts sent, cost shown first; replies drafted for approval.
-- [ ] 8.19 Instagram: posting after Meta App Review; replies drafted for approval. The review is started as soon as an account exists.
-- [ ] 8.20 Reviews and questions log with drafted replies, and a list of what customers keep asking that feeds back into Requirements (4.8).
+- [x] 8.17 Amazon sales read through SP-API into the sales monitor. Needs a Professional selling account. **Done 21 Nov against a stand-in only: orders and daily totals through SP-API with its documented rate limits, one row per order, no buyer details requested, Sync now (no background sync).**
+- [x] 8.18 X: approved posts sent, cost shown first; replies drafted for approval. **Done 21 Nov against a stand-in only: OAuth 2.0 with PKCE, X's dated cost statement acknowledged before any send, one post per confirmed click, mentions read on request.**
+- [x] 8.19 Instagram: posting after Meta App Review; replies drafted for approval. The review is started as soon as an account exists. **Done 21 Nov against a stand-in only. Meta's own page says Standard Access is enough for your own account; App Review is for Advanced Access. Each image needs a public JPEG address. No token refresh button.**
+- [x] 8.20 Reviews and questions log with drafted replies, and a list of what customers keep asking that feeds back into Requirements (4.8). **Done 21 Nov. Amazon gives sellers no individual reviews through its interface, so reviews are typed, pasted or imported from CSV.**
 
 ## Unverified, to be checked before the item that needs it
 

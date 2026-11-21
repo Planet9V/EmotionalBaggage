@@ -203,6 +203,10 @@ Content generators live in `src/lib/content/generators` and are spread into the 
 
 Pure modules in `src/lib/campaigns` (metrics, the stop and scale rule, budget, margin, the Newcombe interval for comparing two creatives, CSV mapping, launch templates); routes under `/api/projects/[id]/campaigns`; tables `campaign_results`, `tracked_links`, `link_clicks` (migration 0020). The verdict is always evaluated in code. The campaign-plan generator is in the drafting registry: the model proposes shares and days, code computes every amount. `src/app/l/[code]/route.ts` is deliberately open; a test fails if any other route file appears outside `/api`.
 
+## Channels
+
+Everything that sends goes through `send()` in `src/lib/channels/send.ts`, with a confirmation `{ channel, itemId, textSha256 }` taken from `GET /api/channels/send/preview`; a changed text is refused. Outside calls use `channelFetch` and the token buckets in `rateLimit.ts`. Rows read from a service carry `data.externalId`, kept unique per concept and section by migration 0021. Test-only environment variables point the clients at stand-ins: `AMAZON_LWA_TOKEN_URL`, `AMAZON_SP_BASE_URL`, `X_API_BASE_URL`, `X_AUTHORIZE_URL`, `INSTAGRAM_GRAPH_BASE_URL`.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

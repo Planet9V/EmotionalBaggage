@@ -21,6 +21,7 @@ import {
   type ConnectionTest,
   type ProviderView,
 } from "@/lib/admin/client";
+import { ChannelProviderNotes } from "@/components/channels/AdminExtras";
 import { ConfirmButton, describe, Empty, FormField, LoadError, LoadingBlocks, Panel, SaveError, SavedNote, TestOutcome, useFlag, when } from "./shared";
 
 type Field = ProviderView["fields"][number];
@@ -39,6 +40,8 @@ const MODEL_PROVIDERS = new Set(["ollama", "lmstudio", "openrouter"]);
 function testFor(p: ProviderView, typed: string, settings: AdminSettings | undefined): ConnectionTest | null {
   const apiKey = typed.trim() || undefined;
   if (p.id === "perplexity") return { kind: "perplexity", ...(apiKey ? { apiKey } : {}) };
+  // the channel connections test the saved values (src/lib/channels/connection.ts)
+  if (p.id === "amazon-sp" || p.id === "x" || p.id === "instagram") return { kind: p.id };
   if (MODEL_PROVIDERS.has(p.id)) {
     const id = p.id as "ollama" | "lmstudio" | "openrouter";
     const saved = [settings?.reasoningModel, settings?.embeddingModel].find((m) => m?.provider === id);
@@ -154,10 +157,13 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
           {t
             ? t.kind === "model"
               ? `Tests the key typed above, or the saved one, at ${t.baseUrl}.`
-              : "Tests the key typed above, or the saved one."
+              : t.kind === "amazon-sp" || t.kind === "x" || t.kind === "instagram"
+                ? "Tests the saved values: save first."
+                : "Tests the key typed above, or the saved one."
             : `There is no connection test for ${p.label} yet.`}
         </p>
         <TestOutcome result={test.data} error={test.isError ? messageOf(test.error) : ""} pending={test.isPending} />
+        <ChannelProviderNotes id={p.id} />
       </form>
     </Panel>
   );

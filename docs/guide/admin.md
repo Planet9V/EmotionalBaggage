@@ -137,6 +137,12 @@ The slicer is a separate, optional service: OrcaSlicer 2.5.0 (AGPL-3.0) run as i
 
 `/l/<code>` is the one open route outside `/api` and sign-in: it redirects to the saved destination and counts the click by day. It limits requests in memory per app instance (120 a minute per code, 1,200 in total, 30 a minute for unknown codes).
 
+## Amazon, X and Instagram
+
+- **Amazon:** a Professional selling account and a private SP-API app with the Inventory and Order Tracking role; save the refresh token, client ID and secret in Credentials.
+- **X:** an OAuth 2.0 client ID (and secret for a Web App client). Register `<app address>/api/channels/x/callback` exactly in the X console, or set the callback address field when the app sits behind a proxy, then press Connect X account. X charges per use; the dated cost statement is shown before the first send, and Test connection costs one user read.
+- **Instagram:** paste the long-lived token and the account ID, then work through the checklist. For an app serving only your own professional account, Meta's Standard Access is enough; App Review is for Advanced Access. Tokens last 60 days and there is no refresh button yet.
+
 ## Checking it is healthy
 
 - `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.

@@ -110,6 +110,16 @@ Every piece of marketing content is tied to one approved Positioning message and
 - **Campaign results:** enter a day, paste a report, or open a CSV from Amazon Ads, Meta or Google Ads. Check the column match; it is remembered per channel. The column names offered for those platforms have not been checked against real export files, so look before you import. The verdict (stop, hold, scale, not enough data) comes from your rule, not from a model. **Explain this with the model** adds a labelled note only and is never saved as a result.
 - **Tracked links:** make a UTM link per campaign or creative; the short `/l/` address counts clicks per day and records nothing about the visitor. QR codes work only from the app's public address.
 
+## Posting, replies, reviews and Amazon sales
+
+None of this has run against a real Amazon, X or Instagram account; each screen says so. Nothing is posted by itself: a scheduled date is only a reminder.
+
+- **Posting** (Marketing): approved and scheduled X and Instagram posts from Social. Each is sent only when you press its button and confirm the exact text, the account and, for X, the cost. Before the first send you tick that you have read X's dated cost statement. Instagram needs the public address of a JPEG copy of the image, because Meta fetches the image itself and this app sits behind sign-in.
+- **Replies and comments** (Marketing): Read X mentions and Read Instagram comments act only when you press them. Draft with AI drafts replies in the brand voice.
+- **Replies to send** (Marketing): approved replies. X and Instagram replies have Send, with the same confirmation. Replies to reviews have Copy and Mark as posted by hand, because the app never posts them.
+- **Reviews and questions** (Sales): add, paste or import a CSV (a text, review, body or question column is needed). Set topic and sentiment, or have them suggested as drafts. "What customers keep asking" groups the rows; "Turn into a requirement" makes a draft requirement that cites them.
+- **Sales monitor:** pick the marketplace and press Sync now; there is no automatic sync. Amazon's own daily totals sit beside the order rows for comparison and are never counted twice. Only order id, date, items, marketplace, currency and status are kept; no buyer or address details are requested.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

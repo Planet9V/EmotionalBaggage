@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 8b77b55 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit abb0970 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 

@@ -118,6 +118,10 @@ export const connectionTest = z.discriminatedUnion("kind", [
     .strict()
     .refine((v) => v.id !== undefined || v.family !== undefined, { message: "send id (a saved printer) or family and access (a printer not saved yet)", path: ["id"] }),
   z.object({ kind: z.literal("planner"), url: httpUrl.optional() }).strict(),
+  // the channel connections test the saved values (plan 8.17 to 8.19)
+  z.object({ kind: z.literal("amazon-sp") }).strict(),
+  z.object({ kind: z.literal("x") }).strict(),
+  z.object({ kind: z.literal("instagram") }).strict(),
   z.object({ kind: z.literal("database") }).strict(),
 ]);
 

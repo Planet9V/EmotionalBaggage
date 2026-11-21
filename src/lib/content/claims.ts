@@ -35,7 +35,8 @@ const normNum = (s: string) => s.replace(/,/g, "").replace(/\.0+$/, "");
 
 /** Number tokens in a line: 12, 3.5, 1,200, 99%. */
 export function numbersIn(text: string): string[] {
-  return (text.match(/\d[\d,]*(?:\.\d+)?/g) ?? []).map(normNum);
+  // A digit glued to the end of a word is a designation (MK1, V2, A4), not a quantity; "3x" and "50%" still count.
+  return (text.match(/(?<![A-Za-z])\d[\d,]*(?:\.\d+)?/g) ?? []).map(normNum);
 }
 
 /** Removes words that may hold digits but are not claims: the product's own name and brand, and web addresses. */

@@ -235,3 +235,11 @@ describe("exports", () => {
     expect(html).toContain("&lt;b&gt;");
   });
 });
+
+describe("numbers that are designations", () => {
+  it("does not treat MK1 or V2 as a figure needing proof, and still catches 3x and 50%", async () => {
+    const { numbersIn } = await import("@/lib/content/claims");
+    expect(numbersIn("Baggage Claims MK1 ships in March, V2 later.")).toEqual([]);
+    expect(numbersIn("3x louder, 50% lighter, lasts 12 hours")).toEqual(["3", "50", "12"]);
+  });
+});

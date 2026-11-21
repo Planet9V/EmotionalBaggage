@@ -1,165 +1,228 @@
 "use client";
 
+// Sales, Sales monitor (plan 8.17): Amazon orders read through SP-API on "Sync now", rows typed by hand,
+// and one chart of units or revenue by day and channel, with the same numbers as a table.
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
-import { Plus, Trash2 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field } from "@/components/parts/controls";
+import { EmptyState, ErrorLine, Field, Select } from "@/components/parts/controls";
 import { Modal } from "@/components/parts/Modal";
 import { money, parseAmount } from "@/components/parts/bom";
+import { NotConnected, NotRealNote } from "@/components/channels/shared";
 import { useItems } from "@/lib/client";
-import { messageOf, queries, type IntegrationsReport } from "@/lib/queries";
+import { useChannelActions, useChannelStatus } from "@/lib/channels/client";
+import { byDayAndChannel, toSaleRow } from "@/lib/channels/salesByDay";
+import { messageOf } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
-type Sale = { item: Item; date: string; channel: string; units: number; revenue: number };
-
-const toSale = (item: Item): Sale => {
-  const n = (v: unknown) => (typeof v === "number" ? v : parseFloat(String(v ?? "")) || 0);
-  return { item, date: String(item.data.date ?? ""), channel: String(item.data.channel ?? ""), units: n(item.data.units), revenue: n(item.data.revenue) };
-};
 const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
+const COLOURS = ["var(--color-dutchOrange-500)", "var(--color-charcoal-400)", "var(--color-info)", "var(--color-success)", "var(--color-warning)", "var(--color-dutchOrange-200)"];
+const DAY_MS = 86_400_000;
 
-const amazonSell = (r: IntegrationsReport) => r.integrations.find((i) => i.key === "amazon-sell") ?? null;
+function AmazonPanel({ projectId }: { projectId: string }) {
+  const status = useChannelStatus(projectId);
+  const { setMarketplace, sync } = useChannelActions(projectId);
+  const [error, setError] = useState("");
+  const a = status.data?.amazon;
+  // The query's own fetch time stands in for "now", so render stays pure.
+  const stale = a?.lastSyncAt ? status.dataUpdatedAt - new Date(a.lastSyncAt).getTime() > DAY_MS : false;
+  return (
+    <section aria-labelledby="amz-h" className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="amz-h" className="text-base font-semibold tracking-tight text-primary">Amazon Seller Central</h2>
+        {a ? <StatusBadge tone={a.configured ? "success" : "neutral"}>{a.configured ? "Credentials saved" : "Not connected"}</StatusBadge> : null}
+      </div>
+      {status.isPending ? (
+        <Skeleton className="h-16 w-full bg-subtle" />
+      ) : status.isError ? (
+        <div className="flex items-center gap-2"><ErrorLine>{messageOf(status.error)}</ErrorLine><Button size="sm" variant="outline" onClick={() => void status.refetch()}>Try again</Button></div>
+      ) : a ? (
+        <div className="space-y-3 text-sm">
+          {!a.configured ? <NotConnected service="Amazon" what="no orders are read" /> : null}
+          <p className="text-secondary">
+            Reads orders and Amazon&apos;s daily totals for one marketplace, read only, when you press Sync now. It needs a Professional selling account and a private SP-API app with the Inventory and Order Tracking role. Nothing about buyers is asked for or kept: each order is stored as its order id, date, items, quantities, amounts and marketplace.
+          </p>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Marketplace" className="w-72">
+              <Select
+                value={a.marketplaceId ?? ""}
+                disabled={setMarketplace.isPending}
+                onChange={(e) => {
+                  setError("");
+                  if (e.target.value) setMarketplace.mutate(e.target.value, { onError: (x) => setError(messageOf(x)) });
+                }}
+              >
+                <option value="">Choose a marketplace</option>
+                {a.marketplaces.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </Select>
+            </Field>
+            <Button
+              disabled={!a.configured || !a.marketplaceId || sync.isPending}
+              onClick={() => {
+                setError("");
+                sync.mutate(undefined, { onError: (x) => setError(messageOf(x)) });
+              }}
+            >
+              <RefreshCw className={`h-4 w-4 ${sync.isPending ? "motion-safe:animate-spin" : ""}`} aria-hidden /> {sync.isPending ? "Syncing" : "Sync now"}
+            </Button>
+            <p className="text-xs text-muted">
+              {a.lastSyncAt ? `Last synced ${new Date(a.lastSyncAt).toLocaleString()}.` : "Never synced."}
+              {stale ? " That is more than a day ago." : ""} There is no automatic sync.
+            </p>
+          </div>
+          {sync.data ? <p role="status" className="text-success">{sync.data.message}</p> : a.lastResult ? <p className={a.lastResult.ok ? "text-secondary" : "text-danger"}>{a.lastResult.message}</p> : null}
+          {error ? <ErrorLine>{error}</ErrorLine> : null}
+          {a.metrics.length ? (
+            <details className="rounded-md border border-hairline">
+              <summary className="cursor-pointer px-3 py-2 text-xs text-secondary">Amazon&apos;s own daily totals (Sales API), to compare with the imported orders</summary>
+              <Table>
+                <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Day (UTC)</TableHead><TableHead className="text-right">Orders</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Sales</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {[...a.metrics].reverse().filter((m) => m.orders || m.units).map((m) => (
+                    <TableRow key={m.day}><TableCell className="font-mono text-xs">{m.day}</TableCell><TableCell className="text-right font-mono text-xs">{m.orders}</TableCell><TableCell className="text-right font-mono text-xs">{m.units}</TableCell><TableCell className="text-right font-mono text-xs">{money(m.sales)} {m.currency}</TableCell></TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </details>
+          ) : null}
+          <NotRealNote service="The Amazon connection" />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function SalesChart({ items }: { items: Item[] }) {
+  const [metric, setMetric] = useState<"units" | "revenue">("units");
+  const [showTable, setShowTable] = useState(false);
+  const agg = useMemo(() => byDayAndChannel(items.map((i) => toSaleRow(i.data))), [items]);
+  if (!agg.days.length) return null;
+  const key = (c: string) => `c${agg.channels.indexOf(c)}`;
+  const config = Object.fromEntries(agg.channels.map((c, k) => [key(c), { label: c, color: COLOURS[k % COLOURS.length] }])) satisfies ChartConfig;
+  const data = agg.days.map((day) => {
+    const row: Record<string, string | number> = { day };
+    for (const c of agg.cells.filter((x) => x.day === day)) row[key(c.channel)] = c[metric];
+    return row;
+  });
+  const mixed = Object.entries(agg.currencies).filter(([, v]) => v.length > 1).map(([k]) => k);
+  return (
+    <figure className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
+      <figcaption className="flex flex-wrap items-center justify-between gap-2">
+        <span>
+          <span className="block text-base font-semibold tracking-tight text-primary">{metric === "units" ? "Units" : "Revenue"} by day and channel</span>
+          <span className="text-xs text-secondary">Sums of the rows below, {agg.days[0]} to {agg.days[agg.days.length - 1]}. Revenue is in each channel&apos;s own currency; nothing is converted.</span>
+        </span>
+        <span className="flex gap-2">
+          <Select aria-label="What the chart shows" value={metric} onChange={(e) => setMetric(e.target.value as "units" | "revenue")} className="h-8 w-32 text-xs"><option value="units">Units</option><option value="revenue">Revenue</option></Select>
+          <Button size="sm" variant="outline" aria-pressed={showTable} onClick={() => setShowTable((v) => !v)}>{showTable ? "Show the chart" : "Show as a table"}</Button>
+        </span>
+      </figcaption>
+      {mixed.length ? <p className="text-xs text-warning">{mixed.join(", ")} {mixed.length === 1 ? "has" : "have"} rows in more than one currency, so revenue for {mixed.length === 1 ? "it" : "them"} adds unlike amounts.</p> : null}
+      {!showTable ? (
+        <div aria-hidden="true">
+          <ChartContainer config={config} className="aspect-auto h-64 w-full">
+            <BarChart data={data} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} />
+              <YAxis tickLine={false} axisLine={false} width={56} allowDecimals={metric === "revenue"} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              {agg.channels.map((c) => <Bar key={c} dataKey={key(c)} stackId="a" fill={`var(--color-${key(c)})`} isAnimationActive={false} />)}
+            </BarChart>
+          </ChartContainer>
+        </div>
+      ) : null}
+      <div className={showTable ? "overflow-x-auto" : "sr-only"}>
+        <Table>
+          <caption className="sr-only">Units and revenue by day and channel</caption>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead scope="col">Day</TableHead><TableHead scope="col">Channel</TableHead><TableHead scope="col" className="text-right">Rows</TableHead><TableHead scope="col" className="text-right">Units</TableHead><TableHead scope="col" className="text-right">Revenue</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {[...agg.cells].reverse().map((c) => (
+              <TableRow key={`${c.day}-${c.channel}`}><TableCell className="font-mono text-xs">{c.day}</TableCell><TableCell>{c.channel}</TableCell><TableCell className="text-right font-mono text-xs">{c.rows}</TableCell><TableCell className="text-right font-mono text-xs">{c.units}</TableCell><TableCell className="text-right font-mono text-xs">{money(c.revenue)}{agg.currencies[c.channel]?.length === 1 ? ` ${agg.currencies[c.channel][0]}` : ""}</TableCell></TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </figure>
+  );
+}
 
 export function MonitorView({ project, store }: ViewProps) {
-  const { items, loading, error, add, remove } = useItems(project.id, store);
-  const reduce = useReducedMotion();
-  // One request for /api/integrations however many views read it; this one picks the Amazon seller row.
-  const integQuery = useQuery({ ...queries.integrations(), select: amazonSell });
-  const integ = integQuery.data;
-  const integError = messageOf(integQuery.error);
-  const [del, setDel] = useState<Sale | null>(null);
+  const { items, loading, error, add, remove, reload } = useItems(project.id, store);
+  const [del, setDel] = useState<Item | null>(null);
   const [actionError, setActionError] = useState("");
-
-  const sales = useMemo(() => items.map(toSale).sort((a, b) => b.date.localeCompare(a.date)), [items]);
-  const byChannel = useMemo(() => {
-    const m = new Map<string, { units: number; revenue: number; rows: number }>();
-    for (const s of sales) {
-      const k = s.channel.trim() || "(no channel)";
-      const c = m.get(k) ?? { units: 0, revenue: 0, rows: 0 };
-      m.set(k, { units: c.units + s.units, revenue: c.revenue + s.revenue, rows: c.rows + 1 });
-    }
-    return [...m.entries()];
-  }, [sales]);
-  const channels = [...new Set(sales.map((s) => s.channel.trim()).filter(Boolean))];
+  const [showAll, setShowAll] = useState(false);
+  const rows = useMemo(() => [...items].sort((a, b) => String(b.data.date ?? "").localeCompare(String(a.data.date ?? "")) || b.id - a.id), [items]);
+  const channels = [...new Set(items.map((i) => (typeof i.data.channel === "string" ? i.data.channel.trim() : "")).filter(Boolean))];
+  const visible = showAll ? rows : rows.slice(0, 50);
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8">
-      <section aria-labelledby="amz-h" className="rounded-xl border border-hairline bg-surface p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="amz-h" className="text-base font-semibold tracking-tight text-primary">Amazon Seller Central</h2>
-          {integ ? <StatusBadge tone={integ.configured ? "info" : "neutral"}>{integ.configured ? "Credentials present" : "Not connected"}</StatusBadge> : null}
-        </div>
-        {integError ? <div className="mt-3"><ErrorLine>{integError}</ErrorLine></div> : integ === undefined ? (
-          <p className="mt-3 text-sm text-secondary">Checking the connection.</p>
-        ) : (
-          <div className="mt-3 space-y-3 text-sm text-secondary">
-            <p>
-              {integ?.configured
-                ? "The credentials are set, but this prototype does not have the Amazon SP-API call code yet, so nothing is fetched and nothing is shown here."
-                : "This prototype is not connected to Amazon and does not have the Amazon SP-API call code yet, so it shows no Amazon sales."}
-            </p>
-            <div>
-              <p className="font-medium text-primary">What it needs</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                <li>An Amazon seller account.</li>
-                <li>An SP-API app registered for that account.</li>
-                <li>
-                  These three values in the .env file, then a restart:{" "}
-                  <span className="font-mono text-xs text-primary">{(integ?.env?.length ? integ.env : ["AMAZON_SP_REFRESH_TOKEN", "AMAZON_SP_CLIENT_ID", "AMAZON_SP_CLIENT_SECRET"]).join(", ")}</span>
-                </li>
-              </ul>
-            </div>
-            <p>Once the call code is built, this page will show orders, units and revenue by day and by ASIN.</p>
-          </div>
-        )}
-      </section>
-
+    <div className="space-y-6">
+      <AmazonPanel projectId={project.id} />
+      {loading ? <Skeleton className="h-64 w-full bg-subtle" /> : <SalesChart items={items} />}
       <section aria-labelledby="log-h" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 id="log-h" className="text-base font-semibold tracking-tight text-primary">Sales log</h2>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Entered by hand</p>
+            <h2 id="log-h" className="text-base font-semibold tracking-tight text-primary">Sales rows</h2>
+            <p className="text-sm text-secondary">Amazon orders from Sync now, one row per order, and rows you type in for other channels.</p>
           </div>
-          <AddSale channels={channels} onCreate={(v) => add({ section: store, title: `${v.date} ${v.channel}`, data: v }).then(() => undefined)} />
+          <AddSale channels={channels} onCreate={(v) => add({ section: store, title: `${v.date} ${v.channel}`, data: { ...v, source: "hand" } }).then(() => undefined)} />
         </div>
-        <p className="text-sm text-secondary">Rows you type in. They are not read from Amazon or any other channel.</p>
-        {error ? <ErrorLine>{error}</ErrorLine> : null}
+        {error ? <div className="flex items-center gap-2"><ErrorLine>{error}</ErrorLine><Button size="sm" variant="outline" onClick={() => reload()}>Try again</Button></div> : null}
         {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
         {loading ? (
-          <p className="text-sm text-secondary">Loading the log.</p>
-        ) : !sales.length ? (
-          <EmptyState title="Nothing logged yet">Add a row for each day and channel you want to track.</EmptyState>
+          <Skeleton className="h-32 w-full bg-subtle" />
+        ) : !rows.length ? (
+          <EmptyState title="No sales yet">Press Sync now once Amazon is connected, or add a row for each day and channel you track.</EmptyState>
         ) : (
-          <>
-            <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>Date</TableHead><TableHead>Channel</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Revenue</TableHead><TableHead className="w-10"><span className="sr-only">Delete</span></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sales.map((s) => (
-                    <TableRow key={s.item.id}>
-                      <TableCell className="font-mono text-xs text-primary">{s.date}</TableCell>
-                      <TableCell className="text-primary">{s.channel}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{s.units}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{money(s.revenue)}</TableCell>
-                      <TableCell><Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete the ${s.channel} row for ${s.date}`} onClick={() => setDel(s)}><Trash2 className="h-4 w-4" aria-hidden /></Button></TableCell>
+          <div className="overflow-x-auto rounded-xl border border-hairline bg-surface">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent"><TableHead>Date</TableHead><TableHead>Channel</TableHead><TableHead>Order</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Revenue</TableHead><TableHead className="w-10"><span className="sr-only">Delete</span></TableHead></TableRow>
+              </TableHeader>
+              <TableBody>
+                {visible.map((s) => {
+                  const r = toSaleRow(s.data);
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-mono text-xs text-primary">{r.date}</TableCell>
+                      <TableCell className="text-primary">{r.channel}</TableCell>
+                      <TableCell className="font-mono text-xs text-secondary">{typeof s.data.orderId === "string" ? `${s.data.orderId}${s.data.orderStatus ? ` (${String(s.data.orderStatus).toLowerCase()})` : ""}` : "typed in"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{r.units}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{money(r.revenue)}{r.currency ? ` ${r.currency}` : ""}</TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete the ${r.channel} row for ${r.date}`} onClick={() => setDel(s)}><Trash2 className="h-4 w-4" aria-hidden /></Button></TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
-              <p className="border-b border-hairline px-3 py-2 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Totals by channel, from the rows above</p>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent"><TableHead>Channel</TableHead><TableHead className="text-right">Rows</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Revenue</TableHead></TableRow>
-                </TableHeader>
-                <TableBody>
-                  {byChannel.map(([k, c]) => (
-                    <TableRow key={k}>
-                      <TableCell className="text-primary">{k}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{c.rows}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{c.units}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{money(c.revenue)}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-subtle hover:bg-subtle">
-                    <TableCell className="font-medium text-primary">All channels</TableCell>
-                    <TableCell className="text-right font-mono text-xs">{sales.length}</TableCell>
-                    <TableCell className="text-right font-mono text-xs text-primary">{sales.reduce((a, s) => a + s.units, 0)}</TableCell>
-                    <TableCell className="text-right font-mono text-xs text-primary">{money(sales.reduce((a, s) => a + s.revenue, 0))}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            {rows.length > 50 ? <div className="border-t border-hairline p-2 text-center"><Button size="sm" variant="ghost" onClick={() => setShowAll((v) => !v)}>{showAll ? "Show the latest 50" : `Show all ${rows.length} rows`}</Button></div> : null}
+          </div>
         )}
       </section>
 
-      <Modal open={!!del} onOpenChange={(o) => !o && setDel(null)} title="Delete this row?" description="It is removed from the log and from the totals.">
-        <p className="font-mono text-sm text-primary">{del ? `${del.date}, ${del.channel}, ${del.units} units, ${money(del.revenue)}` : null}</p>
+      <Modal open={!!del} onOpenChange={(o) => !o && setDel(null)} title="Delete this row?" description="It is removed from the rows and the chart. An Amazon order comes back on the next sync if Amazon still reports it as updated since then.">
+        <p className="font-mono text-sm text-primary">{del ? `${String(del.data.date ?? "")}, ${String(del.data.channel ?? "")}, ${String(del.data.units ?? "")} units` : null}</p>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => setDel(null)}>Keep it</Button>
           <Button onClick={async () => {
             if (!del) return;
-            try { setActionError(""); await remove(del.item.id); } catch (e) { setActionError((e as Error).message); }
+            try { setActionError(""); await remove(del.id); } catch (e) { setActionError((e as Error).message); }
             setDel(null);
           }}>Delete row</Button>
         </div>
       </Modal>
-    </motion.div>
+    </div>
   );
 }
 

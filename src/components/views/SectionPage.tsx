@@ -44,6 +44,10 @@ import type { ViewProps } from "./types";
 import { DraftButton } from "@/components/drafts/DraftButton";
 import { SectionAssist } from "@/components/drafts/SectionAssist";
 
+import { PostingView } from "@/components/channels/PostingView";
+import { InboxView } from "@/components/channels/InboxView";
+import { RepliesView } from "@/components/channels/RepliesView";
+import { ReviewsView } from "@/components/channels/ReviewsView";
 const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   items: ItemsView,
   challenge: ChallengeView,
@@ -79,6 +83,10 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   launch: LaunchView,
   results: ResultsView,
   links: LinksView,
+  posting: PostingView,
+  inbox: InboxView,
+  replies: RepliesView,
+  reviews: ReviewsView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

@@ -155,7 +155,7 @@ jobs:
         run: docker build -t c2r-slicer slicer
       - name: Run the slicer's own tests inside the image, with the real OrcaSlicer
         # The test tools are not part of the image; they are added for this run only.
-        run: docker run --rm c2r-slicer sh -c "pip install -q 'pytest>=8,<10' 'httpx==0.28.*' && python3 -m pytest -q /srv/tests"
+        run: docker run --rm --user root c2r-slicer sh -c "pip install -q 'pytest>=8,<10' 'httpx==0.28.*' && python3 -m pytest -q /srv/tests"
       - name: Start the service
         run: |
           docker run -d --name slicer -p 8811:8000 c2r-slicer

@@ -94,6 +94,11 @@ export const STORE_NOUN: Record<string, [string, string]> = {
   "prototype/tests": ["acceptance test", "acceptance tests"],
   "prototype/printing": ["print job", "print jobs"],
   "production/economics": ["economics line", "economics lines"],
+  // channels (plan 8.18 to 8.20)
+  "marketing/inbox": ["message", "messages"],
+  "sales/reviews": ["review or question", "reviews and questions"],
+  "marketing/replies": ["reply", "replies"],
+  "marketing/brand": ["brand note", "brand notes"],
 };
 
 export const noun = (store: string, n: number) => {

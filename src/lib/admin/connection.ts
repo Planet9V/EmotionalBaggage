@@ -9,6 +9,7 @@ import { plannerUrl } from "./planner";
 import { getPrinterRow, requireFamily, resolveAccess, valuesOf } from "./printers";
 import { createAdapter } from "@/lib/printers/factory";
 import type { ConnectionTest } from "./schemas";
+import { testChannel } from "@/lib/channels/connection";
 
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
 
@@ -277,6 +278,12 @@ export async function runConnectionTest(t: ConnectionTest): Promise<TestResult> 
     case "database":
       result = await testDatabase();
       provider = "database";
+      break;
+    case "amazon-sp":
+    case "x":
+    case "instagram":
+      result = await testChannel(t.kind);
+      provider = t.kind;
       break;
   }
   await audit([{ action: "tested", provider, field, result: { ok: result.ok, message: result.message } }]);

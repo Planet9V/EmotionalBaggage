@@ -46,7 +46,12 @@ export type Section = {
     | "campaigns"
     | "launch"
     | "results"
-    | "links";
+    | "links"
+    // sales and channels (plan 8.17 to 8.20)
+    | "posting"
+    | "inbox"
+    | "replies"
+    | "reviews";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -458,6 +463,29 @@ export const STAGES: Stage[] = [
         statuses: ["draft", "approved"],
         addLabel: "Add launch piece",
       },
+      {
+        key: "posting",
+        label: "Posting",
+        blurb: "Send an approved post to X or Instagram, one at a time, after you confirm what goes where and what X charges.",
+        view: "posting",
+        store: "marketing/social",
+      },
+      {
+        key: "inbox",
+        label: "Replies and comments",
+        blurb: "Mentions on X and comments on Instagram, read when you ask, each waiting for a drafted reply.",
+        view: "inbox",
+        statuses: ["new", "answered", "ignored"],
+        addLabel: "Add message",
+      },
+      {
+        key: "replies",
+        label: "Replies to send",
+        blurb: "Approved replies. Each is sent only when you press Send for that one reply; review replies you post yourself.",
+        view: "replies",
+        statuses: ["approved", "sent", "withdrawn"],
+        addLabel: "Add reply",
+      },
     ],
   },
   {
@@ -479,6 +507,14 @@ export const STAGES: Stage[] = [
         label: "Sales monitor",
         blurb: "Orders and revenue from Amazon Seller Central.",
         view: "monitor",
+      },
+      {
+        key: "reviews",
+        label: "Reviews and questions",
+        blurb: "What customers say and ask, with drafted replies, and the requests that keep coming back turned into requirements.",
+        view: "reviews",
+        statuses: ["new", "answered", "no reply needed"],
+        addLabel: "Add review or question",
       },
       {
         key: "channels",
