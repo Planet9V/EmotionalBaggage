@@ -5,6 +5,7 @@ import { body, HttpError, requireProject, route } from "@/lib/api/route";
 import { buildUtmUrl, makeCode, MEDIA, slugify, UTM_CONVENTION } from "@/lib/campaigns/links";
 import { LINK_SELECT as SELECT, toLink, type LinkDb } from "@/lib/campaigns/linkRows";
 import { requireCampaign, requireCreative } from "@/lib/campaigns/server";
+import { creativeUtmContent } from "@/lib/campaigns/adRule";
 import { currentActor } from "@/lib/actor";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -17,7 +18,7 @@ const make = z.object({
   medium: z.enum(MEDIA, { message: `must be one of: ${MEDIA.join(", ")}` }),
   /** left out: the concept's name and the campaign's name */
   utmCampaign: z.string().trim().max(120).optional(),
-  /** left out: the creative's name */
+  /** only for a link with no creative: with one, utm_content is always taken from the creative row */
   utmContent: z.string().trim().max(120).optional(),
   utmTerm: z.string().trim().max(120).optional(),
   /** also make a short address served by this app */
@@ -43,12 +44,17 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const b = await body(req, make);
   const campaign = await requireCampaign(id, b.campaignId);
   const creative = b.creativeId ? await requireCreative(null, id, b.creativeId) : null;
+  // utm_content names the creative, taken from its row, so results can be tied back to the piece that produced them.
+  const fromCreative = creative ? creativeUtmContent(creative) : null;
+  if (fromCreative && b.utmContent && slugify(b.utmContent, 60) !== fromCreative) {
+    throw new HttpError(400, `utm_content is taken from the creative ("${fromCreative}"), so results tie back to it. Leave it empty, or make the link without a creative.`);
+  }
   const utmCampaign = b.utmCampaign || `${slugify(project.name, 28)}-${slugify(campaign.title, 28)}`.replace(/^-|-$/g, "");
   const built = buildUtmUrl(b.baseUrl, {
     source: b.source,
     medium: b.medium,
     campaign: utmCampaign,
-    content: b.utmContent || (creative ? creative.title : undefined),
+    content: fromCreative ?? (b.utmContent || undefined),
     term: b.utmTerm || undefined,
   });
   if (!built.ok) throw new HttpError(400, built.reason);

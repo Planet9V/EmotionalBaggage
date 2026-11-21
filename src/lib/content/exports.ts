@@ -2,6 +2,8 @@
 // HTML and text. Pure functions of rows; nothing here sends, posts or uploads.
 import type { Item } from "@/lib/types";
 import { listingCategory, type ChannelSpec, type FieldSpec } from "./channels";
+import { effectiveAdRule } from "@/lib/campaigns/adRule";
+import { minorDigits, toMajor } from "@/lib/economics/money";
 
 /** One CSV cell. A cell that starts with = + - @ is prefixed with an apostrophe so a spreadsheet does not run it. */
 export function cell(v: unknown): string {
@@ -12,10 +14,14 @@ export function cell(v: unknown): string {
 export const csv = (rows: unknown[][]) => rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : typeof v === "string" && v ? [v] : []);
-const money = (minor: unknown) => (typeof minor === "number" ? (minor / 100).toFixed(2) : "");
+const moneyIn = (currency: string) => (minor: unknown) => (typeof minor === "number" ? toMajor(minor, currency).toFixed(minorDigits(currency)) : "");
 
-/** Ads of one channel as CSV. Google: Google Ads Editor's one-ad-per-row layout. Other channels: plain, one column per field. */
-export function adsCsv(spec: ChannelSpec, ads: Item[], concept: string): string {
+/**
+ * Ads of one channel as CSV. Google: Google Ads Editor's one-ad-per-row layout. Other channels: plain, one
+ * column per field, with the stop and scale rule that governs each ad: its campaign's, else its own.
+ */
+export function adsCsv(spec: ChannelSpec, ads: Item[], concept: string, campaigns: Item[] = [], currency = "USD"): string {
+  const money = moneyIn(currency);
   if (spec.bulk.layout === "google-ads-editor") {
     const head = ["Campaign", "Ad group", "Ad type", ...Array.from({ length: 15 }, (_, i) => `Headline ${i + 1}`), ...Array.from({ length: 4 }, (_, i) => `Description ${i + 1}`), "Path 1", "Path 2", "Final URL"];
     const rows = ads.map((a, n) => {
@@ -27,10 +33,11 @@ export function adsCsv(spec: ChannelSpec, ads: Item[], concept: string): string 
     return csv([head, ...rows]);
   }
   const cols: FieldSpec[] = spec.fields;
-  const head = ["Status", "Channel", "Message", ...cols.map((c) => c.label), "Stop and scale rule", "Cost per order ceiling", "Least spend before judging"];
+  const head = ["Status", "Channel", "Message", ...cols.map((c) => c.label), "Stop and scale rule", `Cost per order ceiling (${currency})`, `Least spend before judging (${currency})`, "Rule from"];
   const rows = ads.map((a) => {
     const f = (a.data.fields ?? {}) as Record<string, unknown>;
-    return [a.status, spec.label, (a.data.message as { text?: string } | undefined)?.text ?? "", ...cols.map((c) => (c.kind === "list" ? list(f[c.key]).join(" | ") : f[c.key] ?? "")), a.data.stopRule ?? "", money(a.data.costPerOrderCeilingMinor), money(a.data.minSpendBeforeJudgingMinor)];
+    const r = effectiveAdRule(a, campaigns);
+    return [a.status, spec.label, (a.data.message as { text?: string } | undefined)?.text ?? "", ...cols.map((c) => (c.kind === "list" ? list(f[c.key]).join(" | ") : f[c.key] ?? "")), r.sentence, money(r.stopAboveMinor), money(r.afterSpendMinor), r.campaign ? `campaign: ${r.campaign.title}` : "the ad"];
   });
   return csv([head, ...rows]);
 }

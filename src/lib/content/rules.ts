@@ -6,6 +6,7 @@ import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { adChannel, checkChannel, checkListing, checkSocial, listingCategory, refusals, socialChannel, type FieldValues } from "./channels";
 import { evaluate, flagSummary, type Flag, type ProofRow } from "./claims";
 import { CONTENT, CONTENT_STORES, claimFields } from "./schemas";
+import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
 
 /** Statuses that need no check: the row is not being released to anything. */
 const FREE = new Set(["draft", "planned", "killed", "paused", "rejected"]);
@@ -41,7 +42,7 @@ function adValues(data: Record<string, unknown>): FieldValues {
  * Throws when a row cannot be at this status. `status` is the status the row would have.
  * A 409 is something the writer can fix by editing; a 400 is a shape the app refuses.
  */
-export async function assertContentAllowed(projectId: string, section: string, status: string, title: string, body: string, data: Record<string, unknown>) {
+export async function assertContentAllowed(projectId: string, section: string, status: string, title: string, body: string, data: Record<string, unknown>, itemId: number | null = null) {
   if (!CONTENT_STORES.has(section) || FREE.has(status)) return;
   const flags = await flagsFor(projectId, section, title, body, data);
   if (flags.length) {
@@ -52,10 +53,17 @@ export async function assertContentAllowed(projectId: string, section: string, s
     if (!spec) throw new HttpError(400, "Choose an ad channel first.");
     const bad = refusals(checkChannel(spec, adValues(data), { forApproval: true }));
     if (bad.length) throw new HttpError(400, `Over a platform limit or incomplete: ${bad.map((b) => b.message).join(" ")}`, { problems: bad });
-    const ceiling = data.costPerOrderCeilingMinor;
-    const minSpend = data.minSpendBeforeJudgingMinor;
-    if (!String(data.stopRule ?? "").trim() || typeof ceiling !== "number" || typeof minSpend !== "number") {
-      throw new HttpError(409, "Write the stop and scale rule first: the sentence, the highest cost per order you will accept and the least you will spend before judging the ad.");
+    // One source for the rule: the campaign that runs the ad governs; an ad in no campaign needs its own.
+    const id = itemId;
+    const campaigns = id === null ? [] : (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, CONTENT.campaigns])).map(toItem);
+    const rule = effectiveAdRule({ id: id ?? -1, projectId, section, title, body, data, status, sort: 0 }, campaigns);
+    if (!ruleComplete(rule)) {
+      throw new HttpError(
+        409,
+        rule.source === "campaign"
+          ? `The campaign "${rule.campaign!.title}" runs this ad and its rule governs it, but the campaign has no stop line or no spend to judge after. Set both on the campaign first.`
+          : "Write the stop and scale rule first: the sentence, the highest cost per order you will accept and the least you will spend before judging the ad. Or add the ad to a campaign, whose rule then governs it."
+      );
     }
   }
   if (section === CONTENT.social) {

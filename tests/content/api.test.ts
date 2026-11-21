@@ -13,6 +13,7 @@ import { GET as listingExport } from "@/app/api/content/listing/export/route";
 import { GET as launchExport } from "@/app/api/content/launch/export/route";
 import { GET as socialQueue } from "@/app/api/content/social/queue/route";
 import { GET as GENERATORS } from "@/app/api/drafts/generators/route";
+import { POST as makeLink } from "@/app/api/projects/[id]/campaigns/links/route";
 import { anonymous, ctx, json, read } from "../api/helpers";
 import { chooseReasoning, clearModelRows } from "../ai/setup";
 import { start } from "../standins/openai";
@@ -70,6 +71,35 @@ describe("ads", () => {
     const ok = await patch(a.body.item.id, { data: { stopRule: "Stop above the ceiling.", costPerOrderCeilingMinor: 1500, minSpendBeforeJudgingMinor: 5000 }, status: "approved" });
     expect(ok.status, JSON.stringify(ok.body)).toBe(200);
     expect(ok.body.item.status).toBe("approved");
+  });
+
+  it("an ad a campaign runs is governed by the campaign's rule and needs no numbers of its own", async () => {
+    const ad = await add("marketing/ads", "RSA in a campaign", rsa({ stopRule: "", costPerOrderCeilingMinor: undefined, minSpendBeforeJudgingMinor: undefined }));
+    // a campaign that runs the ad but has no stop line yet: the ad cannot be approved, and the reason names the campaign
+    const camp = await insert(P, "marketing/campaigns", "Launch week", { kind: "campaign", creative: [{ section: "marketing/ads", itemId: ad.body.item.id, title: "RSA in a campaign" }] }, "", "planned");
+    const r1 = await patch(ad.body.item.id, { status: "approved" });
+    expect(r1.status).toBe(409);
+    expect(r1.body.error).toContain('"Launch week"');
+    // the campaign gets its rule: the ad is approved on it
+    await q("UPDATE items SET data = data || $2::jsonb WHERE id=$1", [camp, JSON.stringify({ rule: { stopAboveMinor: 900, afterSpendMinor: 4000, scaleBelowMinor: 500 } })]);
+    const r2 = await patch(ad.body.item.id, { status: "approved" });
+    expect(r2.status, JSON.stringify(r2.body)).toBe(200);
+    // (the Google layout has no rule columns; the plain layout's governing rule is checked in pure.test.ts)
+    expect((await get(adsExport, "/api/content/ads/export", "&channel=google-search-rsa")).status).toBe(200);
+    // an ad in no campaign still needs its own rule
+    const loose = await add("marketing/ads", "RSA alone", rsa({ stopRule: "", costPerOrderCeilingMinor: undefined }));
+    expect((await patch(loose.body.item.id, { status: "approved" })).status).toBe(409);
+  });
+
+  it("a tracked link for a creative takes utm_content from the creative row, and refuses a different one", async () => {
+    const ad = await add("marketing/ads", "Weigh It Ad", rsa());
+    const camp = await insert(P, "marketing/campaigns", "Links campaign", { kind: "campaign", creative: [{ section: "marketing/ads", itemId: ad.body.item.id }] }, "", "planned");
+    const mk = (b: Record<string, unknown>) => makeLink(json("POST", { campaignId: camp, creativeId: ad.body.item.id, baseUrl: "https://example.com/bag", source: "google", medium: "cpc", ...b }), ctx(P));
+    const ok = await read<{ link: { utm: { content: string } } }>(await mk({}));
+    expect(ok.status).toBe(201);
+    expect(ok.body.link.utm.content).toBe("weigh-it-ad");
+    expect((await mk({ utmContent: "something-else" })).status).toBe(400);
+    expect((await mk({ utmContent: "Weigh It Ad" })).status).toBe(201);
   });
 
   it("refuses to approve a headline over a limit that comes from the platform's page, and says which", async () => {

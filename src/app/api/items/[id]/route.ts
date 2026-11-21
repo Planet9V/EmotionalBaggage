@@ -34,7 +34,7 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     if (CONTENT_STORES.has(was.section)) {
       const merged = { ...was.data, ...(data ?? {}) };
       data = await withFlags(was.project_id, was.section, b.title ?? was.title, b.body ?? was.body, merged);
-      await assertContentAllowed(was.project_id, was.section, b.status ?? was.status, b.title ?? was.title, b.body ?? was.body, data);
+      await assertContentAllowed(was.project_id, was.section, b.status ?? was.status, b.title ?? was.title, b.body ?? was.body, data, Number(was.id));
     }
     await assertLinks(c, was.project_id, was.section, data);
     await assertBuildMayPass(c, was.project_id, { section: was.section, title: b.title ?? was.title, status: b.status ?? was.status, data: { ...was.data, ...(data ?? {}) } });
