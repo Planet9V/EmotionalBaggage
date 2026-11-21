@@ -38,6 +38,8 @@ test.describe("board", () => {
     expect((await saved).status()).toBe(200);
     await expect(card("in progress")).toBeVisible();
     await expect(live(page)).toContainText("Claimed moats moved to in progress");
+    // focus is back on the moved card's grip, not lost to the page
+    await expect(page.getByRole("button", { name: "Drag Claimed moats" })).toBeFocused();
 
     // it survived a reload, and goes back the same way
     await page.reload();

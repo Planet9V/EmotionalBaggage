@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -85,7 +85,8 @@ const columnJump: KeyboardCoordinateGetter = (event, { context: { active, collis
 export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, renderCard, emptyHint }: Props) {
   const [say, setSay] = useState("");
   const [active, setActive] = useState<Item | null>(null);
-  const refocus = useRef<number | null>(null);
+  /** the card to give focus back to once it has moved, and where: its grip after a keyboard drag, the card after Shift+arrow */
+  const refocus = useRef<{ id: number; to: "grip" | "card" } | null>(null);
   const root = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -95,21 +96,30 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, re
   );
 
   // After a keyboard move the card remounts in its new column; give it focus back.
+  const restoreFocus = useCallback(() => {
+    const r = refocus.current;
+    if (!r) return false;
+    const card = root.current?.querySelector<HTMLElement>(`[data-card-id="${r.id}"]`);
+    if (!card) return false;
+    const target = r.to === "grip" ? (card.querySelector<HTMLElement>("button[data-grip]") ?? card) : card;
+    target.focus();
+    if (document.activeElement !== target) return false;
+    refocus.current = null;
+    return true;
+  }, []);
   useEffect(() => {
-    if (refocus.current == null) return;
-    const el = root.current?.querySelector<HTMLElement>(`[data-card-id="${refocus.current}"]`);
-    if (el) {
-      el.focus();
-      refocus.current = null;
-    }
-  }, [items]);
+    if (restoreFocus()) return;
+    // dnd-kit hands focus back to the old grip a frame after the drop; try again after it has
+    const t = window.setTimeout(restoreFocus, 60);
+    return () => window.clearTimeout(t);
+  }, [items, restoreFocus]);
 
   const count = (st: string) => items.filter((x) => x.status === st).length;
 
-  const move = async (item: Item, status: string, viaKeyboard = false) => {
+  const move = async (item: Item, status: string, viaKeyboard: false | "grip" | "card" = false) => {
     if (item.status === status) return;
     const from = item.status;
-    if (viaKeyboard) refocus.current = item.id;
+    if (viaKeyboard) refocus.current = { id: item.id, to: viaKeyboard };
     setSay(`Moving ${item.title} to ${status}.`);
     try {
       await onMove(item.id, status);
@@ -117,7 +127,7 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, re
       setSay(`${item.title} moved to ${status}. The ${status} column now has ${count(status) + 1}.`);
     } catch (e) {
       const reason = (e as Error).message || "The server refused the change.";
-      refocus.current = viaKeyboard ? item.id : null;
+      refocus.current = viaKeyboard ? { id: item.id, to: viaKeyboard } : null;
       setSay(`${item.title} was not moved: ${reason} It stays in ${from}.`);
       toastError(`${item.title}: ${reason}`);
     }
@@ -138,7 +148,8 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, re
     setActive(null);
     const st = colOf(e.over?.id);
     const item = items.find((i) => i.id === Number(e.active.id));
-    if (item && st) void move(item, st);
+    // dropped with the keyboard (Space): focus goes back to the card's grip in its new column
+    if (item && st) void move(item, st, e.activatorEvent instanceof KeyboardEvent ? "grip" : false);
   };
 
   return (
@@ -169,7 +180,7 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, re
                     onOpen={onOpen}
                     extra={cardExtra?.(it)}
                     renderCard={renderCard}
-                    onMove={(s, kb) => void move(it, s, kb)}
+                    onMove={(s, kb) => void move(it, s, kb ? "card" : false)}
                   />
                 )}
               </Column>
@@ -246,6 +257,7 @@ function BoardCard({
       {...listeners}
       {...attributes}
       aria-label={`Drag ${item.title}`}
+      data-grip
       className="shrink-0 cursor-grab touch-none rounded text-muted hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing"
     >
       <GripVertical className="h-3.5 w-3.5" aria-hidden />
