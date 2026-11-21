@@ -100,7 +100,10 @@ export function routingSpace(parts: RoutePart[], wallMm = SHELL_DEFAULTS.wallMm)
   return { box: { min: lo.map((v) => v - pad) as V3, max: hi.map((v) => v + pad) as V3 }, source: "parts", shellId: null };
 }
 
-export type Skipped = { wireId: number; name: string; reason: string };
+export type Skipped = { wireId: number; name: string; reason: string; fix?: { href: string; label: string } };
+
+/** Where a part with no position is placed. */
+export const PLACE_HREF = "/s/design/layout";
 
 export type PlannerRequest = {
   space: { min: V3; max: V3 };
@@ -112,7 +115,13 @@ export type PlannerRequest = {
   round_to: number;
 };
 
-export type RouteOptions = { cell?: number; wallMm?: number; clearance?: number };
+export type RouteOptions = {
+  cell?: number;
+  wallMm?: number;
+  clearance?: number;
+  /** every reference on the parts list, placed or not, so a part with no position is told apart from one that is not listed */
+  bomRefs?: ReadonlySet<string>;
+};
 export type Built = { request: PlannerRequest | null; skipped: Skipped[]; space: Space | null; fingerprints: Map<number, string>; pinSources: Map<number, [PinSource, PinSource]> };
 
 /** A short stable hash of the inputs, to tell when a stored route no longer matches the model. */
@@ -146,7 +155,11 @@ export function buildRouteRequest(parts: RoutePart[], wires: RouteWire[], opts: 
   for (const w of wires) {
     const a = byRef.get(w.from);
     const b = byRef.get(w.to);
-    if (!a || !b) skipped.push({ wireId: w.id, name: w.name, reason: `${!a ? w.from : w.to} is not in the bill of materials` });
+    if (!a || !b) {
+      const ref = !a ? w.from : w.to;
+      if (opts.bomRefs?.has(ref)) skipped.push({ wireId: w.id, name: w.name, reason: `${ref} has no position in the model; place it in Physical layout`, fix: { href: PLACE_HREF, label: "Physical layout" } });
+      else skipped.push({ wireId: w.id, name: w.name, reason: `${ref} is not in the bill of materials` });
+    }
     else if (a.id === b.id) skipped.push({ wireId: w.id, name: w.name, reason: "both ends are on the same part" });
     else if (a.geometry.shape === "shell" || b.geometry.shape === "shell") skipped.push({ wireId: w.id, name: w.name, reason: "an end is on the enclosure shell, which is the space, not a part in it" });
     else {
@@ -278,7 +291,7 @@ export function bundleRadius(paths: ReadonlyMap<number, readonly (readonly numbe
 export type RouteOutcome = {
   routed: number;
   failed: { wireId: number; name: string; reasons: string[] }[];
-  skipped: { wireId: number; name: string; reason: string }[];
+  skipped: Skipped[];
   /** wires whose ends were placed on a box face because the part has no pin position */
   faceEnds: number;
   cell: number;

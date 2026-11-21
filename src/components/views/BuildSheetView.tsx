@@ -248,7 +248,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
       </Section>
 
       <Section n="03a" title="Harness drawing" blurb="The wires drawn as a harness, with WireViz. Lengths are the routed ones; a wire that has not been routed is drawn without one.">
-        <HarnessPanel projectId={project.id} />
+        <HarnessPanel projectId={project.id} allowanceMm={allowance.value} />
       </Section>
 
       <Section n="04" title="Wire gauge, colour and strip lengths" blurb="The cut list again, sorted by colour and gauge, with the gauge chosen from each wire's current, the total to cut per colour, and the strip length at each end.">

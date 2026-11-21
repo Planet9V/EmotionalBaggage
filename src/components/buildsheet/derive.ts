@@ -190,6 +190,9 @@ export function routedLengthMm(w: Wire): number | null {
 
 const roundUp = (raw: number) => Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO;
 
+/** The length to cut a routed wire: its run plus the strip and slack allowance, rounded up to 5 mm. The cut list and the harness drawing both use it. */
+export const cutLengthMm = (routedMm: number, allowance: number) => roundUp(routedMm + allowance);
+
 /** Current route fingerprint per wire row id, from the parts, their pins (rows, else library) and wires as they are now. */
 export function routeFingerprints(parts: Map<string, PartLite>, wires: Wire[], pins: PinRow[] = []): Map<number, string> {
   const byItem = pinsByItem(pins);
@@ -214,7 +217,7 @@ export function estimateLength(w: Wire, parts: Map<string, PartLite>, routing: n
     const state = current === undefined || !w.routed.fingerprint ? "current" : routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, current);
     if (state === "current") {
       const raw = w.routed.lengthMm + allowance;
-      return { source: "routed", straight: w.routed.lengthMm, raw, mm: roundUp(raw), from: pa, to: pb, cellMm: w.routed.cellMm };
+      return { source: "routed", straight: w.routed.lengthMm, raw, mm: cutLengthMm(w.routed.lengthMm, allowance), from: pa, to: pb, cellMm: w.routed.cellMm };
     }
     stale = true;
   }

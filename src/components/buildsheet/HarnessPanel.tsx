@@ -2,7 +2,7 @@
 
 /**
  * The harness drawing: the planner runs WireViz (a separate program) on the wires and connectors
- * and returns an SVG and a bill of materials. Cable lengths on it are routed lengths only.
+ * and returns an SVG and a bill of materials. Cable lengths on it are cut lengths, as in the cut list.
  */
 import { useMemo, useState } from "react";
 import { Download, Network } from "lucide-react";
@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/Card";
 
 type State = { state: "idle" } | { state: "running" } | { state: "done"; out: HarnessOutcome; ms: number } | { state: "error"; message: string };
 
-export function HarnessPanel({ projectId }: { projectId: string }) {
+export function HarnessPanel({ projectId, allowanceMm }: { projectId: string; allowanceMm: number }) {
   const [s, setS] = useState<State>({ state: "idle" });
   // The SVG is shown through an <img>, so nothing inside it can run.
   const src = useMemo(() => (s.state === "done" ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(s.out.svg)}` : ""), [s]);
@@ -23,7 +23,7 @@ export function HarnessPanel({ projectId }: { projectId: string }) {
     setS({ state: "running" });
     const t0 = performance.now();
     try {
-      const out = await api<HarnessOutcome>(`/api/projects/${encodeURIComponent(projectId)}/harness`, { method: "POST", body: "{}" });
+      const out = await api<HarnessOutcome>(`/api/projects/${encodeURIComponent(projectId)}/harness`, { method: "POST", body: JSON.stringify({ allowanceMm }) });
       setS({ state: "done", out, ms: performance.now() - t0 });
     } catch (e) {
       setS({ state: "error", message: (e as Error).message });
@@ -57,8 +57,11 @@ export function HarnessPanel({ projectId }: { projectId: string }) {
       {s.state === "done" && (
         <>
           <p role="status" className="text-xs text-secondary">
-            Drawn in {s.out.seconds.toFixed(2)} s by {s.out.wireviz || "WireViz"}, run as a separate program. {s.out.withLength} wire{s.out.withLength === 1 ? "" : "s"} carry a routed length
+            Drawn in {s.out.seconds.toFixed(2)} s by {s.out.wireviz || "WireViz"}, run as a separate program. {s.out.withLength} wire{s.out.withLength === 1 ? "" : "s"} carry a length
             {s.out.withoutLength > 0 ? `; ${s.out.withoutLength} ${s.out.withoutLength === 1 ? "has" : "have"} none because ${s.out.withoutLength === 1 ? "it is" : "they are"} not routed, or the route is out of date (route them in the 3D model)` : ""}.
+          </p>
+          <p className="text-xs text-secondary" data-testid="harness-length-note">
+            Lengths on the drawing are cut lengths, the same as the cut list: the routed run plus {s.out.allowanceMm} mm for stripping and slack, rounded up to 5 mm.
           </p>
           {s.out.problems.length > 0 && (
             <ul className="list-disc pl-5 text-xs text-warning">

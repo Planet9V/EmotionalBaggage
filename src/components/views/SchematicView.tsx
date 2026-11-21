@@ -347,8 +347,8 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const revision = revisionPick && revisions.includes(revisionPick) ? revisionPick : (revisions[0] ?? "Draft: no named build yet");
 
   const fileSpecs = useMemo(
-    () => schematicFileSpecs({ projectName: project.name, wires, parts, nets, graph, circuit, symGraph, revision, date }),
-    [project.name, wires, parts, nets, graph, circuit, symGraph, revision, date]
+    () => schematicFileSpecs({ projectName: project.name, wires, parts, nets, graph, circuit, symGraph, revision, date, bomItems: partsApi.items }),
+    [project.name, wires, parts, nets, graph, circuit, symGraph, revision, date, partsApi.items]
   );
 
   // ───────── render

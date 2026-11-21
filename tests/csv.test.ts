@@ -34,7 +34,14 @@ describe("the exports use it", () => {
   it("the wiring list neutralises a formula in a wire's name or note", () => {
     const w = { order: 1, name: "=evil()", net: "VCC", netClass: "", from: "U1", fromPin: "1", to: "J1", toPin: "2", via: "", note: "@x", status: "to solder", item: { id: 1 } } as unknown as Wire;
     const row = wiringCsv([w]).split("\r\n")[1];
-    expect(row).toBe(`1,"'=evil()",VCC,,U1,1,J1,2,"'@x",to solder`);
+    expect(row).toBe(`1,"'=evil()",VCC,,U1,1,J1,2,,,,"'@x",to solder`);
+  });
+
+  it("the wiring list carries the cut length, its basis and the gauge (D5)", () => {
+    const w = { order: 1, name: "Feed", net: "VBAT", netClass: "power", from: "BT1", fromPin: "1", to: "U1", toPin: "VIN", via: "", note: "", status: "to solder", item: { id: 7 } } as unknown as Wire;
+    const out = wiringCsv([w], new Map([[7, { cutMm: 50, basis: "routed" as const, gauge: "24 AWG" }]])).split("\r\n");
+    expect(out[0]).toBe("order,name,net,class,from ref,from pin,to ref,to pin,cut length mm,length basis,gauge,note,status");
+    expect(out[1]).toBe("1,Feed,VBAT,power,BT1,1,U1,VIN,50,routed,24 AWG,,to solder");
   });
 
   it("no other source file writes CSV by hand", () => {

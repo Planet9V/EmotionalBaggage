@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 /** Controls around the 3D canvas: handles, section cut, measuring, export, wire routing, and the parts table. */
 import { useState } from "react";
 import { Download, Hand, Move3d, Rotate3d, Route, Ruler, Scissors, Undo2, Redo2 } from "lucide-react";
@@ -254,6 +256,12 @@ function RouteSummary({ outcome: o, totalMs }: { outcome: RouteOutcome; totalMs:
           {o.skipped.map((f) => (
             <li key={f.wireId}>
               {f.name} skipped: {f.reason}
+              {f.fix ? (
+                <>
+                  {" "}
+                  <Link href={f.fix.href} className="text-link underline">Open {f.fix.label}</Link>
+                </>
+              ) : null}
             </li>
           ))}
         </ul>
