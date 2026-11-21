@@ -227,6 +227,29 @@ export async function startJob(id: number, confirm: Confirm | undefined) {
   return toItem(updated);
 }
 
+/**
+ * After a start or cancel sent straight to a printer from the Printers page: the print job that sent this file
+ * to this printer, if there is one, moves with it (sent to printing; sent or printing to cancelled), so the
+ * job and the printer agree. Answers the job's id, or null when no job matched.
+ */
+export async function followPrinterAction(printerId: number, printerName: string, file: string, action: "start" | "cancel"): Promise<number | null> {
+  return tx(async (c) => {
+    const found = await c.query<ItemRow>(
+      `SELECT ${ITEM_COLS} FROM items WHERE section=$1 AND data->>'printerId' = $2 AND data->>'sentName' = ANY($3) AND status = ANY($4) ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      // a printer may report the file with its folder ("0:/gcodes/x.gcode"); the job keeps the bare name it sent
+      [PRINTING_SECTION, String(printerId), [file, file.split("/").pop() ?? file], action === "start" ? ["sent"] : ["sent", "printing"]]
+    );
+    const row = found.rows[0];
+    if (!row) return null;
+    if (action === "start") {
+      await move(c, row, { to: "printing", data: { startedAt: stamp() }, kind: "print.started", summary: `Started "${row.title}" on ${printerName} (from the Printers page)`, detail: { printer: printerName, printerId, file } });
+    } else {
+      await move(c, row, { to: "cancelled", kind: "print.cancelled", summary: `Cancelled "${row.title}" on ${printerName} (from the Printers page)`, detail: { printer: printerName, file } });
+    }
+    return Number(row.id);
+  });
+}
+
 export async function controlJob(id: number, action: "pause" | "resume" | "cancel", confirm: Confirm | undefined) {
   const row = await loadJob(id);
   const d = jobData(row);

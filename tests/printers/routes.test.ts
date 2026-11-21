@@ -51,12 +51,22 @@ const noSecrets = (v: unknown) => {
 };
 
 describe("actions route", () => {
-  it("refuses start and cancel without confirm: true (400), and sends nothing to the printer", async () => {
+  it("refuses start and cancel without a named confirm (400), a bare true included, and sends nothing to the printer", async () => {
     const s = await octoprint.start({ apiKey: OCTO_KEY });
     closers.push(() => s.close());
     const p = await add({ name: "ZZ Route Octo A", family: "octoprint", access: { address: s.url, apiKey: OCTO_KEY } });
     const before = s.requests.length;
-    for (const body of [{ action: "start", name: "a.gcode" }, { action: "start", name: "a.gcode", confirm: false }, { action: "cancel" }, { action: "cancel", confirm: false }]) {
+    for (const body of [
+      { action: "start", name: "a.gcode" },
+      { action: "start", name: "a.gcode", confirm: false },
+      // the reviewer's repro: a bare boolean started a print outside any job
+      { action: "start", name: "x.gcode", confirm: true },
+      { action: "start", name: "a.gcode", confirm: { printer: "ZZ Route Octo A", file: "b.gcode" } },
+      { action: "start", name: "a.gcode", confirm: { printer: "zz route octo a", file: "a.gcode" } },
+      { action: "cancel" },
+      { action: "cancel", confirm: false },
+      { action: "cancel", confirm: true },
+    ]) {
       const r = await act(p.id, body);
       expect(r.status, JSON.stringify(body)).toBe(400);
       expect(r.body.error).toMatch(/confirm/i);
@@ -69,7 +79,7 @@ describe("actions route", () => {
     const s = await octoprint.start({ apiKey: OCTO_KEY });
     closers.push(() => s.close());
     const p = await add({ name: "ZZ Route Octo B", family: "octoprint", access: { address: s.url, apiKey: OCTO_KEY } });
-    expect((await act(p.id, { action: "start", confirm: true })).body.error).toMatch(/file name/i);
+    expect((await act(p.id, { action: "start", confirm: { printer: "ZZ Route Octo B", file: "" } })).body.error).toMatch(/file name/i);
     expect((await act(p.id, { action: "reboot", confirm: true })).status).toBe(400);
     expect((await act(p.id, { action: "pause" })).status).toBe(409); // nothing is printing: a busy refusal, not a 500
   });
@@ -85,10 +95,10 @@ describe("actions route", () => {
     expect(sent.body.name).toBe("route.gcode");
     expect(await auditFor("printer.start")).toHaveLength(0); // sending never starts
 
-    expect((await act(p.id, { action: "start", name: "route.gcode", confirm: true })).status).toBe(200);
+    expect((await act(p.id, { action: "start", name: "route.gcode", confirm: { printer: "ZZ Route Octo C", file: "route.gcode" } })).status).toBe(200);
     expect((await act(p.id, { action: "pause" })).status).toBe(200);
     expect((await act(p.id, { action: "resume" })).status).toBe(200);
-    expect((await act(p.id, { action: "cancel", confirm: true })).status).toBe(200);
+    expect((await act(p.id, { action: "cancel", confirm: { printer: "ZZ Route Octo C", file: "route.gcode" } })).status).toBe(200);
 
     for (const a of ["upload", "start", "pause", "resume", "cancel"]) {
       const rows = await q<{ action: string; summary: string; detail: Record<string, unknown> }>("SELECT action, summary, detail FROM audit_log WHERE action=$1 AND detail->>'printerId'=$2", [`printer.${a}`, String(p.id)]);
@@ -101,13 +111,31 @@ describe("actions route", () => {
     expect(startRow.detail).toMatchObject({ file: "route.gcode" });
   });
 
+  it("moves the print job that sent the file to that printer: start to printing, cancel to cancelled", async () => {
+    const s = await octoprint.start({ apiKey: OCTO_KEY });
+    closers.push(() => s.close());
+    const p = await add({ name: "ZZ Route Octo Job", family: "octoprint", access: { address: s.url, apiKey: OCTO_KEY } });
+    await uploadRoute(form("POST", (() => { const f = new FormData(); f.append("file", new File(["G28"], "job.gcode")); return f; })()), ctx(String(p.id)));
+    await q("INSERT INTO projects (id, name) VALUES ('zz-route-job', 'ZZ Route Job') ON CONFLICT (id) DO NOTHING");
+    const [job] = await q<{ id: string }>(
+      "INSERT INTO items (project_id, section, title, data, status) VALUES ('zz-route-job', 'prototype/printing', 'zz job', $1, 'sent') RETURNING id",
+      [JSON.stringify({ printerId: p.id, sentName: "job.gcode" })]
+    );
+    const confirm = { printer: "ZZ Route Octo Job", file: "job.gcode" };
+    expect((await act(p.id, { action: "start", name: "job.gcode", confirm })).status).toBe(200);
+    expect((await q<{ status: string }>("SELECT status FROM items WHERE id=$1", [job.id]))[0].status).toBe("printing");
+    expect((await act(p.id, { action: "cancel", confirm })).status).toBe(200);
+    expect((await q<{ status: string }>("SELECT status FROM items WHERE id=$1", [job.id]))[0].status).toBe("cancelled");
+    await q("DELETE FROM projects WHERE id='zz-route-job'");
+  });
+
   it("a refused start is answered with a plain sentence and audited as failed, without the key", async () => {
     const s = await octoprint.start({ apiKey: OCTO_KEY });
     closers.push(() => s.close());
     const p = await add({ name: "ZZ Route Octo D", family: "octoprint", access: { address: s.url, apiKey: OCTO_KEY } });
     await uploadRoute(form("POST", (() => { const f = new FormData(); f.append("file", new File(["G28"], "busy.gcode")); return f; })()), ctx(String(p.id)));
-    expect((await act(p.id, { action: "start", name: "busy.gcode", confirm: true })).status).toBe(200);
-    const again = await act(p.id, { action: "start", name: "busy.gcode", confirm: true });
+    expect((await act(p.id, { action: "start", name: "busy.gcode", confirm: { printer: "ZZ Route Octo D", file: "busy.gcode" } })).status).toBe(200);
+    const again = await act(p.id, { action: "start", name: "busy.gcode", confirm: { printer: "ZZ Route Octo D", file: "busy.gcode" } });
     expect(again.status).toBe(409);
     expect(again.body.error).toMatch(/busy|already|running/i);
     noSecrets(again.body);
@@ -144,7 +172,7 @@ describe("actions route", () => {
     expect((await act(p.id, { action: "pause" })).status).toBe(409);
     expect((await act(987654321, { action: "pause" })).status).toBe(404);
     const hand = await add({ name: "ZZ Route By Hand", family: "file-only" });
-    const r = await act(hand.id, { action: "start", name: "x.gcode", confirm: true });
+    const r = await act(hand.id, { action: "start", name: "x.gcode", confirm: { printer: "ZZ Route By Hand", file: "x.gcode" } });
     expect(r.status).toBe(400);
     expect(r.body.error).toMatch(/file|by hand|download/i);
   });
@@ -159,8 +187,11 @@ describe("actions route", () => {
       const f = new FormData();
       f.append("file", new File(["G28"], "x.gcode"));
       expect((await uploadRoute(form("POST", f), ctx(String(p.id)))).status).toBe(201);
-      expect((await act(p.id, { action: "start", name: "x.gcode", confirm: true })).status).toBe(200);
-      expect((await act(p.id, { action: "cancel", confirm: true })).status).toBe(200);
+      expect((await act(p.id, { action: "start", name: "x.gcode", confirm: { printer: p.name, file: "x.gcode" } })).status).toBe(200);
+      // the confirm names the file as the printer reports it (and as the Printers page shows it): a Duet adds its folder
+      const shown = p.family === "duet" ? "0:/gcodes/x.gcode" : "x.gcode";
+      const cancelled = await act(p.id, { action: "cancel", confirm: { printer: p.name, file: shown } });
+      expect(cancelled.status, JSON.stringify(cancelled.body)).toBe(200);
     }
   });
 });
