@@ -3,6 +3,9 @@ import { DECISIONS_STORE, UNLOCK_STORES } from "@/lib/plan";
 import { toDecision } from "@/lib/domain/decision";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
+import { contentProofCheck, electricalCheck, enclosureCheck, productionCheck, type GateFacts } from "./computed";
+
+export type { GateFacts } from "./computed";
 
 // Pure: no I/O. The browser and the server both run these on the same rows, so the gate the
 // Process page shows is the gate the stage route enforces.
@@ -57,7 +60,7 @@ function rowsOf(rows: Item[], path: string): Item[] {
 
 const FIELD_NAMES: Record<ConceptField, string> = { name: "a name", oneLiner: "a one-line description" };
 
-export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields = {}): CheckResult {
+export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): CheckResult {
   const path = checkSection(check);
   const href = path ? `/s/${path}` : "/concepts";
   const base = { id: check.id, label: check.label, href };
@@ -143,12 +146,20 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
       const met = (concept[f] ?? "").trim() !== "";
       return { ...base, met, detail: met ? "Set." : "Not set.", action: `Give the concept ${FIELD_NAMES[f]}` };
     }
+    case "electrical":
+      return { ...base, ...electricalCheck(facts) };
+    case "enclosure":
+      return { ...base, ...enclosureCheck(rows) };
+    case "production-ready":
+      return { ...base, ...productionCheck(rows, facts) };
+    case "content-proof":
+      return { ...base, ...contentProofCheck(rows, check.params.sections, concept.name ?? "") };
   }
 }
 
 /** Every check of one gate against the concept's rows. The gate is met when every check is. */
-export function evaluateGate(gate: Gate, rows: Item[], concept: ConceptFields = {}): GateResult {
-  const checks = gate.checks.map((c) => evaluateCheck(c, rows, concept));
+export function evaluateGate(gate: Gate, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): GateResult {
+  const checks = gate.checks.map((c) => evaluateCheck(c, rows, concept, facts));
   return { met: checks.every((c) => c.met), checks };
 }
 
@@ -161,8 +172,8 @@ export function recordOf(state: ProcessState, stage: string): GateRecord | undef
 }
 
 /** A stage's gate is passed when every check is met, or when it was overridden with a reason. */
-export function gatePassed(definition: ProcessDefinition, state: ProcessState, stage: string, rows: Item[], concept: ConceptFields = {}) {
-  const result = evaluateGate(gateOf(definition, stage), rows, concept);
+export function gatePassed(definition: ProcessDefinition, state: ProcessState, stage: string, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}) {
+  const result = evaluateGate(gateOf(definition, stage), rows, concept, facts);
   const overridden = !!recordOf(state, stage)?.overridden;
   return { passed: result.met || overridden, met: result.met, overridden, result };
 }
@@ -177,10 +188,10 @@ export function stageAfter(stage: string): string | null {
  * The one thing to do next: the first unmet check of the current stage's gate; once the gate is
  * passed, advancing to the next stage; at the last stage with its gate passed, nothing more.
  */
-export function nextStep(definition: ProcessDefinition, state: ProcessState, rows: Item[], concept: ConceptFields = {}): NextStep {
+export function nextStep(definition: ProcessDefinition, state: ProcessState, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): NextStep {
   const stage = STAGES.some((s) => s.key === state.stage) ? state.stage : STAGES[0].key;
   const label = stageLabel(stage);
-  const { passed, overridden, result } = gatePassed(definition, { ...state, stage }, stage, rows, concept);
+  const { passed, overridden, result } = gatePassed(definition, { ...state, stage }, stage, rows, concept, facts);
   if (!passed) {
     const first = result.checks.find((c) => !c.met)!;
     return { label: first.action, reason: `The ${label} gate needs this: ${lowerFirst(first.label)}. ${first.detail}`, href: first.href };

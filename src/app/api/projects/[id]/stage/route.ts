@@ -7,7 +7,7 @@ import { STAGES } from "@/lib/menu";
 import { processFor } from "@/lib/process/definitions";
 import { gatePassed, stageLabel } from "@/lib/process/evaluate";
 import { stageBody } from "@/lib/process/schemas";
-import { gatesOf, itemsOf } from "@/lib/process/server";
+import { factsOf, gatesOf, itemsOf } from "@/lib/process/server";
 import { processResponse } from "@/lib/process/state";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -43,7 +43,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     }
 
     const state = { stage: from, gates: await gatesOf(c, id) };
-    const g = gatePassed(processFor(p.product_type), state, from, await itemsOf(c, id), { name: p.name, oneLiner: p.one_liner });
+    const g = gatePassed(processFor(p.product_type), state, from, await itemsOf(c, id), { name: p.name, oneLiner: p.one_liner }, await factsOf(c, id, p.product_type));
     if (!g.passed) {
       const unmet = g.result.checks.filter((x) => !x.met).map((x) => ({ id: x.id, label: x.label, detail: x.detail, href: x.href }));
       throw new HttpError(

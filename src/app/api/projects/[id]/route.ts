@@ -11,16 +11,23 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
   return NextResponse.json({ project: await loadConcept(id) });
 });
 
-const COLUMN = { name: "name", oneLiner: "one_liner", productType: "product_type", stage: "stage" } as const;
+const COLUMN = { name: "name", oneLiner: "one_liner", productType: "product_type" } as const;
 type Field = keyof typeof COLUMN;
 
-/** Changes name, oneLiner, productType or stage. The id never changes. Only fields that really change are recorded. */
+/**
+ * Changes name, oneLiner or productType. The id never changes. Only fields that really change are recorded.
+ * The stage is not changed here: it moves only through POST /api/projects/[id]/stage, which holds the
+ * gates. A body naming a different stage is refused with 400 so nothing goes round the gates.
+ */
 export const PATCH = route(async (req: Request, { params }: Ctx) => {
   const { id } = await params;
   const b = await body(req, conceptPatch);
   const project = await tx(async (c) => {
     const was = await lockConcept(c, id);
-    const current: Record<Field, string> = { name: was.name, oneLiner: was.one_liner, productType: was.product_type, stage: was.stage };
+    if (b.stage !== undefined && b.stage !== was.stage) {
+      throw new HttpError(400, "The stage changes only on the Process page, where its gate is checked: POST /api/projects/[id]/stage.");
+    }
+    const current: Record<Field, string> = { name: was.name, oneLiner: was.one_liner, productType: was.product_type };
     const before: Partial<Record<Field, string>> = {};
     const after: Partial<Record<Field, string>> = {};
     for (const f of Object.keys(COLUMN) as Field[]) {

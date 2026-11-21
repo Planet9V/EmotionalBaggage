@@ -10,7 +10,7 @@ import { PRODUCT_TYPES, sectionVisible, type ProductType } from "@/lib/productTy
 // page that fixes it. A check may only name a section its product type shows: a printed part or
 // a wooden toy has no schematic, so its gates cannot ask for one. That is enforced at load.
 
-export type CheckKind = "min-rows" | "all-status" | "decision-made" | "no-open" | "claims-verified" | "field-set";
+export type CheckKind = "min-rows" | "all-status" | "decision-made" | "no-open" | "claims-verified" | "field-set" | "electrical" | "enclosure" | "production-ready" | "content-proof";
 
 /** Concept fields a `field-set` check can ask for. */
 export type ConceptField = "name" | "oneLiner";
@@ -26,7 +26,16 @@ export type Check =
   | { id: string; label: string; kind: "decision-made"; params: { key: string; fallback?: "root" } }
   | { id: string; label: string; kind: "no-open"; params: { section: string; statuses?: string[] } }
   | { id: string; label: string; kind: "claims-verified"; params: { share: number; section?: string } }
-  | { id: string; label: string; kind: "field-set"; params: { field: ConceptField } };
+  | { id: string; label: string; kind: "field-set"; params: { field: ConceptField } }
+  // Worked out by another feature's own code (src/lib/process/computed.ts):
+  /** the electrical checks (src/lib/parts/erc.ts) find no error */
+  | { id: string; label: string; kind: "electrical"; params: Record<string, never> }
+  /** the enclosure's checks pass on the saved choice, measured on today's parts and settings */
+  | { id: string; label: string; kind: "enclosure"; params: Record<string, never> }
+  /** the four production readiness checks (src/lib/economics/readiness.ts) for the first planned batch */
+  | { id: string; label: string; kind: "production-ready"; params: Record<string, never> }
+  /** every released content row in these stores has proof for its numbers and superlatives (src/lib/content/claims.ts) */
+  | { id: string; label: string; kind: "content-proof"; params: { sections: string[] } };
 
 export type Gate = { stage: string; checks: Check[] };
 
@@ -62,17 +71,20 @@ const testsPass: Check = { id: "prototype.tests-pass", label: "Every acceptance 
 const productionGate: Check[] = [
   { id: "production.economics", label: "Unit economics have at least one line", kind: "min-rows", params: { section: "production/economics", min: 1 } },
   { id: "production.batches", label: "At least one batch is planned", kind: "min-rows", params: { section: "production/batches", min: 1 } },
+  { id: "production.ready", label: "Production readiness: tests, compliance, parts and economics", kind: "production-ready", params: {} },
 ];
 
 const marketingGate: Check[] = [
   { id: "marketing.positioning", label: "Positioning has at least one note", kind: "min-rows", params: { section: "marketing/positioning", min: 1 } },
   { id: "marketing.landing", label: "At least one landing page is planned", kind: "min-rows", params: { section: "marketing/landing", min: 1 } },
+  { id: "marketing.proof", label: "Every approved ad, page, post and announcement has proof for its claims", kind: "content-proof", params: { sections: ["marketing/ads", "marketing/landing", "marketing/social", "marketing/announce"] } },
 ];
 
 const salesGate: Check[] = [
   { id: "sales.channels", label: "At least one sales channel is set", kind: "min-rows", params: { section: "sales/channels", min: 1 } },
   { id: "sales.listing", label: "The listing has at least one element", kind: "min-rows", params: { section: "sales/listing", min: 1 } },
   { id: "sales.listing-ready", label: "Every listing element is ready or live", kind: "all-status", params: { section: "sales/listing", statuses: ["ready", "live"] } },
+  { id: "sales.listing-proof", label: "Every ready or live listing has proof for its claims", kind: "content-proof", params: { sections: ["sales/listing"] } },
 ];
 
 const gates = (design: Check[], prototype: Check[]): Gate[] => [
@@ -93,6 +105,8 @@ export const PROCESS_DEFINITIONS: Record<ProductType, ProcessDefinition> = {
         requirements,
         parts,
         { id: "design.schematic", label: "The schematic has at least one wire", kind: "min-rows", params: { section: "design/schematic", min: 1 } },
+        { id: "design.electrical", label: "The electrical checks find no error", kind: "electrical", params: {} },
+        { id: "design.enclosure", label: "The chosen enclosure passes its checks", kind: "enclosure", params: {} },
         requirementsClosed,
       ],
       [
@@ -145,6 +159,14 @@ export function checkSection(check: Check): string | null {
       return check.params.section ?? "research/claims";
     case "decision-made":
       return "concept/decisions";
+    case "electrical":
+      return "design/schematic";
+    case "enclosure":
+      return "design/enclosure";
+    case "production-ready":
+      return "production/batches";
+    case "content-proof":
+      return check.params.sections[0] ?? null;
     case "field-set":
       return null;
   }

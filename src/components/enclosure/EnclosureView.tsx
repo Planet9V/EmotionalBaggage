@@ -102,6 +102,8 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
     setRunning(which);
     try {
       const answer: GenerateAnswer = await generate(project.id, which, usable);
+      // The server keeps the checks on the saved choice for the Design gate; reload it so a later save does not write back an older copy.
+      void saved.reload();
       setHeld((h) => {
         const next = { ...h };
         for (const r of answer.results) next[r.key] = { result: r, inputKey };

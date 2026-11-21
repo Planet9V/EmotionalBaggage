@@ -1,7 +1,8 @@
 import type { PoolClient } from "pg";
 import { notFound } from "@/lib/api/route";
-import { gatesOf, historyOf, type ProcessEvent } from "./server";
+import { factsOf, gatesOf, historyOf, type ProcessEvent } from "./server";
 import type { GateRecord } from "./evaluate";
+import type { GateFacts } from "./computed";
 
 /** What GET /api/projects/[id]/process answers, and what the stage and gate routes answer after a change. */
 export type ProcessResponse = {
@@ -12,6 +13,8 @@ export type ProcessResponse = {
   stage: string;
   gates: GateRecord[];
   history: ProcessEvent[];
+  /** what the gates need beyond the rows (currency, electrical check counts), worked out on the server */
+  facts: GateFacts;
 };
 
 type Runner = Pick<PoolClient, "query">;
@@ -31,5 +34,6 @@ export async function processResponse(c: Runner, id: string): Promise<ProcessRes
     stage: p.stage,
     gates: await gatesOf(c, id),
     history: await historyOf(c, id),
+    facts: await factsOf(c, id, p.product_type),
   };
 }

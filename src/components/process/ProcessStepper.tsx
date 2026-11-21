@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { messageOf } from "@/lib/queries";
-import { useMoveStage, type ProcessView, type StageView } from "@/lib/process/client";
+import { useMoveStage, useWithdrawOverride, type ProcessView, type StageView } from "@/lib/process/client";
 import { fmtTime } from "@/components/plan/format";
 import { CheckList } from "./CheckList";
 import { OverrideDialog } from "./OverrideDialog";
@@ -21,6 +21,15 @@ import { gateBadge } from "./gateBadge";
 export function ProcessStepper({ projectId, view }: { projectId: string; view: ProcessView }) {
   const [overriding, setOverriding] = useState<StageView | null>(null);
   const move = useMoveStage(projectId);
+  const withdraw = useWithdrawOverride(projectId);
+  const withdrawOf = async (stage: StageView) => {
+    try {
+      await withdraw.mutateAsync(stage.key);
+      toast.success(`Withdrew the override of the ${stage.label} gate.`);
+    } catch (e) {
+      toast.error(messageOf(e) || "The override was not withdrawn.");
+    }
+  };
 
   const goTo = async (stage: StageView, verb: string) => {
     try {
@@ -43,10 +52,11 @@ export function ProcessStepper({ projectId, view }: { projectId: string; view: P
             stage={s}
             last={i === view.stages.length - 1}
             next={nextOf(i)}
-            busy={move.isPending}
+            busy={move.isPending || withdraw.isPending}
             onAdvance={() => nextOf(i) && goTo(nextOf(i)!, "Moved to")}
             onBack={() => goTo(s, "Moved back to")}
             onOverride={() => setOverriding(s)}
+            onWithdraw={() => void withdrawOf(s)}
           />
         ))}
       </ol>
@@ -56,10 +66,10 @@ export function ProcessStepper({ projectId, view }: { projectId: string; view: P
 }
 
 function StageRow({
-  stage, last, next, busy, onAdvance, onBack, onOverride,
+  stage, last, next, busy, onAdvance, onBack, onOverride, onWithdraw,
 }: {
   stage: StageView; last: boolean; next?: StageView; busy: boolean;
-  onAdvance: () => void; onBack: () => void; onOverride: () => void;
+  onAdvance: () => void; onBack: () => void; onOverride: () => void; onWithdraw: () => void;
 }) {
   const [open, setOpen] = useState(stage.position === "current");
   const badge = gateBadge(stage);
@@ -115,6 +125,7 @@ function StageRow({
               Overridden{stage.record.decidedBy ? ` by ${stage.record.decidedBy}` : ""}
               {stage.record.decidedAt ? ` on ${fmtTime(stage.record.decidedAt)}` : ""}. Reason: {stage.record.note}
             </span>
+            <Button size="xs" variant="ghost" className="ml-auto" onClick={onWithdraw} disabled={busy}>Withdraw override</Button>
           </p>
         )}
         <CollapsibleContent className="mt-3 space-y-3">

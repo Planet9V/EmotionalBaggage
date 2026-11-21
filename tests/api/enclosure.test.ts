@@ -6,6 +6,8 @@ import { POST as addProject } from "@/app/api/projects/route";
 import { POST as addItem, GET as listItems } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { anonymous, ctx, json, read, SEEDED } from "./helpers";
+import { ITEM_COLS, toItem, type ItemRow } from "@/lib/db";
+import { enclosureCheck } from "@/lib/process/computed";
 
 type Err = { error: string };
 type Ok = { results: { key: string; ok: boolean; checks?: { key: string; ok: boolean }[]; error?: string }[]; openings: number };
@@ -32,6 +34,21 @@ describe("POST /enclosure/generate", () => {
     const ev = await q<{ summary: string }>("SELECT summary FROM events WHERE project_id=$1 AND kind='enclosure.generated' ORDER BY id DESC LIMIT 1", [SEEDED]);
     expect(ev[0].summary).toMatch(/casemaker/);
   }, 90_000);
+
+  it("keeps the measured checks on the saved choice, where the Design gate reads them, and records the change", async () => {
+    const rows = async () => (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 ORDER BY sort, id`, [SEEDED])).map(toItem);
+    const saved = (await rows()).find((r) => r.section === "design/enclosure")!;
+    expect(saved.data.enclosureGenerator).toBe("casemaker");
+    const checked = (saved.data.checked as Record<string, { fingerprint: string; checks: { ok: boolean }[] }>).casemaker;
+    expect(checked.checks.length).toBeGreaterThanOrEqual(5);
+    expect(enclosureCheck(await rows())).toMatchObject({ met: true });
+    const ev = await q<{ data: { itemId: number; after: Record<string, unknown> } }>("SELECT data FROM events WHERE project_id=$1 AND kind='enclosure.generated' ORDER BY id DESC LIMIT 1", [SEEDED]);
+    expect(ev[0].data.itemId).toBe(saved.id);
+    expect(Object.keys(ev[0].data.after)).toEqual(expect.arrayContaining([expect.stringMatching(/^data\./)]));
+    // the saved settings change: the checks no longer describe them
+    await q("UPDATE items SET data = jsonb_set(data, '{params,wallThickness}', '3') WHERE id=$1", [saved.id]);
+    expect(enclosureCheck(await rows())).toMatchObject({ met: false, action: "Generate the enclosure again" });
+  });
 
   it("reports YAPP_Box as unavailable inside the answer when the planner cannot be reached", async () => {
     const saved = process.env.PLANNER_URL;
@@ -108,8 +125,8 @@ describe("the saved choice (design/enclosure)", () => {
     expect(bad.status).toBe(400);
     const ok = await read<{ item: { id: number } }>(await addItem(json("POST", { section: "design/enclosure", title: "Enclosure settings", data: { enclosureGenerator: "yapp", params: { clearance: "0.6", lidType: "screw" } } }), ctx(SEEDED)));
     expect(ok.status).toBe(201);
-    const list = await read<{ items: { data: { params: { clearance: number } } }[] }>(await listItems(json("GET", undefined, "http://test.local/api?section=design/enclosure"), ctx(SEEDED)));
-    expect(list.body.items[0].data.params.clearance).toBe(0.6);
+    const list = await read<{ items: { id: number; data: { params: { clearance: number } } }[] }>(await listItems(json("GET", undefined, "http://test.local/api?section=design/enclosure"), ctx(SEEDED)));
+    expect(list.body.items.find((i) => i.id === ok.body.item.id)!.data.params.clearance).toBe(0.6);
     const patched = await patchItem(json("PATCH", { data: { enclosureGenerator: "casemaker" } }), ctx(String(ok.body.item.id)));
     expect(patched.status).toBe(200);
   });

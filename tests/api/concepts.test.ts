@@ -146,27 +146,35 @@ describe("concepts API", () => {
   describe("edit", () => {
     it("changes the fields, keeps the id, and records before and after", async () => {
       const p = await create("ZZ Test Patch", { oneLiner: "Old line" });
-      const r = await patch(p.id, { id: "something-else", name: "ZZ Test Patched", oneLiner: "New line", productType: "printed", stage: "design" });
+      const r = await patch(p.id, { id: "something-else", name: "ZZ Test Patched", oneLiner: "New line", productType: "printed", stage: "concept" });
       expect(r.status).toBe(200);
-      expect(r.body.project).toMatchObject({ id: p.id, name: "ZZ Test Patched", oneLiner: "New line", productType: "printed", stage: "design" });
+      expect(r.body.project).toMatchObject({ id: p.id, name: "ZZ Test Patched", oneLiner: "New line", productType: "printed", stage: "concept" });
       expect((await q("SELECT 1 FROM projects WHERE id='something-else'")).length).toBe(0);
       const ev = await q<{ data: { before: object; after: object } }>(
         "SELECT data FROM events WHERE project_id=$1 AND kind='project.edited' ORDER BY id",
         [p.id]
       );
       expect(ev.length).toBe(1);
-      expect(ev[0].data.before).toEqual({ name: "ZZ Test Patch", oneLiner: "Old line", productType: "electronics", stage: "concept" });
-      expect(ev[0].data.after).toEqual({ name: "ZZ Test Patched", oneLiner: "New line", productType: "printed", stage: "design" });
+      expect(ev[0].data.before).toEqual({ name: "ZZ Test Patch", oneLiner: "Old line", productType: "electronics" });
+      expect(ev[0].data.after).toEqual({ name: "ZZ Test Patched", oneLiner: "New line", productType: "printed" });
       expect(new Date(r.body.project.updatedAt).getTime()).toBeGreaterThanOrEqual(new Date(p.updatedAt).getTime());
     });
 
     it("records only what changed, and nothing for a change to the same values", async () => {
       const p = await create("ZZ Test Patch Same");
-      await patch(p.id, { name: "ZZ Test Patch Same", stage: "research" });
+      await patch(p.id, { name: "ZZ Test Patch Same", oneLiner: "Changed" });
       const ev = await q<{ data: { before: object; after: object } }>("SELECT data FROM events WHERE project_id=$1 AND kind='project.edited'", [p.id]);
-      expect(ev.map((e) => e.data)).toEqual([{ before: { stage: "concept" }, after: { stage: "research" } }]);
-      await patch(p.id, { stage: "research" });
+      expect(ev.map((e) => e.data)).toEqual([{ before: { oneLiner: "" }, after: { oneLiner: "Changed" } }]);
+      await patch(p.id, { oneLiner: "Changed", stage: "concept" });
       expect((await q("SELECT 1 FROM events WHERE project_id=$1 AND kind='project.edited'", [p.id])).length).toBe(1);
+    });
+
+    it("refuses to change the stage: only the stage route, which holds the gates, moves it", async () => {
+      const p = await create("ZZ Test Patch Stage");
+      const r = await patch(p.id, { stage: "sales" });
+      expect(r.status).toBe(400);
+      expect(r.body.error).toContain("Process page");
+      expect((await q<{ stage: string }>("SELECT stage FROM projects WHERE id=$1", [p.id]))[0].stage).toBe("concept");
     });
 
     it.each([
