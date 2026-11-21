@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export function ListingView({ project, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading the listings" />
       ) : rows.length === 0 ? (
-        <EmptyState title="No listing yet">Draft one with AI or add one. It carries a title, five bullets, a description and search terms.</EmptyState>
+        <SectionEmpty projectId={project.id} store="sales/listing" sectionLabel="Listing" title="No listing yet">The listing is what a buyer reads on Amazon before ordering. It carries a title, five bullets, a description and search terms.</SectionEmpty>
       ) : (
         <ul className="space-y-4">
           {rows.map((r) => (

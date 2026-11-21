@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -83,7 +84,7 @@ export function PositioningView({ project, store }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!statements.length ? (
-        <EmptyState title="No positioning yet">Draft one from your personas and competitors, or write one by hand.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/positioning" sectionLabel="Positioning" title="No positioning yet">Every ad, post and landing page is tied to one of these messages, so nothing can be drafted for buyers until one is approved.</SectionEmpty>
       ) : (
         <ul className="space-y-5" aria-label="Positioning statements">
           {statements.map((it) => (

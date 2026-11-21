@@ -10,7 +10,8 @@ import { useActivity } from "@/lib/trace/client";
 import type { Project } from "@/lib/types";
 import { HistoryEntryView } from "./HistoryEntryView";
 import { NativeSelect } from "@/components/ui/native-select";
-import { NoConcept, LoadingShape } from "@/components/ui/states";
+import { EmptyState, NoConcept, LoadingShape } from "@/components/ui/states";
+import { History } from "lucide-react";
 
 const KINDS = [
   ["item", "Rows added, edited or removed"],
@@ -96,9 +97,9 @@ function ActivityBody({ project }: { project: Project }) {
           </Button>
         </div>
       ) : !a.entries.length ? (
-        <div className="rounded-xl border border-dashed border-hairline p-6 text-center">
-          <p className="text-sm text-secondary">{filtering ? "No changes match these filters." : "Nothing has changed in this concept yet."}</p>
-        </div>
+        <EmptyState icon={History} title={filtering ? "No changes match these filters" : "Nothing has changed in this concept yet"}>
+          {filtering ? "Clear a filter above to see more." : "Every change to a row is listed here with who made it and the value before and after, so you can see how the concept got where it is."}
+        </EmptyState>
       ) : (
         <>
           <ol className="space-y-2" aria-label="Changes, newest first">

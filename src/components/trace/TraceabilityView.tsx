@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { Check } from "lucide-react";
+import { Check, Network } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -12,7 +12,7 @@ import { statusTone } from "@/lib/statusTones";
 import { traceOf } from "@/lib/trace/coverage";
 import type { Item, Project } from "@/lib/types";
 import { Coverage } from "./Coverage";
-import { NoConcept, LoadingShape } from "@/components/ui/states";
+import { EmptyState, NoConcept, LoadingShape } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
 export function TraceabilityView() {
@@ -81,13 +81,17 @@ function TraceBody({ project }: { project: Project }) {
   }
   if (!t.requirements.length) {
     return (
-      <div className="max-w-xl rounded-xl border border-dashed border-hairline bg-surface p-8 text-center">
-        <p className="text-lg font-semibold tracking-tight text-primary">No requirements yet</p>
-        <p className="mx-auto mt-1 max-w-md text-sm text-secondary">Add requirements in Design, then link each to the tests that check it and the parts it needs.</p>
-        <Link href="/s/design/requirements" className="mt-4 inline-block text-sm text-link hover:underline">
-          Go to Requirements
-        </Link>
-      </div>
+      <EmptyState
+        icon={Network}
+        title="No requirements yet"
+        action={
+          <Button asChild size="sm">
+            <Link href="/s/design/requirements">Go to Requirements</Link>
+          </Button>
+        }
+      >
+        This page shows which tests check each requirement and which parts it needs, so a gap is visible before a build. Add requirements in Design, then link each to its tests and parts.
+      </EmptyState>
     );
   }
 

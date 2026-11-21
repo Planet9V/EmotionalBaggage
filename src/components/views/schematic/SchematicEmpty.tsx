@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
 import { EYEBROW } from "@/components/ui/field";
-import { ErrorLine } from "@/components/ui/states";
+import { EmptyState, ErrorLine } from "@/components/ui/states";
 import { FirstConnection } from "@/components/schematic/FirstConnection";
 import type { Part } from "@/components/schematic/model";
 import type { WireDraft } from "@/components/schematic/WireDialog";
@@ -18,16 +18,17 @@ export function NoParts({ loadError }: { loadError: string }) {
   return (
     <div className="animate-enter space-y-3">
       {loadError && <ErrorLine>{loadError}</ErrorLine>}
-      <div className="rounded-xl border border-dashed border-hairline bg-subtle px-6 py-12 text-center">
-        <Cable className="mx-auto h-6 w-6 text-muted" aria-hidden />
-        <p className="mt-3 text-sm font-medium text-primary">No parts to connect yet</p>
-        <p className="mx-auto mt-1 max-w-lg text-sm text-secondary">
-          The schematic draws the parts in the bill of materials and the wires between their pins. Add the parts first, each with a ref such as U1 or R2, and choose each one&apos;s kind or library entry so it gets its pins and symbol.
-        </p>
-        <Button asChild className="mt-4">
-          <Link href="/s/design/bom">Open the bill of materials</Link>
-        </Button>
-      </div>
+      <EmptyState
+        icon={Cable}
+        title="No parts to connect yet"
+        action={
+          <Button asChild size="sm">
+            <Link href="/s/design/bom">Open the parts list</Link>
+          </Button>
+        }
+      >
+        The wires drawn here become the build sheet, the harness and the electrical checks. Add parts first, each with a reference such as U1 and a kind, so each gets its pins.
+      </EmptyState>
     </div>
   );
 }

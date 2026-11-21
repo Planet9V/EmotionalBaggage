@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, ListOrdered, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { AddStepForm } from "@/components/plan/AddStepForm";
@@ -12,7 +12,7 @@ import { usePlan } from "@/components/plan/usePlan";
 import { useItems, useProject } from "@/lib/client";
 import type { Project } from "@/lib/types";
 import { fmtMinutes } from "@/lib/format";
-import { NoConcept } from "@/components/ui/states";
+import { EmptyState, NoConcept } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
 export function PlanView() {
@@ -114,13 +114,9 @@ function PlanBody({ project }: { project: Project }) {
         )}
 
         {plan && !hasSteps && (
-          <Card variant="flat" className="p-6">
-            <h2 className="text-base font-semibold tracking-tight text-primary">No steps yet</h2>
-            <p className="mt-1 max-w-2xl text-sm text-secondary">
-              A step is any row with a key, a duration in minutes and the steps it waits on. Add one below, or turn a row you
-              already have, such as an assembly phase, into a step.
-            </p>
-          </Card>
+          <EmptyState icon={ListOrdered} title="No steps yet">
+            The order of operations shows what can run in parallel, what waits on what and how long the build takes. A step is any row with a key, minutes and the steps it waits on: add one below, or turn an assembly phase into a step.
+          </EmptyState>
         )}
 
         {plan && hasSteps && (

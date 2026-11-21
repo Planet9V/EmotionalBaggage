@@ -3,6 +3,7 @@
 // Sales, Reviews and questions (plan 8.20): a log typed by hand, pasted or imported from CSV; topic and
 // sentiment set by the user or suggested as drafts (Draft with AI, above); drafted replies; and "what
 // customers keep asking", counted from the rows, with "Turn into a requirement".
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -59,7 +60,7 @@ export function ReviewsView({ project, section, store }: ViewProps) {
         {loading ? (
           <LoadingBlocks rows={2} label="Loading the log" />
         ) : sorted.length === 0 ? (
-          <EmptyState title="No reviews or questions yet">Add one by hand, or paste a few, or import a CSV with a column for the text.</EmptyState>
+          <SectionEmpty projectId={project.id} store="sales/reviews" sectionLabel="Reviews" title="No reviews or questions yet">Add one by hand, or paste a few, or import a CSV with a column for the text.</SectionEmpty>
         ) : (
           <ul className="space-y-2">
             {sorted.map((r) => (

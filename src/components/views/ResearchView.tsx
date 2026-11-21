@@ -2,6 +2,7 @@
 
 import { Fragment, Suspense, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
@@ -19,7 +20,7 @@ import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { LoadingBlocks } from "@/components/ui/states";
+import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 
 type Source = { url: string; title?: string; snippet?: string; date?: string };
 type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
@@ -141,7 +142,9 @@ export function ResearchView({ project }: ViewProps) {
       </form>
 
       {state.entries.length === 0 ? (
-        <p className="text-sm text-secondary">{on ? "No research saved yet." : "Saved research appears here once Perplexity is connected."}</p>
+        <EmptyState icon={Search} title={on ? "No research saved yet" : "Research is not connected"} action={on ? undefined : <Button asChild size="sm" variant="outline"><Link href="/admin?tab=credentials">Connect Perplexity in Admin</Link></Button>}>
+          {on ? "Ask a question above. Each answer is saved with its sources, so a claim can be marked verified from it." : "Saved answers appear here once Perplexity is connected. Claims are verified from these answers."}
+        </EmptyState>
       ) : (
         <ul className="space-y-4">
           {state.entries.map((e) => (

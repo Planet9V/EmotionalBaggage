@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -145,7 +146,7 @@ export function ComplianceView({ project }: ViewProps) {
       ) : null}
 
       {!rows.items.length ? (
-        <EmptyState title="No compliance rows yet">Choose your regions and draft a checklist, or add a row by hand. Each drafted row waits for your confirmation.</EmptyState>
+        <SectionEmpty projectId={project.id} store="production/compliance" sectionLabel="Compliance" title="No compliance rows yet">Choose your regions and draft a checklist, or add a row by hand. Each drafted row waits for your confirmation.</SectionEmpty>
       ) : (
         <>
           <p className="text-xs text-secondary" role="status">

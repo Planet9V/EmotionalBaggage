@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export function LaunchView({ project, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading" />
       ) : ordered.length === 0 ? (
-        <EmptyState title="No launch pieces yet">Draft them with AI once the press release is approved, or add one.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/announce" sectionLabel="Launch email and press" title="No launch pieces yet">The launch email and press note tell your first buyers the product exists. They are written from the approved press release.</SectionEmpty>
       ) : (
         <ul className="space-y-4">
           {ordered.map((r) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
 import { Box, CircuitBoard, Download, Plus, Trash2, Upload } from "lucide-react";
@@ -88,9 +89,9 @@ export function BomView({ project, section, store }: ViewProps) {
       {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
 
       {!parts.length ? (
-        <EmptyState title="No parts yet">
+        <SectionEmpty projectId={project.id} store="design/bom" sectionLabel="Parts list" title="No parts yet">
           Add a part, or import a CSV with the columns ref, title, spec, qty, source, search and line.
-        </EmptyState>
+        </SectionEmpty>
       ) : (
         <Card variant="flat" className="overflow-hidden">
           <Table>

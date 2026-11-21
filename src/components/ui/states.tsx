@@ -5,7 +5,7 @@
 // SaveError / ErrorLine in a form), saved (SavedNote), not configured (NotSetUp).
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { RotateCw } from "lucide-react";
+import { Inbox, RotateCw, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,13 +51,39 @@ export function LoadError({ message, onRetry, what }: { message: string; onRetry
   );
 }
 
-/** Empty: one sentence saying what will appear here, and the one action that makes it appear. */
-export function EmptyState({ title, children, action }: { title?: string; children?: ReactNode; action?: ReactNode }) {
+/**
+ * Empty: the one empty state of the whole app. An icon, a title, one sentence saying why the rows matter,
+ * the primary action, and (through `ai`, see SectionEmpty in components/drafts) "Draft with AI" or
+ * "Set a model in Admin" where the section has a generator.
+ */
+export function EmptyState({
+  icon: Icon = Inbox,
+  title,
+  children,
+  action,
+  ai,
+  testId,
+}: {
+  icon?: LucideIcon;
+  title?: string;
+  children?: ReactNode;
+  action?: ReactNode;
+  ai?: ReactNode;
+  testId?: string;
+}) {
   return (
-    <div className="rounded-xl border border-dashed border-hairline bg-subtle px-6 py-8 text-center">
-      {title ? <p className="text-sm font-medium text-primary">{title}</p> : null}
-      {children ? <div className={`mx-auto max-w-xl text-sm text-secondary ${title ? "mt-1" : ""}`}>{children}</div> : null}
-      {action ? <div className="mt-3">{action}</div> : null}
+    <div data-empty-state="" data-testid={testId} className="rounded-xl border border-hairline bg-surface px-6 py-8 text-center">
+      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-subtle text-link">
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      {title ? <p className="mt-3 text-base font-semibold tracking-tight text-primary">{title}</p> : null}
+      {children ? <div className={`mx-auto max-w-xl text-sm text-secondary ${title ? "mt-1" : "mt-3"}`}>{children}</div> : null}
+      {action || ai ? (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {action}
+          {ai}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -86,7 +87,7 @@ export function PersonasView({ project, store }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!items.length ? (
-        <EmptyState title="No personas yet">Draft a first set from the brief, or add one by hand. Drafts stay drafts until you approve them.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/personas" sectionLabel="Personas" title="No personas yet">Positioning, ads and the listing are written for a persona, so they come first in Marketing. Drafts stay drafts until you approve them.</SectionEmpty>
       ) : (
         <ul className="grid gap-4 xl:grid-cols-2" aria-label="Personas">
           {sorted.map((it) => {

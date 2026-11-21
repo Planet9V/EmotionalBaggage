@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -100,7 +101,7 @@ export function LandingView({ project, store }: ViewProps) {
           {loading ? (
             <LoadingBlocks rows={2} label="Loading the sections" />
           ) : sections.length === 0 ? (
-            <EmptyState title="No sections yet">Use Draft with AI above to write the page from your approved message, or add a section.</EmptyState>
+            <SectionEmpty projectId={project.id} store="marketing/landing" sectionLabel="Landing page" title="No sections yet">The landing page is where ads and posts send buyers, so it is written from one approved message in the brand kit.</SectionEmpty>
           ) : (
             sections.map((s, i) => (
               <SectionCard key={s.id} item={s} first={i === 0} last={i === sections.length - 1} onMove={(d) => void move(i, d)} onSave={(c) => patch(s.id, c)} onDelete={() => remove(s.id)} />

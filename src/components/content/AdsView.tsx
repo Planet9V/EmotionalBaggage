@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, Plus, Trash2 } from "lucide-react";
@@ -105,7 +106,7 @@ export function AdsView({ project, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading the ads" />
       ) : ads.length === 0 ? (
-        <EmptyState title={`No ${spec.label} ads yet`}>Draft variants with AI, each tied to one approved message, or add one by hand.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/ads" sectionLabel="Ads" title={`No ${spec.label} ads yet`}>Each ad is tied to one approved message and carries the rule that says when to stop or scale it.</SectionEmpty>
       ) : (
         <ul className="space-y-4">
           {ads.map((a) => (

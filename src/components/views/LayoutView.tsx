@@ -5,7 +5,7 @@
  * It edits data.geometry on the BOM parts, the same data the 3D model draws.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Save } from "lucide-react";
+import { Download, LayoutGrid, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { toPart } from "@/lib/domain";
@@ -32,7 +32,7 @@ import type { ViewProps } from "./types";
 import { NativeSelect } from "@/components/ui/native-select";
 import { downloadFile } from "@/lib/download";
 import { fileSlug } from "@/lib/format";
-import { LoadingBlocks } from "@/components/ui/states";
+import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
 const BOM_STORE = "design/bom";
@@ -320,13 +320,9 @@ export function LayoutView({ project }: ViewProps) {
 
         <section className="order-1 min-w-0 xl:order-2" aria-label="Layout views">
           {!hasGeometry ? (
-            <div className="flex min-h-[320px] flex-col items-start justify-center gap-2 rounded-xl border border-dashed border-hairline bg-subtle p-8">
-              <p className={eyebrow}>Nothing to lay out yet</p>
-              <h2 className="text-lg font-semibold tracking-tight text-primary">Start with the enclosure, then place parts</h2>
-              <p className="max-w-lg text-sm text-secondary">
-                Give the enclosure its outer size under Envelope. Then drag parts from the tray onto the Top view and enter their sizes. Parts you add in the bill of materials show up in the tray.
-              </p>
-            </div>
+            <EmptyState icon={LayoutGrid} title="Nothing to lay out yet">
+              Where each part sits decides the enclosure size, its openings and the wire lengths. Give the enclosure its outer size under Envelope, then drag parts from the tray onto the Top view and enter their sizes.
+            </EmptyState>
           ) : (
             <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
               <div className={`${activeView === "top" ? "block" : "hidden"} lg:row-span-2 lg:block`}>

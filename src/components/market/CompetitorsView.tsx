@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -174,7 +175,7 @@ export function CompetitorsView({ project, store }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!rows.length ? (
-        <EmptyState title="No competitors yet">Research the market, read a saved answer, or add a row by hand. Add the non-product alternatives too: doing nothing, a workaround.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/competitors" sectionLabel="Competitors" title="No competitors yet">Research the market, read a saved answer, or add a row by hand. Add the non-product alternatives too: doing nothing, a workaround.</SectionEmpty>
       ) : (
         <Card variant="outlined" hoverEffect={false} innerClassName="p-0">
           <Table aria-label="Competitors and alternatives">

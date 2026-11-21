@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,9 +61,9 @@ export function CampaignsView({ project, section }: ViewProps) {
         aside={<Button onClick={() => setEditing("new")}><Plus className="h-4 w-4" aria-hidden /> Add campaign</Button>}
       >
         {campaigns.length === 0 ? (
-          <EmptyState title="No campaigns yet">
+          <SectionEmpty projectId={project.id} store="marketing/campaigns" sectionLabel="Campaigns" title="No campaigns yet">
             Draft a campaign plan with the button at the top of the page, which works from the budget above and the margin on your sales channel, or add one by hand. Drafts stay drafts until you approve them.
-          </EmptyState>
+          </SectionEmpty>
         ) : (
           <CampaignBoard campaigns={campaigns} statuses={statuses} money={money} onEdit={setEditing} onDelete={del} onStatus={(c, status) => void guard(patch(c.id, { status }))} />
         )}

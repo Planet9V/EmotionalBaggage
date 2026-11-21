@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
-import { LayoutGrid, Plus, Rows3, Search, X } from "lucide-react";
+import { LayoutGrid, ListPlus, Plus, Rows3, Search, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useItems } from "@/lib/client";
@@ -19,12 +19,14 @@ import { CLAIMS_SECTION } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
-import { LoadingShape } from "@/components/ui/states";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
+import { sectionWhy } from "@/lib/sectionWhy";
+import { EmptyState, LoadingShape } from "@/components/ui/states";
 
 type Layout = "board" | "table";
 const layoutListeners = new Set<() => void>();
 
-export function ItemsView({ project, section, store }: ViewProps) {
+export function ItemsView({ project, stage, section, store }: ViewProps) {
   const { items, loading, error, reload, add, patch, remove } = useItems(project.id, store);
   const configured = section.statuses ?? DEFAULT_STATUSES;
   const columns = section.columns ?? [];
@@ -165,12 +167,9 @@ export function ItemsView({ project, section, store }: ViewProps) {
   if (!items.length) {
     return (
       <>
-        <div className="max-w-xl rounded-xl border border-dashed border-hairline bg-surface p-8 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">{section.label}</p>
-          <p className="mt-2 text-lg font-semibold tracking-tight text-primary">Nothing here yet</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-secondary">This section holds: {section.blurb}</p>
-          <div className="mt-4 flex justify-center">{addButton}</div>
-        </div>
+        <SectionEmpty projectId={project.id} store={store} sectionLabel={section.label} icon={ListPlus} title={`No ${section.label.toLowerCase()} rows yet`} action={addButton}>
+          {sectionWhy(store, stage.label, stage.goal)}
+        </SectionEmpty>
         {dialogs}
       </>
     );
@@ -229,12 +228,9 @@ export function ItemsView({ project, section, store }: ViewProps) {
       )}
 
       {filtering && !shown.length ? (
-        <div className="rounded-xl border border-dashed border-hairline p-6 text-center">
-          <p className="text-sm text-secondary">Nothing matches.</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => { setQ(""); setFilter(null); }}>
-            Clear search and filter
-          </Button>
-        </div>
+        <EmptyState icon={SearchX} title="Nothing matches" action={<Button variant="outline" size="sm" onClick={() => { setQ(""); setFilter(null); }}>Clear search and filter</Button>}>
+          No row has this text or status. Clear the search to see every row.
+        </EmptyState>
       ) : layout === "board" ? (
         <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={(id, status) => patch(id, { status })} cardExtra={cardExtra} />
       ) : (

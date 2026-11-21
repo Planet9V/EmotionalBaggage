@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ export function NamesView({ project }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!items.length ? (
-        <EmptyState title="No names or taglines yet">Suggest a batch from the brief, or add your own. Each one gets a checklist of searches for you to run.</EmptyState>
+        <SectionEmpty projectId={project.id} store="concept/names" sectionLabel="Names" title="No names or taglines yet">Suggest a batch from the brief, or add your own. Each one gets a checklist of searches for you to run.</SectionEmpty>
       ) : (
         <>
           <div role="group" aria-label="Show" className="inline-flex overflow-hidden rounded-md border border-hairline">
