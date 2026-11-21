@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import type { PoolClient } from "pg";
 import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, notFound, route } from "@/lib/api/route";
-import { CLAIMS_SECTION, claimEvidence, evidenceAdd, evidenceRemove, type EvidenceEntry } from "@/lib/research/schemas";
+import { CLAIMS_SECTION, claimEvidence, evidenceAdd, evidenceRemove, readSources, type EvidenceEntry } from "@/lib/research/schemas";
 import { claimStatus, isDisputed } from "@/lib/research/status";
 
 async function lockClaim(c: PoolClient, claimId: number) {
@@ -48,20 +48,23 @@ export const POST = route(async (req: Request) => {
   const b = await body(req, evidenceAdd);
   const out = await tx(async (c) => {
     const { row, evidence } = await lockClaim(c, b.claimId);
+    // The source's title as Perplexity gave it, so the claim reads well later; a title sent with the request wins.
+    let title = b.title;
     if (b.researchId !== undefined) {
-      const r = await c.query<{ project_id: string; citations: unknown }>("SELECT project_id, citations FROM research WHERE id=$1", [b.researchId]);
+      const r = await c.query<{ project_id: string; citations: unknown; sources: unknown }>("SELECT project_id, citations, sources FROM research WHERE id=$1", [b.researchId]);
       const entry = r.rows[0];
       if (!entry) throw notFound("That research entry");
       if (entry.project_id !== row.project_id) throw new HttpError(400, "That research entry belongs to another concept than the claim.");
       const cited = Array.isArray(entry.citations) ? entry.citations : [];
       if (!cited.includes(b.url)) throw new HttpError(400, "That address is not one of the sources of that research entry.");
+      if (!title) title = readSources(entry.sources, entry.citations).find((x) => x.url === b.url)?.title || undefined;
     }
     if (evidence.some((e) => e.url === b.url)) {
       throw new HttpError(409, "This source is already evidence for this claim. Remove it first to change its verdict.");
     }
     const entry: EvidenceEntry = {
       url: b.url,
-      ...(b.title ? { title: b.title } : {}),
+      ...(title ? { title } : {}),
       ...(b.quote ? { quote: b.quote } : {}),
       ...(b.researchId !== undefined ? { researchId: b.researchId } : {}),
       verdict: b.verdict,

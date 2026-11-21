@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { GripVertical } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -15,6 +15,8 @@ type Props = {
   columns: Column[];
   onOpen: (id: number) => void;
   onMove: (id: number, status: string) => void | Promise<void>;
+  /** extra content under a card's fields, for sections that show more than columns (claims show evidence) */
+  cardExtra?: (item: Item) => ReactNode;
 };
 
 /**
@@ -22,7 +24,7 @@ type Props = {
  * (touch and screen readers) or by focusing a card and pressing Shift with the left or right arrow.
  * Every move is announced in a polite live region.
  */
-export function Kanban({ items, statuses, columns, onOpen, onMove }: Props) {
+export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra }: Props) {
   const reduce = useReducedMotion();
   const [over, setOver] = useState<string | null>(null);
   const [say, setSay] = useState("");
@@ -101,6 +103,7 @@ export function Kanban({ items, statuses, columns, onOpen, onMove }: Props) {
                       statuses={statuses}
                       columns={columns}
                       onOpen={onOpen}
+                      extra={cardExtra?.(it)}
                       onMove={(s, kb) => move(it, s, kb)}
                       onDragStart={(e) => {
                         dragged.current = it.id;
@@ -129,6 +132,7 @@ function BoardCard({
   statuses,
   columns,
   onOpen,
+  extra,
   onMove,
   onDragStart,
 }: {
@@ -138,6 +142,7 @@ function BoardCard({
   statuses: string[];
   columns: Column[];
   onOpen: (id: number) => void;
+  extra?: ReactNode;
   onMove: (status: string, viaKeyboard: boolean) => void;
   onDragStart: (e: DragEvent) => void;
 }) {
@@ -190,6 +195,7 @@ function BoardCard({
             ))}
           </dl>
         )}
+        {extra && <div className="mt-2 pl-5">{extra}</div>}
         <div className="mt-2 pl-5">
           <select
             value={item.status}

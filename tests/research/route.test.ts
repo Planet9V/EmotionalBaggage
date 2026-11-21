@@ -10,7 +10,11 @@ const KEY = "pplx-route-test-key-7890";
 let s: StandIn<perplexity.PerplexityOptions>;
 const savedEnvKey = process.env.PERPLEXITY_API_KEY;
 
-type Entry = { id: number; query: string; answer: string; citations: string[]; sources: { url: string; title?: string }[]; model: string; createdAt: string };
+type Entry = { id: number; query: string; answer: string; citations: string[]; sources: { url: string; title: string; snippet?: string; date?: string }[]; model: string; createdAt: string };
+const SOURCES = [
+  { url: "https://cite.example/x", title: "Stand-in source 1", snippet: "Stand-in snippet.", date: "2026-11-01" },
+  { url: "https://cite.example/y", title: "Stand-in source 2", snippet: "Stand-in snippet.", date: "2026-11-01" },
+];
 
 beforeAll(async () => {
   delete process.env.PERPLEXITY_API_KEY;
@@ -51,7 +55,7 @@ describe("research route", () => {
       query: "test: stand-in question",
       answer: "Routed answer[1].",
       citations: ["https://cite.example/x", "https://cite.example/y"],
-      sources: [{ url: "https://cite.example/x", title: "Stand-in source 1" }, { url: "https://cite.example/y", title: "Stand-in source 2" }],
+      sources: SOURCES,
       model: "openai/gpt-6-luna",
     });
     expect(typeof r.body.entry.id).toBe("number");
@@ -64,8 +68,8 @@ describe("research route", () => {
     expect(sent.headers.authorization).toBe(`Bearer ${KEY}`);
     expect(sent.body).toMatchObject({ effort: "fast", input: "test: stand-in question" });
 
-    const rows = await q<{ citations: string[]; model: string }>("SELECT citations, model FROM research WHERE id=$1", [r.body.entry.id]);
-    expect(rows[0]).toEqual({ citations: ["https://cite.example/x", "https://cite.example/y"], model: "openai/gpt-6-luna" });
+    const rows = await q<{ citations: string[]; sources: unknown; model: string }>("SELECT citations, sources, model FROM research WHERE id=$1", [r.body.entry.id]);
+    expect(rows[0]).toEqual({ citations: ["https://cite.example/x", "https://cite.example/y"], sources: SOURCES, model: "openai/gpt-6-luna" });
     const ev = await q<{ kind: string; data: { researchId: number } }>("SELECT kind, data FROM events WHERE project_id=$1 AND kind='research.asked' ORDER BY id DESC LIMIT 1", [SEEDED]);
     expect(ev[0].data.researchId).toBe(r.body.entry.id);
 
@@ -73,7 +77,28 @@ describe("research route", () => {
     const listed = g.body.entries.find((e) => e.id === r.body.entry.id)!;
     expect(Object.keys(listed).sort()).toEqual(["answer", "citations", "createdAt", "id", "model", "query", "sources"]);
     expect(listed.citations).toEqual(["https://cite.example/x", "https://cite.example/y"]);
-    expect(listed.sources).toEqual([{ url: "https://cite.example/x" }, { url: "https://cite.example/y" }]);
+    // the titles survive a reload
+    expect(listed.sources).toEqual(SOURCES);
+  });
+
+  it("reads a row saved before sources were stored as its citation URLs with empty titles, and skips bad entries", async () => {
+    const old = await q<{ id: string }>(
+      "INSERT INTO research (project_id, query, answer, citations, model) VALUES ($1,'test: older row','a',$2,'m') RETURNING id",
+      [SEEDED, JSON.stringify(["https://old.example/1", "not a url"])]
+    );
+    const odd = await q<{ id: string }>(
+      "INSERT INTO research (project_id, query, answer, citations, sources, model) VALUES ($1,'test: odd sources','a','[]',$2,'m') RETURNING id",
+      [SEEDED, JSON.stringify([{ url: "https://ok.example", title: "Kept" }, { url: "javascript:alert(1)", title: "x" }, "garbage", { title: "no url" }])]
+    );
+    const g = await getState();
+    expect(g.body.entries.find((e) => e.id === Number(old[0].id))!.sources).toEqual([{ url: "https://old.example/1", title: "" }]);
+    expect(g.body.entries.find((e) => e.id === Number(odd[0].id))!.sources).toEqual([{ url: "https://ok.example", title: "Kept" }]);
+  });
+
+  it("refuses a sources value that is not a list", async () => {
+    await expect(
+      q("INSERT INTO research (project_id, query, answer, sources) VALUES ($1,'test: not a list','a','{}')", [SEEDED])
+    ).rejects.toThrow(/research_sources_array/);
   });
 
   it("passes on upstream failures as plain messages and stores nothing", async () => {

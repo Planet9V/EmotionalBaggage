@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { claimStatus, isDisputed } from "@/lib/research/status";
+import { claimStatus, isDisputed, statusReason } from "@/lib/research/status";
 import { claimEvidence, evidenceAdd } from "@/lib/research/schemas";
 
 type V = "supports" | "contradicts" | "unclear";
@@ -38,5 +38,22 @@ describe("evidence schemas", () => {
     expect(claimEvidence.safeParse([{ url: "https://x.example", verdict: "supports", addedAt: "2026-11-20T00:00:00Z" }]).success).toBe(true);
     expect(claimEvidence.safeParse([{ url: "https://x.example" }]).success).toBe(false);
     expect(claimEvidence.safeParse("nope").success).toBe(false);
+  });
+});
+
+describe("statusReason", () => {
+  it("words the status from the evidence", () => {
+    expect(statusReason("verified", ev("supports"))).toBe("Verified: 1 source supports it, none contradicts");
+    expect(statusReason("verified", ev("supports", "supports", "unclear"))).toBe("Verified: 2 sources support it, none contradicts");
+    expect(statusReason("unverified", ev("supports", "contradicts"))).toBe("Disputed: sources disagree");
+    expect(statusReason("unverified", [])).toBe("Unverified: no source judged yet");
+    expect(statusReason("unverified", ev("unclear"))).toBe("Unverified: 1 source judged, it is unclear");
+    expect(statusReason("unverified", ev("unclear", "unclear"))).toBe("Unverified: 2 sources judged, all unclear");
+    expect(statusReason("wrong", ev("contradicts"))).toBe("Wrong: 1 source contradicts it, none supports");
+  });
+  it("says when the status was set by hand and does not match the evidence", () => {
+    expect(statusReason("wrong", [])).toBe("Wrong: set by hand; no source judged yet");
+    expect(statusReason("wrong", ev("supports", "contradicts"))).toBe("Wrong: set by hand; sources disagree (1 supports, 1 contradicts)");
+    expect(statusReason("verified", [])).toBe("Verified: set by hand; no source judged yet");
   });
 });

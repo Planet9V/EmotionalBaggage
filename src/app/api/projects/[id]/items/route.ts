@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, requireProject, route } from "@/lib/api/route";
 import { defaultStatus, newItem, STORE_STATUSES, STORES } from "@/lib/api/schemas";
+import { assertNewClaim } from "@/lib/research/rules";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -22,6 +23,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const { id } = await params;
   await requireProject(id);
   const b = await body(req, newItem);
+  assertNewClaim(b);
   const row = await tx(async (c) => {
     const res = await c.query<ItemRow>(
       `INSERT INTO items (project_id, section, title, body, data, status, sort)

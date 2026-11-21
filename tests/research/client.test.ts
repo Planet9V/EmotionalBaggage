@@ -162,6 +162,26 @@ describe("readResponse", () => {
     expect(r).toMatchObject({ answer: "one\n\ntwo", sources: [{ url: "https://a.example", title: "A", id: 1 }, { url: "https://b.example", id: 2 }] });
   });
 
+  it("keeps each source's snippet and date when given, and leaves them out when empty or not text", () => {
+    const r = readResponse({
+      output: [
+        {
+          type: "search_results",
+          results: [
+            { id: 1, url: "https://a.example", title: "A", snippet: "  The limit is 7 kg.  ", date: "2026-11-01" },
+            { id: 2, url: "https://b.example", title: "B", snippet: "   ", date: 20261101 },
+          ],
+        },
+        { type: "message", content: [{ type: "output_text", text: "t" }] },
+      ],
+    });
+    if ("malformed" in r) throw new Error(r.malformed);
+    expect(r.sources).toEqual([
+      { url: "https://a.example", title: "A", snippet: "The limit is 7 kg.", date: "2026-11-01", id: 1 },
+      { url: "https://b.example", title: "B", id: 2 },
+    ]);
+  });
+
   it("falls back to a top-level output_text only when the output array has no text", () => {
     expect(readResponse({ output: [], output_text: "sdk-style" })).toMatchObject({ answer: "sdk-style" });
     expect(readResponse([])).toEqual({ malformed: "the body is not a JSON object" });

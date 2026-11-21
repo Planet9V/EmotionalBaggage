@@ -1,7 +1,7 @@
 "use client";
 
 import { keys } from "@/lib/domain";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Column } from "@/lib/menu";
@@ -21,6 +21,7 @@ export function ItemDrawer({
   statuses,
   onSave,
   onDelete,
+  extra,
 }: {
   item: Item | null;
   onClose: () => void;
@@ -29,6 +30,8 @@ export function ItemDrawer({
   statuses: string[];
   onSave: (id: number, c: Change) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  /** a section's own panel shown in the editor above the status, with its legend (claims show evidence) */
+  extra?: { legend: string; render: (item: Item) => ReactNode };
 }) {
   return (
     <ItemDialogShell
@@ -38,7 +41,7 @@ export function ItemDrawer({
       title={item?.title || "Item"}
       description="Edit the fields and save, or delete the item."
     >
-      {item && <EditForm key={item.id} item={item} columns={columns} statuses={statuses} onClose={onClose} onSave={onSave} onDelete={onDelete} />}
+      {item && <EditForm key={item.id} item={item} columns={columns} statuses={statuses} onClose={onClose} onSave={onSave} onDelete={onDelete} extra={extra} />}
     </ItemDialogShell>
   );
 }
@@ -50,6 +53,7 @@ function EditForm({
   onClose,
   onSave,
   onDelete,
+  extra,
 }: {
   item: Item;
   columns: Column[];
@@ -57,10 +61,13 @@ function EditForm({
   onClose: () => void;
   onSave: (id: number, c: Change) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  extra?: { legend: string; render: (item: Item) => ReactNode };
 }) {
   const [title, setTitle] = useState(item.title);
   const [body, setBody] = useState(item.body);
-  const [status, setStatus] = useState(item.status);
+  // Until the user picks a status, follow the row's own: evidence changed in the editor can move it.
+  const [picked, setStatus] = useState<string | null>(null);
+  const status = picked ?? item.status;
   const [cols, setCols] = useState<Record<string, string>>(() => Object.fromEntries(columns.map((c) => [c.key, prim(item.data[c.key])])));
   const [key, setKey] = useState(prim(item.data.key));
   const [minutes, setMinutes] = useState(prim(item.data.minutes));
@@ -135,6 +142,12 @@ function EditForm({
             </Field>
           ))}
         </div>
+      )}
+      {extra && (
+        <fieldset className="space-y-2 rounded-xl border border-hairline bg-subtle p-4">
+          <legend className="px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-link">{extra.legend}</legend>
+          {extra.render(item)}
+        </fieldset>
       )}
       <Field label="Status" htmlFor="edit-status">
         <select id="edit-status" className={SELECT_CLS} value={status} onChange={(e) => setStatus(e.target.value)}>

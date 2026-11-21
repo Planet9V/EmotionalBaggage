@@ -100,6 +100,25 @@ describe("adding evidence", () => {
     expect(last.body).toMatchObject({ status: "unverified", evidence: [] });
   });
 
+  it("takes the source's title from the research entry when none is sent, and a sent title wins", async () => {
+    const rid = Number(
+      (await q<{ id: string }>(
+        "INSERT INTO research (project_id, query, answer, citations, sources, model) VALUES ($1,'test: titled q','a',$2,$3,'m') RETURNING id",
+        [SEEDED, JSON.stringify([A, B]), JSON.stringify([{ url: A, title: "Airline baggage rules" }, { url: B, title: "" }])]
+      ))[0].id
+    );
+    const titled = await add({ claimId, url: A, researchId: rid, verdict: "supports" });
+    expect(titled.body.item.data.evidence?.[0].title).toBe("Airline baggage rules");
+    expect((await lastEvent()).summary).toContain("Airline baggage rules (https://a.example/supports)");
+    const untitled = await add({ claimId, url: B, researchId: rid, verdict: "unclear" });
+    expect(untitled.body.item.data.evidence?.[1].title).toBeUndefined();
+    await remove({ claimId, url: A });
+    await remove({ claimId, url: B });
+    const given = await add({ claimId, url: A, researchId: rid, title: "My own name", verdict: "supports" });
+    expect(given.body.item.data.evidence?.[0].title).toBe("My own name");
+    await remove({ claimId, url: A });
+  });
+
   it("accepts a source that is not from a research entry, and an unclear verdict changes nothing", async () => {
     const r = await add({ claimId, url: "https://manual.example/page", verdict: "unclear" });
     expect(r.status).toBe(201);
@@ -107,15 +126,16 @@ describe("adding evidence", () => {
     await remove({ claimId, url: "https://manual.example/page" });
   });
 
-  it("lets the user overrule the status by hand, recorded as a manual change", async () => {
-    const res = await patchItem(json("PATCH", { status: "verified" }), ctx(String(claimId)));
+  it("lets the user set a status by hand that the evidence allows; the next evidence change sets it again", async () => {
+    const res = await patchItem(json("PATCH", { status: "wrong" }), ctx(String(claimId)));
     expect(res.status).toBe(200);
     const e = await lastEvent();
     expect(e.kind).toBe("item.status");
     // the next evidence change recomputes the status from the evidence
-    const r = await add({ claimId, url: B, researchId, verdict: "contradicts" });
-    expect(r.body.status).toBe("wrong");
-    expect((await lastEvent()).data.before.status).toBe("verified");
+    const r = await add({ claimId, url: A, researchId, verdict: "supports" });
+    expect(r.body.status).toBe("verified");
+    expect((await lastEvent()).data.before.status).toBe("wrong");
+    await remove({ claimId, url: A });
   });
 
   it("leaves a claim alone whose stored evidence is not in the expected shape", async () => {

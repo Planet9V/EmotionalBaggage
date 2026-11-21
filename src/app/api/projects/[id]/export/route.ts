@@ -22,7 +22,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
       `SELECT id::int AS id, kind, summary, data, created_at AS "createdAt" FROM events WHERE project_id=$1 ORDER BY id`
     );
     const research = await all<Record<string, unknown>>(
-      `SELECT id::int AS id, query, answer, citations, model, created_at AS "createdAt" FROM research WHERE project_id=$1 ORDER BY id`
+      `SELECT id::int AS id, query, answer, citations, sources, model, created_at AS "createdAt" FROM research WHERE project_id=$1 ORDER BY id`
     );
     const messages = await all<Record<string, unknown>>(
       `SELECT id::int AS id, role, content, created_at AS "createdAt" FROM messages WHERE project_id=$1 ORDER BY id`
