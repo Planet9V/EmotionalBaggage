@@ -28,10 +28,11 @@ export async function chooseEmbedding(choice: ModelChoice | null) {
     ]);
 }
 
+/** Saves a key as one saved before migration 0024 would be: unbound, so its first read binds it to the model address in use. */
 export async function saveKey(provider: string, key: string | undefined) {
   if (key === undefined) await q("DELETE FROM credentials WHERE provider=$1 AND field='apiKey'", [provider]);
   else
-    await q("INSERT INTO credentials (provider, field, value) VALUES ($1,'apiKey',$2) ON CONFLICT (provider, field) DO UPDATE SET value=EXCLUDED.value", [
+    await q("INSERT INTO credentials (provider, field, value) VALUES ($1,'apiKey',$2) ON CONFLICT (provider, field) DO UPDATE SET value=EXCLUDED.value, bound_origin=NULL", [
       provider,
       key,
     ]);

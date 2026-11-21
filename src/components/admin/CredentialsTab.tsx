@@ -30,7 +30,8 @@ type Field = ProviderView["fields"][number];
 export function fieldState(f: Field): string {
   if (!f.set) return "Not set.";
   const where = f.source === "environment" ? " It comes from an environment variable, used only because nothing is saved here." : "";
-  if (f.secret) return f.last4 ? `Set, ending in ${f.last4}.${where}` : `Set. It is too short to show its last characters.${where}`;
+  const bound = f.secret && f.boundTo ? ` It is only ever sent to ${f.boundTo}, the address it was saved for; moving a model to another host needs the key typed again.` : "";
+  if (f.secret) return f.last4 ? `Set, ending in ${f.last4}.${where}${bound}` : `Set. It is too short to show its last characters.${where}${bound}`;
   return `Set to ${f.value}.${where}`;
 }
 

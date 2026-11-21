@@ -13,6 +13,10 @@ export type AuditEntry = {
   /** the field, or null when the entry is about the whole provider */
   field: string | null;
   result?: { ok: boolean; message: string };
+  /** the origin a saved value is bound to (an address, never a value) */
+  boundTo?: string;
+  /** why a value was removed by the app rather than by a person */
+  reason?: string;
 };
 
 /** Prepends entries and trims to the limit in one statement, so two saves at once cannot lose each other. */
@@ -25,7 +29,7 @@ export async function audit(entries: Omit<AuditEntry, "at">[]) {
     await auditLine({
       action: `credential.${e.action}`,
       summary: e.action === "tested" ? `Connection to ${what} tested: ${e.result?.ok ? "it works" : "it failed"}` : `Credential ${what} ${e.action}`,
-      detail: { provider: e.provider, field: e.field, ...(e.result ? { result: e.result } : {}) },
+      detail: { provider: e.provider, field: e.field, ...(e.result ? { result: e.result } : {}), ...(e.boundTo ? { boundTo: e.boundTo } : {}), ...(e.reason ? { reason: e.reason } : {}) },
     });
   }
   // newest first: the last entry of a batch goes on top

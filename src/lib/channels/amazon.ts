@@ -24,7 +24,7 @@
 //   [MKT]     https://developer-docs.amazon.com/sp-api/docs/marketplace-ids
 import { createHash } from "node:crypto";
 import { HttpError } from "@/lib/api/route";
-import { getCredential } from "@/lib/settings";
+import { getSecretFor } from "@/lib/secretOrigin";
 import { ChannelError, channelFetch, lwaTokenUrl, readJson, saysOf, spApiBase, upstreamError, type SpRegion } from "./http";
 import { limited, TokenBucket, channelClock } from "./rateLimit";
 
@@ -84,9 +84,9 @@ export type AmazonCredentials = { refreshToken: string; clientId: string; client
 
 export async function amazonCredentials(): Promise<AmazonCredentials | null> {
   const [refreshToken, clientId, clientSecret] = await Promise.all([
-    getCredential("amazon-sp", "refreshToken"),
-    getCredential("amazon-sp", "clientId"),
-    getCredential("amazon-sp", "clientSecret"),
+    getSecretFor("amazon-sp", "refreshToken", lwaTokenUrl()),
+    getSecretFor("amazon-sp", "clientId", lwaTokenUrl()),
+    getSecretFor("amazon-sp", "clientSecret", lwaTokenUrl()),
   ]);
   return refreshToken && clientId && clientSecret ? { refreshToken, clientId, clientSecret } : null;
 }

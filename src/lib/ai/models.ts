@@ -31,6 +31,7 @@ import {
 import { z } from "zod";
 import { HttpError } from "@/lib/api/route";
 import { DEFAULT_BASE_URL, embeddingModel, getCredential, reasoningModel, type ModelChoice } from "@/lib/settings";
+import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
 import { savedModelChoice } from "./schemas";
 
 export type ProviderId = ModelChoice["provider"];
@@ -103,7 +104,12 @@ async function readChoice(role: Role): Promise<{ ok: true; choice: z.infer<typeo
   } catch {
     return { ok: false, missing: "setting", reason: `The ${role} model's address "${baseUrl}" is not a web address. Correct it in Admin, Models.` };
   }
-  const key = (await getCredential(choice.provider, "apiKey"))?.trim() || null;
+  // A saved key is only sent to the host it was saved for (src/lib/secretOrigin.ts).
+  const secret = await secretFor(choice.provider, "apiKey", baseUrl);
+  const key = secret.value?.trim() || null;
+  if (!key && secret.refused && KEY_REQUIRED[choice.provider]) {
+    return { ok: false, missing: "key", reason: `${boundElsewhere(PROVIDER_LABEL[choice.provider], secret.boundTo, baseUrl)} Do that in Admin, Credentials.` };
+  }
   if (!key && KEY_REQUIRED[choice.provider]) {
     return { ok: false, missing: "key", reason: `${PROVIDER_LABEL[choice.provider]} needs a key. Add it in Admin, Credentials.` };
   }

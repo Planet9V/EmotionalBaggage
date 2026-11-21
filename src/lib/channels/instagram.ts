@@ -20,13 +20,14 @@
 // The token is sent in the Authorization header (as in Meta's examples), never in a URL this app builds.
 import { HttpError } from "@/lib/api/route";
 import { getCredential } from "@/lib/settings";
+import { getSecretFor } from "@/lib/secretOrigin";
 import { ChannelError, channelFetch, igGraphBase, readJson, upstreamError } from "./http";
 import { channelClock } from "./rateLimit";
 
 export const IG_PUBLISH_LIMIT_24H = 100;
 
 export async function igCredentials() {
-  const [token, accountId] = await Promise.all([getCredential("instagram", "accessToken"), getCredential("instagram", "accountId")]);
+  const [token, accountId] = await Promise.all([getSecretFor("instagram", "accessToken", igGraphBase()), getCredential("instagram", "accountId")]);
   return token && accountId ? { token, accountId } : null;
 }
 

@@ -75,7 +75,8 @@ describe("kind: model", () => {
   it("uses the saved key when none is given, and the given key over the saved one", async () => {
     const KEY = "sk-or-v1-saved-key-000000000000";
     const s = await track(openai.start({ prefix: "/api/v1", apiKey: KEY }));
-    await putCredentials(json("PUT", { fields: { apiKey: KEY } }), { params: Promise.resolve({ provider: "openrouter" }) });
+    // the key is bound to the address it is for (secretOrigin.ts); it is never sent anywhere else
+    await putCredentials(json("PUT", { fields: { apiKey: KEY }, address: `${s.url}/api/v1` }), { params: Promise.resolve({ provider: "openrouter" }) });
     const ok = await test({ kind: "model", provider: "openrouter", baseUrl: `${s.url}/api/v1` });
     expect(ok.body.ok).toBe(true);
     expect(s.requests[0].headers.authorization).toBe(`Bearer ${KEY}`);

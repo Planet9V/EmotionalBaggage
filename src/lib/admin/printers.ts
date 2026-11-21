@@ -78,10 +78,36 @@ export function requireFamily(id: string, path: string = "family"): PrinterFamil
  * fields the family does not take are a 400, and every required field must end up with a value.
  * Returns the address (for the column) and the rest (for the access object).
  */
+/** The host a printer's values point at: the origin of a url address, the lower-case name of a host address. */
+export function printerTarget(fam: PrinterFamily, values: Record<string, string>): string | null {
+  const f = fam.fields.find((x) => x.name === "address");
+  const v = values.address;
+  if (!f || !v) return null;
+  if (f.kind === "url") {
+    try {
+      return new URL(v).origin.toLowerCase();
+    } catch {
+      return v.toLowerCase();
+    }
+  }
+  return v.trim().toLowerCase();
+}
+
+export const SECRET_NEEDS_REENTRY =
+  "type it again: the address now points to a different host, and a saved secret is only sent to the host it was saved for";
+
+/**
+ * How saved secrets are treated when the address moves to another host (robustness review S1):
+ * "save" (PATCH) refuses unless every saved secret is typed again or removed (null) in the same request;
+ * "test" (a connection test) leaves the saved secrets out and uses only what the request carries.
+ */
+export type SecretMode = "save" | "test";
+
 export function resolveAccess(
   fam: PrinterFamily,
   input: Record<string, string | null> | undefined,
-  saved: Record<string, string> = {}
+  saved: Record<string, string> = {},
+  mode: SecretMode = "save"
 ): { address: string; access: Record<string, string>; values: Record<string, string> } {
   const merged: Record<string, string> = {};
   for (const f of fam.fields) if (saved[f.name] !== undefined) merged[f.name] = saved[f.name];
@@ -108,6 +134,19 @@ export function resolveAccess(
       merged[name] = v;
     } else {
       merged[name] = v;
+    }
+  }
+  // A saved secret never follows the address to another host.
+  const before = printerTarget(fam, saved);
+  const after = printerTarget(fam, merged);
+  if (before && after && before !== after) {
+    for (const f of fam.fields) {
+      if (!f.secret || saved[f.name] === undefined) continue;
+      const typed = input?.[f.name];
+      const retyped = typeof typed === "string" && typed.trim() !== "";
+      if (retyped || typed === null) continue;
+      if (mode === "save" || f.required) throw invalid(["access", f.name], SECRET_NEEDS_REENTRY);
+      delete merged[f.name];
     }
   }
   for (const f of fam.fields) {

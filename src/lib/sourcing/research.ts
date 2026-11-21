@@ -4,7 +4,7 @@
 // (When the drafts engine of another branch is merged, saveDrafts is the one function to repoint.)
 import { ITEM_COLS, logEventIn, q, tx, type ItemRow } from "@/lib/db";
 import { HttpError, notFound } from "@/lib/api/route";
-import { getCredential } from "@/lib/settings";
+import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { ask, type Source } from "@/lib/research/perplexity";
 import { toStoredSource } from "@/lib/research/schemas";
 import { readSourcing, newId, offerSchema, alternateSchema, type Draft, type Sourcing } from "./schemas";
@@ -75,7 +75,7 @@ export async function researchPart(projectId: string, partId: number, kind: Kind
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2 AND section='design/bom'`, [partId, projectId]);
   const part = rows[0];
   if (!part) throw notFound("That part");
-  const key = await getCredential("perplexity", "apiKey");
+  const key = await getSecretFor("perplexity", "apiKey", perplexityBaseUrl());
   if (!key) throw new HttpError(503, "Perplexity is not connected. Add a key in Admin, Credentials.");
   const cur = (await q<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]))[0]?.currency ?? "USD";
   const p: Part = { title: part.title, body: part.body, ref: String(part.data.ref ?? ""), partNumber: String((part.data as { partNumber?: string }).partNumber ?? ""), search: String(part.data.search ?? "") };

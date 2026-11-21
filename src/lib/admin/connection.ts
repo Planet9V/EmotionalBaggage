@@ -2,7 +2,7 @@
 // { ok, message, detail? }. Every call is read-only except Perplexity's, which has no free call (see testPerplexity). A failed test is a normal answer, not an error. Secrets never appear in the answer:
 // any text that comes back from outside is cleaned of the key that was sent before it is shown.
 import { pool, ready } from "@/lib/db";
-import { getCredential } from "@/lib/settings";
+import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
 import { AGENT_PATH, baseUrl as perplexityBase, DEFAULT_EFFORT, readResponse } from "@/lib/research/perplexity";
 import { audit } from "./audit";
 import { plannerUrl } from "./planner";
@@ -90,13 +90,28 @@ async function readJson(res: Response): Promise<unknown> {
 
 const MODEL_PATH_HINT = "Check the address: Ollama and LM Studio usually end in /v1, OpenRouter in /api/v1.";
 
-async function modelKey(provider: "ollama" | "lmstudio" | "openrouter", given?: string) {
+const MODEL_LABEL = { ollama: "Ollama", lmstudio: "LM Studio", openrouter: "OpenRouter" } as const;
+
+/**
+ * The key for a model test: the one typed in the request (used once, never saved), else the saved key,
+ * but only when the address is on the host the saved key was saved for (src/lib/secretOrigin.ts).
+ * When the saved key belongs to another host it is not read at all: `refusal` says why, and the test
+ * goes no further for a provider that needs a key.
+ */
+async function modelKey(provider: "ollama" | "lmstudio" | "openrouter", baseUrl: string, given?: string): Promise<{ key: string | null; refusal?: TestResult }> {
   const g = given?.trim();
-  return g ? g : await getCredential(provider, "apiKey");
+  if (g) return { key: g };
+  const s = await secretFor(provider, "apiKey", baseUrl);
+  if (s.refused) {
+    const message = boundElsewhere(MODEL_LABEL[provider], s.boundTo, baseUrl);
+    return { key: null, refusal: { ok: false, message, detail: { keyBoundTo: s.boundTo } } };
+  }
+  return { key: s.value };
 }
 
 async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise<TestResult> {
-  const key = await modelKey(t.provider, t.apiKey);
+  const { key, refusal } = await modelKey(t.provider, t.baseUrl, t.apiKey);
+  if (refusal) return refusal;
   const c = await call(`${t.baseUrl}/models`, { headers: key ? { authorization: `Bearer ${key}` } : {} }, [key]);
   if ("fail" in c) return c.fail;
   if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT);
@@ -115,7 +130,8 @@ async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise
 }
 
 async function testEmbedding(t: Extract<ConnectionTest, { kind: "embedding" }>): Promise<TestResult> {
-  const key = await modelKey(t.provider, t.apiKey);
+  const { key, refusal } = await modelKey(t.provider, t.baseUrl, t.apiKey);
+  if (refusal) return refusal;
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (key) headers.authorization = `Bearer ${key}`;
   const c = await call(`${t.baseUrl}/embeddings`, { method: "POST", headers, body: JSON.stringify({ model: t.model, input: "hello" }) }, [key]);
@@ -144,7 +160,9 @@ const BILLED = "Perplexity bills each call, so this test was charged as one shor
 
 async function testPerplexity(t: Extract<ConnectionTest, { kind: "perplexity" }>): Promise<TestResult> {
   const given = t.apiKey?.trim();
-  const key = given ? given : await getCredential("perplexity", "apiKey");
+  const saved = given ? null : await secretFor("perplexity", "apiKey", perplexityBase());
+  if (saved?.refused) return { ok: false, message: boundElsewhere("Perplexity", saved.boundTo, perplexityBase()) };
+  const key = given ? given : saved?.value;
   if (!key) return { ok: false, message: "No key is saved." };
   const ms = limitMs === DEFAULT_LIMIT_MS ? PERPLEXITY_LIMIT_MS : limitMs;
   const c = await call(
@@ -189,7 +207,7 @@ async function testPrinter(t: Extract<ConnectionTest, { kind: "printer" }>): Pro
     const row = await getPrinterRow(t.id);
     familyId = t.family ?? row.family;
     const fam = requireFamily(familyId);
-    values = resolveAccess(fam, t.access, valuesOf(row)).values;
+    values = resolveAccess(fam, t.access, valuesOf(row), "test").values; // saved secrets stay behind if the address moved
   } else {
     familyId = t.family!;
     values = resolveAccess(requireFamily(familyId), t.access).values;

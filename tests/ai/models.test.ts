@@ -216,6 +216,7 @@ describe.each(PROVIDERS)("$provider ($prefix)", ({ provider, prefix, key }) => {
     const port = await closedPort();
     for (const host of ["127.0.0.1", "localhost"]) {
       await chooseReasoning({ provider, baseUrl: `http://${host}:${port}${prefix}`, model });
+      await saveKey(provider, key); // a saved key is only sent to the host it is bound to (secretOrigin.ts)
       const e = await caught(complete({ messages: [{ role: "user", content: "x" }], maxRetries: 0 }));
       expect(e.kind).toBe("unreachable");
       expect(e.message).toContain(`Could not reach`);

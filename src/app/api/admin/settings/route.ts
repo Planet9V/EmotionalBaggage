@@ -8,6 +8,6 @@ export const GET = route(async () => NextResponse.json({ settings: await readAdm
 /** Any of reasoningModel, embeddingModel, plannerUrl, defaultConcept. Absent keys are unchanged; null clears. */
 export const PUT = route(async (req: Request) => {
   const b = await body(req, adminSettingsPut);
-  await writeAdminSettings(b);
-  return NextResponse.json({ settings: await readAdminSettings() });
+  const notices = await writeAdminSettings(b);
+  return NextResponse.json({ settings: await readAdminSettings(), notices });
 });
