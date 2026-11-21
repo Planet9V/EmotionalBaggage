@@ -296,7 +296,7 @@ export function LayoutView({ project }: ViewProps) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-md border border-hairline bg-surface p-0.5 lg:hidden" role="group" aria-label="Choose a view">
+        <div className="inline-flex rounded-md border border-hairline bg-surface p-0.5" role="group" aria-label="Choose a view">
           {VIEW_ORDER.map((k) => (
             <Button key={k} size="sm" className="h-7" variant={activeView === k ? "subtle" : "ghost"} aria-pressed={activeView === k} onClick={() => setActiveView(k)}>
               {VIEW_DEFS[k].label}
@@ -349,17 +349,8 @@ export function LayoutView({ project }: ViewProps) {
               </p>
             </div>
           ) : (
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-              <div className={`${activeView === "top" ? "block" : "hidden"} lg:row-span-2 lg:block`}>
-                <ThreeView {...viewProps("top", "h-[420px] lg:h-[564px]")} />
-              </div>
-              <div className={`${activeView === "front" ? "block" : "hidden"} lg:block`}>
-                <ThreeView {...viewProps("front", "h-[420px] lg:h-[276px]")} />
-              </div>
-              <div className={`${activeView === "side" ? "block" : "hidden"} lg:block`}>
-                <ThreeView {...viewProps("side", "h-[420px] lg:h-[276px]")} />
-              </div>
-            </div>
+            // one view at a time, large enough to read its labels, at every width; the buttons above switch it
+            <ThreeView key={activeView} {...viewProps(activeView, "h-[clamp(440px,64vh,760px)]")} />
           )}
           {hasGeometry && !anyParts && shell && (
             <p className="mt-2 text-sm text-muted">The enclosure is drawn. Parts with geometry will appear inside it.</p>

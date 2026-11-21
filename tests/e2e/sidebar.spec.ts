@@ -48,3 +48,26 @@ for (const height of [720, 900]) {
     });
   }
 }
+
+// D16: below 1024 px the sidebar is a drawer, opened by a labelled button, that keeps focus inside it.
+test("at 820 px wide the sidebar is a drawer opened from the Menu button", async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.goto("/s/design/bom");
+  await expect(page.locator("aside").first()).toBeHidden();
+  const open = page.getByRole("button", { name: "Menu" });
+  await expect(open).toBeVisible();
+  await open.click();
+  const drawer = page.getByRole("dialog", { name: "Menu" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole("navigation", { name: "Stages" })).toBeVisible();
+  // focus stays in the drawer
+  for (let i = 0; i < 6; i++) await page.keyboard.press("Shift+Tab");
+  expect(await drawer.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  // following a link closes it
+  await open.click();
+  await drawer.getByRole("link", { name: "Schematic" }).click();
+  await expect(page).toHaveURL(/\/s\/design\/schematic$/);
+  await expect(page.getByRole("dialog", { name: "Menu" })).toBeHidden();
+});

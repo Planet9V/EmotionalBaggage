@@ -25,7 +25,8 @@ export function DraftButton({ projectId, store, sectionLabel }: { projectId: str
   const hint = !gens.data!.configured ? "No reasoning model is chosen" : first.blocked ? first.blocked : first.readsText;
   return (
     <>
-      <div className="flex flex-col items-end gap-0.5">
+      {/* left-aligned when the header wraps it under the title (tablet), right-aligned beside it on a wide screen */}
+      <div className="flex flex-col items-start gap-0.5 xl:items-end">
         <Button id="draft-with-ai" variant="outline" size="sm" onClick={() => setOpen(true)} aria-describedby={`draft-hint-${store}`}>
           <Sparkles className="h-4 w-4 text-link" aria-hidden /> Draft with AI
           {pending > 0 && <span className="ml-1 rounded-full bg-dutchOrange/15 px-1.5 font-mono text-[10px] text-link">{pending} waiting</span>}

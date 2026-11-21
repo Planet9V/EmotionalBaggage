@@ -225,7 +225,14 @@ export function RoutePanel({ cell, onCell, onRoute, result, canRoute, why, count
           {result.message}
         </p>
       )}
-      {result.state === "done" && <RouteSummary outcome={result.outcome} totalMs={result.totalMs} />}
+      {result.state === "done" && (
+        <details className="rounded-md border border-hairline px-2 py-1 text-xs" data-testid="route-report">
+          <summary className="cursor-pointer text-secondary">
+            Route report: {result.outcome.routed} routed{result.outcome.failed.length ? `, ${result.outcome.failed.length} not routed` : ""}{result.outcome.skipped.length ? `, ${result.outcome.skipped.length} skipped` : ""}
+          </summary>
+          <RouteSummary outcome={result.outcome} totalMs={result.totalMs} />
+        </details>
+      )}
     </div>
   );
 }

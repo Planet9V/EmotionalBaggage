@@ -313,7 +313,7 @@ function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove
       .map((n) => ({ id: n.id }));
     // the route view is short: frame all of it; the tree frames the selection with what hangs off it
     const go = () =>
-      rf.fitView({ nodes: only || !ids.length ? undefined : ids, duration: instant ? 0 : 700, padding: only ? 0.15 : 0.3, maxZoom: 1.05, minZoom: 0.3 });
+      rf.fitView({ nodes: only || !ids.length ? undefined : ids, duration: instant ? 0 : 700, padding: FRAME_PAD, maxZoom: 1.05, minZoom: 0.3 });
     // the first frame can land before the pane is measured; frame again once it is
     const timers = [window.setTimeout(go, 40), window.setTimeout(go, 380)];
     return () => {
@@ -324,7 +324,7 @@ function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove
 
   const fitAll = useCallback(() => {
     onUserMove();
-    void rf.fitView({ duration: instant ? 0 : 600, padding: 0.12, maxZoom: 1 });
+    void rf.fitView({ duration: instant ? 0 : 600, padding: FRAME_PAD, maxZoom: 1 });
   }, [rf, instant, onUserMove]);
 
   return (
@@ -361,6 +361,9 @@ function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove
     </ReactFlow>
   );
 }
+
+/** The "+" and collapse buttons hang off a card's right edge, and the Fit button sits top right: room for both. */
+const FRAME_PAD = { top: "64px", right: "72px", bottom: "32px", left: "32px" } as const;
 
 export function DecisionFlow(props: FlowProps) {
   return (
