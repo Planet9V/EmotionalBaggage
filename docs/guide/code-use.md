@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit eaa25f1 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit f56c7a3 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,12 +16,12 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 557 packages (40 direct, 517 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 578 packages (42 direct, 536 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 430 |
-| ISC | 47 |
+| MIT | 447 |
+| ISC | 48 |
 | Apache-2.0 | 43 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
@@ -29,25 +29,30 @@ Web app, npm production tree: 557 packages (40 direct, 517 transitive, of which 
 | Apache-2.0 AND LGPL-3.0-or-later | 3 |
 | OFL-1.1 | 2 |
 | (AFL-2.1 OR BSD-3-Clause) | 1 |
+| (MIT AND Zlib) | 1 |
+| (MIT OR GPL-3.0-or-later) | 1 |
 | (MPL-2.0 OR Apache-2.0) | 1 |
 | 0BSD | 1 |
 | Apache-2.0 AND LGPL-3.0-or-later AND MIT | 1 |
 | BSD-2-Clause | 1 |
 | CC-BY-4.0 | 1 |
 | EPL-2.0 OR GPL-3.0-or-later | 1 |
+| LGPL-2.1 | 1 |
 | MIT AND ISC AND BSD-3-Clause | 1 |
 | Unlicense | 1 |
 
 [//]: # (python:start)
-Planner, Python packages: 19 (3 direct, 16 transitive).
+Planner, Python packages: 22 (4 direct, 18 transitive).
 
 | Licence | Python packages |
 | --- | --- |
-| MIT | 9 |
+| MIT | 10 |
 | BSD-3-Clause | 6 |
 | BSD License (classifier) | 1 |
+| GPLv3 | 1 |
 | MIT License | 1 |
 | MIT License (classifier) | 1 |
+| MIT-CMU | 1 |
 | PSF-2.0 | 1 |
 
 [//]: # (python:end)
@@ -85,6 +90,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
+| occt-import-js | 0.0.23 | LGPL-2.1 | linked library | no |
 | pg | 8.23.1 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |
 | react | 19.3.0 | MIT | linked library | yes |
@@ -96,6 +102,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | streamdown | 2.8.0 | Apache-2.0 | linked library | yes |
 | tailwind-merge | 3.7.1 | MIT | linked library | yes |
 | three | 0.187.0 | MIT | linked library | yes |
+| three-3mf-exporter | 45.2.1 | MIT | linked library | yes |
 | use-stick-to-bottom | 1.1.6 | MIT | linked library | yes |
 | zod | 4.6.7 | MIT | linked library | yes |
 
@@ -109,6 +116,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | fastapi | fastapi==0.115.* | 0.115.14 | MIT License (classifier) | linked library |
 | networkx | networkx==3.4.* | 3.4.2 | BSD License (classifier) | linked library |
 | uvicorn | uvicorn[standard]==0.32.* | 0.32.1 | BSD-3-Clause | linked library |
+| wireviz | wireviz==0.4.1 | 0.4.1 | GPLv3 | linked library |
 
 [//]: # (python:end)
 
@@ -117,17 +125,22 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | Name | Version or tag | Licence | How it is used | Source |
 | --- | --- | --- | --- | --- |
 | AI Elements components | as fetched from https://elements.ai-sdk.dev/api/registry on 2026-11-20 | Apache-2.0 | copied source | https://github.com/vercel/ai-elements |
+| Graphviz (apt package graphviz) | as installed by apt in the planner image (Debian) | EPL-1.0 (Graphviz; the Debian package also contains libraries under their own licences) | separate process | https://graphviz.org/ |
 | Inter (typeface) | Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0 | OFL-1.1 | font files | https://github.com/rsms/inter |
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
+| occt-import-js (OpenCascade STEP reader, WebAssembly) | as copied from the npm package occt-import-js | LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it) | copied source | https://github.com/kovacsv/occt-import-js |
 | pgvector (Docker image pgvector/pgvector) | 0.8.7-pg19-trixie (default; PG_IMAGE may override it) | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | pgvector (Docker image pgvector/pgvector, CI only) | pg17 | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | PostgreSQL | 19 (inside pgvector/pgvector:0.8.7-pg19-trixie) | PostgreSQL | separate process | https://www.postgresql.org |
 | Python (official Docker image python) | 3.13-slim | PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences | container image | https://hub.docker.com/_/python |
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | UI components (Button, Dialog, Input, Table, Card, StatusBadge) | as committed in eb362b6 (2026-11-20) | owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT) | copied source | https://github.com/shadcn-ui/ui |
+| WireViz (Python package, run as a command) | 0.4.1 | GPL-3.0 | separate process | https://github.com/wireviz/WireViz |
 
 **AI Elements components**: origin Vercel's AI Elements registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them.
+
+**occt-import-js (OpenCascade STEP reader, WebAssembly)**: origin npm package occt-import-js, copied into public/vendor/occt so the browser can load it from the same origin. None. The files are as the package ships them (about 7.6 MB of wasm).
 
 **shadcn/ui components added by its CLI**: origin https://ui.shadcn.com registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css.
 
@@ -137,7 +150,7 @@ The file that references each entry, and the evidence for its licence, are in `T
 
 ### Planned, not yet included
 
-OrcaSlicer, WireViz, OpenSCAD, CaseMaker and YAPP_Box are planned and are not in the repository yet. Each will be added to this page in the same change that introduces it: OrcaSlicer, WireViz and OpenSCAD run as separate processes, and CaseMaker and YAPP_Box as forked code with the changes listed.
+OrcaSlicer, OpenSCAD, CaseMaker and YAPP_Box are planned and are not in the repository yet. Each will be added to this page in the same change that introduces it: OrcaSlicer and OpenSCAD run as separate processes (WireViz already does, see the table above), and CaseMaker and YAPP_Box as forked code with the changes listed.
 
 ## Development-only tooling
 

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Part } from "@/lib/domain";
+import type { ShapeStatus } from "@/lib/geometry/useShapes";
+import { ShapeFileSection } from "./ShapeFileSection";
 import { bodyExtent, describeSize, fmt, type PartGeometry } from "./layout";
 
 export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
@@ -57,8 +59,10 @@ function Row({ label, children, mono }: { label: string; children: React.ReactNo
   );
 }
 
-export function PartPanel({ part, onClose, onSave, onTogglePrint, focus }: {
+export function PartPanel({ part, projectId, shapeStatus, onClose, onSave, onTogglePrint, focus }: {
   part: Part;
+  projectId: string;
+  shapeStatus?: ShapeStatus;
   onClose: () => void;
   onSave: (g: PartGeometry) => Promise<void>;
   onTogglePrint: (v: boolean) => void;
@@ -116,6 +120,9 @@ export function PartPanel({ part, onClose, onSave, onTogglePrint, focus }: {
               {(g.count ?? 1) > 1 ? ` (${g.count} bodies)` : ""}
               {g.shape === "shell" ? <span className="block font-sans text-xs text-muted">Outer envelope of the enclosure</span> : null}
             </Row>
+            <Row label="Turned" mono>
+              {g.rotation ? `${g.rotation.map(fmt).join(", ")} deg about x, y, z` : <span className="font-sans text-muted">Not turned</span>}
+            </Row>
             <Row label="Basis">{BASIS_TEXT[g.basis]}</Row>
             <Row label="Printed">
               <label className="inline-flex items-center gap-2 text-sm">
@@ -131,7 +138,8 @@ export function PartPanel({ part, onClose, onSave, onTogglePrint, focus }: {
         )}
       </dl>
       {focus?.focused && <Connections rows={focus.connections} hasRef={part.ref !== ""} onOpenPart={focus.onOpenPart} />}
-      <GeometryEditor key={part.item.id} geometry={g} onSave={onSave} />
+      <GeometryEditor key={`${part.item.id}:${JSON.stringify(g)}`} geometry={g} onSave={onSave} />
+      {(g === null || g.shape !== "shell") && <ShapeFileSection projectId={projectId} partRef={part.ref} geometry={g} status={shapeStatus} onSave={onSave} />}
     </div>
   );
 }
@@ -188,6 +196,7 @@ type Form = {
   size: string[];
   axis: "" | "x" | "y" | "z";
   pos: string[];
+  rot: string[];
   explode: string[];
   count: string;
   basis: "" | PartGeometry["basis"];
@@ -201,14 +210,15 @@ const toForm = (g: PartGeometry | null): Form =>
         size: [0, 1, 2].map((i) => (g.size[i] === undefined ? "" : String(g.size[i]))),
         axis: g.axis ?? "",
         pos: g.pos.map(String),
+        rot: (g.rotation ?? [0, 0, 0]).map(String),
         explode: g.explode.map(String),
         count: String(g.count ?? 1),
         basis: g.basis,
         print: g.print === true,
       }
-    : { shape: "box", size: ["", "", ""], axis: "", pos: ["0", "", "0"], explode: ["0", "0", "0"], count: "1", basis: "", print: false };
+    : { shape: "box", size: ["", "", ""], axis: "", pos: ["0", "", "0"], rot: ["0", "0", "0"], explode: ["0", "0", "0"], count: "1", basis: "", print: false };
 
-function fromForm(f: Form): { geometry: PartGeometry | null; problem: string } {
+function fromForm(f: Form, base: PartGeometry | null): { geometry: PartGeometry | null; problem: string } {
   const n = f.shape === "cylinder" ? 2 : 3;
   const size = f.size.slice(0, n).map((s) => Number(s));
   if (f.size.slice(0, n).some((s) => s.trim() === "") || size.some((s) => !Number.isFinite(s) || s <= 0)) return { geometry: null, problem: "Every size must be a number above 0." };
@@ -221,21 +231,34 @@ function fromForm(f: Form): { geometry: PartGeometry | null; problem: string } {
   const pos = f.pos.map((s, i) => (s.trim() === "" ? (i === 1 ? height / 2 : 0) : Number(s)));
   const explode = f.explode.map((s) => (s.trim() === "" ? 0 : Number(s)));
   if ([...pos, ...explode].some((v) => !Number.isFinite(v))) return { geometry: null, problem: "Position and explode offsets must be numbers." };
+  const rot = f.rot.map((s) => (s.trim() === "" ? 0 : Number(s)));
+  if (rot.some((v) => !Number.isFinite(v) || Math.abs(v) > 3600)) return { geometry: null, problem: "Rotation must be degrees, as numbers." };
+  if (f.shape === "shell" && rot.some((v) => v !== 0)) return { geometry: null, problem: "An enclosure shell cannot be rotated. Rotate the parts inside it." };
   const out: PartGeometry = { ...draft, pos, explode };
+  if (rot.some((v) => v !== 0)) out.rotation = [rot[0], rot[1], rot[2]];
+  // An attached file keeps its box size; the form cannot change what the file is.
+  if (base?.file) {
+    out.shape = "box";
+    out.size = [...base.size];
+    out.file = { ...base.file };
+    delete out.axis;
+    delete out.count;
+    return { geometry: { ...out, ...(f.print ? { print: true } : {}) }, problem: "" };
+  }
   if (count > 1) out.count = count;
   if (f.print) out.print = true;
   return { geometry: out, problem: "" };
 }
 
 const canon = (g: PartGeometry | null) =>
-  g ? JSON.stringify([g.shape, g.size, g.pos, g.explode, g.basis, g.count ?? 1, g.print === true, g.shape === "cylinder" ? g.axis ?? "" : ""]) : "";
+  g ? JSON.stringify([g.shape, g.size, g.pos, g.explode, g.basis, g.count ?? 1, g.print === true, g.shape === "cylinder" ? g.axis ?? "" : "", g.rotation ?? [0, 0, 0], g.file ?? null]) : "";
 const same = (a: PartGeometry | null, b: PartGeometry | null) => canon(a) === canon(b);
 
-function NumField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function NumField({ label, value, onChange, placeholder, disabled }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; disabled?: boolean }) {
   return (
     <label className="flex min-w-0 flex-col gap-1">
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{label}</span>
-      <Input inputMode="decimal" className="h-8 px-2 font-mono text-xs" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      <Input inputMode="decimal" className="h-8 px-2 font-mono text-xs" value={value} placeholder={placeholder} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
     </label>
   );
 }
@@ -247,7 +270,7 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
   const [open, setOpen] = useState(geometry !== null);
   const [f, setF] = useState<Form>(() => toForm(geometry));
   const [saving, setSaving] = useState(false);
-  const result = useMemo(() => fromForm(f), [f]);
+  const result = useMemo(() => fromForm(f, geometry), [f, geometry]);
   const dirty = !same(result.geometry, geometry) || (result.geometry === null && geometry !== null);
 
   if (!open) {
@@ -262,7 +285,8 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
   }
 
   const set = (patch: Partial<Form>) => setF((x) => ({ ...x, ...patch }));
-  const setAt = (k: "size" | "pos" | "explode", i: number, v: string) => setF((x) => ({ ...x, [k]: x[k].map((s, j) => (j === i ? v : s)) }));
+  const setAt = (k: "size" | "pos" | "rot" | "explode", i: number, v: string) => setF((x) => ({ ...x, [k]: x[k].map((s, j) => (j === i ? v : s)) }));
+  const locked = !!geometry?.file;
   const sizeLabels = f.shape === "cylinder" ? ["Diameter", "Length"] : ["Width x", "Height y", "Depth z"];
 
   const save = async () => {
@@ -290,7 +314,7 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Shape</span>
-          <select className={selectCls} value={f.shape} onChange={(e) => set({ shape: e.target.value as Form["shape"] })}>
+          <select className={selectCls} value={locked ? "box" : f.shape} disabled={locked} onChange={(e) => set({ shape: e.target.value as Form["shape"] })}>
             <option value="box">Box</option>
             <option value="cylinder">Cylinder</option>
             <option value="shell">Enclosure shell</option>
@@ -307,7 +331,7 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
       </div>
       <div className="grid grid-cols-3 gap-2">
         {sizeLabels.map((l, i) => (
-          <NumField key={l} label={l} value={f.size[i]} onChange={(v) => setAt("size", i, v)} />
+          <NumField key={l} label={l} value={f.size[i]} disabled={locked} onChange={(v) => setAt("size", i, v)} />
         ))}
         {f.shape === "cylinder" && (
           <label className="flex flex-col gap-1">
@@ -329,6 +353,13 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
           <NumField key={a} label={`Centre ${a}`} value={f.pos[i]} placeholder={i === 1 ? "on floor" : "0"} onChange={(v) => setAt("pos", i, v)} />
         ))}
       </div>
+      {f.shape !== "shell" && (
+        <div className="grid grid-cols-3 gap-2">
+          {["x", "y", "z"].map((a, i) => (
+            <NumField key={a} label={`Rotate ${a}, deg`} value={f.rot[i]} placeholder="0" onChange={(v) => setAt("rot", i, v)} />
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-2">
         {["x", "y", "z"].map((a, i) => (
           <NumField key={a} label={`Explode ${a}`} value={f.explode[i]} placeholder="0" onChange={(v) => setAt("explode", i, v)} />
@@ -341,7 +372,7 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
           3D printed part
         </label>
       </div>
-      <p className="text-[11px] leading-4 text-muted">Origin is the centre of the enclosure floor; y is up. A blank centre y rests the part on the floor.</p>
+      <p className="text-[11px] leading-4 text-muted">Origin is the centre of the enclosure floor; y is up. A blank centre y rests the part on the floor. Rotation turns the part about its own centre, about x, then y, then z.{locked ? " The shape comes from the attached file, so its size cannot be edited here." : ""}</p>
       {result.problem && <p className="text-xs text-warning">{result.problem}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={!result.geometry || !dirty || saving}>

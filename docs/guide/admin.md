@@ -111,6 +111,10 @@ After changing `.env`, run `docker compose up -d` again.
 
 Drafting, the reviewer and realignment all use the reasoning model chosen in Models. Without one, the buttons explain why and link there. The impact notice needs the planner service; when it cannot be reached the notice says so and nothing else is affected.
 
+## Wire routing and harness drawings
+
+Both need the planner service (`PLANNER_URL`). `ROUTE_PLANNER_SECONDS` (default 30) is how long routing may take. The planner image includes Graphviz and WireViz; WireViz is run as a separate program.
+
 ## Checking it is healthy
 
 - `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.

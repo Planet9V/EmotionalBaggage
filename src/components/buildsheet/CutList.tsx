@@ -35,7 +35,8 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
         )}
       </div>
       <p className="text-xs text-secondary">
-        Length estimate = straight-line distance between the two parts&apos; assembled centres × {routingValue} (routing factor) + {allowanceValue} mm (strip and slack), rounded up to {ROUND_TO} mm. Every length below is an estimate. Colours are suggested.
+        <strong className="font-medium text-primary">Routed</strong> = the path the planner found through the enclosure + {allowanceValue} mm (strip and slack), rounded up to {ROUND_TO} mm.{" "}
+        <strong className="font-medium text-primary">Estimate</strong> = straight-line distance between the two parts&apos; assembled centres × {routingValue} (routing factor) + {allowanceValue} mm, rounded up to {ROUND_TO} mm; it stands in for any wire that is not routed, or whose route is out of date. Route wires in the 3D model. Colours are suggested.
       </p>
       <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
         <Table>
@@ -46,7 +47,7 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
               <TableHead>To</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Colour (suggested)</TableHead>
-              <TableHead className="text-right">Length (estimate)</TableHead>
+              <TableHead className="text-right">Length</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -72,8 +73,18 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {r.length ? (
-                    <span title={`${r.length.straight.toFixed(1)} mm straight x ${routingValue} + ${allowanceValue} = ${r.length.raw.toFixed(1)} mm, rounded-sm up`} className="text-primary">
+                    <span
+                      title={
+                        r.length.source === "routed"
+                          ? `${r.length.straight.toFixed(1)} mm routed${r.length.cellMm ? ` on ${r.length.cellMm} mm cells` : ""} + ${allowanceValue} = ${r.length.raw.toFixed(1)} mm, rounded up`
+                          : `${r.length.straight.toFixed(1)} mm straight x ${routingValue} + ${allowanceValue} = ${r.length.raw.toFixed(1)} mm, rounded up`
+                      }
+                      className="text-primary"
+                    >
                       {r.length.mm} mm
+                      <span className={`ml-1.5 font-sans text-[11px] ${r.length.source === "routed" ? "text-success" : "text-muted"}`}>
+                        {r.length.source === "routed" ? "routed" : r.length.stale ? "estimate, route out of date" : "estimate"}
+                      </span>
                     </span>
                   ) : (
                     <span className="text-muted">no geometry</span>
@@ -87,7 +98,7 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
       <ul className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-secondary" aria-label="Total length per class">
         {totals.map((t) => (
           <li key={t.netClass} className="font-mono">
-            {t.netClass}: <span className="text-primary">{t.mm} mm</span> estimate
+            {t.netClass}: <span className="text-primary">{t.mm} mm</span> ({t.routed} routed, {t.counted - t.routed} estimated)
             {t.counted < t.wires && <span className="text-muted"> ({t.counted} of {t.wires} wires have geometry)</span>}
           </li>
         ))}

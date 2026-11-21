@@ -122,6 +122,14 @@ export function SelectionPanel({
   const set = (change: Partial<PartGeometry>) => onGeometry({ ...g, ...change });
   const setPos = (i: number, n: number) => set({ pos: g.pos.map((v, k) => (k === i ? round3(n) : v)) });
   const setSize = (i: number, n: number) => set({ size: g.size.map((v, k) => (k === i ? n : v)) });
+  const setRotation = (i: number, n: number) => {
+    const r: [number, number, number] = [g.rotation?.[0] ?? 0, g.rotation?.[1] ?? 0, g.rotation?.[2] ?? 0];
+    r[i] = round3(n);
+    const next: PartGeometry = { ...g };
+    if (r.some((a) => a !== 0)) next.rotation = r;
+    else delete next.rotation;
+    onGeometry(next);
+  };
 
   const changeShape = (shape: "box" | "cylinder") => {
     if (shape === g.shape) return;
@@ -208,6 +216,17 @@ export function SelectionPanel({
         <NumField label="Pos z" value={g.pos[2]} onCommit={(n) => setPos(2, n)} />
       </div>
       <p className="-mt-2 text-xs text-muted">Position is the centre of the part. The origin is the centre of the enclosure floor.</p>
+
+      {g.shape !== "shell" && (
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            {["x", "y", "z"].map((a, i) => (
+              <NumField key={a} label={`Rotate ${a}`} unit="deg" value={g.rotation?.[i] ?? 0} onCommit={(n) => setRotation(i, n)} />
+            ))}
+          </div>
+          <p className="-mt-2 text-xs text-muted">Degrees about the part&apos;s own centre, turned about x, then y, then z. The footprint shown is the box around the turned part.</p>
+        </>
+      )}
 
       {g.shape !== "shell" && (
         <div className="flex flex-wrap gap-2">

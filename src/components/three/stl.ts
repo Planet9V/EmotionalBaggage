@@ -1,6 +1,7 @@
 /**
- * Printable mesh generation and STL read/write, in plain TypeScript (no three.js), so the same
- * code runs in the browser and in a Node check script.
+ * Printable mesh generation in plain TypeScript (no three.js), so the same code runs in the
+ * browser and in a Node check script. Writing and reading STL files is done by three.js'
+ * STLExporter and STLLoader (see src/lib/geometry).
  *
  * Meshes are triangle soups: a Float32Array with 9 numbers per triangle (three xyz vertices),
  * wound counter-clockwise seen from outside, so normals face outward.
@@ -203,82 +204,6 @@ export function bounds(m: Mesh) {
     }
   }
   return { min, max };
-}
-
-const HEADER = "Binary STL from concept-to-realization. Units: mm. Parametric envelope body.";
-
-/** Binary STL: 80-byte header, uint32 count, then per triangle normal + 3 vertices (float32) + uint16 attribute. Little-endian. */
-export function writeBinaryStl(m: Mesh, header = HEADER): ArrayBuffer {
-  const n = m.length / 9;
-  const buf = new ArrayBuffer(84 + 50 * n);
-  const dv = new DataView(buf);
-  // A header must not start with "solid" or some readers treat the file as ASCII.
-  const h = header.replace(/^solid/i, "STL");
-  for (let i = 0; i < 80; i++) dv.setUint8(i, i < h.length ? h.charCodeAt(i) & 0x7f : 0x20);
-  dv.setUint32(80, n, true);
-  let o = 84;
-  for (let t = 0; t < n; t++) {
-    const i = t * 9;
-    const ux = m[i + 3] - m[i], uy = m[i + 4] - m[i + 1], uz = m[i + 5] - m[i + 2];
-    const vx = m[i + 6] - m[i], vy = m[i + 7] - m[i + 1], vz = m[i + 8] - m[i + 2];
-    let nx = uy * vz - uz * vy;
-    let ny = uz * vx - ux * vz;
-    let nz = ux * vy - uy * vx;
-    const len = Math.hypot(nx, ny, nz) || 1;
-    nx /= len;
-    ny /= len;
-    nz /= len;
-    dv.setFloat32(o, nx, true);
-    dv.setFloat32(o + 4, ny, true);
-    dv.setFloat32(o + 8, nz, true);
-    o += 12;
-    for (let k = 0; k < 9; k++) {
-      dv.setFloat32(o, m[i + k], true);
-      o += 4;
-    }
-    dv.setUint16(o, 0, true);
-    o += 2;
-  }
-  return buf;
-}
-
-export type ParsedStl = { mesh: Mesh; format: "binary" | "ascii"; triangles: number; name: string };
-
-/** Reads binary or ASCII STL. Throws Error with a plain message when the file is not STL. */
-export function parseStl(buf: ArrayBuffer): ParsedStl {
-  const bytes = new Uint8Array(buf);
-  if (bytes.length >= 84) {
-    const dv = new DataView(buf);
-    const n = dv.getUint32(80, true);
-    if (84 + 50 * n === bytes.length) {
-      const mesh = new Float32Array(n * 9);
-      let o = 84;
-      for (let t = 0; t < n; t++) {
-        o += 12;
-        for (let k = 0; k < 9; k++) {
-          mesh[t * 9 + k] = dv.getFloat32(o, true);
-          o += 4;
-        }
-        o += 2;
-      }
-      let name = "";
-      for (let i = 0; i < 80 && bytes[i] !== 0; i++) name += String.fromCharCode(bytes[i]);
-      return { mesh, format: "binary", triangles: n, name: name.trim() };
-    }
-  }
-  const text = new TextDecoder().decode(bytes);
-  if (!/^\s*solid/i.test(text) || !/facet/i.test(text)) {
-    throw new Error("This file is not a readable STL (neither binary nor ASCII).");
-  }
-  const num = "([-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?)";
-  const re = new RegExp(`vertex\\s+${num}\\s+${num}\\s+${num}`, "gi");
-  const vals: number[] = [];
-  let mm: RegExpExecArray | null;
-  while ((mm = re.exec(text))) vals.push(Number(mm[1]), Number(mm[2]), Number(mm[3]));
-  const usable = vals.length - (vals.length % 9);
-  if (usable === 0) throw new Error("The ASCII STL has no triangles.");
-  const nameMatch = /^\s*solid[ \t]*([^\r\n]*)/i.exec(text);
-  return { mesh: new Float32Array(vals.slice(0, usable)), format: "ascii", triangles: usable / 9, name: (nameMatch?.[1] ?? "").trim() };
 }
 
 /** Counts edges not shared by exactly two triangles (0 means watertight), after welding vertices. */

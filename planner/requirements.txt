@@ -1,3 +1,5 @@
 fastapi==0.115.*
 uvicorn[standard]==0.32.*
 networkx==3.4.*
+# GPL-3.0: run as a separate process by harness.py, never imported. Needs the graphviz program (apt) as well.
+wireviz==0.4.1

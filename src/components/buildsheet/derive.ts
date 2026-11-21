@@ -3,6 +3,7 @@
 // sentences, the colour list and the two default estimate settings, all labelled as such in the UI.
 import { NET_CLASSES, partsByRef, pinsOf, toWire, type Geometry, type NetClass, type Part, type Wire } from "@/lib/domain";
 import type { Item } from "@/lib/types";
+import { buildRouteRequest, routeState, type RoutePart } from "@/lib/geometry/routing";
 
 export const CLASS_ORDER: readonly NetClass[] = NET_CLASSES;
 export const STATUS_FLOW = ["to solder", "soldered", "tested"] as const;
@@ -164,19 +165,57 @@ export function signalNetsOf(steps: Step[]): string[] {
 /** The domain reader has already checked the position is three finite numbers. */
 const validPos = (g?: Geometry | null) => !!g;
 
-export type Length = { straight: number; raw: number; mm: number; from: number[]; to: number[] } | null;
+/**
+ * How long to cut a wire. `source` says where the number came from: "routed" is the planner's path
+ * through the enclosure plus the strip and slack allowance; "estimate" is the centre-to-centre
+ * guess, used when nothing is routed or the route is out of date (`stale`).
+ */
+export type Length = {
+  source: "routed" | "estimate";
+  /** routed: the run through the enclosure; estimate: the straight line between centres */
+  straight: number;
+  raw: number;
+  mm: number;
+  from: number[];
+  to: number[];
+  /** routed only: grid cell the run was computed on, mm */
+  cellMm?: number | null;
+  /** an estimate used because a stored route no longer matches the model */
+  stale?: boolean;
+} | null;
 
-/** straight-line distance between the assembled centres x routing factor + allowance, rounded up to 5 mm. */
-export function estimateLength(w: Wire, parts: Map<string, PartLite>, routing: number, allowance: number): Length {
+const roundUp = (raw: number) => Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO;
+
+/** Current route fingerprint per wire row id, from the parts and wires as they are now. */
+export function routeFingerprints(parts: Map<string, PartLite>, wires: Wire[]): Map<number, string> {
+  const rp: RoutePart[] = [];
+  for (const p of parts.values()) if (p.geometry && p.ref) rp.push({ id: p.item.id, ref: p.ref, geometry: p.geometry, pins: p.item.data.pins });
+  return buildRouteRequest(rp, wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin }))).fingerprints;
+}
+
+/**
+ * A routed wire: the planner's run plus the allowance, rounded up to 5 mm. Anything else:
+ * straight-line distance between the assembled centres x routing factor + allowance, rounded up.
+ * `current` is the fingerprint the model gives now; a route made from another one is out of date.
+ */
+export function estimateLength(w: Wire, parts: Map<string, PartLite>, routing: number, allowance: number, current?: string): Length {
   const a = parts.get(w.from)?.geometry;
   const b = parts.get(w.to)?.geometry;
+  const pa = a?.pos.slice(0, 3) ?? [];
+  const pb = b?.pos.slice(0, 3) ?? [];
+  let stale = false;
+  if (w.routed) {
+    const state = current === undefined ? "current" : routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, current);
+    if (state === "current") {
+      const raw = w.routed.lengthMm + allowance;
+      return { source: "routed", straight: w.routed.lengthMm, raw, mm: roundUp(raw), from: pa, to: pb, cellMm: w.routed.cellMm };
+    }
+    stale = true;
+  }
   if (!validPos(a) || !validPos(b)) return null;
-  const pa = a!.pos.slice(0, 3);
-  const pb = b!.pos.slice(0, 3);
   const straight = Math.hypot(pa[0] - pb[0], pa[1] - pb[1], pa[2] - pb[2]);
   const raw = straight * routing + allowance;
-  const mm = Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO;
-  return { straight, raw, mm, from: pa, to: pb };
+  return { source: "estimate", straight, raw, mm: roundUp(raw), from: pa, to: pb, ...(stale ? { stale: true } : {}) };
 }
 
 export type CutRow = {
@@ -188,19 +227,20 @@ export type CutRow = {
 
 export function cutList(steps: Step[], parts: Map<string, PartLite>, routing: number, allowance: number): CutRow[] {
   const nets = signalNetsOf(steps);
+  const fingerprints = routeFingerprints(parts, steps.map((s) => s.wire));
   return steps.map(({ n, wire }) => ({
     step: n,
     wire,
     colour: suggestedColour(wire, nets),
-    length: estimateLength(wire, parts, routing, allowance),
+    length: estimateLength(wire, parts, routing, allowance, fingerprints.get(wire.item.id) ?? ""),
   }));
 }
 
-export type ClassTotal = { netClass: NetClass; mm: number; counted: number; wires: number };
+export type ClassTotal = { netClass: NetClass; mm: number; counted: number; wires: number; routed: number };
 export function totalsByClass(rows: CutRow[]): ClassTotal[] {
   return CLASS_ORDER.map((c) => {
     const of = rows.filter((r) => r.wire.netClass === c);
-    return { netClass: c, mm: of.reduce((a, r) => a + (r.length?.mm ?? 0), 0), counted: of.filter((r) => r.length).length, wires: of.length };
+    return { netClass: c, mm: of.reduce((a, r) => a + (r.length?.mm ?? 0), 0), counted: of.filter((r) => r.length).length, wires: of.length, routed: of.filter((r) => r.length?.source === "routed").length };
   }).filter((t) => t.wires > 0);
 }
 

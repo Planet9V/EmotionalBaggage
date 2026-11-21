@@ -61,6 +61,12 @@ After you change a decision, a requirement or a part, a notice says how many row
 
 **Drafts** in the sidebar lists every draft of the concept. **Optimise** offers lower parts cost, fewer parts and shorter print time, measured from your rows: cost only when every part is priced, print time only from times entered after slicing.
 
+## Editing the 3D model and routing wires
+
+In **3D model**, select a part, pick Move or Rotate and drag (steps of 1 mm and 15 degrees) or type the numbers. Arrow keys nudge, R turns, Ctrl+Z undoes and Ctrl+Shift+Z redoes. **Section cut** hides one side along each axis. **Measure**: click two points. Under **Real shape**, attach an STL or STEP file for a part; a file that looks like metres or inches is flagged and you choose the unit, it is never rescaled for you. Export the assembly or one part as STL, and the enclosure and printed parts as 3MF.
+
+**Route wires** needs the planner. Each wire is routed around the parts and its length is saved; the build sheet then shows "routed" lengths. Moving a part marks those lengths out of date until you route again. A wire end with no pin position starts at the middle of the part's face, and the page says how many do. **Draw the harness** on the Wiring page draws the harness diagram with WireViz.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

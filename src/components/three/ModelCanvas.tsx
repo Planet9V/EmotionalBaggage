@@ -4,14 +4,39 @@
  * The three.js scene for the 3D model view. Loaded with next/dynamic (ssr: false) from ModelView.
  * Units are mm, Y up. Renders on demand: frames are drawn only while something moves.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Grid, Html, OrbitControls } from "@react-three/drei";
-import { bodyOffsets, cylinderAxis, lidLift, sceneBounds, totalExtent, type PartGeometry } from "./layout";
-import { lidMesh, shellDims, trayMesh, type Mesh, type ShellParams } from "./stl";
+import { Grid, Html, OrbitControls, TransformControls } from "@react-three/drei";
+import { bodyOffsets, lidLift, sceneBounds, totalExtent, type PartGeometry } from "./layout";
+import { type Mesh, type ShellParams } from "./stl";
+import { bodyGeometry, sceneGeometry, shellGeometries, soupToGeometry } from "@/lib/geometry/shapes";
+import { degToRad, radToDeg, snap, wrapDegrees } from "@/lib/geometry/rotation";
 
-export type CanvasPart = { id: number; ref: string; title: string; geometry: PartGeometry };
+export type CanvasPart = {
+  id: number;
+  ref: string;
+  title: string;
+  geometry: PartGeometry;
+  /** scene-space triangles of an attached STL or STEP file, centred on the part's position, in mm; null shows its bounding box */
+  shape?: Float32Array | null;
+};
+
+export type TransformMode = "off" | "translate" | "rotate";
+/** One cutting plane: keeps what is below `pos` on its axis (or above it when flipped). */
+export type CutPlane = { axis: "x" | "y" | "z"; on: boolean; pos: number; flip: boolean };
+export type Measurement = { a: [number, number, number]; b: [number, number, number]; distance: number } | null;
+/** A wire drawn along its routed path. */
+export type RoutedDraw = {
+  id: number;
+  name: string;
+  ends: string;
+  length: number;
+  color: string;
+  path: [number, number, number][];
+  /** tube radius in mm; bundles are thicker */
+  radius: number;
+};
 export type ShellView = "clear" | "solid";
 /** A wire to draw: one line between the centres of two parts. */
 export type CanvasWire = {
@@ -54,7 +79,19 @@ export type ModelCanvasProps = {
    * "Render from the 3D model" (plan 8.7).
    */
   onCaptureReady?: (capture: (() => string) | null) => void;
+  /** Handles on the selected part: none, move or rotate. Only used in the assembled view. */
+  transform: TransformMode;
+  /** Called when a drag ends, with the new position and rotation (mm, degrees), already snapped to 1 mm and 15 degrees. */
+  onTransform: (id: number, change: { pos: [number, number, number]; rotation: [number, number, number] }) => void;
+  section: CutPlane[];
+  measure: boolean;
+  onMeasure: (m: Measurement) => void;
+  /** Routed wires; drawn as tubes when assembled. */
+  routed: RoutedDraw[];
 };
+
+/** What the parts need to know about the tool in use, without re-rendering the canvas for it. */
+const ToolContext = React.createContext<{ measuring: boolean; cutting: boolean }>({ measuring: false, cutting: false });
 
 /**
  * Explosion progress plus per-part fade and explode weight, all stepped inside the render loop
@@ -149,16 +186,6 @@ function palette(dark: boolean) {
   return dark
     ? { body: ["#7c838e", "#646b75"], shell: "#a8b0bb", edge: "#c7ccd3", leader: "#6b717b", cell: "#22252c", section: "#3a3f48", uploaded: "#8e98a6" }
     : { body: ["#b9b3a8", "#9f998e"], shell: "#8d877c", edge: "#6f6a61", leader: "#a9a39a", cell: "#e8e3da", section: "#cfc8bb", uploaded: "#a7aeb8" };
-}
-
-/** Triangle soup in print coordinates (Z up) to a BufferGeometry rotated into the scene. */
-function soupToGeometry(mesh: Mesh, rotateX: number) {
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(mesh.slice(), 3));
-  g.rotateX(rotateX);
-  g.computeVertexNormals();
-  g.computeBoundingBox();
-  return g;
 }
 
 /** Disposes a three.js resource when it is replaced or the component unmounts. */
@@ -309,9 +336,11 @@ function setCursor(v: string) {
   if (typeof document !== "undefined") document.body.style.cursor = v;
 }
 
-function clickSelect(id: number, onSelect: (id: number) => void, shell = false) {
+function clickSelect(id: number, onSelect: (id: number) => void, shell = false, measuring = false) {
   return (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 4) return;
+    // While measuring a click picks a point: let it reach the scene's handler instead of selecting.
+    if (measuring) return;
     if (shell) {
       // A see-through shell lets clicks reach the part behind it.
       const behind = e.intersections.some((h) => typeof h.object.userData.partId === "number" && h.object.userData.partId !== id);
@@ -381,7 +410,10 @@ function Leader({ progress, part, info, selected, color, onSelect, lift = 0, yOf
   );
 }
 
-function BodyPart({ part, progress, selected, onSelect, onFocusPart, colors, index }: {
+/** Shared between the parts and the handles: which part is being dragged right now, so the frame loop leaves it alone. */
+type Drag = { current: number | null };
+
+function BodyPart({ part, progress, selected, onSelect, onFocusPart, colors, index, drag, onGroup }: {
   part: CanvasPart;
   progress: Progress;
   selected: boolean;
@@ -389,23 +421,23 @@ function BodyPart({ part, progress, selected, onSelect, onFocusPart, colors, ind
   onFocusPart: (id: number) => void;
   colors: ReturnType<typeof palette>;
   index: number;
+  drag: Drag;
+  onGroup: (id: number, g: THREE.Group | null) => void;
 }) {
   const g = part.geometry;
   const group = useRef<THREE.Group>(null);
-  const [sx, sy, sz = 0] = g.size;
-  const shape = g.shape;
-  const axis = shape === "cylinder" ? cylinderAxis(g) : "y";
+  const tool = React.useContext(ToolContext);
+  const { shape, size, axis } = g;
+  const hasFile = !!part.shape && !!g.file;
+  const fileShape = part.shape;
   const geometry = useMemo<THREE.BufferGeometry>(() => {
-    if (shape === "cylinder") {
-      const geo = new THREE.CylinderGeometry(sx / 2, sx / 2, sy, 48);
-      if (axis === "x") geo.rotateZ(Math.PI / 2);
-      if (axis === "z") geo.rotateX(Math.PI / 2);
-      return geo;
-    }
-    return new THREE.BoxGeometry(sx, sy, sz);
-  }, [shape, sx, sy, sz, axis]);
+    if (hasFile && fileShape) return sceneGeometry(fileShape);
+    return bodyGeometry({ shape, size, axis });
+    // size is read through its numbers so a new array with the same values keeps the geometry
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasFile, fileShape, shape, size[0], size[1], size[2], axis]);
   useDispose(geometry);
-  const offsets = bodyOffsets(g);
+  const offsets = hasFile ? ([[0, 0, 0]] as [number, number, number][]) : bodyOffsets(g);
   const color = selected ? ORANGE : colors.body[index % 2];
   // One material per part, shared by its identical bodies; the meshes opt out of R3F disposal (dispose={null})
   // because they share this material and geometry, so both are disposed here.
@@ -420,16 +452,25 @@ function BodyPart({ part, progress, selected, onSelect, onFocusPart, colors, ind
       transparent: f < 0.999,
       opacity: f,
       depthWrite: f >= 0.999,
+      // A cut shows the inside of a solid: draw both faces while a section is on.
+      side: tool.cutting ? THREE.DoubleSide : THREE.FrontSide,
     });
-  }, [color, selected, progress, part.id]);
+  }, [color, selected, progress, part.id, tool.cutting]);
   useDispose(material);
+  const rot = g.rotation ?? [0, 0, 0];
+  useEffect(() => {
+    onGroup(part.id, group.current);
+    return () => onGroup(part.id, null);
+  }, [part.id, onGroup]);
   useFrame(() => {
+    if (drag.current === part.id) return;
     const p = progress.f(part.id);
     group.current?.position.set(g.pos[0] + g.explode[0] * p, g.pos[1] + g.explode[1] * p, g.pos[2] + g.explode[2] * p);
+    group.current?.rotation.set(degToRad(rot[0]), degToRad(rot[1]), degToRad(rot[2]), "XYZ");
     applyFade(material, 1, progress.fade(part.id), false);
   });
   return (
-    <group ref={group} position={g.pos as [number, number, number]}>
+    <group ref={group} position={g.pos as [number, number, number]} rotation={[degToRad(rot[0]), degToRad(rot[1]), degToRad(rot[2]), "XYZ"]}>
       {offsets.map((o, i) => (
         <mesh
           key={i}
@@ -438,11 +479,11 @@ function BodyPart({ part, progress, selected, onSelect, onFocusPart, colors, ind
           position={o}
           dispose={null}
           userData={{ partId: part.id }}
-          onClick={clickSelect(part.id, onSelect)}
-          onDoubleClick={clickSelect(part.id, onFocusPart)}
+          onClick={clickSelect(part.id, onSelect, false, tool.measuring)}
+          onDoubleClick={clickSelect(part.id, onFocusPart, false, tool.measuring)}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setCursor("pointer");
+            setCursor(tool.measuring ? "crosshair" : "pointer");
           }}
           onPointerOut={() => setCursor("auto")}
         />
@@ -465,15 +506,9 @@ function ShellPart({ part, progress, selected, onSelect, onFocusPart, colors, vi
   const g = part.geometry;
   const [sx, sy, sz] = g.size;
   const { wallMm, clearanceMm, lipMm } = params;
+  const cuttingNow = React.useContext(ToolContext).cutting;
   // A shell too small for the wall settings still shows as its envelope, so it never disappears.
-  const { tray, lid } = useMemo(() => {
-    const size = [sx, sy, sz];
-    const p = { wallMm, clearanceMm, lipMm };
-    if (shellDims(size, p).problems.length) {
-      return { tray: new THREE.BoxGeometry(sx, sy, sz).translate(0, sy / 2, 0), lid: new THREE.BufferGeometry() };
-    }
-    return { tray: soupToGeometry(trayMesh(size, p), -Math.PI / 2), lid: soupToGeometry(lidMesh(size, p), Math.PI / 2) };
-  }, [sx, sy, sz, wallMm, clearanceMm, lipMm]);
+  const { tray, lid } = useMemo(() => shellGeometries([sx, sy, sz], { wallMm, clearanceMm, lipMm }), [sx, sy, sz, wallMm, clearanceMm, lipMm]);
   useDispose(tray);
   useDispose(lid);
   const edgesOf = (geo: THREE.BufferGeometry) => (geo.getAttribute("position") ? new THREE.EdgesGeometry(geo, 20) : new THREE.BufferGeometry());
@@ -496,9 +531,9 @@ function ShellPart({ part, progress, selected, onSelect, onFocusPart, colors, vi
       transparent: clear || f < 0.999,
       opacity: (clear ? 0.16 : 1) * f,
       depthWrite: !(clear || f < 0.999),
-      side: clear ? THREE.DoubleSide : THREE.FrontSide,
+      side: clear || cuttingNow ? THREE.DoubleSide : THREE.FrontSide,
     });
-  }, [color, clear, progress, part.id]);
+  }, [color, clear, progress, part.id, cuttingNow]);
   useDispose(material);
   const edgeMaterial = useMemo(() => new THREE.LineBasicMaterial({ color: edge, transparent: true, opacity: progress.fade(part.id) }), [edge, progress, part.id]);
   useDispose(edgeMaterial);
@@ -512,20 +547,21 @@ function ShellPart({ part, progress, selected, onSelect, onFocusPart, colors, vi
     applyFade(material, clear ? 0.16 : 1, f, clear);
     setOpacity(edgeMaterial, f);
   });
+  const tool = React.useContext(ToolContext);
   const handlers = {
-    onClick: clickSelect(part.id, onSelect, clear),
-    onDoubleClick: clickSelect(part.id, onFocusPart, clear),
+    onClick: clickSelect(part.id, onSelect, clear, tool.measuring),
+    onDoubleClick: clickSelect(part.id, onFocusPart, clear, tool.measuring),
     onPointerOver: () => setCursor("pointer"),
     onPointerOut: () => setCursor("auto"),
   };
   return (
     <>
       <group ref={trayRef} position={[g.pos[0], g.pos[1] - H / 2, g.pos[2]]}>
-        <mesh geometry={tray} material={material} dispose={null} userData={{ partId: part.id }} renderOrder={clear ? 2 : 0} {...handlers} />
+        <mesh geometry={tray} material={material} dispose={null} userData={{ partId: part.id, isShell: true }} renderOrder={clear ? 2 : 0} {...handlers} />
         <lineSegments geometry={trayEdges} material={edgeMaterial} dispose={null} renderOrder={clear ? 2 : 0} />
       </group>
       <group ref={lidRef} position={[g.pos[0], g.pos[1] + H / 2, g.pos[2]]}>
-        <mesh geometry={lid} material={material} dispose={null} userData={{ partId: part.id }} renderOrder={clear ? 2 : 0} {...handlers} />
+        <mesh geometry={lid} material={material} dispose={null} userData={{ partId: part.id, isShell: true }} renderOrder={clear ? 2 : 0} {...handlers} />
         <lineSegments geometry={lidEdges} material={edgeMaterial} dispose={null} renderOrder={clear ? 2 : 0} />
       </group>
     </>
@@ -690,11 +726,220 @@ function Uploaded({ mesh, color }: { mesh: Mesh; color: string }) {
   );
 }
 
+const MM_SNAP = 1;
+const DEG_SNAP = 15;
+
+/**
+ * Move or rotate handles on one part, from drei's TransformControls (three's own gizmo).
+ * The gizmo snaps to 1 mm and 15 degrees while dragging. When the drag ends the result is snapped
+ * again, written back through onTransform, and the part's own frame loop takes over.
+ */
+function Handles({ part, object, mode, dragRef, onTransform }: {
+  part: CanvasPart;
+  object: THREE.Object3D;
+  mode: "translate" | "rotate";
+  dragRef: Drag;
+  onTransform: ModelCanvasProps["onTransform"];
+}) {
+  const invalidate = useThree((s) => s.invalidate);
+  const start = useRef<{ p: THREE.Vector3; r: THREE.Euler } | null>(null);
+  return (
+    <TransformControls
+      object={object}
+      mode={mode}
+      translationSnap={MM_SNAP}
+      rotationSnap={degToRad(DEG_SNAP)}
+      size={0.8}
+      onMouseDown={() => {
+        dragRef.current = part.id;
+        start.current = { p: object.position.clone(), r: object.rotation.clone() };
+      }}
+      onMouseUp={() => {
+        const p = object.position;
+        const r = object.rotation;
+        const s0 = start.current;
+        // Only an axis that was dragged is snapped; the others keep their saved value exactly.
+        const at = (v: number, v0: number | undefined, step: number) => (v0 !== undefined && Math.abs(v - v0) < 1e-6 ? v0 : snap(v, step));
+        const pos: [number, number, number] = [at(p.x, s0?.p.x, MM_SNAP), at(p.y, s0?.p.y, MM_SNAP), at(p.z, s0?.p.z, MM_SNAP)];
+        const rotation: [number, number, number] = [
+          [r.x, s0?.r.x],
+          [r.y, s0?.r.y],
+          [r.z, s0?.r.z],
+        ].map(([v, v0]) => (v0 !== undefined && Math.abs(v! - v0) < 1e-6 ? snap(wrapDegrees(radToDeg(v0)), 1e-3) : snap(wrapDegrees(radToDeg(v!)), DEG_SNAP))) as [number, number, number];
+        // Put the object exactly where the snapped numbers say, so nothing jumps when the saved values arrive.
+        object.position.set(...pos);
+        object.rotation.set(degToRad(rotation[0]), degToRad(rotation[1]), degToRad(rotation[2]), "XYZ");
+        dragRef.current = null;
+        onTransform(part.id, { pos, rotation });
+        invalidate();
+      }}
+    />
+  );
+}
+
+const AXIS_NORMAL: Record<"x" | "y" | "z", [number, number, number]> = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+
+function setClipping(gl: THREE.WebGLRenderer, planes: THREE.Plane[]) {
+  gl.clippingPlanes = planes;
+}
+
+/** Up to three clipping planes on the renderer, one per axis, from the section sliders. */
+function SectionClip({ cut }: { cut: CutPlane[] }) {
+  const gl = useThree((s) => s.gl);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    const planes = cut
+      .filter((c) => c.on)
+      .map((c) => {
+        const n = AXIS_NORMAL[c.axis];
+        // A plane keeps points where normal . p + constant >= 0. Normal -x with constant pos keeps x <= pos.
+        const sign = c.flip ? 1 : -1;
+        return new THREE.Plane(new THREE.Vector3(n[0] * sign, n[1] * sign, n[2] * sign), c.flip ? -c.pos : c.pos);
+      });
+    setClipping(gl, planes);
+    invalidate();
+    return () => setClipping(gl, []);
+  }, [cut, gl, invalidate]);
+  return null;
+}
+
+/** Two clicked points, a line between them and the distance in mm. Points are in assembled scene coordinates. */
+function MeasureLayer({ points, dark }: { points: THREE.Vector3[]; dark: boolean }) {
+  const dot = useMemo(() => new THREE.SphereGeometry(1.1, 14, 10), []);
+  useDispose(dot);
+  const color = dark ? "#ffd2b8" : "#E05A10";
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true }), [color]);
+  useDispose(mat);
+  const line = useMemo(() => {
+    const geo = new THREE.BufferGeometry().setFromPoints(points.length === 2 ? points : [new THREE.Vector3(), new THREE.Vector3()]);
+    const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color, depthTest: false, transparent: true }));
+    l.renderOrder = 20;
+    l.frustumCulled = false;
+    return l;
+  }, [points, color]);
+  useEffect(
+    () => () => {
+      line.geometry.dispose();
+      (line.material as THREE.Material).dispose();
+    },
+    [line]
+  );
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => invalidate(), [points, invalidate]);
+  if (!points.length) return null;
+  const mid = points.length === 2 ? points[0].clone().add(points[1]).multiplyScalar(0.5) : null;
+  const d = points.length === 2 ? points[0].distanceTo(points[1]) : 0;
+  return (
+    <>
+      {points.map((p, i) => (
+        <mesh key={i} geometry={dot} material={mat} position={p} renderOrder={21} />
+      ))}
+      {points.length === 2 && <primitive object={line} />}
+      {mid && (
+        <Html position={mid} zIndexRange={[40, 0]} style={{ pointerEvents: "none", transform: "translate(8px, -120%)" }}>
+          <span className="whitespace-nowrap rounded-md border border-dutchOrange bg-surface px-2 py-0.5 font-mono text-[11px] text-primary shadow-xs">{d.toFixed(2)} mm</span>
+        </Html>
+      )}
+    </>
+  );
+}
+
+/** One routed wire as a tube along its path, coloured by net. */
+function RoutedTube({ wire, onHover }: { wire: RoutedDraw; onHover: (h: { wire: RoutedDraw; point: THREE.Vector3 } | null) => void }) {
+  const geometry = useMemo(() => {
+    const pts = wire.path.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    if (pts.length < 2) return null;
+    // A polyline with a few corners: a centripetal spline rounds them without cutting far in.
+    const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
+    return new THREE.TubeGeometry(curve, Math.max(8, pts.length * 8), wire.radius, 8, false);
+  }, [wire.path, wire.radius]);
+  useDispose(geometry ?? new THREE.BufferGeometry());
+  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: wire.color, roughness: 0.5, metalness: 0 }), [wire.color]);
+  useDispose(material);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => invalidate(), [geometry, material, invalidate]);
+  if (!geometry) return null;
+  return (
+    <mesh
+      geometry={geometry}
+      material={material}
+      dispose={null}
+      userData={{ isWire: true }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        onHover({ wire, point: e.point.clone() });
+      }}
+      onPointerOut={() => onHover(null)}
+    />
+  );
+}
+
+function RoutedLayer({ wires }: { wires: RoutedDraw[] }) {
+  const [hover, setHover] = useState<{ wire: RoutedDraw; point: THREE.Vector3 } | null>(null);
+  const shown = hover && wires.some((w) => w.id === hover.wire.id) ? hover : null;
+  return (
+    <>
+      {wires.map((w) => (
+        <RoutedTube key={w.id} wire={w} onHover={setHover} />
+      ))}
+      {shown && (
+        <Html position={shown.point} zIndexRange={[30, 0]} style={{ pointerEvents: "none", transform: "translate(10px, -110%)" }}>
+          <div className="whitespace-nowrap rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] text-primary shadow-xs">
+            <span className="block font-medium">{shown.wire.name}</span>
+            <span className="block font-mono text-[10px] text-secondary">{shown.wire.ends}</span>
+            <span className="block font-mono text-[10px] text-secondary">routed {shown.wire.length} mm</span>
+          </div>
+        </Html>
+      )}
+    </>
+  );
+}
+
 function Scene(props: ModelCanvasProps & { progress: Progress }) {
-  const { parts, selectedId, onSelect, explode, labels, shellView, shellParams, resetToken, dark, uploaded, progress, wires, wiresOn, fade, weights, focusIds, onFocusPart } = props;
+  const { parts, selectedId, onSelect, explode, labels, shellView, shellParams, resetToken, dark, uploaded, progress, wires, wiresOn, fade, weights, focusIds, onFocusPart, transform, onTransform, section, measure, onMeasure, routed } = props;
   const colors = palette(dark);
   const invalidate = useThree((s) => s.invalidate);
   const [labelsOn, setLabelsOn] = useState(false);
+
+  // Handles: the selected part's group, and which part is being dragged.
+  const drag = useRef<number | null>(null);
+  const [groups, setGroups] = useState<ReadonlyMap<number, THREE.Group>>(() => new Map());
+  const onGroup = React.useCallback((id: number, g: THREE.Group | null) => {
+    setGroups((cur) => {
+      if ((cur.get(id) ?? null) === g) return cur;
+      const next = new Map(cur);
+      if (g) next.set(id, g);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+  const handleObj = selectedId === null ? null : (groups.get(selectedId) ?? null);
+  const selectedPart = parts.find((p) => p.id === selectedId) ?? null;
+  const showHandles = transform !== "off" && explode === 0 && !!handleObj && !!selectedPart && selectedPart.geometry.shape !== "shell";
+
+  // Measure: two clicked points, in scene millimetres.
+  const [points, setPoints] = useState<THREE.Vector3[]>([]);
+  const [wasMeasuring, setWasMeasuring] = useState(measure);
+  if (wasMeasuring !== measure) {
+    // Turning the tool off or on starts with no points.
+    setWasMeasuring(measure);
+    setPoints([]);
+  }
+  useEffect(() => {
+    if (points.length === 2) onMeasure({ a: points[0].toArray(), b: points[1].toArray(), distance: points[0].distanceTo(points[1]) });
+    else onMeasure(null);
+    // onMeasure is a stable setter from the view
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points]);
+  const onMeasureClick = (e: ThreeEvent<MouseEvent>) => {
+    if (!measure || e.delta > 4) return;
+    // Measure to parts, not to a see-through shell or a wire in front of them.
+    const hit = e.intersections.find((h) => !h.object.userData.isShell && !h.object.userData.isWire && (h.object as THREE.Mesh).isMesh) ?? e.intersections.find((h) => (h.object as THREE.Mesh).isMesh);
+    if (!hit) return;
+    e.stopPropagation();
+    setPoints((cur) => (cur.length >= 2 ? [hit.point.clone()] : [...cur, hit.point.clone()]));
+  };
+  const tool = useMemo(() => ({ measuring: measure, cutting: section.some((c) => c.on) }), [measure, section]);
 
   const geoms = useMemo(() => parts.map((p) => p.geometry), [parts]);
   // Fade and explode-weight targets are handed to the render loop, not rendered by React.
@@ -818,6 +1063,9 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
         fadeDistance={span / 2}
         fadeStrength={1.5}
       />
+      <SectionClip cut={section} />
+      <ToolContext.Provider value={tool}>
+      <group onClick={onMeasureClick}>
       {parts.map((p, i) =>
         p.geometry.shape === "shell" ? (
           <ShellPart
@@ -833,7 +1081,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
             lift={shellLift.get(p.id) ?? 20}
           />
         ) : (
-          <BodyPart key={p.id} part={p} progress={progress} selected={p.id === selectedId} onSelect={onSelect} onFocusPart={onFocusPart} colors={colors} index={i} />
+          <BodyPart key={p.id} part={p} progress={progress} selected={p.id === selectedId} onSelect={onSelect} onFocusPart={onFocusPart} colors={colors} index={i} drag={drag} onGroup={onGroup} />
         )
       )}
       {labels &&
@@ -857,7 +1105,14 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
           );
         })}
       {wiresOn && wires.length > 0 && <WiresLayer wires={wires} parts={parts} progress={progress} />}
+      {wiresOn && explode === 0 && routed.length > 0 && <RoutedLayer wires={routed} />}
       {uploaded && <Uploaded mesh={uploaded.mesh} color={colors.uploaded} />}
+      </group>
+      </ToolContext.Provider>
+      <MeasureLayer points={points} dark={dark} />
+      {showHandles && selectedPart && handleObj && (
+        <Handles key={`${selectedPart.id}:${transform}`} part={selectedPart} object={handleObj} mode={transform === "rotate" ? "rotate" : "translate"} dragRef={drag} onTransform={onTransform} />
+      )}
       <OrbitControls makeDefault enableDamping dampingFactor={0.12} />
     </>
   );

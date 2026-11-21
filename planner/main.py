@@ -16,6 +16,8 @@ from pydantic import BaseModel, Field, model_validator
 import networkx as nx
 
 from impact import ImpactRequest, impact as impact_of
+from fastapi import HTTPException
+from harness import HarnessError, HarnessRequest, render as render_harness
 from routing import RouteRequest, route as route_wires
 
 app = FastAPI(title="Concept-to-realization planner")
@@ -142,3 +144,12 @@ def route(req: RouteRequest):
 def impact(req: ImpactRequest):
     """Everything downstream of the changed rows, by section, with the path to each. See impact.py."""
     return impact_of(req)
+
+
+@app.post("/harness")
+def harness(req: HarnessRequest):
+    """Draws a wiring harness. WireViz runs as a separate process with a time limit; see harness.py."""
+    try:
+        return render_harness(req)
+    except HarnessError as e:
+        raise HTTPException(status_code=e.status, detail=e.message)

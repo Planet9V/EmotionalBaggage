@@ -3,6 +3,7 @@
  * Pure functions, no three.js, shared by the canvas and the view.
  */
 import type { Geometry } from "@/lib/domain";
+import { applyMatrix, isRotated, rotatedExtent, rotationMatrix } from "@/lib/geometry/rotation";
 
 /** Geometry as stored, plus an optional cylinder axis. Without one, a cylinder shorter than it is wide lies flat (axis y), otherwise it lies along z. */
 export type PartGeometry = Geometry;
@@ -36,17 +37,35 @@ export function bodyOffsets(g: PartGeometry): [number, number, number][] {
   });
 }
 
-/** Total extent including every body of a counted part. */
+/**
+ * Total extent including every body of a counted part, as the axis-aligned box around the part
+ * after its rotation. A part turned 90 degrees about y swaps its x and z.
+ */
 export function totalExtent(g: PartGeometry): [number, number, number] {
   const e = bodyExtent(g);
   const offs = bodyOffsets(g);
-  const out: [number, number, number] = [0, 0, 0];
-  for (let k = 0; k < 3; k++) {
-    const lo = Math.min(...offs.map((o) => o[k])) - e[k] / 2;
-    const hi = Math.max(...offs.map((o) => o[k])) + e[k] / 2;
-    out[k] = hi - lo;
+  const rot = g.rotation;
+  if (!isRotated(rot)) {
+    const out: [number, number, number] = [0, 0, 0];
+    for (let k = 0; k < 3; k++) {
+      const lo = Math.min(...offs.map((o) => o[k])) - e[k] / 2;
+      const hi = Math.max(...offs.map((o) => o[k])) + e[k] / 2;
+      out[k] = hi - lo;
+    }
+    return out;
   }
-  return out;
+  const m = rotationMatrix(rot);
+  const half = rotatedExtent(e, rot).map((v) => v / 2);
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (const o of offs) {
+    const c = applyMatrix(m, o);
+    for (let k = 0; k < 3; k++) {
+      lo[k] = Math.min(lo[k], c[k] - half[k]);
+      hi[k] = Math.max(hi[k], c[k] + half[k]);
+    }
+  }
+  return [hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]];
 }
 
 /**
