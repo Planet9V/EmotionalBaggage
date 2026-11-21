@@ -63,5 +63,7 @@ ENV ORCA_BIN=/opt/orca/AppRun \
     LC_ALL=C \
     PATH=/opt/venv/bin:$PATH
 EXPOSE 8000
-HEALTHCHECK --interval=10s --timeout=5s --retries=12 CMD python3 -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# HOST and PORT can be set by the host platform, as in the planner image. A platform whose private network is IPv6 (Railway) needs HOST=::
+ENV HOST=0.0.0.0 PORT=8000
+HEALTHCHECK --interval=10s --timeout=5s --retries=12 CMD python3 -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('PORT', '8000'), timeout=4).status == 200 else 1)"
+CMD ["sh", "-c", "exec uvicorn app.main:app --host \"$HOST\" --port \"$PORT\""]

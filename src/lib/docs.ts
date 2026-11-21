@@ -11,6 +11,7 @@ export const DOC_PAGES = [
   { slug: "wiring", dir: "design", title: "Wiring model", audience: "Whoever changes the code", blurb: "Part kinds, pins, wires, nets, electrical checks, wire routing and the three schematic views." },
   { slug: "vector-search", dir: "design", title: "Vector search", audience: "Whoever changes the code or tunes the database", blurb: "PostgreSQL 19 and pgvector at 4,096 numbers per vector: what the limits are, the settings chosen, and the measurements behind them." },
   { slug: "visual-system", dir: "design", title: "Visual system", audience: "Whoever changes the code", blurb: "Foundations, the frame, four page patterns, six states, diagrams and 3D." },
+  { slug: "railway", title: "Deploying on Railway", audience: "Whoever installs and maintains it", blurb: "The four services, their variables, what does not work hosted, and the security steps before going public. Not deployed yet." },
   { slug: "code-use", title: "Code use", audience: "Everyone", blurb: "Every third-party library, image, font and copied file, its licence and how it is used, with the attestation." },
 ] as const;
 
