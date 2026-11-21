@@ -264,7 +264,7 @@ describe("product types", () => {
     expect(w.status).toBe(400);
     expect(w.body.error).toContain("does not apply");
     const g = await read<GeneratorsReply>(await GENERATORS(json("GET", undefined, `http://t/x?projectId=${PHYS}&kind=section`)));
-    expect(g.body.generators.map((x) => x.id)).toEqual(["press-release", "faq", "requirements", "parts", "assembly", "tests"]);
+    expect(g.body.generators.map((x) => x.id)).toEqual(["press-release", "faq", "requirements", "parts", "assembly", "tests", "campaigns"]);
     await addItem(PHYS, "design/requirements", "Holds 120 kg", { key: "phys-1" });
     script.parts = { rows: [{ ref: "LEG1", title: "Leg", spec: "Beech", kind: "mechanical", qty: 3, pins: [{ name: "1", role: "passive" }] }] };
     const r = await run({ projectId: PHYS, generator: "parts" });

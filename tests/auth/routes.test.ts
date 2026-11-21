@@ -83,6 +83,29 @@ describe("every API route requires a session", () => {
   });
 });
 
+/**
+ * The one page route outside /api that answers without a session: the short address of a tracked link.
+ * Adding another is a decision, so the list is checked against the disk here, as OPEN is above.
+ */
+const OPEN_PAGE_ROUTES = new Set(["/l/[code]"]);
+function pageRouteFiles(dir = join(process.cwd(), "src", "app"), base = ""): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const rel = `${base}/${entry.name}`;
+    if (entry.isDirectory()) {
+      if (rel === "/api") continue;
+      out.push(...pageRouteFiles(join(dir, entry.name), rel));
+    } else if (/^route\.(ts|tsx|js|mjs)$/.test(entry.name)) out.push(base || "/");
+  }
+  return out;
+}
+
+describe("route handlers outside /api", () => {
+  it("are exactly the deliberate open ones", () => {
+    expect(new Set(pageRouteFiles())).toEqual(OPEN_PAGE_ROUTES);
+  });
+});
+
 describe("the open routes work signed out", () => {
   it("me answers user null without a session and the user with one", async () => {
     const { GET } = await import("@/app/api/auth/me/route");

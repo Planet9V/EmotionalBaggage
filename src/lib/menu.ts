@@ -34,7 +34,12 @@ export type Section = {
     | "pricing"
     | "names"
     | "brand"
-    | "imagery";
+    | "imagery"
+    // campaigns (plan 8.13 to 8.16)
+    | "campaigns"
+    | "launch"
+    | "results"
+    | "links";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -403,15 +408,33 @@ export const STAGES: Stage[] = [
       {
         key: "campaigns",
         label: "Campaigns",
-        blurb: "The campaign plan by funnel stage.",
-        view: "items",
-        columns: [
-          { key: "funnel", label: "Funnel stage" },
-          { key: "budget", label: "Budget" },
-          { key: "kpi", label: "KPI" },
-        ],
-        statuses: ["planned", "running", "done", "killed"],
+        blurb: "Each campaign's objective, audience, budget, dates, creative, the number it must reach and the rule for stopping or scaling it.",
+        view: "campaigns",
+        statuses: ["planned", "ready", "running", "paused", "done", "killed"],
         addLabel: "Add campaign",
+      },
+      {
+        key: "launch",
+        label: "Launch plan",
+        blurb: "A dated checklist for each launch, built from a template. Moving the launch date moves every step.",
+        view: "launch",
+        store: "marketing/launch",
+        statuses: ["open", "in progress", "done", "blocked"],
+        addLabel: "Add step",
+      },
+      {
+        key: "results",
+        label: "Campaign results",
+        blurb: "Spend, clicks and orders by day for each campaign and creative, set against its target and its rule.",
+        view: "results",
+        store: "marketing/results",
+      },
+      {
+        key: "links",
+        label: "Tracked links",
+        blurb: "A link for each campaign and creative, with UTM parameters, an optional short address and a QR code for print.",
+        view: "links",
+        store: "marketing/links",
       },
       {
         key: "social",

@@ -4,9 +4,10 @@ import { faq, pressRelease } from "./generators/concept";
 import { parts, requirements, wiring } from "./generators/design";
 import { assembly, tests } from "./generators/prototype";
 import { optimiseCost, optimiseParts, optimisePrint } from "./generators/optimise";
+import { campaignPlan } from "@/lib/campaigns/generator";
 import type { OptimiseAction } from "./measure";
 
-export const GENERATORS: Generator<never>[] = [pressRelease, faq, requirements, parts, wiring, assembly, tests, optimiseCost, optimiseParts, optimisePrint] as unknown as Generator<never>[];
+export const GENERATORS: Generator<never>[] = [pressRelease, faq, requirements, parts, wiring, assembly, tests, optimiseCost, optimiseParts, optimisePrint, campaignPlan] as unknown as Generator<never>[];
 
 export const OPTIMISE_GENERATOR: Record<OptimiseAction, string> = { cost: optimiseCost.id, parts: optimiseParts.id, print: optimisePrint.id };
 

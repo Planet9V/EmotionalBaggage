@@ -7,7 +7,7 @@ import type { z } from "zod";
 import type { Item } from "@/lib/types";
 import type { DraftOp } from "./shared";
 
-export type ConceptInfo = { id: string; name: string; oneLiner: string; productType: string };
+export type ConceptInfo = { id: string; name: string; oneLiner: string; productType: string; /** the concept's currency, for generators that work with money */ currency?: string };
 
 export type GenContext = {
   concept: ConceptInfo;

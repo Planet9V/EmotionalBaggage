@@ -23,9 +23,9 @@ export const DRAFT_TIMEOUT_MS = 120_000;
 const MAX_SOURCES = 40;
 
 export async function readConcept(projectId: string): Promise<ConceptInfo> {
-  const r = await q<{ id: string; name: string; one_liner: string; product_type: string }>("SELECT id, name, one_liner, product_type FROM projects WHERE id=$1", [projectId]);
+  const r = await q<{ id: string; name: string; one_liner: string; product_type: string; currency: string }>("SELECT id, name, one_liner, product_type, currency FROM projects WHERE id=$1", [projectId]);
   if (!r.length) throw notFound("That concept");
-  return { id: r[0].id, name: r[0].name, oneLiner: r[0].one_liner ?? "", productType: r[0].product_type ?? "electronics" };
+  return { id: r[0].id, name: r[0].name, oneLiner: r[0].one_liner ?? "", productType: r[0].product_type ?? "electronics", currency: r[0].currency || "USD" };
 }
 
 /** Rows of these stores, in their saved order. */

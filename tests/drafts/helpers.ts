@@ -25,6 +25,8 @@ export const MARKERS: Record<string, string> = {
   "optimise-parts": "design-for-assembly check",
   "optimise-print": "3D print jobs",
   reviewer: "You review product concepts",
+  campaigns: "advertising and promotion campaigns for a product",
+  explain: "You explain an advertising campaign's results",
 };
 
 export type Script = Record<string, unknown>;
