@@ -126,15 +126,16 @@ describe("adding evidence", () => {
     await remove({ claimId, url: "https://manual.example/page" });
   });
 
-  it("lets the user overrule the status by hand, recorded as a manual change", async () => {
-    const res = await patchItem(json("PATCH", { status: "verified" }), ctx(String(claimId)));
+  it("lets the user set a status by hand that the evidence allows; the next evidence change sets it again", async () => {
+    const res = await patchItem(json("PATCH", { status: "wrong" }), ctx(String(claimId)));
     expect(res.status).toBe(200);
     const e = await lastEvent();
     expect(e.kind).toBe("item.status");
     // the next evidence change recomputes the status from the evidence
-    const r = await add({ claimId, url: B, researchId, verdict: "contradicts" });
-    expect(r.body.status).toBe("wrong");
-    expect((await lastEvent()).data.before.status).toBe("verified");
+    const r = await add({ claimId, url: A, researchId, verdict: "supports" });
+    expect(r.body.status).toBe("verified");
+    expect((await lastEvent()).data.before.status).toBe("wrong");
+    await remove({ claimId, url: A });
   });
 
   it("leaves a claim alone whose stored evidence is not in the expected shape", async () => {

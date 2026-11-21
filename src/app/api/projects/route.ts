@@ -4,6 +4,7 @@ import { body, route } from "@/lib/api/route";
 import { defaultStatus, newProject } from "@/lib/api/schemas";
 import { archivedFilter, CONCEPT_SELECT, insertConcept, loadConcept, productTypeField, toConcept, type ConceptRow } from "@/lib/api/concepts";
 import { DEFAULT_PRODUCT_TYPE } from "@/lib/productTypes";
+import { assertNewClaim } from "@/lib/research/rules";
 
 const WHERE = {
   active: "WHERE p.archived_at IS NULL",
@@ -22,6 +23,7 @@ const createConcept = newProject.extend({ productType: productTypeField.optional
 
 export const POST = route(async (req: Request) => {
   const b = await body(req, createConcept);
+  for (const it of b.items ?? []) assertNewClaim(it);
   const oneLiner = b.oneLiner ?? "";
   const productType = b.productType ?? DEFAULT_PRODUCT_TYPE;
   const id = await tx(async (c) => {

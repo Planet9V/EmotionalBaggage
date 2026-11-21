@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, notFound, recordId, route } from "@/lib/api/route";
 import { assertStatus, itemPatch, parseData } from "@/lib/api/schemas";
+import { assertClaimChange } from "@/lib/research/rules";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -14,6 +15,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     const was = before.rows[0];
     if (!was) throw notFound("That row");
     assertStatus(was.section, b.status);
+    // Claims: evidence only through /api/research/evidence; a hand-set status the evidence allows.
+    assertClaimChange(was, b);
     const data = parseData(was.section, b.data);
     const res = await c.query<ItemRow>(
       `UPDATE items SET
