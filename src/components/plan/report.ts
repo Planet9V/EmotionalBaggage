@@ -1,6 +1,7 @@
 "use client";
 
 import { readGeometry, type Geometry } from "@/lib/domain";
+import { NOT_ADVICE } from "@/lib/compliance/text";
 import { STAGES, storeKey, type Section } from "@/lib/menu";
 import type { Item, Project } from "@/lib/types";
 import { cellText, fmtBytes, fmtMinutes, fmtTime, storeLabel } from "./format";
@@ -57,6 +58,17 @@ function bomBlocks(rows: Item[]): Block[] {
   ];
   if (missing) out.push({ t: "p", text: `${missing} of ${rows.length} parts have no line cost, so the total leaves them out.`, muted: true });
   return out;
+}
+
+function complianceBlocks(rows: Item[]): Block[] {
+  return [
+    { t: "p", text: NOT_ADVICE },
+    {
+      t: "table",
+      head: ["Topic", "Why it may apply", "What to check", "Evidence", "Status"],
+      rows: rows.map((r) => [r.title, cellText(r.data.why), cellText(r.data.check), cellText(r.data.evidence), r.status === "draft" ? "draft, not confirmed" : r.status]),
+    },
+  ];
 }
 
 function sourcingBlocks(rows: Item[]): Block[] {
@@ -141,6 +153,8 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
         blocks.push(...bomBlocks(rows));
       } else if (section.view === "sourcing") {
         blocks.push(...sourcingBlocks(rows));
+      } else if (section.view === "compliance") {
+        blocks.push(...complianceBlocks(rows));
       } else {
         blocks.push(genericTable(section, rows));
       }

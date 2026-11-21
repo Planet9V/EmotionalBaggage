@@ -21,7 +21,11 @@ export type Section = {
     | "decisions"
     | "schematic"
     | "layout"
-    | "buildsheet";
+    | "buildsheet"
+    | "economics"
+    | "batches"
+    | "partprices"
+    | "compliance";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -218,28 +222,63 @@ export const STAGES: Stage[] = [
       {
         key: "economics",
         label: "Unit economics",
-        blurb: "Landed cost by volume and margin by channel.",
-        view: "items",
-        columns: [
-          { key: "volume", label: "Volume" },
-          { key: "cogs", label: "Landed COGS" },
-          { key: "price", label: "Price" },
-          { key: "margin", label: "Gross margin" },
-        ],
+        blurb: "Unit cost built from the parts and the lines you add, and the margin on each channel. Worked out, never typed.",
+        view: "economics",
         statuses: ["estimate", "quoted", "actual"],
-        addLabel: "Add line",
+        addLabel: "Add cost line",
       },
       {
         key: "batches",
         label: "Batch plan",
-        blurb: "Each build run, its size, its gate and its exit test.",
-        view: "items",
-        columns: [
-          { key: "units", label: "Units" },
-          { key: "gate", label: "Gate to start" },
-        ],
+        blurb: "Each build run, its size, its date, what it costs per unit and whether production is ready.",
+        view: "batches",
         statuses: ["planned", "funded", "building", "shipped"],
         addLabel: "Add batch",
+      },
+      {
+        key: "suppliers",
+        label: "Suppliers",
+        blurb: "Who supplies what, how long it takes and the smallest order. A public web address only; no personal contact details.",
+        view: "items",
+        columns: [
+          { key: "code", label: "Code (parts link to it)" },
+          { key: "supplies", label: "Supplies" },
+          { key: "leadTimeDays", label: "Lead time (days)" },
+          { key: "minOrder", label: "Minimum order" },
+          { key: "location", label: "Location" },
+          { key: "url", label: "Website" },
+        ],
+        statuses: ["candidate", "quoted", "approved", "in use", "dropped"],
+        addLabel: "Add supplier",
+      },
+      {
+        key: "pricing",
+        label: "Part prices",
+        blurb: "A unit price, a quantity price break and a supplier for each part. These feed the unit cost.",
+        view: "partprices",
+        store: "design/bom",
+      },
+      {
+        key: "methods",
+        label: "Manufacturing methods",
+        blurb: "How each custom part or assembly step is made, with its tooling cost and its extra cost per unit.",
+        view: "items",
+        columns: [
+          { key: "method", label: "Method" },
+          { key: "appliesTo", label: "Applies to (part reference or step key)" },
+          { key: "toolingCost", label: "Tooling cost" },
+          { key: "unitCost", label: "Extra cost per unit" },
+        ],
+        statuses: ["estimate", "quoted", "actual"],
+        addLabel: "Add method",
+      },
+      {
+        key: "compliance",
+        label: "Compliance",
+        blurb: "A checklist of rules that may apply to this product, for your own checking. Not advice.",
+        view: "compliance",
+        statuses: ["to check", "applies", "does not apply", "done", "draft"],
+        addLabel: "Add compliance row",
       },
     ],
   },
@@ -328,12 +367,17 @@ export const STAGES: Stage[] = [
       {
         key: "channels",
         label: "Channels and pricing",
-        blurb: "Every channel, its price and what the platform takes.",
+        blurb: "Every channel, its price and what it costs to sell there. The margin is worked out on Production, Unit economics.",
         view: "items",
         columns: [
           { key: "price", label: "Price" },
-          { key: "take", label: "Platform take" },
-          { key: "net", label: "Net" },
+          { key: "platformPercent", label: "Platform fee (%)" },
+          { key: "platformFixed", label: "Platform fee (fixed)" },
+          { key: "paymentPercent", label: "Payment fee (%)" },
+          { key: "paymentFixed", label: "Payment fee (fixed)" },
+          { key: "fulfilment", label: "Fulfilment per order" },
+          { key: "returnsPercent", label: "Returns allowance (%)" },
+          { key: "adCost", label: "Advertising per order" },
         ],
         statuses: ["planned", "live", "paused"],
         addLabel: "Add channel",
