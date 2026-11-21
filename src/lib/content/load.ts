@@ -6,7 +6,7 @@ import { brandVariables } from "@/lib/market/brand";
 import type { Item } from "@/lib/types";
 import { formatMoney } from "@/lib/economics/money";
 import { proofStateOf } from "./claims";
-import { isSourced, renderPage, type Competitor, type LandingSection, type RenderEnv } from "./landing";
+import { renderPage, type Competitor, type LandingSection, type RenderEnv } from "./landing";
 import { CONTENT, LANDING_KINDS } from "./schemas";
 import { currencyOf } from "@/lib/economics/currency";
 

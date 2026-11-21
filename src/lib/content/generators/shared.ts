@@ -2,8 +2,8 @@
 // link, the brand voice, and the step that turns one model row into a draft with its no-proof flags.
 import { z } from "zod";
 import type { Item } from "@/lib/types";
-import type { GenContext, Proposed } from "@/lib/ai/drafts/types";
-import { RULES, conceptHeader, block } from "@/lib/ai/drafts/prompt";
+import type { GenContext } from "@/lib/ai/drafts/types";
+import { RULES, conceptHeader } from "@/lib/ai/drafts/prompt";
 import { brandText, findKit } from "@/lib/market/brandKit";
 import { checkProof, type ProofRow as MarketProofRow } from "@/lib/market/proof";
 import type { PositioningMessage, ProofRef } from "@/lib/market/schemas";
@@ -18,7 +18,7 @@ export const BASE_FROM = ["marketing/positioning", "marketing/brand", "research/
 export type Message = MessageRef & { id: string; proof: ProofRef[] };
 
 /** The messages of positioning rows that are approved. A message is "positioningId:index". */
-export function approvedMessages(ctx: GenContext): Message[] {
+function approvedMessages(ctx: GenContext): Message[] {
   const out: Message[] = [];
   for (const p of ctx.rows["marketing/positioning"] ?? []) {
     if (p.status !== "approved") continue;

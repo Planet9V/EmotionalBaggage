@@ -14,7 +14,7 @@ import type { ProviderView } from "@/lib/admin/credentials";
 import type { AuditEntry } from "@/lib/admin/audit";
 import type { AdminSettings } from "@/lib/admin/settings";
 import type { PrinterView } from "@/lib/admin/printers";
-import type { PrinterFamily, PrinterField } from "@/lib/admin/printerFamilies";
+import type { PrinterFamily } from "@/lib/admin/printerFamilies";
 import type { StatusItem } from "@/lib/admin/status";
 import type { AuditRow } from "@/lib/auditLog";
 import type { ModelChoice } from "@/lib/settings";

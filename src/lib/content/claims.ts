@@ -4,7 +4,6 @@
 // claim or a passing test: a requirement says what is intended, not what is shown.
 // The check is a pure function of the copy and the linked rows; the server runs it again on every
 // edit and approval, so a stored flag is never trusted.
-import type { ProofRef } from "@/lib/market/schemas";
 import { toInputText } from "@/lib/economics/money";
 
 export type ProofRow = { id: number; section: string; title: string; body: string; status: string; data: Record<string, unknown> };

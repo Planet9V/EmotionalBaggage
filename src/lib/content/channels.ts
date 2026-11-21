@@ -364,10 +364,8 @@ export function checkSocial(spec: SocialSpec, text: string, title = ""): Problem
 // ------------------------------------------------------------------------------------------------
 
 const AMAZON_DETAIL_PDF = "https://m.media-amazon.com/images/G/31/02/RW32A65AJD._CB467907754_.pdf";
-const SELLER_TITLE = "https://sellercentral.amazon.com/gp/help/external/GYTR6SYGFA5E3EQC";
 const SELLER_PESTICIDE = "https://sellercentral.amazon.com/forums/t/reminder-action-required-for-listings-on-amazon-classified-as-pesticides/753908";
 const SELLER_CLAIMS = "https://sellercentral.amazon.com/gp/help/G202115120";
-const SELLER_RULES = "https://sellercentral.amazon.com/help/hub/reference/external/G202024200";
 
 type ListingLimits = {
   title: { max: number; enforce: boolean; source?: string };

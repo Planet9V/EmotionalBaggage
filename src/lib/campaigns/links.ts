@@ -2,7 +2,7 @@
 // for the optional short address (/l/<code>) the app serves. Pure apart from `makeCode`, which uses
 // the system's random number source.
 import { randomBytes } from "node:crypto";
-import { HOST_RE, hostAllowed, parseHosts } from "./hosts";
+import { hostAllowed, parseHosts } from "./hosts";
 import { slugify } from "@/lib/format";
 
 export { hostAllowed, parseHosts };

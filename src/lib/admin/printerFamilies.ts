@@ -25,7 +25,7 @@
 
 type PrinterFieldKind = "url" | "host" | "text";
 
-export type PrinterField = {
+type PrinterField = {
   name: string;
   label: string;
   secret: boolean;

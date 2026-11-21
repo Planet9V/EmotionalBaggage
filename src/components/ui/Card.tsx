@@ -50,7 +50,7 @@ export interface CardProps extends CardBaseProps, Omit<React.HTMLAttributes<HTML
   as?: "div" | "article" | "li" | "section";
 }
 
-interface CardLinkProps
+export interface CardLinkProps
   extends CardBaseProps,
     Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "children" | "className" | "href"> {
   href: string;
@@ -129,7 +129,7 @@ export function Card({
   );
 }
 
-function CardLink({
+export function CardLink({
   variant = "elevated",
   hoverEffect = true,
   accent = false,

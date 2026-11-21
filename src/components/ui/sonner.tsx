@@ -20,7 +20,7 @@ function subscribe(onChange: () => void) {
 const htmlTheme = (): "light" | "dark" => (document.documentElement.classList.contains("dark") ? "dark" : "light")
 
 /** "dark" while <html> has the class dark, else "light". */
-function useHtmlTheme(): "light" | "dark" {
+export function useHtmlTheme(): "light" | "dark" {
   return React.useSyncExternalStore(subscribe, htmlTheme, () => "light")
 }
 

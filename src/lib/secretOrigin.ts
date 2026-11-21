@@ -20,7 +20,7 @@ import { lwaTokenUrl, igGraphBase, xApiBase } from "@/lib/channels/http";
 import { DEFAULT_BASE_URL, embeddingModel, getCredential, reasoningModel, type ModelChoice, type Provider } from "@/lib/settings";
 
 /** Address of the Perplexity API; tests point it at the stand-in with PERPLEXITY_BASE_URL. */
-export const PERPLEXITY_DEFAULT_BASE_URL = "https://api.perplexity.ai";
+const PERPLEXITY_DEFAULT_BASE_URL = "https://api.perplexity.ai";
 export const perplexityBaseUrl = () => (process.env.PERPLEXITY_BASE_URL?.trim() || PERPLEXITY_DEFAULT_BASE_URL).replace(/\/+$/, "");
 
 /** scheme://host[:port] of an address, lower case, default ports left out; null when it is not a URL. */

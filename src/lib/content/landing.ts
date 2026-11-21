@@ -7,7 +7,6 @@ import { z } from "zod";
 import { contrastRatio, parseHex } from "@/lib/market/contrast";
 import { onColour } from "@/lib/market/brandKit";
 import type { LandingKind } from "./schemas";
-import { LANDING_KINDS } from "./schemas";
 import { esc } from "@/lib/html";
 
 const s = (n = 600) => z.string().max(n);

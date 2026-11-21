@@ -1,7 +1,7 @@
 // The one definition of a pin and of a part-library entry. The pins API validates writes with
 // `pinInput`; the library is checked against `libraryEntry` by tests/parts/library.test.ts.
 import { z } from "zod";
-import { BUS_TYPES, BUSES, CATEGORIES, PART_KIND_IDS, PIN_KINDS, SIDES, SYMBOL_IDS } from "./kinds";
+import { BUS_TYPES, BUSES, PART_KIND_IDS, PIN_KINDS, SIDES, SYMBOL_IDS } from "./kinds";
 
 const finite = z.number().finite();
 
