@@ -22,6 +22,7 @@ import { CLASSES, CLASS_LABEL, MISSING_PIN, type Graph, type Part, type XY } fro
 import { SchematicContext, edgeTypes, nodeTypes, type PartNodeType, type WireEdgeType } from "./nodes";
 import type { Selection } from "./SidePanel";
 import { Card } from "@/components/ui/Card";
+import { useFitOnPrint } from "./useFitOnPrint";
 
 const DRAG_TYPE = "application/x-schematic-part";
 
@@ -58,6 +59,7 @@ const pinOf = (handle: string | null) => {
 /** The React Flow canvas. Must sit inside a ReactFlowProvider. */
 export function SchematicCanvas(p: Props) {
   const { screenToFlowPosition } = useReactFlow();
+  useFitOnPrint(0.15, 1.1);
   const wrap = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<Record<string, { width: number; height: number }>>({});
   const [dropping, setDropping] = useState(false);
@@ -142,7 +144,7 @@ export function SchematicCanvas(p: Props) {
   return (
     <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight, onPickPin: p.onPickPin }}>
       {p.palette.length > 0 && (
-        <Card variant="flat" className="mb-3 px-3 py-2.5">
+        <Card variant="flat" className="schematic-noprint mb-3 px-3 py-2.5">
           <p className="text-xs text-secondary">
             <span className="font-medium text-primary">Not on the schematic yet.</span> Drag a part onto the canvas, or press Place, then name its first pin.
           </p>
@@ -231,18 +233,18 @@ export function SchematicCanvas(p: Props) {
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="var(--border-hairline)" />
-          <Controls showInteractive={false} className="rounded-md! border! border-hairline! shadow-xs!" />
+          <Controls showInteractive={false} className="schematic-noprint rounded-md! border! border-hairline! shadow-xs!" />
           <MiniMap
             pannable
             zoomable
-            className="rounded-md! border! border-hairline! bg-subtle!"
+            className="schematic-noprint rounded-md! border! border-hairline! bg-subtle!"
             nodeColor="var(--border-hairline)"
             nodeStrokeColor="var(--text-muted)"
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
             maskColor="rgba(113, 113, 122, 0.16)"
           />
-          <Panel position="top-left" className="m-3!">
+          <Panel position="top-left" className="schematic-noprint m-3!">
             <div role="group" aria-label="Show or hide wires by net class" className="flex flex-wrap items-center gap-1 rounded-md border border-hairline bg-surface p-1 shadow-xs">
               {CLASSES.map((c) => {
                 const on = !hidden.has(c);
@@ -265,13 +267,13 @@ export function SchematicCanvas(p: Props) {
               })}
             </div>
           </Panel>
-          <Panel position="bottom-center" className="mb-3! pointer-events-none">
+          <Panel position="bottom-center" className="schematic-noprint mb-3! pointer-events-none">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Drag parts to arrange. Drag from pin to pin to add a wire. Double-click a wire to edit it.
             </p>
           </Panel>
           {p.banner && (
-            <Panel position="top-center" className="mt-16!">
+            <Panel position="top-center" className="schematic-noprint mt-16!">
               {p.banner}
             </Panel>
           )}

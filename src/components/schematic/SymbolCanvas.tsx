@@ -9,6 +9,7 @@ import { SymbolContext, symbolEdgeTypes, symbolNodeTypes, type FlagNodeType, typ
 import type { SymEdge, SymNode } from "./symbolGraph";
 import type { ConnectRequest } from "./SchematicCanvas";
 import type { Selection } from "./SidePanel";
+import { useFitOnPrint } from "./useFitOnPrint";
 
 type Props = {
   nodes: SymNode[];
@@ -31,6 +32,7 @@ export function SymbolCanvas(p: Props) {
   const [measured, setMeasured] = useState<Record<string, { width: number; height: number }>>({});
   const { onMove, onDragStop, onSelect, onConnect } = p;
   const anyLit = p.litWires.size > 0 || p.litPins.size > 0;
+  useFitOnPrint(0.12, 1.2);
 
   const nodes = useMemo(
     () =>

@@ -19,6 +19,7 @@ import { TitleBlock } from "@/components/schematic/TitleBlock";
 import { elkLayout, type LayoutNode } from "@/lib/graphLayout";
 import { symbolLayout } from "@/lib/parts/symbols";
 import "@/components/schematic/print.css";
+import { printSchematic } from "@/components/schematic/printSchematic";
 import { buildGraph, computeChecks, computeNets, nodeId, nodeHeight, NODE_W, HEADER_H, ROW_H, pinsFor, refParts, readWires, type Check, type Part, type XY } from "@/components/schematic/model";
 import { SchematicCanvas, type ConnectRequest } from "@/components/schematic/SchematicCanvas";
 import { SidePanel, type Selection } from "@/components/schematic/SidePanel";
@@ -429,7 +430,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
           <Button size="sm" onClick={saveLayout} disabled={!unsaved.length}>
             <Save className="h-3.5 w-3.5" aria-hidden /> Save layout
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()} title="Print the sheet, or save it as a PDF from the print dialog">
+          <Button variant="outline" size="sm" onClick={() => void printSchematic()} title="Print the sheet, or save it as a PDF from the print dialog">
             <Printer className="h-3.5 w-3.5" aria-hidden /> Print or PDF
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setPanelOpen((o) => !o)} aria-expanded={panelOpen} aria-controls="schematic-panel">

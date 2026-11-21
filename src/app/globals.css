@@ -325,6 +325,8 @@ html.light main {
 
 @media print {
   .no-print { display: none !important; }
+  /* An element mid-animation is drawn into the PDF as a picture, which leaves the text unsearchable. */
+  *, *::before, *::after { animation: none !important; transition: none !important; }
   body { background: #fff !important; color: #000 !important; }
 }
 
