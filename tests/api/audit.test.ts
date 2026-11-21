@@ -1,6 +1,6 @@
 // The install-wide audit log: every recorded change lands in it with who did it, and it outlives the concept.
 import { describe, expect, it } from "vitest";
-import { q } from "@/lib/db";
+import { audit, q } from "@/lib/db";
 import { POST as addProject } from "@/app/api/projects/route";
 import { DELETE as deleteProject } from "@/app/api/projects/[id]/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
@@ -47,6 +47,16 @@ describe("audit log", () => {
     expect(deleted.entries.every((e) => e.action === "project.deleted")).toBe(true);
     expect((await log("?q=Audit%20probe")).entries.every((e) => /audit probe/i.test(e.summary + e.projectName))).toBe(true);
     expect((await readLog(json("GET", undefined, "http://test.local/api/admin/audit?limit=0"))).status).toBe(400);
+  });
+
+  it("hide leaves out sign-ins that started but keeps refused ones", async () => {
+    await audit({ action: "session.started", summary: "hide-probe signed in", actor: "hide-probe" });
+    await audit({ action: "session.refused", summary: "hide-probe was refused", actor: "" });
+    const shown = await log("?q=hide-probe");
+    expect(shown.entries.map((e) => e.action).sort()).toEqual(["session.refused", "session.started"]);
+    const hidden = await log("?q=hide-probe&hide=session.started");
+    expect(hidden.entries.map((e) => e.action)).toEqual(["session.refused"]);
+    expect((await log("?hide=session.started")).entries.some((e) => e.action === "session.started")).toBe(false);
   });
 
   it("downloads as a file, one JSON object per line, oldest first, and records that it was taken", async () => {
