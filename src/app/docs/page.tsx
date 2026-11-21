@@ -16,7 +16,7 @@ export default function DocsIndex() {
           <li key={d.slug}>
             <Link
               href={`/docs/${d.slug}`}
-              className="block h-full rounded-xl border border-hairline bg-surface p-6 shadow-card transition-colors hover:border-dutchOrange/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange"
+              className="block h-full rounded-xl border border-hairline bg-surface p-6 shadow-card transition-colors hover:border-dutchOrange/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
             >
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">For: {d.audience}</p>
               <p className="mt-2 text-lg font-semibold text-primary">{d.title}</p>

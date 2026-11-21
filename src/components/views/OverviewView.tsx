@@ -90,8 +90,8 @@ function OverviewBody({ project }: { project: Project }) {
                 const href = storeHref(i.section);
                 const inner = (
                   <>
-                    <StatusBadge tone={statusTone(i.status)} className="!py-0">{i.status}</StatusBadge>
-                    <span className="max-w-[22rem] truncate text-primary">{i.title}</span>
+                    <StatusBadge tone={statusTone(i.status)} className="py-0!">{i.status}</StatusBadge>
+                    <span className="max-w-88 truncate text-primary">{i.title}</span>
                     <span className="font-mono text-[10px] text-muted">{storeLabel(i.section)}</span>
                   </>
                 );
@@ -151,7 +151,7 @@ function OverviewBody({ project }: { project: Project }) {
                   transition={{ duration: 0.35, ease: "easeOut", delay: reduce ? 0 : si * 0.04 }}
                   className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 pb-8"
                 >
-                  {!last && <span aria-hidden className="absolute bottom-0 left-[1.25rem] top-10 w-px -translate-x-1/2 bg-hairline" />}
+                  {!last && <span aria-hidden className="absolute bottom-0 left-5 top-10 w-px -translate-x-1/2 bg-hairline" />}
                   <span className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-hairline bg-surface font-mono text-xs text-link">
                     {String(stage.n).padStart(2, "0")}
                   </span>
@@ -197,7 +197,7 @@ function OverviewBody({ project }: { project: Project }) {
                                   <ul className="space-y-1">
                                     {st.next.map((i) => (
                                       <li key={i.id} className="flex min-w-0 items-center gap-2 text-sm">
-                                        <StatusBadge tone={statusTone(i.status)} className="!px-2 !py-0 !text-[10px]">{i.status}</StatusBadge>
+                                        <StatusBadge tone={statusTone(i.status)} className="px-2! py-0! text-[10px]!">{i.status}</StatusBadge>
                                         <span className="truncate text-secondary">{i.title}</span>
                                       </li>
                                     ))}

@@ -82,9 +82,9 @@ export function PrintingView({ project, section, store }: ViewProps) {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[10rem]">Job</TableHead>
-                  {columns.map((c) => <TableHead key={c.key} className="min-w-[8rem]">{c.label}</TableHead>)}
-                  <TableHead className="min-w-[11rem]">File</TableHead>
+                  <TableHead className="min-w-40">Job</TableHead>
+                  {columns.map((c) => <TableHead key={c.key} className="min-w-32">{c.label}</TableHead>)}
+                  <TableHead className="min-w-44">File</TableHead>
                   <TableHead className="w-40">Status</TableHead>
                   <TableHead className="w-10"><span className="sr-only">Delete</span></TableHead>
                 </TableRow>

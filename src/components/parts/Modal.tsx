@@ -32,7 +32,7 @@ export function Modal({
               <DialogTitle className="text-base tracking-tight">{title}</DialogTitle>
               <DialogDescription className={description ? "mt-1 text-xs" : "sr-only"}>{description ?? title}</DialogDescription>
             </div>
-            <DialogClose className="rounded-md p-1 text-muted transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
+            <DialogClose className="rounded-md p-1 text-muted transition hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
               <X className="h-4 w-4" aria-hidden />
             </DialogClose>
           </div>

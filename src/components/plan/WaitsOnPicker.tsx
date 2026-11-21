@@ -11,7 +11,7 @@ export function WaitsOnPicker({ steps, value, onChange }: { steps: PlanNode[]; v
     <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto rounded-md border border-hairline bg-canvas p-1.5">
       {steps.map((s) => (
         <li key={s.id}>
-          <label className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-sm text-secondary transition-colors duration-150 hover:bg-subtle">
+          <label className="flex cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-sm text-secondary transition-colors duration-150 hover:bg-subtle">
             <input
               type="checkbox"
               checked={chosen.has(s.id)}

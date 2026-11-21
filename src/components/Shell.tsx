@@ -65,8 +65,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ProjectContext.Provider value={ctx}>
-      <div className="flex min-h-[100dvh] bg-canvas text-primary">
-        <aside className="no-print sticky top-0 flex h-[100dvh] w-64 shrink-0 flex-col border-r border-hairline bg-surface">
+      <div className="flex min-h-dvh bg-canvas text-primary">
+        <aside className="no-print sticky top-0 flex h-dvh w-64 shrink-0 flex-col border-r border-hairline bg-surface">
           <div className="border-b border-hairline px-4 py-4">
             <Link href="/" className="block">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept to realization</p>
@@ -79,7 +79,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
               id="concept"
               value={current}
               onChange={(e) => select(e.target.value)}
-              className="mt-1 h-9 w-full rounded-md border border-hairline bg-canvas px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange"
+              className="mt-1 h-9 w-full rounded-md border border-hairline bg-canvas px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>

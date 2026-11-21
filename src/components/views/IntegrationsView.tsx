@@ -66,10 +66,10 @@ export function IntegrationsView() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="min-w-[12rem]">Integration</TableHead>
+                      <TableHead className="min-w-48">Integration</TableHead>
                       <TableHead>Connected</TableHead>
                       <TableHead>Built</TableHead>
-                      <TableHead className="min-w-[12rem]">Environment variables</TableHead>
+                      <TableHead className="min-w-48">Environment variables</TableHead>
                       <TableHead className="min-w-[18rem]">Note</TableHead>
                     </TableRow>
                   </TableHeader>

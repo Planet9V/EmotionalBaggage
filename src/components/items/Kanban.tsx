@@ -91,7 +91,7 @@ export function Kanban({ items, statuses, columns, onOpen, onMove }: Props) {
                     {cards.length}
                   </span>
                 </div>
-                <ul className="max-h-[38rem] flex-1 space-y-2 overflow-y-auto p-2">
+                <ul className="max-h-152 flex-1 space-y-2 overflow-y-auto p-2">
                   {cards.map((it, i) => (
                     <BoardCard
                       key={it.id}
@@ -165,14 +165,14 @@ function BoardCard({
         onKeyDown={key}
         aria-label={`${item.title}, ${item.status}`}
         aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
-        className="group cursor-grab rounded-lg border border-hairline bg-surface p-2.5 shadow-sm transition-colors duration-150 hover:border-dutchOrange/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing"
+        className="group cursor-grab rounded-lg border border-hairline bg-surface p-2.5 shadow-xs transition-colors duration-150 hover:border-dutchOrange/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing"
       >
         <div className="flex items-start gap-1.5">
           <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
           <button
             type="button"
             onClick={() => onOpen(item.id)}
-            className="min-w-0 flex-1 text-left text-[13px] font-semibold leading-snug text-primary [overflow-wrap:anywhere] hover:text-link focus:outline-none focus-visible:underline"
+            className="min-w-0 flex-1 text-left text-[13px] font-semibold leading-snug text-primary wrap-anywhere hover:text-link focus:outline-hidden focus-visible:underline"
           >
             {item.title}
           </button>
@@ -182,7 +182,7 @@ function BoardCard({
           <dl className="mt-2 space-y-0.5 pl-5">
             {pairs.map((p) => (
               <div key={p.label} className="flex min-w-0 gap-1.5 font-mono text-[10px]">
-                <dt className="shrink-0 uppercase tracking-[0.1em] text-muted">{p.label}</dt>
+                <dt className="shrink-0 uppercase tracking-widest text-muted">{p.label}</dt>
                 <dd className="min-w-0 truncate text-secondary" title={p.value}>
                   {p.value}
                 </dd>
@@ -195,7 +195,7 @@ function BoardCard({
             value={item.status}
             onChange={(e) => onMove(e.target.value, false)}
             aria-label={`Move ${item.title} to a status`}
-            className="h-8 w-full rounded-md border border-hairline bg-canvas px-1.5 text-[11px] text-secondary hover:border-dutchOrange/60 focus:border-dutchOrange focus:outline-none"
+            className="h-8 w-full rounded-md border border-hairline bg-canvas px-1.5 text-[11px] text-secondary hover:border-dutchOrange/60 focus:border-dutchOrange focus:outline-hidden"
           >
             {statuses.map((s) => (
               <option key={s} value={s}>

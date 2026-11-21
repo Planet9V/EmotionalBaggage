@@ -72,7 +72,7 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {r.length ? (
-                    <span title={`${r.length.straight.toFixed(1)} mm straight x ${routingValue} + ${allowanceValue} = ${r.length.raw.toFixed(1)} mm, rounded up`} className="text-primary">
+                    <span title={`${r.length.straight.toFixed(1)} mm straight x ${routingValue} + ${allowanceValue} = ${r.length.raw.toFixed(1)} mm, rounded-sm up`} className="text-primary">
                       {r.length.mm} mm
                     </span>
                   ) : (

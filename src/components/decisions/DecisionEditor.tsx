@@ -40,7 +40,7 @@ type Props = {
   onDelete: (d: Decision) => Promise<void>;
 };
 
-const field = "w-full rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange";
+const field = "w-full rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 const label = "font-mono text-[10px] uppercase tracking-[0.2em] text-muted";
 
 function initial(editing: Decision | null, defaultParent: string): DecisionDraft {
@@ -180,7 +180,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
             {editing ? "Changes save to this concept's decision tree." : "It gets a short key from its question. Options can be added now or later."}
           </DialogDescription>
         </div>
-        <DialogClose className="rounded-md p-1.5 text-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
+        <DialogClose className="rounded-md p-1.5 text-muted hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
           <X className="h-4 w-4" aria-hidden />
         </DialogClose>
       </div>
@@ -240,7 +240,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
                   const loop = waitsOnSelf.has(d.key);
                   const on = draft.dependsOn.includes(d.key);
                   return (
-                    <label key={d.key} className={`flex items-start gap-2 rounded px-1.5 py-1 text-sm ${loop && !on ? "opacity-50" : "hover:bg-subtle"}`}>
+                    <label key={d.key} className={`flex items-start gap-2 rounded-sm px-1.5 py-1 text-sm ${loop && !on ? "opacity-50" : "hover:bg-subtle"}`}>
                       <input
                         type="checkbox"
                         className="mt-0.5 accent-[#E05A10]"
@@ -306,7 +306,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
                 <Button type="button" variant="outline" size="sm" onClick={() => setConfirmDelete(false)} disabled={busy}>
                   Keep it
                 </Button>
-                <Button type="button" size="sm" onClick={remove} disabled={busy} className="!bg-danger-solid hover:!opacity-90">
+                <Button type="button" size="sm" onClick={remove} disabled={busy} className="bg-danger-solid! hover:opacity-90!">
                   Delete
                 </Button>
               </div>

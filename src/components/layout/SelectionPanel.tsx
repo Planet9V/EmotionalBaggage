@@ -33,7 +33,7 @@ export function BasisPicker({ value, onChange, name }: { value: "doc" | "typical
 }
 
 const selectCls =
-  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange";
+  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 
 export function SelectionPanel({
   item, geometry, draft, floor, centre, onGeometry, onDraft, onCancelDraft, onClose,

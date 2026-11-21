@@ -99,7 +99,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                   const it = items.find((x) => x.id === id);
                   if (it) move(it, col);
                 }}
-                className={cn("flex min-h-[12rem] flex-col rounded-xl border border-hairline bg-subtle transition-shadow", over === col && "ring-2 ring-dutchOrange")}
+                className={cn("flex min-h-48 flex-col rounded-xl border border-hairline bg-subtle transition-shadow", over === col && "ring-2 ring-dutchOrange")}
               >
                 <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
                   <StatusBadge tone={statusTone(col)}>{col}</StatusBadge>
@@ -125,7 +125,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                             <span className={cn("font-mono text-[11px]", n > X_LIMIT ? "text-danger" : "text-muted")} aria-label={`${n} of ${X_LIMIT} characters`}>{n}/{X_LIMIT}</span>
                           )}
                         </div>
-                        <p className="whitespace-pre-wrap break-words text-sm text-primary">{p.body || p.title}</p>
+                        <p className="whitespace-pre-wrap wrap-break-word text-sm text-primary">{p.body || p.title}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-1">
                           {ci > 0 && (
                             <Button size="chip" variant="outline" onClick={() => move(p, columns[ci - 1])} aria-label={`Move to ${columns[ci - 1]}`}>

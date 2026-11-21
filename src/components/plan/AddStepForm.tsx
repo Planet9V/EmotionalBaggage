@@ -10,7 +10,7 @@ import { WaitsOnPicker } from "./WaitsOnPicker";
 const DEFAULT_STORE = "prototype/assembly";
 
 const selectCls =
-  "h-9 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange";
+  "h-9 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 const labelCls = "font-mono text-[10px] uppercase tracking-[0.15em] text-muted";
 
 type Props = {
@@ -86,7 +86,7 @@ export function AddStepForm({ items, steps, onAdd, onConvert }: Props) {
               aria-selected={mode === k}
               onClick={() => setMode(k)}
               className={`rounded px-2.5 py-1 text-xs transition-colors duration-150 ${
-                mode === k ? "bg-surface font-semibold text-primary shadow-sm" : "text-secondary hover:text-primary"
+                mode === k ? "bg-surface font-semibold text-primary shadow-xs" : "text-secondary hover:text-primary"
               }`}
             >
               {label}

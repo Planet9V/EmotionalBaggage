@@ -4,7 +4,7 @@ import type { ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "re
 import { cn } from "@/lib/utils";
 
 export const FIELD_CLS =
-  "w-full rounded-md border border-hairline bg-surface px-3 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-50";
+  "w-full rounded-md border border-hairline bg-surface px-3 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-50";
 
 export const EYEBROW = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 

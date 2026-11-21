@@ -243,7 +243,7 @@ export function DecisionsView({ project }: ViewProps) {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm" data-testid="decisions-view">
+      <div className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-xs" data-testid="decisions-view">
         {/* toolbar */}
         <div className="flex flex-wrap items-center gap-2.5 border-b border-hairline px-4 py-2.5 sm:px-5">
           <div role="group" aria-label="View" className="flex rounded-full border border-hairline p-0.5">
@@ -304,7 +304,7 @@ export function DecisionsView({ project }: ViewProps) {
         </div>
 
         {/* caption: one dash per decision in walk order, and one sentence on the selected one */}
-        <div className="flex min-h-[3.25rem] flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline bg-subtle px-4 py-2.5 sm:px-5" aria-live="polite" data-testid="decisions-caption">
+        <div className="flex min-h-13 flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline bg-subtle px-4 py-2.5 sm:px-5" aria-live="polite" data-testid="decisions-caption">
           <span className="flex shrink-0 flex-wrap gap-1">
             {order.map((k) => {
               const d = byKey.get(k)!;
@@ -321,7 +321,7 @@ export function DecisionsView({ project }: ViewProps) {
                 >
                   <span
                     className={`block h-1.5 w-5 rounded-full transition-all duration-150 ${isDecided(d) ? "bg-dutchOrange" : "bg-hairline group-hover:bg-dutchOrange/40"} ${
-                      on ? "outline outline-2 outline-offset-2 outline-dutchOrange/60" : ""
+                      on ? "outline-solid outline-2 outline-offset-2 outline-dutchOrange/60" : ""
                     }`}
                   />
                 </button>
@@ -350,7 +350,7 @@ export function DecisionsView({ project }: ViewProps) {
               instant={reduce}
             />
             {view === "path" && (
-              <p className="pointer-events-none absolute left-3 top-3 max-w-[60%] rounded-md border border-hairline bg-surface px-2.5 py-1.5 text-[11px] leading-snug text-secondary shadow-sm">
+              <p className="pointer-events-none absolute left-3 top-3 max-w-[60%] rounded-md border border-hairline bg-surface px-2.5 py-1.5 text-[11px] leading-snug text-secondary shadow-xs">
                 {decidedCount === 0 ? "Nothing decided yet; the path shows where to start." : "The route taken so far: decided decisions, the chain above them and what comes next."}
               </p>
             )}

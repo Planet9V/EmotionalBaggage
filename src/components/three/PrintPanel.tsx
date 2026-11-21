@@ -232,7 +232,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
         {printable.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No part has geometry yet, so there is nothing to generate.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-[var(--border-hairline)] border-y border-hairline">
+          <ul className="mt-4 divide-y divide-(--border-hairline) border-y border-hairline">
             {printable.map((p) => {
               const g = p.geometry as PartGeometry;
               const out = g.print ? bodiesFor(g, params) : null;
@@ -318,7 +318,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
               const f = e.dataTransfer.files?.[0];
               if (f) void readFile(f);
             }}
-            className={`mt-2 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-6 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange ${
+            className={`mt-2 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-6 text-center transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
               dragging ? "border-dutchOrange bg-dutchOrange/10" : "border-hairline hover:border-dutchOrange/40"
             }`}
           >
@@ -369,7 +369,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
           ) : files.length === 0 ? (
             <p className="mt-2 text-sm text-muted">None yet. Generated or loaded STL files you save appear here.</p>
           ) : (
-            <ul className="mt-2 divide-y divide-[var(--border-hairline)]">
+            <ul className="mt-2 divide-y divide-(--border-hairline)">
               {files.map((f) => {
                 const m = f.meta ?? {};
                 const desc = m.uploaded ? "loaded file" : [m.partRef, m.body].filter((x) => typeof x === "string" && x).join(" ");

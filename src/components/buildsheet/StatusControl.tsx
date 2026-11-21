@@ -43,7 +43,7 @@ export function StatusControl({ status, name, onChange }: { status: string; name
             tabIndex={i === current ? 0 : -1}
             title={locked ? "Solder this wire first" : undefined}
             onClick={() => { if (!locked) onChange(s); }}
-            className={`h-7 rounded px-2.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange ${
+            className={`h-7 rounded px-2.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
               on
                 ? s === "tested" ? "bg-success-soft text-success" : s === "soldered" ? "bg-info-soft text-info" : "bg-warning-soft text-warning"
                 : locked ? "cursor-not-allowed text-muted" : "text-secondary hover:text-primary"

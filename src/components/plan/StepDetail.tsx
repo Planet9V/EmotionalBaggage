@@ -92,7 +92,7 @@ export function StepDetail({
               value={step.status}
               disabled={!!busy}
               onChange={(e) => void run("status", { status: e.target.value })}
-              className="h-9 flex-1 rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange"
+              className="h-9 flex-1 rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
             >
               {statusesFor(step.section, step.status).map((s) => (
                 <option key={s} value={s}>{s}</option>

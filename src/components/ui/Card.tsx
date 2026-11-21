@@ -73,7 +73,7 @@ function plateClasses(variant: Variant, hoverEffect: boolean, className: string,
         SHELL_RADIUS,
         "transition-colors duration-300 ease-out-soft motion-reduce:transition-none",
         hoverEffect && "hover:border-dutchOrange/40 focus-visible:border-dutchOrange/40",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
         className
       ),
       core: join(
@@ -81,7 +81,7 @@ function plateClasses(variant: Variant, hoverEffect: boolean, className: string,
         CORE_RADIUS,
         LIFT,
         hoverEffect &&
-          "group-hover/plate:-translate-y-[2px] group-focus-visible/plate:-translate-y-[2px] motion-reduce:group-hover/plate:translate-y-0 motion-reduce:group-focus-visible/plate:translate-y-0",
+          "group-hover/plate:translate-y-[-2px] group-focus-visible/plate:translate-y-[-2px] motion-reduce:group-hover/plate:translate-y-0 motion-reduce:group-focus-visible/plate:translate-y-0",
         innerClassName
       ),
     };
@@ -92,7 +92,7 @@ function plateClasses(variant: Variant, hoverEffect: boolean, className: string,
       "rounded-2xl border border-hairline text-primary",
       flat,
       "transition-[transform,border-color] duration-300 ease-spring motion-reduce:transition-none",
-      hoverEffect && "hover:-translate-y-[2px] hover:border-dutchOrange/40 motion-reduce:hover:translate-y-0",
+      hoverEffect && "hover:translate-y-[-2px] hover:border-dutchOrange/40 motion-reduce:hover:translate-y-0",
       className,
       innerClassName
     ),

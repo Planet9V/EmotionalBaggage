@@ -50,7 +50,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus }: Props
         <button
           type="button"
           onClick={() => toggle(key)}
-          className={`inline-flex items-center gap-1 uppercase tracking-[0.15em] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange ${active ? "text-primary" : ""}`}
+          className={`inline-flex items-center gap-1 uppercase tracking-[0.15em] hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${active ? "text-primary" : ""}`}
         >
           {label}
           <Icon className="h-3 w-3" aria-hidden />
@@ -81,8 +81,8 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus }: Props
               transition={{ duration: 0.3, ease: "easeOut", delay: reduce ? 0 : Math.min(i * 0.025, 0.25) }}
               className="border-b border-hairline transition-colors hover:bg-subtle"
             >
-              <TableCell className="max-w-[22rem] font-medium text-primary">
-                <button type="button" onClick={() => onOpen(it.id)} className="text-left [overflow-wrap:anywhere] hover:text-link focus-visible:outline-none focus-visible:underline">
+              <TableCell className="max-w-88 font-medium text-primary">
+                <button type="button" onClick={() => onOpen(it.id)} className="text-left wrap-anywhere hover:text-link focus-visible:outline-hidden focus-visible:underline">
                   {it.title}
                 </button>
               </TableCell>
@@ -112,7 +112,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus }: Props
                 <button
                   type="button"
                   onClick={() => onOpen(it.id)}
-                  className="rounded-md px-2 py-1 text-xs text-secondary hover:text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange"
+                  className="rounded-md px-2 py-1 text-xs text-secondary hover:text-link focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
                   aria-label={`Open ${it.title}`}
                 >
                   Open

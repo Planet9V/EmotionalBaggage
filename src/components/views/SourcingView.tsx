@@ -139,7 +139,7 @@ function PartRow({ part: p, onStatus, onAsin }: { part: Part; onStatus: (s: stri
         ) : kind === "own" ? (
           <Link href="/s/prototype/printing" className="text-sm text-link hover:underline">Print it on your own printer</Link>
         ) : null}
-        {p.search ? <p className="break-words font-mono text-xs text-muted">{p.search}</p> : kind !== "own" ? <p className="text-xs text-muted">No search term set. Add one in the bill of materials.</p> : null}
+        {p.search ? <p className="wrap-break-word font-mono text-xs text-muted">{p.search}</p> : kind !== "own" ? <p className="text-xs text-muted">No search term set. Add one in the bill of materials.</p> : null}
         {kind === "amazon" && <AsinField asin={p.asin} onSave={onAsin} label={p.item.title} />}
       </div>
 

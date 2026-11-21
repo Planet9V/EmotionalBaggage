@@ -362,7 +362,7 @@ function Leader({ progress, part, info, selected, color, onSelect, lift = 0, yOf
           <button
             type="button"
             onClick={() => onSelect(part.id)}
-            className={`whitespace-nowrap rounded-md border bg-surface px-1.5 py-0.5 text-left text-[11px] text-primary shadow-sm transition-colors duration-150 ${
+            className={`whitespace-nowrap rounded-md border bg-surface px-1.5 py-0.5 text-left text-[11px] text-primary shadow-xs transition-colors duration-150 ${
               selected ? "border-dutchOrange" : "border-hairline hover:border-dutchOrange/40"
             }`}
           >
@@ -608,7 +608,7 @@ function WireLine({ wire, ends, index, progress, sphere, showVia, onHover }: {
           <mesh geometry={sphere} material={dot} dispose={null} />
           {showVia && (
             <Html zIndexRange={[15, 0]} style={{ pointerEvents: "none", transform: "translate(6px, -50%)" }}>
-              <span className="whitespace-nowrap rounded border border-hairline bg-surface px-1 font-mono text-[10px] text-primary">{wire.via}</span>
+              <span className="whitespace-nowrap rounded-sm border border-hairline bg-surface px-1 font-mono text-[10px] text-primary">{wire.via}</span>
             </Html>
           )}
         </group>
@@ -657,7 +657,7 @@ function WiresLayer({ wires, parts, progress }: { wires: CanvasWire[]; parts: Ca
       ))}
       {shownHover && (
         <Html position={shownHover.point} zIndexRange={[30, 0]} style={{ pointerEvents: "none", transform: "translate(10px, -110%)" }}>
-          <div className="whitespace-nowrap rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] text-primary shadow-sm">
+          <div className="whitespace-nowrap rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] text-primary shadow-xs">
             <span className="block font-medium">{shownHover.wire.name}</span>
             <span className="block font-mono text-[10px] text-secondary">{shownHover.wire.ends}</span>
           </div>

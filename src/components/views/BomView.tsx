@@ -89,8 +89,8 @@ export function BomView({ project, section, store }: ViewProps) {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-20">Ref</TableHead>
-                <TableHead className="min-w-[10rem]">Part</TableHead>
-                <TableHead className="min-w-[14rem]">Specification</TableHead>
+                <TableHead className="min-w-40">Part</TableHead>
+                <TableHead className="min-w-56">Specification</TableHead>
                 <TableHead className="w-16 text-right">Qty</TableHead>
                 <TableHead className="w-36">Source</TableHead>
                 <TableHead className="w-28 text-right">Line cost</TableHead>
@@ -378,10 +378,10 @@ function ImportDialog({ open, onOpenChange, defaultStatus, onCreate }: { open: b
                     <TableRow key={i} className={r.problem ? "bg-danger-soft hover:bg-danger-soft" : ""}>
                       <TableCell className="font-mono text-xs">{r.ref}</TableCell>
                       <TableCell className="text-xs">{r.title}</TableCell>
-                      <TableCell className="max-w-[12rem] truncate text-xs">{r.spec}</TableCell>
+                      <TableCell className="max-w-48 truncate text-xs">{r.spec}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{r.qty}</TableCell>
                       <TableCell className="text-xs">{r.source}</TableCell>
-                      <TableCell className="max-w-[10rem] truncate text-xs">{r.search}</TableCell>
+                      <TableCell className="max-w-40 truncate text-xs">{r.search}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(r.line)}</TableCell>
                       <TableCell className="text-xs text-danger">{r.problem || <span className="text-success">OK</span>}</TableCell>
                     </TableRow>

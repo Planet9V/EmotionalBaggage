@@ -397,7 +397,7 @@ export function ModelView({ project }: ViewProps) {
             <label className="ml-auto flex items-center gap-2 text-xs text-secondary">
               Explode by net
               <select
-                className="h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-40"
+                className="h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-40"
                 value={explodeByValid ? explodeBy : ""}
                 disabled={!showCanvas || wires.length === 0}
                 onChange={(e) => setExplodeBy(e.target.value)}

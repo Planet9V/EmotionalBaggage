@@ -81,12 +81,12 @@ export function ChangePassword() {
         <form onSubmit={submit} noValidate className="space-y-4 rounded-xl border border-hairline bg-surface p-5">
           <h2 className="text-base font-semibold tracking-tight text-primary">Change password</h2>
           {error && (
-            <p id="password-message" ref={messageRef} tabIndex={-1} role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger focus:outline-none">
+            <p id="password-message" ref={messageRef} tabIndex={-1} role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger focus:outline-hidden">
               {error.message}
             </p>
           )}
           {done && !error && (
-            <p ref={messageRef} tabIndex={-1} role="status" className="rounded-md bg-success-soft px-3 py-2 text-sm text-success focus:outline-none">
+            <p ref={messageRef} tabIndex={-1} role="status" className="rounded-md bg-success-soft px-3 py-2 text-sm text-success focus:outline-hidden">
               The password was changed. Other browsers signed in to this account were signed out.
             </p>
           )}

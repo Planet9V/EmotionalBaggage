@@ -175,7 +175,7 @@ export function SchematicCanvas(p: Props) {
                   <button
                     type="button"
                     onClick={() => placeAtCentre(part.ref)}
-                    className="ml-1 rounded px-1.5 py-0.5 text-[11px] text-link transition-colors duration-150 hover:bg-dutchOrange/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange"
+                    className="ml-1 rounded-sm px-1.5 py-0.5 text-[11px] text-link transition-colors duration-150 hover:bg-dutchOrange/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
                     aria-label={`Place ${part.ref} on the canvas`}
                   >
                     Place
@@ -247,19 +247,19 @@ export function SchematicCanvas(p: Props) {
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="var(--border-hairline)" />
-          <Controls showInteractive={false} className="!rounded-md !border !border-hairline !shadow-sm" />
+          <Controls showInteractive={false} className="rounded-md! border! border-hairline! shadow-xs!" />
           <MiniMap
             pannable
             zoomable
-            className="!rounded-md !border !border-hairline !bg-subtle"
+            className="rounded-md! border! border-hairline! bg-subtle!"
             nodeColor={(n) => (n.type === "via" ? "#E05A10" : "var(--border-hairline)")}
             nodeStrokeColor={(n) => (n.type === "via" ? "#E05A10" : "var(--text-muted)")}
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
             maskColor="rgba(113, 113, 122, 0.16)"
           />
-          <Panel position="top-left" className="!m-3">
-            <div role="group" aria-label="Show or hide wires by net class" className="flex flex-wrap items-center gap-1 rounded-md border border-hairline bg-surface p-1 shadow-sm">
+          <Panel position="top-left" className="m-3!">
+            <div role="group" aria-label="Show or hide wires by net class" className="flex flex-wrap items-center gap-1 rounded-md border border-hairline bg-surface p-1 shadow-xs">
               {CLASSES.map((c) => {
                 const on = !hidden.has(c);
                 return (
@@ -268,7 +268,7 @@ export function SchematicCanvas(p: Props) {
                     type="button"
                     aria-pressed={on}
                     onClick={() => p.onToggleClass(c)}
-                    className={`inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange ${
+                    className={`inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
                       on ? "text-primary hover:bg-subtle" : "text-muted line-through hover:bg-subtle"
                     }`}
                     title={on ? `Hide ${CLASS_LABEL[c].toLowerCase()} wires` : `Show ${CLASS_LABEL[c].toLowerCase()} wires`}
@@ -281,13 +281,13 @@ export function SchematicCanvas(p: Props) {
               })}
             </div>
           </Panel>
-          <Panel position="bottom-center" className="!mb-3 pointer-events-none">
-            <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-sm">
+          <Panel position="bottom-center" className="mb-3! pointer-events-none">
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Drag parts to arrange. Drag from pin to pin to add a wire. Double-click a wire to edit it.
             </p>
           </Panel>
           {p.banner && (
-            <Panel position="top-center" className="!mt-16">
+            <Panel position="top-center" className="mt-16!">
               {p.banner}
             </Panel>
           )}

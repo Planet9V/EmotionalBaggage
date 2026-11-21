@@ -73,7 +73,7 @@ const WORD: Record<DState, string> = {
   blocked: "text-danger",
 };
 
-const hidden = "!h-1.5 !w-1.5 !min-h-0 !min-w-0 !border-0 !bg-transparent";
+const hidden = "h-1.5! w-1.5! min-h-0! min-w-0! border-0! bg-transparent!";
 
 function DecisionCard({ data }: NodeProps<CardNode>) {
   const { d, state, word, selected, onPath, hidden: more, open, hasKids } = data;
@@ -83,8 +83,8 @@ function DecisionCard({ data }: NodeProps<CardNode>) {
         selected
           ? "border-dutchOrange shadow-[0_0_20px_rgba(224,90,16,0.15)]"
           : onPath
-            ? "border-dutchOrange/40 shadow-sm"
-            : "border-hairline shadow-sm hover:border-dutchOrange/40"
+            ? "border-dutchOrange/40 shadow-xs"
+            : "border-hairline shadow-xs hover:border-dutchOrange/40"
       }`}
       style={{ width: CARD_W, height: CARD_H }}
       data-testid="decision-node"
@@ -345,14 +345,14 @@ function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove
         if (e) onUserMove();
       }}
       proOptions={{ hideAttribution: true }}
-      className="!bg-transparent"
+      className="bg-transparent!"
     >
       <Background variant={BackgroundVariant.Dots} gap={22} size={1.1} color="var(--border-hairline)" />
-      <Controls showInteractive={false} showFitView={false} position="bottom-left" className="!rounded-md !shadow-sm" />
+      <Controls showInteractive={false} showFitView={false} position="bottom-left" className="rounded-md! shadow-xs!" />
       <button
         type="button"
         onClick={fitAll}
-        className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 rounded-md border border-hairline bg-surface px-3 text-xs font-medium text-secondary shadow-sm transition-colors duration-150 hover:border-dutchOrange hover:text-link"
+        className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 rounded-md border border-hairline bg-surface px-3 text-xs font-medium text-secondary shadow-xs transition-colors duration-150 hover:border-dutchOrange hover:text-link"
         data-testid="decisions-fit"
       >
         <Maximize2 className="h-3.5 w-3.5" aria-hidden />

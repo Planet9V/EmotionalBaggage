@@ -200,8 +200,8 @@ export function BuildSheetView({ project, store }: ViewProps) {
               type="button"
               aria-pressed={mode === m}
               onClick={() => setMode(m)}
-              className={`h-7 rounded px-3 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange ${
-                mode === m ? "bg-surface text-primary shadow-sm" : "text-secondary hover:text-primary"
+              className={`h-7 rounded px-3 text-xs font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
+                mode === m ? "bg-surface text-primary shadow-xs" : "text-secondary hover:text-primary"
               }`}
             >
               {m === "order" ? "In order" : "By part"}

@@ -63,7 +63,7 @@ export function InlineEdit({
         onClick={open}
         aria-label={`Edit ${label}`}
         className={cn(
-          "-mx-1.5 block w-full rounded-md px-1.5 py-1 text-sm transition hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange",
+          "-mx-1.5 block w-full rounded-md px-1.5 py-1 text-sm transition hover:bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange",
           text,
           value ? "text-primary" : "text-muted",
           className
@@ -93,7 +93,7 @@ export function InlineEdit({
           }
         }}
         className={cn(
-          "h-8 w-full rounded-md border bg-surface px-1.5 text-sm text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange",
+          "h-8 w-full rounded-md border bg-surface px-1.5 text-sm text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange",
           error ? "border-danger" : "border-dutchOrange",
           text
         )}

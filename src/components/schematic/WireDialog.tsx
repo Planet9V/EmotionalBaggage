@@ -139,7 +139,7 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
             <Button variant="outline" onClick={() => setConfirming(false)} disabled={busy}>
               Keep it
             </Button>
-            <Button onClick={remove} disabled={busy} className="!bg-danger-solid hover:!opacity-90">
+            <Button onClick={remove} disabled={busy} className="bg-danger-solid! hover:opacity-90!">
               <Trash2 className="h-4 w-4" aria-hidden /> Delete wire
             </Button>
           </div>

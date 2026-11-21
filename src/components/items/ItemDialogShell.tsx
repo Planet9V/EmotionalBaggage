@@ -28,11 +28,11 @@ export function ItemDialogShell({
           <div className="flex items-start justify-between gap-3 border-b border-hairline px-5 py-4">
             <div className="min-w-0">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">{eyebrow}</p>
-              <DialogTitle className="mt-1 text-lg font-semibold tracking-tight [overflow-wrap:anywhere]">{title}</DialogTitle>
+              <DialogTitle className="mt-1 text-lg font-semibold tracking-tight wrap-anywhere">{title}</DialogTitle>
               <DialogDescription className="mt-0.5">{description}</DialogDescription>
             </div>
             <DialogClose
-              className="rounded-md p-1.5 text-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange"
+              className="rounded-md p-1.5 text-muted hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
               aria-label="Close"
             >
               <X className="h-4 w-4" aria-hidden />

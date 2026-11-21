@@ -57,7 +57,7 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
   const describedBy = error ? ERROR_ID : undefined;
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-canvas px-4 py-10 text-primary">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10 text-primary">
       <div className="w-full max-w-sm">
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept to realization</p>
         <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-primary">Sign in</h1>
@@ -73,7 +73,7 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
           )}
 
           {error && (
-            <p id={ERROR_ID} ref={errorRef} tabIndex={-1} role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange">
+            <p id={ERROR_ID} ref={errorRef} tabIndex={-1} role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
               {error}
             </p>
           )}

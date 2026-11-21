@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 73165be by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 002e22e by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -122,6 +122,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 
 | Package | Version | Licence |
 | --- | --- | --- |
+| @tailwindcss/postcss | 4.3.5 | MIT |
 | @testing-library/dom | 10.4.2 | MIT |
 | @testing-library/react | 16.3.3 | MIT |
 | @types/node | 22.20.5 | MIT |
@@ -129,13 +130,13 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
 | @types/three | 0.187.0 | MIT |
-| autoprefixer | 10.7.0 | MIT |
 | eslint | 9.39.5 | MIT |
 | eslint-config-next | 16.4.6 | MIT |
 | jsdom | 31.0.1 | MIT |
 | license-checker-rseidelsohn | 4.4.2 | BSD-3-Clause |
 | postcss | 8.5.33 | MIT |
-| tailwindcss | 3.4.17 | MIT |
+| tailwindcss | 4.3.5 | MIT |
+| tw-animate-css | 1.4.0 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |
 | vitest | 5.1.1 | MIT |
 

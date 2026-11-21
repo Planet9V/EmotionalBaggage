@@ -35,7 +35,7 @@ const SNAP_STEPS = [0.5, 1, 5];
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
 const selectCls =
-  "h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange";
+  "h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "concept";
 
@@ -272,7 +272,7 @@ export function LayoutView({ project }: ViewProps) {
   });
 
   return (
-    <div className="flex flex-col gap-4 outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
+    <div className="flex flex-col gap-4 outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
       {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       {notice && (
         <p role="status" className={`rounded-md px-3 py-2 text-sm ${notice.tone === "ok" ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>

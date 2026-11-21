@@ -9,7 +9,7 @@ import { CLASS_LABEL } from "./model";
 
 export const EYEBROW = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 export const FIELD_CLS =
-  "w-full rounded-md border border-hairline bg-surface px-3 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-50";
+  "w-full rounded-md border border-hairline bg-surface px-3 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-50";
 
 export function Field({ label, hint, children, className }: { label: string; hint?: string; children: ReactNode; className?: string }) {
   return (
@@ -76,7 +76,7 @@ export function Modal({
               <DialogTitle className="text-base tracking-tight">{title}</DialogTitle>
               <DialogDescription className="mt-0.5 text-xs">{description}</DialogDescription>
             </div>
-            <DialogClose className="rounded-md p-1 text-muted transition-colors duration-150 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
+            <DialogClose className="rounded-md p-1 text-muted transition-colors duration-150 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
               <X className="h-4 w-4" aria-hidden />
             </DialogClose>
           </div>

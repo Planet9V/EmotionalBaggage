@@ -103,7 +103,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
     return (
       <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
         <p className="text-sm font-medium text-danger">{section.label} could not be loaded.</p>
-        <p className="mt-1 text-sm text-danger [overflow-wrap:anywhere]">{error}</p>
+        <p className="mt-1 text-sm text-danger wrap-anywhere">{error}</p>
         <Button variant="outline" size="sm" className="mt-3" onClick={() => void reload()}>
           Try again
         </Button>
@@ -152,7 +152,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
   }
 
   const chip = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange ${
+    `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
       active ? "border-dutchOrange bg-dutchOrange/10 text-primary" : "border-hairline bg-surface text-secondary hover:border-dutchOrange/60 hover:text-primary"
     }`;
 
@@ -175,7 +175,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
               type="button"
               aria-pressed={layout === k}
               onClick={() => pick(k)}
-              className={`inline-flex h-9 items-center gap-1.5 px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dutchOrange ${
+              className={`inline-flex h-9 items-center gap-1.5 px-3 text-xs transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dutchOrange ${
                 layout === k ? "bg-subtle font-medium text-primary" : "bg-surface text-secondary hover:text-primary"
               }`}
             >
@@ -198,7 +198,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
       </div>
 
       {(error || actionError) && (
-        <p role="alert" className="text-sm text-danger [overflow-wrap:anywhere]">
+        <p role="alert" className="text-sm text-danger wrap-anywhere">
           {actionError || error}
         </p>
       )}

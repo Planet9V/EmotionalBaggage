@@ -103,7 +103,7 @@ export function PartPanel({ part, onClose, onSave, onTogglePrint, focus }: {
           </label>
         )}
       </div>
-      <dl className="divide-y divide-[var(--border-hairline)]">
+      <dl className="divide-y divide-(--border-hairline)">
         <Row label="Spec">{part.item.body ? <span className="whitespace-pre-wrap">{part.item.body}</span> : <span className="text-muted">None written</span>}</Row>
         <Row label="Qty" mono>{part.qty === null ? <span className="font-sans text-muted">Not set</span> : fmt(part.qty)}</Row>
         <Row label="Source">{part.source || <span className="text-muted">Not set</span>}</Row>
@@ -241,7 +241,7 @@ function NumField({ label, value, onChange, placeholder }: { label: string; valu
 }
 
 const selectCls =
-  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange";
+  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 
 function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; onSave: (g: PartGeometry) => Promise<void> }) {
   const [open, setOpen] = useState(geometry !== null);

@@ -32,7 +32,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="grid grid-cols-[72px_1fr] items-baseline gap-2 py-1.5">
       <dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{label}</dt>
-      <dd className="min-w-0 break-words text-sm text-primary">{children}</dd>
+      <dd className="min-w-0 wrap-break-word text-sm text-primary">{children}</dd>
     </div>
   );
 }
@@ -78,7 +78,7 @@ function Header({ eyebrow, title, onClose }: { eyebrow: string; title: string; o
         <h3 className="mt-1 text-base font-semibold leading-snug tracking-tight text-primary">{title}</h3>
       </div>
       {onClose && (
-        <button type="button" onClick={onClose} aria-label="Clear selection" className="rounded-md p-1 text-muted transition-colors duration-150 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dutchOrange">
+        <button type="button" onClick={onClose} aria-label="Clear selection" className="rounded-md p-1 text-muted transition-colors duration-150 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
           <X className="h-4 w-4" aria-hidden />
         </button>
       )}

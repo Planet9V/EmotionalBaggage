@@ -30,7 +30,7 @@ const components: Components = {
     if (className || text.includes("\n")) {
       return <pre className="mt-3 overflow-x-auto rounded-xl border border-hairline bg-subtle p-4 font-mono text-xs leading-relaxed text-primary"><code>{text}</code></pre>;
     }
-    return <code className="rounded bg-subtle px-1 py-0.5 font-mono text-[0.85em] text-primary">{text}</code>;
+    return <code className="rounded-sm bg-subtle px-1 py-0.5 font-mono text-[0.85em] text-primary">{text}</code>;
   },
 };
 

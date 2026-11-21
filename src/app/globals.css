@@ -1,15 +1,138 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
 
-/* Design tokens below are Eigenia's (Planet9V/eigenia web/src/app/globals.css), unchanged.
+/* Tailwind 4: the theme lives here, not in a config file. Dark mode is the `dark` class on <html>. */
+@custom-variant dark (&:is(.dark *));
+@custom-variant light (html.light &);
+/* Hover effects only for mouse-type pointers, so a tap never leaves a card stuck in its hover state. */
+@custom-variant can-hover (@media (hover: hover) and (pointer: fine));
+
+/* Design tokens are Eigenia's (Planet9V/eigenia web/src/app/globals.css). The values are set per theme
+   in the :root and .dark blocks below; this block only gives them Tailwind names.
    Fonts are self-hosted from npm so the Docker build needs no font CDN. */
-:root {
-  --font-sans: "Inter Variable", "Inter";
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono";
+@theme inline {
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-subtle: var(--bg-subtle);
+  --color-bezel: var(--bezel-shell);
+  --color-hairline: var(--border-hairline);
+
+  /* Text colours. In this app `text-primary`, `text-secondary` and `text-muted` are ink colours. */
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+
+  /* Contrast tokens. No opacity modifiers on these. */
+  --color-action: var(--action-bg);
+  --color-action-hover: var(--action-bg-hover);
+  --color-link: var(--link);
+  --color-focus: var(--focus-ring);
+
+  /* Status tokens. No opacity modifiers on these. */
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-solid: var(--danger-solid);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  /* The names shadcn/ui and AI Elements components expect, mapped onto the same tokens.
+     shadcn uses `primary`, `secondary` and `muted` as fills; here they are ink colours as text
+     (above) and take shadcn's meaning only as backgrounds (below). */
+  --color-background: var(--bg-canvas);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--bg-surface);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--bg-surface);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--bg-subtle);
+  --color-accent-foreground: var(--text-primary);
+  --color-destructive: var(--danger-solid);
+  --color-border: var(--border-hairline);
+  --color-input: var(--border-hairline);
+  --color-ring: var(--focus-ring);
+  --background-color-primary: var(--action-bg);
+  --background-color-secondary: var(--bg-subtle);
+  --background-color-muted: var(--bg-subtle);
+
+  --shadow-plate: var(--plate-shadow);
+  --shadow-bezel-inset: inset 0 1px 0 0 var(--bezel-highlight);
+}
+
+@theme {
+  --color-obsidian: #0b0c0e;
+  --color-charcoalBand: #121417;
+  --color-slateBand: #16181d;
+  --color-cardSurface: #131519;
+  --color-cardBorder: #22252c;
+
+  --color-dutchOrange-50: #fff6ef;
+  --color-dutchOrange-100: #ffe7d6;
+  --color-dutchOrange-200: #ffc9a8;
+  --color-dutchOrange-300: #ffa370;
+  --color-dutchOrange-400: #f07b37;
+  --color-dutchOrange-500: #e05a10;
+  --color-dutchOrange-600: #c64405;
+  --color-dutchOrange-700: #9c3204;
+  --color-dutchOrange-800: #7a2a0a;
+  --color-dutchOrange-900: #63240c;
+  --color-dutchOrange: #e05a10;
+
+  --color-charcoal-50: #18181b;
+  --color-charcoal-100: #121417;
+  --color-charcoal-200: #0d0d0f;
+  --color-charcoal-300: #09090b;
+  --color-charcoal-400: #050505;
+  --color-charcoal-500: #0b0c0e;
+  --color-charcoal-600: #000000;
+  --color-charcoal: #0b0c0e;
+
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
+  --font-serif: "Charter", "Bitstream Charter", "Georgia", "Cambria", "Times New Roman", serif;
+
+  /* Display scale for landing-page headings. Fluid, tight leading and tracking. */
+  --text-display-2: clamp(2rem, 1.45rem + 1.9vw, 3rem);
+  --text-display-2--line-height: 1.06;
+  --text-display-2--letter-spacing: -0.03em;
+  --text-display-2--font-weight: 600;
+  --text-display-3: clamp(1.625rem, 1.3rem + 1.1vw, 2.25rem);
+  --text-display-3--line-height: 1.12;
+  --text-display-3--letter-spacing: -0.025em;
+  --text-display-3--font-weight: 600;
+
+  /* Motion: ease-spring for entrances and reveals, ease-out-soft for hover, press and focus. */
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes glow {
+    0% { box-shadow: 0 0 15px rgba(224, 90, 16, 0.3); }
+    100% { box-shadow: 0 0 25px rgba(224, 90, 16, 0.6); }
+  }
+}
+
+/* Tailwind 4 makes the default border colour the text colour; here every border is a hairline unless it says otherwise. */
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--border-hairline);
+  }
 }
 
 /* ==========================================================================
@@ -33,14 +156,14 @@
   --shadow-card: 0 4px 20px -2px rgba(24, 24, 27, 0.05);
   --shadow-dropdown: 0 10px 30px -5px rgba(24, 24, 27, 0.08);
   /* Double-bezel plate (ui/Card): soft layered ambient shadow and the inset top highlight. */
-  --shadow-plate: 0 1px 2px rgba(60, 40, 20, 0.04), 0 10px 24px -10px rgba(60, 40, 20, 0.09), 0 28px 48px -28px rgba(60, 40, 20, 0.12);
+  --plate-shadow: 0 1px 2px rgba(60, 40, 20, 0.04), 0 10px 24px -10px rgba(60, 40, 20, 0.09), 0 28px 48px -28px rgba(60, 40, 20, 0.12);
   --bezel-highlight: rgba(255, 255, 255, 0.95);
   /* Tray colour of the double bezel: darker than canvas AND bg-subtle so the 6px shell reads on every band. */
   --bezel-shell: #E9E4DA;
 
-  --color-accent: #E05A10;
-  --color-accent-subtle: rgba(224, 90, 16, 0.08);
-  --color-accent-border: rgba(224, 90, 16, 0.3);
+  --accent-orange: #E05A10;
+  --accent-orange-subtle: rgba(224, 90, 16, 0.08);
+  --accent-orange-border: rgba(224, 90, 16, 0.3);
 
   /* Contrast tokens (polish A3; Tailwind: bg-action, hover:bg-action-hover, text-link).
      White on dutchOrange-500 is 3.72:1 and fails AA, so filled buttons use -600 (4.96:1) and step
@@ -83,13 +206,13 @@ html.dark {
 
   --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
   --shadow-dropdown: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
-  --shadow-plate: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -12px rgba(0, 0, 0, 0.6), 0 36px 64px -32px rgba(0, 0, 0, 0.75);
+  --plate-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -12px rgba(0, 0, 0, 0.6), 0 36px 64px -32px rgba(0, 0, 0, 0.75);
   --bezel-highlight: rgba(255, 255, 255, 0.07);
   --bezel-shell: #1D2027;
 
-  --color-accent: #E05A10;
-  --color-accent-subtle: rgba(224, 90, 16, 0.15);
-  --color-accent-border: rgba(224, 90, 16, 0.4);
+  --accent-orange: #E05A10;
+  --accent-orange-subtle: rgba(224, 90, 16, 0.15);
+  --accent-orange-border: rgba(224, 90, 16, 0.4);
 
   --action-bg: #C64405;
   --action-bg-hover: #9C3204;
@@ -131,21 +254,16 @@ html.dark {
    Tailwind's own DEFAULT easing and duration are deliberately not overridden.
    ========================================================================== */
 :root {
-  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --dur-fast: 150ms;
   --dur-base: 300ms;
   --dur-slow: 700ms;
 }
 
-:root {
-  --font-serif: "Charter", "Bitstream Charter", "Georgia", "Cambria", "Times New Roman", serif;
-}
 
 body {
   background-color: var(--bg-canvas);
   color: var(--text-primary);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
   scroll-behavior: smooth;
   transition: background-color 0.25s ease, color 0.25s ease;
@@ -153,7 +271,7 @@ body {
 
 /* Unified Typography: Consistent Sans (Inter) for all Headers & Text */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   letter-spacing: -0.025em;
 }
 

@@ -140,7 +140,7 @@ export function WizardView() {
                 </motion.div>
               </AnimatePresence>
 
-              <div aria-live="polite" className="mt-4 min-h-[1.25rem] text-sm text-danger">{error}</div>
+              <div aria-live="polite" className="mt-4 min-h-5 text-sm text-danger">{error}</div>
 
               <div className="mt-4 flex items-center justify-between border-t border-hairline pt-4">
                 <Button type="button" variant="ghost" disabled={step === 1 || busy} onClick={() => go(step - 1)}>

@@ -26,7 +26,7 @@ export function readPalette(): Palette {
     hairline: v("--border-hairline", FALLBACK.hairline),
     danger: v("--danger", FALLBACK.danger),
     link: v("--link", FALLBACK.link),
-    accent: v("--color-accent", FALLBACK.accent),
+    accent: v("--accent-orange", FALLBACK.accent),
   };
 }
 

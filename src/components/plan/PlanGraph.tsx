@@ -24,21 +24,21 @@ function StepNodeView({ data }: NodeProps<StepNodeType>) {
       : "border-hairline";
   return (
     <div
-      className={`w-[248px] rounded-xl border bg-surface px-3 py-2.5 text-left shadow-sm transition-shadow duration-150 ${ring} ${
+      className={`w-[248px] rounded-xl border bg-surface px-3 py-2.5 text-left shadow-xs transition-shadow duration-150 ${ring} ${
         selected ? "shadow-[0_0_20px_rgba(224,90,16,0.15)] ring-2 ring-dutchOrange" : "hover:shadow-md"
       }`}
     >
-      <Handle type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      <Handle type="target" position={Position.Left} className="h-2! w-2! border-0! bg-transparent!" />
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-link">{step.id}</span>
-        <StatusBadge tone={statusTone(step.status)} className="!px-2 !py-0 !text-[10px]">{step.status}</StatusBadge>
+        <StatusBadge tone={statusTone(step.status)} className="px-2! py-0! text-[10px]!">{step.status}</StatusBadge>
       </div>
       <p className="mt-1 line-clamp-2 text-[13px] font-semibold leading-snug tracking-tight text-primary">{step.title}</p>
       <div className="mt-1.5 flex items-center justify-between font-mono text-[10px] text-muted">
         <span>{fmtMinutes(step.minutes)}</span>
         <span>{blocked ? "in a loop" : `${step.start} to ${step.finish} min`}</span>
       </div>
-      <Handle type="source" position={Position.Right} className="!h-2 !w-2 !border-0 !bg-transparent" />
+      <Handle type="source" position={Position.Right} className="h-2! w-2! border-0! bg-transparent!" />
     </div>
   );
 }
