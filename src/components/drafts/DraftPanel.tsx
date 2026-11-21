@@ -13,6 +13,7 @@ import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
 import { ApiError, draftQueries, useDraftActions } from "./api";
 import { DraftCard } from "./DraftCard";
+import { PrerequisiteLink } from "./PrerequisiteLink";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Card } from "@/components/ui/Card";
 
@@ -147,7 +148,7 @@ export function DraftPanel({
                   The reasoning model <span className="font-mono text-xs text-primary">{model}</span> reads {g.readsText.replace(/^from /, "")} and proposes rows for {sectionLabel}. Rows that do not fit the section are left out and listed.
                 </p>
                 {g.blocked ? (
-                  <p className="rounded-xl bg-subtle px-4 py-3 text-sm text-secondary">{g.blocked}</p>
+                  <p className="rounded-xl bg-subtle px-4 py-3 text-sm text-secondary">{g.blocked}<PrerequisiteLink generator={g} /></p>
                 ) : phase.kind === "running" ? (
                   <div role="status" aria-live="polite" className="space-y-2 rounded-xl border border-hairline p-4">
                     <p className="text-sm text-primary">Read {g.readsText.replace(/^from /, "")}. Waiting for the model to answer; this can take a minute or two.</p>

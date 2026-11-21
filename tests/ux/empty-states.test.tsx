@@ -101,3 +101,18 @@ describe("no empty-state pattern of a view's own", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("Draft with AI prerequisite (U16)", () => {
+  it("wraps instead of cutting the hint off, and links the section to fill first", async () => {
+    const { DraftButton } = await import("@/components/drafts/DraftButton");
+    adminServer([
+      on("GET", `/api/drafts/generators?projectId=${P}&kind=section&store=${encodeURIComponent(STORE)}`, () => ({
+        body: gens({}, 0) && { ...gens(), generators: [{ ...gens().generators[0], from: ["concept/brief"], counts: { "concept/brief": 0 }, blocked: "Write at least one brief line or a one-liner for the concept first." }] },
+      })),
+    ]);
+    renderWithClient(<DraftButton projectId={P} store={STORE} sectionLabel="Personas" />);
+    const link = await screen.findByRole("link", { name: "Open Concept / Brief" });
+    expect(link.getAttribute("href")).toBe("/s/concept/brief");
+    expect(link.parentElement!.className).not.toMatch(/truncate/);
+  });
+});
