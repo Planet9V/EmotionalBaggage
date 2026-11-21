@@ -3,7 +3,6 @@
 // as a DRAFT with what it was generated from; nothing is a row until the user confirms it. The page
 // says, and the prompt says, that this is a prompt for the user's own checking and not advice.
 import { z } from "zod";
-import { completeJson } from "@/lib/ai/models";
 import { productType } from "@/lib/productTypes";
 import { toPart } from "@/lib/domain/part";
 import { REGION_LABEL, type Region } from "@/lib/economics/schemas";
@@ -64,17 +63,6 @@ export function promptFor(c: DraftContext): string {
 }
 
 export const normalTopic = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-/** Asks the reasoning model. Throws the model layer's ModelError (503 when no model is chosen). */
-export async function askForDraft(c: DraftContext, signal?: AbortSignal) {
-  return completeJson({
-    system: SYSTEM,
-    messages: [{ role: "user", content: promptFor(c) }],
-    schema: draftSchema,
-    maxOutputTokens: 4000,
-    signal,
-  });
-}
 
 // ------------------------------------------------------------------------------------------------
 // On the shared drafting engine (src/lib/ai/drafts): the same prompt and rules, rows reviewed as
