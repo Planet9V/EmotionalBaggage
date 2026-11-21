@@ -2,14 +2,21 @@ name: CI
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
+
+# A newer push to the same branch (or pull request) cancels the run it supersedes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   web:
     runs-on: ubuntu-latest
     services:
       db:
-        image: pgvector/pgvector:pg17
+        # the same PostgreSQL 19 image as production, the e2e and the kicad jobs
+        image: pgvector/pgvector:0.8.7-pg19-trixie
         env:
           POSTGRES_USER: c2r
           POSTGRES_PASSWORD: c2r
@@ -210,6 +217,11 @@ jobs:
       - name: Assert compose file is valid without .env
         run: docker compose config --quiet
 
+      - name: Assert the web port is published on this machine only by default (WEB_BIND opens it)
+        run: |
+          test "$(docker compose config --format json | jq -r '.services.web.ports[0].host_ip')" = "127.0.0.1"
+          test "$(WEB_BIND=0.0.0.0 docker compose config --format json | jq -r '.services.web.ports[0].host_ip')" = "0.0.0.0"
+
       - name: Assert database image tag exists on the registry
         run: |
           IMAGE=$(docker compose config --format json | jq -r '.services.db.image')
@@ -219,6 +231,13 @@ jobs:
           PLAT=$(jq -r '[.manifests[]?.platform | select(.os!="unknown") | "\(.os)/\(.architecture)"] | join(", ")' /tmp/manifest.json)
           echo "Manifest found; platforms: $PLAT" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Database image exists::$IMAGE ($PLAT)"
+          # Apple-silicon Macs pull linux/arm64, Intel machines and CI linux/amd64: both must be offered.
+          for want in linux/amd64 linux/arm64; do
+            if ! jq -e --arg w "$want" '[.manifests[]?.platform | "\(.os)/\(.architecture)"] | index($w)' /tmp/manifest.json > /dev/null; then
+              echo "::error title=Database image platform missing::$IMAGE does not offer $want (it offers: $PLAT)"
+              exit 1
+            fi
+          done
 
       - name: Pull database image
         run: docker pull "$IMAGE"

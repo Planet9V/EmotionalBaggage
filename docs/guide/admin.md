@@ -89,8 +89,27 @@ Every setting is optional except the database password. Keys, models, the planne
 |---|---|
 | `PGPASSWORD` | The database password. It applies when the database is first created; changing it later does not change an existing database. |
 | `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
-| `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY` | Fallbacks only. A key saved in Admin is used first. |
+| `WEB_BIND` | The address the app is published on. Default `127.0.0.1`: this machine only. See "Opening it to the network". |
+| `TRUST_PROXY` | `1` only behind a reverse proxy that appends `X-Forwarded-For`. See "Behind a reverse proxy" under Signing in. |
+| `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY` | Fallbacks only. A key saved in Admin is used first. A key from the environment is only ever sent to the provider's own address (`https://openrouter.ai`, `https://api.perplexity.ai` or `PERPLEXITY_BASE_URL`); to use a key with another model address, save it in Admin. |
 | `PRINTER_KIND`, `PRINTER_URL`, `PRINTER_API_KEY` | Printer status in Prototype, 3D printing. `PRINTER_KIND` is `octoprint` or `moonraker`. |
+| `AMAZON_SP_REFRESH_TOKEN`, `AMAZON_SP_CLIENT_ID`, `AMAZON_SP_CLIENT_SECRET`, `X_ACCESS_TOKEN`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID` | Fallbacks for the channel credentials (Amazon orders, X, Instagram). Saving them in Admin, Credentials is the usual way. |
+
+**Keys stay with their host.** Every key saved in Admin is recorded with the address (scheme, host and port) it was saved for, and is only ever sent there. A model key is saved for the model address in use at the time (Admin, Models). If you move a model to another host, the key is removed when no model uses the old host any more, and Admin says so; type the key again for the new address. A connection test at another address does not use the saved key: type the key in the test form (it is used for that test only and not saved). A printer whose address moves to another host needs its key, password or access code typed again in the same change.
+
+## Opening it to the network
+
+The app is published on `127.0.0.1` by default, so only this machine can reach it. To open it to your network, first change the `demo` / `demo` password (Account), then set `WEB_BIND=0.0.0.0` in `.env` and run `docker compose up -d`. Over plain http anyone on that network can read what is typed; see "What sign-in does not protect".
+
+## Memory for Docker
+
+The database settings (`shared_buffers` 1 GB, `maintenance_work_mem` 1 GB, `/dev/shm` 1 GB) assume Docker may use 4 GB or more. On Docker Desktop set it under Settings, Resources, Memory. With 2 GB, put these lines in `.env`: `PG_SHARED_BUFFERS=256MB`, `PG_EFFECTIVE_CACHE_SIZE=768MB`, `PG_MAINTENANCE_WORK_MEM=256MB`, `PG_SHM_SIZE=512mb`, `PG_MAX_PARALLEL_MAINTENANCE_WORKERS=1`. Vector index builds are then slower. The compose file sets no memory limit of its own.
+
+## Apple-silicon Macs
+
+The database image is published for arm64 as well as amd64 (CI checks that it offers both); the web and planner images are built on your machine from base images that are published for both. The slicer builds natively too: OrcaSlicer 2.5.0 publishes an aarch64 AppImage, which the slicer image uses on arm64 with its own pinned checksum. None of the stack has been run on an Apple-silicon Mac yet. If the arm64 slicer image does not work, build the x86-64 one under emulation (slower): `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose --profile slicer build slicer`. Or run the OrcaSlicer wrapper (`slicer/`) on another machine and point `SLICER_URL` at it.
+
+**Printers on the local network.** Names ending in `.local` (such as `octopi.local`) do not resolve inside the app's container. Use the printer's IP address.
 
 ## Models
 

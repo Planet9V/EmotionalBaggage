@@ -53,7 +53,10 @@ export type PrinterFamily = {
   source: string;
 };
 
-const address = (hint: string): PrinterField => ({ name: "address", label: "Address", secret: false, required: true, kind: "url", hint });
+/** Names ending in .local (mDNS, such as octopi.local) do not resolve inside the app's container, so the form asks for the IP address. */
+export const MDNS_HINT = "Use the printer's IP address: names ending in .local do not resolve inside the app's container.";
+
+const address = (hint: string): PrinterField => ({ name: "address", label: "Address", secret: false, required: true, kind: "url", hint: `${hint}. ${MDNS_HINT}` });
 
 export const PRINTER_FAMILIES: PrinterFamily[] = [
   {
@@ -62,7 +65,7 @@ export const PRINTER_FAMILIES: PrinterFamily[] = [
     status: "supported",
     experimental: false,
     fields: [
-      address("For example http://octopi.local"),
+      address("For example http://192.168.1.40"),
       { name: "apiKey", label: "API key", secret: true, required: true, kind: "text", hint: "Made in OctoPrint under Settings, Application Keys or API." },
     ],
     atPrinter: "OctoPrint running and reachable from this machine, with an API key made for this app.",
@@ -74,7 +77,7 @@ export const PRINTER_FAMILIES: PrinterFamily[] = [
     status: "supported",
     experimental: false,
     fields: [
-      address("For example http://mainsailos.local:7125"),
+      address("For example http://192.168.1.41:7125"),
       { name: "apiKey", label: "API key", secret: true, required: false, kind: "text", hint: "Only if Moonraker is set to require one." },
     ],
     atPrinter: "Moonraker reachable from this machine. If its authorization is on, this machine's address must be trusted or an API key given.",
@@ -100,7 +103,7 @@ export const PRINTER_FAMILIES: PrinterFamily[] = [
     status: "supported",
     experimental: false,
     fields: [
-      address("For example http://duet.local"),
+      address("For example http://192.168.1.42"),
       { name: "password", label: "Machine password", secret: true, required: false, kind: "text", hint: "Only if a machine password is set; RepRapFirmware uses \"reprap\" when none is sent." },
     ],
     atPrinter: "The Duet's network and web server switched on. Standalone boards and boards with a single-board computer (SBC) answer different interfaces; the app asks the board which it is.",
@@ -114,7 +117,7 @@ export const PRINTER_FAMILIES: PrinterFamily[] = [
     notice:
       "The printer's certificate is self-signed by Bambu, so for this one connection to the printer on your local network the certificate check is skipped. Nothing else in the app does that. Anyone on the same network who could answer as the printer could read the access code.",
     fields: [
-      { name: "address", label: "Printer IP address", secret: false, required: true, kind: "host", hint: "On the same local network as this machine." },
+      { name: "address", label: "Printer IP address", secret: false, required: true, kind: "host", hint: `On the same local network as this machine. ${MDNS_HINT}` },
       { name: "accessCode", label: "Access code", secret: true, required: true, kind: "text", hint: "Shown on the printer once LAN Only mode is on." },
       { name: "serial", label: "Serial number", secret: false, required: true, kind: "text", hint: "15 or 18 characters: Bambu Studio under Device, Update, or the printer screen." },
     ],

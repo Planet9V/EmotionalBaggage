@@ -71,7 +71,7 @@ export function SocialView({ project, section, store }: ViewProps) {
           {integError ? <span className="text-sm text-danger">{integError}</span> : null}
         </div>
         <p className="mt-2 text-sm text-secondary">
-          Posting and reading replies are not built yet, so this app cannot post for you. Copy an approved post, publish it yourself, then move it to posted by hand.
+          An approved post to X or Instagram is sent from Marketing, Posting, one at a time after you confirm it. For other channels, copy an approved post, publish it yourself, then move it to posted by hand.
         </p>
       </section>
 

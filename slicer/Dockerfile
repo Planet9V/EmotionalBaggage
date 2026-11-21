@@ -1,12 +1,19 @@
 # The slicer service: OrcaSlicer (a separate program, AGPL-3.0, never linked into the app) behind a small HTTP wrapper.
 # Pinned: the AppImage is checked against a SHA-256 and the profile tree against a commit, so a build that gets different bytes fails.
 # To move to a newer OrcaSlicer, change the four ARGs, run `python3 slicer/tools/gen_profiles.py <profiles> > slicer/profiles.json`, and run the tests.
+#
+# Two architectures, each with its own official asset and its own pinned checksum: OrcaSlicer 2.5.0 publishes an x86-64
+# AppImage and an aarch64 one (OrcaSlicer_Linux_AppImage_Ubuntu2404_aarch64_V2.5.0.AppImage). Docker picks the image's
+# architecture (TARGETARCH), so Apple-silicon Macs build the arm64 image natively. The aarch64 checksum is of the release
+# asset as downloaded on 21 Nov 2026; the arm64 image has not been run on an Apple-silicon Mac yet.
 FROM ubuntu:24.04
 
+ARG TARGETARCH
 ARG ORCA_VERSION=2.5.0
 ARG ORCA_TAG=v2.5.0
 ARG ORCA_COMMIT=40ecc66f78ed72dc368e0c1ebe40d77f00cc8a19
 ARG ORCA_APPIMAGE_SHA256=d13eb0a9cd618ed080ab6b82c64c0a60c4501aac91e88d5ac2c3b526fb141a7c
+ARG ORCA_APPIMAGE_ARM64_SHA256=00a4fa0a2f9c1649abb8c438b0537ed1e58fed5206faa560c1c0fb4ab225f9cf
 
 # The 2.5.0 AppImage does not bundle WebKitGTK; the command line slices without a display but the binary still links it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,8 +24,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # OrcaSlicer: the official release asset, extracted (no FUSE in a container).
 RUN mkdir -p /opt/orca-dl /opt \
- && curl -fsSL -o /opt/orca-dl/orca.AppImage "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/${ORCA_TAG}/OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage" \
- && echo "${ORCA_APPIMAGE_SHA256}  /opt/orca-dl/orca.AppImage" | sha256sum -c - \
+ && case "${TARGETARCH:-amd64}" in \
+      amd64) ASSET="OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage"; SUM="${ORCA_APPIMAGE_SHA256}" ;; \
+      arm64) ASSET="OrcaSlicer_Linux_AppImage_Ubuntu2404_aarch64_V${ORCA_VERSION}.AppImage"; SUM="${ORCA_APPIMAGE_ARM64_SHA256}" ;; \
+      *) echo "No OrcaSlicer ${ORCA_VERSION} build for ${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+ && curl -fsSL -o /opt/orca-dl/orca.AppImage "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/${ORCA_TAG}/${ASSET}" \
+ && echo "${SUM}  /opt/orca-dl/orca.AppImage" | sha256sum -c - \
  && chmod +x /opt/orca-dl/orca.AppImage \
  && cd /opt/orca-dl && ./orca.AppImage --appimage-extract >/dev/null \
  && mv squashfs-root /opt/orca && cd / && rm -rf /opt/orca-dl
