@@ -168,3 +168,18 @@ describe("propose cheaper substitutes", () => {
     expect((await itemsOf(P, "design/bom")).find((x) => Number(x.id) === ids.board)!.data.wasLine).toBe(9.5);
   });
 });
+
+describe("merging the same part listed twice keeps every piece", () => {
+  it("two rows of one resistor become one row of two", async () => {
+    const a = await addItem(P, "design/bom", "Resistor", { ref: "R1", qty: 1, line: 0.05 });
+    const b = await addItem(P, "design/bom", "Resistor", { ref: "R2", qty: 1, line: 0.05 });
+    script["optimise-parts"] = { rows: [{ action: "merge", replaces: a, mergeWith: [b], reason: "Same part twice" }] };
+    const before = (await byId("parts")).now.text;
+    const r = await go("parts");
+    expect(r.body.drafts[0].data.qty).toBe(2);
+    const after = (await byId("parts")).last!.ifApproved.text;
+    // one row fewer, the same number of pieces
+    const pieces = (t: string) => Number(/(\d+) pieces/.exec(t)![1]);
+    expect(pieces(after)).toBe(pieces(before));
+  });
+});

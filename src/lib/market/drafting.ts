@@ -52,7 +52,9 @@ const marketOf = (ctx: GenContext) => ctx.extra?.market as MarketContext;
 
 function adapt(id: GeneratorId): Generator<Record<string, unknown>> {
   const { generator: m, toRows } = GENERATORS[id];
-  const stores = [...new Set(m.from.map((k) => KIND_STORE[k]).filter((s): s is string => !!s))];
+  // A generator names what it reads as store paths ("marketing/personas"); older ones used kind words. Both count,
+  // so Draft with AI says what the generator reads (it said "from nothing yet" while reading personas and competitors).
+  const stores = [...new Set(m.from.map((k) => KIND_STORE[k] ?? (k.includes("/") ? k : undefined)).filter((s): s is string => !!s))];
   return {
     id: marketGeneratorId(id),
     label: m.label,

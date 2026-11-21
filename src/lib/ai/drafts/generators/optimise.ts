@@ -55,6 +55,7 @@ const partsRow = z.object({
   mergeWith: z.array(z.number().int()).max(20).optional().describe("merge: ids of the parts that go away"),
   title: z.string().max(300).optional().describe("merge: the new name of the part that remains"),
   spec: z.string().max(2000).optional().describe("merge: what the part that remains now is"),
+  qty: z.number().int().min(1).max(100000).optional().describe("merge: the quantity of the part that remains"),
   reason: z.string().min(1).max(1000).describe("the design-for-assembly reason: does it move, need a different material, or need to come apart for service?"),
   basedOn,
 });
@@ -73,7 +74,7 @@ export const optimiseParts: Generator<z.infer<typeof partsRow>> = {
     system: [
       "You run a design-for-assembly check on a parts list. For each part ask: does it move relative to its neighbours, must it be a different material, must it come apart for service? A part that answers no to all three is a candidate to merge into a neighbour or remove.",
       "Look hard at fasteners: snap fits, printed features or one fastener type in place of several.",
-      "Return one row per proposal: action \"remove\" with the part's id, or \"merge\" with the part that remains (replaces), the parts that go away (mergeWith), and the remaining part's new name and description.",
+      "Return one row per proposal: action \"remove\" with the part's id, or \"merge\" with the part that remains (replaces), the parts that go away (mergeWith), the remaining part's new name and description, and its quantity (qty).",
       "Never remove a part a requirement plainly needs. Return no rows if nothing should change.",
       RULES,
     ].join("\n"),
@@ -97,10 +98,14 @@ export const optimiseParts: Generator<z.infer<typeof partsRow>> = {
     if (others.some((o) => !o)) return { ok: false, reason: "a merge names a part that is not in the list" };
     if ([t.item.id, ...gone].some((id) => taken.has(id))) return { ok: false, reason: "a part in this merge is already in another proposal" };
     [t.item.id, ...gone].forEach((id) => taken.add(id));
+    // Merging rows that are the same part keeps every piece unless the model says otherwise: the quantities add up.
+    const qtyOf = (i: { data: Record<string, unknown> }) => (typeof i.data.qty === "number" && i.data.qty > 0 ? i.data.qty : 1);
+    const sameTitle = others.every((o) => o!.title.trim().toLowerCase() === t.item!.title.trim().toLowerCase());
+    const qty = row.qty ?? (sameTitle ? qtyOf(t.item) + others.reduce((a, o) => a + qtyOf(o!), 0) : undefined);
     const kept = {
       title: row.title ? clip(row.title) : t.item.title,
       body: row.spec?.trim() || t.item.body,
-      data: { ...t.item.data },
+      data: { ...t.item.data, ...(qty !== undefined ? { qty } : {}) },
       op: { op: "replace" as const, reason: `Merged with ${others.map((o) => o!.title).join(", ")}. ${reason}` },
       itemId: t.item.id,
       basedOn: row.basedOn,
