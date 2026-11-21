@@ -86,6 +86,18 @@ On the schematic, switch between **Symbols** and **Pins and wires**; selecting a
 
 **Design, Enclosure** builds a printable base and lid around your parts. It needs at least one part with a size and place in Physical layout, and says so when there is none. Pick a generator: CaseMaker runs inside the workbench in a few seconds; YAPP_Box runs in OpenSCAD in the planner service and takes about a minute, and shows as not available, with the reason, when the planner is not running. Set the parameters (the defaults are under each field; problems show as you type) and press Generate, or Generate with both to compare side by side. Under the 3D preview are five checks worked out on the generated model, each marked met or not met with its numbers: base watertight, lid watertight, lid closes, every part fits with the stated clearance, every opening lines up with its part. Download the base STL, the lid STL (print side down) and the generator's own source file.
 
+### Enclosure files and printing without a slicer
+
+- On Enclosure, **Save to concept** keeps the base STL, the lid STL (outer face down) and one 3MF holding both, all Z up, on the concept. The last saved set shows again after a reload. **Send to printing** opens a new print job with that set chosen.
+- A print job can be queued with no slicer set up. Slice it in your own slicer (Orca, Prusa, Cura, Bambu Studio), then attach the sliced file with the slicer's name, minutes and grams. The job is marked "Entered by hand".
+- The schematic prints one clean sheet per view, A4 landscape, with a title block and no controls.
+- Every part has one price on every screen. The shopping list says "Nothing is priced yet" until an offer is chosen.
+- Each wire has one cut length, in the drawing and in the CSV, and its gauge respects the connector at each end and says which rule decided. A connector range with no datasheet source shows "not sourced".
+- Enclosure checks see part against part, and flag a part that goes through the floor.
+- A post or reply you set to posted yourself shows "marked posted by hand".
+- The Report shows campaign results and tracked links.
+- Below a wide window the sidebar becomes a drawer, opened with the Menu button.
+
 ## Printers
 
 Printers are added in Admin, Printers by choosing the model from the supported list, which is also at `/printers` with the source for every fact. **Prototype, 3D printing** shows each printer's state, file, progress, time left and temperatures. Pause and Resume act directly; Stop asks first and names the printer and the file. Test checks the connection. A printer marked Experimental is built from documentation that does not name your model: run Test before relying on it. A file-only printer gets the file and the steps to carry it over.

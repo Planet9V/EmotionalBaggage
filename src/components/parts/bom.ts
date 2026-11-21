@@ -1,4 +1,4 @@
-import { sumLine, type Part } from "@/lib/domain";
+import { partSource, sumLine, type Part } from "@/lib/domain";
 import { toCsvText } from "@/lib/csv";
 import { DEFAULT_CURRENCY, majorText } from "@/lib/economics/money";
 
@@ -37,7 +37,7 @@ export function groupParts(parts: Part[], by: "none" | "source" | "status"): Gro
   if (by === "none") return [{ key: "", parts, total: sumLine(parts) }];
   const map = new Map<string, Part[]>();
   for (const p of parts) {
-    const k = (by === "source" ? p.source.trim() : p.item.status.trim()) || "(none)";
+    const k = (by === "source" ? partSource(p).trim() : p.item.status.trim()) || "(none)";
     map.set(k, [...(map.get(k) ?? []), p]);
   }
   return [...map.entries()].map(([key, ps]) => ({ key, parts: ps, total: sumLine(ps) }));

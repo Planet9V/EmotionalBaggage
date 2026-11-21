@@ -61,7 +61,7 @@ export function RepliesView({ project, section, store }: ViewProps) {
         <ul className="space-y-2">
           {shown.map((r) => {
             const ch = channelOf(r.data.channel);
-            const sent = r.data.sent as { id?: string; at?: string; url?: string } | undefined;
+            const sent = r.data.sent as { id?: string; at?: string; url?: string; byHand?: boolean } | undefined;
             const err = r.data.sendError as { message?: string } | undefined;
             return (
               <Card as="li" variant="flat" key={r.id} className="p-4">
@@ -69,6 +69,7 @@ export function RepliesView({ project, section, store }: ViewProps) {
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{String(r.data.channel ?? "Other")}</span>
                     <StatusBadge tone={statusTone(r.status === "sent" ? "done" : r.status)}>{r.status}</StatusBadge>
+                    {sent?.byHand ? <span className="text-xs text-secondary">marked sent by hand, not sent by the app</span> : null}
                     {sent?.url ? <a href={sent.url} target="_blank" rel="noreferrer" className="text-xs text-link underline">open on {sendName(ch)}</a> : null}
                   </span>
                   <span className="flex flex-wrap items-center gap-1">

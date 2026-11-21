@@ -49,7 +49,14 @@ export function ShoppingList({ parts, currency, projectName }: { parts: Part[]; 
           {list.unchosen.length > 0 && (
             <p className="text-sm text-secondary"><span className="font-medium text-primary">No supplier chosen:</span> {list.unchosen.map((u) => `${u.ref ? u.ref + " " : ""}${u.title} (need ${u.need})`).join(", ")}</p>
           )}
-          <p className="font-mono text-sm text-primary">Total {fmt(list.totalMinor)} {currency}</p>
+          {list.groups.length ? (
+            <p className="font-mono text-sm text-primary">
+              Total {fmt(list.totalMinor)} {currency}
+              {list.unchosen.length ? <span className="font-sans text-xs text-secondary"> for the parts with a chosen offer; {list.unchosen.length} {list.unchosen.length === 1 ? "part has" : "parts have"} none yet and {list.unchosen.length === 1 ? "is" : "are"} not in it.</span> : null}
+            </p>
+          ) : (
+            <p className="text-sm text-secondary" data-testid="shopping-nothing-priced">Nothing is priced yet. Choose an offer on a part and its packs and total appear here.</p>
+          )}
           {list.excluded.length > 0 && <p className="text-xs text-muted">Left out: {list.excluded.map((e) => `${e.ref || e.title} (${e.why})`).join("; ")}</p>}
         </div>
       )}

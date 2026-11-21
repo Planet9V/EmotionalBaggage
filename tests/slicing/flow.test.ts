@@ -146,7 +146,7 @@ describe("slicing", () => {
       const j = await job();
       const r = await read<Body>(await act(slice, j.id));
       expect(r.status).toBe(503);
-      expect(r.body.error).toMatch(/not set up/);
+      expect(r.body.error).toMatch(/No slicer service is set up/);
       expect((await get(j.id)).status).toBe("queued");
     } finally {
       process.env.SLICER_URL = was;

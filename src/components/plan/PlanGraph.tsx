@@ -1,8 +1,8 @@
 "use client";
 
 import "@xyflow/react/dist/style.css";
-import { memo, useEffect, useMemo, useState } from "react";
-import { Background, BackgroundVariant, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { Background, BackgroundVariant, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps, type ReactFlowInstance } from "@xyflow/react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Plan, PlanNode } from "@/lib/types";
@@ -12,6 +12,8 @@ import type { XY } from "@/lib/domain";
 
 const ORANGE = "#E05A10";
 const NODE_W = 248;
+/** room for the zoom buttons at the left; never zoomed in past 1 */
+const FIT = { padding: { top: "24px", right: "24px", bottom: "24px", left: "56px" }, maxZoom: 1 } as const;
 const NODE_H = 88;
 
 type StepData = { step: PlanNode; selected: boolean; blocked: boolean };
@@ -74,6 +76,9 @@ export function PlanGraph({ plan, selectedId, onSelect }: { plan: Plan; selected
           id: n.id,
           type: "step",
           position: at[n.id] ?? { x: 0, y: i * (NODE_H + 24) },
+          // the size elk laid out with, so the first fit already frames every wave
+          width: NODE_W,
+          height: NODE_H,
           data: { step: n, selected: n.id === selectedId, blocked: inLoop.has(n.id) },
           draggable: false,
           connectable: false,
@@ -99,8 +104,19 @@ export function PlanGraph({ plan, selectedId, onSelect }: { plan: Plan; selected
     return { nodes, edges };
   }, [plan, selectedId, at]);
 
+  // every wave in view: fitted once laid out, and again whenever the frame changes size (a narrower window)
+  const box = useRef<HTMLDivElement>(null);
+  const flow = useRef<ReactFlowInstance<StepNodeType> | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || !at || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => void flow.current?.fitView(FIT));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [at]);
+
   return (
-    <div className="h-[460px] w-full overflow-hidden rounded-xl border border-hairline bg-canvas">
+    <div ref={box} className="h-[clamp(420px,58vh,640px)] w-full overflow-hidden rounded-xl border border-hairline bg-canvas">
       <ReactFlow
         key={at ? "ready" : "waiting"}
         nodes={nodes}
@@ -109,8 +125,12 @@ export function PlanGraph({ plan, selectedId, onSelect }: { plan: Plan; selected
         nodesDraggable={false}
         nodesConnectable={false}
         fitView
-        fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
-        minZoom={0.2}
+        fitViewOptions={FIT}
+        onInit={(inst) => {
+          flow.current = inst;
+          window.setTimeout(() => void inst.fitView(FIT), 60);
+        }}
+        minZoom={0.1}
         panOnScroll
         onNodeClick={(_, n) => onSelect(n.id)}
         onPaneClick={() => onSelect(null)}

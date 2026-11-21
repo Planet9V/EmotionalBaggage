@@ -27,6 +27,7 @@ export function SchematicDialogs({
   removeWire,
   addPin,
   placePart,
+  pinKind,
 }: {
   dialog: DialogState;
   setDialog: (d: DialogState) => void;
@@ -39,6 +40,7 @@ export function SchematicDialogs({
   removeWire: (w: Wire) => Promise<void>;
   addPin: (part: Part, pin: string) => Promise<void>;
   placePart: (part: Part, at: XY | null, pin: string) => Promise<void>;
+  pinKind?: (ref: string, pin: string) => string | null;
 }) {
   return (
     <>
@@ -49,6 +51,7 @@ export function SchematicDialogs({
           parts={parts}
           nets={nets}
           pinsByRef={pinsByRef}
+          pinKind={pinKind}
           nextOrder={nextOrder}
           statuses={statuses}
           onClose={() => setDialog(null)}

@@ -3,7 +3,9 @@
 import { HttpError } from "@/lib/api/route";
 import { slicerUrl } from "./config";
 
-export const NOT_SET_UP = "The slicer is not set up. Start it with `docker compose --profile slicer up -d --build` and save its address in Admin, Printers (SLICER_URL is the fallback), then try again.";
+import { SLICER_NOT_SET_UP } from "./messages";
+
+export const NOT_SET_UP = SLICER_NOT_SET_UP;
 const SLICE_TIMEOUT_MS = 6 * 60_000;
 const QUICK_TIMEOUT_MS = 15_000;
 

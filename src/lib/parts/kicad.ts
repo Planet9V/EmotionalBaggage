@@ -6,13 +6,18 @@
 //   in lib_symbols; nothing comes from KiCad's symbol library;
 // - every wired pin gets a short wire and a local label carrying its net name, so pins with the same
 //   label are one net; every unwired pin gets a no-connect flag;
-// - the title block carries the concept, the revision and the date.
+// - the title block carries the concept, the revision and the date;
+// - a power flag (this app's own PWR_FLAG, a one-pin power_out symbol, reference #FLGnn, as KiCad names its
+//   own flags) on each net whose supply pins are fed through something KiCad cannot see drive it: a supply
+//   reached through a switch, or the ground return of a battery. Without it KiCad's ERC reports "input power
+//   pin not driven" on a circuit that is in fact supplied.
 //
 // tests/parts/kicad.test.ts reads the file back and rebuilds the nets from the coordinates alone;
 // tests/parts/kicad-format.test.ts compares every node with a schematic KiCad 10 wrote itself, and the
 // layout below (property flags, pin_numbers before pin_names, sheet items grouped by type) follows
 // KiCad 10's own writer so a re-save in KiCad does not reorder the file.
-import { pinKey, type Circuit, type CircuitPart } from "./circuit";
+import { pinKey, supplyGroups, type Circuit, type CircuitPart, type Net } from "./circuit";
+import { toPin } from "./pins";
 import type { PinKind } from "./kinds";
 import { qs, write, type SNode } from "./sexpr";
 import { GRID, symbolLayout, type SymbolLayout } from "./symbols";
@@ -32,6 +37,13 @@ export type KicadMeta = {
   /** symbol positions in millimetres by reference; missing parts are placed on a grid */
   positions?: Record<string, { x: number; y: number }>;
 };
+
+/**
+ * A pin whose kind nobody has stated is written as passive: KiCad counts a passive pin as able to drive a net,
+ * so an input fed only by such a pin is not reported as undriven, which it may not be. The app's own checks
+ * still treat the kind as unknown.
+ */
+const UNSTATED = "passive";
 
 const ELECTRICAL: Record<PinKind, string> = {
   power_in: "power_in",
@@ -69,9 +81,38 @@ function uuidFrom(seed: string): string {
 }
 
 const libName = (ref: string) => ref.replace(/[^A-Za-z0-9_-]/g, "_") || "PART";
-const refPrefix = (ref: string) => ref.match(/^[A-Za-z]+/)?.[0] ?? "U";
+const refPrefix = (ref: string) => ref.match(/^#?[A-Za-z]+/)?.[0] ?? "U";
 
-type Placed = { part: CircuitPart; layout: SymbolLayout; at: { x: number; y: number }; name: string; numbers: string[] };
+type Placed = { part: CircuitPart; layout: SymbolLayout; at: { x: number; y: number }; name: string; numbers: string[]; flagNet?: string };
+
+const FLAG_PIN = "pwr";
+
+/**
+ * Nets that get a power flag: a net with supply or ground pins and no power_out pin of its own, that is
+ * nevertheless driven: its supply group (nets joined through switches) holds a power_out pin, it is the
+ * ground return of a part that gives power (a battery's minus), or its wires are classed power or ground
+ * (the supply comes from a pin whose kind is not stated, such as a board with no library entry).
+ */
+export function powerFlagNets(c: Circuit): Net[] {
+  const groups = supplyGroups(c);
+  const byId = new Map(c.nets.map((n) => [n.id, n]));
+  const kinds = (n: Net) => n.members.map((m) => m.def?.kind);
+  const sources = new Set(c.parts.filter((p) => p.pins.some((x) => x.kind === "power_out")).map((p) => p.ref));
+  return c.nets.filter((n) => {
+    const k = kinds(n);
+    if (!k.some((x) => x === "power_in" || x === "ground") || k.includes("power_out")) return false;
+    const fed = (groups.get(n.id) ?? [n.id]).some((id) => kinds(byId.get(id)!).includes("power_out"));
+    const sourceReturn = k.includes("ground") && n.members.some((m) => m.def?.kind === "ground" && sources.has(m.ref));
+    // the wires say this net carries the supply (class power or ground), from a pin whose kind nobody has stated yet
+    const declared = n.netClass === "power" || n.netClass === "ground";
+    return fed || sourceReturn || declared;
+  });
+}
+
+/** A flag as a placed part: one power_out pin, pointing down to its net label. */
+function flagPart(n: number, net: Net, item: CircuitPart["item"]): CircuitPart {
+  return { ref: `#FLG${String(n).padStart(2, "0")}`, item: { ...item, id: -n, title: "PWR_FLAG", body: "" }, title: "PWR_FLAG", pins: [toPin({ name: FLAG_PIN, kind: "power_out", side: "bottom" }, 0)], source: "own", symbol: "box", kindId: null, libraryId: null } as CircuitPart & { netName?: string };
+}
 
 /** Unique pin numbers for one symbol: the stated number, or its position, never repeated. */
 function pinNumbers(layout: SymbolLayout): string[] {
@@ -124,7 +165,7 @@ function libSymbol(pl: Placed): SNode {
   const angle = { right: "0", left: "180", down: "270", up: "90" } as const;
   const pins: SNode[] = layout.pins.map((p, i) => [
     "pin",
-    p.pin.kind ? ELECTRICAL[p.pin.kind] : "unspecified",
+    p.pin.kind ? ELECTRICAL[p.pin.kind] : UNSTATED,
     "line",
     ["at", fmt(p.x), fmt(-p.y), angle[p.toward]],
     ["length", fmt(p.length)],
@@ -221,6 +262,17 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
   const project = meta.project ?? slugify(meta.title, { max: Infinity, fallback: "concept" });
   const root = uuidFrom(`root:${project}`);
   const placed = place(c, meta);
+  // power flags along the foot of the drawing, one per net that needs one
+  const flagNets = powerFlagNets(c);
+  if (flagNets.length && placed.length) {
+    const foot = Math.max(...placed.map((p) => p.at.y + p.layout.bbox.y2)) + GRID * 6;
+    const left = Math.min(...placed.map((p) => p.at.x + p.layout.bbox.x1));
+    flagNets.forEach((net, i) => {
+      const part = flagPart(i + 1, net, placed[0].part.item);
+      const layout = symbolLayout("box", part.pins);
+      placed.push({ part, layout, at: { x: snap(left + i * GRID * 16 - layout.bbox.x1), y: snap(foot - layout.bbox.y1) }, name: libName(part.ref), numbers: pinNumbers(layout), flagNet: net.name });
+    });
+  }
   // KiCad 10 saves sheet items grouped by type (no_connect, then wires, then labels, then symbols:
   // the order of KICAD_T), each group sorted by uuid (SCH_IO_KICAD_SEXPR::Format). The parser takes
   // any order; writing KiCad's own keeps a re-save by KiCad free of reordering noise.
@@ -232,7 +284,7 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
   for (const pl of placed) {
     pl.layout.pins.forEach((p) => {
       const at = pinPoint(pl, p);
-      const net = c.netOf.get(pinKey(pl.part.ref, p.name));
+      const net = pl.flagNet ? { name: pl.flagNet } : c.netOf.get(pinKey(pl.part.ref, p.name));
       const id = `${pl.part.ref}.${p.name}`;
       if (!net) {
         noConnects.push(["no_connect", ["at", fmt(at.x), fmt(at.y)], ["uuid", qs(uuidFrom(`nc:${id}`))]]);

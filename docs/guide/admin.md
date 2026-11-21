@@ -160,6 +160,8 @@ Starting and stopping a print always need a confirmation, and every printer acti
 
 The slicer is a separate, optional service: OrcaSlicer 2.5.0 (AGPL-3.0) run as its own program in its own container, never linked into the app. Start it with `docker compose --profile slicer up -d --build` and set `SLICER_URL=http://slicer:8000` for the web service. The first build downloads OrcaSlicer (about 215 MB, checksum pinned). The banner on 3D printing shows Ready, Not reachable or Not set up. Perplexity needs its key in Admin, Credentials for price and alternate research.
 
+With no slicer address set, print jobs say "No slicer is set up" and can still be queued: slice by hand and attach the file (100 MB at most).
+
 ## The short link address
 
 `/l/<code>` is the one open route outside `/api` and sign-in: it redirects to the saved destination and counts the click by day. It limits requests in memory per app instance (120 a minute per code, 1,200 in total, 30 a minute for unknown codes).

@@ -31,7 +31,7 @@ export default defineConfig({
   projects: [
     { name: "signed-out", testMatch: /signed-out\.spec\.ts$/ },
     { name: "setup", testMatch: /auth\.setup\.ts$/ },
-    { name: "signed-in", testMatch: /(pages|save|a11y|keyboard|sidebar)\.spec\.ts$/, dependencies: ["setup"], use: { storageState: STORAGE_STATE } },
+    { name: "signed-in", testMatch: /(pages|save|a11y|keyboard|sidebar|print)\.spec\.ts$/, dependencies: ["setup"], use: { storageState: STORAGE_STATE } },
     // Signs in a session of its own and ends it, so the stored session above stays valid.
     { name: "sign-out", testMatch: /sign-out\.spec\.ts$/ },
   ],

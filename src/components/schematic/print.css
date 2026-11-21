@@ -1,20 +1,45 @@
 /* Print the schematic sheet through the browser (Print, then Save as PDF): only the canvas and its
-   title block, landscape, no controls. Loaded by SchematicView. */
+   title block, landscape, no controls. Every rule is scoped under html.printing-schematic, a class
+   set by printSchematic() (./printSchematic.ts) only while the schematic is being printed. The file
+   is loaded by SchematicView, and all sections share one route, so an unscoped rule here would apply
+   to every page's print (it once blanked the build sheet). */
+
+/* On screen too, while the class is on: the canvas takes the paper's shape so React Flow can fit the
+   drawing to it before the print dialog opens. A4 landscape, 10 mm margins: 277 x 190 mm. */
+html.printing-schematic .schematic-print-area .schematic-canvas {
+  width: 277mm !important;
+  height: 148mm !important;
+}
+
 @media print {
-  @page {
+  /* A named page, so the landscape sheet applies to this print only. */
+  @page schematic-sheet {
     size: A4 landscape;
     margin: 10mm;
   }
-  body * {
-    visibility: hidden;
+  html.printing-schematic body {
+    page: schematic-sheet;
   }
-  .schematic-print-area,
-  .schematic-print-area * {
-    visibility: visible;
+  /* Keep only the print area and the elements that contain it. */
+  html.printing-schematic body *:not(:has(.schematic-print-area)):not(.schematic-print-area):not(.schematic-print-area *) {
+    display: none !important;
   }
-  .schematic-print-area {
-    position: fixed;
-    inset: 0;
+  html.printing-schematic body,
+  html.printing-schematic body *:has(.schematic-print-area) {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  html.printing-schematic .schematic-print-area {
+    width: 277mm;
     background: #fff;
     /* paper is white in both themes */
     color-scheme: light;
@@ -25,18 +50,20 @@
     --text-secondary: #52525b;
     --text-muted: #71717a;
     --border-hairline: #d9d2c5;
+    break-inside: avoid;
   }
-  .schematic-print-area .schematic-canvas {
-    height: 100vh !important;
+  html.printing-schematic .schematic-print-area .schematic-canvas {
     border: 0 !important;
+    break-inside: avoid;
   }
-  .schematic-noprint,
-  .schematic-print-area .react-flow__controls,
-  .schematic-print-area .react-flow__minimap,
-  .schematic-print-area .react-flow__background {
+  html.printing-schematic .schematic-noprint,
+  html.printing-schematic .schematic-print-area .react-flow__controls,
+  html.printing-schematic .schematic-print-area .react-flow__minimap,
+  html.printing-schematic .schematic-print-area .react-flow__panel.schematic-noprint,
+  html.printing-schematic .schematic-print-area .react-flow__background {
     display: none !important;
   }
-  .schematic-printonly {
+  html.printing-schematic .schematic-printonly {
     display: inline !important;
   }
 }

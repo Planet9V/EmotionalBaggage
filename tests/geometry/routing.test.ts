@@ -73,6 +73,13 @@ describe("the space and the request", () => {
     ]);
     expect(built.pinSources.get(1)).toEqual(["face", "face"]);
   });
+  it("tells a part with no position apart from one not on the parts list, and points to Physical layout", () => {
+    const built = buildRouteRequest([shell, left, right], [W(1, "U1", "R1"), W(2, "U1", "NOPE")], { bomRefs: new Set(["U1", "U2", "R1"]) });
+    expect(built.skipped).toEqual([
+      { wireId: 1, name: expect.any(String), reason: "R1 has no position in the model; place it in Physical layout", fix: { href: "/s/design/layout", label: "Physical layout" } },
+      { wireId: 2, name: expect.any(String), reason: "NOPE is not in the bill of materials" },
+    ]);
+  });
   it("no request when nothing can be routed", () => {
     expect(buildRouteRequest([shell, left], [W(1, "U1", "NOPE")]).request).toBeNull();
     expect(buildRouteRequest([], [W(1, "U1", "U2")]).request).toBeNull();

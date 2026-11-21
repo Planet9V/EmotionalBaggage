@@ -7,7 +7,8 @@ export type PrintStatus = (typeof PRINT_STATUSES)[number];
 
 /** Where each status may go. Hardware states (sent, printing) are reached only by the routes that talk to the printer. */
 export const TRANSITIONS: Record<PrintStatus, readonly PrintStatus[]> = {
-  queued: ["slicing", "cancelled"],
+  // queued to sliced: a file sliced in the person's own slicer is attached (attachSlicedFile in flow.ts)
+  queued: ["slicing", "sliced", "cancelled"],
   slicing: ["sliced", "failed", "queued"],
   sliced: ["slicing", "sent", "cancelled", "queued"],
   sent: ["printing", "failed", "cancelled"],
@@ -72,11 +73,14 @@ export const printJobData = z.looseObject({
     .object({
       seconds: z.number(),
       filamentG: z.number(),
-      filamentMm: z.number(),
+      /** filament length; null when the numbers were entered by hand and none was given */
+      filamentMm: z.number().nullable().optional(),
       supportG: z.number().nullable().optional(),
       layers: z.number().nullable().optional(),
-      orcaVersion: z.string().max(40),
-      profile: z.object({ machine: z.string(), process: z.string(), filament: z.string() }),
+      orcaVersion: z.string().max(40).optional(),
+      profile: z.object({ machine: z.string(), process: z.string(), filament: z.string() }).optional(),
+      /** set when the job was sliced in the user's own slicer and the file attached: time and grams were typed, from that slicer */
+      byHand: z.object({ slicer: z.string().max(80) }).optional(),
       warnings: z.array(z.string()).max(50).default([]),
       slicedAt: day,
       /** the G-code and the project file, stored as files */

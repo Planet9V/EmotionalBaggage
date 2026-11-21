@@ -114,7 +114,7 @@ export function useSceneModel({
         // the same pin positions the route request uses (pin rows, else the library entry), so a fresh route reads as current
         routePartsOf(parts, pinRows),
         wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })),
-        { cell: routeCell }
+        { cell: routeCell, bomRefs: new Set(parts.map((p) => p.ref).filter(Boolean)) }
       ),
     [parts, wires, routeCell, pinRows]
   );

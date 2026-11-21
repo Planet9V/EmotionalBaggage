@@ -118,10 +118,16 @@ describe("the generate route", () => {
     await q("DELETE FROM projects WHERE id='zz-market-empty'");
   });
 
-  it("a model answer of the wrong shape is a 502 and nothing is saved", async () => {
+  it("a model answer of the wrong shape saves nothing and says why", async () => {
+    // A bare object is taken as the one row a market generator returns (tolerant unwrap); a row that does not
+    // fit the generator's schema is dropped with its reason, as for every generator. Before the unwrap the
+    // whole answer was refused with a 502.
     s.set({ reply: JSON.stringify({ personas: "not a list" }) });
     const r = await run({ generator: "personas" });
-    expect(r.status).toBe(502);
+    const body = (await r.json()) as { drafts?: unknown[]; dropped?: { reason: string }[] };
+    expect(r.status).toBe(201);
+    expect(body.drafts ?? []).toHaveLength(0);
+    expect(body.dropped?.[0]?.reason).toMatch(/personas/);
     expect(await q("SELECT 1 FROM items WHERE project_id=$1 AND section='marketing/personas'", [P])).toHaveLength(0);
   });
 });

@@ -36,12 +36,13 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [id, [STORE.parts, STORE.wiring]]);
   const items = rows.map(toItem);
   // Wire ends at real pin positions (pin rows, else the library entry), the face centre otherwise.
-  const parts: RoutePart[] = routePartsOf(items.filter((i) => i.section === STORE.parts).map(toPart), await pinsOfProject(id));
+  const bom = items.filter((i) => i.section === STORE.parts).map(toPart);
+  const parts: RoutePart[] = routePartsOf(bom, await pinsOfProject(id));
   const wires = items.filter((i) => i.section === STORE.wiring).map(toWire).filter((w): w is Wire => w !== null);
   const routeWires: RouteWire[] = wires.map((w) => ({ id: w.item.id, name: w.name || w.net || `${w.from} to ${w.to}`, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin }));
 
   if (!wires.length) throw new HttpError(400, "There are no wires to route. Add them in Schematic first.");
-  const built = buildRouteRequest(parts, routeWires, { cell: opts.cell, wallMm: opts.wallMm });
+  const built = buildRouteRequest(parts, routeWires, { cell: opts.cell, wallMm: opts.wallMm, bomRefs: new Set(bom.map((p) => p.ref).filter(Boolean)) });
   if (!built.space) throw new HttpError(400, "There is no space to route in. Give the enclosure shell a size, or place at least one part with geometry.");
   if (!built.request) {
     throw new HttpError(400, "No wire has geometry on both of its parts, so there is nothing to route.", { skipped: built.skipped });

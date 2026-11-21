@@ -15,6 +15,8 @@ export const SENSORS: Entry[] = [
     basis: "typical",
     symbol: "box",
     sources: [],
+    note: "No maker's document: GY-521 boards come from many makers. Many carry their own I2C pull-up resistors and a regulator, some do not; check your board.",
+    pullUpsVary: true,
     pins: row(
       [
         p("VCC", "power_in"),
@@ -92,6 +94,8 @@ export const DISPLAYS: Entry[] = [
     kind: "display",
     name: "SSD1306 OLED 128x64, I2C, four pins",
     description: "Small monochrome display board. Boards differ in their regulator, so no supply range is stated.",
+    note: "No maker's document: these boards come from many makers and differ in regulator and pull-ups; check your board.",
+    pullUpsVary: true,
     size: { w: 27, d: 27 },
     basis: "typical",
     symbol: "box",
@@ -103,6 +107,8 @@ export const DISPLAYS: Entry[] = [
     kind: "display",
     name: "16x2 character LCD with I2C backpack",
     description: "Character display driven through a PCF8574 backpack. No supply range is stated: backpacks differ.",
+    note: "No maker's document: backpacks come from many makers; some carry pull-ups, some do not; check your board.",
+    pullUpsVary: true,
     size: { w: 80, d: 36 },
     basis: "typical",
     symbol: "box",

@@ -9,6 +9,9 @@ import { Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { toPart } from "@/lib/domain";
+import { partTypeOf } from "@/lib/parts/pins";
+import { insideOfOf } from "@/lib/geometry/overlap";
+import { libraryEntryById } from "@/lib/parts/library";
 import type { PartGeometry } from "@/components/three/layout";
 import { ChecksPanel, type NoGeometry } from "@/components/layout/ChecksPanel";
 import { EnvelopePanel } from "@/components/layout/EnvelopePanel";
@@ -18,6 +21,8 @@ import { ThreeView, type Marker } from "@/components/layout/ThreeView";
 import { buildSheet, readPalette } from "@/components/layout/export";
 import {
   boxOf,
+  firstFreeSpot,
+  innerBox,
   floorLevel,
   runChecks,
   round3,
@@ -63,7 +68,7 @@ export function LayoutView({ project }: ViewProps) {
     for (const p of parts) {
       if (!p.geometry) continue;
       const g: PartGeometry = live && live.id === p.item.id ? { ...p.geometry, pos: live.pos } : p.geometry;
-      out.push({ id: p.item.id, ref: p.ref, label: labelOf(p), geometry: g });
+      out.push({ id: p.item.id, ref: p.ref, label: labelOf(p), geometry: g, ...(insideOfOf(p.item.data) ? { insideOf: insideOfOf(p.item.data) } : {}) });
     }
     return out;
   }, [parts, live]);
@@ -145,29 +150,45 @@ export function LayoutView({ project }: ViewProps) {
   };
   useEffect(() => () => { if (nudgeTimer.current) clearTimeout(nudgeTimer.current); }, []);
 
-  // Placing from the tray
-  const startDraft = (id: number, x = 0, z = 0) => {
-    setDrafts((d) => ({ ...d, [id]: d[id] ? { ...d[id], x, z } : { size: [null, null, null], basis: "", x, y: null, z } }));
+  // Placing from the tray. A part whose library entry states a size starts with it (basis "library"); a part
+  // placed with Place goes to the first free spot on the floor once its size is known, never on top of another.
+  const inner = shell ? innerBox(shell.geometry, wall) : null;
+  const finish = (id: number, next: Draft): boolean => {
+    const sizes = next.size;
+    if (!(sizes.every((s) => s !== null && s > 0) && next.basis)) return false;
+    const sz = sizes as number[];
+    const spot = next.auto ? firstFreeSpot(sz, bodies, inner) : { x: next.x, z: next.z };
+    const y = next.y ?? floor + sz[1] / 2;
+    const geometry: PartGeometry = { shape: "box", size: sz, pos: [spot.x, y, spot.z].map(round3), explode: [0, 0, 0], basis: next.basis, ...(next.basisSource ? { basisSource: next.basisSource } : {}) };
+    setDrafts((d) => {
+      const { [id]: _gone, ...rest } = d;
+      void _gone;
+      return rest;
+    });
+    void saveGeometry(id, geometry);
+    return true;
+  };
+
+  const startDraft = (id: number, x?: number, z?: number) => {
+    const item = items.find((i) => i.id === id);
+    const lib = item ? libraryEntryById(partTypeOf(item).libraryId) : null;
+    const auto = x === undefined || z === undefined;
+    const seeded: Draft | null = lib
+      ? { size: [lib.size.w, lib.size.h ?? null, lib.size.d], basis: "library", basisSource: `${lib.name}${lib.basis === "doc" ? ", from its drawing" : ", a typical part"}`, x: x ?? 0, y: null, z: z ?? 0, auto }
+      : null;
+    const cur = drafts[id];
+    const next: Draft = cur ? { ...cur, ...(auto ? {} : { x: x!, z: z!, auto: false }) } : (seeded ?? { size: [null, null, null], basis: "", x: x ?? 0, y: null, z: z ?? 0, auto });
     setSelectedId(id);
+    if (finish(id, next)) return;
+    setDrafts((d) => ({ ...d, [id]: next }));
   };
 
   const updateDraft = (id: number, change: Partial<Draft>) => {
     const cur = drafts[id];
     if (!cur) return;
-    const next = { ...cur, ...change };
-    const sizes = next.size;
-    if (sizes.every((s) => s !== null && s > 0) && next.basis) {
-      const sz = sizes as number[];
-      const y = next.y ?? floor + sz[1] / 2;
-      const geometry: PartGeometry = { shape: "box", size: sz, pos: [next.x, y, next.z].map(round3), explode: [0, 0, 0], basis: next.basis };
-      setDrafts((d) => {
-        const { [id]: _gone, ...rest } = d;
-        void _gone;
-        return rest;
-      });
-      void saveGeometry(id, geometry);
-      return;
-    }
+    // a position typed by hand is kept
+    const next: Draft = { ...cur, ...change, ...("x" in change || "z" in change ? { auto: false } : {}) };
+    if (finish(id, next)) return;
     setDrafts((d) => ({ ...d, [id]: next }));
   };
   const cancelDraft = (id: number) =>
@@ -275,7 +296,7 @@ export function LayoutView({ project }: ViewProps) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-md border border-hairline bg-surface p-0.5 lg:hidden" role="group" aria-label="Choose a view">
+        <div className="inline-flex rounded-md border border-hairline bg-surface p-0.5" role="group" aria-label="Choose a view">
           {VIEW_ORDER.map((k) => (
             <Button key={k} size="sm" className="h-7" variant={activeView === k ? "subtle" : "ghost"} aria-pressed={activeView === k} onClick={() => setActiveView(k)}>
               {VIEW_DEFS[k].label}
@@ -328,17 +349,8 @@ export function LayoutView({ project }: ViewProps) {
               </p>
             </div>
           ) : (
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-              <div className={`${activeView === "top" ? "block" : "hidden"} lg:row-span-2 lg:block`}>
-                <ThreeView {...viewProps("top", "h-[420px] lg:h-[564px]")} />
-              </div>
-              <div className={`${activeView === "front" ? "block" : "hidden"} lg:block`}>
-                <ThreeView {...viewProps("front", "h-[420px] lg:h-[276px]")} />
-              </div>
-              <div className={`${activeView === "side" ? "block" : "hidden"} lg:block`}>
-                <ThreeView {...viewProps("side", "h-[420px] lg:h-[276px]")} />
-              </div>
-            </div>
+            // one view at a time, large enough to read its labels, at every width; the buttons above switch it
+            <ThreeView key={activeView} {...viewProps(activeView, "h-[clamp(440px,64vh,760px)]")} />
           )}
           {hasGeometry && !anyParts && shell && (
             <p className="mt-2 text-sm text-muted">The enclosure is drawn. Parts with geometry will appear inside it.</p>

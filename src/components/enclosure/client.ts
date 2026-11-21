@@ -15,6 +15,8 @@ export type ResultOk = {
   checks: CheckResult[];
   baseStl: string;
   lidStl: string;
+  /** Z up, on z = 0, as they print (the downloads) */
+  basePrintStl: string;
   lidPrintStl: string;
   source: { filename: string; text: string; note: string };
 };

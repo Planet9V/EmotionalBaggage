@@ -287,13 +287,24 @@ function byPinKey(a: string, b: string) {
 
 export type FileMeta = { concept: string; generatedAt: Date };
 
-export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "note", "status"];
+export function fmtDate(d: Date) {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
-/** (a) Wiring list, one row per wire in soldering order. */
-export function wiringCsv(wires: Wire[]): string {
+export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "cut length mm", "length basis", "gauge", "note", "status"];
+
+/** What the build sheet works out for a wire: the length to cut (and whether it is routed or estimated) and the gauge. */
+export type WireCut = { cutMm: number | null; basis: "routed" | "estimate" | ""; gauge: string };
+
+/** (a) Wiring list, one row per wire in soldering order, with the cut length, its basis and the gauge from the build sheet. */
+export function wiringCsv(wires: Wire[], cuts: ReadonlyMap<number, WireCut> = new Map()): string {
   const rows = [...wires]
     .sort((a, b) => a.order - b.order || a.item.id - b.item.id)
-    .map((w) => [w.order, w.name, w.net, w.netClass, w.from, w.fromPin, w.to, w.toPin, w.note, w.status]);
+    .map((w) => {
+      const c = cuts.get(w.item.id);
+      return [w.order, w.name, w.net, w.netClass, w.from, w.fromPin, w.to, w.toPin, c?.cutMm ?? "", c?.basis ?? "", c?.gauge ?? "", w.note, w.status];
+    });
   return toCsvText([CSV_HEADER, ...rows]);
 }
 

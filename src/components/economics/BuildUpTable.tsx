@@ -24,10 +24,13 @@ export function BuildUpTable({
   unit,
   onEdit,
   onRemove,
+  printedRows,
 }: {
   unit: UnitCost;
   onEdit?: (rowId: number) => void;
   onRemove?: (rowId: number) => void;
+  /** a control per printed part (its material price per kg), shown under the part's line */
+  printedRows?: Map<number, React.ReactNode>;
 }) {
   const fm = (m: number) => formatMoney(m, unit.currency);
   const sub: Record<CostLine["group"], number> = {
@@ -60,7 +63,7 @@ export function BuildUpTable({
         </TableHeader>
         <TableBody>
           {GROUPS.filter((g) => unit.lines.some((l) => l.group === g.key)).map((g) => (
-            <GroupRows key={g.key} title={g.title} subtotal={fm(sub[g.key])} lines={unit.lines.filter((l) => l.group === g.key)} fm={fm} editable={editable} onEdit={onEdit} onRemove={onRemove} />
+            <GroupRows key={g.key} title={g.title} subtotal={fm(sub[g.key])} lines={unit.lines.filter((l) => l.group === g.key)} fm={fm} editable={editable} onEdit={onEdit} onRemove={onRemove} printedRows={printedRows} />
           ))}
           <TableRow className="border-t-2 border-hairline bg-subtle">
             <TableCell className="font-semibold text-primary">
@@ -85,6 +88,7 @@ function GroupRows({
   editable,
   onEdit,
   onRemove,
+  printedRows,
 }: {
   title: string;
   subtotal: string;
@@ -93,6 +97,7 @@ function GroupRows({
   editable: (l: CostLine) => boolean;
   onEdit?: (rowId: number) => void;
   onRemove?: (rowId: number) => void;
+  printedRows?: Map<number, React.ReactNode>;
 }) {
   return (
     <>
@@ -105,6 +110,8 @@ function GroupRows({
         <TableRow key={l.key}>
           <TableCell className="text-primary">
             {l.label}
+            {l.group === "part" ? <span className="block text-[11px] text-muted" data-testid={`basis-${l.key}`}>{l.how}</span> : null}
+            {l.group === "part" && l.rowId !== null && printedRows?.has(l.rowId) ? printedRows.get(l.rowId) : null}
             {l.missing ? (
               <span className="ml-2 inline-flex items-center gap-1.5">
                 <StatusBadge tone="warning">Not priced</StatusBadge>

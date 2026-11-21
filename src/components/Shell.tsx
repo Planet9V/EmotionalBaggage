@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, BookOpen, FileText, Gauge, GitBranch, LayoutList, Link2, ListChecks, MessagesSquare, Moon, PenLine, Plug, Plus, Printer, Settings, Sun } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Activity, BookOpen, FileText, Gauge, GitBranch, LayoutList, Link2, ListChecks, Menu, MessagesSquare, Moon, PenLine, Plug, Plus, Printer, Settings, Sun, X } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
 import { sectionsFor } from "@/lib/productTypes";
@@ -32,6 +33,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const error = messageOf(conceptsQuery.error);
   const [chosen, setChosen] = useState<string>("");
   const [dark, setDark] = useState(false);
+  /** below 1024 px the sidebar is a drawer, opened from the top bar */
+  const [menuOpen, setMenuOpen] = useState(false);
   const { refetch } = conceptsQuery;
   const reload = useCallback(async () => {
     await refetch();
@@ -67,20 +70,19 @@ function AppShell({ children }: { children: React.ReactNode }) {
       active ? "bg-dutchOrange/10 font-semibold text-link" : "text-secondary hover:bg-subtle hover:text-primary"
     }`;
 
-  return (
-    <ProjectContext.Provider value={ctx}>
-      <div className="flex min-h-dvh bg-canvas text-primary">
-        <aside className="no-print sticky top-0 flex h-dvh w-64 shrink-0 flex-col border-r border-hairline bg-surface">
+  // rendered in the sidebar and, below 1024 px, in the drawer: each copy has its own control id
+  const sidebar = (cid: string) => (
+    <>
           <div className="border-b border-hairline px-4 py-4 [@media(max-height:800px)]:py-2.5">
             <Link href="/" className="block">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept to realization</p>
               <p className="mt-1 text-sm font-semibold tracking-tight">Product workbench</p>
             </Link>
-            <label className="mt-4 [@media(max-height:800px)]:mt-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-muted" htmlFor="concept">
+            <label className="mt-4 [@media(max-height:800px)]:mt-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-muted" htmlFor={cid}>
               Concept
             </label>
             <NativeSelect
-              id="concept"
+              id={cid}
               value={current}
               onChange={(e) => select(e.target.value)}
               className="mt-1 bg-canvas"
@@ -155,9 +157,45 @@ function AppShell({ children }: { children: React.ReactNode }) {
             </button>
             <SessionControls linkClass={link("", false)} />
           </div>
-        </aside>
+            </>
+  );
+
+  return (
+    <ProjectContext.Provider value={ctx}>
+      <div className="flex min-h-dvh bg-canvas text-primary">
+        <aside className="no-print sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-hairline bg-surface lg:flex">{sidebar("concept")}</aside>
+        <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 lg:hidden" />
+            <Dialog.Content
+              aria-describedby={undefined}
+              className="no-print fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-hairline bg-surface shadow-plate focus:outline-hidden lg:hidden"
+              // a link followed from the drawer closes it
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("a")) setMenuOpen(false);
+              }}
+            >
+              <Dialog.Title className="sr-only">Menu</Dialog.Title>
+              <Dialog.Close className="absolute right-2 top-2 rounded-md p-1.5 text-secondary hover:bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close the menu">
+                <X className="h-4 w-4" aria-hidden />
+              </Dialog.Close>
+              <div className="flex min-h-0 flex-1 flex-col">{sidebar("concept-menu")}</div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
 
         <main className="min-w-0 flex-1">
+          <div className="no-print sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-surface px-4 py-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-expanded={menuOpen}
+              className="inline-flex items-center gap-2 rounded-md border border-hairline px-2.5 py-1.5 text-sm text-primary hover:bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+            >
+              <Menu className="h-4 w-4" aria-hidden /> Menu
+            </button>
+            <span className="truncate text-sm font-medium text-secondary">{project?.name ?? "Product workbench"}</span>
+          </div>
           {error ? (
             <div className="m-8 rounded-xl border border-hairline bg-danger-soft p-5 text-sm text-danger" role="alert">
               <p className="font-semibold">The database could not be reached.</p>

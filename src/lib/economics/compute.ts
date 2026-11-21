@@ -87,6 +87,22 @@ export function partLine(p: PartInput, batchSize: number, currency: string): Cos
     missing: { key: base.key, what: `${name}: not priced`, reason, href: HREF.parts, rowId: p.id },
   });
 
+  if (p.printed) {
+    const sl = p.printed.slice;
+    const per = p.printed.pricePerKg;
+    if (sl && per !== null) {
+      const perKg = toMinor(per, currency);
+      const qty = p.qty ?? 1;
+      const amount = roundHalfUp((qty * sl.grams * perKg) / 1000);
+      return { ...base, amount, how: `${qty} x ${sl.grams} g (slice of print job "${sl.job}", ${sl.by}) x ${fm(perKg, currency)} per kg / 1000 = ${fm(amount, currency)}${p.qty === null ? " (quantity not set, counted as 1)" : ""}`, missing: null };
+    }
+    const why = sl ? `set the material price per kilogram to work it out from the slice of "${sl.job}" (${sl.grams} g)` : "slice a print job tied to this part to work it out from grams";
+    if (p.line !== null) {
+      const amount = toMinor(p.line, currency);
+      return { ...base, amount, how: `Entered estimate on the parts list: ${fm(amount, currency)}; ${why}`, missing: null };
+    }
+    return miss(`${why}, or enter an estimate on the parts list.`);
+  }
   if (p.qty !== null && (p.unit !== null || p.breaks.length)) {
     const ordered = p.qty * batchSize;
     const hit = [...p.breaks].reverse().find((b) => b.qty <= ordered);
@@ -96,14 +112,15 @@ export function partLine(p: PartInput, batchSize: number, currency: string): Cos
     }
     const unitMinor = toMinor(unit, currency);
     const amount = roundHalfUp(p.qty * unitMinor);
+    const from = !hit && p.offer ? `, from ${p.offer.supplier}${p.offer.checkedAt ? `, checked ${p.offer.checkedAt}` : ""}` : !hit ? ", unit price entered" : ", price break entered";
     const how = hit
-      ? `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)} (${ordered} pieces ordered reaches the break at ${hit.qty})`
-      : `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)}${p.breaks.length ? ` (${ordered} pieces ordered is below the first break at ${p.breaks[0].qty})` : ""}`;
+      ? `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)} (${ordered} pieces ordered reaches the break at ${hit.qty})${from}`
+      : `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)}${p.breaks.length ? ` (${ordered} pieces ordered is below the first break at ${p.breaks[0].qty})` : ""}${from}`;
     return { ...base, amount, how, missing: null };
   }
   if (p.line !== null) {
     const amount = toMinor(p.line, currency);
-    return { ...base, amount, how: `Line cost entered on the parts list: ${fm(amount, currency)}`, missing: null };
+    return { ...base, amount, how: `Entered estimate on the parts list: ${fm(amount, currency)}`, missing: null };
   }
   if (p.unit !== null || p.breaks.length) return miss("quantity is not set. Enter how many go into one unit.");
   return miss("no unit price and no line cost. Enter one on the parts list.");

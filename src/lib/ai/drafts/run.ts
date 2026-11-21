@@ -67,6 +67,22 @@ export async function buildContext(g: Generator<Record<string, unknown>>, concep
 /** The output the model is asked for: { rows: [...] }, each row described by the generator's schema. */
 const envelope = z.object({ rows: z.array(z.record(z.string(), z.unknown())).max(200) });
 
+/**
+ * Real models do not always keep the {"rows": [...]} envelope: some answer with the bare array, some with
+ * the one row on its own, some with the rows under another single key. Each is put back into the envelope;
+ * anything else is left for the schema to refuse.
+ */
+export function unwrapRows(value: unknown): unknown {
+  const isRow = (v: unknown) => !!v && typeof v === "object" && !Array.isArray(v);
+  if (Array.isArray(value)) return { rows: value };
+  if (!isRow(value)) return value;
+  const o = value as Record<string, unknown>;
+  if ("rows" in o) return Array.isArray(o.rows) ? o : isRow(o.rows) ? { rows: [o.rows] } : o;
+  const keys = Object.keys(o);
+  if (keys.length === 1 && Array.isArray(o[keys[0]])) return { rows: o[keys[0]] };
+  return { rows: [o] };
+}
+
 function rowInstruction(g: Generator<Record<string, unknown>>) {
   return `Answer with a JSON object {"rows": [...]}. Each row must match this JSON Schema:\n${JSON.stringify(z.toJSONSchema(g.schema))}`;
 }
@@ -180,6 +196,7 @@ export async function runGenerator(o: RunOptions): Promise<RunResult> {
     system: `${prompt.system}\n\n${rowInstruction(g)}`,
     messages: [{ role: "user", content: prompt.user }],
     schema: envelope,
+    coerce: unwrapRows,
     maxOutputTokens: 8000,
     temperature: 0.2,
     timeoutMs: DRAFT_TIMEOUT_MS,

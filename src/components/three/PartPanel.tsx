@@ -13,11 +13,8 @@ import type { ShapeStatus } from "@/lib/geometry/useShapes";
 import { ShapeFileSection } from "./ShapeFileSection";
 import { bodyExtent, describeSize, fmt, type PartGeometry } from "./layout";
 import { NativeSelect } from "@/components/ui/native-select";
+import { basisText } from "@/lib/domain/part";
 
-export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
-  doc: "Dimension stated in the source documents",
-  typical: "Typical size for this kind of part; not measured",
-};
 
 /** One wire touching the focused part. */
 export type ConnectionRow = {
@@ -121,7 +118,7 @@ export function PartPanel({ part, projectId, shapeStatus, onClose, onSave, onTog
             <Row label="Turned" mono>
               {g.rotation ? `${g.rotation.map(fmt).join(", ")} deg about x, y, z` : <span className="font-sans text-muted">Not turned</span>}
             </Row>
-            <Row label="Basis">{BASIS_TEXT[g.basis]}</Row>
+            <Row label="Basis">{basisText(g)}</Row>
             <Row label="Printed">
               <label className="inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" className="h-4 w-4 accent-[#E05A10]" checked={g.print === true} onChange={(e) => onTogglePrint(e.target.checked)} />

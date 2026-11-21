@@ -1,5 +1,7 @@
 "use client";
 
+import { sentText } from "@/lib/channels/sentText";
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Check, Copy, Pencil, Plus, Trash2 } from "lucide-react";
@@ -119,6 +121,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                   )}
                 </div>
                 <p className="whitespace-pre-wrap wrap-break-word text-sm text-primary">{p.body || p.title}</p>
+                {sentText(p.data) ? <p className="mt-1 text-[11px] text-muted">{sentText(p.data).replace(/^./, (c) => c.toUpperCase())}.</p> : null}
                 <div className="mt-2 flex flex-wrap items-center gap-1">
                   {ci > 0 && (
                     <Button size="chip" variant="outline" onClick={() => move(p, columns[ci - 1])} aria-label={`Move to ${columns[ci - 1]}`}>

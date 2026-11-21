@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "walk": "node scripts/walk.mjs",
     "typecheck": "tsc --noEmit",
     "deadcode": "knip",
     "notices": "node scripts/notices.mjs",

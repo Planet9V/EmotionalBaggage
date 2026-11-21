@@ -4,6 +4,7 @@
  * the enclosure floor. Placement of counted bodies comes from the 3D view's own helpers so both
  * views agree.
  */
+import { relationOf } from "@/lib/geometry/overlap";
 import type { Geometry } from "@/lib/types";
 import { bodyExtent, bodyOffsets, cylinderAxis, totalExtent, type PartGeometry } from "../three/layout";
 
@@ -34,6 +35,8 @@ export const VIEW_ORDER: ViewKey[] = ["top", "front", "side"];
 export type LayoutPart = {
   id: number;
   ref: string;
+  /** the reference of the part that holds this one (data.insideOf) */
+  insideOf?: string;
   /** what to call the part in sentences: ref, else title */
   label: string;
   geometry: PartGeometry;
@@ -113,13 +116,20 @@ export function overlapDepth(a: Box, b: Box): [number, number, number] {
   return [0, 1, 2].map((k) => Math.min(a.max[k], b.max[k]) - Math.max(a.min[k], b.min[k])) as [number, number, number];
 }
 
-/** Pairs whose bounding boxes intersect by more than the tolerance on all three axes. The shell is never in `parts`. */
+/**
+ * Pairs whose bounding boxes intersect by more than the tolerance on all three axes, and are not one part held in
+ * the other (relationOf: the row's data.insideOf, or at least 90% of the smaller inside the larger). The shell is
+ * never in `parts`.
+ */
 export function findOverlaps(parts: LayoutPart[], tol = OVERLAP_TOLERANCE): Overlap[] {
   const out: Overlap[] = [];
   for (let i = 0; i < parts.length; i++) {
     for (let j = i + 1; j < parts.length; j++) {
-      const d = overlapDepth(boxOf(parts[i].geometry), boxOf(parts[j].geometry));
-      if (d.every((v) => v > tol)) out.push({ a: parts[i], b: parts[j], depth: d });
+      const ba = boxOf(parts[i].geometry), bb = boxOf(parts[j].geometry);
+      const d = overlapDepth(ba, bb);
+      if (!d.every((v) => v > tol)) continue;
+      if (relationOf({ ref: parts[i].ref || parts[i].label, box: ba, insideOf: parts[i].insideOf }, { ref: parts[j].ref || parts[j].label, box: bb, insideOf: parts[j].insideOf }).kind === "contained") continue;
+      out.push({ a: parts[i], b: parts[j], depth: d });
     }
   }
   return out;
@@ -222,14 +232,31 @@ export function niceStep(pxPerMm: number, minPx = 60) {
 /** A BOM part being placed from the tray: not saved until three sizes and a basis are set. */
 export type Draft = {
   size: (number | null)[];
-  basis: "doc" | "typical" | "";
+  basis: "doc" | "typical" | "library" | "";
+  basisSource?: string;
   x: number;
   /** null until set: the part then rests on the floor once sized */
   y: number | null;
   z: number;
+  /** placed from the tray rather than dropped at a spot: it goes to the first free place once its size is known */
+  auto?: boolean;
 };
 
-export const BASIS_TEXT: Record<"doc" | "typical", string> = {
-  doc: "Dimension stated in the source documents",
-  typical: "Typical size for this kind of part; not measured",
-};
+export { basisText } from "@/lib/domain/part";
+
+/**
+ * The first place on the floor where a part of this footprint touches nothing already placed: rows from the
+ * back left corner of the inside (or around the origin when there is no shell), in 5 mm steps, keeping `gap`
+ * mm from every other part. Falls back to the centre when nothing is free.
+ */
+export function firstFreeSpot(size: number[], bodies: LayoutPart[], inner: Box | null, gap = 2): { x: number; z: number } {
+  const [w, , d] = size;
+  const boxes = bodies.map((b) => boxOf(b.geometry));
+  const free = (x: number, z: number) =>
+    boxes.every((b) => x + w / 2 + gap <= b.min[0] || x - w / 2 - gap >= b.max[0] || z + d / 2 + gap <= b.min[2] || z - d / 2 - gap >= b.max[2]);
+  const area = inner ?? { min: [-150, 0, -150], max: [150, 0, 150] };
+  const STEP = 5;
+  for (let z = area.min[2] + d / 2; z <= area.max[2] - d / 2 + 1e-9; z += STEP)
+    for (let x = area.min[0] + w / 2; x <= area.max[0] - w / 2 + 1e-9; x += STEP) if (free(x, z)) return { x: round3(x), z: round3(z) };
+  return { x: 0, z: 0 };
+}

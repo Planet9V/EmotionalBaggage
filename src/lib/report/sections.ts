@@ -30,7 +30,7 @@ export type ReportSection = { id: string; title: string; href: string; blocks: R
 
 
 function economics(by: (s: string) => Item[], currency: string): ReportSection | null {
-  const rows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES) };
+  const rows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES), printJobs: by("prototype/printing") };
   if (!rows.economics.length && !rows.channels.length && !rows.batches.length) return null;
   const inputs = readEconomics(rows, currency);
   const u = referenceUnitCost(inputs);
@@ -182,13 +182,60 @@ async function campaignVerdicts(projectId: string, items: Item[], currency: stri
   };
 }
 
+async function campaignResults(projectId: string, items: Item[], currency: string): Promise<ReportSection | null> {
+  const rows = await loadResults(projectId);
+  if (!rows.length) return null;
+  const names = new Map(items.map((i) => [i.id, i.title]));
+  const money = (m: number) => formatMoney(m, currency);
+  const by = new Map<number, typeof rows>();
+  for (const r of rows) by.set(r.campaignId, [...(by.get(r.campaignId) ?? []), r]);
+  const sum = (rs: typeof rows, k: "spend" | "impressions" | "clicks" | "orders" | "revenue") => rs.reduce((a, r) => a + r[k], 0);
+  return {
+    id: "computed-results",
+    title: "Campaign results",
+    href: "/s/marketing/results",
+    blocks: [
+      { t: "p", text: `${plural(rows.length, "day of results", "days of results")} recorded, totalled per campaign.`, muted: true },
+      {
+        t: "table",
+        head: ["Campaign", "Days", "From", "To", "Spent", "Impressions", "Clicks", "Orders", "Revenue"],
+        rows: [...by].map(([id, rs]) => [names.get(id) ?? `Campaign ${id}`, String(rs.length), rs[0].day, rs[rs.length - 1].day, money(sum(rs, "spend")), String(sum(rs, "impressions")), String(sum(rs, "clicks")), String(sum(rs, "orders")), money(sum(rs, "revenue"))]),
+        mono: [1, 2, 3, 4, 5, 6, 7, 8],
+      },
+    ],
+  };
+}
+
+async function trackedLinks(projectId: string, items: Item[]): Promise<ReportSection | null> {
+  const links = await q<{ campaign_id: string; creative_label: string; destination: string; code: string | null; clicks: string }>(
+    `SELECT l.campaign_id, l.creative_label, l.destination, l.code, (SELECT COALESCE(sum(c.clicks), 0) FROM link_clicks c WHERE c.link_id = l.id) AS clicks
+       FROM tracked_links l WHERE l.project_id=$1 ORDER BY l.id`,
+    [projectId]
+  );
+  if (!links.length) return null;
+  const names = new Map(items.map((i) => [i.id, i.title]));
+  return {
+    id: "computed-links",
+    title: "Tracked links",
+    href: "/s/marketing/links",
+    blocks: [
+      {
+        t: "table",
+        head: ["Campaign", "Creative", "Short address", "Goes to", "Clicks"],
+        rows: links.map((l) => [names.get(Number(l.campaign_id)) ?? `Campaign ${l.campaign_id}`, l.creative_label, l.code ? `/l/${l.code}` : "none", l.destination, String(l.clicks)]),
+        mono: [2, 4],
+      },
+    ],
+  };
+}
+
 /** Every computed section that has rows to be worked from, in stage order. */
 export async function reportSections(projectId: string): Promise<ReportSection[]> {
   const p = (await q<{ currency: string; product_type: string }>("SELECT currency, product_type FROM projects WHERE id=$1", [projectId]))[0];
   const currency = p?.currency || "USD";
   const items = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 ORDER BY sort, id`, [projectId])).map(toItem);
   const by = (s: string) => items.filter((i) => i.section === s);
-  const econRows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES) };
+  const econRows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES), printJobs: by("prototype/printing") };
   const out = [
     enclosure(items),
     await electrical(projectId, p?.product_type ?? "electronics", items),
@@ -196,6 +243,8 @@ export async function reportSections(projectId: string): Promise<ReportSection[]
     economics(by, currency),
     compliance(by),
     launchDates(by),
+    await campaignResults(projectId, items, currency),
+    await trackedLinks(projectId, items),
     await campaignVerdicts(projectId, items, currency, econRows),
   ];
   return out.filter((s): s is ReportSection => s !== null);

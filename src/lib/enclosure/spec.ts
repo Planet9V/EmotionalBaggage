@@ -1,6 +1,7 @@
 // Builds the enclosure spec from a concept's parts (plan 5.9). Pure: rows in, spec out, no I/O.
 import { toPart } from "@/lib/domain";
 import { totalExtent } from "@/components/three/layout";
+import { insideOfOf } from "@/lib/geometry/overlap";
 import type { Item } from "@/lib/types";
 import {
   DEFAULT_PARAMS,
@@ -100,7 +101,7 @@ function readOverride(item: Item): OpeningOverride | null {
 }
 
 /** The face of `inner` a box is nearest to, and the gap to it. Faces on which the box already crosses the wall have a negative gap. */
-export function nearestFace(box: Box, inner: Box): { face: Face; gap: number } {
+export function nearestFace(box: Box, inner: Box, exclude: Face[] = []): { face: Face; gap: number } {
   const g: [Face, number][] = [
     ["left", box.min[0] - inner.min[0]],
     ["right", inner.max[0] - box.max[0]],
@@ -109,8 +110,8 @@ export function nearestFace(box: Box, inner: Box): { face: Face; gap: number } {
     ["bottom", box.min[1] - inner.min[1]],
     ["top", inner.max[1] - box.max[1]],
   ];
-  g.sort((a, b) => a[1] - b[1]);
-  return { face: g[0][0], gap: g[0][1] };
+  const pick = g.filter(([f]) => !exclude.includes(f)).sort((a, b) => a[1] - b[1]);
+  return { face: pick[0][0], gap: pick[0][1] };
 }
 
 const centerOf = (b: Box): Vec3 => [0, 1, 2].map((k) => (b.min[k] + b.max[k]) / 2) as Vec3;
@@ -183,7 +184,7 @@ export function buildSpec({ items, params: given }: BuildInput): EnclosureSpec {
     const pos = g.pos as Vec3;
     const box: Box = { min: [0, 1, 2].map((k) => pos[k] - ext[k] / 2) as Vec3, max: [0, 1, 2].map((k) => pos[k] + ext[k] / 2) as Vec3 };
     const { kind, from } = enclosureRoleOf(item, g.shape);
-    parts.push({ id: item.id, ref: p.ref, title: p.title, kind, kindFrom: from, box, shape: g.shape, role: "inside" });
+    parts.push({ id: item.id, ref: p.ref, title: p.title, kind, kindFrom: from, box, shape: g.shape, role: "inside", ...(insideOfOf(item.data) ? { insideOf: insideOfOf(item.data) } : {}) });
   }
 
   const shell = parts.find((p) => p.kind === "shell");
@@ -239,12 +240,14 @@ export function buildSpec({ items, params: given }: BuildInput): EnclosureSpec {
     const wantsKind = (OPENING_ROLES as readonly string[]).includes(p.kind);
     if (ov && (ov.face || ov.width || ov.height || ov.shape || ov.shift)) {
       const face = ov.face ?? near.face;
-      openings.push(makeOpening(p, face, outer, t, "row", `Set on the part row (data.opening).`, ov));
+      openings.push(makeOpening(p, face, outer, t, "row", `Set for this part below.`, ov));
     } else if (p.role === "through") {
       const face = near.face;
       openings.push(makeOpening(p, face, outer, t, "crossing", `${p.ref || p.title} crosses the ${face} wall, so the wall is opened for it.`, null));
-    } else if (wantsKind && near.gap <= NEAR_WALL + EPS) {
-      openings.push(makeOpening(p, near.face, outer, t, "kind", `A ${p.kind} ${round(Math.max(near.gap, 0))} mm from the ${near.face} wall: opened so it can be used.`, null));
+    } else if (wantsKind) {
+      // A control or connector is opened in a side wall or the lid, never the floor the box stands on, unless the row asks for it.
+      const side = nearestFace(p.box, innerBox, ["bottom"]);
+      if (side.gap <= NEAR_WALL + EPS) openings.push(makeOpening(p, side.face, outer, t, "kind", `A ${p.kind} ${round(Math.max(side.gap, 0))} mm from the ${side.face} wall: opened so it can be used.`, null));
     }
   }
 

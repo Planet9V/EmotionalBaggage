@@ -23,7 +23,7 @@ const READY = new Set(["approved", "scheduled"]);
 
 function Row({ item, onSend }: { item: Item; onSend: () => void }) {
   const ch = channelOf(item.data.channel);
-  const sent = item.data.sent as { id?: string; at?: string; url?: string } | undefined;
+  const sent = item.data.sent as { id?: string; at?: string; url?: string; byHand?: boolean } | undefined;
   const err = item.data.sendError as { message?: string } | undefined;
   const when = typeof item.data.scheduledAt === "string" && item.data.scheduledAt ? item.data.scheduledAt : "";
   return (
@@ -31,12 +31,12 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{sendName(ch)}</span>
-          <StatusBadge tone={sent ? "success" : "info"}>{sent ? "sent" : item.status}</StatusBadge>
+          <StatusBadge tone={sent ? "success" : "info"}>{sent ? (sent.byHand ? "marked posted by hand" : "sent") : item.status}</StatusBadge>
           {when && !sent ? <span className="font-mono text-xs text-muted">planned for {when}</span> : null}
         </span>
         {sent ? (
           <span className="text-xs text-secondary">
-            Sent {sent.at ? fmtDateTime(sent.at) : ""}
+            {sent.byHand ? "Marked posted by hand, not sent by the app," : "Sent"} {sent.at ? fmtDateTime(sent.at) : ""}
             {sent.url ? (
               <>
                 {" "}

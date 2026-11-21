@@ -4,7 +4,16 @@ import { SCALE, type buildSymbolGraph } from "@/components/schematic/symbolGraph
 import { kicadSchematic } from "@/lib/parts/kicad";
 import type { buildCircuit } from "@/lib/parts/circuit";
 import type { Wire } from "@/lib/domain";
-import { netlistKicad, netlistText, schematicSvg, wiringCsv, type computeNets, type Graph, type Part } from "@/components/schematic/model";
+import { netlistKicad, netlistText, schematicSvg, wiringCsv, type WireCut, type computeNets, type Graph, type Part } from "@/components/schematic/model";
+import { DEFAULT_ALLOWANCE, DEFAULT_ROUTING, partMap, sequence } from "@/components/buildsheet/derive";
+import { specRows } from "@/components/buildsheet/wiresheet";
+import type { Item } from "@/lib/types";
+
+/** The cut length, its basis and the gauge per wire, as the build sheet works them out at its default allowance and routing factor. */
+function wireCuts(bomItems: Item[], wires: Wire[]): Map<number, WireCut> {
+  const rows = specRows(sequence(wires), partMap(bomItems), DEFAULT_ROUTING, DEFAULT_ALLOWANCE);
+  return new Map(rows.map((r) => [r.wire.item.id, { cutMm: r.length?.mm ?? null, basis: r.length?.source ?? "", gauge: r.gauge.awg !== null ? `${r.gauge.awg} AWG` : r.gauge.label }]));
+}
 import type { GeneratedFile } from "@/components/schematic/FilesPanel";
 import { fileSlug } from "@/lib/format";
 
@@ -18,8 +27,10 @@ export function schematicFileSpecs({
   symGraph,
   revision,
   date,
+  bomItems = [],
 }: {
   projectName: string;
+  bomItems?: Item[];
   wires: Wire[];
   parts: Part[];
   nets: ReturnType<typeof computeNets>;
@@ -48,8 +59,9 @@ export function schematicFileSpecs({
     {
       key: "csv",
       label: "Wiring list (CSV)",
-      detail: `${n} ${n === 1 ? "row" : "rows"} in soldering order: order, name, net, class, from ref, from pin, to ref, to pin, note, status.`,
-      make: (): GeneratedFile[] => [{ name: `${base}-wiring-list.csv`, mime: "text/csv;charset=utf-8", text: wiringCsv(wires), format: "wiring-list-csv" }],
+      detail: `${n} ${n === 1 ? "row" : "rows"} in soldering order: order, name, net, class, from ref, from pin, to ref, to pin, cut length, length basis (routed or estimate), gauge, note, status.`,
+      note: `Cut lengths and gauges are the build sheet's, at its default ${DEFAULT_ALLOWANCE} mm allowance and ${DEFAULT_ROUTING} routing factor for wires not yet routed.`,
+      make: (): GeneratedFile[] => [{ name: `${base}-wiring-list.csv`, mime: "text/csv;charset=utf-8", text: wiringCsv(wires, wireCuts(bomItems, wires)), format: "wiring-list-csv" }],
     },
     {
       key: "netlist",

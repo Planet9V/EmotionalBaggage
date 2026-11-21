@@ -7,7 +7,7 @@ import { pool, q } from "@/lib/db";
 import type { ItemRow } from "@/lib/db";
 import { planSend } from "@/lib/slicing/flow";
 import type { PrinterPort } from "@/lib/slicing/printerPort";
-import { POST as toPrint } from "@/app/api/projects/[id]/enclosure/print/route";
+import { GET as storedPrint, POST as toPrint } from "@/app/api/projects/[id]/enclosure/print/route";
 import { GET as getSettings, PUT as putSettings } from "@/app/api/admin/settings/route";
 import { POST as testConnection } from "@/app/api/admin/test/route";
 import { GET as listJobs } from "@/app/api/projects/[id]/print-jobs/route";
@@ -40,14 +40,20 @@ describe("planSend follows the adapter's file types, in its order", () => {
 });
 
 describe("Send to printing from the Enclosure page", () => {
-  it("needs a saved choice, then stores the base and the lid as Z-up STL files and records them", async () => {
+  it("needs a saved choice, then stores the base and the lid as Z-up STL files and one 3MF, named with the generator and parameter hash, and records them", async () => {
     await q("DELETE FROM items WHERE project_id=$1 AND section='design/enclosure'", [SEEDED]);
     const none = await read<{ error: string }>(await toPrint(json("POST"), ctx(SEEDED)));
     expect(none.status).toBe(409);
     await q("INSERT INTO items (project_id, section, title, data) VALUES ($1,'design/enclosure','Enclosure settings',$2)", [SEEDED, JSON.stringify({ enclosureGenerator: "casemaker", params: {} })]);
     const r = await read<{ files: { id: number; name: string }[]; generator: string }>(await toPrint(json("POST"), ctx(SEEDED)));
     expect(r.status).toBe(201);
-    expect(r.body.files.map((f) => f.name)).toEqual(["enclosure-casemaker-base.stl", "enclosure-casemaker-lid.stl"]);
+    const names = r.body.files.map((f) => f.name);
+    expect(names).toHaveLength(3);
+    expect(names[0]).toMatch(/^enclosure-casemaker-[0-9a-f]{8}-base\.stl$/);
+    const stem = names[0].replace(/-base\.stl$/, "");
+    expect(names).toEqual([`${stem}-base.stl`, `${stem}-lid.stl`, `${stem}.3mf`]);
+    const kinds = await q<{ kind: string; mime: string }>("SELECT kind, mime FROM files WHERE id=$1", [r.body.files[2].id]);
+    expect(kinds[0]).toEqual({ kind: "3mf", mime: "model/3mf" });
     const base = (await q<{ bytes: Buffer; kind: string }>("SELECT bytes, kind FROM files WHERE id=$1", [r.body.files[0].id]))[0];
     expect(base.kind).toBe("stl");
     const m = parseStl(new Uint8Array(base.bytes));
@@ -65,7 +71,26 @@ describe("Send to printing from the Enclosure page", () => {
     // the checks of this build are kept on the saved choice, where the Design gate reads them
     const savedRow = (await q<{ data: { checked?: Record<string, { checks: unknown[] }> } }>("SELECT data FROM items WHERE project_id=$1 AND section='design/enclosure'", [SEEDED]))[0];
     expect(savedRow.data.checked?.casemaker.checks.length).toBeGreaterThanOrEqual(5);
-  }, 90_000);
+
+    // the lid is Z up too, on z = 0
+    const lid = parseStl(new Uint8Array((await q<{ bytes: Buffer }>("SELECT bytes FROM files WHERE id=$1", [r.body.files[1].id]))[0].bytes));
+    let lidMin = Infinity;
+    for (let i = 2; i < lid.positions.length; i += 3) lidMin = Math.min(lidMin, lid.positions[i]);
+    expect(Math.abs(lidMin)).toBeLessThan(0.01);
+
+    // reloading the Enclosure page reads the last stored set back, with the checks measured on that build
+    const got = await read<{ stored: { generator: string; paramsHash: string; checks: { ok: boolean }[]; files: { id: number; piece: string }[] } }>(await storedPrint(json("GET"), ctx(SEEDED)));
+    expect(got.status).toBe(200);
+    expect(got.body.stored.generator).toBe("casemaker");
+    expect(stem.endsWith(got.body.stored.paramsHash)).toBe(true);
+    expect(got.body.stored.checks).toHaveLength(5);
+    expect(got.body.stored.files.map((f) => f.piece)).toEqual(["base", "lid", "both"]);
+
+    // the same build again keeps the same three files
+    const again = await read<{ files: { id: number }[] }>(await toPrint(json("POST"), ctx(SEEDED)));
+    expect(again.body.files.map((f) => f.id)).toEqual(r.body.files.map((f) => f.id));
+    expect(await q("SELECT 1 FROM files WHERE project_id=$1 AND name LIKE 'enclosure-%'", [SEEDED])).toHaveLength(3);
+  }, 120_000);
 });
 
 describe("the slicer address in Admin", () => {

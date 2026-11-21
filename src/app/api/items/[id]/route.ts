@@ -14,7 +14,8 @@ import { mirrorLinks } from "@/lib/trace/mirror";
 import { assertMarketChange } from "@/lib/market/rules";
 import { assertAttackUntouched } from "@/lib/ai/drafts/attack";
 import { assertPrintChange } from "@/lib/slicing/rules";
-import { assertSendChange } from "@/lib/channels/rules";
+import { assertSendChange, handMarkedSent } from "@/lib/channels/rules";
+import { currentActor } from "@/lib/actor";
 import { assertContentAllowed, withFlags } from "@/lib/content/rules";
 import { CONTENT_STORES } from "@/lib/content/schemas";
 
@@ -39,6 +40,9 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     // Posts and replies: the send markers are written only by sending (robustness review S9).
     assertSendChange(was, b);
     let data = parseData(was.section, b.data);
+    // moved to posted or sent by hand: kept, and recorded as marked by hand, never as an app send
+    const byHand = handMarkedSent(was, b, currentActor());
+    if (byHand) data = { ...(data ?? {}), ...byHand };
     // Content rows: the no-proof flags are worked out again on the words as they will be, and a row past
     // draft may not carry a flagged line or break a platform limit.
     if (CONTENT_STORES.has(was.section)) {
