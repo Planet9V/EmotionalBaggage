@@ -208,8 +208,11 @@ async function seedLinks() {
     for (const link of SEED_LINKS) {
       const req = await find("design/requirements", "title", link.requirement);
       if (!req) continue;
-      const tests = (await Promise.all(link.tests.map((t) => find("prototype/tests", "title", t)))).filter((x): x is ItemRow => !!x);
-      const parts = (await Promise.all(link.parts.map((p) => find("design/bom", "ref", p)))).filter((x): x is ItemRow => !!x);
+      // One at a time: a pg client runs a single query at a time.
+      const tests: ItemRow[] = [];
+      for (const t of link.tests) { const r = await find("prototype/tests", "title", t); if (r) tests.push(r); }
+      const parts: ItemRow[] = [];
+      for (const p of link.parts) { const r = await find("design/bom", "ref", p); if (r) parts.push(r); }
       if (!tests.length && !parts.length) continue;
       const reqKey = await ensureKey(c, req);
       const testKeys = [];
