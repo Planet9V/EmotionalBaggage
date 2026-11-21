@@ -4,7 +4,7 @@
 // here is listed with the page it came from in docs/research/perplexity-api.md. The Sonar interface
 // (POST /v1/sonar) is not used: its support ended on 27 Sep 2026.
 import { getSetting } from "@/lib/settings";
-import { getSecretFor, PERPLEXITY_DEFAULT_BASE_URL, perplexityBaseUrl } from "@/lib/secretOrigin";
+import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { safeFetch } from "@/lib/net/outbound";
 import { scrub } from "@/lib/secrets/scrub";
 
