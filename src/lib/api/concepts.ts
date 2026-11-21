@@ -99,7 +99,7 @@ export async function insertConcept(
 }
 
 /** The tables a concept owns; the database cascades a concept delete to each of them. */
-export const OWNED_TABLES = ["items", "files", "events", "messages", "research", "gates"] as const;
+export const OWNED_TABLES = ["items", "files", "events", "messages", "research", "gates", "source_chunks"] as const;
 
 /** Version of the export document. Raise it when the shape changes in a way a reader must know about. */
 export const EXPORT_FORMAT = 1;

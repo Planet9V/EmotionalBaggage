@@ -45,7 +45,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["pg", "node-pg-migrate"],
   // Migrations are read from disk at start-up, so they must travel with the standalone build.
-  outputFileTracingIncludes: { "/**": ["./migrations/**/*"] },
+  // The example concept's documents (seed/) are loaded into its Files at start-up the same way.
+  outputFileTracingIncludes: { "/**": ["./migrations/**/*", "./seed/**/*"] },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

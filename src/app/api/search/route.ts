@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { requireProject, route } from "@/lib/api/route";
-import { meaningReady, searchByMeaning } from "@/lib/ai/embeddings";
+import { meaningReady, searchByMeaning, searchSourcesByMeaning } from "@/lib/ai/embeddings";
 import { searchMode } from "@/lib/ai/schemas";
 
 // Search across a concept.
@@ -32,11 +32,16 @@ export const GET = route(async (req: Request) => {
   if (mode === "meaning" && ready?.ok) {
     const r = await searchByMeaning(projectId, term, 50, { use: ready.emb, signal: req.signal });
     if (!r.ok) return NextResponse.json({ error: r.reason, missing: r.missing }, { status: 503 });
-    return NextResponse.json({ mode, items: r.items });
+    // A source whose text matches is found through its passages, and listed as the source row (with the passage's score).
+    const passages = await searchSourcesByMeaning(projectId, term, 20, { use: ready.emb, signal: req.signal });
+    const seen = new Set(r.items.map((i) => i.id));
+    const sources = passages.hits.flatMap((h) => (h.kind === "source" && !seen.has(h.item.id) && seen.add(h.item.id) ? [{ ...h.item, score: h.score }] : []));
+    return NextResponse.json({ mode, items: [...r.items, ...sources].sort((a, b) => b.score - a.score).slice(0, 50) });
   }
 
   const rows = await q<ItemRow>(
-    `SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND (title ILIKE $2 OR body ILIKE $2 OR data::text ILIKE $2) ORDER BY sort, id LIMIT 50`,
+    `SELECT ${ITEM_COLS} FROM items i WHERE project_id=$1 AND (title ILIKE $2 OR body ILIKE $2 OR data::text ILIKE $2
+       OR EXISTS (SELECT 1 FROM source_chunks c WHERE c.item_id = i.id AND c.text ILIKE $2)) ORDER BY sort, id LIMIT 50`,
     [projectId, `%${term.replace(/[\\%_]/g, "\\$&")}%`]
   );
   return NextResponse.json({ mode, items: rows.map(toItem), ...(note ? { note } : {}) });

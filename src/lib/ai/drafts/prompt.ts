@@ -47,8 +47,19 @@ export function critiqueBlock(ctx: GenContext) {
   return `The reviewer attacked the current version. Answer the critique in the revision where it is right, and keep what it gets wrong:\n${ctx.critique}`;
 }
 
-/** Ids the model may cite, and the ids it did cite that exist. */
-export const knownIds = (ctx: GenContext) => new Set(Object.values(ctx.rows).flat().map((i) => i.id).concat(ctx.revise?.items.map((i) => i.id) ?? []));
+/** Ids the model may cite, and the ids it did cite that exist: rows given, rows to revise, and the sources of the passages given. */
+export const knownIds = (ctx: GenContext) =>
+  new Set(Object.values(ctx.rows).flat().map((i) => i.id).concat(ctx.revise?.items.map((i) => i.id) ?? [], ctx.passages?.map((p) => p.sourceId) ?? []));
+
+/** The passages of the concept's sources given to this run, each headed by its source's id and title, for citing in basedOn. */
+export function passagesBlock(ctx: GenContext) {
+  const list = ctx.passages ?? [];
+  if (!list.length) return "";
+  return [
+    "Passages from the concept's own source documents (the original material it was written from). Use them as evidence, quote their lines exactly where you quote, and cite the source's id (the number after #) in basedOn:",
+    ...list.map((p) => `#${p.sourceId} ${p.title}, passage ${p.n}:\n${p.text}`),
+  ].join("\n\n");
+}
 
 export const basedOn = z.array(z.number().int()).max(200).optional().describe("ids of the rows you used, the numbers after #");
 export const replaces = z.number().int().optional().describe("revision only: the id of the row this replaces");

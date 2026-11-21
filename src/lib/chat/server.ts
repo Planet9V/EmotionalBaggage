@@ -16,6 +16,10 @@ export function numberSources(hits: SourceHit[]): NumberedSource[] {
     if (h.kind === "item") {
       return { n: i + 1, kind: "item", id: h.item.id, section: h.item.section, title: h.item.title || "(untitled row)", score, text: clip(itemText(h.item), SOURCE_CHARS) };
     }
+    if (h.kind === "source") {
+      // A passage of one of the concept's sources: cited by the source's title, opened on the Sources page.
+      return { n: i + 1, kind: "item", id: h.item.id, section: h.item.section, title: `${h.item.title || "(untitled source)"}, passage ${h.chunk.n}`, score, text: clip(h.chunk.text, SOURCE_CHARS) };
+    }
     return {
       n: i + 1,
       kind: "research",
@@ -38,7 +42,7 @@ export const stored = (s: NumberedSource): ChatSource => ({ n: s.n, kind: s.kind
 export function buildSystemPrompt(concept: { name: string; oneLiner?: string }, sources: NumberedSource[]): string {
   const about = concept.oneLiner?.trim() ? `"${concept.name}" (${concept.oneLiner.trim()})` : `"${concept.name}"`;
   const rules = [
-    `You answer questions about one product concept, ${about}, using only the numbered sources below. They are rows the team recorded for this concept and research answers they saved.`,
+    `You answer questions about one product concept, ${about}, using only the numbered sources below. They are rows the team recorded for this concept, research answers they saved, and passages of the original documents kept in the concept's Sources.`,
     "",
     "Rules:",
     "- Answer only from the sources. Do not add facts, figures, prices, names or regulations that are not in them.",

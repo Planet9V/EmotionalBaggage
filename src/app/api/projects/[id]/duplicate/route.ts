@@ -11,7 +11,7 @@ type Ctx = { params: Promise<{ id: string }> };
 /**
  * Creates a new concept named `name` with a copy of the source: its product type, stage, currency and
  * sales regions; every item; every file except what a print run produced; the pins of every part;
- * tracked links with new short codes and no clicks. Rows that name other rows (a campaign's creatives
+ * tracked links with new short codes and no clicks; the passages of each source (its read text). Rows that name other rows (a campaign's creatives
  * and sales channel, proof links, a landing page's price) or files are pointed at the copies
  * (src/lib/concepts/copy.ts). Print jobs arrive queued, without slice results or printer links.
  * Not copied: drafts, campaign results, link clicks, events, messages, research, gates and audit lines.
@@ -64,6 +64,15 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     }
     const items = { rowCount: rows.length };
 
+    // The passages of each source (migration 0029) belong to the source row; its copy gets the same text.
+    const chunks = await c.query(
+      `INSERT INTO source_chunks (project_id, item_id, n, text)
+       SELECT $1, m.dst, sc.n, sc.text FROM source_chunks sc
+         JOIN unnest($3::bigint[], $4::bigint[]) AS m(src, dst) ON m.src = sc.item_id
+        WHERE sc.project_id = $2`,
+      [newId, sourceId, [...idMap.keys()], [...idMap.values()]]
+    );
+
     // Pins belong to part rows; parts are matched by their reference, which is unique per concept.
     // Pins of a part with no reference are not copied (nothing can be wired to such a part).
     await c.query(
@@ -94,7 +103,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       linkCount++;
     }
 
-    const copied = { items: items.rowCount ?? 0, files: fileMap.size, links: linkCount };
+    const copied = { items: items.rowCount ?? 0, files: fileMap.size, links: linkCount, passages: chunks.rowCount ?? 0 };
     await logEventIn(
       c,
       newId,

@@ -69,7 +69,7 @@ function attackApproved(qc: QueryClient, projectId: string, approved: Approved[]
   void qc.invalidateQueries({ queryKey: appKeys.itemsOf(projectId) });
 }
 
-export type RunInput = { generator: string; supersede?: boolean; reviseIds?: number[]; why?: string; critique?: string; signal?: AbortSignal };
+export type RunInput = { generator: string; supersede?: boolean; reviseIds?: number[]; why?: string; critique?: string; params?: Record<string, unknown>; signal?: AbortSignal };
 
 export function useDraftActions(projectId: string) {
   const qc = useQueryClient();

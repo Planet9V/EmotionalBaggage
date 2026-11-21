@@ -26,6 +26,12 @@ const add = (id: string, section: string, title: string, extra: Record<string, u
 // earlier run can carry the same id: count only lines written by this run.
 let since = 0;
 
+/** The story's pitch and one source: the first two checks of the Concept gate. */
+async function storyAndSource(id: string) {
+  expect((await add(id, "concept/story", "The pitch", { data: { part: "pitch" } })).status).toBe(201);
+  expect((await add(id, "concept/files", "Notes", { status: "not uploaded" })).status).toBe(201);
+}
+
 describe("process API", () => {
   beforeAll(async () => {
     since = Number((await q<{ n: string | null }>("SELECT max(id) AS n FROM audit_log"))[0].n ?? 0);
@@ -54,8 +60,10 @@ describe("process API", () => {
     const r = await move(id, "research");
     expect(r.status).toBe(409);
     expect(r.body.error).toContain("The Concept gate is not passed");
-    expect(r.body.detail?.unmet.map((c) => c.id)).toEqual(["concept.one-liner", "concept.brief", "concept.go"]);
-    expect(r.body.detail?.unmet[1]).toMatchObject({ href: "/s/concept/brief#add-row", detail: "0 rows recorded, 3 needed." });
+    expect(r.body.detail?.unmet.map((c) => c.id)).toEqual(["concept.one-liner", "concept.story", "concept.files", "concept.brief", "concept.go"]);
+    expect(r.body.detail?.unmet[1]).toMatchObject({ href: "/story#story-pitch" });
+    expect(r.body.detail?.unmet[2]).toMatchObject({ href: "/files#add-file" });
+    expect(r.body.detail?.unmet[3]).toMatchObject({ href: "/s/concept/brief#add-row", detail: "0 rows recorded, 3 needed." });
     expect((await q<{ stage: string }>("SELECT stage FROM projects WHERE id=$1", [id]))[0].stage).toBe("concept");
   });
 
@@ -94,7 +102,7 @@ describe("process API", () => {
     expect(line.actor).toBe("demo");
     expect(line.detail.stage).toBe("concept");
     expect(line.detail.reason).toBe("Validated with ten buyers in person");
-    expect(line.detail.unmet.map((u) => u.id)).toEqual(["concept.one-liner", "concept.brief", "concept.go"]);
+    expect(line.detail.unmet.map((u) => u.id)).toEqual(["concept.one-liner", "concept.story", "concept.files", "concept.brief", "concept.go"]);
 
     const m = await move(id, "research");
     expect(m.status).toBe(200);
@@ -105,6 +113,7 @@ describe("process API", () => {
 
   it("an override of a gate whose checks are all met is refused", async () => {
     const id = await create("ZZ Process Met", { oneLiner: "x" });
+    await storyAndSource(id);
     for (const t of ["What", "Who", "Why"]) expect((await add(id, "concept/brief", t)).status).toBe(201);
     expect((await add(id, "concept/decisions", "Build it?", { data: { key: "go", chosen: "yes", options: [{ id: "yes", label: "Yes", outcome: "" }] } })).status).toBe(201);
     const r = await doOverride(id, { stage: "concept", reason: "Just because" });
@@ -188,6 +197,7 @@ describe("process API", () => {
 
   it("a gate that was passed on its checks and no longer is reads as regressed, not as never passed", async () => {
     const id = await create("ZZ Process Regressed", { oneLiner: "x" });
+    await storyAndSource(id);
     const rows = [await add(id, "concept/brief", "One"), await add(id, "concept/brief", "Two"), await add(id, "concept/brief", "Three")];
     expect(rows.every((r) => r.status === 201)).toBe(true);
     const dec = await add(id, "concept/decisions", "Go?", { data: { key: "go", options: [{ id: "y", label: "Yes" }], chosen: "y" } });

@@ -98,7 +98,7 @@ describe("check kinds", () => {
 describe("evaluateGate", () => {
   it("is met only when every check is, and keeps the checks in order", () => {
     const gate = gateOf(processFor("electronics"), "concept");
-    const rows = [row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open"), decision("go", "yes")];
+    const rows = [row("concept/story", "draft"), row("concept/files", "stored"), row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open"), decision("go", "yes")];
     const r = evaluateGate(gate, rows, { oneLiner: "x" });
     expect(r.met).toBe(true);
     expect(r.checks.map((c) => c.id)).toEqual(gate.checks.map((c) => c.id));
@@ -183,7 +183,10 @@ describe("nextStep", () => {
 
   it.each(PRODUCT_TYPE_KEYS)("%s: the first unmet check of the current stage, then Advance once the gate is met", (t) => {
     const def = processFor(t);
-    const rows = [row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open")];
+    // The story and its sources come first (they are written before anything else)
+    expect(nextStep(def, empty, [], { oneLiner: "x" })).toMatchObject({ label: "Write the pitch in the concept story, or draft the story with AI", href: "/story#story-pitch" });
+    expect(nextStep(def, empty, [row("concept/story", "draft")], { oneLiner: "x" })).toMatchObject({ label: "Add a file: a document, note or chat the concept came from", href: "/files#add-file" });
+    const rows = [row("concept/story", "draft"), row("concept/files", "stored"), row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open")];
     expect(nextStep(def, empty, rows, { oneLiner: "x" })).toMatchObject({ label: "Add the go/no-go question as the first decision", href: "/s/concept/decisions" });
     expect(nextStep(def, empty, [...rows, decision("go", "yes")], { oneLiner: "x" })).toEqual({
       label: "Advance to Research",

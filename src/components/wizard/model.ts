@@ -117,6 +117,16 @@ export function firstProblem(a: Answers): { step: StepId; message: string } | nu
 
 export function buildGroups(a: Answers): Group[] {
   const groups: Group[] = [];
+  // The concept story starts with the answer to "what is it" as the first draft of its pitch; the rest of the
+  // story is written later, from the sources the next step asks for.
+  if (t(a.oneLiner)) {
+    groups.push({
+      label: "Concept story · The pitch (first draft)",
+      step: 1,
+      section: "concept/story",
+      items: [{ section: "concept/story", title: "The pitch", body: t(a.oneLiner), data: { part: "pitch" }, status: "draft" }],
+    });
+  }
   const brief: NewItem[] = [];
   const brow = (title: string, body: string) => t(body) && brief.push({ section: "concept/brief", title, body: t(body), status: "open" });
   brow("One-liner", a.oneLiner);

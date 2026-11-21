@@ -140,6 +140,7 @@ const CONFLICT: Record<string, string> = {
   items_part_ref_unique: "Another part in this concept already uses that reference. References must be unique because wires name parts by them.",
   items_key_unique: "Another row in this concept already uses that key. Keys must be unique because the order of operations and the decision tree address rows by them.",
   printers_name_unique: "A printer with that name already exists.",
+  items_story_part_unique: "This concept's story already has that section. Edit it instead of adding a second one.",
 };
 
 function fail(e: unknown) {

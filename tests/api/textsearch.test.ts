@@ -4,7 +4,7 @@ import { q, ready } from "@/lib/db";
 import { searchSourcesByText } from "@/lib/ai/embeddings";
 
 const P = "zz-textsearch";
-const titles = (hits: Awaited<ReturnType<typeof searchSourcesByText>>) => hits.map((h) => (h.kind === "item" ? h.item.title : `research: ${h.research.query}`));
+const titles = (hits: Awaited<ReturnType<typeof searchSourcesByText>>) => hits.map((h) => (h.kind === "item" ? h.item.title : h.kind === "source" ? `source: ${h.item.title} ${h.chunk.n}` : `research: ${h.research.query}`));
 
 beforeAll(async () => {
   await ready();

@@ -164,19 +164,19 @@ describe("generated SQL", () => {
       expect(sql).not.toContain("binary_quantize");
     }
     expect(nearestSourcesSql(4096, "exact")).toBe(
-      "SELECT c.item_id, c.research_id, 1 - c.dist AS score FROM (SELECT e.item_id, e.research_id, e.embedding::vector(4096) <=> $3::vector(4096) AS dist FROM embeddings e " +
+      "SELECT c.item_id, c.research_id, c.chunk_id, 1 - c.dist AS score FROM (SELECT e.item_id, e.research_id, e.chunk_id, e.embedding::vector(4096) <=> $3::vector(4096) AS dist FROM embeddings e " +
         "WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096 OFFSET 0) c ORDER BY c.dist LIMIT $4"
     );
   });
 
-  it("chat's sources query covers rows and research answers, in both scans", () => {
+  it("chat's sources query covers rows, research answers and source passages, in both scans", () => {
     const plain = nearestSourcesSql(8);
     expect(plain).toBe(
-      "SELECT e.item_id, e.research_id, 1 - (e.embedding::vector(8) <=> $3::vector(8)) AS score FROM embeddings e " +
+      "SELECT e.item_id, e.research_id, e.chunk_id, 1 - (e.embedding::vector(8) <=> $3::vector(8)) AS score FROM embeddings e " +
         "WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 8 ORDER BY e.embedding::vector(8) <=> $3::vector(8) LIMIT $4"
     );
     const bq = nearestSourcesSql(4096, "binary");
-    expect(bq).toContain("SELECT e.item_id, e.research_id, e.embedding FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096 ORDER BY binary_quantize(");
+    expect(bq).toContain("SELECT e.item_id, e.research_id, e.chunk_id, e.embedding FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096 ORDER BY binary_quantize(");
     expect(bq).toContain("LIMIT least(greatest($4 * 10, 100), 1000)) c ORDER BY c.embedding::vector(4096) <=> $3::vector(4096) LIMIT $4");
     expect(bq).not.toContain("item_id IS NOT NULL");
     expect(countSql(4096, "all")).toBe("SELECT count(*)::int AS n FROM embeddings e WHERE e.project_id = $1 AND e.model = $2 AND e.dims = 4096");
@@ -196,6 +196,7 @@ describe("generated SQL", () => {
     expect(questionWords("Batería ÜBER")).toEqual(["batería", "über"]);
     expect(TEXT_SOURCES_SQL).toContain("i.search @@ t.query OR i.section = ANY($4::text[])");
     expect(TEXT_SOURCES_SQL).toContain("r.search @@ t.query");
+    expect(TEXT_SOURCES_SQL).toContain("c.search @@ t.query");
     expect(TEXT_SOURCES_SQL).toContain("ORDER BY rank DESC");
   });
 
@@ -221,7 +222,7 @@ describe("generated SQL", () => {
     expect(sql).toContain("e.bq::bit(4096) <~> binary_quantize($3::vector(4096)) AS h");
     expect(sql).toContain("OFFSET 0) x ORDER BY x.h LIMIT least(greatest($4 * 20, 200), 1000)");
     expect(sql).toContain("ORDER BY c.embedding::vector(4096) <=> $3::vector(4096) LIMIT $4");
-    expect(nearestSourcesSql(8, "bits")).toContain("e.research_id, e.embedding, e.bq::bit(8)");
+    expect(nearestSourcesSql(8, "bits")).toContain("e.research_id, e.chunk_id, e.embedding, e.bq::bit(8)");
     expect([bitCandidates(1), bitCandidates(8), bitCandidates(20), bitCandidates(100)]).toEqual([200, 200, 400, 1000]);
     expect(BIT_SCAN_MAX_ROWS).toBe(100_000);
   });

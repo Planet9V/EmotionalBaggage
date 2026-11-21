@@ -51,12 +51,20 @@ export type Section = {
     | "posting"
     | "inbox"
     | "replies"
-    | "reviews";
+    | "reviews"
+    // the whole concept's introduction and its original material
+    | "story"
+    | "files";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
   statuses?: string[];
   addLabel?: string;
+  /**
+   * The section has its own page in the sidebar's "Whole concept" group (the concept story, the sources): this is
+   * that page's address. The section is left out of its stage's list in the sidebar and the overview.
+   */
+  href?: string;
 };
 
 export type Stage = {
@@ -76,6 +84,22 @@ export const STAGES: Stage[] = [
     label: "Concept",
     goal: "State the proposition, then have it questioned until it holds.",
     sections: [
+      {
+        key: "story",
+        label: "Concept story",
+        blurb: "The concept told in full: the pitch, where it came from, how it works, why it should work, who it is for, its voice and what it costs to find out.",
+        view: "story",
+        href: "/story",
+        statuses: ["draft", "written", "final"],
+      },
+      {
+        key: "files",
+        label: "Files",
+        blurb: "The concept's own files: the original documents, notes, chats, drawings and data it was written from, in folders. Chat and drafting read their text.",
+        view: "files",
+        href: "/files",
+        statuses: ["not uploaded", "stored", "unreadable"],
+      },
       {
         key: "brief",
         label: "Brief",

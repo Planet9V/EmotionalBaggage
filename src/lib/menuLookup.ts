@@ -58,7 +58,7 @@ export function storeLabel(store: string): string {
 /** The page that shows a store's rows ("/s/design/bom"), or null for a store the menu does not know. */
 export function storeHref(store: string): string | null {
   const r = locate(store);
-  return r ? `/s/${r.stage.key}/${r.section.key}` : null;
+  return r ? (r.section.href ?? `/s/${r.stage.key}/${r.section.key}`) : null;
 }
 
 /** As storeHref, and for a store the menu does not know a best-guess address. */

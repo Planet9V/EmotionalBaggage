@@ -4,7 +4,10 @@ import { notFound, recordId, route } from "@/lib/api/route";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export const GET = route(async (_req: Request, { params }: Ctx) => {
+/** Kinds a browser may show in the page (the Files preview) rather than save; never HTML or SVG, which could run script. */
+const INLINE = new Set(["application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp"]);
+
+export const GET = route(async (req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That file");
   const rows = await q<{ name: string; mime: string; bytes: Buffer; sha256: string }>(
     "SELECT name, mime, bytes, sha256 FROM files WHERE id=$1",
@@ -15,7 +18,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
   return new NextResponse(new Uint8Array(f.bytes), {
     headers: {
       "Content-Type": f.mime,
-      "Content-Disposition": `attachment; filename="${f.name.replace(/[^\w.\- ]/g, "_")}"`,
+      "Content-Disposition": `${new URL(req.url).searchParams.get("inline") === "1" && INLINE.has(f.mime) ? "inline" : "attachment"}; filename="${f.name.replace(/[^\w.\- ]/g, "_")}"`,
       ETag: `"${f.sha256}"`,
       "X-Content-Type-Options": "nosniff",
     },

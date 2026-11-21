@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit df17e40 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 9ef0f0c by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 689 packages (59 direct, 630 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 690 packages (60 direct, 630 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 548 |
+| MIT | 549 |
 | ISC | 55 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
@@ -120,6 +120,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | tailwind-merge | 3.7.1 | MIT | linked library | yes |
 | three | 0.187.0 | MIT | linked library | yes |
 | three-3mf-exporter | 45.2.1 | MIT | linked library | yes |
+| unpdf | 2.2.1 | MIT | linked library | yes |
 | use-stick-to-bottom | 1.1.6 | MIT | linked library | yes |
 | zod | 4.6.7 | MIT | linked library | yes |
 

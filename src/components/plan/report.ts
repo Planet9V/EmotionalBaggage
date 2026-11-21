@@ -3,6 +3,7 @@
 import { readGeometry, type Geometry } from "@/lib/domain";
 import { NOT_ADVICE } from "@/lib/compliance/text";
 import { STAGES, storeKey, type Section } from "@/lib/menu";
+import { CLAIM_BASIS_LABEL, SOURCE_KIND_LABEL, SOURCES_STORE, STORY_PARTS, STORY_STORE, type SourceData, type StoryClaim, type StoryExample } from "@/lib/story/parts";
 import type { Item, Project } from "@/lib/types";
 import { cellText, storeLabel } from "./format";
 import type { ConceptData, ConceptPart } from "./useConcept";
@@ -17,6 +18,8 @@ export type Block =
   | { t: "table"; head: string[]; rows: string[][]; foot?: string[]; mono?: number[] }
   | { t: "links"; items: { text: string; href: string }[] }
   | { t: "quote"; label: string; text: string }
+  /** Markdown written by a person (the concept story), rendered as Markdown */
+  | { t: "md"; text: string }
   | { t: "empty" };
 
 const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN);
@@ -134,6 +137,43 @@ function modelBlocks(bom: Item[], data: ConceptData): Block[] {
   return out;
 }
 
+/** The concept story as report blocks, part by part, then the list of its sources. */
+function storyBlocks(story: Item[], sources: Item[]): Block[] {
+  const out: Block[] = [{ t: "h2", text: "Concept story", id: "story" }];
+  const titles = new Map(sources.map((s) => [s.id, s.title]));
+  const cited = (ids: unknown) => (Array.isArray(ids) ? ids.map((n) => titles.get(n as number)).filter((t): t is string => !!t) : []);
+  const byPart = new Map(story.map((i) => [String(i.data.part), i]));
+  if (!story.length) out.push({ t: "p", text: "The concept story is not written yet.", muted: true });
+  for (const p of STORY_PARTS) {
+    const row = byPart.get(p.key);
+    if (!row) continue;
+    out.push({ t: "h3", text: p.heading, id: `story-${p.key}` });
+    if (p.key === "positioning" && typeof row.data.position === "string" && row.data.position) out.push({ t: "quote", label: "The one-line position", text: row.data.position });
+    if (row.body.trim()) out.push({ t: "md", text: row.body });
+    const examples = (row.data.examples ?? []) as StoryExample[];
+    if (examples.length) out.push({ t: "md", text: examples.map((e) => `- "${e.text}"${e.context ? ` (${e.context})` : ""}`).join("\n") });
+    const claims = (row.data.claims ?? []) as StoryClaim[];
+    if (claims.length) {
+      out.push({ t: "table", head: ["How it is known", "Claim", "Note", "From"], rows: claims.map((c) => [CLAIM_BASIS_LABEL[c.basis] ?? c.basis, c.text, c.note ?? "", cited(c.sourceIds).join(", ")]) });
+    }
+    const from = cited(row.data.sourceIds);
+    if (from.length) out.push({ t: "p", text: `Written from ${from.join(", ")}.`, muted: true });
+  }
+  out.push({ t: "h2", text: "Sources", id: "sources" });
+  if (!sources.length) out.push({ t: "empty" });
+  else {
+    out.push({
+      t: "table",
+      head: ["Source", "What it is", "Kind", "Status", "Where it came from"],
+      rows: sources.map((s) => {
+        const d = s.data as SourceData;
+        return [s.title, s.body, d.kind && d.kind in SOURCE_KIND_LABEL ? SOURCE_KIND_LABEL[d.kind] : "", s.status, String(d.origin ?? "")];
+      }),
+    });
+  }
+  return out;
+}
+
 export function buildReport(project: Project, data: ConceptData, errors: Partial<Record<ConceptPart, string>>): Block[] {
   const blocks: Block[] = [];
   const failed = Object.entries(errors);
@@ -143,12 +183,17 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
 
   const byStore = new Map<string, Item[]>();
   for (const it of data.items) byStore.set(it.section, [...(byStore.get(it.section) ?? []), it]);
-  const known = new Set<string>();
+  const known = new Set<string>([STORY_STORE, SOURCES_STORE]);
+
+  // The concept story comes first: it is the introduction to everything after it.
+  blocks.push(...storyBlocks(byStore.get(STORY_STORE) ?? [], byStore.get(SOURCES_STORE) ?? []));
 
   for (const stage of STAGES) {
     blocks.push({ t: "h2", text: stage.label, eyebrow: `Stage ${stage.n}`, id: `stage-${stage.key}` });
     blocks.push({ t: "p", text: stage.goal, muted: true });
     for (const section of stage.sections) {
+      // the story and the sources are at the top of the report
+      if (section.href) continue;
       const store = storeKey(stage, section);
       known.add(store);
       const rows = byStore.get(store) ?? [];
@@ -270,6 +315,9 @@ export function toMarkdown(project: Project, generatedAt: string, blocks: Block[
         break;
       case "empty":
         out.push("Nothing recorded.", "");
+        break;
+      case "md":
+        out.push(b.text, "");
         break;
       case "quote":
         out.push(`**${b.label}**`, "", ...b.text.split(/\r?\n/).map((l) => `> ${l}`), "");

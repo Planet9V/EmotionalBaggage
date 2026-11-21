@@ -15,7 +15,9 @@ import { generator as findGenerator } from "./registry";
 import { toDraftRow, type DraftDbRow, DRAFT_COLS } from "./store";
 import { readsText, type DraftSource, type DroppedRow, type RunResult } from "./shared";
 import type { ConceptInfo, GenContext, Generator, Proposed, RunState } from "./types";
-import { knownIds } from "./prompt";
+import { knownIds, passagesBlock } from "./prompt";
+import { relevantPassages } from "@/lib/sources/store";
+import { SOURCES_STORE } from "@/lib/story/parts";
 
 /** Lists of rows sent to the model and answered by it can be long; two minutes, not the usual one. */
 const DRAFT_TIMEOUT_MS = 120_000;
@@ -112,6 +114,7 @@ function checkRows(g: Generator<Record<string, unknown>>, ctx: GenContext, raws:
   const known = knownIds(ctx);
   const allSources = Object.values(ctx.rows).flat();
   const byId = new Map([...allSources, ...(ctx.revise?.items ?? [])].map((i) => [i.id, i]));
+  const passageSources = new Map((ctx.passages ?? []).map((p) => [p.sourceId, p.title]));
   const schema = dataSchemaFor(g.to);
   for (const raw of raws) {
     const parsed = g.schema.safeParse(raw);
@@ -141,9 +144,12 @@ function checkRows(g: Generator<Record<string, unknown>>, ctx: GenContext, raws:
         }
         data = r.data;
       }
-      const cited = (p.basedOn ?? []).filter((id) => known.has(id) && byId.has(id));
-      const from = cited.length ? cited.map((id) => byId.get(id)!) : allSources.slice(0, MAX_SOURCES);
-      const sources: DraftSource[] = p.sources?.length ? p.sources.slice(0, MAX_SOURCES) : from.map((i) => ({ kind: "item", id: i.id, title: i.title, section: i.section }));
+      const cited = (p.basedOn ?? []).filter((id) => known.has(id) && (byId.has(id) || passageSources.has(id)));
+      const asSource = (i: Item): DraftSource => ({ kind: "item", id: i.id, title: i.title, section: i.section });
+      const from: DraftSource[] = cited.length
+        ? [...new Set(cited)].map((id) => (byId.has(id) ? asSource(byId.get(id)!) : { kind: "item", id, title: passageSources.get(id)!, section: SOURCES_STORE }))
+        : allSources.slice(0, MAX_SOURCES).map(asSource);
+      const sources: DraftSource[] = p.sources?.length ? p.sources.slice(0, MAX_SOURCES) : from;
       kept.push({ proposed: { ...p, title: title.slice(0, 300), body: p.body.slice(0, 20_000) }, data, sources });
     }
   }
@@ -190,11 +196,14 @@ export async function runGenerator(o: RunOptions): Promise<RunResult> {
 
   const reasoning = await getReasoning();
   if (!reasoning.ok) throw new ModelError(503, reasoning.reason, "not-configured");
+  // The most relevant passages of the concept's sources, bounded (src/lib/sources/store.ts): never the whole library.
+  ctx.passages = await relevantPassages(o.projectId, g.passageQuery?.(ctx) ?? `${g.label}. ${concept.name}. ${concept.oneLiner}`, { signal: o.signal });
   const prompt = g.buildPrompt(ctx);
+  const extra = g.ownsPassages ? "" : passagesBlock(ctx);
   const res = await completeJson({
     use: reasoning,
     system: `${prompt.system}\n\n${rowInstruction(g)}`,
-    messages: [{ role: "user", content: prompt.user }],
+    messages: [{ role: "user", content: extra ? `${prompt.user}\n\n${extra}` : prompt.user }],
     schema: envelope,
     coerce: unwrapRows,
     maxOutputTokens: 8000,
@@ -243,7 +252,7 @@ export async function runGenerator(o: RunOptions): Promise<RunResult> {
       o.projectId,
       "draft.run",
       `${g.label}: the AI drafted ${saved.length} ${saved.length === 1 ? "row" : "rows"} for review (${dropped.length} dropped), from ${readsText(counts)}`,
-      { runId, generator: g.id, targetStore: g.to, drafts: saved.length, dropped, superseded, model: res.info.model, provider: res.info.provider, path: res.path, revise: o.reviseIds ?? null, ...(o.record ?? {}) }
+      { runId, generator: g.id, targetStore: g.to, drafts: saved.length, dropped, superseded, model: res.info.model, provider: res.info.provider, path: res.path, revise: o.reviseIds ?? null, passages: (ctx.passages ?? []).map((p) => ({ sourceId: p.sourceId, n: p.n })), ...(o.record ?? {}) }
     );
     return { saved, superseded };
   });

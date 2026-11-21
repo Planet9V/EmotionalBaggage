@@ -15,6 +15,7 @@ import type { Item, Project } from "@/lib/types";
 import { fmtDateTime } from "@/lib/format";
 import { LoadingBlocks } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
+import { StoryIntro } from "@/components/story/StoryIntro";
 
 const PARTS: ConceptPart[] = ["items", "events", "research", "challenge"];
 const TROUBLE = new Set(["blocked", "wrong", "fail", "failed"]);
@@ -74,6 +75,7 @@ function OverviewBody({ project }: { project: Project }) {
       <PageHeader eyebrow="Overview" title={project.name} blurb={project.oneLiner} nextStep={false} />
 
       <div className="space-y-8 px-8 py-6">
+        <StoryIntro projectId={project.id} />
         <NextStepCard projectId={project.id} />
 
         {failed.length > 0 && (
@@ -158,7 +160,7 @@ function OverviewBody({ project }: { project: Project }) {
                     <h2 className="text-base font-semibold tracking-tight text-primary">{stage.label}</h2>
                     <p className="mt-0.5 text-sm text-secondary">{stage.goal}</p>
                     <ul className="mt-3 divide-y divide-hairline rounded-xl border border-hairline bg-surface">
-                      {stage.sections.map((section) => {
+                      {stage.sections.filter((section) => !section.href).map((section) => {
                         const store = storeKey(stage, section);
                         const st = sectionState(section, byStore.get(store) ?? [], data);
                         const pct = st.total ? (st.closed / st.total) * 100 : 0;
