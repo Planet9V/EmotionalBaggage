@@ -78,7 +78,7 @@ export function backoffMs(attempt: number, retryAfter: string | null): number {
 }
 
 /**
- * Calls `send` through the bucket. On 429 it drains the bucket, waits (backoffMs) and tries again,
+ * Calls `send` through the bucket. On 429 it waits (backoffMs) and tries again,
  * up to `retries` times, never waiting past maxWaitMs in total. Any other answer is returned.
  */
 export async function limited(bucket: TokenBucket, what: string, send: () => Promise<Response>, opts: { retries?: number; maxWaitMs?: number } = {}): Promise<Response> {
@@ -89,7 +89,8 @@ export async function limited(bucket: TokenBucket, what: string, send: () => Pro
     await bucket.take(what, Math.max(0, maxWaitMs - waited));
     const res = await send();
     if (res.status !== 429 || attempt >= retries) return res;
-    bucket.drain();
+    // Not drained to zero: Amazon's own bucket can differ from ours, and its slowest rates would turn
+    // one 429 into a three-minute wait. The backoff below spaces the retries instead.
     const wait = backoffMs(attempt, res.headers.get("retry-after"));
     if (waited + wait > maxWaitMs) return res;
     waited += wait;
