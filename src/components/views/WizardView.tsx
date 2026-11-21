@@ -236,6 +236,7 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
   const { register, control, formState: { errors } } = form;
   const parts = useFieldArray({ control, name: "parts" });
   const printed = useWatch({ control, name: "printed" });
+  const type = useWatch({ control, name: "productType" });
   return (
     <div className="space-y-6">
       <Field id="w-how" label="How it works"><Textarea id="w-how" rows={4} {...register("how")} /></Field>
@@ -260,7 +261,12 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
           ))}
         </div>
         {errors.w?.message && <p role="alert" className="text-xs text-danger">{errors.w.message}</p>}
-        <p className="text-xs text-muted">Optional overall envelope. With a printed part and all three sizes, an Enclosure part is added to the bill of materials.</p>
+        <p className="text-xs text-muted">
+          Optional overall size. With a printed part and all three sizes,{" "}
+          {type === "electronics"
+            ? "an Enclosure part is added to the parts list: the box printed around the electronics."
+            : "a printed body part is added to the parts list: the product itself, to shape in Design, 3D model and print."}
+        </p>
       </fieldset>
 
       <fieldset className="space-y-3">

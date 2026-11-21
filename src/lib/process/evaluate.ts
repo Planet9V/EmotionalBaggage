@@ -107,7 +107,20 @@ function moveAction(title: string, label: string, statuses: string[]): string {
   return `Move "${title}" in ${label} to ${listOr(statuses)}`;
 }
 
+/** True when any part in the parts list is to be printed: status "to print", made on your own printer, or printed geometry. */
+export function printsParts(rows: Item[]): boolean {
+  return rows.some((r) => {
+    if (r.section !== "design/bom") return false;
+    const g = r.data?.geometry as { print?: unknown } | undefined;
+    return r.status === "to print" || /own printer/i.test(String(r.data?.source ?? "")) || g?.print === true;
+  });
+}
+
 export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): CheckResult {
+  if (check.onlyIf === "prints-parts" && !printsParts(rows)) {
+    const path = checkSection(check);
+    return { id: check.id, label: check.label, href: path ? fixHref(path) : "/concepts", met: true, detail: "No part in the parts list is to be printed, so no print job is needed.", action: "Nothing to do" };
+  }
   const r = evaluateOne(check, rows, concept, facts);
   const n = check.needs;
   if (r.met || !n || rowsOf(rows, n.section).some((x) => n.statuses.includes(x.status))) return r;

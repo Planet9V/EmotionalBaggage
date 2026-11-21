@@ -181,12 +181,16 @@ export function buildGroups(a: Answers): Group[] {
   if (a.printed === "yes" && env) {
     ref += 1;
     const [w, h, d] = env;
+    // Electronics are boxed: the printed part is the enclosure the generator builds around the boards. Any other
+    // product is printed itself (a cable comb, a bracket): the printed part is the product's body, a solid the
+    // enclosure generator leaves alone (U2).
+    const boxed = a.productType === "electronics";
     parts.push({
       section: "design/bom",
-      title: "Enclosure",
+      title: boxed ? "Enclosure" : `${t(a.name) || "Printed"} body`.replace(/^(.)/, (c) => c.toUpperCase()),
       data: {
         ref: `P${ref}`, qty: 1, source: "Own printer", search: "", asin: "",
-        geometry: { shape: "shell", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "entered", print: true },
+        geometry: { shape: boxed ? "shell" : "box", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "entered", print: true },
       },
       status: "to print",
     });

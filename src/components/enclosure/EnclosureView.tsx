@@ -19,7 +19,7 @@ import { generate, getStatus, type GenerateAnswer, type ResultFailed, type Resul
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
 import { ResultPanel } from "./ResultPanel";
 import { SendToPrinting } from "./SendToPrinting";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks, NotSetUp } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { fileSlug } from "@/lib/format";
 
@@ -311,18 +311,21 @@ export function EnclosureView({ project }: ViewProps) {
   const saved = useItems(project.id, SAVE_STORE);
   if (bom.loading || saved.loading) return <LoadingBlocks label="Loading the enclosure" />;
   if (bom.error || saved.error) {
-    return (
-      <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
-        <p className="text-sm font-medium text-danger">The enclosure could not be loaded.</p>
-        <p className="mt-1 text-sm text-danger wrap-anywhere">{bom.error || saved.error}</p>
-        <Button variant="outline" size="sm" className="mt-3" onClick={() => void (bom.error ? bom.reload() : saved.reload())}>
-          Try again
-        </Button>
-      </div>
-    );
+    return <LoadError what="The enclosure" message={bom.error || saved.error} onRetry={() => void (bom.error ? bom.reload() : saved.reload())} />;
   }
+  // A product that is printed itself (not electronics) has no box to generate around it: its printed body is the
+  // product. Say so, and send the person to the 3D model and to printing (U2). The generator stays below for a
+  // product that also has parts to box.
+  const selfPrinted = (project as { productType?: string }).productType !== undefined && (project as { productType?: string }).productType !== "electronics";
+  const notice = selfPrinted ? (
+    <NotSetUp href="/s/design/model" label="Open 3D model">
+      This product is printed itself, so it needs no enclosure around it. Shape its printed body in Design, 3D model, then send the file to{" "}
+      <Link href="/s/prototype/printing#new-print-job" className="underline">3D printing</Link>. Use this page only if the product also has parts to box.
+    </NotSetUp>
+  ) : null;
   if (!enclosureOffered(bom.items)) {
     const layout = sectionHref(BOM);
+    if (notice) return notice;
     return (
       <EmptyState title="No part has a box yet">
         An enclosure is built around the parts, so it needs their sizes and places.{" "}
@@ -340,6 +343,11 @@ export function EnclosureView({ project }: ViewProps) {
     );
   }
 
-  return <Editor project={project} bom={bom} saved={saved} />;
+  return (
+    <>
+      {notice ? <div className="mb-4">{notice}</div> : null}
+      <Editor project={project} bom={bom} saved={saved} />
+    </>
+  );
 }
 

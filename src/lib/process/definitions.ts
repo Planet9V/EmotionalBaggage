@@ -42,7 +42,12 @@ export type ConceptField = "name" | "oneLiner";
  * While it is missing, the next step is that row, not this one.
  */
 type Needs = { section: string; statuses: string[]; todo: string; anchor?: string };
-type Base = { id: string; label: string; anchor?: string; todo?: string; needs?: Needs };
+/**
+ * `onlyIf: "prints-parts"`: the check applies only when the parts list has a part to print (status "to print",
+ * from your own printer, or with printed geometry). A concept that prints nothing meets it. Derived from the
+ * rows, so it holds for every product type (U2).
+ */
+type Base = { id: string; label: string; anchor?: string; todo?: string; needs?: Needs; onlyIf?: "prints-parts" };
 
 export type Check =
   /**
@@ -119,9 +124,9 @@ const inHand: Check = { id: "prototype.parts-in-hand", label: "Every bought part
 const testsWritten: Check = { id: "prototype.tests", label: "At least one acceptance test is written", kind: "min-rows", anchor: "draft-with-ai", params: { section: "prototype/tests", min: 1 } };
 const testsPass: Check = { id: "prototype.tests-pass", label: "Every acceptance test passes", kind: "all-status", anchor: "draft-with-ai", todo: "Write the acceptance tests, then run them", params: { section: "prototype/tests", statuses: ["pass"] } };
 const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "build-passed", anchor: "add-build", todo: "Add a build with its exit criteria and tests", params: {} };
-const printJob: Check = { id: "prototype.print-jobs", label: "At least one print job is set up", kind: "min-rows", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", min: 1 } };
+const printJob: Check = { id: "prototype.print-jobs", label: "At least one print job is set up", onlyIf: "prints-parts", kind: "min-rows", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", min: 1 } };
 // The print job statuses since migration 0018: a finished print is "done" (the gate asked for "printed", which no job can reach).
-const printed: Check = { id: "prototype.printed", label: "Every print job is printed", kind: "all-status", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", statuses: ["done"] } };
+const printed: Check = { id: "prototype.printed", label: "Every print job is printed", onlyIf: "prints-parts", kind: "all-status", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", statuses: ["done"] } };
 
 const productionGate: Check[] = [
   { id: "production.economics", label: "Unit economics have at least one line", kind: "min-rows", anchor: "add-row", todo: "Add a cost line in Unit economics", params: { section: "production/economics", min: 1 } },
@@ -215,6 +220,9 @@ export const PROCESS_DEFINITIONS: Record<ProductType, ProcessDefinition> = {
       [requirements, parts, requirementsClosed],
       [
         inHand,
+        // A physical product can still have printed parts (a cable comb, a bracket): the print checks apply when it does.
+        printJob,
+        printed,
         { id: "prototype.assembly", label: "No assembly step is open or blocked", kind: "no-open", anchor: "add-row", todo: "Add the assembly steps, then settle each one", params: { section: "prototype/assembly" } },
         testsWritten,
         testsPass,

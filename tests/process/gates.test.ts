@@ -195,8 +195,13 @@ describe("nextStep", () => {
   it("differs by type in the Prototype stage", () => {
     const state: ProcessState = { stage: "prototype", gates: [] };
     // electronics: parts in hand, then the enclosure printed, then the build sheet
-    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/printing#new-print-job");
-    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("prototype/printing", "done"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    const printedShell = () => row("design/bom", "in hand", { source: "Own printer" });
+    expect(nextStep(processFor("electronics"), state, [printedShell(), row("design/wiring", "to solder")]).href).toBe("/s/prototype/printing#new-print-job");
+    expect(nextStep(processFor("electronics"), state, [printedShell(), row("prototype/printing", "done"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    // with nothing to print, the print checks do not apply (U2)
+    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    // a physical product with a printed part goes to printing too (U2)
+    expect(nextStep(processFor("physical"), state, [row("design/bom", "in hand", { source: "Own printer" }), row("prototype/assembly", "open")]).href).toBe("/s/prototype/printing#new-print-job");
     // with no parts at all, "every bought part is in hand" is not met: the first step is the parts (process review 5)
     expect(nextStep(processFor("printed"), state, [])).toMatchObject({ href: "/s/prototype/sourcing", label: "Add the parts in the Bill of materials, then source them" });
     expect(nextStep(processFor("printed"), state, [row("design/bom", "to print")]).href).toBe("/s/prototype/printing#new-print-job");
@@ -244,7 +249,9 @@ describe("no gate passes on rows that do not exist (process review 5)", () => {
   it.each(rows)("%s on an empty concept", (name, id, allowEmpty) => {
     const t = name.split("/")[0];
     const c = PROCESS_DEFINITIONS[t as keyof typeof PROCESS_DEFINITIONS].stages.flatMap((g) => g.checks).find((x) => x.id === id)!;
-    expect(evaluateCheck(c, []).met).toBe(allowEmpty);
+    // A print check applies only when a part is to be printed (U2): judge it on a concept that prints one.
+    const empty = c.onlyIf === "prints-parts" ? [row("design/bom", "to print")] : [];
+    expect(evaluateCheck(c, empty).met).toBe(allowEmpty);
   });
   it("only the open-questions check allows an empty section", () => {
     expect(new Set(rows.filter(([, , a]) => a).map(([, id]) => id))).toEqual(new Set(["concept.questions"]));
@@ -253,7 +260,8 @@ describe("no gate passes on rows that do not exist (process review 5)", () => {
     for (const [name, id, allowEmpty] of rows) {
       if (allowEmpty) continue;
       const c = PROCESS_DEFINITIONS[name.split("/")[0] as keyof typeof PROCESS_DEFINITIONS].stages.flatMap((g) => g.checks).find((x) => x.id === id)!;
-      expect(evaluateCheck(c, []).action, name).toMatch(/^(Add|Write|Set up|Draft)/);
+      const empty = c.onlyIf === "prints-parts" ? [row("design/bom", "to print")] : [];
+      expect(evaluateCheck(c, empty).action, name).toMatch(/^(Add|Write|Set up|Draft)/);
     }
   });
 });
