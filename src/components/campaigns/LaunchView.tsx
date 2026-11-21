@@ -81,7 +81,7 @@ export function LaunchView({ project, section }: ViewProps) {
     <div className="space-y-8">
       <Card variant="outlined" hoverEffect={false} innerClassName="space-y-4 p-4">
         <div>
-          <h2 className="text-sm font-semibold text-primary">Start a launch from a template</h2>
+          <h2 id="launch-template" tabIndex={-1} className="text-sm font-semibold text-primary">Start a launch from a template</h2>
           <p className="mt-1 text-sm text-secondary">
             A template is a dated checklist for one way of launching. Pick one and the date you want to launch, and every step gets a due date counted back from it. The steps are yours to change afterwards.
           </p>

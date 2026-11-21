@@ -32,6 +32,15 @@ export function changes(before: Item, d: Draft): { field: string; was: string; n
   if (before.body !== d.body) out.push({ field: "Details", was: before.body || "(empty)", now: d.body || "(empty)" });
   const keys = new Set([...Object.keys(before.data ?? {}), ...Object.keys(d.data ?? {})]);
   for (const k of keys) {
+    // A print job's slice reads as its time, not as the slicer's whole record.
+    if (k === "slice") {
+      const secs = (v: unknown) => (v && typeof (v as { seconds?: unknown }).seconds === "number" ? (v as { seconds: number }).seconds : null);
+      const fmt = (x: number | null) => (x === null ? "not sliced yet" : `sliced: ${Math.floor(x / 3600) ? `${Math.floor(x / 3600)} h ` : ""}${Math.round((x % 3600) / 60)} min`);
+      const a = fmt(secs(before.data?.slice));
+      const b = fmt(secs(d.data?.slice));
+      if (a !== b) out.push({ field: "print time", was: a, now: `${b} (slice again at the new settings to measure it)` });
+      continue;
+    }
     const a = show(before.data?.[k]);
     const b = show(d.data?.[k]);
     if (a !== b) out.push({ field: k, was: a, now: b });
@@ -84,6 +93,10 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
   };
 
   const diff = op === "replace" && current ? changes(current, draft) : [];
+  // A substitute part arrives without a price: approving takes the old price out of the total. Say so first.
+  const oldLine = op === "replace" && current && typeof current.data.line === "number" ? current.data.line : null;
+  const dropsPrice = oldLine !== null && (draft.data.line === undefined || draft.data.line === null || draft.data.line === "");
+  const [confirmPrice, setConfirmPrice] = useState(false);
   // A wire reads as "BT1.+ to U1.VCC" rather than four separate fields.
   const wire = typeof draft.data.from === "string" && typeof draft.data.to === "string" && draft.data.from && draft.data.to ? `${draft.data.from}.${draft.data.fromPin ?? ""} to ${draft.data.to}.${draft.data.toPin ?? ""}` : "";
   const WIRE_FIELDS = new Set(["from", "fromPin", "to", "toPin"]);
@@ -198,10 +211,22 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
       {missing && <p role="alert" className="mt-3 text-sm text-danger">The row this draft would change no longer exists. Reject it.</p>}
       {error && <p role="alert" className="mt-3 text-sm text-danger wrap-anywhere">{error}</p>}
 
+      {confirmPrice && dropsPrice && draft.status === "draft" && (
+        <div role="alertdialog" aria-label="Approving removes this part's price" className="mt-3 space-y-2 rounded-xl bg-warning-soft p-3 text-sm text-warning">
+          <p>
+            Approving takes this part&apos;s price ({oldLine!.toFixed(2)}) out of the parts total. The total shows as not priced until you enter the
+            substitute&apos;s cost. The old price stays on the part as &quot;was {oldLine!.toFixed(2)}&quot;.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => { setConfirmPrice(false); void decide(() => approve.mutateAsync(draft.id)); }} disabled={busy}>Approve and remove the price</Button>
+            <Button size="sm" variant="outline" onClick={() => setConfirmPrice(false)}>Keep it waiting</Button>
+          </div>
+        </div>
+      )}
       {draft.status === "draft" && !decided && !editing && (
         <div className="mt-3 flex flex-wrap gap-2 border-t border-hairline pt-3">
-          <Button size="sm" onClick={() => void decide(() => approve.mutateAsync(draft.id))} disabled={busy || missing}>
-            <Check className="h-3.5 w-3.5" aria-hidden /> {approve.isPending ? "Approving" : op === "remove" ? "Approve removal" : "Approve"}
+          <Button size="sm" onClick={() => (dropsPrice && !confirmPrice ? setConfirmPrice(true) : void decide(() => approve.mutateAsync(draft.id)))} disabled={busy || missing || confirmPrice}>
+            <Check className="h-3.5 w-3.5" aria-hidden /> {approve.isPending ? "Approving" : op === "remove" ? "Approve removal" : dropsPrice ? "Approve (removes the price)" : "Approve"}
           </Button>
           <Button size="sm" variant="outline" onClick={() => void decide(() => reject.mutateAsync({ id: draft.id }))} disabled={busy}>
             <X className="h-3.5 w-3.5" aria-hidden /> {reject.isPending ? "Rejecting" : "Reject"}

@@ -12,6 +12,8 @@ import { withDefaults } from "@/lib/enclosure/validate";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
+import { positioningFingerprint } from "@/lib/market/critique";
+import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
 
 /** What the server works out that rows alone cannot give. */
 export type GateFacts = {
@@ -19,6 +21,9 @@ export type GateFacts = {
   currency?: string;
   /** the electrical checks' counts, from ercForProject; undefined when not worked out */
   erc?: { ok: boolean; errors: number; warnings: number } | null;
+  /** tracked links and days of campaign results (their own tables); undefined when not counted */
+  links?: number;
+  results?: number;
 };
 
 export type Computed = { met: boolean; detail: string; action: string; href: string };
@@ -79,10 +84,23 @@ export function productionCheck(rows: Item[], facts: GateFacts): Computed {
   const batch = rr.batches.find((b) => readBatch(b).units !== null) ?? null;
   const checks = readiness(rr, { batchId: batch?.id ?? null, currency: facts.currency });
   const unmet = checks.filter((c) => !c.met);
+  // The readiness check's own label is a statement; the next step is the thing to do about it.
+  const TODO: Record<string, string> = {
+    tests: "Pass the acceptance tests for this build",
+    compliance: "Decide every compliance row",
+    parts: "Price every part and give it a supplier",
+    economics: "Complete the economics for one sales channel",
+  };
+  // When nothing exists yet, say what to make rather than what to decide.
+  const NONE: Record<string, string> = {
+    tests: "Write the acceptance tests for this build",
+    compliance: "Draft the compliance checklist, then decide each row",
+  };
+  const first = unmet[0];
   return {
     met: unmet.length === 0,
     detail: unmet.length ? `${unmet.length} of 4 readiness checks not met: ${unmet.map((c) => `${c.label.toLowerCase()} (${c.detail})`).join("; ")}` : "All four readiness checks are met.",
-    action: unmet[0] ? unmet[0].label : "Nothing to do",
+    action: first ? (first.missing[0] ? `${TODO[first.key] ?? first.label}, starting with ${first.missing[0]}` : (NONE[first.key] ?? TODO[first.key] ?? first.label)) : "Nothing to do",
     href: unmet[0]?.href ?? "/s/production/batches",
   };
 }
@@ -113,4 +131,64 @@ export function contentProofCheck(rows: Item[], sections: string[], conceptName 
     action: `Link proof to ${plural(bad.length, "row")} or move ${bad.length === 1 ? "it" : "them"} back to draft`,
     href: bad[0] ? `/s/${bad[0].section}` : `/s/${sections[0]}`,
   };
+}
+
+/** The positioning: drafted, attacked by the reviewer on its current words, then approved (src/lib/market/rules.ts). */
+export function positioningCheck(rows: Item[]): Computed {
+  const base = "/s/marketing/positioning";
+  const xs = rows.filter((r) => r.section === "marketing/positioning");
+  if (xs.some((r) => r.status === "approved" || r.status === "done")) return { met: true, detail: "The positioning is approved after the reviewer's attack.", action: "Nothing to do", href: base };
+  if (!xs.length) return { met: false, detail: "No positioning yet.", action: "Draft the positioning with AI, from the personas and competitors", href: `${base}#draft-with-ai` };
+  const reviewed = (r: Item) => {
+    const c = r.data?.critique as { text?: unknown; fingerprint?: unknown } | undefined;
+    return !!c && typeof c.text === "string" && c.text.trim() !== "" && (typeof c.fingerprint !== "string" || c.fingerprint === positioningFingerprint(r.data ?? {}));
+  };
+  const ready = xs.find(reviewed);
+  if (ready) return { met: false, detail: "The reviewer has attacked it; it is not approved yet.", action: `Approve the positioning "${ready.title}"`, href: `${base}#positioning-${ready.id}` };
+  const first = xs[0];
+  return { met: false, detail: "The reviewer has not attacked it on its current words, so it cannot be approved yet.", action: `Ask the reviewer to attack the positioning "${first.title}"`, href: `${base}#positioning-${first.id}` };
+}
+
+/** The campaigns section's budget row: a total budget and the share of the margin a campaign may spend per order. */
+export function campaignBudgetCheck(rows: Item[]): Computed {
+  const href = "/s/marketing/campaigns#campaign-budget";
+  const plan = rows.find((r) => r.section === "marketing/campaigns" && r.data?.kind === "plan");
+  const d = (plan?.data ?? {}) as { planTotalMinor?: unknown; allowableSharePercent?: unknown };
+  const missing = [typeof d.planTotalMinor === "number" ? "" : "the total marketing budget", typeof d.allowableSharePercent === "number" ? "" : "the share of the margin a campaign may spend"].filter(Boolean);
+  return {
+    met: missing.length === 0,
+    detail: missing.length ? `Not set: ${missing.join(" and ")}.` : "The budget and the rule numbers are set.",
+    action: `Set ${missing.join(" and ") || "the budget"} in Campaigns`,
+    href,
+  };
+}
+
+/** A count the server keeps in its own table (tracked links, campaign results). */
+export function countCheck(n: number | undefined, min: number, w: { one: string; many?: string; where: string; href: string; verb: string }): Computed {
+  if (n === undefined) return { met: false, detail: `${w.where} have not been counted yet.`, action: w.verb, href: w.href };
+  return { met: n >= min, detail: `${plural(n, w.one, w.many)} recorded${n >= min ? "" : `, ${min} needed`}.`, action: w.verb, href: w.href };
+}
+
+/**
+ * A content section has a released row (approved or later). Otherwise the first draft is named with what stops it,
+ * in the order the server checks (src/lib/content/rules.ts): a line with no proof, then an ad's missing stop rule.
+ * The stored flags are only a hint here; the server works them out again when the row is approved.
+ */
+export function contentApprovedCheck(rows: Item[], section: string, label: string, anchor?: string): Computed {
+  const href = `/s/${section}`;
+  const xs = rows.filter((r) => r.section === section);
+  const released = xs.filter((r) => RELEASED.has(r.status));
+  if (released.length) return { met: true, detail: `${plural(released.length, "row")} approved or released.`, action: "Nothing to do", href };
+  if (!xs.length) return { met: false, detail: "Nothing written yet.", action: `Draft ${label} with AI, or add a row by hand`, href: anchor ? `${href}#${anchor}` : href };
+  const first = xs[0];
+  if (first.data?.noProof === true) {
+    return { met: false, detail: `"${first.title}" has a line with no proof behind it.`, action: `Link proof to "${first.title}" or take the flagged line out, then approve it`, href };
+  }
+  if (section === "marketing/ads") {
+    const rule = effectiveAdRule(first, rows.filter((r) => r.section === "marketing/campaigns"));
+    if (!ruleComplete(rule)) {
+      return { met: false, detail: `"${first.title}" has no stop and scale rule yet, so it cannot be approved.`, action: `Write the stop and scale rule for "${first.title}", then approve it`, href };
+    }
+  }
+  return { met: false, detail: `${plural(xs.length, "row")} in draft.`, action: `Approve "${first.title}" in ${label}`, href };
 }

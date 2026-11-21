@@ -132,6 +132,12 @@ None of this has run against a real Amazon, X or Instagram account; each screen 
 - **Duplicate** carries currency, regions, product type, pins, campaigns and print jobs (as queued, without results); tracked links get new codes with no clicks. Drafts, results, history and credentials are not copied.
 - **The report and the overview** end with "Worked out from the rows": economics, compliance, builds, the enclosure and its checks, electrical checks, launch dates and campaign verdicts, as tables and sentences.
 
+## The next step, boards and forms
+
+The next step under every title leads through each stage in order: in Prototype from parts in hand to a passed build, and in Marketing from personas through positioning, price, brand kit, ads, landing page, listing, social and launch email to budget, campaigns, launch plan, tracked links and results. It names the row and what stops it, and opens the control that fixes it. **Verify this** attaches the research answer to the row; a claim is verified only by a source you judge.
+
+Boards move cards by keyboard too: focus a card, press Space, move with the arrow keys (Left and Right change column), Space again to drop. If the server refuses a move the card returns and the reason is shown. The New concept wizard asks what kind of product you are making. A chat answer that could not finish is marked, with an Ask again button that does not save your question twice, and saved answers show how their sources were found. On the Optimise page, approving a cheaper substitute removes that part's price until you enter the new one; the button says so and the old price stays visible as "was".
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

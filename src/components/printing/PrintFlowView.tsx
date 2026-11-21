@@ -81,7 +81,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
       <section aria-labelledby="jobs-h" className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="jobs-h" className="text-base font-semibold tracking-tight text-primary">Print jobs</h2>
-          <Button onClick={() => setAdding(true)}><Plus className="h-4 w-4" aria-hidden /> New print job</Button>
+          <Button id="new-print-job" onClick={() => setAdding(true)}><Plus className="h-4 w-4" aria-hidden /> New print job</Button>
         </div>
         {jobs.error ? <div className="space-y-2"><ErrorLine>{jobs.error}</ErrorLine></div> : null}
         {printers.isError ? <ErrorLine>The printer list did not load: {messageOf(printers.error)}</ErrorLine> : null}

@@ -12,6 +12,9 @@ export type CostMeasure = {
   pricedTotal: number;
   /** the whole list's cost, only when every part has a cost; otherwise null ("not priced") */
   total: number | null;
+  /** unpriced parts that replaced a priced one (an approved substitute), and the sum of the prices they replaced */
+  substitutes?: number;
+  wasTotal?: number;
 };
 
 export type CountMeasure = {
@@ -40,7 +43,9 @@ export function measureCost(bom: Item[]): CostMeasure {
   const parts = readParts(bom);
   const priced = parts.filter((p) => p.line !== null);
   const pricedTotal = Math.round(priced.reduce((a, p) => a + (p.line ?? 0), 0) * 100) / 100;
-  return { parts: parts.length, priced: priced.length, pricedTotal, total: parts.length && priced.length === parts.length ? pricedTotal : null };
+  const subs = parts.filter((p) => p.line === null && typeof p.item.data.wasLine === "number");
+  const wasTotal = Math.round(subs.reduce((a, p) => a + (p.item.data.wasLine as number), 0) * 100) / 100;
+  return { parts: parts.length, priced: priced.length, pricedTotal, total: parts.length && priced.length === parts.length ? pricedTotal : null, ...(subs.length ? { substitutes: subs.length, wasTotal } : {}) };
 }
 
 const FASTENER = /\b(screws?|bolts?|nuts?|washers?|rivets?|standoffs?|inserts?|fasteners?)\b/i;
@@ -65,9 +70,12 @@ export function measureCount(bom: Item[]): CountMeasure {
 
 /**
  * The print time a row holds, in minutes, as [low, high], or null when it holds none.
- * `printMinutes` (a number) wins; otherwise the `estimate` text is read: "45 min", "5 h", "4-5 h", "1 h 30 min".
+ * The slicer's `slice.seconds` wins, then `printMinutes` (a number); otherwise the `estimate` text is read: "45 min", "5 h", "4-5 h", "1 h 30 min".
  */
 export function printMinutes(i: Item): [number, number] | null {
+  // The slicer's own figure wins (written only by the slice route).
+  const sliced = (i.data.slice as { seconds?: unknown } | undefined)?.seconds;
+  if (typeof sliced === "number" && Number.isFinite(sliced) && sliced >= 0) return [sliced / 60, sliced / 60];
   const m = i.data.printMinutes;
   if (typeof m === "number" && Number.isFinite(m) && m >= 0) return [m, m];
   const text = typeof i.data.estimate === "string" ? i.data.estimate : "";
@@ -132,8 +140,9 @@ export function describe(action: OptimiseAction, m: Measure): string {
     const c = m as CostMeasure;
     if (!c.parts) return "No parts";
     if (c.total !== null) return `${money(c.total)} for ${c.parts} parts`;
-    if (!c.priced) return `Not priced (none of ${c.parts} parts has a cost)`;
-    return `Not priced (${c.priced} of ${c.parts} parts have a cost, adding up to ${money(c.pricedTotal)})`;
+    const was = c.substitutes ? `; ${c.substitutes === 1 ? "1 substitute has" : `${c.substitutes} substitutes have`} no cost yet, was ${money(c.wasTotal ?? 0)}` : "";
+    if (!c.priced) return `Not priced (none of ${c.parts} parts has a cost${was})`;
+    return `Not priced (${c.priced} of ${c.parts} parts have a cost, adding up to ${money(c.pricedTotal)}${was})`;
   }
   if (action === "parts") {
     const c = m as CountMeasure;

@@ -46,7 +46,7 @@ describe("ProcessStepper", () => {
     expect(screen.getByTestId("stage-sales").dataset.position).toBe("upcoming");
     // Only the current stage is open; it lists its checks with what fixes them.
     expect(within(design).getByText("At least one requirement is written")).toBeTruthy();
-    expect(within(design).getByRole("link", { name: "Add 1 more row to Requirements" }).getAttribute("href")).toBe("/s/design/requirements");
+    expect(within(design).getByRole("link", { name: "Draft Requirements with AI, or add a row by hand" }).getAttribute("href")).toBe("/s/design/requirements#draft-with-ai");
     expect(within(screen.getByTestId("stage-sales")).queryByText("At least one sales channel is set")).toBeNull();
     // A done stage can be moved back to.
     expect(within(screen.getByTestId("stage-concept")).getByRole("button", { name: /Move back to Concept/ })).toBeTruthy();
@@ -107,7 +107,7 @@ describe("NextStepStrip", () => {
     ]);
     renderWithClient(<ProcessContext projectId="toy"><NextStepStrip /></ProcessContext>);
     const strip = await screen.findByTestId("next-step-strip");
-    expect(within(strip).getByRole("link", { name: "Add 2 more rows to Brief" }).getAttribute("href")).toBe("/s/concept/brief");
+    expect(within(strip).getByRole("link", { name: "Add 2 more rows to Brief" }).getAttribute("href")).toBe("/s/concept/brief#add-row");
     expect(strip.textContent).toContain("Why: The Concept gate needs this: the brief has at least three lines. 1 row recorded, 3 needed.");
   });
 

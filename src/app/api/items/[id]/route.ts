@@ -7,6 +7,7 @@ import { assertClaimChange } from "@/lib/research/rules";
 import { changedDetail, itemDiff, removedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
 import { keyOf } from "@/lib/trace/spec";
+import { mirrorLinks } from "@/lib/trace/mirror";
 import { assertMarketChange } from "@/lib/market/rules";
 import { assertAttackUntouched } from "@/lib/ai/drafts/attack";
 import { assertPrintChange } from "@/lib/slicing/rules";
@@ -66,6 +67,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     const oldKey = keyOf(was.data);
     const newKey = keyOf(row.data);
     if (oldKey && oldKey !== newKey) await relinkKey(c, row, oldKey, newKey || null, newKey ? `the key ${oldKey} became ${newKey}` : `the key ${oldKey} was removed`);
+    // A link added or removed at this end is added or removed at the other end too.
+    await mirrorLinks(c, was, row);
     // A write that changes nothing leaves no line: the record holds changes, not clicks.
     if (Object.keys(diff.after).length || Object.keys(diff.before).length) {
       const detail = changedDetail(row, diff);

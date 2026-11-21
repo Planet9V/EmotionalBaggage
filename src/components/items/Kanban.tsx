@@ -54,15 +54,22 @@ const collide: CollisionDetection = (args) => {
  * A lifted card moves a whole column at a time: Right and Left go to the neighbouring column, other keys do
  * nothing. (The default moves 25 px a press, which never gets a card from one column to the next.)
  */
-const columnJump: KeyboardCoordinateGetter = (event, { context: { active, collisionRect, droppableRects, droppableContainers } }) => {
-  if (!active || !collisionRect || (event.code !== "ArrowRight" && event.code !== "ArrowLeft")) return undefined;
-  const centre = collisionRect.left + collisionRect.width / 2;
+const columnJump: KeyboardCoordinateGetter = (event, { context: { active, collisionRect, droppableContainers } }) => {
+  if (!active || (event.code !== "ArrowRight" && event.code !== "ArrowLeft")) return undefined;
+  // Read the columns and the card from the page itself. dnd-kit measures its drop areas a moment after a
+  // card is lifted, so its cached rectangles can still be missing when the arrow key arrives straight after
+  // Space; with them missing the key did nothing.
   const columns = droppableContainers
     .getEnabled()
     .filter((c) => String(c.id).startsWith("col:"))
-    .map((c) => droppableRects.get(c.id))
-    .filter((r): r is NonNullable<typeof r> => !!r)
-    .sort((a, b) => a.left - b.left);
+    .map((c) => c.node.current?.getBoundingClientRect())
+    .filter((r): r is DOMRect => !!r && r.width > 0)
+    .sort((x, y) => x.left - y.left);
+  // The same holds for the lifted card's own rectangle: before the first measurement it is empty.
+  const measured = collisionRect && collisionRect.width > 0 ? collisionRect : null;
+  const card = measured ?? document.querySelector(`[data-card-id="${String(active.id)}"]`)?.getBoundingClientRect();
+  if (!card || columns.length === 0) return undefined;
+  const centre = card.left + card.width / 2;
   const here = columns.findIndex((r) => centre >= r.left && centre <= r.left + r.width);
   const to = columns[(here < 0 ? 0 : here) + (event.code === "ArrowRight" ? 1 : -1)];
   return to ? { x: to.left + 8, y: to.top + 8 } : undefined;

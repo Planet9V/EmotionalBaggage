@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useItems, useProject } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
 import { traceOf } from "@/lib/trace/coverage";
-import { keyOf, listOf } from "@/lib/trace/spec";
 import type { Item, Project } from "@/lib/types";
 import { Coverage } from "./Coverage";
 import { NoConcept, LoadingShape } from "@/components/ui/states";
@@ -92,7 +91,6 @@ function TraceBody({ project }: { project: Project }) {
     );
   }
 
-  const testKey = (x: Item) => keyOf(x.data);
   return (
     <div className="space-y-6">
       <section aria-label="Requirements by test">
@@ -115,7 +113,7 @@ function TraceBody({ project }: { project: Project }) {
               </TableHeader>
               <TableBody>
                 {t.requirements.map((r) => {
-                  const linked = new Set(listOf(r.data, "tests"));
+                  const linked = new Set(t.testsOf(r).map((x) => x.id));
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium text-primary">
@@ -127,7 +125,7 @@ function TraceBody({ project }: { project: Project }) {
                         </div>
                       </TableCell>
                       {t.tests.map((x) => {
-                        const on = !!testKey(x) && linked.has(testKey(x));
+                        const on = linked.has(x.id);
                         return (
                           <TableCell key={x.id} className="text-center">
                             {on ? (

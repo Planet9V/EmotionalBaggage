@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CheckList } from "./CheckList";
 import { gateBadge } from "./gateBadge";
 import { Card } from "@/components/ui/Card";
+import { focusHash } from "./DeepLinkFocus";
 
 /** The next step in full, for the overview: what to do, why, and the current stage's gate. */
 export function NextStepCard({ projectId, showGate = true }: { projectId: string; showGate?: boolean }) {
@@ -41,6 +42,8 @@ export function NextStepCard({ projectId, showGate = true }: { projectId: string
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
           href={next.href}
+          onClick={() => window.setTimeout(() => focusHash(new URL(next.href, window.location.href).hash), 50)}
+          data-testid="next-step-link"
           className="inline-flex items-center gap-1.5 rounded-md bg-action px-3 py-2 text-sm font-medium text-white transition hover:bg-action-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange focus-visible:ring-offset-2"
         >
           {next.label} <ArrowRight className="h-3.5 w-3.5" aria-hidden />

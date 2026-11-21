@@ -6,12 +6,18 @@ import { useProject } from "@/lib/client";
 import { useProcess } from "@/lib/process/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingShape } from "@/components/ui/states";
+import { DeepLinkFocus, focusHash } from "./DeepLinkFocus";
 
 /** The compact next step under every page title, for the concept that is open. Nothing when no concept is open. */
 export function NextStepStrip() {
   const { project } = useProject();
   if (!project) return null;
-  return <Strip projectId={project.id} />;
+  return (
+    <>
+      <DeepLinkFocus />
+      <Strip projectId={project.id} />
+    </>
+  );
 }
 
 function Strip({ projectId }: { projectId: string }) {
@@ -44,7 +50,7 @@ function Strip({ projectId }: { projectId: string }) {
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
         <span className="font-semibold text-primary">Next:</span>
-        <Link href={next.href} className="inline-flex items-center gap-1 font-medium text-link hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
+        <Link href={next.href} onClick={() => window.setTimeout(() => focusHash(new URL(next.href, window.location.href).hash), 50)} data-testid="next-step-link" className="inline-flex items-center gap-1 font-medium text-link hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
           {next.label} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </span>

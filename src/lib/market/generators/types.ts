@@ -72,8 +72,13 @@ export const lines = (items: Item[], max = 40) =>
     .map((i) => `- [id ${i.id}${i.status ? `, ${i.status}` : ""}] ${i.title}${i.body ? `: ${i.body.replace(/\s+/g, " ").slice(0, 600)}` : ""}`)
     .join("\n");
 
+// A source's title is what the row was made from, in words; the stored record keeps at most 300 characters
+// (the schema's limit). A long research question used to make every row of the run fail that limit and be dropped.
+const TITLE_MAX = 300;
+const clipTitle = (t: string) => (t.length > TITLE_MAX ? `${t.slice(0, TITLE_MAX - 1).trimEnd()}…` : t);
+
 export const stampOf = (sources: SourceRef[], s: { model: string; at: string }): GeneratedFrom => ({
-  sources: dedupe(sources),
+  sources: dedupe(sources).map((x) => ({ ...x, title: clipTitle(x.title) })),
   model: s.model,
   at: s.at,
 });

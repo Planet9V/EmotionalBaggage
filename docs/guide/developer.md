@@ -213,6 +213,12 @@ Everything that sends goes through `send()` in `src/lib/channels/send.ts`, with 
 
 Gate check kinds are listed in `src/lib/process/computed.ts`; facts only the server knows come from `factsOf`. The drafting engine's `load`, `params`, `sources`, `append` and `saveDrafts` let a feature's own screen run a generator. `src/lib/geometry/pins3d.ts` is the one source of 3D pin positions. `src/lib/campaigns/adRule.ts` resolves the rule that governs an ad. `src/lib/concepts/copy.ts` decides what a duplicate carries. `src/lib/report/sections.ts` builds the computed report sections. `src/lib/ai/drafts/attack.ts` runs the reviewer's attack after approval, claimed by one atomic update so it never runs twice. Every new route that writes must be listed in `tests/trace/write-paths.test.ts` with where it records its change.
 
+## The shared UI kit
+
+Use the kit in `src/components/ui` (field, NativeSelect, textarea, modal, states, PageHeader, Card, Panel, Table, download and format helpers); there are no local kits. Forms use react-hook-form with the zod resolver, with server errors on `setError("root")`. Boards use dnd-kit core with the `columnJump` keyboard getter; tables use TanStack Table; the wizard uses Stepperize with a schema per step. Graph layouts go through `src/lib/graphLayout.ts` (elkjs) or dagre; positions are never computed by hand. A loading placeholder is labelled only through `LoadingShape` or `LoadingBlocks`; `Skeleton` is decorative (`tests/ui/loading-labels.test.ts` enforces it). The accessibility audit (`tests/e2e/a11y.spec.ts`) runs axe on every page in both themes, leaves frames out and fails on any frame that is not fully sandboxed.
+
+A gate check may carry `anchor`, `todo` and `needs`, which the next step turns into a sentence and a deep link; `DeepLinkFocus` scrolls to and focuses the control. Requirement links are read from either end by `linksOf` (`src/lib/trace/coverage.ts`) and kept the same at both ends by `mirrorLinks`. `POST /api/research` accepts `itemId` to attach the answer to a row.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

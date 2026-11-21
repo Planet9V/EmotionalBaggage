@@ -64,7 +64,7 @@ export function BatchesView({ project }: ViewProps) {
     }
   };
   const add = (
-    <Button onClick={() => setEditing("new")}>
+    <Button id="add-row" onClick={() => setEditing("new")}>
       <Plus className="h-4 w-4" aria-hidden /> Add batch
     </Button>
   );

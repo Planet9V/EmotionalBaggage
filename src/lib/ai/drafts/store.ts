@@ -27,6 +27,9 @@ import { assertDraftAllowed, withFlags } from "@/lib/content/rules";
 import { assertMarketChange, assertNewMarket } from "@/lib/market/rules";
 import type { Draft, DraftOp, DraftSource, DraftStatus } from "./shared";
 import { assertRoomFor } from "@/lib/api/limits";
+import { relinkKey } from "@/lib/trace/links";
+import { mirrorLinks } from "@/lib/trace/mirror";
+import { keyOf } from "@/lib/trace/spec";
 
 export const DRAFT_COLS =
   "id, project_id, generator, target_store, title, body, data, sources, model, provider, status, run_id, reason, created_at, decided_at, decided_by, item_id";
@@ -215,15 +218,22 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
   if (op.op === "replace" && before) assertMarketChange({ section: before.section, status: before.status, data: before.data }, { data: fields.data });
 
   if (op.op === "remove") {
-    await c.query("DELETE FROM items WHERE id=$1", [d.item_id]);
+    const gone = await c.query<ItemRow>(`DELETE FROM items WHERE id=$1 RETURNING ${ITEM_COLS}`, [d.item_id]);
+    // Rows that linked to the removed one lose the link, each recorded (as a hand deletion does).
+    if (gone.rows[0]) await relinkKey(c, gone.rows[0], keyOf(gone.rows[0].data), null, `the linked row "${gone.rows[0].title}" was removed by an approved draft`);
   } else if (op.op === "replace") {
     // The reviewer's attack record stays with the row: a revision that answers it is not attacked again.
     const kept = before && before.data.attack !== undefined ? { ...fields.data, attack: before.data.attack } : fields.data;
-    const r = await c.query<ItemRow>(`UPDATE items SET title=$2, body=$3, data=$4, updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [
+    // A print job whose slicer settings change goes back to queued: its slice no longer describes it.
+    const PRINT_SETTINGS = ["fileId", "printerId", "material", "layerHeight", "infill", "supports"];
+    const resliced = d.target_store === "prototype/printing" && before && PRINT_SETTINGS.some((k) => JSON.stringify(before!.data[k]) !== JSON.stringify(kept[k]));
+    if (resliced && ["slicing", "sent", "printing"].includes(before!.status)) throw new HttpError(409, `"${before!.title}" is ${before!.status}; change its settings after it finishes.`);
+    const r = await c.query<ItemRow>(`UPDATE items SET title=$2, body=$3, data=$4, status=COALESCE($5, status), updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [
       d.item_id,
       fields.title,
       fields.body,
       JSON.stringify(kept),
+      resliced ? "queued" : null,
     ]);
     item = toItem(r.rows[0]);
   } else {
@@ -235,6 +245,14 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
       [d.project_id, d.target_store, fields.title, fields.body, JSON.stringify(fields.data), defaultStatus(d.target_store)]
     );
     item = toItem(r.rows[0]);
+  }
+
+  // A drafted test or part names the requirements it serves; the requirements list it back (traceability).
+  if (item) {
+    const row = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1`, [item.id])).rows[0];
+    await mirrorLinks(c, before ? { data: before.data } : null, row);
+    const fresh = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1`, [item.id])).rows[0];
+    item = toItem(fresh);
   }
 
   // A drafted part's pins become pin rows, the one place the schematic and the electrical checks read them.

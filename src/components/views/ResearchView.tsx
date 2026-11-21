@@ -24,7 +24,7 @@ import { LoadingBlocks } from "@/components/ui/states";
 type Source = { url: string; title?: string; snippet?: string; date?: string };
 type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
 type Resp = { configured: boolean; model: string; entries: Entry[] };
-type AskResp = { entry: Entry; effort: string | null; costUsd: number | null };
+type AskResp = { entry: Entry; attached: { id: number; section: string; title: string } | null; effort: string | null; costUsd: number | null };
 type Claims = ReturnType<typeof useItems>;
 
 const day = (iso: string) => {
@@ -44,11 +44,20 @@ export function ResearchView({ project }: ViewProps) {
   // "Verify this" on a row arrives as ?ask=<the row's text>&claim=<id>: the question is filled in and
   // the claim is chosen in each evidence form.
   const [preferClaim, setPreferClaim] = useState("");
+  // The row "Verify this" came from (?item=<id>): the next answer is attached to it, and it says so.
+  const [attachTo, setAttachTo] = useState("");
+  const [attachedNote, setAttachedNote] = useState("");
 
   const [cost, setCost] = useState("");
   const askM = useMutation({
-    mutationFn: (q: string) => api<AskResp>("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q }) }),
-    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: keys.research(project.id) }), qc.invalidateQueries({ queryKey: keys.events(project.id) })]),
+    mutationFn: (q: string) =>
+      api<AskResp>("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q, ...(attachTo ? { itemId: Number(attachTo) } : {}) }) }),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: keys.research(project.id) }),
+        qc.invalidateQueries({ queryKey: keys.events(project.id) }),
+        qc.invalidateQueries({ queryKey: ["items", project.id] }),
+      ]),
   });
   const pending = askM.isPending;
 
@@ -60,6 +69,14 @@ export function ResearchView({ project }: ViewProps) {
     try {
       const r = await askM.mutateAsync(q);
       setQuery("");
+      if (r.attached) {
+        setAttachTo("");
+        setAttachedNote(
+          r.attached.section === "research/claims"
+            ? `The answer is attached to "${r.attached.title}". The claim stays unverified until you judge a source below: press Use as evidence beside it.`
+            : `The answer is attached to "${r.attached.title}" in ${r.attached.section}.`
+        );
+      } else setAttachedNote("");
       if (typeof r.costUsd === "number") setCost(`Perplexity estimated the cost of that answer at $${r.costUsd.toFixed(4)}${r.effort ? ` (effort ${r.effort})` : ""}.`);
     } catch (e) {
       setError((e as Error).message);
@@ -82,12 +99,14 @@ export function ResearchView({ project }: ViewProps) {
             Ask a question and Perplexity searches the web, answers with sources, and the answer is saved here with its sources.
             You can then use one source as evidence for or against a claim.
           </p>
-          <p className="mt-3 text-sm text-secondary">Perplexity is not connected. Add a key in Admin, Credentials.</p>
+          <p className="mt-3 text-sm text-secondary">
+            Perplexity is not connected. <a href="/admin?tab=credentials" className="text-link hover:underline">Add a key in Admin, Credentials</a>.
+          </p>
         </Card>
       )}
 
       <Suspense fallback={null}>
-        <FromUrl names={["ask", "claim"]} onParams={(v) => { if (v.ask) setQuery(v.ask); if (v.claim) setPreferClaim(v.claim); box.current?.focus(); }} />
+        <FromUrl names={["ask", "claim", "item"]} onParams={(v) => { if (v.ask) setQuery(v.ask); if (v.claim) setPreferClaim(v.claim); if (v.item) setAttachTo(v.item); box.current?.focus(); }} />
       </Suspense>
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
         <label htmlFor="rq" className="text-sm font-medium text-primary">Question</label>
@@ -101,7 +120,9 @@ export function ResearchView({ project }: ViewProps) {
           Each question is billed to your Perplexity account: model tokens plus a fee for each web search
           (Perplexity lists $0.001 per Fast Search, which the default effort uses). Perplexity reports an estimate after the answer. Effort: {state.model}.
         </p>
+        {attachTo && !error && <p className="text-xs text-secondary">The answer will be attached to the row you came from. Attaching it does not verify anything.</p>}
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+        {attachedNote && !error && <p role="status" className="text-sm text-primary">{attachedNote}</p>}
         {cost && !error && <p className="text-xs text-secondary">{cost}</p>}
         {unverified.length > 0 && (
           <div>
@@ -124,7 +145,7 @@ export function ResearchView({ project }: ViewProps) {
       ) : (
         <ul className="space-y-4">
           {state.entries.map((e) => (
-            <li className="animate-enter" key={e.id}>
+            <li className="animate-enter" key={e.id} id={`research-${e.id}`}>
               <EntryCard entry={e} claims={claims} projectId={project.id} preferClaim={preferClaim} />
             </li>
           ))}

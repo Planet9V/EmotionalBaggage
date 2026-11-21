@@ -82,7 +82,7 @@ export function PlanCard({ projectId, plan, money }: { projectId: string; plan: 
   };
 
   return (
-    <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
+    <Card id="campaign-budget" variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold text-primary">Marketing budget and rules</h2>
         <p className="mt-1 text-sm text-secondary">

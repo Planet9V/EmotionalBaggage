@@ -19,7 +19,7 @@ import { Panel } from "@/components/ui/panel";
 const WHAT: Record<string, string> = {
   cost: "The model proposes cheaper substitutes for parts. A substitute has no price until you enter one, so the after is counted from the costs you enter.",
   parts: "A design-for-assembly check: parts that could be merged or removed, and fewer fasteners. The counts are taken from the parts list.",
-  print: "Faster print settings: walls, infill, layer height, orientation, splitting. A changed job is not sliced yet until you slice it and enter the time.",
+  print: "Faster print settings: walls, infill, layer height, orientation, splitting. A changed job goes back to queued until it is sliced again; the slicer's time is the after.",
 };
 
 export function OptimiseView() {

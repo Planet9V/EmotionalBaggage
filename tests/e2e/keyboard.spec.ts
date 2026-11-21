@@ -5,6 +5,23 @@ test.use({ reducedMotion: "reduce" });
 
 const live = (page: Page) => page.locator("[role=status]").filter({ hasText: /moved to|was not moved/ });
 
+/**
+ * Lifts the focused card. dnd-kit starts listening for the arrow keys a moment after Space (it adds its key
+ * listener in a timer), so a key sent in the same instant is lost; a person is never that fast. Wait until the
+ * board has said the card is picked up, then one more turn of the event loop.
+ */
+async function lift(page: Page) {
+  await page.keyboard.press("Space");
+  await expect(page.locator("[role=status]").filter({ hasText: /Picked up Claimed moats|Claimed moats is over/ }).first()).toBeAttached();
+  await page.waitForTimeout(500);
+}
+
+/** Presses an arrow and waits until the board says the lifted card is over that status, as a listener would hear it. */
+async function arrowTo(page: Page, key: "ArrowLeft" | "ArrowRight", status: string) {
+  await page.keyboard.press(key);
+  await expect(page.locator("[role=status]").filter({ hasText: `Claimed moats is over ${status}.` }).first()).toBeAttached();
+}
+
 test.describe("board", () => {
   test("a card is picked up, moved to the next column and dropped with the keyboard, and the change is saved", async ({ page }) => {
     await page.goto("/s/concept/brief");
@@ -15,8 +32,8 @@ test.describe("board", () => {
     const grip = page.getByRole("button", { name: "Drag Claimed moats" });
     await grip.focus();
     const saved = page.waitForResponse((r) => /\/api\/items\/\d+$/.test(new URL(r.url()).pathname) && r.request().method() === "PATCH");
-    await page.keyboard.press("Space"); // lift
-    await page.keyboard.press("ArrowRight"); // over the next column
+    await lift(page);
+    await arrowTo(page, "ArrowRight", "in progress");
     await page.keyboard.press("Space"); // drop
     expect((await saved).status()).toBe(200);
     await expect(card("in progress")).toBeVisible();
@@ -28,8 +45,8 @@ test.describe("board", () => {
     await expect(card("in progress")).toBeVisible();
     await page.getByRole("button", { name: "Drag Claimed moats" }).focus();
     const back = page.waitForResponse((r) => /\/api\/items\/\d+$/.test(new URL(r.url()).pathname) && r.request().method() === "PATCH");
-    await page.keyboard.press("Space");
-    await page.keyboard.press("ArrowLeft");
+    await lift(page);
+    await arrowTo(page, "ArrowLeft", "open");
     await page.keyboard.press("Space");
     expect((await back).status()).toBe(200);
     await expect(card("open")).toBeVisible();
@@ -43,8 +60,8 @@ test.describe("board", () => {
       if (r.method() === "PATCH" && /\/api\/items\//.test(r.url())) patched = true;
     });
     await page.getByRole("button", { name: "Drag Claimed moats" }).focus();
-    await page.keyboard.press("Space");
-    await page.keyboard.press("ArrowRight");
+    await lift(page);
+    await arrowTo(page, "ArrowRight", "in progress");
     await page.keyboard.press("Escape");
     await expect(page.locator('article[aria-label="Claimed moats, open"]')).toBeVisible();
     expect(patched).toBe(false);
