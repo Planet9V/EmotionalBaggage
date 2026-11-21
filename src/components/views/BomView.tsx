@@ -155,7 +155,7 @@ export function BomView({ project, section, store }: ViewProps) {
                       <TableCell>
                         <NativeSelect
                           aria-label={`Status of ${p.item.title}`}
-                          className="h-8 text-xs"
+                          className="h-8 min-w-28 text-xs"
                           value={p.item.status}
                           onChange={(e) => void patch(p.item.id, { status: e.target.value })}
                         >

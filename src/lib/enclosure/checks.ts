@@ -3,7 +3,7 @@
 //  - fit: each part sits inside the cavity measured from the result, with the stated clearance, and touches no printed material.
 //  - openings: the hole found in the wall is where the part is, and the size that was asked for.
 //  - lid: base and lid have the same footprint, meet without a gap and make the stated height.
-import { fmtMm } from "@/lib/format";
+import { fmtMm, plural } from "@/lib/format";
 import type { Manifold } from "manifold-3d";
 import { fromManifold, getKernel, toManifold } from "./kernel";
 import { FACE_AXES, type Box, type CheckResult, type EnclosureSpec, type GeneratorOutput, type Opening, type Vec3 } from "./types";
@@ -204,7 +204,7 @@ export async function computeChecks(spec: EnclosureSpec, out: GeneratorOutput): 
     key: "openings-line-up",
     label: "Every opening lines up with its part",
     ok: lineFails.length === 0,
-    detail: spec.openings.length === 0 ? "No openings were asked for." : lineFails.length ? lineFails.join("; ") + "." : `${spec.openings.length} openings measured in the walls; the furthest is ${mm(worstOff)} from its part (limit ${mm(TOL.openingCenter)}).`,
+    detail: spec.openings.length === 0 ? "No openings were asked for." : lineFails.length ? lineFails.join("; ") + "." : `${plural(spec.openings.length, "opening")} measured in the walls; the furthest is ${mm(worstOff)} from its part (limit ${mm(TOL.openingCenter)}).`,
   });
 
   solid.delete();
