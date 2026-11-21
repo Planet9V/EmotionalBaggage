@@ -24,7 +24,8 @@ export type CheckKind =
   | "positioning"
   | "campaign-budget"
   | "tracked-links"
-  | "campaign-results";
+  | "campaign-results"
+  | "content-approved";
 
 /** Concept fields a `field-set` check can ask for. */
 export type ConceptField = "name" | "oneLiner";
@@ -35,7 +36,12 @@ export type ConceptField = "name" | "oneLiner";
  * right state links to the first such row with `?item=<id>` where the section's page opens a row from the address.
  */
 /** `todo`: what to do when the section has no row yet, in words, when the generic "Add a row" would not say it. */
-type Base = { id: string; label: string; anchor?: string; todo?: string };
+/**
+ * `needs`: a row elsewhere that has to exist first (the launch email is written from a reviewed press release).
+ * While it is missing, the next step is that row, not this one.
+ */
+type Needs = { section: string; statuses: string[]; todo: string; anchor?: string };
+type Base = { id: string; label: string; anchor?: string; todo?: string; needs?: Needs };
 
 export type Check =
   /**
@@ -69,7 +75,9 @@ export type Check =
   /** tracked links (their own table, counted on the server: GateFacts.links) */
   | (Base & { kind: "tracked-links"; params: { min: number } })
   /** campaign results (their own table, counted on the server: GateFacts.results) */
-  | (Base & { kind: "campaign-results"; params: { min: number } });
+  | (Base & { kind: "campaign-results"; params: { min: number } })
+  /** a content row in this section is released (approved or later); the next step names what stops the first draft (src/lib/content/rules.ts) */
+  | (Base & { kind: "content-approved"; params: { section: string } });
 
 export type Gate = { stage: string; checks: Check[] };
 
@@ -125,11 +133,18 @@ const marketingGate: Check[] = [
   { ...approved("marketing.pricing", "marketing/pricing", "A price is approved", "add-price"), todo: "Add a price to consider and read its margin" },
   { id: "marketing.name", label: "A name is chosen", kind: "min-rows", anchor: "draft-with-ai", params: { section: "marketing/names", min: 1, statuses: ["chosen"] } },
   { ...approved("marketing.brand", "marketing/brand", "The brand kit is approved", "brand-kit"), todo: "Set up the brand kit: voice, colours and type" },
-  approved("marketing.ads", "marketing/ads", "At least one ad is approved"),
-  approved("marketing.landing", "marketing/landing", "The landing page has an approved section"),
+  { id: "marketing.ads", label: "At least one ad is approved", kind: "content-approved", anchor: "draft-with-ai", params: { section: "marketing/ads" } },
+  { id: "marketing.landing", label: "The landing page has an approved section", kind: "content-approved", anchor: "draft-with-ai", params: { section: "marketing/landing" } },
   { id: "marketing.listing", label: "The marketplace listing is drafted", kind: "min-rows", anchor: "draft-with-ai", params: { section: "sales/listing", min: 1 } },
-  approved("marketing.social", "marketing/social", "At least one social post is approved"),
-  approved("marketing.announce", "marketing/announce", "The launch email or press note is approved"),
+  { id: "marketing.social", label: "At least one social post is approved", kind: "content-approved", anchor: "draft-with-ai", params: { section: "marketing/social" } },
+  {
+    id: "marketing.announce",
+    label: "The launch email or press note is approved",
+    kind: "content-approved",
+    anchor: "draft-with-ai",
+    params: { section: "marketing/announce" },
+    needs: { section: "concept/press", statuses: ["reviewed", "final"], todo: "Write the press release and mark it reviewed: the launch email is written from it", anchor: "draft-with-ai" },
+  },
   { id: "marketing.proof", label: "Every approved ad, page, post and announcement has proof for its claims", kind: "content-proof", params: { sections: ["marketing/ads", "marketing/landing", "marketing/social", "marketing/announce"] } },
   { id: "marketing.budget", label: "The campaign budget and the rule numbers are set", kind: "campaign-budget", anchor: "campaign-budget", params: {} },
   { id: "marketing.campaigns", label: "At least one campaign is planned", kind: "min-rows", anchor: "draft-with-ai", todo: "Draft a campaign plan with AI from the budget and the approved messages", params: { section: "marketing/campaigns", min: 1, except: { field: "kind", value: "plan" } } },
@@ -233,6 +248,8 @@ export function checkSection(check: Check): string | null {
       return "marketing/links";
     case "campaign-results":
       return "marketing/results";
+    case "content-approved":
+      return check.params.section;
     case "field-set":
       return null;
   }

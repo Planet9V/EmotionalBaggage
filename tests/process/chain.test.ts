@@ -37,7 +37,7 @@ describe("the Marketing chain", () => {
   });
 
   it("an attacked positioning asks for approval, then the chain moves on to pricing and the rest in order", () => {
-    const rows: Item[] = [row("marketing/personas", "approved"), row("marketing/competitors", "approved")];
+    const rows: Item[] = [row("marketing/personas", "approved"), row("marketing/competitors", "approved"), row("concept/press", "reviewed")];
     const pos = row("marketing/positioning", "draft", { forWhom: "a", critique: { text: "Weak." } }, "Line");
     const state: ProcessState = { stage: "marketing", gates: [] };
     const next = () => nextStep(processFor("electronics"), state, rows, { name: "Thing" }, { links: rows.some((r) => r.title === "link") ? 1 : 0, results: rows.some((r) => r.title === "result") ? 1 : 0 });
@@ -112,5 +112,43 @@ describe("the Prototype chain", () => {
     const state: ProcessState = { stage: "prototype", gates: [] };
     const rows = [row("design/bom", "to print"), row("prototype/printing", "done")];
     expect(nextStep(processFor("printed"), state, rows).href).toBe("/s/prototype/tests#draft-with-ai");
+  });
+});
+
+describe("content rows: the next step names what stops the first draft", () => {
+  const before = () => [
+    row("marketing/personas", "approved"), row("marketing/competitors", "approved"), row("marketing/positioning", "approved"),
+    row("marketing/pricing", "approved"), row("concept/names", "chosen"), row("marketing/brand", "approved"),
+  ];
+  const state: ProcessState = { stage: "marketing", gates: [] };
+  it("an ad with no stop and scale rule: write the rule, then approve it", () => {
+    const ad = row("marketing/ads", "draft", { channel: "meta" }, "Meta ad A");
+    expect(nextStep(processFor("printed"), state, [...before(), ad])).toMatchObject({ label: 'Write the stop and scale rule for "Meta ad A", then approve it', href: "/s/marketing/ads" });
+    const ruled = { ...ad, data: { ...ad.data, stopRule: "Stop above 8", costPerOrderCeilingMinor: 800, minSpendBeforeJudgingMinor: 2400 } };
+    expect(nextStep(processFor("printed"), state, [...before(), ruled])).toMatchObject({ label: 'Approve "Meta ad A" in Ads' });
+  });
+  it("an ad a campaign runs takes the campaign's rule", () => {
+    const ad = row("marketing/ads", "draft", {}, "Ad B");
+    const camp = row("marketing/campaigns", "planned", { kind: "campaign", creative: [{ section: "marketing/ads", itemId: ad.id }], rule: { stopAboveMinor: 900, afterSpendMinor: 3000 } });
+    expect(nextStep(processFor("printed"), state, [...before(), ad, camp]).label).toBe('Approve "Ad B" in Ads');
+  });
+  it("a draft with a line that has no proof: link proof or take it out", () => {
+    const post = row("marketing/landing", "draft", { noProof: true }, "Hero");
+    const rows = [...before(), row("marketing/ads", "approved"), post];
+    expect(nextStep(processFor("printed"), state, rows)).toMatchObject({ label: 'Link proof to "Hero" or take the flagged line out, then approve it', href: "/s/marketing/landing" });
+  });
+});
+
+describe("a check that needs a row elsewhere first", () => {
+  it("the launch email is written from a reviewed press release: with none, the next step is the press release", () => {
+    const state: ProcessState = { stage: "marketing", gates: [] };
+    const rows = ["marketing/personas", "marketing/competitors", "marketing/positioning", "marketing/pricing", "marketing/brand", "marketing/ads", "marketing/landing", "marketing/social"].map((s) => row(s, "approved"));
+    rows.push(row("concept/names", "chosen"), row("sales/listing", "draft"));
+    expect(nextStep(processFor("printed"), state, rows)).toMatchObject({ label: "Write the press release and mark it reviewed: the launch email is written from it", href: "/s/concept/press#draft-with-ai" });
+    const press = row("concept/press", "draft", {}, "Launch");
+    rows.push(press);
+    expect(nextStep(processFor("printed"), state, rows)).toMatchObject({ label: 'Mark "Launch" reviewed or final in Press release', href: `/s/concept/press?item=${press.id}` });
+    rows.push(row("concept/press", "reviewed", {}, "Launch v2"));
+    expect(nextStep(processFor("printed"), state, rows)).toMatchObject({ label: "Draft Launch email and press note with AI, or add a row by hand", href: "/s/marketing/announce#draft-with-ai" });
   });
 });

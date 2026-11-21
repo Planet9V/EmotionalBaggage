@@ -184,13 +184,19 @@ function AdCard({ ad, spec, cur, governing, onSave, onDelete }: { ad: Item; spec
     }
   };
   const save = () =>
-    run(() => {
+    run(async () => {
       const first = spec.fields.find((f) => f.kind !== "url" && vals[f.key]);
       const lead = first ? (Array.isArray(vals[first.key]) ? (vals[first.key] as string[])[0] : String(vals[first.key])) : "new variant";
-      return onSave({
+      const c = toMinor(ceiling, cur);
+      const m = toMinor(minSpend, cur);
+      await onSave({
         title: `${spec.label}: ${lead}`.slice(0, 120),
-        data: { fields: vals, stopRule: rule, costPerOrderCeilingMinor: toMinor(ceiling, cur), minSpendBeforeJudgingMinor: toMinor(minSpend, cur) },
+        data: { fields: vals, stopRule: rule, costPerOrderCeilingMinor: c, minSpendBeforeJudgingMinor: m },
       });
+      // Show the amounts as they were saved ("8" is kept as 8.00), so a saved card is not left looking unsaved
+      // (which kept its status locked behind "Save before changing the status").
+      setCeiling(fromMinor(c, cur));
+      setMinSpend(fromMinor(m, cur));
     });
 
   const set = (k: string, v: string | string[]) => setVals((p) => ({ ...p, [k]: v }));

@@ -13,6 +13,7 @@ import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
 import { positioningFingerprint } from "@/lib/market/critique";
+import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
 
 /** What the server works out that rows alone cannot give. */
 export type GateFacts = {
@@ -166,4 +167,28 @@ export function campaignBudgetCheck(rows: Item[]): Computed {
 export function countCheck(n: number | undefined, min: number, w: { one: string; many?: string; where: string; href: string; verb: string }): Computed {
   if (n === undefined) return { met: false, detail: `${w.where} have not been counted yet.`, action: w.verb, href: w.href };
   return { met: n >= min, detail: `${plural(n, w.one, w.many)} recorded${n >= min ? "" : `, ${min} needed`}.`, action: w.verb, href: w.href };
+}
+
+/**
+ * A content section has a released row (approved or later). Otherwise the first draft is named with what stops it,
+ * in the order the server checks (src/lib/content/rules.ts): a line with no proof, then an ad's missing stop rule.
+ * The stored flags are only a hint here; the server works them out again when the row is approved.
+ */
+export function contentApprovedCheck(rows: Item[], section: string, label: string, anchor?: string): Computed {
+  const href = `/s/${section}`;
+  const xs = rows.filter((r) => r.section === section);
+  const released = xs.filter((r) => RELEASED.has(r.status));
+  if (released.length) return { met: true, detail: `${plural(released.length, "row")} approved or released.`, action: "Nothing to do", href };
+  if (!xs.length) return { met: false, detail: "Nothing written yet.", action: `Draft ${label} with AI, or add a row by hand`, href: anchor ? `${href}#${anchor}` : href };
+  const first = xs[0];
+  if (first.data?.noProof === true) {
+    return { met: false, detail: `"${first.title}" has a line with no proof behind it.`, action: `Link proof to "${first.title}" or take the flagged line out, then approve it`, href };
+  }
+  if (section === "marketing/ads") {
+    const rule = effectiveAdRule(first, rows.filter((r) => r.section === "marketing/campaigns"));
+    if (!ruleComplete(rule)) {
+      return { met: false, detail: `"${first.title}" has no stop and scale rule yet, so it cannot be approved.`, action: `Write the stop and scale rule for "${first.title}", then approve it`, href };
+    }
+  }
+  return { met: false, detail: `${plural(xs.length, "row")} in draft.`, action: `Approve "${first.title}" in ${label}`, href };
 }

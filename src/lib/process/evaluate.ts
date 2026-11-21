@@ -3,7 +3,7 @@ import { DECISIONS_STORE, UNLOCK_STORES } from "@/lib/plan";
 import { toDecision } from "@/lib/domain/decision";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
-import { campaignBudgetCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
+import { campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
 
 export type { GateFacts } from "./computed";
 
@@ -86,6 +86,16 @@ function moveAction(title: string, label: string, statuses: string[]): string {
 }
 
 export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): CheckResult {
+  const r = evaluateOne(check, rows, concept, facts);
+  const n = check.needs;
+  if (r.met || !n || rowsOf(rows, n.section).some((x) => n.statuses.includes(x.status))) return r;
+  const waiting = rowsOf(rows, n.section)[0];
+  const detail = `${r.detail} It is made from a ${sectionLabel(n.section).toLowerCase()} marked ${listOr(n.statuses)}, and there is none yet.`;
+  if (waiting) return { ...r, detail, action: `Mark "${waiting.title}" ${listOr(n.statuses)} in ${sectionLabel(n.section)}`, href: fixHref(n.section, { row: waiting }) };
+  return { ...r, detail, action: n.todo, href: fixHref(n.section, { anchor: n.anchor }) };
+}
+
+function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: GateFacts): CheckResult {
   const path = checkSection(check);
   const href = path ? fixHref(path, { anchor: check.anchor }) : "/concepts";
   const base = { id: check.id, label: check.label, href };
@@ -216,6 +226,8 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
       return { ...base, ...campaignBudgetCheck(rows) };
     case "tracked-links":
       return { ...base, ...countCheck(facts.links, check.params.min, { one: "tracked link", where: "Tracked links", href: base.href, verb: "Make a tracked link for a campaign" }) };
+    case "content-approved":
+      return { ...base, ...contentApprovedCheck(rows, check.params.section, sectionLabel(check.params.section), check.anchor) };
     case "campaign-results":
       return { ...base, ...countCheck(facts.results, check.params.min, { one: "day of results", many: "days of results", where: "Campaign results", href: base.href, verb: "Enter a campaign's results by hand, by paste or from a CSV" }) };
   }
