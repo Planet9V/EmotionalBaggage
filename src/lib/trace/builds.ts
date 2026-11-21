@@ -16,6 +16,9 @@ export function criteriaOf(data: Record<string, unknown>): Criterion[] {
   });
 }
 
+/** The sentence for a build that has no exit criterion or no linked test. */
+export const EMPTY_EVIDENCE = "Add at least one exit criterion and one test before marking this build passed.";
+
 export function buildProgress(build: Row, tests: Row[]) {
   const byKey = new Map(tests.map((t) => [keyOf(t.data), t]));
   const criteria = criteriaOf(build.data);
@@ -27,6 +30,8 @@ export function buildProgress(build: Row, tests: Row[]) {
   const notDone = linked.filter((t) => !t.done);
   /** why this build cannot be marked passed yet; empty when it can */
   const blockers: string[] = [];
+  // Nothing to prove is not proof: a build needs at least one criterion and one linked test before it can pass.
+  if (!criteria.length || !linked.length) blockers.push(EMPTY_EVIDENCE);
   if (unmet.length) blockers.push(`${unmet.length} of ${criteria.length} exit criteria ${unmet.length === 1 ? "is" : "are"} not met (for example "${unmet[0].text}")`);
   if (notDone.length) {
     const t = notDone[0];
@@ -42,5 +47,38 @@ export const PASSED = "passed";
 /** The sentence for a refused "Mark passed", or null when the build may pass. */
 export const passRefusal = (build: Row, tests: Row[]): string | null => {
   const { blockers } = buildProgress(build, tests);
-  return blockers.length ? `This build cannot be marked passed: ${blockers.join("; and ")}.` : null;
+  if (!blockers.length) return null;
+  // The missing-evidence sentence leads; any unmet criterion or test follows it.
+  const [first, ...rest] = blockers;
+  if (first === EMPTY_EVIDENCE) return rest.length ? `${EMPTY_EVIDENCE} Also: ${rest.join("; and ")}.` : EMPTY_EVIDENCE;
+  return `This build cannot be marked passed: ${blockers.join("; and ")}.`;
 };
+
+/**
+ * Why a build's stored "passed" no longer holds, in words a history line can carry ("Drop test no longer passes"),
+ * or an empty list when the evidence is intact. `gone` names tests that were just deleted (the title the row had).
+ */
+export function lostEvidence(build: Row, tests: Row[], gone: Record<string, string> = {}): string[] {
+  const p = buildProgress(build, tests);
+  const out: string[] = [];
+  if (!p.criteria.length && !p.linked.length) out.push("it has no exit criterion and no linked test");
+  else if (!p.criteria.length) out.push("it has no exit criterion");
+  else if (!p.linked.length) out.push("it has no linked test");
+  for (const t of p.linked) {
+    if (t.done) continue;
+    if (t.title === null) out.push(`${gone[t.key] ?? t.key} was deleted`);
+    else out.push(`${t.title} no longer passes${t.status ? ` (${t.status})` : ""}`);
+  }
+  for (const c of p.criteria) if (!c.met) out.push(`the criterion "${c.text}" is not met`);
+  return out;
+}
+
+/** What a passed build gave up when its data changed: a linked test unlinked, or an exit criterion removed. */
+export function lostByEdit(before: Record<string, unknown>, after: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  const tests = new Set(listOf(after, "tests"));
+  for (const k of listOf(before, "tests")) if (!tests.has(k)) out.push(`the test ${k} was unlinked`);
+  const kept = new Set(criteriaOf(after).map((c) => c.text));
+  for (const c of criteriaOf(before)) if (!kept.has(c.text)) out.push(`the criterion "${c.text}" was removed`);
+  return out;
+}

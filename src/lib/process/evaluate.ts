@@ -3,7 +3,7 @@ import { DECISIONS_STORE, UNLOCK_STORES } from "@/lib/plan";
 import { toDecision } from "@/lib/domain/decision";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
-import { campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
+import { buildPassedCheck, campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
 
 export type { GateFacts } from "./computed";
 
@@ -138,6 +138,10 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const bad = badRows.length;
       const want = listOr(check.params.statuses);
       const label = sectionLabel(check.params.section);
+      // True of zero rows is not proof: an empty section fails unless the definition allows it.
+      if (xs.length === 0 && !check.params.allowEmpty) {
+        return { ...base, met: false, detail: `No rows in ${label} yet, so nothing shows this is ${want}.`, action: check.todo ?? `Add rows to ${label}` };
+      }
       return {
         ...base,
         href: badRows[0] ? fixHref(check.params.section, { row: badRows[0] }) : base.href,
@@ -149,9 +153,13 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
     case "no-open": {
       const statuses = check.params.statuses ?? OPEN_STATUSES;
       const set = new Set(statuses);
-      const open = rowsOf(rows, check.params.section).filter((r) => set.has(r.status));
+      const all = rowsOf(rows, check.params.section);
+      const open = all.filter((r) => set.has(r.status));
       const n = open.length;
       const label = sectionLabel(check.params.section);
+      if (all.length === 0 && !check.params.allowEmpty) {
+        return { ...base, met: false, detail: `No rows in ${label} yet, so nothing shows none is ${listOr(statuses)}.`, action: check.todo ?? `Add rows to ${label}` };
+      }
       return {
         ...base,
         href: open[0] ? fixHref(check.params.section, { row: open[0] }) : base.href,
@@ -228,6 +236,8 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       return { ...base, ...countCheck(facts.links, check.params.min, { one: "tracked link", where: "Tracked links", href: base.href, verb: "Make a tracked link for a campaign" }) };
     case "content-approved":
       return { ...base, ...contentApprovedCheck(rows, check.params.section, sectionLabel(check.params.section), check.anchor) };
+    case "build-passed":
+      return { ...base, ...buildPassedCheck(rows, check.anchor, check.todo) };
     case "campaign-results":
       return { ...base, ...countCheck(facts.results, check.params.min, { one: "day of results", many: "days of results", where: "Campaign results", href: base.href, verb: "Enter a campaign's results by hand, by paste or from a CSV" }) };
   }
@@ -282,3 +292,43 @@ export function nextStep(definition: ProcessDefinition, state: ProcessState, row
     href: "/process#advance",
   };
 }
+
+/**
+ * A stage before the current one whose gate is neither passed nor overridden: the concept is further on than its
+ * gates allow (an override was withdrawn after it advanced, or evidence went bad since). Warns; never stops anything.
+ */
+export type SkippedGate = {
+  /** the gate that is not passed */
+  stage: string;
+  label: string;
+  /** the stage that was entered behind it */
+  enteredStage: string;
+  enteredLabel: string;
+  /** true when the gate was passed on its checks once and no longer is; false when it was never passed */
+  regressed: boolean;
+  unmet: { id: string; label: string; detail: string; action: string; href: string }[];
+};
+
+export function skippedGates(definition: ProcessDefinition, state: ProcessState, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): SkippedGate[] {
+  const ci = Math.max(0, STAGES.findIndex((s) => s.key === state.stage));
+  const out: SkippedGate[] = [];
+  for (let i = 0; i < ci; i++) {
+    const key = STAGES[i].key;
+    const g = gatePassed(definition, state, key, rows, concept, facts);
+    if (g.passed) continue;
+    const rec = recordOf(state, key);
+    out.push({
+      stage: key,
+      label: STAGES[i].label,
+      enteredStage: STAGES[i + 1].key,
+      enteredLabel: STAGES[i + 1].label,
+      regressed: rec?.status === "go" && !rec.overridden,
+      unmet: g.result.checks.filter((c) => !c.met).map((c) => ({ id: c.id, label: c.label, detail: c.detail, action: c.action, href: c.href })),
+    });
+  }
+  return out;
+}
+
+/** The sentence for a skipped gate. */
+export const skippedSentence = (s: Pick<SkippedGate, "label" | "enteredLabel" | "regressed">) =>
+  s.regressed ? `The ${s.label} gate no longer passes, and the concept is already in ${s.enteredLabel} or later.` : `${s.enteredLabel} was entered without passing the ${s.label} gate.`;

@@ -8,6 +8,6 @@ export const GET = route(async (req: Request) => {
   const projectId = p.get("projectId") ?? "";
   await requireProject(projectId);
   const kind = p.get("kind");
-  if (kind !== null && kind !== "section" && kind !== "optimise") throw new HttpError(400, "kind must be section or optimise.");
+  if (kind !== null && kind !== "section" && kind !== "optimise" && kind !== "links") throw new HttpError(400, "kind must be section, optimise or links.");
   return NextResponse.json(await generatorsInfo(projectId, { store: p.get("store") ?? undefined, kind: kind ?? undefined }));
 });

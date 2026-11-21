@@ -16,7 +16,7 @@ import { keys, messageOf, queries } from "@/lib/queries";
 import { STAGES } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { processFor, type ProcessDefinition } from "./definitions";
-import { gatePassed, nextStep, recordOf, type GateRecord, type GateResult, type NextStep } from "./evaluate";
+import { gatePassed, nextStep, recordOf, skippedGates, type GateRecord, type GateResult, type NextStep, type SkippedGate } from "./evaluate";
 import type { ProcessResponse } from "./state";
 
 const enc = encodeURIComponent;
@@ -49,6 +49,8 @@ export type ProcessView = {
   stages: StageView[];
   current: StageView;
   next: NextStep;
+  /** earlier stages whose gate is neither passed nor overridden, read from today's rows */
+  skipped: SkippedGate[];
 };
 
 /** Pure: the state and rows laid out stage by stage. Exported for tests. */
@@ -64,7 +66,11 @@ export function processView(state: ProcessResponse, rows: Item[]): ProcessView {
       result: g.result, passed: g.passed, overridden: g.overridden, record: recordOf(state, s.key),
     };
   });
-  return { definition, state, stages, current: stages[ci], next: nextStep(definition, { ...state, stage: STAGES[ci].key }, rows, concept, state.facts ?? {}) };
+  return {
+    definition, state, stages, current: stages[ci],
+    next: nextStep(definition, { ...state, stage: STAGES[ci].key }, rows, concept, state.facts ?? {}),
+    skipped: skippedGates(definition, state, rows, concept, state.facts ?? {}),
+  };
 }
 
 /** The process of one concept. `view` is null until both the state and the rows have loaded. */
@@ -105,12 +111,14 @@ export const useOverrideGate = (projectId: string) =>
 
 /** Withdraw an override; the gate is judged on its checks again. Recorded with who and when. */
 export const useWithdrawOverride = (projectId: string) =>
-  useProcessMutation(projectId, (stage: string) =>
-    api<ProcessResponse>(`/api/projects/${enc(projectId)}/gates`, { method: "DELETE", body: JSON.stringify({ stage }) })
-  );
+  useProcessMutation(projectId, (v: string | { stage: string; why?: string }) => {
+    const { stage, why } = typeof v === "string" ? { stage: v, why: undefined } : v;
+    return api<ProcessResponse>(`/api/projects/${enc(projectId)}/gates`, { method: "DELETE", body: JSON.stringify({ stage, ...(why?.trim() ? { why: why.trim() } : {}) }) });
+  });
 
 /** Move to another stage: forward one when the gate is passed, back any time. */
 export const useMoveStage = (projectId: string) =>
-  useProcessMutation(projectId, (stage: string) =>
-    api<ProcessResponse>(`/api/projects/${enc(projectId)}/stage`, { method: "POST", body: JSON.stringify({ stage }) })
-  );
+  useProcessMutation(projectId, (v: string | { stage: string; why?: string }) => {
+    const { stage, why } = typeof v === "string" ? { stage: v, why: undefined } : v;
+    return api<ProcessResponse>(`/api/projects/${enc(projectId)}/stage`, { method: "POST", body: JSON.stringify({ stage, ...(why?.trim() ? { why: why.trim() } : {}) }) });
+  });

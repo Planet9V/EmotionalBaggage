@@ -24,7 +24,8 @@ export const ProjectContext = createContext<ProjectState>({
 /** The concept currently open. Every view reads its project from here. */
 export const useProject = () => useContext(ProjectContext);
 
-export type ItemChange = Partial<Pick<Item, "title" | "body" | "status" | "sort">> & { data?: Record<string, unknown> };
+/** `why`: an optional reason, kept on the change in the history; it is not a field of the row. */
+export type ItemChange = Partial<Pick<Item, "title" | "body" | "status" | "sort">> & { data?: Record<string, unknown>; why?: string };
 export type NewItem = { section: string; title: string; body?: string; data?: Record<string, unknown>; status?: string };
 
 const SCALARS = ["title", "body", "status", "sort"] as const;

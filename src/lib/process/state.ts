@@ -1,7 +1,8 @@
 import type { PoolClient } from "pg";
 import { notFound } from "@/lib/api/route";
-import { factsOf, gatesOf, historyOf, type ProcessEvent } from "./server";
-import type { GateRecord } from "./evaluate";
+import { factsOf, gatesOf, historyOf, itemsOf, type ProcessEvent } from "./server";
+import { skippedGates, type GateRecord, type SkippedGate } from "./evaluate";
+import { processFor } from "./definitions";
 import type { GateFacts } from "./computed";
 
 /** What GET /api/projects/[id]/process answers, and what the stage and gate routes answer after a change. */
@@ -15,6 +16,8 @@ export type ProcessResponse = {
   history: ProcessEvent[];
   /** what the gates need beyond the rows (currency, electrical check counts), worked out on the server */
   facts: GateFacts;
+  /** stages before the current one whose gate is neither passed nor overridden (worked out against today's rows) */
+  skipped: SkippedGate[];
 };
 
 type Runner = Pick<PoolClient, "query">;
@@ -26,14 +29,18 @@ export async function processResponse(c: Runner, id: string): Promise<ProcessRes
   );
   if (!r.rows.length) throw notFound("That concept");
   const p = r.rows[0];
+  const gates = await gatesOf(c, id);
+  const facts = await factsOf(c, id, p.product_type);
+  const skipped = skippedGates(processFor(p.product_type), { stage: p.stage, gates }, await itemsOf(c, id), { name: p.name, oneLiner: p.one_liner }, facts);
   return {
     projectId: p.id,
     name: p.name,
     oneLiner: p.one_liner,
     productType: p.product_type,
     stage: p.stage,
-    gates: await gatesOf(c, id),
+    gates,
     history: await historyOf(c, id),
-    facts: await factsOf(c, id, p.product_type),
+    facts,
+    skipped,
   };
 }

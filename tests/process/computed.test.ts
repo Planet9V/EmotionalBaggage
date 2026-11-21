@@ -86,3 +86,21 @@ describe("gates that read other features' checks", () => {
     expect(evaluateCheck(c, [claim, ad("approved", [{ itemId: claim.id }])]).met).toBe(true);
   });
 });
+
+describe("the build gate reads live evidence (process review 2)", async () => {
+  const { buildPassedCheck } = await import("@/lib/process/computed");
+  const mk = (section: string, status: string, data: Record<string, unknown>, title: string, id: number) => ({ id, projectId: "p", section, title, body: "", data, status, sort: id });
+  const build = (status = "passed") => mk("prototype/builds", status, { criteria: [{ text: "Boots", met: true }], tests: ["t1"] }, "EVT", 1);
+  it("is met when a passed build still has every criterion met and every test passing", () => {
+    expect(buildPassedCheck([build(), mk("prototype/tests", "pass", { key: "t1" }, "T1", 2)]).met).toBe(true);
+  });
+  it("is not met, and says why, when a passed build's test no longer passes or is gone", () => {
+    const failing = buildPassedCheck([build(), mk("prototype/tests", "fail", { key: "t1" }, "T1", 2)]);
+    expect(failing.met).toBe(false);
+    expect(failing.detail).toContain("T1 no longer passes (fail)");
+    expect(buildPassedCheck([build()]).detail).toContain("t1 was deleted");
+  });
+  it("is not met for a passed build with nothing to prove", () => {
+    expect(buildPassedCheck([mk("prototype/builds", "passed", {}, "Empty", 1)]).met).toBe(false);
+  });
+});

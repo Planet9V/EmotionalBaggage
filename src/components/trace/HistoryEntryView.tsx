@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fieldValue, sameValue, valueText, type HistoryChange, type HistoryEntry } from "@/lib/trace/history";
 import type { Item } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
+import { WhyField } from "./WhyField";
 
 /** Written the way people read a date: the time in their own zone, with the full stamp in the tooltip. */
 export function when(at: string) {
@@ -81,16 +82,80 @@ function ChangeView({ change, current, onRestore }: { change: HistoryChange; cur
   );
 }
 
+/** Why the change was made, when the record has a reason (given with it, or added afterwards). */
+export function ReasonLine({ entry }: { entry: Pick<HistoryEntry, "reason" | "reasonLater" | "summary"> }) {
+  // A gate override and an automatic move back already say their reason in the summary.
+  if (!entry.reason || entry.summary.includes(entry.reason)) return null;
+  return (
+    <p className="mt-1.5 text-xs text-secondary wrap-anywhere">
+      <span className="font-medium text-primary">Why:</span> {entry.reason}
+      {entry.reasonLater && <span className="text-muted"> (added later by {entry.reasonLater.by || "the app"}, {when(entry.reasonLater.at)})</span>}
+    </p>
+  );
+}
+
+/** "Add reason" on a change that has none: a short field, saved as a new line that names this one. */
+function AddReason({ onAdd }: { onAdd: (why: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [why, setWhy] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const fieldId = useId();
+  if (!open) {
+    return (
+      <Button type="button" variant="ghost" size="xs" className="mt-1.5" onClick={() => setOpen(true)}>
+        Add reason
+      </Button>
+    );
+  }
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!why.trim()) {
+      setError("Type the reason.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await onAdd(why.trim());
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={save} className="mt-2 flex flex-wrap items-end gap-2" noValidate>
+      <div className="min-w-[12rem] flex-1">
+        <WhyField id={`add-reason-${fieldId}`} value={why} onChange={setWhy} autoFocus />
+      </div>
+      <Button type="submit" size="sm" disabled={busy}>
+        {busy ? "Saving" : "Save reason"}
+      </Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
+        Cancel
+      </Button>
+      {error && (
+        <p role="alert" className="w-full text-xs text-danger wrap-anywhere">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
 /** One recorded change: who, when, and each field before and after. */
 export function HistoryEntryView({
   entry,
   current,
   onRestore,
+  onAddReason,
   showRow,
 }: {
   entry: HistoryEntry;
   current?: Item;
   onRestore?: (change: HistoryChange) => Promise<void>;
+  /** adds a reason to this change afterwards; offered only where the server says the signed-in person may */
+  onAddReason?: (entry: HistoryEntry, why: string) => Promise<void>;
   /** the Activity page names the row each change is about */
   showRow?: boolean;
 }) {
@@ -105,6 +170,8 @@ export function HistoryEntryView({
           <span className="text-secondary">{entry.actor || "The app"}</span> · <time dateTime={entry.at} title={entry.at}>{when(entry.at)}</time>
         </p>
       </div>
+      <ReasonLine entry={entry} />
+      {entry.canAddReason && onAddReason && <AddReason onAdd={(why) => onAddReason(entry, why)} />}
       {entry.changes.length > 0 && (
         <ul className="mt-2 space-y-2" aria-label="Fields changed">
           {entry.changes.map((c) => (

@@ -62,7 +62,7 @@ export type GeneratorInfo = {
   action: string;
   from: string[];
   to: string;
-  kind: "section" | "optimise";
+  kind: "section" | "optimise" | "links";
   /** source rows it would read, by store */
   counts: Record<string, number>;
   /** total source rows */

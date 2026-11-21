@@ -14,12 +14,12 @@ import { readsText, type Draft, type GeneratorInfo, type GeneratorsReply, type R
 import { safeFetch } from "@/lib/net/outbound";
 
 /** The generators for a concept (optionally only those writing one store), with what each would read. */
-export async function generatorsInfo(projectId: string, opts: { store?: string; kind?: "section" | "optimise" } = {}): Promise<GeneratorsReply> {
+export async function generatorsInfo(projectId: string, opts: { store?: string; kind?: "section" | "optimise" | "links" } = {}): Promise<GeneratorsReply> {
   const concept = await readConcept(projectId);
   const reasoning = await getReasoning();
   const pending = await q<{ generator: string; n: number }>("SELECT generator, count(*)::int AS n FROM drafts WHERE project_id=$1 AND status='draft' GROUP BY generator", [projectId]);
   const pendingBy = new Map(pending.map((p) => [p.generator, p.n]));
-  const list = GENERATORS.filter((g) => (!opts.store || g.to === opts.store) && (!opts.kind || g.kind === opts.kind) && g.applies(concept.productType));
+  const list = GENERATORS.filter((g) => (!opts.store || g.to === opts.store) && (opts.kind ? g.kind === opts.kind : g.kind !== "links") && g.applies(concept.productType));
   const generators: GeneratorInfo[] = [];
   for (const g0 of list) {
     const g = g0 as unknown as Parameters<typeof buildContext>[0];

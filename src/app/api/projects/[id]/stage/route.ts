@@ -9,6 +9,7 @@ import { gatePassed, stageLabel } from "@/lib/process/evaluate";
 import { stageBody } from "@/lib/process/schemas";
 import { factsOf, gatesOf, itemsOf } from "@/lib/process/server";
 import { processResponse } from "@/lib/process/state";
+import { reasonDetail } from "@/lib/trace/why";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -34,7 +35,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
 
     if (ti < fi) {
       await c.query("UPDATE projects SET stage=$2, updated_at=now() WHERE id=$1", [id, b.stage]);
-      await logEventIn(c, id, "stage.moved-back", `Moved back from ${stageLabel(from)} to ${stageLabel(b.stage)}`, { from, to: b.stage, by: currentActor(), before: { stage: from }, after: { stage: b.stage } });
+      await logEventIn(c, id, "stage.moved-back", `Moved back from ${stageLabel(from)} to ${stageLabel(b.stage)}`, { from, to: b.stage, by: currentActor(), before: { stage: from }, after: { stage: b.stage }, ...reasonDetail(b.why) });
       return processResponse(c, id);
     }
 
@@ -67,7 +68,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       id,
       "stage.advanced",
       `Advanced from ${stageLabel(from)} to ${stageLabel(b.stage)}${how === "override" ? " on an override" : " with every check met"}`,
-      { from, to: b.stage, passedBy: how, by: currentActor(), before: { stage: from }, after: { stage: b.stage } }
+      { from, to: b.stage, passedBy: how, by: currentActor(), before: { stage: from }, after: { stage: b.stage }, ...reasonDetail(b.why) }
     );
     return processResponse(c, id);
   });

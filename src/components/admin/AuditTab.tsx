@@ -18,6 +18,8 @@ import { EmptyState, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 
 const ALL = "__all";
+/** The sign-in lines that fill the log; hidden until asked for. Refused attempts stay visible. */
+export const SIGN_IN = "session.started";
 
 /** Kinds of change, by the start of the action name. */
 export const KINDS: { prefix: string; label: string }[] = [
@@ -51,7 +53,10 @@ export function AuditTab() {
   const [action, setAction] = useState("");
   const [text, setText] = useState("");
   const q = useDebounced(text);
-  const filters: AuditFilters = { project: project || undefined, action: action || undefined, q: q.trim() || undefined };
+  const [showSignIns, setShowSignIns] = useState(false);
+  // Choosing the Sign-in kind asks for those lines, so nothing is hidden then.
+  const hidingSignIns = !showSignIns && !action.startsWith("session.");
+  const filters: AuditFilters = { project: project || undefined, action: action || undefined, q: q.trim() || undefined, hide: hidingSignIns ? SIGN_IN : undefined };
   const log = useAuditLog(filters);
   const [open, setOpen] = useState<Set<number>>(new Set());
   const [downloading, setDownloading] = useState(false);
@@ -61,7 +66,7 @@ export function AuditTab() {
   const entries = pages.flatMap((p) => p.entries);
   const concepts = pages[0]?.concepts ?? [];
   const deleted = new Set(concepts.filter((c) => !c.exists).map((c) => c.id));
-  const filtered = !!(filters.project || filters.action || filters.q);
+  const filtered = !!(filters.project || filters.action || filters.q || filters.hide);
 
   const toggle = (id: number) =>
     setOpen((s) => {
@@ -147,6 +152,15 @@ export function AuditTab() {
         </p>
       ) : null}
 
+      {!action.startsWith("session.") ? (
+        <p className="mt-3 text-xs text-muted" role="status">
+          {showSignIns ? "Sign-ins shown. " : "Sign-ins hidden. "}
+          <button type="button" className="text-link underline-offset-2 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-pressed={showSignIns} onClick={() => setShowSignIns((v) => !v)}>
+            {showSignIns ? "Hide" : "Show"}
+          </button>
+        </p>
+      ) : null}
+
       <div className="mt-4">
         {log.isPending ? (
           <LoadingBlocks rows={2} label="Reading the audit log" />
@@ -161,11 +175,11 @@ export function AuditTab() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="w-8"><span className="sr-only">Details</span></TableHead>
-                    <TableHead className="w-44">Time</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Concept</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead className="min-w-[18rem]">Summary</TableHead>
+                    <TableHead className="w-28 lg:w-44">Time</TableHead>
+                    <TableHead className="hidden lg:table-cell">User</TableHead>
+                    <TableHead className="hidden lg:table-cell">Concept</TableHead>
+                    <TableHead className="hidden lg:table-cell">Action</TableHead>
+                    <TableHead className="min-w-0">Summary</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -186,9 +200,9 @@ export function AuditTab() {
                               {isOpen ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
                             </Button>
                           </TableCell>
-                          <TableCell className="whitespace-nowrap align-top font-mono text-xs text-muted">{fmtDateTime(e.at)}</TableCell>
-                          <TableCell className="align-top text-xs">{e.actor || "none"}</TableCell>
-                          <TableCell className="align-top text-xs">
+                          <TableCell className="align-top font-mono text-xs text-muted lg:whitespace-nowrap">{fmtDateTime(e.at)}</TableCell>
+                          <TableCell className="hidden align-top text-xs lg:table-cell">{e.actor || "none"}</TableCell>
+                          <TableCell className="hidden align-top text-xs lg:table-cell">
                             {e.projectId ? (
                               <span className="inline-flex flex-wrap items-center gap-1">
                                 {e.projectName || e.projectId}
@@ -198,12 +212,24 @@ export function AuditTab() {
                               <span className="text-muted">install-wide</span>
                             )}
                           </TableCell>
-                          <TableCell className="align-top font-mono text-xs">{e.action}</TableCell>
-                          <TableCell className="align-top text-xs text-primary">{e.summary}</TableCell>
+                          <TableCell className="hidden align-top font-mono text-xs lg:table-cell">{e.action}</TableCell>
+                          <TableCell className="min-w-0 align-top text-xs text-primary wrap-anywhere">
+                            {/* Below lg the user, concept and action columns are folded under the summary. */}
+                            <span className="mb-0.5 block font-mono text-[11px] text-muted lg:hidden" data-testid={`audit-meta-${e.id}`}>
+                              {e.action} · {e.actor || "none"} · {e.projectId ? e.projectName || e.projectId : "install-wide"}
+                              {deleted.has(e.projectId) ? " (deleted)" : ""}
+                            </span>
+                            {e.summary}
+                            {typeof e.detail?.reason === "string" && e.detail.reason && !e.summary.includes(e.detail.reason) ? (
+                              <span className="mt-1 block text-secondary wrap-anywhere">
+                                <span className="font-medium text-primary">Why:</span> {e.detail.reason}
+                              </span>
+                            ) : null}
+                          </TableCell>
                         </TableRow>
                         {isOpen ? (
                           <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={6} className="bg-subtle">
+                            <TableCell colSpan={6} className="bg-subtle max-w-0">
                               <pre id={`audit-detail-${e.id}`} className="max-h-80 overflow-auto whitespace-pre-wrap break-all font-mono text-xs text-primary">
                                 {JSON.stringify(e.detail, null, 2)}
                               </pre>

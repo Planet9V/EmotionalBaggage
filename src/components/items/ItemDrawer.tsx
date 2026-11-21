@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryPanel } from "@/components/trace/HistoryPanel";
+import { WhyField } from "@/components/trace/WhyField";
 import { useItems } from "@/lib/client";
 import { linkedFrom } from "@/lib/trace/coverage";
 import type { Column } from "@/lib/menu";
@@ -17,7 +18,7 @@ import { RowAssist } from "@/components/drafts/RowAssist";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
-type Change = { title: string; body: string; status: string; data: Record<string, unknown> };
+type Change = { title: string; body: string; status: string; data: Record<string, unknown>; why?: string };
 type Restore = (id: number, change: Record<string, unknown>) => Promise<void>;
 
 const afterText = (v: unknown) => keys(v).join(", ");
@@ -128,6 +129,9 @@ function EditForm({
   // Until the user picks a status, follow the row's own: evidence changed in the editor can move it.
   const [picked, setStatus] = useState<string | null>(null);
   const status = picked ?? item.status;
+  // A status change can carry a reason; it is kept with the change in the history.
+  const [why, setWhy] = useState("");
+  const statusChanged = status !== item.status;
   const [cols, setCols] = useState<Record<string, string>>(() => Object.fromEntries(columns.map((c) => [c.key, prim(item.data[c.key])])));
   const [key, setKey] = useState(prim(item.data.key));
   const [minutes, setMinutes] = useState(prim(item.data.minutes));
@@ -164,7 +168,7 @@ function EditForm({
     setBusy(true);
     setError("");
     try {
-      await onSave(item.id, { title: title.trim(), body, status, data });
+      await onSave(item.id, { title: title.trim(), body, status, data, ...(statusChanged && why.trim() ? { why: why.trim() } : {}) });
       onClose();
     } catch (err) {
       setError((err as Error).message);
@@ -221,6 +225,7 @@ function EditForm({
           ))}
         </NativeSelect>
       </Field>
+      {statusChanged && <WhyField id="edit-why" value={why} onChange={setWhy} hint={`Optional. Kept with the move from ${item.status} to ${status}.`} />}
 
       <fieldset className="space-y-3 rounded-xl border border-hairline bg-subtle p-4">
         <legend className="px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step in the order of operations</legend>

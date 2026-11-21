@@ -14,6 +14,7 @@ import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
 import { positioningFingerprint } from "@/lib/market/critique";
 import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
+import { buildProgress, EMPTY_EVIDENCE, lostEvidence, PASSED } from "@/lib/trace/builds";
 
 /** What the server works out that rows alone cannot give. */
 export type GateFacts = {
@@ -191,4 +192,30 @@ export function contentApprovedCheck(rows: Item[], section: string, label: strin
     }
   }
   return { met: false, detail: `${plural(xs.length, "row")} in draft.`, action: `Approve "${first.title}" in ${label}`, href };
+}
+
+/**
+ * A build has passed, read live: its stored status is "passed" and its evidence still holds (at least one exit
+ * criterion, all met; at least one linked test, all passing). A build marked passed whose evidence went bad does
+ * not count, and the sentence names what changed.
+ */
+export function buildPassedCheck(rows: Item[], anchor = "add-build", todo = "Add a build with its exit criteria and tests"): Computed {
+  const section = "prototype/builds";
+  const href = "/s/prototype/builds";
+  const builds = rows.filter((r) => r.section === section);
+  const tests = rows.filter((r) => r.section === "prototype/tests");
+  const marked = builds.filter((b) => b.status === PASSED);
+  const holding = marked.filter((b) => lostEvidence(b, tests).length === 0);
+  if (holding.length) return { met: true, detail: `${plural(holding.length, "build")} passed, with its exit criteria met and its tests passing.`, action: "Nothing to do", href };
+  const stale = marked[0];
+  if (stale) {
+    const why = lostEvidence(stale, tests).join("; ");
+    return { met: false, detail: `"${stale.title}" is marked passed, but its evidence no longer holds: ${why}.`, action: `Restore the evidence of the build "${stale.title}", then pass it again`, href };
+  }
+  if (!builds.length) return { met: false, detail: "No build yet.", action: todo, href: `${href}#${anchor}` };
+  const first = builds[0];
+  const p = buildProgress(first, tests);
+  const detail = `${plural(builds.length, "build")}, none passed.`;
+  if (p.blockers[0] === EMPTY_EVIDENCE) return { met: false, detail: `${detail} "${first.title}" has no exit criterion or no linked test.`, action: `Add exit criteria and tests to the build "${first.title}"`, href };
+  return { met: false, detail, action: `Pass the build "${first.title}" in Builds`, href };
 }

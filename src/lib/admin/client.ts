@@ -26,7 +26,7 @@ export type AdminStatus = { complete: boolean; items: StatusItem[]; defaultPassw
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
 export type AuditConcept = { id: string; name: string; exists: boolean };
 export type AuditPage = { entries: AuditRow[]; next: number | null; concepts: AuditConcept[] };
-export type AuditFilters = { project?: string; action?: string; q?: string };
+export type AuditFilters = { project?: string; action?: string; q?: string; /** leave out actions that start with this */ hide?: string };
 export type ConnectionTest =
   | { kind: "model"; provider: ModelChoice["provider"]; baseUrl: string; model?: string; apiKey?: string }
   | { kind: "embedding"; provider: ModelChoice["provider"]; baseUrl: string; model: string; dims: number; apiKey?: string }
@@ -55,6 +55,7 @@ export function auditQueryString(f: AuditFilters, extra: { before?: number | nul
   const p = new URLSearchParams();
   if (f.project) p.set("project", f.project);
   if (f.action) p.set("action", f.action);
+  if (f.hide) p.set("hide", f.hide);
   const text = f.q?.trim();
   if (text) p.set("q", text);
   if (extra.before) p.set("before", String(extra.before));
@@ -71,7 +72,7 @@ export const adminKeys = {
   settings: () => ["admin", "settings"] as const,
   printers: () => ["admin", "printers"] as const,
   families: () => ["admin", "printer-families"] as const,
-  audit: (f: AuditFilters) => ["admin", "audit", f.project ?? "", f.action ?? "", f.q?.trim() ?? ""] as const,
+  audit: (f: AuditFilters) => ["admin", "audit", f.project ?? "", f.action ?? "", f.hide ?? "", f.q?.trim() ?? ""] as const,
 };
 
 type Ctx = { signal?: AbortSignal };

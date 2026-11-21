@@ -39,7 +39,7 @@ async function setField(c: PoolClient, id: number, field: string, value: unknown
 }
 
 /** Gives a row a key when it has none, so the other end can name it. Returns the key. */
-async function ensureKey(c: PoolClient, row: Row): Promise<string> {
+export async function ensureKey(c: PoolClient, row: Row): Promise<string> {
   const own = keyOf(row.data);
   if (own) return own;
   const key = await freeKey(c, row.project_id, row);

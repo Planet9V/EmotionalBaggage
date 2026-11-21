@@ -30,7 +30,7 @@ export function DraftButton({ projectId, store, sectionLabel }: { projectId: str
           <Sparkles className="h-4 w-4 text-link" aria-hidden /> Draft with AI
           {pending > 0 && <span className="ml-1 rounded-full bg-dutchOrange/15 px-1.5 font-mono text-[10px] text-link">{pending} waiting</span>}
         </Button>
-        <span id={`draft-hint-${store}`} className="max-w-64 truncate text-[11px] text-muted" title={hint}>{hint}</span>
+        <span id={`draft-hint-${store}`} className="max-w-72 text-right text-[11px] text-muted">{hint}</span>
       </div>
       {open && (
         <DraftPanel

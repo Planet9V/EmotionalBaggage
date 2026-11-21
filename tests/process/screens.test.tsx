@@ -3,7 +3,7 @@
 // Override needing a reason and showing the server's refusal, the next-step strip, and the
 // section banner for decisions not yet made. The API is a stand-in fetch; the routes are tested in tests/api/process.test.ts.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { adminServer, on, renderWithClient, shimBrowser } from "../admin-ui/harness";
 
@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 const base = (o: Partial<ProcessResponse> = {}): ProcessResponse => ({
-  projectId: "toy", name: "Wooden toy", oneLiner: "A pull-along duck", productType: "physical", stage: "research", gates: [], history: [], facts: { currency: "USD", erc: null }, ...o,
+  projectId: "toy", name: "Wooden toy", oneLiner: "A pull-along duck", productType: "physical", stage: "research", gates: [], history: [], facts: { currency: "USD", erc: null }, skipped: [], ...o,
 });
 let id = 1;
 const row = (section: string, status: string, data: Record<string, unknown> = {}, title = `row ${id}`): Item => ({ id: id++, projectId: "toy", section, title, body: "", data, status, sort: id });
@@ -99,6 +99,40 @@ describe("ProcessStepper", () => {
   });
 });
 
+describe("the optional why on moving back and withdrawing an override (process review 3)", () => {
+  it("Move back asks for an optional reason, sends it, and sends none when left empty", async () => {
+    const state = base({ stage: "design" });
+    const { calls } = adminServer([on("POST", "/api/projects/toy/stage", () => ({ body: { ...state, stage: "concept" } }))]);
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(state, [])} />);
+    fireEvent.click(within(screen.getByTestId("stage-concept")).getByRole("button", { name: /Move back to Concept/ }));
+    let dialog = await screen.findByRole("dialog");
+    expect(calls).toHaveLength(0);
+    fireEvent.change(within(dialog).getByLabelText("Why (kept in the history)"), { target: { value: "The brief changed" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Move back" }));
+    await waitFor(() => expect(calls).toEqual([{ method: "POST", path: "/api/projects/toy/stage", body: { stage: "concept", why: "The brief changed" } }]));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Moved back to Concept."));
+    cleanup();
+    calls.length = 0;
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(state, [])} />);
+    fireEvent.click(within(screen.getByTestId("stage-concept")).getByRole("button", { name: /Move back to Concept/ }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Move back" }));
+    await waitFor(() => expect(calls).toEqual([{ method: "POST", path: "/api/projects/toy/stage", body: { stage: "concept" } }]));
+  });
+
+  it("Withdraw override asks for an optional reason first", async () => {
+    const state = base({ gates: [{ stage: "research", status: "go", overridden: true, note: "Checked", decidedBy: "demo", decidedAt: "2026-11-20T10:00:00.000Z" }] });
+    const { calls } = adminServer([on("DELETE", "/api/projects/toy/gates", () => ({ body: base() }))]);
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(state, [])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw override" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(calls).toHaveLength(0);
+    fireEvent.change(within(dialog).getByLabelText("Why (kept in the history)"), { target: { value: "Evidence arrived" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Withdraw override" }));
+    await waitFor(() => expect(calls).toEqual([{ method: "DELETE", path: "/api/projects/toy/gates", body: { stage: "research", why: "Evidence arrived" } }]));
+  });
+});
+
 describe("NextStepStrip", () => {
   it("shows the next step and why for the open concept", async () => {
     adminServer([
@@ -122,6 +156,40 @@ describe("NextStepStrip", () => {
   it("renders nothing with no concept open", () => {
     const { container } = renderWithClient(<NextStepStrip />);
     expect(container.textContent).toBe("");
+  });
+});
+
+describe("a stage entered behind an unpassed gate (process review 4)", () => {
+  it("the next-step strip says so, with Show what is missing and Move back to Concept", async () => {
+    const { calls } = adminServer([
+      on("GET", "/api/projects/toy/process", () => ({ body: base({ stage: "research" }) })),
+      on("GET", "/api/projects/toy/items", () => ({ body: { items: [] } })),
+      on("POST", "/api/projects/toy/stage", () => ({ body: base({ stage: "concept" }) })),
+    ]);
+    renderWithClient(<ProcessContext projectId="toy"><NextStepStrip /></ProcessContext>);
+    const note = await screen.findByTestId("skipped-concept");
+    expect(note.textContent).toContain("Research was entered without passing the Concept gate.");
+    expect(within(note).getByRole("link", { name: "Show what is missing" }).getAttribute("href")).toBe("/process#gate-concept");
+    fireEvent.click(within(note).getByRole("button", { name: "Move back to Concept" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Move back" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.path === "/api/projects/toy/stage")).toBe(true));
+  });
+
+  it("shows nothing when the earlier gates pass or are overridden", async () => {
+    const state = base({ stage: "research", gates: [{ stage: "concept", status: "go", overridden: true, note: "ok", decidedBy: "demo", decidedAt: "2026-11-20T10:00:00.000Z" }] });
+    adminServer([on("GET", "/api/projects/toy/process", () => ({ body: state })), on("GET", "/api/projects/toy/items", () => ({ body: { items: [] } }))]);
+    renderWithClient(<ProcessContext projectId="toy"><NextStepStrip /></ProcessContext>);
+    await screen.findByTestId("next-step-strip");
+    expect(screen.queryByTestId("skipped-concept")).toBeNull();
+  });
+
+  it("Show what is missing opens the earlier stage's checks on the Process page", async () => {
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(base({ stage: "research" }), [])} />);
+    const concept = screen.getByTestId("stage-concept");
+    expect(within(concept).queryByText("The concept has a one-line description")).toBeNull();
+    act(() => window.dispatchEvent(new CustomEvent("process:reveal", { detail: "concept" })));
+    expect(await within(concept).findByText("The concept has a one-line description")).toBeTruthy();
   });
 });
 

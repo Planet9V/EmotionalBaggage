@@ -10,7 +10,7 @@ import { statusList } from "@/components/items/shared";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
 import { STORE } from "@/lib/domain/schemas";
-import { buildProgress, PASSED } from "@/lib/trace/builds";
+import { buildProgress, lostEvidence, passRefusal, PASSED } from "@/lib/trace/builds";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { BuildPanel } from "./BuildPanel";
@@ -136,6 +136,10 @@ export function BuildsView({ project, section, store }: ViewProps) {
         {builds.map((b) => {
           const p = buildProgress(b, tests);
           const passed = b.status === PASSED;
+          const cannotPass = passed ? null : passRefusal(b, tests);
+          // The stored status is not the whole story: a build marked passed whose evidence went bad says so.
+          const stale = passed ? lostEvidence(b, tests) : [];
+          const sentBack = !passed && typeof b.data.revertedBecause === "string" ? b.data.revertedBecause : "";
           const start = day(b.data.start);
           const end = day(b.data.end);
           return (
@@ -176,7 +180,21 @@ export function BuildsView({ project, section, store }: ViewProps) {
                 )}
               </section>
 
-              {!passed && p.blockers.length > 0 && !refused[b.id] && <p className="text-xs text-warning">Not ready to pass: {p.blockers.join("; and ")}.</p>}
+              {stale.length > 0 && (
+                <p role="status" className="text-sm text-warning wrap-anywhere">
+                  Marked passed, but its evidence no longer holds: {stale.join("; ")}. Open it to move it back to testing.
+                </p>
+              )}
+              {sentBack && (
+                <p role="status" className="text-sm text-warning wrap-anywhere">
+                  Moved back to testing because {sentBack}.
+                </p>
+              )}
+              {cannotPass && !refused[b.id] && (
+                <p id={`pass-reason-${b.id}`} className="text-xs text-warning wrap-anywhere">
+                  {cannotPass}
+                </p>
+              )}
               {refused[b.id] && (
                 <p role="alert" className="text-sm text-danger wrap-anywhere">
                   {refused[b.id]}
@@ -187,11 +205,11 @@ export function BuildsView({ project, section, store }: ViewProps) {
                   Open
                 </Button>
                 {passed ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Passed
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium ${stale.length ? "text-warning" : "text-success"}`}>
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> {stale.length ? "Passed, evidence lost" : "Passed"}
                   </span>
                 ) : (
-                  <Button size="sm" onClick={() => void setStatus(b, PASSED)} aria-label={`Mark ${b.title} passed`}>
+                  <Button size="sm" disabled={cannotPass !== null} aria-describedby={cannotPass ? `pass-reason-${b.id}` : undefined} onClick={() => void setStatus(b, PASSED)} aria-label={`Mark ${b.title} passed`}>
                     Mark passed
                   </Button>
                 )}

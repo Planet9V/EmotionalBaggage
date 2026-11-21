@@ -1,10 +1,10 @@
 // Links between rows, kept by key (src/lib/trace/spec.ts), checked and kept whole on the server.
 import { z } from "zod";
 import type { PoolClient } from "pg";
-import { logEventIn, type ItemRow } from "@/lib/db";
+import { ITEM_COLS, logEventIn, type ItemRow } from "@/lib/db";
 import { HttpError } from "@/lib/api/route";
-import { changedDetail } from "./changes";
-import { PASSED, passRefusal } from "./builds";
+import { changedDetail, itemDiff } from "./changes";
+import { lostEvidence, PASSED, passRefusal } from "./builds";
 import { LINK_FIELDS, listOf } from "./spec";
 import { STORE } from "@/lib/domain/schemas";
 
@@ -76,4 +76,40 @@ export async function assertBuildMayPass(c: PoolClient, projectId: string, row: 
     : [];
   const why = passRefusal(row, tests);
   if (why) throw new HttpError(400, why);
+}
+
+/** The one place a passed build goes back: status testing, the reason kept on the row and in the history. */
+export const REVERTED = "testing";
+
+async function sendBack(c: PoolClient, was: ItemRow, reasons: string[]) {
+  const reason = reasons.join("; ");
+  const res = await c.query<ItemRow>(
+    `UPDATE items SET status=$2, data = data || jsonb_build_object('revertedBecause', $3::text), updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
+    [was.id, REVERTED, reason]
+  );
+  const now = res.rows[0];
+  await logEventIn(c, now.project_id, "item.status", `"${now.title}" moved from ${PASSED} to ${REVERTED}: ${reason}`, {
+    ...changedDetail(now, itemDiff(was, now)),
+    reason,
+    auto: true,
+  });
+}
+
+/**
+ * The gate reads live evidence: after a test or a link changed, every passed build whose tests no longer
+ * all pass, or that lost a linked test, goes back to "testing" in the same transaction, with the reason in the
+ * history ("Drop no longer passes"). `gone` names tests deleted in this change, by key, for the sentence.
+ */
+export async function demoteBrokenBuilds(c: PoolClient, projectId: string, gone: Record<string, string> = {}) {
+  const builds = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 AND status=$3 FOR UPDATE`, [projectId, STORE.builds, PASSED]);
+  if (!builds.rows.length) return [];
+  const tests = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2`, [projectId, STORE.tests]);
+  const out: number[] = [];
+  for (const b of builds.rows) {
+    const reasons = lostEvidence(b, tests.rows, gone);
+    if (!reasons.length) continue;
+    await sendBack(c, b, reasons);
+    out.push(Number(b.id));
+  }
+  return out;
 }

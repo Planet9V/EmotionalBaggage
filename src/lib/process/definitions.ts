@@ -25,7 +25,8 @@ export type CheckKind =
   | "campaign-budget"
   | "tracked-links"
   | "campaign-results"
-  | "content-approved";
+  | "content-approved"
+  | "build-passed";
 
 /** Concept fields a `field-set` check can ask for. */
 export type ConceptField = "name" | "oneLiner";
@@ -49,14 +50,18 @@ export type Check =
    * data field has this value (the campaigns section's one budget row, kind "plan").
    */
   | (Base & { kind: "min-rows"; params: { section: string; min: number; statuses?: string[]; except?: { field: string; value: string } } })
-  | (Base & { kind: "all-status"; params: { section: string; statuses: string[] } })
+  /**
+   * `allowEmpty`: an empty section meets the check. Without it an empty section fails: "every row is X" and "no row is
+   * open" are true of zero rows, and a gate must not pass on rows that do not exist.
+   */
+  | (Base & { kind: "all-status"; params: { section: string; statuses: string[]; allowEmpty?: boolean } })
   /**
    * `fallback: "root"`: when no decision has the key, the first top-level decision of the tree is
    * read instead. The decision tree screen makes keys from the question, so a user cannot always
    * type the key; the first decision of a tree is where the go/no-go question sits.
    */
   | (Base & { kind: "decision-made"; params: { key: string; fallback?: "root" } })
-  | (Base & { kind: "no-open"; params: { section: string; statuses?: string[] } })
+  | (Base & { kind: "no-open"; params: { section: string; statuses?: string[]; allowEmpty?: boolean } })
   | (Base & { kind: "claims-verified"; params: { share: number; section?: string } })
   | (Base & { kind: "field-set"; params: { field: ConceptField } })
   // Worked out by another feature's own code (src/lib/process/computed.ts):
@@ -77,7 +82,9 @@ export type Check =
   /** campaign results (their own table, counted on the server: GateFacts.results) */
   | (Base & { kind: "campaign-results"; params: { min: number } })
   /** a content row in this section is released (approved or later); the next step names what stops the first draft (src/lib/content/rules.ts) */
-  | (Base & { kind: "content-approved"; params: { section: string } });
+  | (Base & { kind: "content-approved"; params: { section: string } })
+  /** a build is marked passed and its evidence still holds, read live from the rows (src/lib/trace/builds.ts) */
+  | (Base & { kind: "build-passed"; params: Record<string, never> });
 
 export type Gate = { stage: string; checks: Check[] };
 
@@ -94,7 +101,8 @@ const conceptGate: Check[] = [
   { id: "concept.one-liner", label: "The concept has a one-line description", kind: "field-set", params: { field: "oneLiner" } },
   { id: "concept.brief", label: "The brief has at least three lines", kind: "min-rows", anchor: "add-row", params: { section: "concept/brief", min: 3 } },
   { id: "concept.go", label: "The go/no-go decision is decided", kind: "decision-made", params: { key: GO_DECISION, fallback: "root" } },
-  { id: "concept.questions", label: "No open question is left open or blocked", kind: "no-open", params: { section: "concept/questions" } },
+  // Zero open questions is the good answer here, so an empty section is allowed.
+  { id: "concept.questions", label: "No open question is left open or blocked", kind: "no-open", params: { section: "concept/questions", allowEmpty: true } },
 ];
 
 const researchGate: Check[] = [
@@ -104,16 +112,16 @@ const researchGate: Check[] = [
 
 const requirements: Check = { id: "design.requirements", label: "At least one requirement is written", kind: "min-rows", anchor: "draft-with-ai", params: { section: "design/requirements", min: 1 } };
 const parts: Check = { id: "design.bom", label: "The bill of materials has at least one part", kind: "min-rows", anchor: "draft-with-ai", params: { section: "design/bom", min: 1 } };
-const requirementsClosed: Check = { id: "design.requirements-open", label: "No requirement is open or blocked", kind: "no-open", params: { section: "design/requirements" } };
+const requirementsClosed: Check = { id: "design.requirements-open", label: "No requirement is open or blocked", kind: "no-open", anchor: "draft-with-ai", todo: "Write the requirements, then settle each one", params: { section: "design/requirements" } };
 
 // A part made by printing is not bought: "to print" counts until its print job is done.
-const inHand: Check = { id: "prototype.parts-in-hand", label: "Every bought part is in hand", kind: "all-status", params: { section: "prototype/sourcing", statuses: ["in hand", "to print"] } };
+const inHand: Check = { id: "prototype.parts-in-hand", label: "Every bought part is in hand", kind: "all-status", todo: "Add the parts in the Bill of materials, then source them", params: { section: "prototype/sourcing", statuses: ["in hand", "to print"] } };
 const testsWritten: Check = { id: "prototype.tests", label: "At least one acceptance test is written", kind: "min-rows", anchor: "draft-with-ai", params: { section: "prototype/tests", min: 1 } };
-const testsPass: Check = { id: "prototype.tests-pass", label: "Every acceptance test passes", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"] } };
-const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "min-rows", anchor: "add-build", todo: "Add a build with its exit criteria and tests", params: { section: "prototype/builds", min: 1, statuses: ["passed"] } };
+const testsPass: Check = { id: "prototype.tests-pass", label: "Every acceptance test passes", kind: "all-status", anchor: "draft-with-ai", todo: "Write the acceptance tests, then run them", params: { section: "prototype/tests", statuses: ["pass"] } };
+const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "build-passed", anchor: "add-build", todo: "Add a build with its exit criteria and tests", params: {} };
 const printJob: Check = { id: "prototype.print-jobs", label: "At least one print job is set up", kind: "min-rows", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", min: 1 } };
 // The print job statuses since migration 0018: a finished print is "done" (the gate asked for "printed", which no job can reach).
-const printed: Check = { id: "prototype.printed", label: "Every print job is printed", kind: "all-status", params: { section: "prototype/printing", statuses: ["done"] } };
+const printed: Check = { id: "prototype.printed", label: "Every print job is printed", kind: "all-status", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", statuses: ["done"] } };
 
 const productionGate: Check[] = [
   { id: "production.economics", label: "Unit economics have at least one line", kind: "min-rows", anchor: "add-row", todo: "Add a cost line in Unit economics", params: { section: "production/economics", min: 1 } },
@@ -156,7 +164,7 @@ const marketingGate: Check[] = [
 const salesGate: Check[] = [
   { id: "sales.channels", label: "At least one sales channel is set", kind: "min-rows", anchor: "add-row", todo: "Add a sales channel with its price and fees", params: { section: "sales/channels", min: 1 } },
   { id: "sales.listing", label: "The listing has at least one element", kind: "min-rows", anchor: "draft-with-ai", params: { section: "sales/listing", min: 1 } },
-  { id: "sales.listing-ready", label: "Every listing element is ready or live", kind: "all-status", params: { section: "sales/listing", statuses: ["ready", "live"] } },
+  { id: "sales.listing-ready", label: "Every listing element is ready or live", kind: "all-status", anchor: "draft-with-ai", todo: "Draft the marketplace listing with AI, then mark each element ready", params: { section: "sales/listing", statuses: ["ready", "live"] } },
   { id: "sales.listing-proof", label: "Every ready or live listing has proof for its claims", kind: "content-proof", params: { sections: ["sales/listing"] } },
 ];
 
@@ -187,7 +195,7 @@ export const PROCESS_DEFINITIONS: Record<ProductType, ProcessDefinition> = {
         inHand,
         printJob,
         printed,
-        { id: "prototype.wiring-tested", label: "Every joint is soldered and tested", kind: "all-status", params: { section: "prototype/wiring", statuses: ["tested"] } },
+        { id: "prototype.wiring-tested", label: "Every joint is soldered and tested", kind: "all-status", todo: "Add the wires to solder and test", params: { section: "prototype/wiring", statuses: ["tested"] } },
         testsWritten,
         testsPass,
         buildPassed,
@@ -207,7 +215,7 @@ export const PROCESS_DEFINITIONS: Record<ProductType, ProcessDefinition> = {
       [requirements, parts, requirementsClosed],
       [
         inHand,
-        { id: "prototype.assembly", label: "No assembly step is open or blocked", kind: "no-open", params: { section: "prototype/assembly" } },
+        { id: "prototype.assembly", label: "No assembly step is open or blocked", kind: "no-open", anchor: "add-row", todo: "Add the assembly steps, then settle each one", params: { section: "prototype/assembly" } },
         testsWritten,
         testsPass,
         buildPassed,
@@ -250,6 +258,8 @@ export function checkSection(check: Check): string | null {
       return "marketing/results";
     case "content-approved":
       return check.params.section;
+    case "build-passed":
+      return "prototype/builds";
     case "field-set":
       return null;
   }

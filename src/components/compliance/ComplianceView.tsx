@@ -2,21 +2,20 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { InlineEdit } from "@/components/parts/InlineEdit";
-import { api, saveOrMessage, useItems } from "@/lib/client";
+import { saveOrMessage, useItems } from "@/lib/client";
 import { DRAFT_NOTE, NOT_ADVICE } from "@/lib/compliance/text";
 import { useProductionSettings } from "@/lib/economics/client";
 import { CONFIRM_STATUSES, isPublicUrl, REGIONS, REGION_LABEL, STORE_COMPLIANCE, type Region } from "@/lib/economics/schemas";
-import { keys } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ComplianceDialog } from "./ComplianceDialog";
 import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { NativeSelect } from "@/components/ui/native-select";
+import { statusOptions } from "@/lib/statusOptions";
 
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 const tone = (s: string) => (s === "done" ? "success" : s === "applies" ? "info" : s === "does not apply" ? "neutral" : "warning");
@@ -27,13 +26,8 @@ const generatedOf = (i: Item): Generated => ((i.data.generated as Generated | un
 export function ComplianceView({ project }: ViewProps) {
   const settings = useProductionSettings(project.id);
   const rows = useItems(project.id, STORE_COMPLIANCE);
-  const qc = useQueryClient();
   const [editing, setEditing] = useState<number | "new" | null>(null);
-  const [drafting, setDrafting] = useState(false);
-  const [draftError, setDraftError] = useState("");
-  const [notice, setNotice] = useState("");
   const [message, setMessage] = useState("");
-  const [confirmAs, setConfirmAs] = useState<Record<number, string>>({});
 
   if (rows.loading || settings.loading) return <LoadingBlocks label="Loading the compliance checklist" />;
   if ((rows.error && !rows.items.length) || settings.error) {
@@ -49,9 +43,10 @@ export function ComplianceView({ project }: ViewProps) {
   }
 
   const regions = settings.regions;
-  const drafts = rows.items.filter((r) => r.status === "draft");
   const open = rows.items.filter((r) => r.status === "to check");
-  const decided = rows.items.length - drafts.length - open.length;
+  const decided = rows.items.filter((r) => r.status === "applies" || r.status === "does not apply" || r.status === "done").length;
+  // A row from before drafting went through approval can still sit at "draft"; it is edited like any other row.
+  const undecided = rows.items.length - open.length - decided;
   const editingRow = typeof editing === "number" ? rows.items.find((r) => r.id === editing) ?? null : null;
 
   const toggle = async (region: Region) => {
@@ -59,35 +54,6 @@ export function ComplianceView({ project }: ViewProps) {
     const next = regions.includes(region) ? regions.filter((r) => r !== region) : [...regions, region];
     try {
       await settings.save({ regions: next });
-    } catch (e) {
-      setMessage((e as Error).message);
-    }
-  };
-
-  const draft = async () => {
-    setDrafting(true);
-    setDraftError("");
-    setNotice("");
-    try {
-      const r = await api<{ drafts: unknown[]; dropped: unknown[] }>(`/api/projects/${encodeURIComponent(project.id)}/compliance/draft`, { method: "POST" });
-      await qc.invalidateQueries({ queryKey: ["drafts", project.id] });
-      setNotice(
-        r.drafts.length
-          ? `${r.drafts.length} ${r.drafts.length === 1 ? "draft is" : "drafts are"} waiting for review in Draft with AI at the top of this page${r.dropped.length ? `; ${r.dropped.length} left out` : ""}. Approve one to add it here, then confirm it.`
-          : "Nothing new to add: every topic the model proposed is already on the list.",
-      );
-    } catch (e) {
-      setDraftError((e as Error).message);
-    } finally {
-      setDrafting(false);
-    }
-  };
-
-  const confirm = async (row: Item) => {
-    setMessage("");
-    try {
-      await api(`/api/items/${row.id}/confirm`, { method: "POST", body: JSON.stringify({ status: confirmAs[row.id] ?? "to check" }) });
-      await qc.invalidateQueries({ queryKey: keys.itemsOf(project.id) });
     } catch (e) {
       setMessage((e as Error).message);
     }
@@ -121,79 +87,53 @@ export function ComplianceView({ project }: ViewProps) {
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => void draft()} disabled={drafting || regions.length === 0}>
-          <Sparkles className="h-4 w-4" aria-hidden /> {drafting ? "Drafting" : "Draft a checklist"}
-        </Button>
         <Button variant="outline" onClick={() => setEditing("new")}>
           <Plus className="h-4 w-4" aria-hidden /> Add a row by hand
         </Button>
         <p className="max-w-xl text-xs text-secondary">
-          {regions.length === 0 ? "Choose at least one region to draft. " : ""}
-          Drafting reads the brief, the product type, the parts and your regions, using the reasoning model chosen in{" "}
+          {regions.length === 0 ? "Choose at least one region before drafting. " : ""}
+          Draft with AI, at the top of this page, reads the brief, the product type, the parts and your regions, using the reasoning model chosen in{" "}
           <Link href="/admin?tab=models" className="text-link hover:underline">
             Admin, Models
           </Link>
           . With none chosen, the page works by hand.
         </p>
       </div>
-      {draftError ? <ErrorLine>{draftError}</ErrorLine> : null}
       {message || rows.writeError ? <ErrorLine>{message || rows.writeError}</ErrorLine> : null}
-      {notice ? (
-        <p role="status" className="text-sm text-secondary">
-          {notice}
-        </p>
-      ) : null}
 
       {!rows.items.length ? (
-        <EmptyState title="No compliance rows yet">Choose your regions and draft a checklist, or add a row by hand. Each drafted row waits for your confirmation.</EmptyState>
+        <EmptyState title="No compliance rows yet">Choose your regions and use Draft with AI, or add a row by hand. A draft becomes a row only when you approve it; you then decide each row.</EmptyState>
       ) : (
         <>
           <p className="text-xs text-secondary" role="status">
-            {drafts.length} to confirm, {open.length} to check, {decided} decided.
+            {open.length} to check, {decided} decided{undecided ? `, ${undecided} with no decision yet` : ""}.
           </p>
           <ul className="space-y-3">
             {rows.items.map((r) => {
               const g = generatedOf(r);
-              const isDraft = r.status === "draft";
               return (
-                <li key={r.id} className={`rounded-xl border bg-surface p-4 ${isDraft ? "border-dashed border-dutchOrange" : "border-hairline"}`}>
+                <li key={r.id} className="rounded-xl border border-hairline bg-surface p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <h3 className="min-w-0 text-sm font-semibold text-primary">{r.title}</h3>
                     <div className="flex flex-wrap items-center gap-2">
-                      {isDraft ? (
-                        <>
-                          <StatusBadge tone="warning">Draft</StatusBadge>
-                          <NativeSelect aria-label={`Confirm ${r.title} as`} value={confirmAs[r.id] ?? "to check"} className="h-8 w-40 text-xs" onChange={(e) => setConfirmAs({ ...confirmAs, [r.id]: e.target.value })}>
-                            {CONFIRM_STATUSES.map((s) => (
-                              <option key={s}>{s}</option>
-                            ))}
-                          </NativeSelect>
-                          <Button size="sm" onClick={() => void confirm(r)} aria-label={`Confirm ${r.title}`}>
-                            Confirm
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <StatusBadge tone={tone(r.status)}>{r.status}</StatusBadge>
-                          <NativeSelect
-                            aria-label={`Status of ${r.title}`}
-                            value={r.status}
-                            className="h-8 w-40 text-xs"
-                            onChange={(e) => {
-                              setMessage("");
-                              rows.patch(r.id, { status: e.target.value }).catch((err: Error) => setMessage(err.message));
-                            }}
-                          >
-                            {CONFIRM_STATUSES.map((s) => (
-                              <option key={s}>{s}</option>
-                            ))}
-                          </NativeSelect>
-                        </>
-                      )}
+                      <StatusBadge tone={tone(r.status)}>{r.status}</StatusBadge>
+                      <NativeSelect
+                        aria-label={`Status of ${r.title}`}
+                        value={r.status}
+                        className="h-8 w-40 text-xs"
+                        onChange={(e) => {
+                          setMessage("");
+                          rows.patch(r.id, { status: e.target.value }).catch((err: Error) => setMessage(err.message));
+                        }}
+                      >
+                        {statusOptions([...CONFIRM_STATUSES], r.status).map((st) => (
+                          <option key={st}>{st}</option>
+                        ))}
+                      </NativeSelect>
                       <Button variant="ghost" size="icon-sm" aria-label={`Edit ${r.title}`} onClick={() => setEditing(r.id)}>
                         <Pencil className="h-3.5 w-3.5" aria-hidden />
                       </Button>
-                      <Button variant="ghost" size="icon-sm" aria-label={isDraft ? `Discard ${r.title}` : `Remove ${r.title}`} onClick={() => void remove(r)}>
+                      <Button variant="ghost" size="icon-sm" aria-label={`Remove ${r.title}`} onClick={() => void remove(r)}>
                         <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       </Button>
                     </div>

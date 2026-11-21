@@ -21,6 +21,7 @@ export const MARKERS: Record<string, string> = {
   wiring: "propose the wires",
   assembly: "assembly of a first prototype",
   tests: "acceptance tests a prototype must pass",
+  "trace-links": "propose links between the requirements of a product",
   "optimise-cost": "cheaper substitutes",
   "optimise-parts": "design-for-assembly check",
   "optimise-print": "3D print jobs",
