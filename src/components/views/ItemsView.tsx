@@ -75,7 +75,9 @@ export function ItemsView({ project, section, store }: ViewProps) {
     try {
       await patch(id, { status });
     } catch (e) {
-      setActionError((e as Error).message);
+      // Name the row: a refusal from the board would otherwise not say which card it is about.
+      const title = items.find((i) => i.id === id)?.title;
+      setActionError(`${title ? `${title}: ` : ""}${(e as Error).message}`);
     }
   };
 

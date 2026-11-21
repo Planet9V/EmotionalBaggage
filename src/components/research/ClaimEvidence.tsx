@@ -28,7 +28,7 @@ export function judgedOn(iso: string): string {
 
 const sourceName = (e: EvidenceEntry) => e.title?.trim() || hostname(e.url);
 
-export function ClaimEvidence({ item, projectId, compact = false }: { item: Item; projectId: string; compact?: boolean }) {
+export function ClaimEvidence({ item, projectId, compact = false, hint = true }: { item: Item; projectId: string; compact?: boolean; hint?: boolean }) {
   const { remove } = useEvidence(projectId);
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -51,7 +51,7 @@ export function ClaimEvidence({ item, projectId, compact = false }: { item: Item
     <div className={compact ? "space-y-1.5" : "space-y-2"} data-claim-evidence={item.id}>
       <p className={`${compact ? "text-[11px]" : "text-xs"} leading-snug text-secondary`}>{reason}</p>
       {evidence.length === 0 ? (
-        !compact && (
+        !compact && hint && (
           <p className="text-xs text-muted">
             Add a source from a saved answer in{" "}
             <Link href="/s/research/ask" className="text-link hover:underline">

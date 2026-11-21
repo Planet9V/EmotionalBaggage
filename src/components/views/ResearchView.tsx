@@ -320,7 +320,7 @@ function ClaimsEvidence({ claims, projectId }: { claims: Claims; projectId: stri
                 <span className="text-sm text-primary">{c.title}</span>
                 <StatusBadge tone={statusTone(c.status)}>{c.status}</StatusBadge>
               </div>
-              <ClaimEvidence item={c} projectId={projectId} />
+              <ClaimEvidence item={c} projectId={projectId} hint={false} />
             </Card>
           </li>
         ))}
