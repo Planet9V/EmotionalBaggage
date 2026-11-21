@@ -7,7 +7,7 @@ export const metadata = { title: "Documentation" };
 export default function DocsIndex() {
   return (
     <>
-      <PageHeader eyebrow="Documentation" title="Guides" blurb="Each guide describes the workbench as it is today and says plainly what is not built yet." nextStep={false} />
+      <PageHeader eyebrow="Workbench" title="Guides" blurb="Each guide describes the workbench as it is today and says plainly what is not built yet." nextStep={false} />
       <div className="px-8 py-6">
       <ul className="grid max-w-4xl gap-4 sm:grid-cols-2">
         {DOC_PAGES.map((d) => (

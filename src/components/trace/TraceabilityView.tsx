@@ -21,7 +21,7 @@ export function TraceabilityView() {
   return (
     <>
       <PageHeader
-        eyebrow={`Tools${project ? ` · ${project.name}` : ""}`}
+        eyebrow={`Whole concept${project ? ` · ${project.name}` : ""}`}
         title="Traceability"
         blurb="Which test checks which requirement, and which parts a requirement needs. Link them in the requirement's editor."
       />

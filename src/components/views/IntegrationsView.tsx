@@ -29,7 +29,7 @@ export function IntegrationsView() {
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Integrations" blurb="What is connected, what is built, and where in Admin each one is set." />
+      <PageHeader eyebrow="Workbench" title="Integrations" nextStep={false} blurb="What is connected, what is built, and where in Admin each one is set." />
       <div className="animate-enter space-y-8 px-8 py-6">
         {error ? <ErrorLine>{error}</ErrorLine> : null}
         {!data && !error ? <p className="text-sm text-secondary">Reading the integrations.</p> : null}

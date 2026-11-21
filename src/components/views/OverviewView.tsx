@@ -25,7 +25,7 @@ export function OverviewView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Overview" title="No concept open" />
+        <PageHeader eyebrow="Whole concept" title="No concept open" />
         <div className="p-8 text-sm text-secondary">
           {loading ? (
             <LoadingBlocks rows={2} label="Loading the concept" />
@@ -74,7 +74,7 @@ function OverviewBody({ project }: { project: Project }) {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title={project.name} blurb={project.oneLiner} nextStep={false} />
+      <PageHeader eyebrow="Whole concept · Overview" title={project.name} blurb={project.oneLiner} nextStep={false} />
 
       <div className="space-y-8 px-8 py-6">
         <NextStepCard projectId={project.id} />

@@ -71,7 +71,7 @@ export function ChangePassword() {
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Account" blurb={me ? `Signed in as ${me.username}.` : undefined} />
+      <PageHeader eyebrow="Workbench" title="Account" nextStep={false} blurb={me ? `Signed in as ${me.username}.` : undefined} />
       <div className="max-w-md space-y-4 px-8 py-6">
         {me?.usingDefaultPassword && (
           <p className="rounded-md border border-hairline bg-warning-soft px-3 py-2 text-sm text-primary">

@@ -28,7 +28,7 @@ export function OptimiseView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Optimisation" title="Optimise" />
+        <PageHeader eyebrow="Whole concept" title="Optimise" />
         <NoConcept loading={loading} />
       </>
     );
@@ -42,7 +42,7 @@ function OptimiseBody({ project }: { project: Project }) {
   return (
     <>
       <PageHeader
-        eyebrow={`Optimisation · ${project.name}`}
+        eyebrow={`Whole concept · ${project.name}`}
         title="Optimise"
         blurb="Three actions, each measured before and after from the concept's rows. The model proposes changes as drafts; it never supplies the figures."
       />

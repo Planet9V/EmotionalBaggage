@@ -39,7 +39,7 @@ export function SupportedPrinters() {
   return (
     <>
       <PageHeader
-        eyebrow="Documentation"
+        eyebrow="Workbench"
         title="Supported printers"
         blurb={`${total} models, from the makers' own pages where they publish one. Every fact has a link to the page it came from, and a fact that could not be sourced is left out rather than guessed.`}
         nextStep={false}

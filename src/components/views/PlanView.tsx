@@ -21,7 +21,7 @@ export function PlanView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Order of operations" title="Order of operations" />
+        <PageHeader eyebrow="Whole concept" title="Order of operations" />
         <NoConcept loading={loading} />
       </>
     );
@@ -65,7 +65,7 @@ function PlanBody({ project }: { project: Project }) {
   return (
     <>
       <PageHeader
-        eyebrow={project.name}
+        eyebrow={`Whole concept · ${project.name}`}
         title="Order of operations"
         blurb="Every row with a step key, in the order it can be done. Steps in the same wave can run in parallel; the critical path sets the total time."
       >

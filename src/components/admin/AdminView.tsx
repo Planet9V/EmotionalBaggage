@@ -22,7 +22,7 @@ export function AdminView() {
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Admin" blurb="Models, keys, printers and the audit log for this install. Everything is saved in its own database." />
+      <PageHeader eyebrow="Workbench" title="Admin" nextStep={false} blurb="Models, keys, printers and the audit log for this install. Everything is saved in its own database." />
       <div className="px-8 py-6">
         <Tabs value={tab} onValueChange={(v) => isAdminTab(v) && go(v)} className="gap-5">
           <TabsList className="h-auto w-full max-w-full flex-wrap justify-start gap-1 bg-subtle sm:w-fit">

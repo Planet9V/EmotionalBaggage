@@ -123,7 +123,7 @@ export function ConceptsView() {
 
   return (
     <div ref={rootRef}>
-      <PageHeader eyebrow="Concepts" title="All concepts" blurb="Open, edit, copy, archive or delete a concept. Archived concepts are kept below.">
+      <PageHeader eyebrow="Workbench" title="All concepts" nextStep={false} blurb="Open, edit, copy, archive or delete a concept. Archived concepts are kept below.">
         <Button asChild>
           <Link href="/new"><Plus className="h-4 w-4" aria-hidden /> New concept</Link>
         </Button>

@@ -30,7 +30,7 @@ export function ActivityView() {
   const { project, loading } = useProject();
   return (
     <>
-      <PageHeader eyebrow={`Tools${project ? ` · ${project.name}` : ""}`} title="Activity" blurb="Every change to this concept: who made it, when, and each field before and after." />
+      <PageHeader eyebrow={`Whole concept${project ? ` · ${project.name}` : ""}`} title="Activity" blurb="Every change to this concept: who made it, when, and each field before and after." />
       <div className="px-8 py-6">
         {!project ? (
           <NoConcept loading={loading} />
