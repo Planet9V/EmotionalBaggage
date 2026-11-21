@@ -67,7 +67,7 @@ export function impactGraph(items: Item[]): ImpactGraph {
     if (!wire) continue;
     nodes.push({ id: `b${w.id}`, itemId: w.id, section: BUILD_SHEET, title: `Build sheet: ${w.title}` });
     add(`i${w.id}`, `b${w.id}`, "soldered from this wire");
-    for (const [ref, role] of [[wire.from, "from"], [wire.to, "to"], [wire.via, "via"]] as const) {
+    for (const [ref, role] of [[wire.from, "from"], [wire.to, "to"]] as const) {
       const p = ref ? byRef.get(ref) : undefined;
       if (p) add(`i${p.id}`, `i${w.id}`, `wire runs ${role} ${ref}`);
     }

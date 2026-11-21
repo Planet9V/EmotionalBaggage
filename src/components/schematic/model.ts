@@ -202,45 +202,6 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
   };
   const centreX = (r: string) => pos.get(r)!.x + NODE_W / 2;
 
-  // vias: one inline node per wire that runs through a part in series
-  const viaPos = new Map<number, XY>();
-  for (const w of wires) {
-    if (!w.via) continue;
-    const id = viaId(w.item.id);
-    const saved = overlay[id] ?? (ignoreSaved ? null : readXY(w.item.data.schematic));
-    if (saved) {
-      viaPos.set(w.item.id, saved);
-      continue;
-    }
-    const a = { x: centreX(w.from), y: pinY(w.from, pinLabel(w.fromPin)) };
-    const b = { x: centreX(w.to), y: pinY(w.to, pinLabel(w.toPin)) };
-    if (w.from === w.to) {
-      viaPos.set(w.item.id, { x: Math.round(pos.get(w.from)!.x + NODE_W + 70), y: Math.round((a.y + b.y) / 2 - VIA_H / 2) });
-    } else {
-      viaPos.set(w.item.id, { x: Math.round((a.x + b.x) / 2 - VIA_W / 2), y: Math.round((a.y + b.y) / 2 - VIA_H / 2) });
-    }
-  }
-
-  // keep automatically placed vias clear of part nodes and of each other
-  const boxes = refs.map((r) => ({ x: pos.get(r)!.x, y: pos.get(r)!.y, w: NODE_W, h: nodeHeight(pinList.get(r)?.length ?? 1) }));
-  const hits = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
-    a.x < b.x + b.w + 12 && b.x < a.x + a.w + 12 && a.y < b.y + b.h + 12 && b.y < a.y + a.h + 12;
-  for (const w of wires) {
-    if (!w.via || overlay[viaId(w.item.id)] || (!ignoreSaved && readXY(w.item.data.schematic))) continue;
-    const start = viaPos.get(w.item.id)!;
-    let placed = start;
-    for (let step = 0; step <= 16; step++) {
-      const dy = step === 0 ? 0 : Math.ceil(step / 2) * 54 * (step % 2 ? 1 : -1);
-      const cand = { x: start.x, y: start.y + dy, w: VIA_W, h: VIA_H };
-      if (!boxes.some((b) => hits(cand, b))) {
-        placed = { x: cand.x, y: cand.y };
-        break;
-      }
-    }
-    viaPos.set(w.item.id, placed);
-    boxes.push({ x: placed.x, y: placed.y, w: VIA_W, h: VIA_H });
-  }
-
   // side of each pin: each wire end votes for the side facing what it connects to. When two
   // boxes overlap left to right (one above the other), both ends take the same outer side,
   // so the wire runs round the outside instead of through a part.
@@ -258,11 +219,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
   for (const w of wires) {
     const fk = pinKey(w.from, w.fromPin);
     const tk = pinKey(w.to, w.toPin);
-    if (w.via) {
-      const v = { x: viaPos.get(w.item.id)!.x, w: VIA_W };
-      vote(fk, prefer(w.from, v));
-      vote(tk, prefer(w.to, v));
-    } else if (w.from === w.to) {
+    if (w.from === w.to) {
       vote(fk, 1);
       vote(tk, 1);
     } else {
@@ -308,29 +265,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
     const dst = nodeId(w.to);
     const sh = handleId(w.fromPin);
     const th = handleId(w.toPin);
-    if (!w.via) {
-      segments.push({ id: `w:${w.item.id}`, wire: w, source: src, sourceHandle: sh, target: dst, targetHandle: th, label: true });
-      continue;
-    }
-    const vid = viaId(w.item.id);
-    const v = viaPos.get(w.item.id)!;
-    const vp = byRef.get(w.via);
-    nodes.push({
-      kind: "via",
-      id: vid,
-      ref: w.via,
-      title: vp ? vp.title : "Not in the bill of materials",
-      ghost: !vp,
-      wire: w,
-      pos: v,
-      saved: !!readXY(w.item.data.schematic),
-    });
-    const vc = v.x + VIA_W / 2;
-    // each end enters the via from the side facing it
-    const fromX = sideOf(w.from, pinLabel(w.fromPin)) === "left" ? pos.get(w.from)!.x : pos.get(w.from)!.x + NODE_W;
-    const toX = sideOf(w.to, pinLabel(w.toPin)) === "left" ? pos.get(w.to)!.x : pos.get(w.to)!.x + NODE_W;
-    segments.push({ id: `w:${w.item.id}:a`, wire: w, source: src, sourceHandle: sh, target: vid, targetHandle: fromX < vc ? "l" : "r", label: true });
-    segments.push({ id: `w:${w.item.id}:b`, wire: w, source: vid, sourceHandle: toX < vc ? "l" : "r", target: dst, targetHandle: th, label: false });
+    segments.push({ id: `w:${w.item.id}`, wire: w, source: src, sourceHandle: sh, target: dst, targetHandle: th, label: true });
   }
   return { nodes, segments, byId: new Map(nodes.map((n) => [n.id, n])) };
 }
@@ -353,7 +288,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
   }
 
   for (const w of wires) {
-    const missing = [...new Set([w.from, w.to, w.via].filter((r) => r && !known.has(r)))];
+    const missing = [...new Set([w.from, w.to].filter((r) => r && !known.has(r)))];
     if (missing.length) {
       out.push({
         id: `unknown:${w.item.id}`,
@@ -367,7 +302,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
     if (ends.length) {
       out.push({ id: `nopin:${w.item.id}`, tone: "warning", text: `${wireLabel(w)} has no pin name at ${ends.join(" or ")}.`, wireIds: [w.item.id], refs: [w.from, w.to] });
     }
-    if (w.from === w.to && w.fromPin === w.toPin && !w.via) {
+    if (w.from === w.to && w.fromPin === w.toPin) {
       out.push({ id: `self:${w.item.id}`, tone: "warning", text: `${wireLabel(w)} joins ${pinKey(w.from, w.fromPin)} to itself.`, wireIds: [w.item.id], refs: [w.from] });
     }
   }
@@ -389,7 +324,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
   const pairs = new Map<string, Wire[]>();
   for (const w of wires) {
     const ends = [pinKey(w.from, w.fromPin), pinKey(w.to, w.toPin)].sort();
-    const k = `${ends.join("|")}|${w.via}`;
+    const k = ends.join("|");
     pairs.set(k, [...(pairs.get(k) ?? []), w]);
   }
   for (const [k, ws] of pairs) {
@@ -398,7 +333,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
     out.push({
       id: `dup:${k}`,
       tone: "warning",
-      text: `Wires ${listRefs(ws.map((w) => String(w.order)))} ${ws.length === 2 ? "both" : "all"} join ${a} and ${b}${ws[0].via ? ` through ${ws[0].via}` : ""}.`,
+      text: `Wires ${listRefs(ws.map((w) => String(w.order)))} ${ws.length === 2 ? "both" : "all"} join ${a} and ${b}.`,
       wireIds: ws.map((w) => w.item.id),
       refs: [],
     });
@@ -416,7 +351,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
     }
   }
 
-  const touched = new Set(wires.flatMap((w) => [w.from, w.to, w.via]).filter(Boolean));
+  const touched = new Set(wires.flatMap((w) => [w.from, w.to]).filter(Boolean));
   const idle = [...known].filter((r) => !touched.has(r));
   if (idle.length) {
     out.push({
@@ -433,18 +368,17 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
 // ───────── nets as named on the wires
 
 export const NO_NET = "(no net name)";
-export type NetInfo = { name: string; classes: NetClass[]; members: string[]; vias: { via: string; wire: Wire }[]; wires: Wire[] };
+export type NetInfo = { name: string; classes: NetClass[]; members: string[]; wires: Wire[] };
 
 export function computeNets(wires: Wire[]): NetInfo[] {
   const map = new Map<string, NetInfo>();
   for (const w of wires) {
     const name = w.net.trim() || NO_NET;
-    if (!map.has(name)) map.set(name, { name, classes: [], members: [], vias: [], wires: [] });
+    if (!map.has(name)) map.set(name, { name, classes: [], members: [], wires: [] });
     const n = map.get(name)!;
     n.wires.push(w);
     if (!n.classes.includes(w.netClass)) n.classes.push(w.netClass);
     for (const m of [pinKey(w.from, w.fromPin), pinKey(w.to, w.toPin)]) if (!n.members.includes(m)) n.members.push(m);
-    if (w.via) n.vias.push({ via: w.via, wire: w });
   }
   const list = [...map.values()];
   for (const n of list) n.members.sort(byPinKey);
@@ -473,13 +407,13 @@ const csvCell = (v: string | number) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "via", "note", "status"];
+export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "note", "status"];
 
 /** (a) Wiring list, one row per wire in soldering order. */
 export function wiringCsv(wires: Wire[]): string {
   const rows = [...wires]
     .sort((a, b) => a.order - b.order || a.item.id - b.item.id)
-    .map((w) => [w.order, w.name, w.net, w.netClass, w.from, w.fromPin, w.to, w.toPin, w.via, w.note, w.status]);
+    .map((w) => [w.order, w.name, w.net, w.netClass, w.from, w.fromPin, w.to, w.toPin, w.note, w.status]);
   return [CSV_HEADER, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 
@@ -494,7 +428,6 @@ export function netlistText(wires: Wire[], meta: FileMeta): string {
   for (const n of computeNets(wires)) {
     lines.push(`Net ${n.name} (${n.classes.join(", ")}), ${n.wires.length} ${n.wires.length === 1 ? "wire" : "wires"}`);
     for (const m of n.members) lines.push(`  ${m}`);
-    for (const v of n.vias) lines.push(`  through ${v.via}: ${pinKey(v.wire.from, v.wire.fromPin)} -> ${v.via} -> ${pinKey(v.wire.to, v.wire.toPin)}`);
     lines.push("");
   }
   return lines.join("\n");
@@ -519,20 +452,11 @@ export function electricalNets(wires: Wire[]): ElectricalNet[] {
   const union = (a: string, b: string) => parent.set(find(a), find(b));
   const key = (ref: string, pin: string) => `${ref}\u0000${pinLabel(pin)}`;
   const direct: [string, string][] = [];
-  const viaNames: [string, string][] = [];
   for (const w of wires) {
     const f = key(w.from, w.fromPin);
     const t = key(w.to, w.toPin);
-    if (w.via) {
-      const v1 = key(w.via, "1");
-      const v2 = key(w.via, "2");
-      union(f, v1);
-      union(v2, t);
-      viaNames.push([f, w.net], [t, w.net]);
-    } else {
-      union(f, t);
-      direct.push([f, w.net]);
-    }
+    union(f, t);
+    direct.push([f, w.net]);
   }
   const groups = new Map<string, { members: Set<string>; names: string[]; fallback: string[] }>();
   for (const k of parent.keys()) {
@@ -541,7 +465,6 @@ export function electricalNets(wires: Wire[]): ElectricalNet[] {
     groups.get(r)!.members.add(k);
   }
   for (const [k, n] of direct) if (n.trim()) groups.get(find(k))!.names.push(n.trim());
-  for (const [k, n] of viaNames) if (n.trim()) groups.get(find(k))!.fallback.push(n.trim());
 
   const nets = [...groups.values()].map((g) => {
     const members = [...g.members]

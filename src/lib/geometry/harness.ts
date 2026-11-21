@@ -13,7 +13,6 @@ export type HarnessWire = {
   toPin: string;
   colour: string;
   net: string;
-  via: string;
   lengthMm?: number;
 };
 
@@ -79,7 +78,6 @@ export function buildHarnessRequest(
           toPin: w.toPin,
           colour,
           net: w.net,
-          via: w.via,
           ...(len !== undefined ? { lengthMm: len } : {}),
         };
       }),

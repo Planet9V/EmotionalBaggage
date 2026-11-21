@@ -83,7 +83,7 @@ export function groupByPart(steps: Step[], hub: string): Group[] {
     let ref = "";
     if (cands.length === 2) ref = (touch.get(cands[1]) ?? 0) > (touch.get(cands[0]) ?? 0) ? cands[1] : cands[0];
     else if (cands.length === 1) ref = cands[0];
-    else ref = w.via || hub;
+    else ref = hub;
     const g = groups.get(ref) ?? { key: ref, ref, steps: [] };
     g.steps.push(s);
     groups.set(ref, g);
@@ -93,16 +93,14 @@ export function groupByPart(steps: Step[], hub: string): Group[] {
 
 export type ConnRow = {
   pin: string;
-  /** "REF.pin" at the other end, or the two ends for a part in series */
+  /** "REF.pin" at the other end */
   to: string;
   net: string;
   netClass: NetClass;
-  via: string;
   status: string;
   step: number;
   /** number of wire ends meeting at this pin, including this one */
   joint: number;
-  series?: boolean;
 };
 
 const endKey = (ref: string, pin: string) => `${ref}\u0000${pin}`;
@@ -120,19 +118,16 @@ export const jointAt = (joints: Map<string, number>, ref: string, pin: string) =
 
 export type PartConn = { ref: string; rows: ConnRow[] };
 
-/** One block per part that any wire touches (as an end or in series), pins sorted by name. */
+/** One block per part that any wire touches, pins sorted by name. A part in series is its own part with two wires. */
 export function connectionsByPart(steps: Step[]): PartConn[] {
   const wires = steps.map((s) => s.wire);
   const joints = jointCounts(wires);
   const by = new Map<string, ConnRow[]>();
   const push = (ref: string, row: ConnRow) => by.set(ref, [...(by.get(ref) ?? []), row]);
   for (const { n, wire: w } of steps) {
-    const base = { net: w.net, netClass: w.netClass, via: w.via, status: w.status, step: n };
+    const base = { net: w.net, netClass: w.netClass, status: w.status, step: n };
     push(w.from, { ...base, pin: w.fromPin, to: `${w.to}.${w.toPin}`, joint: jointAt(joints, w.from, w.fromPin) });
     push(w.to, { ...base, pin: w.toPin, to: `${w.from}.${w.fromPin}`, joint: jointAt(joints, w.to, w.toPin) });
-    if (w.via) {
-      push(w.via, { ...base, pin: "in series", to: `${w.from}.${w.fromPin} to ${w.to}.${w.toPin}`, joint: 0, series: true });
-    }
   }
   return [...by.entries()]
     .map(([ref, rows]) => ({
@@ -261,13 +256,10 @@ export function totalsByClass(rows: CutRow[]): ClassTotal[] {
 export type Consumables = {
   joints: number;
   wireJoints: number;
-  viaParts: string[];
-  viaJoints: number;
   headers: { ref: string; pins: number }[];
 };
 
 export function consumables(wires: Wire[]): Consumables {
-  const viaParts = [...new Set(wires.map((w) => w.via).filter(Boolean))];
   const refs = [...new Set(wires.flatMap((w) => [w.from, w.to]))];
   const headers = refs
     .map((ref) => ({ ref, pins: pinsOf(ref, wires).length }))
@@ -275,9 +267,7 @@ export function consumables(wires: Wire[]): Consumables {
     .sort((a, b) => b.pins - a.pins || a.ref.localeCompare(b.ref, undefined, { numeric: true }));
   return {
     wireJoints: wires.length * 2,
-    viaParts,
-    viaJoints: viaParts.length * 2,
-    joints: wires.length * 2 + viaParts.length * 2,
+    joints: wires.length * 2,
     headers,
   };
 }

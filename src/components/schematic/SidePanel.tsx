@@ -114,14 +114,6 @@ function WirePanel({ wire: w, parts, statuses, onSelect, onEditWire, onPatchWire
           <span className="inline-flex flex-wrap items-center gap-1">
             {end(w.from, w.fromPin)}
             <ArrowRight className="h-3 w-3 text-muted" aria-hidden />
-            {w.via && (
-              <>
-                <button type="button" onClick={() => onSelect({ kind: "part", ref: w.via })} className="font-mono text-link hover:underline">
-                  {w.via}
-                </button>
-                <ArrowRight className="h-3 w-3 text-muted" aria-hidden />
-              </>
-            )}
             {end(w.to, w.toPin)}
           </span>
         </Row>
@@ -153,7 +145,6 @@ function PartPanel({ refName, parts, wires, graph, onSelect, onRemovePin }: Prop
   const part = parts.find((x) => x.ref === refName) ?? null;
   const node = graph.nodes.find((n) => n.kind === "part" && n.ref === refName);
   const pins = node && node.kind === "part" ? node.pins : [];
-  const series = wires.filter((w) => w.via === refName);
   return (
     <div className="space-y-3">
       <Header eyebrow={refName} title={part ? part.title : "Not in the bill of materials"} onClose={() => onSelect(null)} />
@@ -191,7 +182,6 @@ function PartPanel({ refName, parts, wires, graph, onSelect, onRemovePin }: Prop
                         <li key={w.item.id}>
                           <button type="button" onClick={() => onSelect({ kind: "wire", id: w.item.id })} className="text-left text-xs text-secondary hover:text-link">
                             to <span className="font-mono">{other}</span>
-                            {w.via && <> through {w.via}</>}
                             {w.net && <span className="text-muted"> · {w.net}</span>}
                           </button>
                         </li>
@@ -207,12 +197,7 @@ function PartPanel({ refName, parts, wires, graph, onSelect, onRemovePin }: Prop
         </ul>
         {!pins.length && (
           <p className="mt-1 text-xs text-muted">
-            {series.length ? "No named pins. It is drawn inline on the wires it sits in." : "No named pins. Use Place in the parts row above the canvas to give it one."}
-          </p>
-        )}
-        {series.length > 0 && (
-          <p className="mt-2 text-xs text-secondary">
-            In series on {series.map((w) => `wire ${w.order}`).join(", ")}.
+            No named pins. Use Place in the parts row above the canvas to give it one.
           </p>
         )}
       </div>
@@ -308,11 +293,6 @@ function NetList({ nets, wires, hoverNet, onHoverNet }: Props) {
               </div>
               <p className="mt-1 font-mono text-[10.5px] leading-relaxed text-secondary">
                 {n.members.join("  ")}
-                {n.vias.map((v) => (
-                  <span key={v.wire.item.id} className="text-muted">
-                    {"  "}through {v.via}
-                  </span>
-                ))}
               </p>
             </button>
           </li>

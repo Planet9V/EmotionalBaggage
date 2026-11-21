@@ -123,13 +123,13 @@ export function ModelView({ project }: ViewProps) {
   // A focused part that was deleted or lost its geometry simply stops being focused (focus is null).
   const focused = focus !== null;
 
-  /** Wires that touch the focused part, as an end or in series. */
-  const touching = useMemo(() => (focus && focus.ref ? wires.filter((w) => w.from === focus.ref || w.to === focus.ref || w.via === focus.ref) : []), [focus, wires]);
+  /** Wires that touch the focused part. A part in series is its own part with a wire to each pin. */
+  const touching = useMemo(() => (focus && focus.ref ? wires.filter((w) => w.from === focus.ref || w.to === focus.ref) : []), [focus, wires]);
   const neighbourIds = useMemo(() => {
     const ids = new Set<number>();
     if (!focus) return ids;
     for (const w of touching) {
-      for (const r of [w.from, w.to, w.via]) {
+      for (const r of [w.from, w.to]) {
         const p = r ? partByRef.get(r) : undefined;
         if (p && p.item.id !== focus.item.id && p.geometry) ids.add(p.item.id);
       }
@@ -154,7 +154,7 @@ export function ModelView({ project }: ViewProps) {
     if (!explodeByValid) return null;
     const match = (w: Wire) => (explodeBy.startsWith("class:") ? w.netClass === explodeBy.slice(6) : w.net === explodeBy.slice(4));
     const refs = new Set<string>();
-    for (const w of wires) if (match(w)) for (const r of [w.from, w.to, w.via]) if (r) refs.add(r);
+    for (const w of wires) if (match(w)) for (const r of [w.from, w.to]) if (r) refs.add(r);
     return new Map(parts.map((p) => [p.item.id, p.ref && refs.has(p.ref) ? 1 : 0]));
   }, [explodeByValid, explodeBy, wires, parts]);
 
@@ -200,12 +200,12 @@ export function ModelView({ project }: ViewProps) {
       else if (!a.geometry || !b.geometry) noGeometry++;
       else if (hidden.has(a.item.id) || hidden.has(b.item.id)) hiddenEnd++;
       else if (!classOff.has(w.netClass)) {
-        const ends = `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}${w.via ? ` via ${w.via}` : ""}`;
+        const ends = `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`;
         const current = w.routed && w.routed.path.length >= 2 && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fingerprints.get(w.item.id) ?? "") === "current";
         if (assembled && current && w.routed) {
           routed.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, length: w.routed.lengthMm, color: NET_COLOR[w.netClass], path: w.routed.path, radius: 0.6 });
         } else {
-          draw.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, color: NET_COLOR[w.netClass], a: a.item.id, b: b.item.id, via: w.via });
+          draw.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, color: NET_COLOR[w.netClass], a: a.item.id, b: b.item.id, via: "" });
         }
       }
     }
@@ -243,7 +243,7 @@ export function ModelView({ project }: ViewProps) {
         otherId: other && other.geometry ? other.item.id : null,
         net: w.net,
         color: NET_COLOR[w.netClass],
-        via: end ? w.via : "",
+        via: "",
         status: w.status,
         series: end ? "" : `In series: ${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`,
       };

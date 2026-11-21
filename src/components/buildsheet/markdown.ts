@@ -40,7 +40,6 @@ export function buildMarkdown(opts: {
     L.push(`### Step ${n}: ${w.name}`, "");
     L.push(`- Connect ${end(w, "from")} to ${end(w, "to")}`);
     L.push(`- Net ${w.net || "(none)"}, class ${w.netClass}`);
-    if (w.via) L.push(`- Through ${w.via} (${title(w.via)})`);
     if (w.note) L.push(`- Instruction: ${w.note}`);
     L.push(`- Check: ${CHECK_TEXT[w.netClass]}`);
     L.push(`- Status: ${w.status}`, "");
@@ -49,9 +48,9 @@ export function buildMarkdown(opts: {
   L.push("## Connections by part", "");
   for (const p of connectionsByPart(steps)) {
     L.push(`### ${p.ref} ${title(p.ref)}`, "");
-    L.push(row("Pin", "Connects to", "Net", "Class", "Via", "Status", "Shared joint"));
-    L.push(row("---", "---", "---", "---", "---", "---", "---"));
-    for (const r of p.rows) L.push(row(r.pin || "(none)", r.to, r.net, r.netClass, r.via, r.status, r.joint > 1 ? `${r.joint} wires meet here` : ""));
+    L.push(row("Pin", "Connects to", "Net", "Class", "Status", "Shared joint"));
+    L.push(row("---", "---", "---", "---", "---", "---"));
+    for (const r of p.rows) L.push(row(r.pin || "(none)", r.to, r.net, r.netClass, r.status, r.joint > 1 ? `${r.joint} wires meet here` : ""));
     L.push("");
   }
 
@@ -87,8 +86,7 @@ export function buildMarkdown(opts: {
 
   const k = consumables(wires);
   L.push("## Joints and consumables", "");
-  L.push(`- Solder joints: ${k.joints} (${k.wireJoints} for ${wires.length} wires, ${k.viaJoints} for ${k.viaParts.length} parts in series)`);
-  L.push(`- Parts in series: ${k.viaParts.length ? k.viaParts.map((r) => `${r} ${title(r)}${parts.get(r)?.spec ? `, ${parts.get(r)!.spec}` : ""}`).join("; ") : "none"}`);
+  L.push(`- Solder joints: ${k.joints} (2 for each of ${wires.length} wires; a part in series has its own two wires)`);
   L.push(`- Parts with 3 or more pins (header pins): ${k.headers.length ? k.headers.map((h) => `${h.ref} ${title(h.ref)}, ${h.pins} pins`).join("; ") : "none"}`, "");
 
   L.push("## Before power", "");

@@ -386,7 +386,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
       {
         key: "csv",
         label: "Wiring list (CSV)",
-        detail: `${n} ${n === 1 ? "row" : "rows"} in soldering order: order, name, net, class, from ref, from pin, to ref, to pin, via, note, status.`,
+        detail: `${n} ${n === 1 ? "row" : "rows"} in soldering order: order, name, net, class, from ref, from pin, to ref, to pin, note, status.`,
         make: (): GeneratedFile[] => [{ name: `${base}-wiring-list.csv`, mime: "text/csv;charset=utf-8", text: wiringCsv(wires), format: "wiring-list-csv" }],
       },
       {

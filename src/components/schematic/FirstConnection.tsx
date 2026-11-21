@@ -30,7 +30,7 @@ export function FirstConnection({ parts, nextOrder, onSave, onDone }: { parts: P
     setBusy(true);
     setError("");
     try {
-      await onSave({ name: autoName({ from, fromPin: fp, to, toPin: tp }), net: net.trim(), netClass, note: "", from, fromPin: fp, to, toPin: tp, via: "", order: nextOrder, status: "to solder" });
+      await onSave({ name: autoName({ from, fromPin: fp, to, toPin: tp }), net: net.trim(), netClass, note: "", from, fromPin: fp, to, toPin: tp, order: nextOrder, status: "to solder" });
       setFromPin("");
       setToPin("");
       setNet("");
