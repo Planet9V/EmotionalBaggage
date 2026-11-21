@@ -38,7 +38,7 @@ function StepNodeView({ data }: NodeProps<StepNodeType>) {
       <p className="mt-1 line-clamp-2 text-[13px] font-semibold leading-snug tracking-tight text-primary">{step.title}</p>
       <div className="mt-1.5 flex items-center justify-between font-mono text-[10px] text-muted">
         <span>{fmtMinutes(step.minutes)}</span>
-        <span>{blocked ? "in a loop" : `${step.start} to ${step.finish} min`}</span>
+        <span>{blocked ? "in a loop" : step.wave < 0 ? "no time yet" : `${step.start} to ${step.finish} min`}</span>
       </div>
       <Handle type="source" position={Position.Right} className="h-2! w-2! border-0! bg-transparent!" />
     </div>

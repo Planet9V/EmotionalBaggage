@@ -76,7 +76,8 @@ describe("states", () => {
   it("announces errors and offers a retry on a failed load", () => {
     const retry = vi.fn();
     render(<LoadError what="The parts" message="Network down" onRetry={retry} />);
-    expect(screen.getByRole("alert").textContent).toContain("The parts could not be loaded. Network down");
+    expect(screen.getByRole("alert").textContent).toContain("The parts could not be loaded");
+    expect(screen.getByRole("alert").textContent).toContain("Network down");
     fireEvent.click(screen.getByRole("button", { name: /try again/i }));
     expect(retry).toHaveBeenCalled();
   });

@@ -1,5 +1,6 @@
 // "Test connection" for the three channel providers in Admin, Credentials. Each makes one call with the
 // saved values and answers { ok, message }; a failure is a normal answer. Messages never contain a secret.
+import { plainMessage } from "@/lib/net/plain";
 import { amazonAccessToken, amazonCredentials, NOT_CONNECTED, resetAmazon } from "./amazon";
 import { igCredentials, igMe, IG_NOT_CONNECTED } from "./instagram";
 import { NOT_RUN_AGAINST_REAL } from "./status";
@@ -10,7 +11,7 @@ import { saveXAccount, xAccount } from "./state";
 export type ChannelTestKind = "amazon-sp" | "x" | "instagram";
 type Result = { ok: boolean; message: string; detail?: Record<string, unknown> };
 
-const failed = (e: unknown): Result => ({ ok: false, message: e instanceof Error ? e.message : String(e) });
+const failed = (e: unknown): Result => ({ ok: false, message: plainMessage(e) });
 
 export async function testChannel(kind: ChannelTestKind): Promise<Result> {
   try {

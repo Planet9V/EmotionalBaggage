@@ -7,6 +7,7 @@
 // in-process timer would work, but it would also start in `next dev`, in every test process and in a
 // build worker, and it would call Amazon with nobody watching the result. "Sync now" with the last sync
 // time on the screen (and a note when it is more than a day old) keeps every call one a person asked for.
+import { plainMessage } from "@/lib/net/plain";
 import { HttpError } from "@/lib/api/route";
 import { currentActor } from "@/lib/actor";
 import { logEventIn, tx } from "@/lib/db";
@@ -118,7 +119,7 @@ export async function syncAmazon(projectId: string, opts: { marketplaceId?: stri
   try {
     metrics = await orderMetricsByDay({ marketplaceId, days: FIRST_SYNC_DAYS, maxWaitMs: opts.maxWaitMs });
   } catch (e) {
-    metricsError = e instanceof Error ? e.message : String(e);
+    metricsError = plainMessage(e);
   }
 
   const counts = await upsertOrders(projectId, orders);
@@ -150,7 +151,7 @@ export async function syncAmazon(projectId: string, opts: { marketplaceId?: stri
 }
 
 async function recordFailure(projectId: string, state: Awaited<ReturnType<typeof amazonState>>, marketplaceId: string, e: unknown) {
-  const message = e instanceof Error ? e.message : String(e);
+  const message = plainMessage(e);
   const at = new Date(channelClock().now()).toISOString();
   await saveAmazonState(projectId, { ...state, marketplaceId, lastResult: { ok: false, message, at } });
   await tx((c) => logEventIn(c, projectId, "channel.amazon.sync.failed", `Amazon sync failed: ${message}`, { marketplaceId }));

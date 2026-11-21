@@ -1,4 +1,5 @@
 // Where the planner service is: the address saved in Admin first, then the PLANNER_URL environment variable.
+import { plainNetworkReason } from "@/lib/net/plain";
 import { getSetting, SETTING } from "@/lib/settings";
 import { safeFetch } from "@/lib/net/outbound";
 
@@ -29,7 +30,7 @@ export async function plannerHealth(timeoutMs = 2500): Promise<PlannerHealth> {
     return { connected: r.ok && j.ok !== false, url, source, networkx: j.networkx };
   } catch (e) {
     const err = e as { name?: string; message?: string; cause?: { code?: string } };
-    const error = err.name === "TimeoutError" ? `No answer within ${timeoutMs} ms` : err.cause?.code ?? err.message ?? "unreachable";
+    const error = err.name === "TimeoutError" ? `No answer within ${timeoutMs} ms` : plainNetworkReason(e);
     return { connected: false, url, source, error };
   }
 }

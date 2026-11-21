@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { plainNetworkReason } from "@/lib/net/plain";
 import { route } from "@/lib/api/route";
 import { firstEnabledPrinter, valuesOf } from "@/lib/admin/printers";
 import { printerFamily } from "@/lib/admin/printerFamilies";
@@ -37,7 +38,7 @@ export const GET = route(async () => {
   try {
     t = await target();
   } catch (e) {
-    return NextResponse.json({ configured: false, error: `Could not read the printers: ${(e as Error).message}` });
+    return NextResponse.json({ configured: false, error: `Could not read the printers: ${plainNetworkReason(e)}.` });
   }
   if (!t) {
     return NextResponse.json({ configured: false, note: "No printer is set up. Add one in Admin, Printers." });

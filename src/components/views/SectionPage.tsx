@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { NotFoundPanel } from "@/components/NotFoundPanel";
 import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 import { SectionLockBanner } from "@/components/process/SectionLockBanner";
@@ -94,7 +95,7 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {
   const { project, loading } = useProject();
   const found = findSection(stageKey, sectionKey);
-  if (!found) return <p className="p-8 text-sm text-secondary">That section does not exist.</p>;
+  if (!found) return <NotFoundPanel />;
   // The concept list carries each concept's product type (src/lib/api/concepts.ts, toConcept).
   const type = (project as { productType?: string } | null)?.productType ?? "";
   // The section as this concept's type shows it (its requirement columns), or the menu's while loading.

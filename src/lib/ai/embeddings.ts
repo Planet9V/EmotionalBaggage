@@ -18,6 +18,7 @@
 //     ORDER BY embedding <=> '[1,-2,3]' LIMIT 5;
 // Qwen3 Embedding 8B gives 4,096 numbers per text, so it takes this path. Above 64,000 a width is
 // searched exactly, without an index.
+import { plainMessage } from "@/lib/net/plain";
 import { createHash } from "node:crypto";
 import { ITEM_COLS, q, ready, toItem, tx, type ItemRow } from "@/lib/db";
 import { STAGES, storeKey } from "@/lib/menu";
@@ -394,7 +395,7 @@ async function embedTargets(targets: Target[], emb: ReadyEmbedding, o: IndexOpti
       // A failed batch is almost always the model host (down, wrong key, wrong width), which the
       // next batch would hit too: stop, and count this batch and the rest as failed.
       for (const g2 of groups.slice(gi)) for (const x of g2) bump(x.t, "failed");
-      out.error = e instanceof Error ? e.message : String(e);
+      out.error = plainMessage(e);
       break;
     }
     for (let k = 0; k < group.length; k++) {
@@ -404,7 +405,7 @@ async function embedTargets(targets: Target[], emb: ReadyEmbedding, o: IndexOpti
         bump(t, "indexed");
       } catch (e) {
         bump(t, "failed");
-        out.error ??= e instanceof Error ? e.message : String(e);
+        out.error ??= plainMessage(e);
       }
     }
   }

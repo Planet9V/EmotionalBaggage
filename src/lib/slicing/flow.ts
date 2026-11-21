@@ -1,6 +1,7 @@
 // The print flow on the server: slice, send, start, control, track, record. Each step checks the job's status against the state
 // machine in jobState.ts, records what happened with logEventIn, and never moves hardware without a confirm that names the printer
 // and the file.
+import { plainMessage } from "@/lib/net/plain";
 import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { createHash } from "node:crypto";
 import { ITEM_COLS, logEventIn, q, tx, toItem, type ItemRow } from "@/lib/db";
@@ -169,7 +170,7 @@ function portOf(printer: PrinterRow): PrinterPort {
 
 function wrapPort(e: unknown, what: string): never {
   if (e instanceof HttpError) throw e;
-  const msg = e instanceof Error ? e.message : String(e);
+  const msg = plainMessage(e);
   throw new HttpError(e instanceof PortError && e.kind === "unsupported" ? 409 : 502, `Could not ${what}: ${msg}`);
 }
 

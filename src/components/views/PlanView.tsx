@@ -12,7 +12,8 @@ import { usePlan } from "@/components/plan/usePlan";
 import { useItems, useProject } from "@/lib/client";
 import type { Project } from "@/lib/types";
 import { fmtMinutes } from "@/lib/format";
-import { EmptyState, NoConcept } from "@/components/ui/states";
+import { EmptyState, ErrorPanel, LoadingBlocks, NoConcept } from "@/components/ui/states";
+import { ADMIN_PLANNER } from "@/lib/adminLinks";
 import { Card } from "@/components/ui/Card";
 
 export function PlanView() {
@@ -82,19 +83,20 @@ function PlanBody({ project }: { project: Project }) {
           </div>
         )}
 
-        {planLoading && !plan && <p className="text-sm text-secondary">Computing the order.</p>}
+        {planLoading && !plan && <LoadingBlocks rows={2} label="Working out the order" />}
 
-        {plan && (
-          <p className="font-mono text-[11px] text-muted">
-            {plan.engine === "networkx" ? (
-              <span className="text-link">Computed by NetworkX</span>
-            ) : (
-              <>
-                <span className="text-warning">No order worked out.</span> {plan.note ?? "The planner service did not answer."}
-              </>
-            )}
-          </p>
-        )}
+        {plan &&
+          (plan.engine === "networkx" ? (
+            <p className="font-mono text-[11px] text-link">Computed by NetworkX</p>
+          ) : (
+            <ErrorPanel
+              title="The order is not worked out"
+              message={plan.note ?? "The planner service did not answer."}
+              todo="The steps are listed without times or a total until the planner answers. Times shown without it would not be real."
+              link={{ href: ADMIN_PLANNER, label: "Set the planner address in Admin, Models" }}
+              onRetry={() => void refresh()}
+            />
+          ))}
 
         {plan && plan.cycles.length > 0 && (
           <div className="rounded-xl border border-danger bg-danger-soft p-5 text-danger" role="alert">
@@ -144,7 +146,7 @@ function PlanBody({ project }: { project: Project }) {
           </section>
         )}
 
-        {plan && hasSteps && (
+        {plan && hasSteps && plan.engine === "networkx" && (
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">

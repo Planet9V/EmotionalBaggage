@@ -1,4 +1,5 @@
 import { plannerUrl } from "@/lib/admin/planner";
+import { plainNetworkReason } from "@/lib/net/plain";
 import { NextResponse } from "next/server";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { requireProject, route } from "@/lib/api/route";
@@ -19,7 +20,7 @@ export const GET = route(async (_req: Request, { params }: { params: Promise<{ i
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 ORDER BY sort, id`, [id]);
   const graph = planGraph(rows.map(toItem));
   const url = await plannerUrl();
-  if (!url) return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} (No planner address is set in Admin or in PLANNER_URL.)`));
+  if (!url) return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} No planner address is set in Admin, Models or in PLANNER_URL.`));
   let res: Response;
   try {
     res = await safeFetch(`${url.replace(/\/$/, "")}/plan`, {
@@ -29,7 +30,7 @@ export const GET = route(async (_req: Request, { params }: { params: Promise<{ i
       signal: AbortSignal.timeout(4000),
     });
   } catch (e) {
-    return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} (${(e as Error).message}.)`));
+    return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} The planner did not answer: ${plainNetworkReason(e)}.`));
   }
   if (!res.ok) {
     return NextResponse.json(

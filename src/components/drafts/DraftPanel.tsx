@@ -7,7 +7,7 @@ import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorPanel, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
@@ -18,7 +18,7 @@ import { Card } from "@/components/ui/Card";
 
 export const MODELS_HREF = "/admin?tab=models";
 
-type Phase = { kind: "idle" } | { kind: "running"; started: number } | { kind: "confirm"; pending: number } | { kind: "error"; message: string } | { kind: "done"; result: RunResult };
+type Phase = { kind: "idle" } | { kind: "running"; started: number } | { kind: "confirm"; pending: number } | { kind: "error"; message: string; status?: number } | { kind: "done"; result: RunResult };
 
 /** The drafts waiting in one store, grouped by run, newest run first. */
 export function byRun(drafts: Draft[]) {
@@ -108,7 +108,7 @@ export function DraftPanel({
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && e.detail?.pending) setPhase({ kind: "confirm", pending: e.detail.pending });
       else if ((e as Error).name === "AbortError") setPhase({ kind: "idle" });
-      else setPhase({ kind: "error", message: messageOf(e) });
+      else setPhase({ kind: "error", message: messageOf(e), status: e instanceof ApiError ? e.status : undefined });
     }
   };
 
@@ -171,10 +171,14 @@ export function DraftPanel({
                   </Button>
                 )}
                 {phase.kind === "error" && (
-                  <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-                    <span className="wrap-anywhere">{phase.message}</span>
-                    <Button variant="outline" size="sm" onClick={() => void go(false)}>Retry</Button>
-                  </div>
+                  <ErrorPanel
+                    title="The draft did not run"
+                    message={phase.message}
+                    todo="Nothing was saved. Fix what the message names, then try again."
+                    // 502, 503 and 504 from the run are the model layer: not set up, unreachable or too slow.
+                    link={phase.status && phase.status >= 502 && phase.status <= 504 ? { href: MODELS_HREF, label: "Open Admin, Models" } : undefined}
+                    onRetry={() => void go(false)}
+                  />
                 )}
                 {phase.kind === "done" && <RunSummary result={phase.result} />}
               </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorPanel } from "@/components/ui/states";
 import Link from "next/link";
 import { Search, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,9 +53,7 @@ export function RowAssist({ item }: { item: Item }) {
         </div>
       )}
       {challenge.error && (
-        <p role="alert" className="text-sm text-danger wrap-anywhere">
-          {messageOf(challenge.error)} {notConfigured && <Link href={MODELS_HREF} className="underline">Open Admin, Models.</Link>}
-        </p>
+        <ErrorPanel title="The reviewer did not answer" message={messageOf(challenge.error)} link={notConfigured ? { href: MODELS_HREF, label: "Open Admin, Models" } : undefined} />
       )}
     </fieldset>
   );
