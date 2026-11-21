@@ -5,6 +5,7 @@
  * options as cards to choose or reopen; what it depends on, what it unlocks and what it
  * decides next; and, under it, the outcome of every decision made so far.
  */
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { ArrowUpRight, Check, Pencil, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,7 @@ export function DecisionDetail({ d, all, byKey, tree, order, busy, onSelect, onC
             {BADGE[state]}
           </StatusBadge>
           <div className="ml-auto flex gap-1.5">
+            <RowActions item={d.item} label={d.question} />
             <Button variant="outline" size="sm" onClick={() => onEdit(d)}>
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               Edit

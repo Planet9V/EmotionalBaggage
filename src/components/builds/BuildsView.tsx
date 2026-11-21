@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useMemo, useState } from "react";
 import { CheckCircle2, Hammer, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -182,9 +183,12 @@ export function BuildsView({ project, section, store }: ViewProps) {
                 </p>
               )}
               <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-3">
-                <Button variant="outline" size="sm" onClick={() => setOpenId(b.id)} aria-label={`Open ${b.title}`}>
-                  Open
-                </Button>
+                <span className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => setOpenId(b.id)} aria-label={`Open ${b.title}`}>
+                    Open
+                  </Button>
+                  <RowActions item={b} />
+                </span>
                 {passed ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Passed

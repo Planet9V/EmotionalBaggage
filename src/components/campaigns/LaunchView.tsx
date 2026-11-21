@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Trash2 } from "lucide-react";
@@ -140,7 +141,7 @@ export function LaunchView({ project, section }: ViewProps) {
                 <div key={g.phase} className="space-y-2">
                   <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{g.phase}</h3>
                   <ul className="space-y-2">
-                    {g.steps.map((s) => <StepCard key={s.id} s={s} statuses={statuses} onStatus={(status) => void patch(s.id, { status }).catch((x: Error) => setErr(x.message))} />)}
+                    {g.steps.map((s) => <StepCard key={s.id} s={s} projectId={project.id} statuses={statuses} onStatus={(status) => void patch(s.id, { status }).catch((x: Error) => setErr(x.message))} />)}
                   </ul>
                 </div>
               ))}
@@ -158,7 +159,7 @@ const work = (min: number) => {
   return `${h} ${h === 1 ? "hour" : "hours"}`;
 };
 
-function StepCard({ s, statuses, onStatus }: { s: Scheduled; statuses: string[]; onStatus: (status: string) => void }) {
+function StepCard({ s, projectId, statuses, onStatus }: { s: Scheduled; projectId: string; statuses: string[]; onStatus: (status: string) => void }) {
   const due = s.due ? formatDay(s.due) : "No date";
   const when = s.daysAway === null || s.closed ? "" : s.daysAway < 0 ? `${-s.daysAway} ${-s.daysAway === 1 ? "day" : "days"} overdue` : s.daysAway === 0 ? "due today" : `in ${s.daysAway} ${s.daysAway === 1 ? "day" : "days"}`;
   return (
@@ -175,6 +176,7 @@ function StepCard({ s, statuses, onStatus }: { s: Scheduled; statuses: string[];
         </div>
         <div className="flex items-center gap-2">
           {s.overdue && <StatusBadge tone="danger">Overdue</StatusBadge>}
+          <RowActions item={{ id: s.id, projectId, section: "marketing/launch", title: s.title, body: s.why ?? "" }} />
           <label className="sr-only" htmlFor={`step-${s.id}`}>Status of {s.title}</label>
           <NativeSelect id={`step-${s.id}`} value={s.status} onChange={(e) => onStatus(e.target.value)} className="h-8 w-32 px-2 text-xs">
             {[...new Set([...statuses, s.status])].map((x) => <option key={x}>{x}</option>)}

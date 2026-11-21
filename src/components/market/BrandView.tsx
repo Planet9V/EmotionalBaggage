@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, Upload } from "lucide-react";
@@ -101,7 +102,7 @@ function KitForm({ project, kit, onSave, onStatus }: { project: ViewProps["proje
   return (
     <Card variant="outlined" hoverEffect={false} innerClassName="space-y-6 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2"><h2 className="text-base font-semibold text-primary">Brand kit</h2><Status status={kit.status} /></div>
+        <div className="flex items-center gap-2"><h2 className="text-base font-semibold text-primary">Brand kit</h2><Status status={kit.status} /><RowActions item={kit} label="the brand kit" /></div>
         <ApproveButton item={kit} onSet={onStatus} />
       </div>
 

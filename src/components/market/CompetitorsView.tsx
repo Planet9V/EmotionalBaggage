@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -210,6 +211,7 @@ export function CompetitorsView({ project, store }: ViewProps) {
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <ApproveButton item={r.item} onSet={(status) => patch(r.item.id, { status })} />
+                      <RowActions item={r.item} label={r.name} />
                       <Button size="icon-sm" variant="outline" onClick={() => setEditing(r.item)} aria-label={`Edit ${r.name}`}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
                       <Button size="icon-sm" variant="ghost" onClick={() => void guard(remove(r.item.id))} aria-label={`Delete ${r.name}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                     </div>

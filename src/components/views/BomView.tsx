@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
@@ -197,6 +198,7 @@ export function BomView({ project, section, store }: ViewProps) {
                         )}
                       </TableCell>
                       <TableCell>
+                        <RowActions item={p.item} />
                         <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete ${p.item.title}`} onClick={() => setDeleting(p)}>
                           <Trash2 className="h-4 w-4" aria-hidden />
                         </Button>

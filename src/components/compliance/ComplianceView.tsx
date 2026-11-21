@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useState } from "react";
@@ -191,6 +192,7 @@ export function ComplianceView({ project }: ViewProps) {
                           </NativeSelect>
                         </>
                       )}
+                      <RowActions item={r} />
                       <Button variant="ghost" size="icon-sm" aria-label={`Edit ${r.title}`} onClick={() => setEditing(r.id)}>
                         <Pencil className="h-3.5 w-3.5" aria-hidden />
                       </Button>

@@ -65,7 +65,7 @@ export function CampaignsView({ project, section }: ViewProps) {
             Draft a campaign plan with the button at the top of the page, which works from the budget above and the margin on your sales channel, or add one by hand. Drafts stay drafts until you approve them.
           </SectionEmpty>
         ) : (
-          <CampaignBoard campaigns={campaigns} statuses={statuses} money={money} onEdit={setEditing} onDelete={del} onStatus={(c, status) => void guard(patch(c.id, { status }))} />
+          <CampaignBoard projectId={project.id} campaigns={campaigns} statuses={statuses} money={money} onEdit={setEditing} onDelete={del} onStatus={(c, status) => void guard(patch(c.id, { status }))} />
         )}
       </Section>
 

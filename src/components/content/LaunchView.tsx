@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
@@ -98,6 +99,7 @@ function LaunchCard({ projectId, row, onSave, onDelete }: { projectId: string; r
           <StatusPill status={row.status} />
           {row.data.noProof === true && <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">No proof</span>}
         </div>
+        <RowActions item={row} />
         <Button size="icon" variant="ghost" aria-label={`Delete ${row.title}`} onClick={() => void run(onDelete)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
       </div>
       <div className="mt-2"><MessageLine message={row.data.message as { text?: string } | undefined} /></div>

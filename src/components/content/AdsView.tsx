@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -214,6 +215,7 @@ function AdCard({ ad, spec, cur, governing, onSave, onDelete }: { ad: Item; spec
           <StatusPill status={ad.status} />
           {ad.data.noProof === true && <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">No proof</span>}
         </div>
+        <RowActions item={ad} />
         <Button size="icon" variant="ghost" aria-label={`Delete ${ad.title}`} onClick={() => void run(onDelete)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
       </div>
       <div className="mt-2"><MessageLine message={ad.data.message as { text?: string } | undefined} /></div>

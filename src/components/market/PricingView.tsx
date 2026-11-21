@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -124,7 +125,7 @@ export function PricingView({ project, store }: ViewProps) {
                     <TableCell><InlineEdit label="Channel name" value={c.name} onSave={(v) => (v.trim() ? saveOrMessage(patch(c.item.id, { title: v.trim() })) : "A channel needs a name.")} /></TableCell>
                     <TableCell><InlineEdit label="Fee percent" mono value={String(c.feePercent)} onSave={(v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 100 ? saveOrMessage(patch(c.item.id, { data: { feePercent: n } })) : "Enter a percent from 0 to 100."; }} /></TableCell>
                     <TableCell><InlineEdit label="Fixed fee" mono value={majorText(c.fixedFeeMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null ? "Enter an amount, zero or more." : saveOrMessage(patch(c.item.id, { data: { fixedFeeMinor: m } })); }} /></TableCell>
-                    <TableCell><Button size="icon-sm" variant="ghost" aria-label={`Remove ${c.name}`} onClick={() => void guard(remove(c.item.id))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button></TableCell>
+                    <TableCell className="whitespace-nowrap"><RowActions item={c.item} label={c.name} /><Button size="icon-sm" variant="ghost" aria-label={`Remove ${c.name}`} onClick={() => void guard(remove(c.item.id))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -222,6 +223,7 @@ export function PricingView({ project, store }: ViewProps) {
                     <TableCell className="whitespace-nowrap">
                       <InlineEdit label="Price" mono value={majorText(p.priceMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null || m === 0 ? "Enter a price above zero." : saveOrMessage(patch(p.item.id, { title: `${formatMoney(m, currency)}${p.note ? ` (${p.note})` : ""}`, data: { priceMinor: m } })); }} />
                       <span className="block text-[11px] text-muted">{p.approach === "own" ? "your own" : p.approach.replace("-", " ")}</span>
+                      <RowActions item={p.item} label={`the price ${formatMoney(p.priceMinor, currency)}`} />
                     </TableCell>
                     {cols.map((c) => {
                       const m = margin(p.priceMinor, unit, c);

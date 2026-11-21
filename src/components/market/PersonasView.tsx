@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -98,7 +99,7 @@ export function PersonasView({ project, store }: ViewProps) {
                 <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="text-base font-semibold tracking-tight text-primary">{it.title}</h3>
-                    <Status status={it.status} />
+                    <div className="flex items-center gap-1"><Status status={it.status} /><RowActions item={it} /></div>
                   </div>
                   <dl className="space-y-2.5">
                     {FIELDS.map(([k, label]) => <FieldRow key={k} label={label}>{String(data[k] ?? "")}</FieldRow>)}

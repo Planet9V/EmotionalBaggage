@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -157,7 +158,7 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
           <div className="space-y-4 p-5">
             <div className="flex items-start justify-between gap-3">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Positioning line</p>
-              <Status status={item.status} />
+              <div className="flex items-center gap-1"><Status status={item.status} /><RowActions item={item} /></div>
             </div>
             <p className="text-lg font-semibold leading-snug tracking-tight text-primary">{positioningLine(d, productName)}</p>
             <div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -186,6 +187,7 @@ function SectionCard({ item, first, last, onMove, onSave, onDelete }: { item: It
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" aria-label={`Move ${KIND_LABEL[kind]} up`} disabled={first} onClick={() => onMove(-1)}><ArrowUp className="h-4 w-4" aria-hidden /></Button>
           <Button size="icon" variant="ghost" aria-label={`Move ${KIND_LABEL[kind]} down`} disabled={last} onClick={() => onMove(1)}><ArrowDown className="h-4 w-4" aria-hidden /></Button>
+          <RowActions item={item} label={`the ${KIND_LABEL[kind]} section`} />
           <Button size="icon" variant="ghost" aria-label={`Delete ${KIND_LABEL[kind]}`} onClick={() => void run(onDelete)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
         </div>
       </div>

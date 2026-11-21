@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { NET_COLOR } from "@/lib/domain";
 import { CHECK_TEXT, type PartLite, type Step } from "./derive";
 import { StatusControl } from "./StatusControl";
@@ -39,7 +40,10 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
                 <span>{w.netClass}</span>
               </p>
             </div>
-            <StatusControl status={w.status} name={w.name} onChange={onStatus} />
+            <span className="no-print flex items-center gap-1">
+              <RowActions item={w.item} label={`joint ${w.name}`} />
+              <StatusControl status={w.status} name={w.name} onChange={onStatus} />
+            </span>
             <span className="hidden font-mono text-xs print:inline">{w.status}</span>
           </div>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-secondary">

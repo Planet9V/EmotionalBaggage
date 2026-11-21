@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
@@ -93,6 +94,7 @@ export function NamesView({ project }: ViewProps) {
                         <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{k}</p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <RowActions item={it} />
                         <Status status={it.status} />
                         <NativeSelect aria-label={`Status of ${it.title}`} value={it.status} onChange={(e) => void guard(patch(it.id, { status: e.target.value }))} className="w-32">
                           {options.map((s) => <option key={s}>{s}</option>)}
