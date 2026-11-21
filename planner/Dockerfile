@@ -11,4 +11,6 @@ RUN pip install --no-cache-dir -r requirements.lock
 COPY main.py routing.py impact.py harness.py enclosure.py ./
 COPY vendor ./vendor
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# HOST and PORT can be set by the host platform. A platform whose private network is IPv6 (Railway) needs HOST=::
+ENV HOST=0.0.0.0 PORT=8000
+CMD ["sh", "-c", "exec uvicorn main:app --host \"$HOST\" --port \"$PORT\""]
