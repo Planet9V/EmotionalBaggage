@@ -100,7 +100,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
   const filesError = messageOf(filesQuery.error);
   const loadFiles = useFilesChanged(projectId);
   const [busy, setBusy] = useState("");
-  const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string; job?: boolean } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -160,7 +160,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
       form.append("meta", JSON.stringify({ printedParts: true, objects: bodies.length }));
       await api<{ file: FileMeta }>(`/api/projects/${projectId}/files`, { method: "POST", body: form });
       await loadFiles();
-      setNotice({ tone: "ok", text: `Stored ${name} with ${bodies.length} object${bodies.length === 1 ? "" : "s"}. 3D printing offers it for a new job.` });
+      setNotice({ tone: "ok", text: `Stored ${name} with ${bodies.length} object${bodies.length === 1 ? "" : "s"}.`, job: true });
     } catch (e) {
       setNotice({ tone: "bad", text: `Could not store the 3MF: ${(e as Error).message}` });
     } finally {
@@ -285,7 +285,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
           </Button>
           {!anyPrinted && <span className="text-xs text-muted">Tick Printed on a part to include it.</span>}
         </div>
-        {notice && <p role={notice.tone === "bad" ? "alert" : "status"} className={`mt-3 text-sm ${notice.tone === "ok" ? "text-success" : "text-danger"}`}>{notice.text}</p>}
+        {notice && <p role={notice.tone === "bad" ? "alert" : "status"} className={`mt-3 text-sm ${notice.tone === "ok" ? "text-success" : "text-danger"}`}>{notice.text}{notice.job ? <> <Link href="/s/prototype/printing#new-print-job" className="underline">Make a print job from it in 3D printing</Link>.</> : null}</p>}
         {printable.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No part has geometry yet, so there is nothing to generate.</p>
         ) : (
