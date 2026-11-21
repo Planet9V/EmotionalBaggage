@@ -9,29 +9,7 @@ import { ATTACK_MESSAGE, type Draft, type GeneratorsReply, type RunResult } from
 import type { ImpactReply } from "@/lib/ai/drafts/impact";
 import type { OptimiseState } from "@/lib/ai/drafts/service";
 import type { Item } from "@/lib/types";
-
-/** An API failure with its status and any detail the server sent (409 on a run carries `pending`). */
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public detail?: { pending?: number }
-  ) {
-    super(message);
-  }
-}
-
-/** Like api() in src/lib/http.ts, keeping the status and detail. A 401 sends the browser to sign in. */
-export async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, { ...init, headers: init?.body ? { "Content-Type": "application/json", ...(init?.headers ?? {}) } : init?.headers });
-  const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: { pending?: number } };
-  if (res.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/sign-in")) {
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- outside React, no router here
-    window.location.assign(`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-  }
-  if (!res.ok) throw new ApiError(body.error ?? `Request failed (${res.status})`, res.status, body.detail);
-  return body as T;
-}
+import { api } from "@/lib/http";
 
 const enc = encodeURIComponent;
 
@@ -48,19 +26,19 @@ export const draftQueries = {
   list: (projectId: string, store: string | null, status: "draft" | "approved" | "rejected" | "all" = "draft") =>
     queryOptions({
       queryKey: draftKeys.list(projectId, store, status),
-      queryFn: ({ signal }) => call<DraftList>(`/api/drafts?projectId=${enc(projectId)}&status=${status}${store ? `&store=${enc(store)}` : ""}`, { signal }),
+      queryFn: ({ signal }) => api<DraftList>(`/api/drafts?projectId=${enc(projectId)}&status=${status}${store ? `&store=${enc(store)}` : ""}`, { signal }),
       enabled: !!projectId,
     }),
   generators: (projectId: string, store: string | null) =>
     queryOptions({
       queryKey: draftKeys.generators(projectId, store),
-      queryFn: ({ signal }) => call<GeneratorsReply>(`/api/drafts/generators?projectId=${enc(projectId)}&kind=section${store ? `&store=${enc(store)}` : ""}`, { signal }),
+      queryFn: ({ signal }) => api<GeneratorsReply>(`/api/drafts/generators?projectId=${enc(projectId)}&kind=section${store ? `&store=${enc(store)}` : ""}`, { signal }),
       enabled: !!projectId,
     }),
   optimise: (projectId: string) =>
     queryOptions({
       queryKey: draftKeys.optimise(projectId),
-      queryFn: ({ signal }) => call<{ actions: OptimiseState[] }>(`/api/drafts/optimise?projectId=${enc(projectId)}`, { signal }).then((r) => r.actions),
+      queryFn: ({ signal }) => api<{ actions: OptimiseState[] }>(`/api/drafts/optimise?projectId=${enc(projectId)}`, { signal }).then((r) => r.actions),
       enabled: !!projectId,
     }),
 };
@@ -89,16 +67,16 @@ export type RunInput = { generator: string; supersede?: boolean; reviseIds?: num
 export function useDraftActions(projectId: string) {
   const qc = useQueryClient();
   const run = useMutation({
-    mutationFn: ({ signal, ...b }: RunInput) => call<RunResult>("/api/drafts/run", { method: "POST", body: JSON.stringify({ projectId, ...b }), signal }),
+    mutationFn: ({ signal, ...b }: RunInput) => api<RunResult>("/api/drafts/run", { method: "POST", body: JSON.stringify({ projectId, ...b }), signal }),
     onSettled: () => refreshAfterDecision(qc, projectId, false),
   });
   const approve = useMutation({
-    mutationFn: (id: number) => call<{ draft: Draft; item: Item | null; before: Item | null }>(`/api/drafts/${id}/approve`, { method: "POST" }),
+    mutationFn: (id: number) => api<{ draft: Draft; item: Item | null; before: Item | null }>(`/api/drafts/${id}/approve`, { method: "POST" }),
     onSuccess: (r) => attackApproved(qc, projectId, [r]),
     onSettled: () => refreshAfterDecision(qc, projectId),
   });
   const reject = useMutation({
-    mutationFn: ({ id, reason }: { id: number; reason?: string }) => call<{ draft: Draft }>(`/api/drafts/${id}/reject`, { method: "POST", body: JSON.stringify({ reason: reason ?? "" }) }),
+    mutationFn: ({ id, reason }: { id: number; reason?: string }) => api<{ draft: Draft }>(`/api/drafts/${id}/reject`, { method: "POST", body: JSON.stringify({ reason: reason ?? "" }) }),
     // The card goes at once; a refusal brings it back with the server's sentence.
     onMutate: async ({ id }) => {
       await qc.cancelQueries({ queryKey: draftKeys.all(projectId) });
@@ -111,11 +89,11 @@ export function useDraftActions(projectId: string) {
   });
   const edit = useMutation({
     mutationFn: ({ id, ...change }: { id: number; title?: string; body?: string; data?: Record<string, unknown> }) =>
-      call<{ draft: Draft }>(`/api/drafts/${id}`, { method: "PATCH", body: JSON.stringify(change) }),
+      api<{ draft: Draft }>(`/api/drafts/${id}`, { method: "PATCH", body: JSON.stringify(change) }),
     onSuccess: ({ draft }) => qc.setQueriesData<DraftList>({ queryKey: draftKeys.all(projectId) }, (l) => (l && Array.isArray(l.drafts) ? { ...l, drafts: l.drafts.map((d) => (d.id === draft.id ? draft : d)) } : l)),
   });
   const approveRun = useMutation({
-    mutationFn: (runId: string) => call<{ approved: Approved[] }>("/api/drafts/approve-run", { method: "POST", body: JSON.stringify({ projectId, runId, confirm: true }) }),
+    mutationFn: (runId: string) => api<{ approved: Approved[] }>("/api/drafts/approve-run", { method: "POST", body: JSON.stringify({ projectId, runId, confirm: true }) }),
     onSuccess: (r) => attackApproved(qc, projectId, r.approved),
     onSettled: () => refreshAfterDecision(qc, projectId),
   });
@@ -125,11 +103,11 @@ export function useDraftActions(projectId: string) {
 export function useImpact(projectId: string) {
   const qc = useQueryClient();
   const impact = useMutation({
-    mutationFn: (itemId: number) => call<ImpactReply>("/api/drafts/impact", { method: "POST", body: JSON.stringify({ projectId, itemId }) }),
+    mutationFn: (itemId: number) => api<ImpactReply>("/api/drafts/impact", { method: "POST", body: JSON.stringify({ projectId, itemId }) }),
   });
   const propose = useMutation({
     mutationFn: (b: { itemId: number; groups: { generator: string; itemIds: number[] }[]; supersede?: boolean }) =>
-      call<{ runs: RunResult[] }>("/api/drafts/impact/propose", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
+      api<{ runs: RunResult[] }>("/api/drafts/impact/propose", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
     onSettled: () => refreshAfterDecision(qc, projectId, false),
   });
   return { impact, propose };
@@ -138,7 +116,7 @@ export function useImpact(projectId: string) {
 export function useOptimise(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (b: { action: string; supersede?: boolean }) => call<RunResult>("/api/drafts/optimise", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
+    mutationFn: (b: { action: string; supersede?: boolean }) => api<RunResult>("/api/drafts/optimise", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
     onSettled: () => refreshAfterDecision(qc, projectId, false),
   });
 }
@@ -147,7 +125,7 @@ export function useOptimise(projectId: string) {
 export function useChallengeRow(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (b: { itemId: number; message: string }) => call<{ reply: string; itemId: number }>("/api/challenge", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
+    mutationFn: (b: { itemId: number; message: string }) => api<{ reply: string; itemId: number }>("/api/challenge", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
     onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: appKeys.challenge(projectId) }), qc.invalidateQueries({ queryKey: appKeys.events(projectId) })]),
   });
 }
@@ -156,7 +134,7 @@ export function useChallengeRow(projectId: string) {
 export function useAttackRow(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (b: { itemId: number }) => call<{ ran: boolean; reason: string }>("/api/drafts/attack", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
+    mutationFn: (b: { itemId: number }) => api<{ ran: boolean; reason: string }>("/api/drafts/attack", { method: "POST", body: JSON.stringify({ projectId, ...b }) }),
     onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: appKeys.challenge(projectId) }), qc.invalidateQueries({ queryKey: appKeys.events(projectId) }), qc.invalidateQueries({ queryKey: appKeys.itemsOf(projectId) })]),
   });
 }

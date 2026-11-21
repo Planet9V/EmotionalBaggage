@@ -11,7 +11,8 @@ import { type RunResult } from "@/lib/ai/drafts/shared";
 import { storeLink } from "@/lib/menuLookup";
 import { WATCHED_STORES, type ImpactReply } from "@/lib/ai/drafts/impact";
 import type { Item } from "@/lib/types";
-import { ApiError, draftKeys, useImpact } from "./api";
+import { draftKeys, useImpact } from "./api";
+import { ApiError } from "@/lib/http";
 import { RunSummary } from "./DraftPanel";
 import { Card } from "@/components/ui/Card";
 
