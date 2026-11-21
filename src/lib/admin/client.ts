@@ -41,7 +41,7 @@ export type SettingsChange = Partial<Pick<AdminSettings, "reasoningModel" | "emb
 export type PrinterInput = { name?: string; family?: string; model?: string; enabled?: boolean; access?: Record<string, string | null> };
 
 /** The tabs of /admin, in order. The tab is kept in the address as ?tab=. */
-export const ADMIN_TABS = ["setup", "credentials", "models", "printers", "audit"] as const;
+export const ADMIN_TABS = ["setup", "credentials", "models", "printers", "audit", "access"] as const;
 export type AdminTab = (typeof ADMIN_TABS)[number];
 export const isAdminTab = (v: string | null | undefined): v is AdminTab => !!v && (ADMIN_TABS as readonly string[]).includes(v);
 

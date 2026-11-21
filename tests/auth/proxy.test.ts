@@ -4,8 +4,12 @@ import { proxy } from "@/proxy";
 import { isPublicPath, pageGate, safeNext, SESSION_COOKIE } from "@/app/sign-in/shared";
 
 describe("the proxy's redirect rules", () => {
+  it("sends a signed-out visit to the bare address to the welcome page, not the sign-in form", () => {
+    expect(pageGate("/", "", false)).toBe("/welcome");
+    expect(pageGate("/", "?concept=baggage-claims", false)).toBe("/welcome");
+  });
+
   it("sends a signed-out page request to the sign-in page with where it was going", () => {
-    expect(pageGate("/", "", false)).toBe("/sign-in?next=%2F");
     expect(pageGate("/plan", "?view=graph", false)).toBe("/sign-in?next=%2Fplan%3Fview%3Dgraph");
     expect(pageGate("/s/design/bom", "", false)).toBe("/sign-in?next=%2Fs%2Fdesign%2Fbom");
     expect(pageGate("/account", "", false)).toBe("/sign-in?next=%2Faccount");
@@ -16,7 +20,7 @@ describe("the proxy's redirect rules", () => {
     expect(pageGate("/plan", "", true)).toBeNull();
   });
 
-  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/models/frame.glb", "/fonts/inter.woff2", "/l/abcd2345"])(
+  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/models/frame.glb", "/fonts/inter.woff2", "/l/abcd2345", "/welcome", "/welcome/overview", "/landing/schematic-dark.webp"])(
     "lets %s through signed out",
     (path) => {
       expect(isPublicPath(path)).toBe(true);
@@ -24,7 +28,7 @@ describe("the proxy's redirect rules", () => {
     }
   );
 
-  it.each(["/", "/plan", "/report", "/new", "/integrations", "/docs", "/docs/user", "/account", "/sign-inx", "/apix", "/l", "/l/", "/l/abcd2345/extra", "/lx/abcd2345", "/links"])("guards %s", (path) => {
+  it.each(["/", "/plan", "/report", "/new", "/integrations", "/docs", "/docs/user", "/account", "/sign-inx", "/apix", "/l", "/l/", "/l/abcd2345/extra", "/lx/abcd2345", "/links", "/welcomex", "/welcomes/overview"])("guards %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });
 
@@ -71,6 +75,12 @@ describe("the next parameter", () => {
 });
 
 describe("the proxy function", () => {
+  it("redirects a signed-out visit to / to /welcome", () => {
+    const res = proxy(new NextRequest("http://localhost:3000/"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/welcome");
+  });
+
   it("redirects a signed-out page request", () => {
     const res = proxy(new NextRequest("http://localhost:3000/report?print=1"));
     expect(res.status).toBe(307);

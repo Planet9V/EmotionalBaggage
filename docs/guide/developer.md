@@ -242,6 +242,10 @@ One place per job. Use these rather than writing another.
 
 **Page furniture.** Use `EmptyState` or `SectionEmpty` for an empty page, `ErrorPanel` for an error (its Admin link is worked out by `adminLinkFor`), `MoneyInput` with `readMoney` and `parseMinor` for money, `RowActions` for the per-row menu, and `fmtNum` and `fmtMm` for numbers. `DialogContent` returns focus to its opener itself. A gate check may carry `onlyIf: "prints-parts"`. `refineStep` and `pageStep` shape the Next strip. The scripted walk's ports come from `WALK_PORT_BASE`.
 
+## Welcome page
+
+The page is a server component in `src/app/welcome/`; its words live in `src/components/welcome/content.ts`, shared with `/welcome/overview`. A signed-out visit to `/` goes to `/welcome`; `/welcome` and `/welcome/*` are public, and `POST /api/access-requests` is an open route. Screenshots are regenerated with `node scripts/landing-shots.mjs <base URL>` against a fresh database with the planner running; the files go to `public/landing/`. Access requests: table `access_requests` (migration 0028), code in `src/lib/accessRequests/` (`shared.ts` holds the one zod schema for browser and server), Admin routes under `/api/admin/access-requests`, refused while the session uses the default password. `throttleOpenForm(bucket, client, free)` in `src/lib/auth.ts` gives any other open form the sign-in throttle.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

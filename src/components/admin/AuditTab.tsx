@@ -34,6 +34,7 @@ export const KINDS: { prefix: string; label: string }[] = [
   { prefix: "session.", label: "Sign-in" },
   { prefix: "password.", label: "Passwords" },
   { prefix: "audit.", label: "Audit log copies" },
+  { prefix: "access.", label: "Access requests" },
 ];
 
 /** A concept's name in the filter, marked when it has been deleted. */

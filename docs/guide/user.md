@@ -40,6 +40,10 @@ The left menu folds. Each group (Whole concept, Stages, Workbench) and each stag
 - "Skip to content" is the first Tab on every page. In Physical layout, choose a part from the Placed parts list and move it with the arrow keys.
 - With no theme chosen, the app follows your system's light or dark setting.
 
+### The welcome page
+
+People who are not signed in see the welcome page at `/welcome`; opening the bare address takes them there. It describes the workbench with screenshots of the running app and has two ways in. **Try the live workbench** signs in as demo / demo; that account is shared with everyone, so keep private ideas out of it. **Request your own workspace** is a form that stores your name, email, what you want to build and an optional company. No email is sent; the owner reads requests in Admin. A one-page overview that prints on one sheet is at `/welcome/overview`.
+
 ## Concepts
 
 The Concepts page lists every concept with its name, one line, product type, stage, when it last changed and how many rows it has. Search covers names and descriptions. Sort by last changed or by name.
