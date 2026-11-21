@@ -6,6 +6,7 @@ import { assertNewClaim } from "@/lib/research/rules";
 import { assertNewPrintJob } from "@/lib/slicing/rules";
 import { addedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
+import { mirrorLinks } from "@/lib/trace/mirror";
 import { assertNewMarket } from "@/lib/market/rules";
 import { assertAttackUntouched } from "@/lib/ai/drafts/attack";
 import { assertNewContent, withFlags } from "@/lib/content/rules";
@@ -46,6 +47,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       [id, b.section, b.title, b.body ?? "", JSON.stringify(b.data ?? {}), b.status ?? defaultStatus(b.section)]
     );
     await logEventIn(c, id, "item.added", `Added "${b.title}" to ${b.section}`, addedDetail(res.rows[0]));
+    // A link written at this end is written at the other end too (traceability).
+    await mirrorLinks(c, null, res.rows[0]);
     return res.rows[0];
   });
   return NextResponse.json({ item: toItem(row) }, { status: 201 });

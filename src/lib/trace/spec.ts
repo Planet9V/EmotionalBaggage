@@ -19,7 +19,24 @@ export const LINK_FIELDS: Record<string, Record<string, LinkField>> = {
   [STORE.builds]: {
     tests: { section: STORE.tests, noun: "acceptance test", where: "Prototype, Acceptance tests" },
   },
+  // The other end of the requirement links: a drafted test or part names the requirements it serves.
+  // Either end may be written; src/lib/trace/mirror.ts keeps the other end the same.
+  [STORE.tests]: {
+    requirements: { section: STORE.requirements, noun: "requirement", where: "Design, Requirements" },
+  },
+  [STORE.parts]: {
+    requirements: { section: STORE.requirements, noun: "requirement", where: "Design, Requirements" },
+  },
 };
+
+/**
+ * The links kept at both ends: a requirement's `tests` (or `parts`) list and the test's (or part's)
+ * `requirements` list say the same thing. One table, read by the coverage and by the mirror.
+ */
+export const MIRRORED: { field: "tests" | "parts"; section: string }[] = [
+  { field: "tests", section: STORE.tests },
+  { field: "parts", section: STORE.parts },
+];
 
 /** A test counts as done only when it passed. */
 export const TEST_DONE = "pass";

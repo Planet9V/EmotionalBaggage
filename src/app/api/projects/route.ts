@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logEventIn, q, tx } from "@/lib/db";
+import { ITEM_COLS, logEventIn, q, tx, type ItemRow } from "@/lib/db";
 import { body, route } from "@/lib/api/route";
 import { defaultStatus, newProject } from "@/lib/api/schemas";
 import { archivedFilter, CONCEPT_SELECT, insertConcept, loadConcept, productTypeField, toConcept, type ConceptRow } from "@/lib/api/concepts";
@@ -7,6 +7,7 @@ import { DEFAULT_PRODUCT_TYPE } from "@/lib/productTypes";
 import { assertNewClaim } from "@/lib/research/rules";
 import { assertNewPrintJob } from "@/lib/slicing/rules";
 import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
+import { mirrorLinks } from "@/lib/trace/mirror";
 
 const WHERE = {
   active: "WHERE p.archived_at IS NULL",
@@ -31,18 +32,22 @@ export const POST = route(async (req: Request) => {
   const id = await tx(async (c) => {
     const made = await insertConcept(c, { name: b.name, oneLiner, productType });
     const items = b.items ?? [];
+    const inserted: ItemRow[] = [];
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      await c.query(
-        "INSERT INTO items (project_id, section, title, body, data, status, sort) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      const r = await c.query<ItemRow>(
+        `INSERT INTO items (project_id, section, title, body, data, status, sort) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING ${ITEM_COLS}`,
         [made, it.section, it.title, it.body ?? "", JSON.stringify(it.data ?? {}), it.status ?? defaultStatus(it.section), i]
       );
+      inserted.push(r.rows[0]);
     }
     // Links between the new rows are checked once all of them exist.
     for (const it of items) {
       await assertLinks(c, made, it.section, it.data);
       await assertBuildMayPass(c, made, { section: it.section, title: it.title, status: it.status ?? defaultStatus(it.section), data: it.data ?? {} });
     }
+    // Links written at one end are written at the other too (traceability).
+    for (const row of inserted) await mirrorLinks(c, null, row);
     await logEventIn(c, made, "project.created", `Concept "${b.name}" created`, { productType, after: { name: b.name, oneLiner, productType, rows: items.length } });
     return made;
   });
