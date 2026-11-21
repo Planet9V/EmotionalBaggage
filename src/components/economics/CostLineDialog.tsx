@@ -3,11 +3,13 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { num } from "@/lib/economics/read";
 import { COST_KINDS, COST_KIND_LABEL, METHOD_STATUSES, type CostKind } from "@/lib/economics/schemas";
 import type { Item } from "@/lib/types";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Modal } from "@/components/ui/modal";
 
 type FieldSpec = { key: string; label: string; hint?: string };
 
@@ -96,13 +98,13 @@ function Form({ productType, initial, onCancel, onSave }: { productType: string;
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <Field label="Kind of cost">
-        <Select value={kind} onChange={(e) => setKind(e.target.value as CostKind)} aria-label="Kind of cost">
+        <NativeSelect value={kind} onChange={(e) => setKind(e.target.value as CostKind)} aria-label="Kind of cost">
           {kinds.map((k) => (
             <option key={k} value={k}>
               {COST_KIND_LABEL[k]}
             </option>
           ))}
-        </Select>
+        </NativeSelect>
       </Field>
       <Field label="Name" hint={`Shown in the table. Left empty it reads "${COST_KIND_LABEL[kind]}".`}>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={COST_KIND_LABEL[kind]} />
@@ -115,13 +117,13 @@ function Form({ productType, initial, onCancel, onSave }: { productType: string;
         ))}
       </div>
       <Field label="How sure is it">
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="How sure is it">
+        <NativeSelect value={status} onChange={(e) => setStatus(e.target.value)} aria-label="How sure is it">
           {METHOD_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </Select>
+        </NativeSelect>
       </Field>
       {error ? <ErrorLine>{error}</ErrorLine> : null}
       <div className="flex justify-end gap-2">

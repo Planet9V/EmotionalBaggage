@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { useItems } from "@/lib/client";
 import { isDay } from "@/lib/campaigns/days";
 import { allowableCostPerOrder } from "@/lib/campaigns/margin";
@@ -13,6 +11,12 @@ import { CAMPAIGN_STORE, OBJECTIVES, OBJECTIVE_LABEL, TARGET_INFO, TARGET_METRIC
 import type { Item } from "@/lib/types";
 import { MoneyField, NumberField, readNumber } from "./fields";
 import type { Summary, useMoney } from "./hooks";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
 
 type Money = ReturnType<typeof useMoney>;
 
@@ -131,23 +135,23 @@ export function CampaignDialog({ projectId, campaign, plan, summary, money, stat
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Name" className="sm:col-span-2"><Input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
           <Field label="Objective">
-            <Select value={objective} onChange={(e) => setObjective(e.target.value)}>
+            <NativeSelect value={objective} onChange={(e) => setObjective(e.target.value)}>
               <option value="">Not set</option>
               {OBJECTIVES.map((o) => <option key={o} value={o}>{OBJECTIVE_LABEL[o]}</option>)}
-            </Select>
+            </NativeSelect>
           </Field>
           <Field label="Where it runs" hint="For example Amazon Sponsored Products, or Meta feed."><Input value={channel} onChange={(e) => setChannel(e.target.value)} /></Field>
           <Field label="Audience persona">
-            <Select value={audience} onChange={(e) => setAudience(e.target.value)}>
+            <NativeSelect value={audience} onChange={(e) => setAudience(e.target.value)}>
               <option value="">Not set</option>
               {personas.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </Select>
+            </NativeSelect>
           </Field>
           <Field label="Sales channel (for the margin)" hint="The campaign's allowable cost comes from this channel's margin.">
-            <Select value={salesChannel} onChange={(e) => setSalesChannel(e.target.value)}>
+            <NativeSelect value={salesChannel} onChange={(e) => setSalesChannel(e.target.value)}>
               <option value="">Not set</option>
               {channels.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </Select>
+            </NativeSelect>
           </Field>
           <MoneyField label="Total budget" value={total} onChange={setTotal} currency={money.currency} />
           <MoneyField label="Daily budget" value={daily} onChange={setDaily} currency={money.currency} hint="With no total, the total is the daily budget times the days." />
@@ -156,7 +160,7 @@ export function CampaignDialog({ projectId, campaign, plan, summary, money, stat
         </div>
 
         {salesChannel && (
-          <div className="rounded-lg border border-hairline bg-subtle p-3 text-sm" data-testid="allowable">
+          <Card variant="well" className="rounded-lg p-3 text-sm" data-testid="allowable">
             <p className="font-medium text-primary">
               {allowable?.minor != null ? `Allowable cost per order: ${money.format(allowable.minor)}` : "Allowable cost per order: not worked out"}
             </p>
@@ -164,7 +168,7 @@ export function CampaignDialog({ projectId, campaign, plan, summary, money, stat
               {margin ? (margin.marginBeforeAds === null ? `The margin on ${margin.title} is not worked out yet. ${margin.missing.join(" ")}` : `Margin per unit before ads on ${margin.title}: ${money.format(margin.marginBeforeAds)}. ${allowable?.how ?? ""}${allowable?.minor != null ? `: ${money.format(allowable.minor)}.` : ""}`) : "Loading the margin."}
             </p>
             {plan.allowableSharePercent === null && <p className="mt-1 text-secondary">Set the share of the margin in Marketing budget and rules to see it.</p>}
-          </div>
+          </Card>
         )}
 
         <fieldset className="space-y-2">
@@ -189,10 +193,10 @@ export function CampaignDialog({ projectId, campaign, plan, summary, money, stat
         <fieldset className="grid gap-3 sm:grid-cols-2">
           <legend className="mb-1 text-xs font-medium text-secondary">Measure of success</legend>
           <Field label="Measure">
-            <Select value={metric} onChange={(e) => setMetric(e.target.value as TargetMetric | "")}>
+            <NativeSelect value={metric} onChange={(e) => setMetric(e.target.value as TargetMetric | "")}>
               <option value="">No target</option>
               {TARGET_METRICS.map((m) => <option key={m} value={m}>{TARGET_INFO[m].label} ({TARGET_INFO[m].direction === "at_most" ? "at most" : "at least"})</option>)}
-            </Select>
+            </NativeSelect>
           </Field>
           {metric && (
             <Field label={`Target${TARGET_INFO[metric].kind === "money" ? ` (${money.currency})` : TARGET_INFO[metric].kind === "fraction" ? " (%)" : ""}`}>
@@ -213,7 +217,7 @@ export function CampaignDialog({ projectId, campaign, plan, summary, money, stat
         <Field label="Notes"><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
         {c && (
           <Field label="Status">
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</Select>
+            <NativeSelect value={status} onChange={(e) => setStatus(e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</NativeSelect>
           </Field>
         )}
         {c && c.reasoning && (

@@ -7,14 +7,14 @@ import { Box, ListPlus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { queries } from "@/lib/queries";
 import { shotByKey, SHOTS } from "@/lib/market/imagery";
 import { imageryData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { ApproveButton, LoadFailed, LoadingBlock, Status } from "./shared";
+import { ApproveButton, Status } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 
@@ -27,8 +27,8 @@ export function ImageryView({ project, store }: ViewProps) {
   const input = useRef<HTMLInputElement>(null);
   const target = useRef<Item | null>(null);
 
-  if (loading) return <LoadingBlock label="Loading the shot list" />;
-  if (error && !items.length) return <LoadFailed what="The shot list" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading the shot list" />;
+  if (error && !items.length) return <LoadError what="The shot list" message={error} onRetry={() => void reload()} />;
 
   const have = new Set(items.map((i) => String(i.data.shotKey ?? "")));
   const missing = SHOTS.filter((s) => !have.has(s.key));

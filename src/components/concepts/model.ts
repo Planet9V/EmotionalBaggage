@@ -64,9 +64,3 @@ export function newlyHidden(fromType: string, toType: string) {
 export const typeLabel = (key: string) => productType(key).label;
 export const stageLabel = (key: string) => STAGES.find((s) => s.key === key)?.label ?? key;
 
-export function fmtDate(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
-
-export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;

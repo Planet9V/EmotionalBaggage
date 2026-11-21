@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit cb26aaa by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit d2b9e42 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,15 +16,15 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 674 packages (56 direct, 618 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 691 packages (63 direct, 628 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 534 |
+| MIT | 550 |
 | ISC | 55 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
-| BSD-3-Clause | 8 |
+| BSD-3-Clause | 9 |
 | BlueOak-1.0.0 | 5 |
 | Apache-2.0 AND LGPL-3.0-or-later | 3 |
 | OFL-1.1 | 2 |
@@ -65,6 +65,10 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | --- | --- | --- | --- | --- |
 | @ai-sdk/openai-compatible | 3.0.94 | Apache-2.0 | linked library | yes |
 | @ai-sdk/react | 4.0.183 | Apache-2.0 | linked library | yes |
+| @dagrejs/dagre | 3.1.3 | MIT | linked library | no |
+| @dnd-kit/core | 6.3.1 | MIT | linked library | no |
+| @dnd-kit/sortable | 10.0.0 | MIT | linked library | no |
+| @dnd-kit/utilities | 3.2.2 | MIT | linked library | no |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | font files | yes |
 | @fontsource-variable/jetbrains-mono | 5.3.0 | OFL-1.1 | font files | yes |
 | @fullcalendar/core | 6.1.22 | MIT | linked library | yes |
@@ -72,15 +76,18 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @fullcalendar/interaction | 6.1.22 | MIT | linked library | yes |
 | @fullcalendar/react | 6.1.22 | MIT | linked library | yes |
 | @fullcalendar/timegrid | 6.1.22 | MIT | linked library | yes |
+| @hookform/resolvers | 7.0.8 | MIT | linked library | no |
 | @radix-ui/react-dialog | 1.3.1 | MIT | linked library | yes |
 | @radix-ui/react-slot | 1.5.0 | MIT | linked library | yes |
 | @react-three/drei | 10.7.9 | MIT | linked library | yes |
 | @react-three/fiber | 9.8.2 | MIT | linked library | yes |
+| @stepperize/react | 9.0.0 | MIT | linked library | no |
 | @streamdown/cjk | 1.0.5 | Apache-2.0 | linked library | yes |
 | @streamdown/code | 2.0.1 | Apache-2.0 | linked library | yes |
 | @streamdown/math | 1.0.4 | Apache-2.0 | linked library | yes |
 | @streamdown/mermaid | 1.0.4 | Apache-2.0 | linked library | yes |
 | @tanstack/react-query | 5.108.2 | MIT | linked library | yes |
+| @tanstack/react-table | 9.3.1 | MIT | linked library | no |
 | @xyflow/react | 13.0.2 | MIT | linked library | yes |
 | ai | 7.0.179 | Apache-2.0 | linked library | yes |
 | basic-ftp | 6.2.6 | MIT | linked library | yes |
@@ -92,7 +99,6 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | linked library | yes |
 | embla-carousel-react | 8.6.0 | MIT | linked library | yes |
 | fflate | 0.8.3 | MIT | linked library | yes |
-| framer-motion | 14.14.0 | MIT | linked library | yes |
 | lucide-react | 1.77.0 | ISC | linked library | yes |
 | manifold-3d | 3.5.5 | Apache-2.0 | linked library | yes |
 | mermaid | 12.3.0 | MIT | linked library | yes |
@@ -109,6 +115,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | react | 19.3.0 | MIT | linked library | yes |
 | react-day-picker | 10.0.2 | MIT | linked library | yes |
 | react-dom | 19.3.0 | MIT | linked library | no |
+| react-hook-form | 7.92.0 | MIT | linked library | no |
 | react-markdown | 10.1.0 | MIT | linked library | yes |
 | recharts | 3.8.0 | MIT | linked library | yes |
 | remark-gfm | 4.0.1 | MIT | linked library | yes |

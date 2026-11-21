@@ -318,3 +318,21 @@ html.light main {
   .no-print { display: none !important; }
   body { background: #fff !important; color: #000 !important; }
 }
+
+/* The one entry motion: a short fade and rise. Off for people who ask for reduced motion. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@utility animate-enter {
+  animation: enter 350ms ease-out both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

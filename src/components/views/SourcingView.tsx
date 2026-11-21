@@ -3,17 +3,17 @@ import { sumLine, toPart, type Part } from "@/lib/domain";
 
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Check, ExternalLink, ShoppingCart } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
 import { ASIN_RE, amazonSearchUrl, cartUrl, microCenterSearchUrl, money, sourceKind,  } from "@/components/parts/bom";
 import { useItems } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
 import { cn } from "@/lib/utils";
 import type { ViewProps } from "./types";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 const BUY_STEPS = ["to buy", "ordered", "in hand"];
 const PRINT_STEPS = ["to print", "in hand"];
@@ -21,7 +21,6 @@ const DONE = new Set(["ordered", "in hand"]);
 
 export function SourcingView({ project, store }: ViewProps) {
   const { items, loading, error, writeError, patch } = useItems(project.id, store);
-  const reduce = useReducedMotion();
 
   const parts = useMemo(() => items.map(toPart), [items]);
   const groups = useMemo(() => {
@@ -39,7 +38,7 @@ export function SourcingView({ project, store }: ViewProps) {
   const toBuyParts = parts.filter((p) => p.item.status === "to buy");
   const toBuyTotal = sumLine(toBuyParts);
 
-  if (loading) return <p className="text-sm text-secondary">Loading the parts.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading the parts" />;
   if (error) return <ErrorLine>{error}</ErrorLine>;
   if (!parts.length)
     return (
@@ -49,13 +48,13 @@ export function SourcingView({ project, store }: ViewProps) {
     );
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-6">
+    <div className="animate-enter space-y-6">
       {writeError ? <ErrorLine>{writeError}</ErrorLine> : null}
       <p className="max-w-3xl text-sm text-secondary">
         You complete checkout on Amazon yourself; this app does not place orders. Search links open a search, not a specific listing, so check the part before you buy.
       </p>
 
-      <section aria-labelledby="cart-h" className="rounded-xl border border-hairline bg-surface p-5">
+      <Card variant="flat" as="section" aria-labelledby="cart-h" className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 id="cart-h" className="text-base font-semibold tracking-tight text-primary">Amazon cart</h2>
@@ -86,7 +85,7 @@ export function SourcingView({ project, store }: ViewProps) {
             Missing an ASIN: {missing.map((p) => p.ref || p.item.title).join(", ")}
           </p>
         )}
-      </section>
+      </Card>
 
       {groups.map(([source, ps]) => {
         const sub = sumLine(ps);
@@ -109,7 +108,7 @@ export function SourcingView({ project, store }: ViewProps) {
           </section>
         );
       })}
-    </motion.div>
+    </div>
   );
 }
 

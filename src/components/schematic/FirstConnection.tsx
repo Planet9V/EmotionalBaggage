@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { NetClass } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, type Part } from "./model";
-import { ErrorLine, Field, Select } from "./controls";
 import { autoName, type WireDraft } from "./WireDialog";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** The first wire, typed in: two parts, two pin names, a net. Works before anything is on the canvas. */
 export function FirstConnection({ parts, nextOrder, onSave, onDone }: { parts: Part[]; nextOrder: number; onSave: (d: WireDraft) => Promise<void>; onDone?: () => void }) {
@@ -43,13 +45,13 @@ export function FirstConnection({ parts, nextOrder, onSave, onDone }: { parts: P
   };
 
   const partSelect = (value: string, onChange: (v: string) => void) => (
-    <Select value={value} onChange={(e) => onChange(e.target.value)}>
+    <NativeSelect value={value} onChange={(e) => onChange(e.target.value)}>
       {parts.map((p) => (
         <option key={p.item.id} value={p.ref}>
           {p.ref} · {p.title}
         </option>
       ))}
-    </Select>
+    </NativeSelect>
   );
 
   return (
@@ -69,13 +71,13 @@ export function FirstConnection({ parts, nextOrder, onSave, onDone }: { parts: P
           <Input value={net} onChange={(e) => setNet(e.target.value)} className="font-mono" placeholder="GND" />
         </Field>
         <Field label="Net class">
-          <Select value={netClass} onChange={(e) => setNetClass(e.target.value as NetClass)}>
+          <NativeSelect value={netClass} onChange={(e) => setNetClass(e.target.value as NetClass)}>
             {CLASSES.map((c) => (
               <option key={c} value={c}>
                 {CLASS_LABEL[c]}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         </Field>
       </div>
       {error && <ErrorLine>{error}</ErrorLine>}

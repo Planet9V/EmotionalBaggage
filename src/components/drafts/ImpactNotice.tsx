@@ -12,6 +12,7 @@ import { WATCHED_STORES, type ImpactReply } from "@/lib/ai/drafts/impact";
 import type { Item } from "@/lib/types";
 import { ApiError, draftKeys, useImpact } from "./api";
 import { RunSummary } from "./DraftPanel";
+import { Card } from "@/components/ui/Card";
 
 /** Changes that do not alter what a row means: positions, order, a status on its own. */
 const COSMETIC = new Set(["geometry", "schematic", "sort"]);
@@ -61,18 +62,18 @@ export function ImpactNotice({ projectId }: { projectId: string }) {
   if (!reply || dismissed) return null;
   if (reply.engine === "unavailable") {
     return (
-      <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hairline bg-subtle px-4 py-2.5 text-sm text-secondary">
+      <Card variant="well" role="status" className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-sm text-secondary">
         <span>{reply.note}</span>
         <Button variant="ghost" size="sm" onClick={() => setDismissed(true)} aria-label="Dismiss">
           <X className="h-3.5 w-3.5" aria-hidden />
         </Button>
-      </div>
+      </Card>
     );
   }
   if (reply.total === 0) return null;
   return (
     <>
-      <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hairline bg-surface px-4 py-2.5 text-sm">
+      <Card variant="flat" role="status" className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-sm">
         <span className="text-primary">
           <GitBranch className="mr-1.5 inline h-4 w-4 text-link" aria-hidden />
           Your change to &ldquo;{reply.changed.title}&rdquo; affects {reply.total} {reply.total === 1 ? "row" : "rows"} in {reply.groups.length} {reply.groups.length === 1 ? "section" : "sections"}.
@@ -83,7 +84,7 @@ export function ImpactNotice({ projectId }: { projectId: string }) {
             <X className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </div>
-      </div>
+      </Card>
       <ImpactPanel projectId={projectId} reply={reply} open={open} onOpenChange={setOpen} />
     </>
   );

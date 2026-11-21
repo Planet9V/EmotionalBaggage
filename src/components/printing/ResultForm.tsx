@@ -4,9 +4,12 @@ import { useState } from "react";
 import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { api, useFilesChanged } from "@/lib/client";
 import type { PrintJobData } from "@/lib/slicing/jobState";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
   projectId: string;
@@ -67,11 +70,11 @@ export function ResultForm({ projectId, data, busy, onSave }: Props) {
   return (
     <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2" aria-label="Record the result">
       <Field label="How did it come out">
-        <Select value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+        <NativeSelect value={outcome} onChange={(e) => setOutcome(e.target.value)}>
           <option value="good">Good, usable</option>
           <option value="flawed">Printed, with flaws</option>
           <option value="failed">Failed</option>
-        </Select>
+        </NativeSelect>
       </Field>
       <Field label="Actual time (minutes)" hint={s ? `The slicer said ${Math.round(s.seconds / 60)} min.` : undefined}>
         <Input inputMode="decimal" value={minutes} onChange={(e) => setMinutes(e.target.value)} />

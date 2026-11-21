@@ -3,10 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { isPublicUrl } from "@/lib/economics/schemas";
 import type { Item } from "@/lib/types";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
 
 export type ComplianceDraft = { title: string; data: { why: string; check: string; evidence: string } };
 

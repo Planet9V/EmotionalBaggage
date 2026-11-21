@@ -28,7 +28,11 @@ import { ModelFacts } from "@/components/printers/ModelFacts";
 import { ModelPicker } from "@/components/printers/ModelPicker";
 import { findModel, type PrinterModel } from "@/lib/printers/models";
 import { findModelFor } from "@/lib/printers/modelLookup";
-import { ConfirmButton, describe, Empty, FormField, LoadError, LoadingBlocks, Panel, SaveError, SavedNote, TestOutcome, useFlag } from "./shared";
+import { TestOutcome } from "./shared";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Field, describe } from "@/components/ui/field";
+import { EmptyState, LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 /** What this app can do with a family today, in words. Shown on every family, honestly. */
 export function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields"> & { experimental?: boolean }): { label: string; tone: StatusTone; detail: string } {
@@ -140,13 +144,13 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
     <form onSubmit={submit} noValidate className="space-y-4 rounded-xl border border-hairline bg-subtle p-4" aria-label={editing ? `Edit ${editing.name}` : "Add a printer"} aria-busy={busy || undefined}>
       <h3 className="text-sm font-semibold text-primary">{editing ? `Edit ${editing.name}` : "Add a printer"}</h3>
       <div className="grid gap-4 lg:grid-cols-2">
-        <FormField id={id("name")} label="Name" required error={errors.name}>
+        <Field id={id("name")} label="Name" required error={errors.name}>
           <Input id={id("name")} value={name} onChange={(e) => setName(e.target.value)} {...describe(id("name"), { error: errors.name })} />
-        </FormField>
-        <FormField id={id("pick")} label="Model from the supported list" hint="Choosing one sets the family and shows what to switch on at the printer. Not on the list? Choose the family below.">
+        </Field>
+        <Field id={id("pick")} label="Model from the supported list" hint="Choosing one sets the family and shows what to switch on at the printer. Not on the list? Choose the family below.">
           <ModelPicker id={id("pick")} value={modelId} onPick={pickModel} />
-        </FormField>
-        <FormField id={id("family")} label="Family" required error={errors.family}>
+        </Field>
+        <Field id={id("family")} label="Family" required error={errors.family}>
           <Select
             value={familyId || undefined}
             onValueChange={(v) => {
@@ -166,10 +170,10 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
               ))}
             </SelectContent>
           </Select>
-        </FormField>
-        <FormField id={id("model")} label="Printer model" hint="Optional, for your own reference.">
+        </Field>
+        <Field id={id("model")} label="Printer model" hint="Optional, for your own reference.">
           <Input id={id("model")} value={model} onChange={(e) => setModel(e.target.value)} {...describe(id("model"), { hint: true })} />
-        </FormField>
+        </Field>
       </div>
 
       {fam && st ? (
@@ -206,7 +210,7 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
               const hint = [f.hint, state].filter(Boolean).join(" ");
               return (
                 <div key={f.name}>
-                  <FormField id={fid} label={f.label} required={f.required} error={errors[f.name]} hint={hint || undefined}>
+                  <Field id={fid} label={f.label} required={f.required} error={errors[f.name]} hint={hint || undefined}>
                     <Input
                       id={fid}
                       name={f.name}
@@ -218,7 +222,7 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
                       onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                       {...describe(fid, { hint: !!hint, error: errors[f.name] })}
                     />
-                  </FormField>
+                  </Field>
                   {saved?.set && f.secret && !f.required ? (
                     <Button
                       type="button"
@@ -374,9 +378,9 @@ export function PrintersTab() {
         <div className="space-y-3">
           {adding ? <PrinterForm families={families.data} mode={{ kind: "add" }} onDone={() => setAdding(false)} /> : null}
           {printers.data.length === 0 && !adding ? (
-            <Empty action={<Button size="sm" variant="outline" onClick={() => setAdding(true)}>Add printer</Button>}>
+            <EmptyState action={<Button size="sm" variant="outline" onClick={() => setAdding(true)}>Add printer</Button>}>
               No printers yet. Add one to see print progress here. Without one you can still download files and print by hand.
-            </Empty>
+            </EmptyState>
           ) : null}
           {printers.data.length ? (
             <ul className="space-y-3">

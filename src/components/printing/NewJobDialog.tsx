@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { matchPrinter } from "@/lib/slicing/match";
 import type { SlicerState } from "@/lib/slicing/queries";
 import type { PrinterView } from "@/lib/admin/printers";
 import type { FileMeta, Item } from "@/lib/types";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Modal } from "@/components/ui/modal";
 
 export type NewJob = { title: string; data: Record<string, unknown> };
 
@@ -106,11 +108,11 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
     <Modal open={open} onOpenChange={onOpenChange} title={editing ? "Edit print job" : "New print job"} description="Pick what to print and where. The slicer works out time and material when you slice it." wide>
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
         <Field label="File to print" hint={printable.length ? "Stored .stl and .3mf files of this concept." : undefined} className="sm:col-span-2">
-          <Select value={fileId} onChange={(e) => pickFile(e.target.value)} required>
+          <NativeSelect value={fileId} onChange={(e) => pickFile(e.target.value)} required>
             <option value="">Choose a file</option>
             {enclosure.length > 0 && <optgroup label="Enclosure">{enclosure.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</optgroup>}
             {rest.length > 0 && <optgroup label="Other files">{rest.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</optgroup>}
-          </Select>
+          </NativeSelect>
           {!printable.length && (
             <span className="mt-1 block text-xs text-secondary">
               No .stl or .3mf file is stored yet. Generate or upload one in <Link href="/s/design/model" className="text-link underline">Design, 3D model</Link>.
@@ -119,40 +121,40 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
         </Field>
         <Field label="Job name"><Input value={title} onChange={(e) => setTitle(e.target.value)} required /></Field>
         <Field label="Printed part (optional)">
-          <Select value={part} onChange={(e) => setPart(e.target.value)}>
+          <NativeSelect value={part} onChange={(e) => setPart(e.target.value)}>
             <option value="">Not tied to a part</option>
             {parts.map((p) => <option key={p.ref || p.title} value={p.ref || p.title}>{p.ref ? `${p.ref} ` : ""}{p.title}</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <Field label="Printer" hint={usable.length ? undefined : "No printer is enabled."} className="sm:col-span-1">
-          <Select value={printerId} onChange={(e) => pickPrinter(e.target.value)} required>
+          <NativeSelect value={printerId} onChange={(e) => pickPrinter(e.target.value)} required>
             <option value="">Choose a printer</option>
             {usable.map((p) => <option key={p.id} value={p.id}>{p.name}{p.model ? ` (${p.model})` : ""}</option>)}
-          </Select>
+          </NativeSelect>
           {!usable.length && <span className="mt-1 block text-xs text-secondary">Add one in <Link href="/admin?tab=printers" className="text-link underline">Admin, Printers</Link>.</span>}
         </Field>
         <Field label="Slicer profile for this printer" hint={slicer && !slicer.ok ? "The slicer is not available." : "The model OrcaSlicer has profiles for."}>
-          <Select value={modelKey} onChange={(e) => pickModel(e.target.value)} required disabled={!profiles.length}>
+          <NativeSelect value={modelKey} onChange={(e) => pickModel(e.target.value)} required disabled={!profiles.length}>
             <option value="">Choose a model</option>
             {profiles.map((p) => <option key={`${p.maker}|${p.model}`} value={`${p.maker}|${p.model}`}>{p.maker} {p.model}</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <Field label="Material">
-          <Select value={material} onChange={(e) => setMaterial(e.target.value)} disabled={!profile}>
+          <NativeSelect value={material} onChange={(e) => setMaterial(e.target.value)} disabled={!profile}>
             {mats.map((m) => <option key={m} value={m}>{m}</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <Field label="Layer height (mm)">
-          <Select value={layer} onChange={(e) => setLayer(e.target.value)} disabled={!profile}>
+          <NativeSelect value={layer} onChange={(e) => setLayer(e.target.value)} disabled={!profile}>
             {layers.map((h) => <option key={h} value={h}>{h.toFixed(2)}</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <Field label="Infill (%)"><Input inputMode="numeric" value={infill} onChange={(e) => setInfill(e.target.value)} /></Field>
         <Field label="Belongs to build (optional)">
-          <Select value={buildKey} onChange={(e) => setBuildKey(e.target.value)}>
+          <NativeSelect value={buildKey} onChange={(e) => setBuildKey(e.target.value)}>
             <option value="">No build</option>
             {builds.map((b) => <option key={b.key} value={b.key}>{b.title}</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <label className="flex items-center gap-2 text-sm text-primary sm:col-span-2">
           <input type="checkbox" checked={supports} onChange={(e) => setSupports(e.target.checked)} className="h-4 w-4 accent-dutchOrange" />

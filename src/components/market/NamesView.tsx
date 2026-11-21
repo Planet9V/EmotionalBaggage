@@ -5,14 +5,16 @@ import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
-import { EmptyState, ErrorLine, Field, Select } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { useItems } from "@/lib/client";
 import { GROUP_LABEL, GROUP_ORDER, nameChecks, SCREENING_NOTE, screeningProgress } from "@/lib/market/nameChecks";
 import { namesData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { GeneratedLine, GenerateButton, LoadFailed, LoadingBlock, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Modal } from "@/components/ui/modal";
 
 const STATUSES = ["draft", "candidate", "shortlist", "chosen", "rejected"];
 
@@ -30,8 +32,8 @@ export function NamesView({ project }: ViewProps) {
   const [actionError, setActionError] = useState("");
 
   const shown = useMemo(() => items.filter((i) => filter === "all" || (i.data.kind === "Tagline" ? "Tagline" : "Name") === filter), [items, filter]);
-  if (loading) return <LoadingBlock label="Loading names" />;
-  if (error && !items.length) return <LoadFailed what="Names and taglines" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading names" />;
+  if (error && !items.length) return <LoadError what="Names and taglines" message={error} onRetry={() => void reload()} />;
 
   const briefEmpty = !brief.loading && brief.items.length === 0;
   const guard = async (p: Promise<unknown>) => {
@@ -52,8 +54,8 @@ export function NamesView({ project }: ViewProps) {
         <h2 className="text-sm font-semibold text-primary">Suggest names and taglines</h2>
         <p className="text-sm text-secondary">Candidates come in batches with a short reason each. {SCREENING_NOTE}</p>
         <div className="flex flex-wrap items-end gap-3">
-          <Field label="What to suggest"><Select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} className="w-40"><option value="">Names and taglines</option><option value="Name">Names</option><option value="Tagline">Taglines</option></Select></Field>
-          <Field label="How many"><Select value={count} onChange={(e) => setCount(e.target.value)} className="w-20">{[3, 4, 6, 8, 10].map((n) => <option key={n}>{n}</option>)}</Select></Field>
+          <Field label="What to suggest"><NativeSelect value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} className="w-40"><option value="">Names and taglines</option><option value="Name">Names</option><option value="Tagline">Taglines</option></NativeSelect></Field>
+          <Field label="How many"><NativeSelect value={count} onChange={(e) => setCount(e.target.value)} className="w-20">{[3, 4, 6, 8, 10].map((n) => <option key={n}>{n}</option>)}</NativeSelect></Field>
           <Field label="Direction for this batch (optional)" className="min-w-64 flex-1"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: short, one word, easy to spell" /></Field>
           <GenerateButton pending={gen.pending} disabled={model.configured === false || briefEmpty} onClick={() => void gen.run({ generator: "names", count: Number(count), kind: kind || undefined, note: note.trim() || undefined }).catch(() => undefined)}>Suggest a batch</GenerateButton>
           <Button variant="outline" onClick={() => setAdding(true)}><Plus className="h-4 w-4" aria-hidden /> Add by hand</Button>
@@ -91,9 +93,9 @@ export function NamesView({ project }: ViewProps) {
                       </div>
                       <div className="flex items-center gap-2">
                         <Status status={it.status} />
-                        <Select aria-label={`Status of ${it.title}`} value={it.status} onChange={(e) => void guard(patch(it.id, { status: e.target.value }))} className="w-32">
+                        <NativeSelect aria-label={`Status of ${it.title}`} value={it.status} onChange={(e) => void guard(patch(it.id, { status: e.target.value }))} className="w-32">
                           {options.map((s) => <option key={s}>{s}</option>)}
-                        </Select>
+                        </NativeSelect>
                         <Button size="icon-sm" variant="ghost" aria-label={`Delete ${it.title}`} onClick={() => void guard(remove(it.id))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                       </div>
                     </div>
@@ -147,7 +149,7 @@ function AddDialog({ onClose, onAdd }: { onClose: () => void; onAdd: (title: str
     <Modal open onOpenChange={(o) => !o && onClose()} title="Add a name or tagline">
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!t.trim()) return setErr("Type the name or line."); onAdd(t.trim(), k).catch((x) => setErr((x as Error).message)); }}>
         <Field label="Name or line"><Input value={t} onChange={(e) => setT(e.target.value)} autoFocus /></Field>
-        <Field label="Kind"><Select value={k} onChange={(e) => setK(e.target.value as typeof k)}><option>Name</option><option>Tagline</option></Select></Field>
+        <Field label="Kind"><NativeSelect value={k} onChange={(e) => setK(e.target.value as typeof k)}><option>Name</option><option>Tagline</option></NativeSelect></Field>
         {err && <ErrorLine>{err}</ErrorLine>}
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>Cancel</Button><Button type="submit">Add</Button></div>
       </form>

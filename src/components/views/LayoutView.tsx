@@ -29,15 +29,16 @@ import {
   type ViewKey,
 } from "@/components/layout/geom";
 import type { ViewProps } from "./types";
+import { NativeSelect } from "@/components/ui/native-select";
+import { downloadFile } from "@/lib/download";
+import { fileSlug } from "@/lib/format";
+import { LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 const BOM_STORE = "design/bom";
 const SNAP_STEPS = [0.5, 1, 5];
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
-const selectCls =
-  "h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
-
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "concept";
 
 export function LayoutView({ project }: ViewProps) {
   const { items, loading, error, add, patch } = useItems(project.id, BOM_STORE);
@@ -212,19 +213,12 @@ export function LayoutView({ project }: ViewProps) {
       palette: readPalette(),
       date: new Date().toLocaleDateString("en-CA"),
     });
-  const fileName = () => `${slug(project.name)}-physical-layout.svg`;
+  const fileName = () => `${fileSlug(project.name)}-physical-layout.svg`;
 
   const download = () => {
     const s = sheet();
     if (!s) return;
-    const url = URL.createObjectURL(new Blob([s.svg], { type: "image/svg+xml" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadFile(fileName(), s.svg, "image/svg+xml");
   };
 
   const saveToConcept = async () => {
@@ -247,7 +241,7 @@ export function LayoutView({ project }: ViewProps) {
     }
   };
 
-  if (loading) return <p className="text-sm text-secondary">Loading parts.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading parts" />;
 
   const hasGeometry = placed.length > 0 || markers.length > 0;
   const anyParts = bodies.length > 0;
@@ -294,11 +288,11 @@ export function LayoutView({ project }: ViewProps) {
         </label>
         <label className="flex items-center gap-2 text-xs text-secondary">
           <span className="sr-only">Snap step</span>
-          <select className={selectCls} value={step} onChange={(e) => setStep(Number(e.target.value))} aria-label="Snap step in mm">
+          <NativeSelect className="h-8 w-auto text-xs" value={step} onChange={(e) => setStep(Number(e.target.value))} aria-label="Snap step in mm">
             {SNAP_STEPS.map((s) => (
               <option key={s} value={s}>{s} mm</option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <span className="hidden text-xs text-muted md:inline">Drag a part to move it. Arrow keys nudge by the snap step, Shift for 10 times.</span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -352,7 +346,7 @@ export function LayoutView({ project }: ViewProps) {
         </section>
 
         <aside className="order-3 flex flex-col gap-4">
-          <section aria-label="Selected part" className="rounded-xl border border-hairline bg-surface p-4">
+          <Card variant="flat" as="section" aria-label="Selected part" className="p-4">
             <p className={`${eyebrow} mb-2`}>Selected part</p>
             {selected ? (
               <SelectionPanel
@@ -372,7 +366,7 @@ export function LayoutView({ project }: ViewProps) {
                 {anyParts ? "Click a part in any view to edit it." : "Select a part to edit its size and position."}
               </p>
             )}
-          </section>
+          </Card>
           <ChecksPanel checks={checks} noGeometry={noGeometry} hasParts={anyParts} onSelect={setSelectedId} />
         </aside>
       </div>

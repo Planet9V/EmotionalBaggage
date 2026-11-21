@@ -2,16 +2,13 @@
 
 import { Fragment, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Box, CircuitBoard, Download, Plus, Trash2, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field, Select, Textarea, statusOptions } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
-import { Modal } from "@/components/parts/Modal";
 import { sumLine, toPart, type Part } from "@/lib/domain";
 import { mapImport, money, parseAmount, parseCsv, toCsv, groupParts, type ImportRow } from "@/components/parts/bom";
 import { saveOrMessage, useItems } from "@/lib/client";
@@ -24,13 +21,20 @@ import { libraryEntryById } from "@/lib/parts/library";
 import { partPins, pinsByItem } from "@/lib/parts/pins";
 import { PartElectricalDialog } from "@/components/parts/PartElectricalDialog";
 import type { ViewProps } from "./types";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { statusOptions } from "@/lib/statusOptions";
+import { Modal } from "@/components/ui/modal";
+import { downloadFile } from "@/lib/download";
+import { Card } from "@/components/ui/Card";
 
 type GroupBy = "none" | "source" | "status";
 const SOURCES = ["Amazon", "Micro Center", "Own printer"];
 
 export function BomView({ project, section, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
-  const reduce = useReducedMotion();
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -52,13 +56,7 @@ export function BomView({ project, section, store }: ViewProps) {
   const setData = (p: Part, data: Record<string, unknown>) => patch(p.item.id, { data });
 
   const exportCsv = () => {
-    const blob = new Blob([toCsv(parts)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${project.id}-bill-of-materials.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${project.id}-bill-of-materials.csv`, toCsv(parts), "text/csv;charset=utf-8");
   };
 
   const numberSave = (p: Part, key: "qty" | "line") => (v: string) => {
@@ -67,10 +65,10 @@ export function BomView({ project, section, store }: ViewProps) {
     return saveOrMessage(setData(p, { [key]: n }));
   };
 
-  if (loading) return <p className="text-sm text-secondary">Loading the parts.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading the parts" />;
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-4">
+    <div className="animate-enter space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button onClick={() => setAdding(true)}>
           <Plus className="h-4 w-4" aria-hidden /> Add part
@@ -99,7 +97,7 @@ export function BomView({ project, section, store }: ViewProps) {
           Add a part, or import a CSV with the columns ref, title, spec, qty, source, search and line.
         </EmptyState>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+        <Card variant="flat" className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -150,7 +148,7 @@ export function BomView({ project, section, store }: ViewProps) {
                         <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={p.line === null ? "" : money(p.line)} onSave={numberSave(p, "line")} />
                       </TableCell>
                       <TableCell>
-                        <Select
+                        <NativeSelect
                           aria-label={`Status of ${p.item.title}`}
                           className="h-8 text-xs"
                           value={p.item.status}
@@ -159,7 +157,7 @@ export function BomView({ project, section, store }: ViewProps) {
                           {statusOptions(statuses, p.item.status).map((s) => (
                             <option key={s} value={s}>{s}</option>
                           ))}
-                        </Select>
+                        </NativeSelect>
                       </TableCell>
                       {electrical && (
                         <TableCell>
@@ -219,7 +217,7 @@ export function BomView({ project, section, store }: ViewProps) {
               </TableRow>
             </tfoot>
           </Table>
-        </div>
+        </Card>
       )}
 
       <AddPartDialog
@@ -285,7 +283,7 @@ export function BomView({ project, section, store }: ViewProps) {
       )}
       {pinsApi.writeError ? <ErrorLine>{pinsApi.writeError}</ErrorLine> : null}
       <StatusLegend statuses={statuses} />
-    </motion.div>
+    </div>
   );
 }
 
@@ -349,7 +347,7 @@ function AddPartDialog({ open, onOpenChange, statuses, onCreate }: { open: boole
         <Field label="Search term" hint="Used to build the buy link on the Sourcing page."><Input value={f.search} onChange={set("search")} /></Field>
         {statuses.length > 0 && (
           <Field label="Status">
-            <Select value={f.status} onChange={set("status")}>{statuses.map((s) => <option key={s} value={s}>{s}</option>)}</Select>
+            <NativeSelect value={f.status} onChange={set("status")}>{statuses.map((s) => <option key={s} value={s}>{s}</option>)}</NativeSelect>
           </Field>
         )}
         {err ? <ErrorLine>{err}</ErrorLine> : null}

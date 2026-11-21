@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,11 @@ import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
 import { SHELL_DEFAULTS, type ShellParams } from "@/components/three/stl";
 import { RenderToImagery } from "@/components/market/RenderToImagery";
 import type { ViewProps } from "./types";
+import { NativeSelect } from "@/components/ui/native-select";
+import { downloadFile } from "@/lib/download";
+import { fileSlug } from "@/lib/format";
+import { LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 const ModelCanvas = dynamic(() => import("@/components/three/ModelCanvas"), {
   ssr: false,
@@ -54,7 +58,6 @@ const useDark = () =>
 export function ModelView({ project }: ViewProps) {
   const { items, loading, error, writeError, patch } = useItems(project.id, BOM_STORE);
   const dark = useDark();
-  const reduce = useReducedMotion();
 
   const parts = useMemo(() => [...items].sort((a, b) => a.sort - b.sort || a.id - b.id).map(toPart), [items]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -357,7 +360,6 @@ export function ModelView({ project }: ViewProps) {
     () => canvasParts.map((c) => ({ id: c.id, ref: c.ref, title: c.title, geometry: c.geometry, shape: c.shape })),
     [canvasParts]
   );
-  const slugOf = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "model";
   const runExport = async (what: "assembly" | "part", format: "stl" | "3mf") => {
     setExportError("");
     const only = what === "part" ? selectedId ?? undefined : undefined;
@@ -366,13 +368,8 @@ export function ModelView({ project }: ViewProps) {
     try {
       const buf = format === "stl" ? assemblyStl(exportParts, params, only) : await assembly3mf(exportParts, params, only);
       const sel = only !== undefined ? parts.find((x) => x.item.id === only) : null;
-      const name = `${slugOf(project.id)}-${sel ? slugOf(sel.ref || sel.item.title) : "assembly"}.${format}`;
-      const url = URL.createObjectURL(new Blob([buf], { type: format === "stl" ? "model/stl" : "model/3mf" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const name = `${fileSlug(project.id, "model")}-${sel ? fileSlug(sel.ref || sel.item.title, "model") : "assembly"}.${format}`;
+      downloadFile(name, buf, format === "stl" ? "model/stl" : "model/3mf");
     } catch (e) {
       setExportError(`Could not write the file: ${(e as Error).message}`);
     } finally {
@@ -459,7 +456,7 @@ export function ModelView({ project }: ViewProps) {
   const uploadedForCanvas = useMemo(() => (loaded && loaded.show ? { mesh: loaded.mesh, key: loaded.key } : null), [loaded]);
   const showCanvas = withGeometry.length > 0 || uploadedForCanvas !== null;
 
-  if (loading) return <p className="text-sm text-secondary">Loading parts.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading parts" />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -598,8 +595,8 @@ export function ModelView({ project }: ViewProps) {
               })}
             <label className="ml-auto flex items-center gap-2 text-xs text-secondary">
               Explode by net
-              <select
-                className="h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-40"
+              <NativeSelect
+                className="h-8 w-auto text-xs"
                 value={explodeByValid ? explodeBy : ""}
                 disabled={!showCanvas || wires.length === 0}
                 onChange={(e) => setExplodeBy(e.target.value)}
@@ -623,7 +620,7 @@ export function ModelView({ project }: ViewProps) {
                     ))}
                   </optgroup>
                 )}
-              </select>
+              </NativeSelect>
             </label>
           </div>
           <RoutePanel
@@ -668,15 +665,13 @@ export function ModelView({ project }: ViewProps) {
             </nav>
           )}
 
-          <div
-            className="relative h-[560px] overflow-hidden rounded-xl border border-hairline bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
-            tabIndex={showCanvas ? 0 : -1}
-            role="group"
-            aria-label="3D model"
-            aria-describedby="model-keys"
-            aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
-            onKeyDown={onCanvasKey}
-          >
+          <Card variant="well" className="relative h-[560px] overflow-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+ tabIndex={showCanvas ? 0 : -1}
+ role="group"
+ aria-label="3D model"
+ aria-describedby="model-keys"
+ aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
+ onKeyDown={onCanvasKey}>
             {showCanvas ? (
               <ModelCanvas
                 parts={canvasParts}
@@ -735,7 +730,7 @@ export function ModelView({ project }: ViewProps) {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
           <p id="model-keys" className="sr-only">
             With a part selected and this area focused: arrow keys move it 1 mm in x and z, Shift for 10 mm, Page Up and Page Down move it in y, R turns it 15 degrees about y, Control Z undoes.
           </p>
@@ -760,15 +755,8 @@ export function ModelView({ project }: ViewProps) {
 
         {/* Side panel */}
         <aside className="order-3 rounded-xl border border-hairline bg-surface p-4">
-          <AnimatePresence mode="wait" initial={false}>
             {selected ? (
-              <motion.div
-                key={selected.item.id}
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
+              <div className="animate-enter" key={selected.item.id}>
                 <PartPanel
                   part={selected}
                   onClose={() => {
@@ -790,15 +778,14 @@ export function ModelView({ project }: ViewProps) {
                   onSave={(g) => saveGeometry(selected, g)}
                   onTogglePrint={(v) => togglePrint(selected, v)}
                 />
-              </motion.div>
+              </div>
             ) : (
-              <motion.div key="none" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+              <div className="animate-enter" key="none">
                 <p className={eyebrow}>Part details</p>
                 <p className="mt-2 text-sm text-secondary">Click a part in the model or the list to see its spec, cost, size and where that size comes from.</p>
                 <p className="mt-2 text-sm text-secondary">Parts without geometry can be given a shape and size here, so the model works for any concept.</p>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </aside>
       </div>
 

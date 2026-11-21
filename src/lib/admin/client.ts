@@ -17,6 +17,7 @@ import type { PrinterFamily, PrinterField } from "@/lib/admin/printerFamilies";
 import type { StatusItem } from "@/lib/admin/status";
 import type { AuditRow } from "@/lib/auditLog";
 import type { ModelChoice } from "@/lib/settings";
+import { downloadFile } from "@/lib/download";
 
 export type { ProviderView, AuditEntry, AdminSettings, PrinterView, PrinterFamily, PrinterField, StatusItem, AuditRow, ModelChoice };
 
@@ -278,14 +279,6 @@ export async function downloadAuditLog(f: AuditFilters): Promise<string> {
     throw new Error(body.error ?? `The download failed (${res.status}).`);
   }
   const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "audit-log.ndjson";
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  downloadFile(name, await res.blob(), "application/x-ndjson");
   return name;
 }

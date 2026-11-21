@@ -9,17 +9,10 @@ import { Download, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/client";
 import type { HarnessOutcome } from "@/lib/geometry/harness";
+import { downloadFile } from "@/lib/download";
+import { Card } from "@/components/ui/Card";
 
 type State = { state: "idle" } | { state: "running" } | { state: "done"; out: HarnessOutcome; ms: number } | { state: "error"; message: string };
-
-function save(name: string, text: string, type: string) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 export function HarnessPanel({ projectId }: { projectId: string }) {
   const [s, setS] = useState<State>({ state: "idle" });
@@ -45,10 +38,10 @@ export function HarnessPanel({ projectId }: { projectId: string }) {
         </Button>
         {s.state === "done" && (
           <>
-            <Button variant="outline" size="sm" onClick={() => save(`${projectId}-harness.svg`, s.out.svg, "image/svg+xml")}>
+            <Button variant="outline" size="sm" onClick={() => downloadFile(`${projectId}-harness.svg`, s.out.svg, "image/svg+xml")}>
               <Download className="h-3.5 w-3.5" aria-hidden /> Download SVG
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => save(`${projectId}-harness.yml`, s.out.yaml, "text/yaml")}>
+            <Button variant="ghost" size="sm" onClick={() => downloadFile(`${projectId}-harness.yml`, s.out.yaml, "text/yaml")}>
               <Download className="h-3.5 w-3.5" aria-hidden /> WireViz YAML
             </Button>
           </>
@@ -81,7 +74,7 @@ export function HarnessPanel({ projectId }: { projectId: string }) {
             </div>
           )}
           {s.out.bom.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border border-hairline bg-surface">
+            <Card variant="flat" className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <caption className="sr-only">Harness bill of materials from WireViz</caption>
                 <thead>
@@ -101,7 +94,7 @@ export function HarnessPanel({ projectId }: { projectId: string }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </Card>
           )}
         </>
       )}

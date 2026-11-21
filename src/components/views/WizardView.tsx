@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export function WizardView() {
   const { select } = useProject();
   const createConcept = useCreateConcept();
   const qc = useQueryClient();
-  const reduce = useReducedMotion();
   const [a, setA] = useState<Answers>(emptyAnswers);
   const [step, setStep] = useState(1);
   const [reached, setReached] = useState(1);
@@ -136,22 +134,14 @@ export function WizardView() {
               noValidate
               onSubmit={(e) => { e.preventDefault(); if (last) void create(); else go(step + 1); }}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={step}
-                  initial={reduce ? false : { opacity: 0, x: 16 * dir }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={reduce ? { opacity: 0 } : { opacity: 0, x: -16 * dir }}
-                  transition={{ duration: reduce ? 0 : 0.25, ease: "easeOut" }}
-                >
+                <div className="animate-enter" key={step}>
                   {step === 1 && <StepIdea a={a} set={set} />}
                   {step === 2 && <StepWho a={a} set={set} />}
                   {step === 3 && <StepProduct a={a} set={set} setA={setA} />}
                   {step === 4 && <StepProof a={a} set={set} />}
                   {step === 5 && <StepSelling a={a} set={set} setA={setA} />}
                   {step === 6 && <StepReview a={a} edit={go} />}
-                </motion.div>
-              </AnimatePresence>
+                </div>
 
               <div aria-live="polite" className="mt-4 min-h-5 text-sm text-danger">{error}</div>
 
@@ -229,7 +219,7 @@ function StepProduct({ a, set, setA }: { a: Answers; set: SetFn; setA: SetA }) {
         <legend className="text-sm font-medium text-primary">Parts</legend>
         <ul className="space-y-3">
           {a.parts.map((p, i) => (
-            <li key={p.key} className="rounded-xl border border-hairline bg-subtle p-3">
+            <Card variant="well" as="li" key={p.key} className="p-3">
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-12 sm:col-span-6">
                   <Input aria-label={`Part ${i + 1} name`} placeholder="Part name" value={p.name} onChange={(e) => upd(p.key, { name: e.target.value })} />
@@ -253,7 +243,7 @@ function StepProduct({ a, set, setA }: { a: Answers; set: SetFn; setA: SetA }) {
                   </Button>
                 </div>
               </div>
-            </li>
+            </Card>
           ))}
         </ul>
         <Button type="button" variant="outline" size="sm" onClick={addPart}><Plus className="h-3.5 w-3.5" aria-hidden /> Add part</Button>
@@ -311,7 +301,7 @@ function StepReview({ a, edit }: { a: Answers; edit: (n: number) => void }) {
   const groups = buildGroups(a);
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-hairline bg-subtle p-4">
+      <Card variant="well" className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept</p>
@@ -320,7 +310,7 @@ function StepReview({ a, edit }: { a: Answers; edit: (n: number) => void }) {
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={() => edit(1)}>Edit</Button>
         </div>
-      </div>
+      </Card>
       {groups.length === 0 && <p className="text-sm text-secondary">Nothing else was entered, so only the concept itself is created.</p>}
       {groups.map((g) => (
         <section key={g.label} className="rounded-xl border border-hairline p-4">

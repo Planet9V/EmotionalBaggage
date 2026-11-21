@@ -2,12 +2,9 @@
 
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Copy, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { useItems } from "@/lib/client";
 import { messageOf, queries, type Integration, type IntegrationsReport } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
@@ -16,6 +13,12 @@ import { cn } from "@/lib/utils";
 import { SOCIAL_CHANNELS, checkSocial, socialChannel } from "@/lib/content/channels";
 import { SocialCalendar } from "@/components/content/SocialCalendar";
 import type { ViewProps } from "./types";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
 
 const NO_INTEGRATIONS: Integration[] = [];
 const socialOnly = (r: IntegrationsReport) => r.integrations.filter((i) => i.key === "x" || i.key === "instagram");
@@ -32,7 +35,6 @@ const firstLine = (t: string) => {
 
 export function SocialView({ project, section, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
-  const reduce = useReducedMotion();
   const columns = section.statuses?.length ? section.statuses : FALLBACK;
   const integQuery = useQuery({ ...queries.integrations(), select: socialOnly });
   const integ = integQuery.data ?? NO_INTEGRATIONS;
@@ -59,8 +61,8 @@ export function SocialView({ project, section, store }: ViewProps) {
   };
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-5">
-      <section aria-label="Connections" className="rounded-xl border border-hairline bg-surface p-4">
+    <div className="animate-enter space-y-5">
+      <Card variant="flat" as="section" aria-label="Connections" className="p-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           {integ.map((i) => (
             <span key={i.key} className="flex items-center gap-2 text-sm text-primary">
@@ -73,7 +75,7 @@ export function SocialView({ project, section, store }: ViewProps) {
         <p className="mt-2 text-sm text-secondary">
           Posting and reading replies are not built yet, so this app cannot post for you. Copy an approved post, publish it yourself, then move it to posted by hand.
         </p>
-      </section>
+      </Card>
 
       <div role="group" aria-label="Social view" className="flex gap-2">
         <Button size="sm" variant={tab === "board" ? "default" : "outline"} aria-pressed={tab === "board"} onClick={() => setTab("board")}>Board</Button>
@@ -83,7 +85,7 @@ export function SocialView({ project, section, store }: ViewProps) {
         <>
           {error ? <ErrorLine>{error}</ErrorLine> : null}
           {writeError ? <ErrorLine>{writeError}</ErrorLine> : null}
-          {loading ? <p className="text-sm text-secondary">Loading the posts.</p> : <SocialCalendar items={items} onPatch={(id, c) => patch(id, c)} />}
+          {loading ? <LoadingBlocks rows={2} label="Loading the posts" /> : <SocialCalendar items={items} onPatch={(id, c) => patch(id, c)} />}
         </>
       ) : (<>
       <div className="flex items-center justify-between gap-2">
@@ -94,7 +96,7 @@ export function SocialView({ project, section, store }: ViewProps) {
       {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
 
       {loading ? (
-        <p className="text-sm text-secondary">Loading the posts.</p>
+        <LoadingBlocks rows={2} label="Loading the posts" />
       ) : (
         <div className="grid gap-3 md:grid-cols-3">
           {columns.map((col, ci) => {
@@ -125,12 +127,10 @@ export function SocialView({ project, section, store }: ViewProps) {
                     const ch = channelOf(p);
                     const n = len(p.body);
                     return (
-                      <li
-                        key={p.id}
-                        draggable
-                        onDragStart={(e) => { dragged.current = p.id; e.dataTransfer.setData("text/plain", String(p.id)); e.dataTransfer.effectAllowed = "move"; }}
-                        className="rounded-xl border border-hairline bg-surface p-3"
-                      >
+                      <Card variant="flat" as="li" key={p.id}
+ draggable
+ onDragStart={(e) => { dragged.current = p.id; e.dataTransfer.setData("text/plain", String(p.id)); e.dataTransfer.effectAllowed = "move"; }}
+ className="p-3">
                         <div className="mb-1.5 flex items-center justify-between gap-2">
                           <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
                             <GripVertical className="h-3.5 w-3.5" aria-hidden /> {ch}
@@ -161,7 +161,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                             <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Delete post" onClick={() => setDel(p)}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                           </span>
                         </div>
-                      </li>
+                      </Card>
                     );
                   })}
                 </ul>
@@ -197,7 +197,7 @@ export function SocialView({ project, section, store }: ViewProps) {
           }}>Delete post</Button>
         </div>
       </Modal>
-    </motion.div>
+    </div>
   );
 }
 
@@ -225,7 +225,7 @@ function ComposeDialog({ item, onClose, onSave }: { item: Item | null; onClose: 
     <Modal open onOpenChange={(o) => !o && onClose()} title={item ? "Edit post" : "New draft post"}>
       <form onSubmit={submit} className="space-y-3">
         <Field label="Channel">
-          <Select value={channel} onChange={(e) => setChannel(e.target.value)}>{CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}</Select>
+          <NativeSelect value={channel} onChange={(e) => setChannel(e.target.value)}>{CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}</NativeSelect>
         </Field>
         <Field label="Post text">
           <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} autoFocus />

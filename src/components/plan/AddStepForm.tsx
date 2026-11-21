@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import type { Item, PlanNode } from "@/lib/types";
 import { isStep, STORE_REFS, storeLabel, stepKeys, uniqueKey } from "./format";
 import { WaitsOnPicker } from "./WaitsOnPicker";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const DEFAULT_STORE = "prototype/assembly";
 
-const selectCls =
-  "h-9 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 const labelCls = "font-mono text-[10px] uppercase tracking-[0.15em] text-muted";
 
 type Props = {
@@ -104,18 +103,18 @@ export function AddStepForm({ items, steps, onAdd, onConvert }: Props) {
             </div>
             <div>
               <label htmlFor="new-step-section" className={labelCls}>Section</label>
-              <select id="new-step-section" value={section} onChange={(e) => setSection(e.target.value)} className={`${selectCls} mt-1`}>
+              <NativeSelect id="new-step-section" value={section} onChange={(e) => setSection(e.target.value)} className="mt-1">
                 {STORE_REFS.map((r) => (
                   <option key={r.store} value={r.store}>{storeLabel(r.store)}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
           </>
         ) : (
           <div className="md:col-span-2">
             <label htmlFor="existing-item" className={labelCls}>Row</label>
             {candidates.length ? (
-              <select id="existing-item" value={itemId} onChange={(e) => setItemId(e.target.value)} className={`${selectCls} mt-1`}>
+              <NativeSelect id="existing-item" value={itemId} onChange={(e) => setItemId(e.target.value)} className="mt-1">
                 <option value="">Choose a row that is not a step yet</option>
                 {grouped.map(([store, list]) => (
                   <optgroup key={store} label={storeLabel(store)}>
@@ -124,7 +123,7 @@ export function AddStepForm({ items, steps, onAdd, onConvert }: Props) {
                     ))}
                   </optgroup>
                 ))}
-              </select>
+              </NativeSelect>
             ) : (
               <p className="mt-1 text-sm text-muted">Every row in this concept is already a step.</p>
             )}

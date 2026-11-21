@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import { Check, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GENERATORS } from "@/lib/enclosure/types";
-import { bytesOf, download, meshOf, type ResultOk } from "./client";
+import { downloadFile } from "@/lib/download";
+import { bytesOf, meshOf, type ResultOk } from "./client";
+import { Card } from "@/components/ui/Card";
 
 const EnclosureCanvas = dynamic(() => import("./EnclosureCanvas"), {
   ssr: false,
@@ -43,7 +45,7 @@ export function ResultPanel({ result, dark, floorY, slug, stale }: { result: Res
   const liftId = `lift-${result.key}`;
   const failed = result.checks.filter((c) => !c.ok).length;
   return (
-    <section aria-labelledby={`res-${result.key}`} className="min-w-0 rounded-xl border border-hairline bg-surface">
+    <Card variant="flat" as="section" aria-labelledby={`res-${result.key}`} className="min-w-0">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-hairline px-4 py-3">
         <h3 id={`res-${result.key}`} className="text-sm font-semibold text-primary">
           {meta.label}
@@ -58,9 +60,9 @@ export function ResultPanel({ result, dark, floorY, slug, stale }: { result: Res
             This was generated from earlier settings or parts. Generate again to match what is on screen.
           </p>
         ) : null}
-        <div className="h-72 overflow-hidden rounded-lg border border-hairline bg-subtle">
+        <Card variant="well" className="rounded-lg h-72 overflow-hidden">
           <EnclosureCanvas meshes={meshes} lift={lift} dark={dark} floorY={floorY} label={`${meta.label} base and lid, drag to turn`} />
-        </div>
+        </Card>
         <div className="flex flex-wrap items-center gap-3">
           <label htmlFor={liftId} className="text-xs text-secondary">
             Lift the lid ({lift} mm)
@@ -84,18 +86,18 @@ export function ResultPanel({ result, dark, floorY, slug, stale }: { result: Res
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => download(`${slug}-${result.key}-base.stl`, bytesOf(result.baseStl), "model/stl")}>
+          <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.key}-base.stl`, bytesOf(result.baseStl), "model/stl")}>
             <Download aria-hidden className="size-4" /> Base STL
           </Button>
-          <Button variant="outline" size="sm" onClick={() => download(`${slug}-${result.key}-lid.stl`, bytesOf(result.lidPrintStl), "model/stl")}>
+          <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.key}-lid.stl`, bytesOf(result.lidPrintStl), "model/stl")}>
             <Download aria-hidden className="size-4" /> Lid STL (print side down)
           </Button>
-          <Button variant="outline" size="sm" onClick={() => download(`${slug}-${result.source.filename}`, result.source.text, "text/plain")}>
+          <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.source.filename}`, result.source.text, "text/plain")}>
             <Download aria-hidden className="size-4" /> Generator source
           </Button>
         </div>
         <p className="text-xs text-muted">{result.source.note}</p>
       </div>
-    </section>
+    </Card>
   );
 }

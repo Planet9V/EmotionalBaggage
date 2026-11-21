@@ -2,7 +2,8 @@
 
 import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
 import type { Check } from "./model";
-import { EYEBROW } from "./controls";
+import { EYEBROW } from "@/components/ui/field";
+import { Card } from "@/components/ui/Card";
 
 const ICON = {
   danger: <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden />,
@@ -15,7 +16,7 @@ const WORD = { danger: "Error", warning: "Check", neutral: "Note" };
 export function ChecksPanel({ checks, wireCount, partCount, onPick }: { checks: Check[]; wireCount: number; partCount: number; onPick: (c: Check) => void }) {
   const problems = checks.filter((c) => c.tone !== "neutral").length;
   return (
-    <section aria-labelledby="schematic-checks" className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="section" aria-labelledby="schematic-checks" className="p-4">
       <p className={EYEBROW}>Checks</p>
       <h3 id="schematic-checks" className="mt-1 text-base font-semibold tracking-tight text-primary">
         {problems ? `${problems} to look at` : "Nothing to fix"}
@@ -50,6 +51,6 @@ export function ChecksPanel({ checks, wireCount, partCount, onPick }: { checks: 
           })}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }

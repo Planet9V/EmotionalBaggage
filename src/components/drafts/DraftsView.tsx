@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Empty, LoadError, LoadingBlocks } from "@/components/admin/shared";
 import { useItems, useProject } from "@/lib/client";
 import { storeHref, type Draft } from "@/lib/ai/drafts/shared";
 import { messageOf } from "@/lib/queries";
@@ -14,6 +13,7 @@ import { draftQueries } from "./api";
 import { DraftCard } from "./DraftCard";
 import { WaitingDrafts } from "./DraftPanel";
 import { storeLabelClient } from "./labels";
+import { EmptyState, LoadError, LoadingBlocks, NoConcept } from "@/components/ui/states";
 
 type Tab = "draft" | "approved" | "rejected";
 const TABS: [Tab, string][] = [["draft", "Waiting"], ["approved", "Approved"], ["rejected", "Rejected"]];
@@ -24,7 +24,7 @@ export function DraftsView() {
     return (
       <>
         <PageHeader eyebrow="AI drafts" title="Drafts" />
-        <p className="p-8 text-sm text-secondary">{loading ? "Loading the concept." : <>No concept is open. <Link href="/new" className="text-link hover:underline">Start one</Link>.</>}</p>
+        <NoConcept loading={loading} />
       </>
     );
   }
@@ -66,9 +66,9 @@ function DraftsBody({ project }: { project: Project }) {
         ) : list.error ? (
           <LoadError message={messageOf(list.error)} onRetry={() => void list.refetch()} />
         ) : drafts.length === 0 ? (
-          <Empty action={tab === "draft" ? <Button asChild variant="outline" size="sm"><Link href="/s/design/requirements">Go to Requirements</Link></Button> : undefined}>
+          <EmptyState action={tab === "draft" ? <Button asChild variant="outline" size="sm"><Link href="/s/design/requirements">Go to Requirements</Link></Button> : undefined}>
             {tab === "draft" ? "No drafts are waiting. Use Draft with AI at the top of a section, for example Requirements, to have the assistant propose rows." : `No ${tab} drafts yet.`}
-          </Empty>
+          </EmptyState>
         ) : (
           group(drafts).map(([store, list]) => (
             <section key={store} aria-labelledby={`dr-${store}`} className="space-y-3">

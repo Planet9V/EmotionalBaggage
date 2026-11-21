@@ -4,9 +4,9 @@ import { useState, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { num, type PartInput } from "@/lib/economics/read";
+import { ErrorLine } from "@/components/ui/states";
+import { Modal } from "@/components/ui/modal";
 
 type Row = { qty: string; unit: string };
 

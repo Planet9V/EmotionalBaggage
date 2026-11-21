@@ -4,11 +4,8 @@ import { PrintersPanel } from "@/components/printers/PrintersPanel";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { toPart } from "@/lib/domain";
 import { useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
@@ -20,11 +17,13 @@ import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { JobCard } from "./JobCard";
 import { NewJobDialog } from "./NewJobDialog";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
 
 const NO_FILES: never[] = [];
 
 export function PrintFlowView({ project, store }: ViewProps) {
-  const reduce = useReducedMotion();
   const jobs = useItems(project.id, store);
   const bom = useItems(project.id, "design/bom");
   const builds = useItems(project.id, "prototype/builds");
@@ -52,9 +51,9 @@ export function PrintFlowView({ project, store }: ViewProps) {
   }, [anySlicing, qc, project.id]);
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-6">
+    <div className="animate-enter space-y-6">
       <PrintersPanel />
-      <section aria-labelledby="slicer-h" className="rounded-xl border border-hairline bg-surface p-4">
+      <Card variant="flat" as="section" aria-labelledby="slicer-h" className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="slicer-h" className="text-base font-semibold tracking-tight text-primary">Slicer</h2>
           {slicer.isLoading ? <StatusBadge tone="neutral">Checking</StatusBadge> : s?.ok ? <StatusBadge tone="success">Ready</StatusBadge> : s?.configured ? <StatusBadge tone="danger">Not reachable</StatusBadge> : <StatusBadge tone="neutral">Not set up</StatusBadge>}
@@ -74,7 +73,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
             <p>OrcaSlicer {s.orca?.version} runs as its own service. Time and filament below come from its output, not from an estimate.</p>
           )}
         </div>
-      </section>
+      </Card>
 
       {actionError || jobs.writeError ? <ErrorLine>{actionError || jobs.writeError}</ErrorLine> : null}
 
@@ -87,7 +86,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
         {printers.isError ? <ErrorLine>The printer list did not load: {messageOf(printers.error)}</ErrorLine> : null}
         {filesQ.isError ? <ErrorLine>The stored files did not load: {messageOf(filesQ.error)}</ErrorLine> : null}
         {jobs.loading ? (
-          <p className="text-sm text-secondary">Loading the jobs.</p>
+          <LoadingBlocks rows={2} label="Loading the jobs" />
         ) : !jobs.items.length ? (
           <EmptyState title="No print jobs yet">Pick a stored STL or the enclosure, a printer from Admin and a material, then slice it. Printers are set up in Admin, Printers.</EmptyState>
         ) : (
@@ -135,6 +134,6 @@ export function PrintFlowView({ project, store }: ViewProps) {
           }}>Delete job</Button>
         </div>
       </Modal>
-    </motion.div>
+    </div>
   );
 }

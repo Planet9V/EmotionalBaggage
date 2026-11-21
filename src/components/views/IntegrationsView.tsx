@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ErrorLine } from "@/components/parts/controls";
 import { messageOf, queries, type Integration } from "@/lib/queries";
+import { ErrorLine } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 
 const ADMIN_TAB = { credentials: "credentials", settings: "models", printers: "printers" } as const;
@@ -23,21 +23,20 @@ export function IntegrationsView() {
   const report = useQuery(queries.integrations());
   const data = report.data ?? null;
   const error = messageOf(report.error);
-  const reduce = useReducedMotion();
 
   const plannerWhy = data?.planner.error ?? data?.planner.reason ?? data?.planner.note;
 
   return (
     <>
       <PageHeader eyebrow="Settings" title="Integrations" blurb="What is connected, what is built, and where in Admin each one is set." />
-      <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8 px-8 py-6">
+      <div className="animate-enter space-y-8 px-8 py-6">
         {error ? <ErrorLine>{error}</ErrorLine> : null}
         {!data && !error ? <p className="text-sm text-secondary">Reading the integrations.</p> : null}
 
         {data && (
           <>
             <section aria-label="Services" className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-hairline bg-surface p-5">
+              <Card variant="flat" className="p-5">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-base font-semibold tracking-tight text-primary">Database</h2>
                   <StatusBadge tone={data.database.connected ? "success" : "danger"}>{data.database.connected ? "Connected" : "Not connected"}</StatusBadge>
@@ -51,8 +50,8 @@ export function IntegrationsView() {
                     ? "Search by meaning also needs an embedding model, chosen in Admin, Models. Without one, search matches words."
                     : "Search by meaning needs pgvector in the database, which this one does not have. Search matches words."}
                 </p>
-              </div>
-              <div className="rounded-xl border border-hairline bg-surface p-5">
+              </Card>
+              <Card variant="flat" className="p-5">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-base font-semibold tracking-tight text-primary">Planner</h2>
                   <StatusBadge tone={data.planner.connected ? "success" : "warning"}>{data.planner.connected ? "Connected" : "Unreachable"}</StatusBadge>
@@ -63,12 +62,12 @@ export function IntegrationsView() {
                 {!data.planner.connected && (
                   <p className="mt-3 text-sm text-secondary">{plannerWhy ? plannerWhy : "The planner service did not answer. The order of operations cannot be worked out until it does; the plan page lists the steps without an order."}</p>
                 )}
-              </div>
+              </Card>
             </section>
 
             <section aria-labelledby="int-h" className="space-y-3">
               <h2 id="int-h" className="text-base font-semibold tracking-tight text-primary">Integrations</h2>
-              <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+              <Card variant="flat" className="overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -107,10 +106,10 @@ export function IntegrationsView() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+              </Card>
             </section>
 
-            <section aria-labelledby="how-h" className="max-w-3xl rounded-xl border border-hairline bg-subtle p-5">
+            <Card variant="well" as="section" aria-labelledby="how-h" className="max-w-3xl p-5">
               <h2 id="how-h" className="text-base font-semibold tracking-tight text-primary">How to connect</h2>
               <p className="mt-2 text-sm text-secondary">
                 Configure everything in <Link href="/admin" className="text-link underline-offset-4 hover:underline">Admin</Link>: models in Models, keys in Credentials, printers in Printers. Each has a Test button, and what you save is kept in this install&apos;s database. No restart is needed.
@@ -119,10 +118,10 @@ export function IntegrationsView() {
                 The environment variables listed above are fallbacks only. They apply when Admin has nothing saved for the same value, so an install set up through <span className="font-mono text-xs text-primary">.env</span> keeps working.
               </p>
               <p className="mt-2 text-sm text-secondary">An integration shows as connected only when all of its values are set. That does not mean it works: check the Built column, or use Test in Admin.</p>
-            </section>
+            </Card>
           </>
         )}
-      </motion.div>
+      </div>
     </>
   );
 }

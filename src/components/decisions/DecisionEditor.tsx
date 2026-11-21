@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Decision, DecisionOption } from "@/lib/domain";
 import { parentOf, slugKey, slugOption, type Tree } from "./model";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 
 export type DecisionDraft = {
   key: string;
@@ -40,7 +42,6 @@ type Props = {
   onDelete: (d: Decision) => Promise<void>;
 };
 
-const field = "w-full rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 const label = "font-mono text-[10px] uppercase tracking-[0.2em] text-muted";
 
 function initial(editing: Decision | null, defaultParent: string): DecisionDraft {
@@ -192,13 +193,13 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
         </label>
         <label className="block space-y-1.5">
           <span className={label}>Context</span>
-          <textarea value={draft.context} onChange={(e) => set("context", e.target.value)} rows={3} className={field} placeholder="Why it matters and what is known so far." />
+          <Textarea value={draft.context} onChange={(e) => set("context", e.target.value)} rows={3} placeholder="Why it matters and what is known so far." />
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">
             <span className={label}>Hangs under</span>
-            <select value={draft.parent} onChange={(e) => setDraft((d) => ({ ...d, parent: e.target.value, viaOption: "" }))} className={field}>
+            <NativeSelect value={draft.parent} onChange={(e) => setDraft((d) => ({ ...d, parent: e.target.value, viaOption: "" }))}>
               <option value="">Nothing (a root decision)</option>
               {all
                 .filter((d) => d.key !== self && !descendants.has(d.key))
@@ -207,14 +208,13 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
                     {d.key}: {d.question}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="block space-y-1.5">
             <span className={label}>Follows option</span>
-            <select
+            <NativeSelect
               value={draft.viaOption}
               onChange={(e) => set("viaOption", e.target.value)}
-              className={field}
               disabled={!parentDecision || parentDecision.options.length === 0}
             >
               <option value="">Any option of the parent</option>
@@ -223,7 +223,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
                   {o.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <span className="block text-[11px] text-muted">{parentDecision ? "Hangs this decision off one of the parent's options in the tree." : "Pick a parent first."}</span>
           </label>
         </div>

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 import { SectionLockBanner } from "@/components/process/SectionLockBanner";
 import { useProject } from "@/lib/client";
 import { findSection, storeKey, type Section } from "@/lib/menu";
@@ -103,16 +105,13 @@ export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectio
       </PageHeader>
       <div className="px-8 py-6">
         {loading ? (
-          <p className="text-sm text-secondary">Loading the concept.</p>
+          <LoadingBlocks rows={2} label="Loading the concept" />
         ) : !project ? (
-          <p className="text-sm text-secondary">No concept yet. Use New concept to start one.</p>
+          <EmptyState title="No concept yet" action={<Button asChild size="sm" variant="outline"><Link href="/new">Start a concept</Link></Button>}>Each section works on one concept.</EmptyState>
         ) : hidden ? (
-          <div className="rounded-xl border border-hairline bg-surface p-5 text-sm text-secondary">
-            <p className="font-semibold text-primary">This section is not used for the product type &ldquo;{productType(type).label}&rdquo;.</p>
-            <p className="mt-1">
-              Its rows, if any, are kept. To show it, change the concept&apos;s product type on the <Link href="/concepts" className="text-link hover:underline">Concepts page</Link>.
-            </p>
-          </div>
+          <EmptyState title={`This section is not used for the product type \u201c${productType(type).label}\u201d.`} action={<Button asChild size="sm" variant="outline"><Link href="/concepts">Change the product type</Link></Button>}>
+            Its rows, if any, are kept. To show it, change the concept&apos;s product type on the Concepts page.
+          </EmptyState>
         ) : (
           <>
             <SectionLockBanner projectId={project.id} stageKey={stage.key} sectionKey={section.key} />

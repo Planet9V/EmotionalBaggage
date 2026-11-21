@@ -9,15 +9,18 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
 import { formatMoney, parseMinor } from "@/lib/market/pricing";
 import { competitorData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { ApproveButton, GeneratedLine, GenerateButton, LoadFailed, LoadingBlock, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { ApproveButton, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
 
 type Row = {
   item: Item;
@@ -101,8 +104,8 @@ export function CompetitorsView({ project, store }: ViewProps) {
     onSettled: () => qc.invalidateQueries({ queryKey: keys.research(project.id) }),
   });
 
-  if (loading) return <LoadingBlock label="Loading competitors" />;
-  if (error && !items.length) return <LoadFailed what="Competitors" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading competitors" />;
+  if (error && !items.length) return <LoadError what="Competitors" message={error} onRetry={() => void reload()} />;
 
   const answers = research.data?.entries ?? [];
   const perplexityOn = research.data?.configured ?? null;
@@ -151,10 +154,10 @@ export function CompetitorsView({ project, store }: ViewProps) {
           {answers.length > 0 && model.configured !== false && (
             <div className="flex items-end gap-2">
               <Field label="Or read a saved answer">
-                <Select value={picked} onChange={(e) => setPicked(e.target.value)} className="w-72">
+                <NativeSelect value={picked} onChange={(e) => setPicked(e.target.value)} className="w-72">
                   <option value="">Choose a research answer</option>
                   {answers.map((a) => <option key={a.id} value={a.id}>{a.query.length > 60 ? `${a.query.slice(0, 60)}...` : a.query}</option>)}
-                </Select>
+                </NativeSelect>
               </Field>
               <GenerateButton pending={gen.pending} onClick={() => void extract(Number(picked))} disabled={!picked}>Extract rows</GenerateButton>
             </div>
@@ -322,7 +325,7 @@ function CompetitorDialog({ item, onClose, onSave }: { item: Item | null; onClos
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void save(); }}>
         <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
           <Field label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} /></Field>
-          <Field label="Kind"><Select value={kind} onChange={(e) => setKind(e.target.value)}><option value="product">Product</option><option value="alternative">Alternative (do nothing, a workaround)</option></Select></Field>
+          <Field label="Kind"><NativeSelect value={kind} onChange={(e) => setKind(e.target.value)}><option value="product">Product</option><option value="alternative">Alternative (do nothing, a workaround)</option></NativeSelect></Field>
         </div>
         <Field label="What it is"><Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} /></Field>
         <div className="grid gap-3 sm:grid-cols-[1fr_7rem]">

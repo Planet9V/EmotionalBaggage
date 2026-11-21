@@ -12,7 +12,10 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { messageOf } from "@/lib/queries";
 import { downloadAuditLog, useAuditLog, type AuditConcept, type AuditFilters } from "@/lib/admin/client";
-import { Empty, LoadError, LoadingBlocks, Panel, when } from "./shared";
+import {  } from "./shared";
+import { fmtDateTime } from "@/lib/format";
+import { EmptyState, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 const ALL = "__all";
 
@@ -150,7 +153,7 @@ export function AuditTab() {
         ) : log.isError && !entries.length ? (
           <LoadError message={messageOf(log.error)} onRetry={() => void log.refetch()} />
         ) : entries.length === 0 ? (
-          <Empty>{filtered ? "No lines match these filters." : "No lines yet. Every change made in the app will be listed here."}</Empty>
+          <EmptyState>{filtered ? "No lines match these filters." : "No lines yet. Every change made in the app will be listed here."}</EmptyState>
         ) : (
           <>
             <div className="overflow-x-auto rounded-xl border border-hairline" aria-busy={log.isFetching || undefined}>
@@ -183,7 +186,7 @@ export function AuditTab() {
                               {isOpen ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
                             </Button>
                           </TableCell>
-                          <TableCell className="whitespace-nowrap align-top font-mono text-xs text-muted">{when(e.at)}</TableCell>
+                          <TableCell className="whitespace-nowrap align-top font-mono text-xs text-muted">{fmtDateTime(e.at)}</TableCell>
                           <TableCell className="align-top text-xs">{e.actor || "none"}</TableCell>
                           <TableCell className="align-top text-xs">
                             {e.projectId ? (

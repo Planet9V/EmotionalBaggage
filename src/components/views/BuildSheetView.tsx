@@ -2,11 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Download, Printer, RotateCcw, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { STORE } from "@/lib/domain";
 import { Checklist } from "@/components/buildsheet/Checklist";
@@ -24,6 +21,9 @@ import {
 } from "@/components/buildsheet/derive";
 import { buildMarkdown } from "@/components/buildsheet/markdown";
 import type { ViewProps } from "./types";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Modal } from "@/components/ui/modal";
+import { downloadFile } from "@/lib/download";
 
 type Mode = "order" | "part";
 
@@ -58,17 +58,7 @@ const parseNum = (s: string): number | null => {
   return Number.isFinite(n) && n >= 0 ? n : null;
 };
 
-function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export function BuildSheetView({ project, store }: ViewProps) {
-  const reduce = useReducedMotion();
   const wiring = useItems(project.id, store || STORE.wiring);
   const partItems = useItems(project.id, STORE.parts);
   const filesChanged = useFilesChanged(project.id);
@@ -135,7 +125,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
     }
   };
 
-  if (wiring.loading || partItems.loading) return <p className="text-sm text-secondary">Loading the build sheet.</p>;
+  if (wiring.loading || partItems.loading) return <LoadingBlocks rows={2} label="Loading the build sheet" />;
 
   if (steps.length === 0) {
     return (
@@ -162,12 +152,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
   );
 
   return (
-    <motion.div
-      initial={reduce ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-      className="bs-root space-y-8"
-    >
+    <div className="animate-enter bs-root space-y-8">
       <style>{PRINT_CSS}</style>
 
       <div className="hidden print:block">
@@ -178,7 +163,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
         <Button variant="outline" size="sm" onClick={() => window.print()}>
           <Printer className="h-3.5 w-3.5" aria-hidden /> Print
         </Button>
-        <Button variant="outline" size="sm" onClick={() => download(`${project.id}-build-sheet.md`, markdown())}>
+        <Button variant="outline" size="sm" onClick={() => downloadFile(`${project.id}-build-sheet.md`, markdown(), "text/markdown;charset=utf-8")}>
           <Download className="h-3.5 w-3.5" aria-hidden /> Download Markdown
         </Button>
         <Button variant="outline" size="sm" onClick={() => void save()} disabled={saving}>
@@ -295,6 +280,6 @@ export function BuildSheetView({ project, store }: ViewProps) {
           <Button size="sm" onClick={() => void resetAll()} disabled={resetting}>{resetting ? "Resetting" : "Reset all"}</Button>
         </div>
       </Modal>
-    </motion.div>
+    </div>
   );
 }

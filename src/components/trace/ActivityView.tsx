@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { SELECT_CLS } from "@/components/items/shared";
 import { Field } from "@/components/items/shared";
 import { STAGES, storeKey } from "@/lib/menu";
 import { useProject } from "@/lib/client";
 import { useActivity } from "@/lib/trace/client";
 import type { Project } from "@/lib/types";
 import { HistoryEntryView } from "./HistoryEntryView";
+import { NativeSelect } from "@/components/ui/native-select";
+import { NoConcept } from "@/components/ui/states";
 
 const KINDS = [
   ["item", "Rows added, edited or removed"],
@@ -32,9 +32,7 @@ export function ActivityView() {
       <PageHeader eyebrow={`Tools${project ? ` · ${project.name}` : ""}`} title="Activity" blurb="Every change to this concept: who made it, when, and each field before and after." />
       <div className="px-8 py-6">
         {!project ? (
-          <p className="text-sm text-secondary">
-            {loading ? "Loading the concept." : <>No concept is open. <Link href="/new" className="text-link hover:underline">Start one</Link>.</>}
-          </p>
+          <NoConcept loading={loading} />
         ) : (
           <ActivityBody key={project.id} project={project} />
         )}
@@ -54,26 +52,26 @@ function ActivityBody({ project }: { project: Project }) {
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-full sm:w-64">
           <Field label="Section" htmlFor="activity-section">
-            <select id="activity-section" className={SELECT_CLS} value={section} onChange={(e) => setSection(e.target.value)}>
+            <NativeSelect id="activity-section" value={section} onChange={(e) => setSection(e.target.value)}>
               <option value="">All sections</option>
               {SECTIONS.map((s) => (
                 <option key={s.store} value={s.store}>
                   {s.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </Field>
         </div>
         <div className="w-full sm:w-64">
           <Field label="Kind of change" htmlFor="activity-kind">
-            <select id="activity-kind" className={SELECT_CLS} value={kind} onChange={(e) => setKind(e.target.value)}>
+            <NativeSelect id="activity-kind" value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="">All changes</option>
               {KINDS.map(([k, label]) => (
                 <option key={k} value={k}>
                   {label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </Field>
         </div>
         {filtering && (

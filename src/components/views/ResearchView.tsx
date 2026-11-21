@@ -2,7 +2,6 @@
 
 import { Fragment, Suspense, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
@@ -11,8 +10,6 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
-import { selectClass } from "@/components/wizard/fields";
-import { TEXTAREA_CLS } from "@/components/items/shared";
 import { hostname, stamp } from "@/components/wizard/shared";
 import { ClaimEvidence } from "@/components/research/ClaimEvidence";
 import { VERDICT_LABEL, useEvidence } from "@/lib/research/client";
@@ -20,6 +17,9 @@ import { VERDICTS, type Verdict } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { LoadingBlocks } from "@/components/ui/states";
 
 type Source = { url: string; title?: string; snippet?: string; date?: string };
 type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
@@ -33,7 +33,6 @@ const day = (iso: string) => {
 };
 
 export function ResearchView({ project }: ViewProps) {
-  const reduce = useReducedMotion();
   const qc = useQueryClient();
   const research = useQuery(queries.research(project.id));
   const state: Resp | null = research.data ?? null;
@@ -68,7 +67,7 @@ export function ResearchView({ project }: ViewProps) {
   };
 
   if (loadError && !state) return <p role="alert" className="text-sm text-danger">{loadError}</p>;
-  if (!state) return <p className="text-sm text-secondary">Loading.</p>;
+  if (!state) return <LoadingBlocks rows={2} label="Loading" />;
 
   const on = state.configured;
   const unverified = claims.items.filter((c) => c.status === "unverified");
@@ -125,9 +124,9 @@ export function ResearchView({ project }: ViewProps) {
       ) : (
         <ul className="space-y-4">
           {state.entries.map((e) => (
-            <motion.li key={e.id} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
+            <li className="animate-enter" key={e.id}>
               <EntryCard entry={e} claims={claims} projectId={project.id} preferClaim={preferClaim} />
-            </motion.li>
+            </li>
           ))}
         </ul>
       )}
@@ -288,10 +287,10 @@ function EvidenceForm({ claims, source, researchId, projectId, preferClaim = "",
     <div className="mt-2 space-y-3 rounded-md border border-hairline p-3">
       <div className="space-y-1">
         <label htmlFor={`${base}-claim`} className="text-xs font-medium text-primary">Claim this source is evidence for</label>
-        <select id={`${base}-claim`} className={`${selectClass} h-8 text-xs`} value={claimId} onChange={(e) => setClaimId(e.target.value)}>
+        <NativeSelect id={`${base}-claim`} className="h-8 text-xs" value={claimId} onChange={(e) => setClaimId(e.target.value)}>
           <option value="">{claims.length ? "Pick a claim" : "No claims in this concept yet"}</option>
           {claims.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-        </select>
+        </NativeSelect>
       </div>
       <fieldset className="space-y-1">
         <legend className="text-xs font-medium text-primary">What does this source say about the claim?</legend>
@@ -304,7 +303,7 @@ function EvidenceForm({ claims, source, researchId, projectId, preferClaim = "",
       </fieldset>
       <div className="space-y-1">
         <label htmlFor={`${base}-quote`} className="text-xs font-medium text-primary">Quote from the source (optional)</label>
-        <textarea id={`${base}-quote`} rows={2} className={TEXTAREA_CLS} value={quote} onChange={(e) => setQuote(e.target.value)} />
+        <Textarea id={`${base}-quote`} rows={2} value={quote} onChange={(e) => setQuote(e.target.value)} />
       </div>
       <div className="flex gap-2">
         <Button size="sm" disabled={!claimId || !verdict || add.isPending} onClick={() => void save()}>{add.isPending ? "Saving" : "Save evidence"}</Button>

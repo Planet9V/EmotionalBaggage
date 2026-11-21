@@ -4,12 +4,17 @@ import { useMemo, useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
 import { AD_CHANNELS, checkChannel, measure, type ChannelSpec, type FieldSpec, type FieldValues } from "@/lib/content/channels";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { asFlags, Count, FlagList, MessageLine, Panel, Problems, SourceLink, StatusPill } from "./shared";
+import { asFlags, Count, FlagList, MessageLine, Problems, SourceLink, StatusPill } from "./shared";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Panel } from "@/components/ui/panel";
+import { Card } from "@/components/ui/Card";
 
 const STATUSES = ["draft", "approved", "running", "paused", "killed"];
 const toMinor = (s: string) => (s.trim() === "" ? undefined : Math.round(Number(s) * 100));
@@ -68,7 +73,7 @@ export function AdsView({ project, store }: ViewProps) {
       {error && !items.length ? <ErrorLine>{error}</ErrorLine> : null}
 
       {loose.length > 0 && (
-        <Panel title={`Older ad rows without a channel (${loose.length})`}>
+        <Panel compact title={`Older ad rows without a channel (${loose.length})`}>
           <p className="mb-2 text-xs text-muted">These were written before ads had channels. They are kept as they are. Move one to a channel to edit it with that channel&apos;s fields.</p>
           <ul className="space-y-2">
             {loose.map((i) => (
@@ -77,10 +82,10 @@ export function AdsView({ project, store }: ViewProps) {
                 <span className="min-w-0 flex-1 truncate text-primary">{i.title}</span>
                 <label className="flex items-center gap-2 text-xs text-secondary">
                   Move to
-                  <Select aria-label={`Channel for ${i.title}`} className="h-8 w-56" value="" onChange={(e) => e.target.value && void patch(i.id, { data: { channel: e.target.value, fields: {} } }).catch((x) => setErr((x as Error).message))}>
+                  <NativeSelect aria-label={`Channel for ${i.title}`} className="h-8 w-56" value="" onChange={(e) => e.target.value && void patch(i.id, { data: { channel: e.target.value, fields: {} } }).catch((x) => setErr((x as Error).message))}>
                     <option value="">Choose a channel</option>
                     {AD_CHANNELS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-                  </Select>
+                  </NativeSelect>
                 </label>
               </li>
             ))}
@@ -89,7 +94,7 @@ export function AdsView({ project, store }: ViewProps) {
       )}
 
       {loading ? (
-        <p className="text-sm text-secondary" role="status">Loading the ads.</p>
+        <LoadingBlocks rows={2} label="Loading the ads" />
       ) : ads.length === 0 ? (
         <EmptyState title={`No ${spec.label} ads yet`}>Draft variants with AI, each tied to one approved message, or add one by hand.</EmptyState>
       ) : (
@@ -107,7 +112,7 @@ export function AdsView({ project, store }: ViewProps) {
 
 function SpecPanel({ spec }: { spec: ChannelSpec }) {
   return (
-    <Panel title={`${spec.label}: what it accepts`}>
+    <Panel compact title={`${spec.label}: what it accepts`}>
       <p className="text-sm text-secondary">{spec.summary}</p>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full text-left text-xs">
@@ -188,7 +193,7 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
   const set = (k: string, v: string | string[]) => setVals((p) => ({ ...p, [k]: v }));
 
   return (
-    <article className="rounded-xl border border-hairline bg-surface p-4" aria-label={ad.title}>
+    <Card variant="flat" as="article" className="p-4" aria-label={ad.title}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <StatusPill status={ad.status} />
@@ -204,7 +209,7 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg border border-hairline bg-subtle p-3">
+      <Card variant="well" className="rounded-lg mt-4 p-3">
         <h3 className="text-xs font-semibold text-primary">Stop and scale rule</h3>
         <p className="text-[11px] text-muted">The two numbers are read by the campaign tracking. They are yours to set; none is filled in for you.</p>
         <div className="mt-2 grid gap-3 md:grid-cols-3">
@@ -216,7 +221,7 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
             <Input inputMode="decimal" value={minSpend} onChange={(e) => setMinSpend(e.target.value)} />
           </Field>
         </div>
-      </div>
+      </Card>
 
       <div className="mt-3 space-y-2">
         <FlagList flags={asFlags(ad.data.flags)} />
@@ -228,13 +233,13 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
         <Button size="sm" onClick={() => void save()} disabled={busy || !dirty || hard.some((h) => !/required|at least/.test(h.message))}>{busy ? "Saving" : dirty ? "Save changes" : "Saved"}</Button>
         <label className="flex items-center gap-2 text-xs text-secondary">
           Status
-          <Select aria-label={`Status of ${ad.title}`} className="h-8 w-36" value={ad.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
+          <NativeSelect aria-label={`Status of ${ad.title}`} className="h-8 w-36" value={ad.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
             {STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </Select>
+          </NativeSelect>
         </label>
         {dirty && <span className="text-xs text-muted">Save before changing the status.</span>}
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -264,10 +269,10 @@ function FieldEditor({ spec, value, onChange, id }: { spec: FieldSpec; value: st
   if (spec.kind === "choice") {
     return (
       <Field label={label}>
-        <Select value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)}>
+        <NativeSelect value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)}>
           <option value="">Choose</option>
           {spec.choices!.map((c) => <option key={c}>{c}</option>)}
-        </Select>
+        </NativeSelect>
       </Field>
     );
   }

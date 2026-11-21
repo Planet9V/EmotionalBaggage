@@ -1,27 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import type { Missing } from "@/lib/economics/compute";
-
-/** A panel with a title: the unit of layout on the economics screens. */
-export function Panel({ title, note, action, children, id }: { title: string; note?: ReactNode; action?: ReactNode; children: ReactNode; id?: string }) {
-  return (
-    <section aria-labelledby={id ? `${id}-h` : undefined} id={id} className="rounded-xl border border-hairline bg-surface">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-hairline px-4 py-3">
-        <div className="min-w-0">
-          <h2 id={id ? `${id}-h` : undefined} className="text-sm font-semibold tracking-tight text-primary">
-            {title}
-          </h2>
-          {note ? <p className="mt-0.5 max-w-3xl text-xs text-secondary">{note}</p> : null}
-        </div>
-        {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
 
 /** What is missing, one line each, each with a link to the screen that has the row. */
 export function MissingList({ items, title = "Not priced or not entered" }: { items: Missing[]; title?: string }) {
@@ -64,12 +45,3 @@ export function HowThisIsWorkedOut({ lines }: { lines: { label: string; how: str
   );
 }
 
-export function PanelLoading({ label }: { label: string }) {
-  return (
-    <div aria-busy="true" aria-label={label} className="space-y-3">
-      <div className="h-8 w-72 animate-pulse rounded-md bg-subtle" />
-      <div className="h-56 animate-pulse rounded-xl bg-subtle" />
-      <div className="h-40 animate-pulse rounded-xl bg-subtle" />
-    </div>
-  );
-}

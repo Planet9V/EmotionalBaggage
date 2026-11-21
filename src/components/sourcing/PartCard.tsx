@@ -5,7 +5,6 @@ import { ExternalLink, Search, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { ErrorLine, Field, Select } from "@/components/parts/controls";
 import type { Part } from "@/lib/domain";
 import { statusTone } from "@/lib/statusTones";
 import { searchLinks, searchTerm } from "@/lib/sourcing/links";
@@ -13,6 +12,10 @@ import { pieceUnitPrice } from "@/lib/sourcing/list";
 import { newId, ORDER_STATUSES, orderSchema, readSourcing, type Draft, type Offer, type Sourcing } from "@/lib/sourcing/schemas";
 import type { Kind } from "@/lib/sourcing/research";
 import { OfferForm } from "./OfferForm";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 
 export type Change = { status?: string; data?: Record<string, unknown> };
 
@@ -46,7 +49,7 @@ export function PartCard({ part, currency, onSave, onResearch }: {
   const reject = (d: Draft) => save({ ...s, drafts: s.drafts.filter((x) => x.id !== d.id) });
 
   return (
-    <li className="rounded-xl border border-hairline bg-surface" aria-label={part.item.title}>
+    <Card variant="flat" as="li" aria-label={part.item.title}>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary">
@@ -154,7 +157,7 @@ export function PartCard({ part, currency, onSave, onResearch }: {
           <OrderForm part={part} s={s} onSave={(order) => save({ ...s, order }, { status: STATUS_FOR_ORDER[order.status] })} />
         </div>
       )}
-    </li>
+    </Card>
   );
 }
 
@@ -177,7 +180,7 @@ function OrderForm({ part, s, onSave }: { part: Part; s: Sourcing; onSave: (o: N
       <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Order, tracked by you</h3>
       <p className="text-xs text-muted">You place the order on the supplier&apos;s site. Record here what happened.</p>
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Field label="Status"><Select value={v.status} onChange={set("status")}>{ORDER_STATUSES.map((x) => <option key={x}>{x}</option>)}</Select></Field>
+        <Field label="Status"><NativeSelect value={v.status} onChange={set("status")}>{ORDER_STATUSES.map((x) => <option key={x}>{x}</option>)}</NativeSelect></Field>
         <Field label="Quantity ordered"><Input inputMode="numeric" value={v.qtyOrdered} onChange={set("qtyOrdered")} /></Field>
         <Field label="Quantity received"><Input inputMode="numeric" value={v.qtyReceived} onChange={set("qtyReceived")} /></Field>
         <Field label="Ordered on"><Input type="date" value={v.orderedOn} onChange={set("orderedOn")} /></Field>

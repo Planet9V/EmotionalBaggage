@@ -8,10 +8,11 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { EventDropArg, EventInput } from "@fullcalendar/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine } from "@/components/parts/controls";
 import { socialChannel, checkSocial } from "@/lib/content/channels";
 import type { Item } from "@/lib/types";
 import { StatusPill } from "./shared";
+import { ErrorLine } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 type Change = { status?: string; data?: Record<string, unknown> };
 const sched = (i: Item) => (typeof i.data.scheduledAt === "string" ? i.data.scheduledAt : "");
@@ -81,7 +82,7 @@ export function SocialCalendar({ items, onPatch }: { items: Item[]; onPatch: (id
         .c2r-cal .c2r-ev-posted{opacity:.6}
         .c2r-cal a{color:inherit}
       `}</style>
-      <div className="c2r-cal rounded-xl border border-hairline bg-surface p-3">
+      <Card variant="flat" className="c2r-cal p-3">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
@@ -100,9 +101,9 @@ export function SocialCalendar({ items, onPatch }: { items: Item[]; onPatch: (id
           allDayText="All day"
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
         />
-      </div>
+      </Card>
 
-      <section aria-label="Posts without a date" className="rounded-xl border border-hairline bg-surface p-4">
+      <Card variant="flat" as="section" aria-label="Posts without a date" className="p-4">
         <h3 className="text-sm font-semibold text-primary">Not on the calendar yet ({unscheduled.length})</h3>
         <p className="text-xs text-muted">Pick a date and time, or drag a dated post on the calendar. An approved post becomes scheduled when it gets a date.</p>
         {unscheduled.length === 0 ? (
@@ -125,7 +126,7 @@ export function SocialCalendar({ items, onPatch }: { items: Item[]; onPatch: (id
             })}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

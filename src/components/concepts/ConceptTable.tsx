@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { exportHref, lastChanged, type Concept } from "@/lib/conceptsClient";
-import { fmtDate, plural, stageLabel, typeLabel } from "./model";
+import { stageLabel, typeLabel } from "./model";
+import { fmtDateTime, plural } from "@/lib/format";
 
 type ActionKind = "edit" | "delete" | "duplicate" | "archive";
 
@@ -87,13 +88,13 @@ function Row({
         <p className="truncate text-xs text-secondary">{c.oneLiner || <span className="text-muted">No description</span>}</p>
         {/* Below 1024 px the other columns fold into this line, so the name keeps its width. */}
         <p className="mt-0.5 whitespace-normal font-mono text-[10px] text-muted lg:hidden">
-          {typeLabel(c.productType)} · {stageLabel(c.stage)} · {fmtDate(changed)} · {plural(c.rowCount, "row")}
+          {typeLabel(c.productType)} · {stageLabel(c.stage)} · {fmtDateTime(changed)} · {plural(c.rowCount, "row")}
         </p>
       </TableCell>
       <TableCell className="hidden whitespace-nowrap lg:table-cell">{typeLabel(c.productType)}</TableCell>
       <TableCell className="hidden whitespace-nowrap lg:table-cell">{stageLabel(c.stage)}</TableCell>
       <TableCell className="hidden whitespace-nowrap font-mono text-xs lg:table-cell">
-        <time dateTime={changed}>{fmtDate(changed)}</time>
+        <time dateTime={changed}>{fmtDateTime(changed)}</time>
       </TableCell>
       <TableCell className="hidden text-right font-mono text-xs lg:table-cell">{c.rowCount.toLocaleString()}</TableCell>
       <TableCell className="whitespace-nowrap text-right">

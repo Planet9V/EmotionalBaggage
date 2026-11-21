@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusTone } from "@/lib/statusTones";
 import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
-import { SELECT_CLS, prim } from "./shared";
+import { prim } from "./shared";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 
 type Props = {
   items: Item[];
@@ -26,7 +27,6 @@ const num = (s: string) => {
 };
 
 export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraColumn }: Props) {
-  const reduce = useReducedMotion();
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
 
   const value = (it: Item, key: string) => (key === "title" ? it.title : key === "status" ? String(statuses.indexOf(it.status)).padStart(4, "0") : prim(it.data[key]));
@@ -62,7 +62,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+    <Card variant="flat" className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
@@ -77,13 +77,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
         </TableHeader>
         <TableBody>
           {rows.map((it, i) => (
-            <motion.tr
-              key={it.id}
-              initial={reduce ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut", delay: reduce ? 0 : Math.min(i * 0.025, 0.25) }}
-              className="border-b border-hairline transition-colors hover:bg-subtle"
-            >
+            <tr className="animate-enter border-b border-hairline transition-colors hover:bg-subtle" style={{ animationDelay: `${(Math.min(i * 0.025, 0.25)) * 1000}ms` }} key={it.id}>
               <TableCell className="max-w-88 font-medium text-primary">
                 <button type="button" onClick={() => onOpen(it.id)} className="text-left wrap-anywhere hover:text-link focus-visible:outline-hidden focus-visible:underline">
                   {it.title}
@@ -98,18 +92,18 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
               <TableCell>
                 <div className="flex items-center gap-2">
                   <StatusBadge tone={statusTone(it.status)}>{it.status}</StatusBadge>
-                  <select
+                  <NativeSelect
                     value={it.status}
                     onChange={(e) => void onStatus(it.id, e.target.value)}
                     aria-label={`Status of ${it.title}`}
-                    className={`${SELECT_CLS} h-8 w-28 text-xs`}
+                    className="h-8 w-28 text-xs"
                   >
                     {statuses.map((s) => (
                       <option key={s} value={s}>
                         {s}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
               </TableCell>
               <TableCell className="text-right">
@@ -122,10 +116,10 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
                   Open
                 </button>
               </TableCell>
-            </motion.tr>
+            </tr>
           ))}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }

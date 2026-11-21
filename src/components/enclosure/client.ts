@@ -36,16 +36,3 @@ export function bytesOf(b64: string): Uint8Array {
 }
 
 export const meshOf = (b64: string): GeneratedMesh => parseStl(bytesOf(b64));
-
-/** Saves bytes or text as a file through a temporary link. */
-export function download(name: string, data: Uint8Array | string, type: string) {
-  const blob = new Blob([data as BlobPart], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}

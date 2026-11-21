@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { GripVertical } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { prim } from "./shared";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+import { Card } from "@/components/ui/Card";
 
 type Props = {
   items: Item[];
@@ -157,21 +158,15 @@ function BoardCard({
   };
   const pairs = columns.map((c) => ({ label: c.label, value: prim(item.data[c.key]) })).filter((p) => p.value);
   return (
-    <motion.li
-      initial={reduce ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: reduce ? 0 : Math.min(index * 0.03, 0.24) }}
-    >
-      <article
-        draggable
-        tabIndex={0}
-        data-card-id={item.id}
-        onDragStart={onDragStart}
-        onKeyDown={key}
-        aria-label={`${item.title}, ${item.status}`}
-        aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
-        className="group cursor-grab rounded-lg border border-hairline bg-surface p-2.5 shadow-xs transition-colors duration-150 hover:border-dutchOrange/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing"
-      >
+    <li className="animate-enter" style={{ animationDelay: `${(Math.min(index * 0.03, 0.24)) * 1000}ms` }}>
+      <Card variant="flat" as="article" draggable
+ tabIndex={0}
+ data-card-id={item.id}
+ onDragStart={onDragStart}
+ onKeyDown={key}
+ aria-label={`${item.title}, ${item.status}`}
+ aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
+ className="rounded-lg group cursor-grab p-2.5 shadow-xs transition-colors duration-150 hover:border-dutchOrange/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing">
         <div className="flex items-start gap-1.5">
           <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
           <button
@@ -210,7 +205,7 @@ function BoardCard({
             ))}
           </select>
         </div>
-      </article>
-    </motion.li>
+      </Card>
+    </li>
   );
 }

@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Column } from "@/lib/menu";
 import { ItemDialogShell } from "./ItemDialogShell";
-import { Field, SELECT_CLS, TEXTAREA_CLS } from "./shared";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Draft = { title: string; body: string; status: string; data: Record<string, string> };
 
@@ -58,29 +60,29 @@ function AddForm({ columns, statuses, onCancel, onCreate }: { columns: Column[];
 
   return (
     <form onSubmit={submit} className="space-y-4 px-5 py-4" noValidate>
-      <Field label="Title" htmlFor="add-title">
+      <Field label="Title" id="add-title">
         <Input id="add-title" value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} autoFocus required aria-required aria-invalid={!!error && !d.title.trim()} />
       </Field>
-      <Field label="Details" htmlFor="add-body">
-        <textarea id="add-body" rows={4} className={TEXTAREA_CLS} value={d.body} onChange={(e) => setD({ ...d, body: e.target.value })} />
+      <Field label="Details" id="add-body">
+        <Textarea id="add-body" rows={4} value={d.body} onChange={(e) => setD({ ...d, body: e.target.value })} />
       </Field>
       {columns.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
           {columns.map((c) => (
-            <Field key={c.key} label={c.label} htmlFor={`add-${c.key}`}>
+            <Field key={c.key} label={c.label} id={`add-${c.key}`}>
               <Input id={`add-${c.key}`} value={d.data[c.key] ?? ""} onChange={(e) => setD({ ...d, data: { ...d.data, [c.key]: e.target.value } })} />
             </Field>
           ))}
         </div>
       )}
-      <Field label="Status" htmlFor="add-status">
-        <select id="add-status" className={SELECT_CLS} value={d.status} onChange={(e) => setD({ ...d, status: e.target.value })}>
+      <Field label="Status" id="add-status">
+        <NativeSelect id="add-status" value={d.status} onChange={(e) => setD({ ...d, status: e.target.value })}>
           {statuses.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </Field>
       {error && (
         <p role="alert" className="text-sm text-danger">

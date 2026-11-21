@@ -6,11 +6,12 @@ import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { TEXTAREA_CLS } from "@/components/items/shared";
 import { storeHref, type Draft } from "@/lib/ai/drafts/shared";
 import type { Item } from "@/lib/types";
 import { messageOf } from "@/lib/queries";
 import { useDraftActions } from "./api";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/Card";
 
 /** Fields the card does not offer as text boxes: shapes and positions edited in their own views. */
 const STRUCTURED = new Set(["geometry", "schematic", "pinRoles", "options"]);
@@ -92,7 +93,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
   const size = (draft.data.geometry as { size?: number[] } | undefined)?.size;
 
   return (
-    <article aria-labelledby={`${base}-t`} className="rounded-xl border border-hairline bg-surface p-4" data-draft={draft.id}>
+    <Card variant="flat" as="article" aria-labelledby={`${base}-t`} className="p-4" data-draft={draft.id}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -123,7 +124,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
         <div className="mt-3 space-y-3">
           <div>
             <label htmlFor={`${base}-body`} className="text-xs font-medium text-primary">Details</label>
-            <textarea id={`${base}-body`} rows={5} className={`${TEXTAREA_CLS} mt-1`} value={body} onChange={(e) => setBody(e.target.value)} />
+            <Textarea id={`${base}-body`} rows={5} className="mt-1" value={body} onChange={(e) => setBody(e.target.value)} />
           </div>
           {Object.keys(fields).length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -207,6 +208,6 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
           </Button>
         </div>
       )}
-    </article>
+    </Card>
   );
 }

@@ -21,7 +21,12 @@ import {
   type ConnectionTest,
   type ProviderView,
 } from "@/lib/admin/client";
-import { ConfirmButton, describe, Empty, FormField, LoadError, LoadingBlocks, Panel, SaveError, SavedNote, TestOutcome, useFlag, when } from "./shared";
+import { TestOutcome,  } from "./shared";
+import { fmtDateTime } from "@/lib/format";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Field, describe } from "@/components/ui/field";
+import { EmptyState, LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 type Field = ProviderView["fields"][number];
 
@@ -108,7 +113,7 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
           const id = fieldId(f.name);
           return (
             <div key={f.name} className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-              <FormField id={id} label={f.label} required={f.required} hint={<span data-testid={`state-${p.id}-${f.name}`}>{fieldState(f)}</span>}>
+              <Field id={id} label={f.label} required={f.required} hint={<span data-testid={`state-${p.id}-${f.name}`}>{fieldState(f)}</span>}>
                 <Input
                   id={id}
                   type={f.secret ? "password" : "text"}
@@ -119,7 +124,7 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
                   onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                   {...describe(id, { hint: true })}
                 />
-              </FormField>
+              </Field>
               {f.source === "admin" ? (
                 <ConfirmButton
                   label="Remove"
@@ -174,12 +179,12 @@ function Activity() {
       ) : audit.isError ? (
         <LoadError message={messageOf(audit.error)} onRetry={() => void audit.refetch()} />
       ) : audit.data.length === 0 ? (
-        <Empty>Nothing yet. Saving a key or testing a connection adds a line here.</Empty>
+        <EmptyState>Nothing yet. Saving a key or testing a connection adds a line here.</EmptyState>
       ) : (
         <ul className="divide-y divide-hairline rounded-xl border border-hairline text-sm">
           {audit.data.slice(0, 30).map((e, i) => (
             <li key={`${e.at}-${i}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2">
-              <span className="w-44 shrink-0 font-mono text-xs text-muted">{when(e.at)}</span>
+              <span className="w-44 shrink-0 font-mono text-xs text-muted">{fmtDateTime(e.at)}</span>
               <span className="font-medium text-primary">{ACTION[e.action] ?? e.action}</span>
               <span className="font-mono text-xs text-secondary">
                 {e.provider}
@@ -210,7 +215,7 @@ export function CredentialsTab() {
         Keys are saved in this install&apos;s database. The app never shows a saved key again: at most its last four characters. A key saved here is used before any
         environment variable.
       </p>
-      {creds.data.length === 0 ? <Empty>No providers are defined.</Empty> : null}
+      {creds.data.length === 0 ? <EmptyState>No providers are defined.</EmptyState> : null}
       <div className="grid gap-4 xl:grid-cols-2">
         {creds.data.map((p) => (
           <ProviderCard key={p.id} p={p} settings={settings.data} />

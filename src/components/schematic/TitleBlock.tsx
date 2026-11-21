@@ -1,5 +1,6 @@
 "use client";
 
+import { NativeSelect } from "@/components/ui/native-select";
 /** The schematic's title block: concept, revision and date. Shown on the canvas and on the printed sheet. */
 export function TitleBlock({ concept, revision, revisions, onRevision, date, view }: { concept: string; revision: string; revisions: string[]; onRevision: (r: string) => void; date: string; view: string }) {
   return (
@@ -17,18 +18,18 @@ export function TitleBlock({ concept, revision, revisions, onRevision, date, vie
           </label>
           {revisions.length > 1 ? (
             <>
-              <select
+              <NativeSelect
                 id="schematic-revision"
                 value={revision}
                 onChange={(e) => onRevision(e.target.value)}
-                className="schematic-noprint mt-0.5 w-full truncate rounded-sm border border-hairline bg-surface px-1 py-0.5 text-xs"
+                className="schematic-noprint mt-0.5 h-auto truncate rounded-sm px-1 py-0.5 text-xs"
               >
                 {revisions.map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <span className="schematic-printonly hidden text-xs">{revision}</span>
             </>
           ) : (

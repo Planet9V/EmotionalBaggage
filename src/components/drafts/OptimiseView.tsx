@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { LoadError, LoadingBlocks, Panel, when } from "@/components/admin/shared";
+import { fmtDateTime } from "@/lib/format";
 import { useProject } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { OptimiseState } from "@/lib/ai/drafts/service";
@@ -13,6 +13,8 @@ import type { RunResult } from "@/lib/ai/drafts/shared";
 import type { Project } from "@/lib/types";
 import { ApiError, draftQueries, useOptimise } from "./api";
 import { MODELS_HREF, RunSummary, WaitingDrafts } from "./DraftPanel";
+import { LoadError, LoadingBlocks, NoConcept } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 const WHAT: Record<string, string> = {
   cost: "The model proposes cheaper substitutes for parts. A substitute has no price until you enter one, so the after is counted from the costs you enter.",
@@ -26,7 +28,7 @@ export function OptimiseView() {
     return (
       <>
         <PageHeader eyebrow="Optimisation" title="Optimise" />
-        <p className="p-8 text-sm text-secondary">{loading ? "Loading the concept." : <>No concept is open. <Link href="/new" className="text-link hover:underline">Start one</Link>.</>}</p>
+        <NoConcept loading={loading} />
       </>
     );
   }
@@ -101,7 +103,7 @@ function Action({ projectId, a, configured }: { projectId: string; a: OptimiseSt
         {a.last ? (
           <>
             <dt className="text-muted">Before the last run</dt>
-            <dd className="text-primary">{a.last.before.text} <span className="text-xs text-muted">({when(a.last.at)})</span></dd>
+            <dd className="text-primary">{a.last.before.text} <span className="text-xs text-muted">({fmtDateTime(a.last.at)})</span></dd>
             <dt className="text-muted">If every waiting proposal is approved</dt>
             <dd className="text-primary">{a.last.drafts.waiting ? a.last.ifApproved.text : "Nothing is waiting"}</dd>
             <dt className="text-muted">Proposals of the last run</dt>

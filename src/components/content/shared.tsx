@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { AlertTriangle, ExternalLink } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/utils";
@@ -77,18 +76,6 @@ export function MessageLine({ message, href = "/s/marketing/positioning" }: { me
 }
 
 export const asFlags = (v: unknown): Flag[] => (Array.isArray(v) ? (v as Flag[]) : []);
-
-export function Panel({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
-  return (
-    <section aria-label={title} className="rounded-xl border border-hairline bg-surface p-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-primary">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 export const tone = (status: string) => (status === "approved" || status === "ready" || status === "scheduled" ? "success" : status === "draft" ? "warning" : status === "killed" ? "danger" : "neutral") as "success" | "warning" | "danger" | "neutral";
 

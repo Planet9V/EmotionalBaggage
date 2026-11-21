@@ -3,10 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { readBatch } from "@/lib/economics/read";
 import type { Item } from "@/lib/types";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Modal } from "@/components/ui/modal";
 
 const STATUSES = ["planned", "funded", "building", "shipped"];
 export type BatchDraft = { title: string; status: string; data: { units: number; targetDate: string; build: string } };
@@ -61,11 +63,11 @@ function Form({ initial, onCancel, onSave }: { initial: Item | null; onCancel: (
         <Input value={build} onChange={(e) => setBuild(e.target.value)} aria-label="Build it belongs to" />
       </Field>
       <Field label="Status">
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
+        <NativeSelect value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
           {STATUSES.map((s) => (
             <option key={s}>{s}</option>
           ))}
-        </Select>
+        </NativeSelect>
       </Field>
       {error ? <ErrorLine>{error}</ErrorLine> : null}
       <div className="flex justify-end gap-2">

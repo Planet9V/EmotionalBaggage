@@ -10,6 +10,7 @@ import { messageOf, queries } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import { ApiError, ATTACK_MESSAGE, useChallengeRow, useDraftActions } from "./api";
 import { MODELS_HREF } from "./DraftPanel";
+import { Card } from "@/components/ui/Card";
 
 const GENERATOR: Record<string, string> = { "concept/press": "press-release", "concept/faq": "faq" };
 
@@ -27,7 +28,7 @@ export function CritiquePanel({ projectId, store }: { projectId: string; store: 
   if (!rows.items.length) return null;
   const messages = ((thread.data?.messages ?? []) as Msg[]).filter((m) => m.role === "assistant" && typeof m.itemId === "number");
   return (
-    <section aria-labelledby="critique-h" className="rounded-2xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="section" aria-labelledby="critique-h" className="rounded-2xl p-4">
       <h2 id="critique-h" className="text-sm font-semibold text-primary">The reviewer&apos;s attack</h2>
       <p className="mt-0.5 text-xs text-secondary">Each approved row is put to the reviewer once. Revise with the critique to get a new draft you can approve or reject.</p>
       {thread.error && <p role="alert" className="mt-2 text-sm text-danger">{messageOf(thread.error)}</p>}
@@ -36,7 +37,7 @@ export function CritiquePanel({ projectId, store }: { projectId: string; store: 
           <CritiqueRow key={row.id} projectId={projectId} store={store} row={row} critique={[...messages].reverse().find((m) => m.itemId === row.id) ?? null} configured={thread.data?.configured ?? false} />
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }
 

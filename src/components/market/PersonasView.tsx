@@ -6,13 +6,16 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { useItems } from "@/lib/client";
 import { personaData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { ApproveButton, FieldRow, GeneratedLine, GenerateButton, LoadFailed, LoadingBlock, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { ApproveButton, FieldRow, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
 
 const FIELDS = [
   ["who", "Who they are"],
@@ -35,8 +38,8 @@ export function PersonasView({ project, store }: ViewProps) {
   const briefEmpty = !brief.loading && brief.items.length === 0;
   const sorted = useMemo(() => [...items].sort((a, b) => (a.status === b.status ? a.sort - b.sort : a.status === "approved" ? -1 : 1)), [items]);
 
-  if (loading) return <LoadingBlock label="Loading personas" />;
-  if (error && !items.length) return <LoadFailed what="Personas" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading personas" />;
+  if (error && !items.length) return <LoadError what="Personas" message={error} onRetry={() => void reload()} />;
 
   const draft = async () => {
     try {
@@ -65,9 +68,9 @@ export function PersonasView({ project, store }: ViewProps) {
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <Field label="How many">
-            <Select value={count} onChange={(e) => setCount(e.target.value)} className="w-24">
+            <NativeSelect value={count} onChange={(e) => setCount(e.target.value)} className="w-24">
               {[1, 2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}
-            </Select>
+            </NativeSelect>
           </Field>
           <Field label="A note for this batch (optional)" className="min-w-64 flex-1">
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: include one buyer who gives it as a gift" />

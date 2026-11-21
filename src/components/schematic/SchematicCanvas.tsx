@@ -21,6 +21,7 @@ import { NET_COLOR, type NetClass, type Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, MISSING_PIN, type Graph, type Part, type XY } from "./model";
 import { SchematicContext, edgeTypes, nodeTypes, type PartNodeType, type ViaNodeType, type WireEdgeType } from "./nodes";
 import type { Selection } from "./SidePanel";
+import { Card } from "@/components/ui/Card";
 
 const DRAG_TYPE = "application/x-schematic-part";
 
@@ -156,7 +157,7 @@ export function SchematicCanvas(p: Props) {
   return (
     <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight, onPickPin: p.onPickPin }}>
       {p.palette.length > 0 && (
-        <div className="mb-3 rounded-xl border border-hairline bg-surface px-3 py-2.5">
+        <Card variant="flat" className="mb-3 px-3 py-2.5">
           <p className="text-xs text-secondary">
             <span className="font-medium text-primary">Not on the schematic yet.</span> Drag a part onto the canvas, or press Place, then name its first pin.
           </p>
@@ -187,7 +188,7 @@ export function SchematicCanvas(p: Props) {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
       <div
         ref={wrap}

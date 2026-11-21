@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { AddStepForm } from "@/components/plan/AddStepForm";
-import { fmtMinutes } from "@/components/plan/format";
 import { PlanGraph } from "@/components/plan/PlanGraph";
 import { PlanTimeline } from "@/components/plan/PlanTimeline";
 import { StepDetail, type ItemChange } from "@/components/plan/StepDetail";
 import { usePlan } from "@/components/plan/usePlan";
 import { useItems, useProject } from "@/lib/client";
 import type { Project } from "@/lib/types";
+import { fmtMinutes } from "@/lib/format";
+import { NoConcept } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 export function PlanView() {
   const { project, loading } = useProject();
@@ -21,9 +21,7 @@ export function PlanView() {
     return (
       <>
         <PageHeader eyebrow="Order of operations" title="Order of operations" />
-        <p className="p-8 text-sm text-secondary">
-          {loading ? "Loading the concept." : <>No concept is open. <Link href="/new" className="text-link hover:underline">Start one</Link>.</>}
-        </p>
+        <NoConcept loading={loading} />
       </>
     );
   }
@@ -35,7 +33,6 @@ function PlanBody({ project }: { project: Project }) {
   const { items, error: itemsError, reload: reloadItems, patch, add: addItem } = useItems(project.id, null);
   const [selected, setSelected] = useState<string | null>(null);
   const [writeError, setWriteError] = useState("");
-  const reduce = useReducedMotion();
 
   const refresh = async () => {
     await Promise.all([reloadItems(), reloadPlan()]);
@@ -63,7 +60,6 @@ function PlanBody({ project }: { project: Project }) {
   const step = selected ? byKey.get(selected) ?? null : null;
   const stepItem = step ? items.find((i) => i.id === step.itemId) : undefined;
   const hasSteps = !!plan && plan.nodes.length > 0;
-  const enter = reduce ? {} : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, ease: "easeOut" as const } };
 
   return (
     <>
@@ -118,17 +114,17 @@ function PlanBody({ project }: { project: Project }) {
         )}
 
         {plan && !hasSteps && (
-          <div className="rounded-xl border border-hairline bg-surface p-6">
+          <Card variant="flat" className="p-6">
             <h2 className="text-base font-semibold tracking-tight text-primary">No steps yet</h2>
             <p className="mt-1 max-w-2xl text-sm text-secondary">
               A step is any row with a key, a duration in minutes and the steps it waits on. Add one below, or turn a row you
               already have, such as an assembly phase, into a step.
             </p>
-          </div>
+          </Card>
         )}
 
         {plan && hasSteps && (
-          <motion.section {...enter} className="grid gap-6">
+          <section className="animate-enter grid gap-6">
             <div className="min-w-0 space-y-3">
               <PlanGraph plan={plan} selectedId={selected} onSelect={setSelected} />
               <p className="font-mono text-[10px] text-muted">
@@ -149,7 +145,7 @@ function PlanBody({ project }: { project: Project }) {
                 Select a step in the graph or the list to see its detail, change its status, minutes or what it waits on.
               </aside>
             )}
-          </motion.section>
+          </section>
         )}
 
         {plan && hasSteps && (
@@ -165,7 +161,7 @@ function PlanBody({ project }: { project: Project }) {
               <PlanTimeline plan={plan} selectedId={selected} onSelect={setSelected} />
             </div>
             <div className="space-y-6">
-              <div className="rounded-xl border border-hairline bg-surface p-5">
+              <Card variant="flat" className="p-5">
                 <h2 className="text-sm font-semibold tracking-tight text-primary">Critical path</h2>
                 {plan.criticalPath.length ? (
                   <ol className="mt-3 space-y-2">
@@ -188,7 +184,7 @@ function PlanBody({ project }: { project: Project }) {
                 <p className="mt-3 border-t border-hairline pt-3 text-xs text-muted">
                   A delay to any of these steps delays the finish. Other steps have slack.
                 </p>
-              </div>
+              </Card>
             </div>
           </section>
         )}

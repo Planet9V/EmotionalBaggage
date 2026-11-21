@@ -4,15 +4,6 @@ export { isStep, stepKeys } from "@/lib/domain";
 
 import { DEFAULT_STATUSES, STAGES, storeKey, type Section, type Stage } from "@/lib/menu";
 
-/** 430 -> "7 h 10 min", 45 -> "45 min", 0 -> "0 min" */
-export function fmtMinutes(m: number) {
-  const n = Math.max(0, Math.round(m));
-  if (n < 60) return `${n} min`;
-  const h = Math.floor(n / 60);
-  const r = n % 60;
-  return r ? `${h} h ${r} min` : `${h} h`;
-}
-
 /** Every distinct store key in menu order, with the stage and section that owns it first. */
 export type StoreRef = { store: string; stage: Stage; section: Section };
 
@@ -69,17 +60,6 @@ export function uniqueKey(title: string, used: Set<string>) {
     const k = `${base}-${n}`;
     if (!used.has(k)) return k;
   }
-}
-
-export function fmtBytes(n: number) {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(2)} MB`;
-}
-
-export function fmtTime(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 /** A data value as display text: numbers and strings as they are, other values as JSON. */

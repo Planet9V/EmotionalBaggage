@@ -3,6 +3,7 @@
 import { NET_COLOR } from "@/lib/domain";
 import { CHECK_TEXT, type PartLite, type Step } from "./derive";
 import { StatusControl } from "./StatusControl";
+import { Card } from "@/components/ui/Card";
 
 function End({ refId, pin, parts }: { refId: string; pin: string; parts: Map<string, PartLite> }) {
   const p = parts.get(refId);
@@ -20,10 +21,8 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
   const w = step.wire;
   const via = w.via ? parts.get(w.via) : undefined;
   return (
-    <li
-      className="rounded-xl border border-hairline bg-surface p-4 print:break-inside-avoid"
-      data-step={step.n}
-    >
+    <Card variant="flat" as="li" className="p-4 print:break-inside-avoid"
+ data-step={step.n}>
       <div className="flex items-start gap-4">
         <span aria-hidden className="hidden h-4 w-4 shrink-0 border border-black print:mt-1 print:inline-block" />
         <span className="w-8 shrink-0 pt-0.5 font-mono text-sm text-link" aria-label={`Step ${step.n}`}>
@@ -61,6 +60,6 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
           </div>
         </div>
       </div>
-    </li>
+    </Card>
   );
 }

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { messageOf } from "@/lib/queries";
 import { TAB_OF, useAdminStatus, type AdminTab } from "@/lib/admin/client";
-import { LoadError, LoadingBlocks, Panel } from "./shared";
+import { LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 const TAB_LABEL: Record<AdminTab, string> = { setup: "Setup", credentials: "Credentials", models: "Models", printers: "Printers", audit: "Audit log" };
 

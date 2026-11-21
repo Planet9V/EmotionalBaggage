@@ -11,6 +11,7 @@ import { sectionsFor } from "@/lib/productTypes";
 import type { Project } from "@/lib/types";
 import { SessionControls } from "@/app/account/SessionControls";
 import { ConceptFromUrl } from "@/components/concepts/ConceptFromUrl";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const KEY = "c2r.project";
 const NO_PROJECTS: Project[] = [];
@@ -78,16 +79,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <label className="mt-4 block font-mono text-[10px] uppercase tracking-[0.15em] text-muted" htmlFor="concept">
               Concept
             </label>
-            <select
+            <NativeSelect
               id="concept"
               value={current}
               onChange={(e) => select(e.target.value)}
-              className="mt-1 h-9 w-full rounded-md border border-hairline bg-canvas px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+              className="mt-1 bg-canvas"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
-            </select>
+            </NativeSelect>
             <button
               type="button"
               onClick={() => router.push("/new")}

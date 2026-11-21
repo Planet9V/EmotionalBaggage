@@ -8,8 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
-import { Panel, PanelLoading } from "@/components/economics/shared";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import { sectionHref } from "@/lib/chat/shared";
@@ -20,6 +18,9 @@ import type { ViewProps } from "@/components/views/types";
 import { generate, getStatus, type GenerateAnswer, type ResultFailed, type ResultOk } from "./client";
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
 import { ResultPanel } from "./ResultPanel";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
+import { fileSlug } from "@/lib/format";
 
 const BOM = "design/bom";
 const SAVE_STORE = "design/enclosure";
@@ -36,7 +37,6 @@ const useDark = () =>
     () => false
   );
 
-const slugOf = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "concept";
 const mm = (n: number) => `${Math.round(n * 10) / 10}`;
 
 type Saved = { enclosureGenerator?: GeneratorKey; params?: Partial<EnclosureParams> };
@@ -126,9 +126,10 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
   return (
     <div className="space-y-4">
       <Panel
+        compact
         title="Generator"
-        note="Both read the same parts and parameters. Pick one, or build with both and compare."
-        action={
+        description="Both read the same parts and parameters. Pick one, or build with both and compare."
+        actions={
           <span role="status" className="text-xs text-muted">
             {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : ""}
           </span>
@@ -180,7 +181,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
       </Panel>
 
-      <Panel title="Parameters" note="Defaults are shown under each field. The checks hold the result to the clearance you set." action={
+      <Panel compact title="Parameters" description="Defaults are shown under each field. The checks hold the result to the clearance you set." actions={
         <Button variant="outline" size="sm" onClick={() => setDraft(toDraft(DEFAULT_PARAMS))}>
           Reset to defaults
         </Button>
@@ -189,8 +190,9 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
       </Panel>
 
       <Panel
+        compact
         title="What the parts need"
-        note={
+        description={
           spec.envelope === "shell"
             ? `Envelope taken from the shell part: ${mm(spec.outer.max[0] - spec.outer.min[0])} by ${mm(spec.outer.max[2] - spec.outer.min[2])} by ${mm(spec.outer.max[1] - spec.outer.min[1])} mm outside.`
             : `No shell part, so the envelope is worked out from the parts, the clearance and the walls: ${mm(spec.outer.max[0] - spec.outer.min[0])} by ${mm(spec.outer.max[2] - spec.outer.min[2])} by ${mm(spec.outer.max[1] - spec.outer.min[1])} mm outside.`
@@ -292,7 +294,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
       <div className={visible.length > 1 ? "grid gap-4 lg:grid-cols-2" : "grid gap-4"}>
         {visible.map((k) => {
           const h = held[k]!;
-          return h.result.ok ? <ResultPanel key={k} result={h.result} dark={dark} floorY={spec.outer.min[1]} slug={slugOf(project.name)} stale={h.inputKey !== inputKey} /> : null;
+          return h.result.ok ? <ResultPanel key={k} result={h.result} dark={dark} floorY={spec.outer.min[1]} slug={fileSlug(project.name)} stale={h.inputKey !== inputKey} /> : null;
         })}
       </div>
     </div>
@@ -302,7 +304,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
 export function EnclosureView({ project }: ViewProps) {
   const bom = useItems(project.id, BOM);
   const saved = useItems(project.id, SAVE_STORE);
-  if (bom.loading || saved.loading) return <PanelLoading label="Loading the enclosure" />;
+  if (bom.loading || saved.loading) return <LoadingBlocks label="Loading the enclosure" />;
   if (bom.error || saved.error) {
     return (
       <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">

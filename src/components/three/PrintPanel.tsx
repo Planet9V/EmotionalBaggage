@@ -17,6 +17,10 @@ import { describeSize, fmt, type PartGeometry } from "./layout";
 import { boxMesh, bounds, cylinderMesh, lidMesh, shellDims, trayMesh, type Mesh, type ShellParams } from "./stl";
 import { parseStl } from "@/lib/geometry/meshFile";
 import { bodies3mf, soupToStl, type PrintBody } from "@/lib/geometry/export";
+import { downloadFile } from "@/lib/download";
+import { fileSlug, fmtBytes } from "@/lib/format";
+import { LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 export type LoadedStl = {
   key: string;
@@ -48,17 +52,8 @@ function bodiesFor(g: PartGeometry, p: ShellParams): { bodies: Body[]; problems:
   return { bodies: [{ body: "solid", mesh: boxMesh(g.size[0], g.size[2], g.size[1]) }], problems: [] };
 }
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "part";
-const kb = (n: number) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 / 1024).toFixed(2)} MB`);
 
-function downloadBytes(buf: ArrayBuffer, name: string, type = "model/stl") {
-  const url = URL.createObjectURL(new Blob([buf], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+const downloadBytes = (buf: ArrayBuffer, name: string, type = "model/stl") => downloadFile(name, buf, type);
 
 export function meshExtent(m: Mesh): [number, number, number] {
   const b = bounds(m);
@@ -121,7 +116,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
   const printable = parts.filter((p) => p.geometry);
 
   const generate = (p: Part, b: Body) => {
-    const name = `${slug(p.ref || p.item.title)}-${b.body}.stl`;
+    const name = `${fileSlug(p.ref || p.item.title, "part")}-${b.body}.stl`;
     return { name, buf: soupToStl(b.mesh) };
   };
 
@@ -129,7 +124,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
   const printedBodies = (only?: Part): PrintBody[] =>
     printable
       .filter((p) => (only ? p.item.id === only.item.id : (p.geometry as PartGeometry).print === true))
-      .flatMap((p) => bodiesFor(p.geometry as PartGeometry, params).bodies.map((b) => ({ name: `${p.ref || slug(p.item.title)} ${b.body}`.trim(), mesh: b.mesh })));
+      .flatMap((p) => bodiesFor(p.geometry as PartGeometry, params).bodies.map((b) => ({ name: `${p.ref || fileSlug(p.item.title, "part")} ${b.body}`.trim(), mesh: b.mesh })));
 
   const download3mf = async (only?: Part) => {
     const bodies = printedBodies(only);
@@ -138,7 +133,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
     setNotice(null);
     try {
       const buf = await bodies3mf(bodies);
-      const name = `${only ? slug(only.ref || only.item.title) : slug(projectId)}-printed.3mf`;
+      const name = `${only ? fileSlug(only.ref || only.item.title, "part") : fileSlug(projectId, "part")}-printed.3mf`;
       downloadBytes(buf, name, "model/3mf");
       setNotice({ tone: "ok", text: `Downloaded ${name}: ${bodies.length} object${bodies.length === 1 ? "" : "s"}, millimetres.` });
     } catch (e) {
@@ -174,7 +169,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
   const readFile = async (file: File) => {
     setNotice(null);
     if (file.size > MAX_BYTES) {
-      setNotice({ tone: "bad", text: `${file.name} is ${kb(file.size)}. Files are limited to 25 MB.` });
+      setNotice({ tone: "bad", text: `${file.name} is ${fmtBytes(file.size)}. Files are limited to 25 MB.` });
       return;
     }
     try {
@@ -242,7 +237,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <section className="rounded-xl border border-hairline bg-surface p-5">
+      <Card variant="flat" as="section" className="p-5">
         <p className={eyebrow}>3D print files</p>
         <h3 className="mt-1 text-base font-semibold tracking-tight text-primary">Generate STL from part envelopes</h3>
         <p className="mt-1 max-w-2xl text-sm text-secondary">
@@ -295,7 +290,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
                         return (
                           <div key={b.body} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-subtle px-3 py-2">
                             <p className="font-mono text-[11px] text-secondary">
-                              <span className="text-primary">{b.body}</span> · {e.map(fmt).join(" x ")} mm · {tris} triangles · {kb(84 + 50 * tris)}
+                              <span className="text-primary">{b.body}</span> · {e.map(fmt).join(" x ")} mm · {tris} triangles · {fmtBytes(84 + 50 * tris)}
                               {(g.count ?? 1) > 1 && b.body === "solid" ? ` · one of ${g.count}` : ""}
                             </p>
                             <div className="flex gap-1.5">
@@ -327,10 +322,10 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
           </ul>
         )}
         <p className="mt-3 text-xs text-muted">Files are Z up, in mm, sitting on z = 0. The lid is laid out plate down, lip up, ready to print.</p>
-      </section>
+      </Card>
 
       <div className="flex flex-col gap-6">
-        <section className="rounded-xl border border-hairline bg-surface p-5">
+        <Card variant="flat" as="section" className="p-5">
           <p className={eyebrow}>Load an STL</p>
           <div
             role="button"
@@ -393,14 +388,14 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
               </div>
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className="rounded-xl border border-hairline bg-surface p-5">
+        <Card variant="flat" as="section" className="p-5">
           <p className={eyebrow}>Saved STL files</p>
           {filesError ? (
             <p className="mt-2 text-sm text-danger">Could not load files: {filesError}</p>
           ) : files === null ? (
-            <p className="mt-2 text-sm text-muted">Loading files.</p>
+            <LoadingBlocks rows={2} label="Loading files" />
           ) : files.length === 0 ? (
             <p className="mt-2 text-sm text-muted">None yet. Generated or loaded STL files you save appear here.</p>
           ) : (
@@ -416,7 +411,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
                       </a>
                       <p className="font-mono text-[11px] text-muted">
                         {desc ? `${desc} · ` : ""}
-                        {kb(f.size)} · {new Date(f.createdAt).toLocaleString()}
+                        {fmtBytes(f.size)} · {new Date(f.createdAt).toLocaleString()}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -448,7 +443,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
               })}
             </ul>
           )}
-        </section>
+        </Card>
       </div>
     </div>
   );

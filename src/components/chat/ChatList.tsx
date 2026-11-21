@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatSummary } from "./api";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const when = (iso: string) => {
   const d = new Date(iso);
@@ -40,9 +41,9 @@ export function ChatList({
           Chat
         </label>
         {chats.length ? (
-          <select
+          <NativeSelect
             id="chat-picker"
-            className="h-8 min-w-0 flex-1 rounded-md border border-hairline bg-canvas px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+            className="h-8 min-w-0 flex-1 bg-canvas"
             value={current ?? ""}
             onChange={(e) => onPick(Number(e.target.value))}
           >
@@ -51,7 +52,7 @@ export function ChatList({
                 {titleOf(c)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         ) : (
           <p className="flex-1 text-sm text-secondary">No chats yet. Your first question starts one.</p>
         )}

@@ -2,19 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { money, parseAmount } from "@/components/parts/bom";
 import { useItems } from "@/lib/client";
 import { messageOf, queries, type IntegrationsReport } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
 
 type Sale = { item: Item; date: string; channel: string; units: number; revenue: number };
 
@@ -31,7 +32,6 @@ const amazonSell = (r: IntegrationsReport) => r.integrations.find((i) => i.key =
 
 export function MonitorView({ project, store }: ViewProps) {
   const { items, loading, error, add, remove } = useItems(project.id, store);
-  const reduce = useReducedMotion();
   // One request for /api/integrations however many views read it; this one picks the Amazon seller row.
   const integQuery = useQuery({ ...queries.integrations(), select: amazonSell });
   const integ = integQuery.data;
@@ -52,8 +52,8 @@ export function MonitorView({ project, store }: ViewProps) {
   const channels = [...new Set(sales.map((s) => s.channel.trim()).filter(Boolean))];
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8">
-      <section aria-labelledby="amz-h" className="rounded-xl border border-hairline bg-surface p-5">
+    <div className="animate-enter space-y-8">
+      <Card variant="flat" as="section" aria-labelledby="amz-h" className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="amz-h" className="text-base font-semibold tracking-tight text-primary">Amazon Seller Central</h2>
           {integ ? <StatusBadge tone={integ.configured ? "info" : "neutral"}>{integ.configured ? "Credentials present" : "Not connected"}</StatusBadge> : null}
@@ -81,7 +81,7 @@ export function MonitorView({ project, store }: ViewProps) {
             <p>Once the call code is built, this page will show orders, units and revenue by day and by ASIN.</p>
           </div>
         )}
-      </section>
+      </Card>
 
       <section aria-labelledby="log-h" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
@@ -95,12 +95,12 @@ export function MonitorView({ project, store }: ViewProps) {
         {error ? <ErrorLine>{error}</ErrorLine> : null}
         {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
         {loading ? (
-          <p className="text-sm text-secondary">Loading the log.</p>
+          <LoadingBlocks rows={2} label="Loading the log" />
         ) : !sales.length ? (
           <EmptyState title="Nothing logged yet">Add a row for each day and channel you want to track.</EmptyState>
         ) : (
           <>
-            <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+            <Card variant="flat" className="overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -119,8 +119,8 @@ export function MonitorView({ project, store }: ViewProps) {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+            </Card>
+            <Card variant="flat" className="overflow-hidden">
               <p className="border-b border-hairline px-3 py-2 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Totals by channel, from the rows above</p>
               <Table>
                 <TableHeader>
@@ -143,7 +143,7 @@ export function MonitorView({ project, store }: ViewProps) {
                   </TableRow>
                 </TableBody>
               </Table>
-            </div>
+            </Card>
           </>
         )}
       </section>
@@ -159,7 +159,7 @@ export function MonitorView({ project, store }: ViewProps) {
           }}>Delete row</Button>
         </div>
       </Modal>
-    </motion.div>
+    </div>
   );
 }
 

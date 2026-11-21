@@ -4,13 +4,15 @@ import { useMemo, useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import type { Item } from "@/lib/types";
 import { BUSES, BUS_TYPES, CATEGORIES, PART_KINDS, PIN_KIND_LABEL, PIN_KINDS, SIDES, partKind, type BusType, type PinKind, type Side } from "@/lib/parts/kinds";
 import { LIBRARY, libraryEntryById } from "@/lib/parts/library";
 import { partPins, pinToDef, type PinRow } from "@/lib/parts/pins";
 import { pinList, type PinDef } from "@/lib/parts/schema";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Modal } from "@/components/ui/modal";
 
 type Props = {
   part: Item | null;
@@ -147,7 +149,7 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
       {error ? <ErrorLine>{error}</ErrorLine> : null}
       <section className="grid gap-3 sm:grid-cols-2">
         <Field label="Kind">
-          <Select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Kind">
+          <NativeSelect value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Kind">
             <option value="">Not set</option>
             {CATEGORIES.map((c) => (
               <optgroup key={c} label={c}>
@@ -158,10 +160,10 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
                 ))}
               </optgroup>
             ))}
-          </Select>
+          </NativeSelect>
         </Field>
         <Field label="Library entry" hint={entries.length < LIBRARY.length ? "Entries of the same kind of part." : undefined}>
-          <Select
+          <NativeSelect
             value={library}
             onChange={(e) => {
               setLibrary(e.target.value);
@@ -176,7 +178,7 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
                 {e.name}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         </Field>
         {lib && (
           <div className="rounded-md border border-hairline bg-subtle p-3 text-xs text-secondary sm:col-span-2">
@@ -265,24 +267,24 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
                         <Input value={d.name} onChange={(e) => set(i, { name: e.target.value })} aria-label={`Name of pin ${i + 1}`} className="h-7 w-24 font-mono text-xs" />
                       </td>
                       <td className="px-1 py-1">
-                        <Select value={d.kind} onChange={(e) => set(i, { kind: e.target.value as PinKind | "" })} aria-label={`Kind of pin ${i + 1}`} className="h-7 w-36 pr-6 text-xs">
+                        <NativeSelect value={d.kind} onChange={(e) => set(i, { kind: e.target.value as PinKind | "" })} aria-label={`Kind of pin ${i + 1}`} className="h-7 w-36 pr-6 text-xs">
                           <option value="">Not stated</option>
                           {PIN_KINDS.map((k) => (
                             <option key={k} value={k}>
                               {PIN_KIND_LABEL[k]}
                             </option>
                           ))}
-                        </Select>
+                        </NativeSelect>
                       </td>
                       <td className="px-1 py-1">
-                        <Select value={d.side} onChange={(e) => set(i, { side: e.target.value as Side | "" })} aria-label={`Symbol side of pin ${i + 1}`} className="h-7 w-28 pr-6 text-xs">
+                        <NativeSelect value={d.side} onChange={(e) => set(i, { side: e.target.value as Side | "" })} aria-label={`Symbol side of pin ${i + 1}`} className="h-7 w-28 pr-6 text-xs">
                           <option value="">From kind</option>
                           {SIDES.map((s) => (
                             <option key={s} value={s}>
                               {s}
                             </option>
                           ))}
-                        </Select>
+                        </NativeSelect>
                       </td>
                       {(["vmin", "vmax", "vnom", "imax"] as const).map((k) => (
                         <td key={k} className="px-1 py-1">
@@ -290,14 +292,14 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
                         </td>
                       ))}
                       <td className="px-1 py-1">
-                        <Select value={d.bus} onChange={(e) => set(i, { bus: e.target.value })} aria-label={`Bus of pin ${i + 1}`} className="h-7 w-28 text-xs">
+                        <NativeSelect value={d.bus} onChange={(e) => set(i, { bus: e.target.value })} aria-label={`Bus of pin ${i + 1}`} className="h-7 w-28 text-xs">
                           <option value="">None</option>
                           {BUS_OPTIONS.map((b) => (
                             <option key={b.value} value={b.value}>
                               {b.label}
                             </option>
                           ))}
-                        </Select>
+                        </NativeSelect>
                       </td>
                       <td className="px-2 py-1 text-center">
                         <input type="checkbox" checked={d.optional} onChange={(e) => set(i, { optional: e.target.checked })} aria-label={`Pin ${i + 1} may be left unconnected`} />

@@ -5,7 +5,6 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
 import { statusTone } from "@/lib/statusTones";
 import { useItems } from "@/lib/client";
 import { batchResults, fixedCosts } from "@/lib/economics/compute";
@@ -14,11 +13,13 @@ import { formatMoney } from "@/lib/economics/money";
 import { readEconomics } from "@/lib/economics/read";
 import { readiness } from "@/lib/economics/readiness";
 import { STORE_BATCHES } from "@/lib/economics/schemas";
-import { HowThisIsWorkedOut, MissingList, Panel, PanelLoading } from "@/components/economics/shared";
+import { HowThisIsWorkedOut, MissingList } from "@/components/economics/shared";
 import { FixedCostsTable } from "@/components/economics/FixedCostsTable";
 import type { ViewProps } from "@/components/views/types";
 import { BatchDialog } from "./BatchDialog";
 import { ReadinessPanel } from "./ReadinessPanel";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 export function BatchesView({ project }: ViewProps) {
   const settings = useProductionSettings(project.id);
@@ -39,7 +40,7 @@ export function BatchesView({ project }: ViewProps) {
   const selected = results.find((r) => r.id === picked) ?? results[0] ?? null;
   const checks = useMemo(() => readiness(rows, { batchId: selected?.id ?? null, currency }), [rows, selected, currency]);
 
-  if (loading || settings.loading) return <PanelLoading label="Loading the batch plan" />;
+  if (loading || settings.loading) return <LoadingBlocks label="Loading the batch plan" />;
   if (error || settings.error) {
     return (
       <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
@@ -78,7 +79,7 @@ export function BatchesView({ project }: ViewProps) {
           <div className="mt-3 flex justify-center">{add}</div>
         </EmptyState>
       ) : (
-        <Panel id="batches" title="Batches" note="Unit cost, cash needed and what is not priced are worked out at each batch's own size." action={add}>
+        <Panel compact id="batches" title="Batches" description="Unit cost, cash needed and what is not priced are worked out at each batch's own size." actions={add}>
           <div className="space-y-3">
             <Table>
               <caption className="sr-only">Planned batches with computed unit cost and cash needed</caption>
@@ -137,12 +138,12 @@ export function BatchesView({ project }: ViewProps) {
       )}
 
       {results.length ? (
-        <Panel id="readiness" title="Production readiness" note="Whether this batch can start. Each check is worked out from the rows, never ticked by hand.">
+        <Panel compact id="readiness" title="Production readiness" description="Whether this batch can start. Each check is worked out from the rows, never ticked by hand.">
           <ReadinessPanel checks={checks} batchTitle={selected?.title} />
         </Panel>
       ) : null}
 
-      <Panel id="one-off" title="One-off costs outside any batch" note="Tooling and certification are paid once for the whole plan, so they are not in any batch's cash figure above.">
+      <Panel compact id="one-off" title="One-off costs outside any batch" description="Tooling and certification are paid once for the whole plan, so they are not in any batch's cash figure above.">
         <FixedCostsTable fixed={oneOff} currency={currency} />
       </Panel>
 

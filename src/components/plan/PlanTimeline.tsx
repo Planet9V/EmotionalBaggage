@@ -3,7 +3,7 @@
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Plan, PlanNode } from "@/lib/types";
-import { fmtMinutes } from "./format";
+import { fmtMinutes } from "@/lib/format";
 
 /** The plan as an ordered list grouped by wave, each step with a bar from its start to its finish. */
 export function PlanTimeline({ plan, selectedId, onSelect }: { plan: Plan; selectedId: string | null; onSelect: (id: string) => void }) {

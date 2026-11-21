@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Cable, LayoutGrid, PanelRightClose, PanelRightOpen, Plus, Printer, Save, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,6 @@ import {
   refParts,
   readWires,
   schematicSvg,
-  slug,
   wiringCsv,
   type Check,
   type Part,
@@ -48,8 +46,12 @@ import { FilesPanel, type GeneratedFile } from "@/components/schematic/FilesPane
 import { WireDialog, type WireDialogMode, type WireDraft } from "@/components/schematic/WireDialog";
 import { PinDialog } from "@/components/schematic/PinDialog";
 import { FirstConnection } from "@/components/schematic/FirstConnection";
-import { EYEBROW, ErrorLine, Modal } from "@/components/schematic/controls";
 import type { ViewProps } from "./types";
+import { EYEBROW } from "@/components/ui/field";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Modal } from "@/components/ui/modal";
+import { fileSlug } from "@/lib/format";
+import { Card } from "@/components/ui/Card";
 
 type DialogState =
   | { kind: "wire"; mode: WireDialogMode }
@@ -80,7 +82,6 @@ function selectionFromUrl(): Selection {
 }
 
 export function SchematicView({ project, section, store }: ViewProps) {
-  const reduce = useReducedMotion();
   const partsApi = useItems(project.id, STORE.parts);
   const wiresApi = useItems(project.id, store);
   const buildsApi = useItems(project.id, STORE.builds);
@@ -367,7 +368,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const revision = revisionPick && revisions.includes(revisionPick) ? revisionPick : (revisions[0] ?? "Draft: no named build yet");
 
   const fileSpecs = useMemo(() => {
-    const base = slug(project.name);
+    const base = fileSlug(project.name);
     const meta = () => ({ concept: project.name, generatedAt: new Date() });
     const n = wires.length;
     const drawn = circuit.parts.filter((p) => p.pins.length).length;
@@ -412,14 +413,13 @@ export function SchematicView({ project, section, store }: ViewProps) {
   }, [project.name, wires, parts, nets, graph, circuit, symGraph, revision, date]);
 
   // ───────── render
-  if (partsApi.loading || wiresApi.loading) return <p className="text-sm text-secondary">Loading the schematic.</p>;
+  if (partsApi.loading || wiresApi.loading) return <LoadingBlocks rows={2} label="Loading the schematic" />;
   const loadError = partsApi.error || wiresApi.error || partsApi.writeError || wiresApi.writeError || pinsApi.writeError;
 
-  const enter = { initial: reduce ? false : { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4, ease: "easeOut" as const } };
 
   if (!parts.length && !wires.length) {
     return (
-      <motion.div {...enter} className="space-y-3">
+      <div className="animate-enter space-y-3">
         {loadError && <ErrorLine>{loadError}</ErrorLine>}
         <div className="rounded-xl border border-dashed border-hairline bg-subtle px-6 py-12 text-center">
           <Cable className="mx-auto h-6 w-6 text-muted" aria-hidden />
@@ -431,7 +431,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
             <Link href="/s/design/bom">Open the bill of materials</Link>
           </Button>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
@@ -472,7 +472,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
         />
       )}
       {dialog?.kind === "first" && (
-        <Modal open onClose={() => setDialog(null)} title="Add first connection" description="Two parts and the pins the wire joins. It is saved with status to solder." width="560px">
+        <Modal open onOpenChange={(o) => !o && setDialog(null)} title="Add first connection" description="Two parts and the pins the wire joins. It is saved with status to solder." width="560px">
           <FirstConnection parts={parts} nextOrder={nextOrder} onSave={(d) => saveWire(d, null)} onDone={() => setDialog(null)} />
         </Modal>
       )}
@@ -482,7 +482,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   // parts exist but nothing has a pin or a wire yet: no canvas to drag on
   if (!graph.nodes.length && !symGraph.nodes.length) {
     return (
-      <motion.div {...enter} className="space-y-4">
+      <div className="animate-enter space-y-4">
         {loadError && <ErrorLine>{loadError}</ErrorLine>}
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <div className="rounded-xl border border-dashed border-hairline bg-subtle p-6">
@@ -507,15 +507,15 @@ export function SchematicView({ project, section, store }: ViewProps) {
               ))}
             </ul>
           </div>
-          <div className="rounded-xl border border-hairline bg-surface p-6">
+          <Card variant="flat" className="p-6">
             <p className={EYEBROW}>Add first connection</p>
             <div className="mt-3">
               <FirstConnection parts={parts} nextOrder={nextOrder} onSave={(d) => saveWire(d, null)} />
             </div>
-          </div>
+          </Card>
         </div>
         {dialogs}
-      </motion.div>
+      </div>
     );
   }
 
@@ -525,7 +525,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const titleBlock = <TitleBlock concept={project.name} revision={revision} revisions={revisions} onRevision={setRevisionPick} date={date} view={view === "symbols" ? "Schematic, symbol view" : "Schematic, pins and wires"} />;
 
   return (
-    <motion.div {...enter} className="space-y-4">
+    <div className="animate-enter space-y-4">
       {loadError && <ErrorLine>{loadError}</ErrorLine>}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -625,13 +625,13 @@ export function SchematicView({ project, section, store }: ViewProps) {
                 onPlace={onPlace}
                 banner={
                   !wires.length ? (
-                    <div className="max-w-md rounded-xl border border-hairline bg-surface px-4 py-3 text-center shadow-plate">
+                    <Card variant="flat" className="max-w-md px-4 py-3 text-center shadow-plate">
                       <p className="text-sm font-medium text-primary">No wires yet</p>
                       <p className="mt-0.5 text-xs text-secondary">Drag from one pin to another to connect them, or type the pins in.</p>
                       <Button size="sm" className="mt-2" onClick={() => setDialog({ kind: "first" })}>
                         <Plus className="h-3.5 w-3.5" aria-hidden /> Add first connection
                       </Button>
-                    </div>
+                    </Card>
                   ) : undefined
                 }
               />
@@ -679,6 +679,6 @@ export function SchematicView({ project, section, store }: ViewProps) {
         .
       </p>
       {dialogs}
-    </motion.div>
+    </div>
   );
 }

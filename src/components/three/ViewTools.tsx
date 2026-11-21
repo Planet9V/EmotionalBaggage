@@ -8,6 +8,7 @@ import type { RouteOutcome } from "@/lib/geometry/routing";
 import { fmt } from "./layout";
 import type { CutPlane, Measurement, TransformMode } from "./ModelCanvas";
 import type { PartGeometry } from "./layout";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 const focusRing = "focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
@@ -199,13 +200,13 @@ export function RoutePanel({ cell, onCell, onRoute, result, canRoute, why, count
         </Button>
         <label className="inline-flex items-center gap-1.5 text-xs text-secondary">
           Grid cell
-          <select className={`h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary ${focusRing}`} value={cell} disabled={running} onChange={(e) => onCell(Number(e.target.value))}>
+          <NativeSelect className="h-8 w-auto text-xs" value={cell} disabled={running} onChange={(e) => onCell(Number(e.target.value))}>
             {CELLS.map((c) => (
               <option key={c} value={c}>
                 {c} mm
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <span className="font-mono text-[10px] text-muted">
           {counts.total === 0 ? "no wires" : `${counts.routed} of ${counts.total} routed${counts.stale ? `, ${counts.stale} out of date` : ""}`}

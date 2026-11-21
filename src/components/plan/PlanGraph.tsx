@@ -6,7 +6,7 @@ import { Background, BackgroundVariant, Controls, Handle, MarkerType, Position, 
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Plan, PlanNode } from "@/lib/types";
-import { fmtMinutes } from "./format";
+import { fmtMinutes } from "@/lib/format";
 
 const ORANGE = "#E05A10";
 const COL = 300;

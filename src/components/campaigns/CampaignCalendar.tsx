@@ -5,6 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { dayNumber, formatDay, inclusiveDays, todayUtc } from "@/lib/campaigns/days";
 import { dueDate, type LaunchRow, type StepRow } from "@/lib/campaigns/launch";
 import type { Campaign } from "@/lib/campaigns/read";
+import { Card } from "@/components/ui/Card";
 
 const local = (day: string) => {
   const [y, m, d] = day.split("-").map(Number);
@@ -53,7 +54,7 @@ export function CampaignCalendar({ campaigns, launches, steps }: { campaigns: Ca
 
   return (
     <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
-      <div className="rounded-xl border border-hairline bg-surface">
+      <Card variant="flat">
         <Calendar
           mode="single"
           selected={picked}
@@ -68,7 +69,7 @@ export function CampaignCalendar({ campaigns, launches, steps }: { campaigns: Ca
           }}
         />
         <p className="border-t border-hairline px-3 py-2 text-xs text-secondary">Shaded: a campaign runs. Ringed: a launch day. Underlined: a launch step is due.</p>
-      </div>
+      </Card>
       <div className="min-w-0 space-y-3">
         {picked && (
           <div aria-live="polite">
