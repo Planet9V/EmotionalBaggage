@@ -33,7 +33,7 @@ export function NotConnected({ service, what }: { service: string; what: string 
   return (
     <p className="text-sm text-secondary">
       {service} is not connected, so {what}. Save its credentials in{" "}
-      <Link href={CREDENTIALS_HREF} className="text-link hover:underline">
+      <Link href={CREDENTIALS_HREF} className="text-link underline">
         Admin, Credentials
       </Link>{" "}
       and press Test connection.
@@ -57,7 +57,7 @@ export function CostStatement({ projectId, status }: { projectId: string; status
       </div>
       <p className="mt-1 text-secondary">
         {s.tier}. Read from{" "}
-        <a href={s.url} target="_blank" rel="noreferrer" className="text-link hover:underline">
+        <a href={s.url} target="_blank" rel="noreferrer" className="text-link underline">
           X&apos;s pricing page <ExternalLink className="inline h-3 w-3" aria-hidden />
         </a>{" "}
         on <span className="font-mono">{s.read}</span>.
@@ -123,7 +123,7 @@ export function SendDialog({ projectId, kind, itemId, onClose }: { projectId: st
             Sent to {where}. {where} gave it the id <span className="font-mono">{done.id}</span>.
           </p>
           {done.url ? (
-            <a href={done.url} target="_blank" rel="noreferrer" className="text-link hover:underline">Open it on {where}</a>
+            <a href={done.url} target="_blank" rel="noreferrer" className="text-link underline">Open it on {where}</a>
           ) : null}
           <div className="flex justify-end"><Button onClick={onClose}>Close</Button></div>
         </div>

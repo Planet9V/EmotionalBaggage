@@ -71,7 +71,7 @@ export function InboxView({ project, section, store }: ViewProps) {
             </div>
             {!s.x.configured ? <NotConnected service="X" what="mentions cannot be read" /> : !s.x.acknowledged ? (
               <p className="text-sm text-secondary">
-                X bills each mention read. Read X&apos;s cost statement on <Link href="/s/marketing/posting" className="text-link hover:underline">Posting</Link> and tick that you read it first.
+                X bills each mention read. Read X&apos;s cost statement on <Link href="/s/marketing/posting" className="text-link underline">Posting</Link> and tick that you read it first.
               </p>
             ) : null}
             {!s.instagram.configured ? <NotConnected service="Instagram" what="comments cannot be read" /> : null}
@@ -118,7 +118,7 @@ export function InboxView({ project, section, store }: ViewProps) {
                     </span>
                     <span className="flex items-center gap-2">
                       {m.data.url ? (
-                        <a href={String(m.data.url)} target="_blank" rel="noreferrer" className="text-xs text-link hover:underline">
+                        <a href={String(m.data.url)} target="_blank" rel="noreferrer" className="text-xs text-link underline">
                           Open <ExternalLink className="inline h-3 w-3" aria-hidden />
                         </a>
                       ) : null}
@@ -135,7 +135,7 @@ export function InboxView({ project, section, store }: ViewProps) {
           </ul>
         )}
         <p className="text-xs text-muted">
-          Approved replies wait in <Link href="/s/marketing/replies" className="text-link hover:underline">Replies to send</Link>.
+          Approved replies wait in <Link href="/s/marketing/replies" className="text-link underline">Replies to send</Link>.
         </p>
       </section>
     </div>

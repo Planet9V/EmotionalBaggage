@@ -14,7 +14,7 @@ import { messageOf } from "@/lib/queries";
 const NOT_REAL = "Built to the service's documentation and tested against a stand-in only. It has not yet been run against the real service: the Test button is how you confirm it once your account exists.";
 
 const A = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <a href={href} target="_blank" rel="noreferrer" className="text-link hover:underline">
+  <a href={href} target="_blank" rel="noreferrer" className="text-link underline">
     {children} <ExternalLink className="inline h-3 w-3" aria-hidden />
   </a>
 );

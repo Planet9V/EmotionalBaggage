@@ -40,7 +40,7 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
             {sent.url ? (
               <>
                 {" "}
-                · <a href={sent.url} target="_blank" rel="noreferrer" className="text-link hover:underline">open</a>
+                · <a href={sent.url} target="_blank" rel="noreferrer" className="text-link underline">open</a>
               </>
             ) : null}
           </span>
@@ -96,7 +96,7 @@ export function PostingView({ project, store }: ViewProps) {
           <h2 id="ready-h" className="text-base font-semibold tracking-tight text-primary">Ready to send</h2>
           <p className="text-sm text-secondary">
             Approved and scheduled posts for X and Instagram from{" "}
-            <Link href="/s/marketing/social" className="text-link hover:underline">Social</Link>. Each one goes only when you press its button and confirm. A planned date is a reminder; nothing is posted on its own.
+            <Link href="/s/marketing/social" className="text-link underline">Social</Link>. Each one goes only when you press its button and confirm. A planned date is a reminder; nothing is posted on its own.
           </p>
         </div>
         {error ? (
@@ -105,7 +105,7 @@ export function PostingView({ project, store }: ViewProps) {
           <LoadingBlocks rows={2} label="Loading the posts" />
         ) : ready.length === 0 ? (
           <EmptyState title="Nothing approved to send">
-            Approve a post for X or Instagram in <Link href="/s/marketing/social" className="text-link hover:underline">Social</Link> and it appears here.
+            Approve a post for X or Instagram in <Link href="/s/marketing/social" className="text-link underline">Social</Link> and it appears here.
             {waiting ? ` ${waiting} ${waiting === 1 ? "post is" : "posts are"} still waiting for approval.` : ""}
           </EmptyState>
         ) : (

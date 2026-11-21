@@ -99,7 +99,7 @@ export function ReviewsView({ project, section, store }: ViewProps) {
         <div>
           <h2 id="reply-h" className="text-base font-semibold tracking-tight text-primary">Replies</h2>
           <p className="max-w-2xl text-sm text-secondary">
-            Drafted in the brand voice for the new rows. Approved replies wait in <Link href="/s/marketing/replies" className="text-link hover:underline">Replies to send</Link>; this app never posts a reply to a review for you.
+            Drafted in the brand voice for the new rows. Approved replies wait in <Link href="/s/marketing/replies" className="text-link underline">Replies to send</Link>; this app never posts a reply to a review for you.
           </p>
         </div>
         <DraftButton projectId={project.id} store={CHANNEL.replies} sectionLabel="Replies to send" />
@@ -287,7 +287,7 @@ function RequirementDialog({ projectId, group, onClose }: { projectId: string; g
       {done ? (
         <div className="space-y-3 text-sm">
           <p className="text-primary">Saved as a draft requirement, key <span className="font-mono">{done.key}</span>, citing {group.count} rows.</p>
-          <div className="flex justify-end gap-2"><Link href="/drafts" className="text-link hover:underline">Open Drafts</Link><Button onClick={onClose}>Close</Button></div>
+          <div className="flex justify-end gap-2"><Link href="/drafts" className="text-link underline">Open Drafts</Link><Button onClick={onClose}>Close</Button></div>
         </div>
       ) : (
         <form

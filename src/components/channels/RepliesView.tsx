@@ -69,7 +69,7 @@ export function RepliesView({ project, section, store }: ViewProps) {
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{String(r.data.channel ?? "Other")}</span>
                     <StatusBadge tone={statusTone(r.status === "sent" ? "done" : r.status)}>{r.status}</StatusBadge>
-                    {sent?.url ? <a href={sent.url} target="_blank" rel="noreferrer" className="text-xs text-link hover:underline">open on {ch === "x" ? "X" : "Instagram"}</a> : null}
+                    {sent?.url ? <a href={sent.url} target="_blank" rel="noreferrer" className="text-xs text-link underline">open on {ch === "x" ? "X" : "Instagram"}</a> : null}
                   </span>
                   <span className="flex flex-wrap items-center gap-1">
                     {ch && r.status === "approved" && !sent ? (
