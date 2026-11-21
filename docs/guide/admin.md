@@ -54,11 +54,13 @@ A new install has one account: user `demo`, password `demo`. Opening the app tak
 
 **Signing out.** "Sign out" at the foot of the sidebar ends the session on the server and removes the cookie.
 
-**Too many failed attempts.** After 5 wrong passwords for a name within 15 minutes, that name is refused until 15 minutes after the first failure. Wait, or clear the count:
+**Too many failed attempts.** There is no lockout. After 3 wrong passwords for one name from one network address, each further try from that address has to wait: 1 second after the next failure, then 2, 4, 8 and so on, at most 15 minutes. After 20 wrong passwords from one address, whatever the names, that address waits the same way. A try made during a wait is refused with "Try again in ..." and does not count. The right password is always accepted once the wait that applies to it has passed, and it clears the count for that name and address. Someone guessing from another address does not slow you down. Counts are forgotten after an hour without a try. To clear them at once:
 
 ```
 docker compose exec db psql -U c2r c2r -c "DELETE FROM sign_in_attempts;"
 ```
+
+**Behind a reverse proxy.** The app takes the network address from the connection itself (the container starts with `node -r ./client-address.cjs server.js`, which records it). Behind a reverse proxy every request comes from the proxy, so set `TRUST_PROXY=1` for the web service: the app then reads the address from the right-most entry of `X-Forwarded-For`, which your proxy must append (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`). Never set it without a proxy in front: anyone could then send their own `X-Forwarded-For` and escape the per-address limits. Run with `next dev` or `next start`, the address is not recorded and every request counts as one address.
 
 **Lost password.** This puts the install back to `demo` / `demo`. It deletes the account and its sessions; concepts and their data do not belong to an account, so nothing else is lost. The app recreates the default account when it starts with no users:
 
@@ -70,7 +72,7 @@ docker compose restart web
 **What sign-in does not protect.** This is a public test with a published default password, and keys saved in Admin are stored in the database unencrypted.
 
 - Over plain http, anyone on the same network can read the password as it is typed and the session cookie, and use that cookie for up to 30 days. To use the app beyond your own machine, put it behind an HTTPS reverse proxy that sends `X-Forwarded-Proto: https` and passes the original `Host` header (nginx: `proxy_set_header Host $host;`); the cookie is then marked Secure. A proxy that rewrites `Host` makes every save answer 403. This has not been run behind a real proxy.
-- Anyone who can reach the app can lock the account for 15 minutes by sending 5 wrong passwords, and can do it again. There is no limit per network address.
+- Sign-in attempts are slowed per name and address and per address (above), not locked. Someone sharing your network address (the same office or home router) shares its waits.
 - There is one account and no roles: whoever signs in can read and change everything, including saved keys (which the app never shows in full, but which sit readable in the database).
 
 ## The audit log

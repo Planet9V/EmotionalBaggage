@@ -9,7 +9,9 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
-    public detail?: unknown
+    public detail?: unknown,
+    /** extra response headers, for example Retry-After */
+    public headers?: Record<string, string>
   ) {
     super(message);
   }
@@ -91,7 +93,7 @@ const CONFLICT: Record<string, string> = {
 
 function fail(e: unknown) {
   if (e instanceof HttpError) {
-    return NextResponse.json({ error: e.message, ...(e.detail ? { detail: e.detail } : {}) }, { status: e.status });
+    return NextResponse.json({ error: e.message, ...(e.detail ? { detail: e.detail } : {}) }, { status: e.status, ...(e.headers ? { headers: e.headers } : {}) });
   }
   if (e instanceof ZodError) {
     const issues = e.issues.map((i) => ({ field: i.path.join(".") || "(body)", problem: i.message }));

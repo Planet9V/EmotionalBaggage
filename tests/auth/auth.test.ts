@@ -9,7 +9,11 @@ import {
   DEFAULT_USERNAME,
   ensureDefaultUser,
   hashPassword,
-  LOCK_WINDOW_MS,
+  ADDRESS_FREE_FAILURES,
+  clientAddress,
+  delayAfter,
+  MAX_ATTEMPT_ROWS,
+  PAIR_FREE_FAILURES,
   sessionCookie,
   sessionFromRequest,
   sessionFromToken,
@@ -35,14 +39,15 @@ async function makeUser(name: string, password: string) {
 
 const withCookie = (token: string) => new Request("http://test.local/", { headers: { cookie: `other=1; ${SESSION_COOKIE}=${token}` } });
 
+// Throttling counts per client address too, so every count this file makes is removed before and after.
 beforeAll(async () => {
   await q("DELETE FROM users WHERE username LIKE $1", [`${PREFIX}%`]);
-  await q("DELETE FROM sign_in_attempts WHERE username_key LIKE $1", [`${PREFIX}%`]);
+  await q("DELETE FROM sign_in_attempts");
 });
 
 afterAll(async () => {
   await q("DELETE FROM users WHERE username LIKE $1", [`${PREFIX}%`]);
-  await q("DELETE FROM sign_in_attempts WHERE username_key LIKE $1", [`${PREFIX}%`]);
+  await q("DELETE FROM sign_in_attempts");
   await pool().end();
 });
 
@@ -123,47 +128,91 @@ describe("signing in", () => {
     expect(unknown).toEqual(wrong);
   });
 
-  it("locks a name after 5 failures in 15 minutes, and lets it in again after the window", async () => {
-    const name = `${PREFIX}lock`;
+  // Robustness review S4: 5 wrong passwords for demo used to lock the owner out for 15 minutes, repeatably.
+  it("the reviewer's repro: guesses from another address never delay the owner", async () => {
+    const name = `${PREFIX}owner`;
     await makeUser(name, "right-password");
     const t0 = new Date();
-    const at = (ms: number) => ({ now: new Date(t0.getTime() + ms) });
-    for (let i = 0; i < 5; i++) {
-      expect(await signIn(i % 2 ? name.toUpperCase() : name, "guess", "", at(i * 1000))).toEqual({ ok: false, reason: "invalid" });
+    for (let i = 0; i < 40; i++) await signIn(name, "guess", "", { now: new Date(t0.getTime() + i * 1000), client: "203.0.113.66" });
+    const r = await signIn(name, "right-password", "", { now: new Date(t0.getTime() + 41_000), client: "198.51.100.7" });
+    expect(r.ok).toBe(true);
+  });
+
+  it("slows one name from one address with growing delays, and lets the right password in once its delay has passed", async () => {
+    const name = `${PREFIX}slow`;
+    await makeUser(name, "right-password");
+    const t0 = new Date();
+    const at = (ms: number) => ({ now: new Date(t0.getTime() + ms), client: "192.0.2.10" });
+    for (let i = 0; i < PAIR_FREE_FAILURES; i++) {
+      expect(await signIn(i % 2 ? name.toUpperCase() : name, "guess", "", at(i))).toEqual({ ok: false, reason: "invalid" });
     }
-    const locked = await signIn(name, "guess", "", at(60_000));
-    expect(locked).toMatchObject({ ok: false, reason: "locked" });
-    if (!locked.ok && locked.reason === "locked") {
-      expect(locked.retryAfterSeconds).toBe(14 * 60);
-    }
-    // The right password is refused too while the name is locked.
-    expect(await signIn(name, "right-password", "", at(LOCK_WINDOW_MS - 1000))).toMatchObject({ ok: false, reason: "locked" });
-    // The window counts from the first failure, and refused attempts do not extend it.
-    const after = await signIn(name, "right-password", "", at(LOCK_WINDOW_MS + 1000));
-    expect(after.ok).toBe(true);
-    // Success clears the count.
+    expect(await signIn(name, "guess", "", at(10))).toEqual({ ok: false, reason: "invalid" }); // the 4th sets a 1 s wait
+    expect(await signIn(name, "right-password", "", at(500))).toEqual({ ok: false, reason: "wait", retryAfterSeconds: 1 });
+    expect(await signIn(name, "guess", "", at(1010))).toEqual({ ok: false, reason: "invalid" }); // the 5th: 2 s
+    expect(await signIn(name, "guess", "", at(2000))).toMatchObject({ reason: "wait", retryAfterSeconds: 2 });
+    // a refused try does not count or extend the wait
+    expect((await signIn(name, "right-password", "", at(3010))).ok).toBe(true);
     expect(await q("SELECT 1 FROM sign_in_attempts WHERE username_key = $1", [name])).toHaveLength(0);
   });
 
-  it("locks names that are not users too, so locking does not reveal which names exist", async () => {
-    const name = `${PREFIX}ghost`;
-    for (let i = 0; i < 5; i++) expect((await signIn(name, "guess", "")).ok).toBe(false);
-    expect(await signIn(name, "guess", "")).toMatchObject({ ok: false, reason: "locked" });
+  it("caps the delay at 15 minutes", () => {
+    expect([1, 3, 4, 5, 6, 13, 14, 50].map((f) => delayAfter(f, 3))).toEqual([0, 0, 1000, 2000, 4000, 512_000, 900_000, 900_000]);
   });
 
-  it("counts parallel guesses, so they cannot slip past the limit", async () => {
+  it("slows an address that tries many names, whatever the names", async () => {
+    const t0 = new Date();
+    const at = (ms: number) => ({ now: new Date(t0.getTime() + ms), client: "192.0.2.20" });
+    for (let i = 0; i < ADDRESS_FREE_FAILURES; i++) expect(await signIn(`${PREFIX}spray-${i}`, "guess", "", at(i))).toEqual({ ok: false, reason: "invalid" });
+    expect(await signIn(`${PREFIX}spray-x`, "guess", "", at(100))).toEqual({ ok: false, reason: "invalid" });
+    expect(await signIn(`${PREFIX}spray-y`, "guess", "", at(200))).toMatchObject({ ok: false, reason: "wait" });
+    // another address is not affected
+    expect(await signIn(`${PREFIX}spray-y`, "guess", "", { now: new Date(t0.getTime() + 200), client: "192.0.2.21" })).toEqual({ ok: false, reason: "invalid" });
+  });
+
+  it("counts names that are not users too, so throttling does not reveal which names exist", async () => {
+    const name = `${PREFIX}ghost`;
+    const t0 = new Date();
+    for (let i = 0; i <= PAIR_FREE_FAILURES; i++) expect((await signIn(name, "guess", "", { now: t0, client: "192.0.2.30" })).ok).toBe(false);
+    expect(await signIn(name, "guess", "", { now: t0, client: "192.0.2.30" })).toMatchObject({ ok: false, reason: "wait" });
+  });
+
+  it("counts parallel guesses, so they cannot slip past", async () => {
     const name = `${PREFIX}burst`;
     await makeUser(name, "right-password");
-    const results = await Promise.all(Array.from({ length: 8 }, () => signIn(name, "guess", "")));
-    expect(results.filter((r) => !r.ok && r.reason === "invalid")).toHaveLength(5);
-    expect(results.filter((r) => !r.ok && r.reason === "locked")).toHaveLength(3);
+    const now = new Date();
+    const results = await Promise.all(Array.from({ length: 8 }, () => signIn(name, "guess", "", { now, client: "192.0.2.40" })));
+    expect(results.filter((r) => !r.ok && r.reason === "invalid")).toHaveLength(PAIR_FREE_FAILURES + 1);
+    expect(results.filter((r) => !r.ok && r.reason === "wait")).toHaveLength(8 - PAIR_FREE_FAILURES - 1);
   });
 
-  it("keeps the failure count in the database, so a restart does not reset it", async () => {
+  it("keeps the counts in the database, so a restart does not reset them, and keeps the table bounded", async () => {
     const name = `${PREFIX}persist`;
-    await signIn(name, "guess", "");
-    const rows = await q<{ failures: number }>("SELECT failures FROM sign_in_attempts WHERE username_key = $1", [name]);
+    await signIn(name, "guess", "", { client: "192.0.2.50" });
+    const rows = await q<{ failures: number }>("SELECT failures FROM sign_in_attempts WHERE username_key = $1 AND client = $2", [name, "192.0.2.50"]);
     expect(rows[0].failures).toBe(1);
+    await q(
+      "INSERT INTO sign_in_attempts (username_key, client, failures, last_attempt_at, next_allowed_at) SELECT 'zz-auth-fill-' || g, '192.0.2.60', 1, now(), now() FROM generate_series(1, $1) g",
+      [MAX_ATTEMPT_ROWS + 5]
+    );
+    await signIn(name, "guess", "", { client: "192.0.2.50" });
+    const [{ n }] = await q<{ n: number }>("SELECT count(*)::int AS n FROM sign_in_attempts");
+    expect(n).toBeLessThanOrEqual(MAX_ATTEMPT_ROWS);
+    await q("DELETE FROM sign_in_attempts WHERE client = '192.0.2.60'");
+  });
+
+  it("reads the client address from the connection, and X-Forwarded-For only behind a proxy", () => {
+    const req = (h: Record<string, string>) => new Request("http://test.local/", { headers: h });
+    const before = process.env.TRUST_PROXY;
+    try {
+      delete process.env.TRUST_PROXY;
+      expect(clientAddress(req({ "x-forwarded-for": "1.1.1.1", "x-c2r-client-address": "10.0.0.9" }))).toBe("10.0.0.9");
+      expect(clientAddress(req({ "x-forwarded-for": "1.1.1.1" }))).toBe("unknown");
+      process.env.TRUST_PROXY = "1";
+      expect(clientAddress(req({ "x-forwarded-for": "6.6.6.6, 1.1.1.1", "x-c2r-client-address": "10.0.0.9" }))).toBe("1.1.1.1");
+    } finally {
+      if (before === undefined) delete process.env.TRUST_PROXY;
+      else process.env.TRUST_PROXY = before;
+    }
   });
 });
 
