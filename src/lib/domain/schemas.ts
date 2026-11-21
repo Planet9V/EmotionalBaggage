@@ -9,6 +9,7 @@ import { libraryEntryById } from "@/lib/parts/library";
 import { printJobData } from "@/lib/slicing/jobState";
 import { sourcingData } from "@/lib/sourcing/schemas";
 import { CONTENT_SCHEMAS } from "@/lib/content/schemas";
+import { CAMPAIGN_SCHEMAS } from "@/lib/campaigns/schemas";
 
 export const STORE = {
   parts: "design/bom",
@@ -222,6 +223,8 @@ const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   ...economicsSchemas(step),
   ...MARKET_SCHEMAS,
   ...CONTENT_SCHEMAS,
+  // campaigns and the launch plan (plan 8.13, 8.14)
+  ...CAMPAIGN_SCHEMAS,
 };
 
 /** The schema a section's `data` must satisfy. */

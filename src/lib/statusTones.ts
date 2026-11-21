@@ -7,7 +7,7 @@ const TONES: Record<string, StatusTone> = {
   "in progress": "info", shortlist: "info", ready: "info", printing: "info", approved: "info",
   running: "info", ordered: "info", quoted: "info", funded: "info", building: "info", drafted: "info",
   soldered: "info", tested: "success", "to solder": "warning",
-  blocked: "danger", wrong: "danger", fail: "danger", failed: "danger",
+  blocked: "danger", wrong: "danger", fail: "danger", failed: "danger", killed: "danger", paused: "warning",
   unverified: "warning", "waiting on file": "warning", queued: "warning", slicing: "info", sliced: "info", sent: "info", cancelled: "neutral", "not run": "warning", "to buy": "warning", "to print": "warning",
 };
 

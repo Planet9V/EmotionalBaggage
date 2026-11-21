@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 180b750 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit cb26aaa by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,12 +16,12 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 643 packages (53 direct, 590 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 674 packages (56 direct, 618 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 509 |
-| ISC | 49 |
+| MIT | 534 |
+| ISC | 55 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
@@ -88,6 +88,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | clsx | 2.1.1 | MIT | linked library | yes |
 | cmdk | 1.1.1 | MIT | linked library | yes |
 | cn | 0.5.2 | MIT | linked library | yes |
+| date-fns | 4.4.0 | MIT | linked library | no |
 | elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | linked library | yes |
 | embla-carousel-react | 8.6.0 | MIT | linked library | yes |
 | fflate | 0.8.3 | MIT | linked library | yes |
@@ -103,8 +104,10 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | occt-import-js | 0.0.23 | LGPL-2.1 | linked library | no |
 | papaparse | 5.7.1 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
+| qrcode | 1.5.4 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |
 | react | 19.3.0 | MIT | linked library | yes |
+| react-day-picker | 10.0.2 | MIT | linked library | yes |
 | react-dom | 19.3.0 | MIT | linked library | no |
 | react-markdown | 10.1.0 | MIT | linked library | yes |
 | recharts | 3.8.0 | MIT | linked library | yes |
@@ -193,6 +196,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @types/node | 22.20.5 | MIT |
 | @types/papaparse | 5.5.2 | MIT |
 | @types/pg | 8.23.1 | MIT |
+| @types/qrcode | 1.5.6 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
 | @types/three | 0.187.0 | MIT |

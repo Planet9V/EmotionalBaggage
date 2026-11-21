@@ -195,7 +195,7 @@ describe("social queue", () => {
 
 describe("launch", () => {
   it("exports an approved piece as text and HTML and refuses a draft", async () => {
-    const l = await add("marketing/launch", "Launch email", { kind: "email", message, subjects: ["Meet Bag2Go"], previewText: "A bag that tells you" }, "draft", "Hello.\n\nIt is here.");
+    const l = await add("marketing/announce", "Launch email", { kind: "email", message, subjects: ["Meet Bag2Go"], previewText: "A bag that tells you" }, "draft", "Hello.\n\nIt is here.");
     expect((await get(launchExport, "/api/content/launch/export", `&id=${l.body.item.id}`)).status).toBe(409);
     expect((await patch(l.body.item.id, { status: "approved" })).status).toBe(200);
     expect(await (await get(launchExport, "/api/content/launch/export", `&id=${l.body.item.id}&format=text`)).text()).toContain("Meet Bag2Go");

@@ -103,6 +103,13 @@ Every piece of marketing content is tied to one approved Positioning message and
 - **Social:** Board or Calendar; give a post a date or drag it; an approved post with a date becomes scheduled.
 - **Launch email and press note:** from the approved press release: subject options, preview text and body, a press note and a three-email sequence outline; export HTML or text.
 
+## Campaigns, launch plan, results and tracked links
+
+- **Campaigns:** set the marketing budget and the share of the margin an order may cost in "Marketing budget and rules", then add campaigns or use **Draft a campaign plan**. Allowable cost per order is the margin per unit before ads times your share; the screen shows the sum. Targets and stop and scale rules are numbers you enter. The board shows campaigns by status, the calendar by date, and the monthly roll-up against your budget.
+- **Launch plan:** pick a template (Kickstarter, Amazon, own site, retail, soft launch) and a launch date; every step gets a due date counted back from it. Change the date and every step moves. A step that needs a gate or a build says so. Steps marked "Check" rest on platform rules with no source: read the platform's own help page first. No step posts or buys anything.
+- **Campaign results:** enter a day, paste a report, or open a CSV from Amazon Ads, Meta or Google Ads. Check the column match; it is remembered per channel. The column names offered for those platforms have not been checked against real export files, so look before you import. The verdict (stop, hold, scale, not enough data) comes from your rule, not from a model. **Explain this with the model** adds a labelled note only and is never saved as a result.
+- **Tracked links:** make a UTM link per campaign or creative; the short `/l/` address counts clicks per day and records nothing about the visitor. QR codes work only from the app's public address.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

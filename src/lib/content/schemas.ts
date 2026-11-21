@@ -1,7 +1,7 @@
 // What the content sections store in Item.data. Registered in src/lib/domain/schemas.ts (BY_STORE).
 // All loose, every field optional, so a row typed by hand, an older row and a generated row all pass.
 // The stores are existing sections (marketing/ads, marketing/landing, marketing/social, sales/listing)
-// plus marketing/launch; no new table.
+// plus marketing/announce; no new table.
 import { z } from "zod";
 import { proofRef } from "@/lib/market/schemas";
 import type { CopyField } from "./claims";
@@ -13,7 +13,7 @@ export const CONTENT = {
   landing: "marketing/landing",
   social: "marketing/social",
   listing: "sales/listing",
-  launch: "marketing/launch",
+  launch: "marketing/announce",
   campaigns: "marketing/campaigns",
 } as const;
 

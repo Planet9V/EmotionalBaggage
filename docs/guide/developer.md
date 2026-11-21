@@ -197,6 +197,10 @@ Import from `@/lib/printers`: `createAdapter`, `adapterForRow`, `runPrinterActio
 
 Content generators live in `src/lib/content/generators` and are spread into the drafting registry. Channel limits are in `src/lib/content/channels.ts`; a limit is enforced only when its `source` is the platform's own URL. `src/lib/content/rules.ts` is the only place that decides whether a content row may leave draft (called from PATCH, POST and draft approval); a stored `noProof` flag is never trusted. The landing page is one pure function (`renderPage`) used by the preview and the zip export. Posting code reads `GET /api/content/social/queue`. The preview frame uses `sandbox="allow-scripts"` without allow-same-origin on purpose.
 
+## Campaigns
+
+Pure modules in `src/lib/campaigns` (metrics, the stop and scale rule, budget, margin, the Newcombe interval for comparing two creatives, CSV mapping, launch templates); routes under `/api/projects/[id]/campaigns`; tables `campaign_results`, `tracked_links`, `link_clicks` (migration 0020). The verdict is always evaluated in code. The campaign-plan generator is in the drafting registry: the model proposes shares and days, code computes every amount. `src/app/l/[code]/route.ts` is deliberately open; a test fails if any other route file appears outside `/api`.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

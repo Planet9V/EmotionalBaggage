@@ -29,11 +29,14 @@ export function safeNext(next: string | null | undefined): string {
   }
 }
 
-/** Paths a signed-out browser may open: the sign-in page, the API (route() answers 401 itself) and static files. */
+/** Paths a signed-out browser may open: the sign-in page, the API (route() answers 401 itself), short tracked links and static files. */
 export function isPublicPath(pathname: string): boolean {
   if (pathname === SIGN_IN_PATH || pathname.startsWith(`${SIGN_IN_PATH}/`)) return true;
   if (pathname === "/api" || pathname.startsWith("/api/")) return true;
   if (pathname.startsWith("/_next/")) return true;
+  // Short tracked links (src/app/l/[code]/route.ts): a visitor to a campaign link has no session.
+  // The handler redirects only to a destination a signed-in user saved, and stores no personal data.
+  if (pathname.startsWith("/l/") && !pathname.slice(3).includes("/") && pathname.length > 3) return true;
   if (pathname === "/favicon.ico" || pathname === "/robots.txt" || pathname === "/sitemap.xml") return true;
   // Files from public/ (images, fonts, models): a last path segment with an extension.
   const last = pathname.slice(pathname.lastIndexOf("/") + 1);

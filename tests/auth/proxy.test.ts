@@ -16,7 +16,7 @@ describe("the proxy's redirect rules", () => {
     expect(pageGate("/plan", "", true)).toBeNull();
   });
 
-  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/models/frame.glb", "/fonts/inter.woff2"])(
+  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/models/frame.glb", "/fonts/inter.woff2", "/l/abcd2345"])(
     "lets %s through signed out",
     (path) => {
       expect(isPublicPath(path)).toBe(true);
@@ -24,7 +24,7 @@ describe("the proxy's redirect rules", () => {
     }
   );
 
-  it.each(["/", "/plan", "/report", "/new", "/integrations", "/docs", "/docs/user", "/account", "/sign-inx", "/apix"])("guards %s", (path) => {
+  it.each(["/", "/plan", "/report", "/new", "/integrations", "/docs", "/docs/user", "/account", "/sign-inx", "/apix", "/l", "/l/", "/l/abcd2345/extra", "/lx/abcd2345", "/links"])("guards %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });
 
