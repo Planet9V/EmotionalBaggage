@@ -40,6 +40,7 @@ beforeAll(async () => {
   await add("prototype/assembly", "Step two", { key: "s2", after: "s1, s0 ,", minutes: 5 }, 7);
   await add("prototype/tests", "Clashing key", { key: "s1" }, 8);
   await add("concept/decisions", "Go?", { key: "go", dependsOn: "", unlocks: "prototype/assembly, sales/listing" }, 9);
+  await old.query("INSERT INTO research (project_id, query, answer, citations) VALUES ('old', 'Older question', 'a', $1)", [JSON.stringify(["https://a.example/1", "https://b.example/2"])]);
   await old.end();
 
   process.env.DATABASE_URL = scratchUrl;
@@ -58,12 +59,17 @@ afterAll(async () => {
 describe("upgrading a database from before migrations", () => {
   it("records each migration once, and a second start changes nothing", async () => {
     const first = await db.q<{ name: string }>("SELECT name FROM schema_migrations ORDER BY id");
-    expect(first.map((r) => r.name)).toEqual(["0001_baseline", "0002_integrity", "0003_concepts_and_admin", "0004_sign_in", "0005_audit_log"]);
+    expect(first.map((r) => r.name)).toEqual(["0001_baseline", "0002_integrity", "0003_concepts_and_admin", "0004_sign_in", "0005_audit_log", "0007_research_sources"]);
     const g = globalThis as { __c2rReady?: unknown };
     g.__c2rReady = undefined;
     await db.ready();
     const second = await db.q<{ name: string }>("SELECT name FROM schema_migrations ORDER BY id");
     expect(second).toEqual(first);
+  });
+
+  it("gives older research rows sources built from their citation URLs, with empty titles", async () => {
+    const rows = await db.q<{ sources: unknown }>("SELECT sources FROM research WHERE project_id='old'");
+    expect(rows[0].sources).toEqual([{ url: "https://a.example/1", title: "" }, { url: "https://b.example/2", title: "" }]);
   });
 
   it("keeps every existing row", async () => {

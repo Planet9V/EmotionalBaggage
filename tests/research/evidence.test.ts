@@ -100,6 +100,25 @@ describe("adding evidence", () => {
     expect(last.body).toMatchObject({ status: "unverified", evidence: [] });
   });
 
+  it("takes the source's title from the research entry when none is sent, and a sent title wins", async () => {
+    const rid = Number(
+      (await q<{ id: string }>(
+        "INSERT INTO research (project_id, query, answer, citations, sources, model) VALUES ($1,'test: titled q','a',$2,$3,'m') RETURNING id",
+        [SEEDED, JSON.stringify([A, B]), JSON.stringify([{ url: A, title: "Airline baggage rules" }, { url: B, title: "" }])]
+      ))[0].id
+    );
+    const titled = await add({ claimId, url: A, researchId: rid, verdict: "supports" });
+    expect(titled.body.item.data.evidence?.[0].title).toBe("Airline baggage rules");
+    expect((await lastEvent()).summary).toContain("Airline baggage rules (https://a.example/supports)");
+    const untitled = await add({ claimId, url: B, researchId: rid, verdict: "unclear" });
+    expect(untitled.body.item.data.evidence?.[1].title).toBeUndefined();
+    await remove({ claimId, url: A });
+    await remove({ claimId, url: B });
+    const given = await add({ claimId, url: A, researchId: rid, title: "My own name", verdict: "supports" });
+    expect(given.body.item.data.evidence?.[0].title).toBe("My own name");
+    await remove({ claimId, url: A });
+  });
+
   it("accepts a source that is not from a research entry, and an unclear verdict changes nothing", async () => {
     const r = await add({ claimId, url: "https://manual.example/page", verdict: "unclear" });
     expect(r.status).toBe(201);

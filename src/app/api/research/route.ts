@@ -3,21 +3,23 @@ import { logEvent, q } from "@/lib/db";
 import { body as readBody, requireProject, route } from "@/lib/api/route";
 import { researchAsk } from "@/lib/api/schemas";
 import { getCredential } from "@/lib/settings";
-import { ask, currentEffort, type Source } from "@/lib/research/perplexity";
+import { ask, currentEffort } from "@/lib/research/perplexity";
+import { readSources, toStoredSource } from "@/lib/research/schemas";
 
-type Row = { id: string; query: string; answer: string; citations: string[]; model: string; created_at: string };
+type Row = { id: string; query: string; answer: string; citations: string[]; sources: unknown; model: string; created_at: string };
+const COLS = "id, query, answer, citations, sources, model, created_at";
 
 /**
- * `citations` stays an array of URL strings (what the browser and the report read).
- * `sources` repeats them as objects; titles are known only in the answer to the POST,
- * because the research table has no column for them.
+ * `citations` stays an array of URL strings (what the report and the evidence check read).
+ * `sources` holds the same sources in the same order with Perplexity's title ("" when it gave none),
+ * and its snippet and date when it gave them. Both are stored (migrations/0007_research_sources.sql).
  */
-const shape = (r: Row, sources?: Source[]) => ({
+const shape = (r: Row) => ({
   id: Number(r.id),
   query: r.query,
   answer: r.answer,
   citations: r.citations,
-  sources: sources ?? r.citations.map((url) => ({ url })),
+  sources: readSources(r.sources, r.citations),
   model: r.model,
   createdAt: r.created_at,
 });
@@ -27,7 +29,7 @@ const NOT_CONNECTED = "Perplexity is not connected. Add a key in Admin, Credenti
 export const GET = route(async (req: Request) => {
   const projectId = new URL(req.url).searchParams.get("projectId") ?? "";
   await requireProject(projectId);
-  const rows = await q<Row>("SELECT id, query, answer, citations, model, created_at FROM research WHERE project_id=$1 ORDER BY id DESC", [projectId]);
+  const rows = await q<Row>(`SELECT ${COLS} FROM research WHERE project_id=$1 ORDER BY id DESC`, [projectId]);
   const configured = !!(await getCredential("perplexity", "apiKey"));
   return NextResponse.json({ configured, model: await currentEffort(), entries: rows.map((r) => shape(r)) });
 });
@@ -45,9 +47,10 @@ export const POST = route(async (req: Request) => {
   }
 
   const citations = r.sources.map((s) => s.url);
+  const sources = r.sources.map(toStoredSource);
   const rows = await q<Row>(
-    "INSERT INTO research (project_id, query, answer, citations, model) VALUES ($1,$2,$3,$4,$5) RETURNING id, query, answer, citations, model, created_at",
-    [b.projectId, b.query, r.answer, JSON.stringify(citations), r.model]
+    `INSERT INTO research (project_id, query, answer, citations, sources, model) VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${COLS}`,
+    [b.projectId, b.query, r.answer, JSON.stringify(citations), JSON.stringify(sources), r.model]
   );
   await logEvent(b.projectId, "research.asked", `Researched: ${b.query.slice(0, 120)}`, {
     researchId: Number(rows[0].id),
@@ -55,7 +58,7 @@ export const POST = route(async (req: Request) => {
     costUsd: r.costUsd ?? null,
   });
   return NextResponse.json(
-    { entry: shape(rows[0], r.sources.map(({ url, title }) => (title ? { url, title } : { url }))), effort: r.effort ?? null, costUsd: r.costUsd ?? null },
+    { entry: shape(rows[0]), effort: r.effort ?? null, costUsd: r.costUsd ?? null },
     { status: 201 }
   );
 });

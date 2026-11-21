@@ -22,7 +22,7 @@ export const INSTRUCTIONS =
   "Base every factual statement on the numbered web search results provided. Before finalizing, verify each claim against the sources: re-read the cited results and confirm they actually support the statement; if a claim is not directly supported, drop it or soften it rather than guessing. After each sentence that uses information from those results, cite the exact source number(s) in square brackets right after the statement, like [1] or [1][2], with no space before the bracket. Cite the one to three sources that most directly support the statement, and only cite a source that actually contains that information. Do not cite a source you did not use, do not invent source numbers, and do not add a separate references section." +
   " Say plainly when sources disagree or when nothing reliable was found.";
 
-export type Source = { url: string; title?: string; id?: number };
+export type Source = { url: string; title?: string; snippet?: string; date?: string; id?: number };
 
 export type AskSuccess = {
   ok: true;
@@ -97,6 +97,8 @@ export function readResponse(body: unknown): { answer: string; sources: Source[]
         if (!isObj(r) || typeof r.url !== "string" || !/^https?:\/\//i.test(r.url)) continue;
         const s: Source = { url: r.url };
         if (typeof r.title === "string" && r.title.trim()) s.title = r.title.trim();
+        if (typeof r.snippet === "string" && r.snippet.trim()) s.snippet = r.snippet.trim();
+        if (typeof r.date === "string" && r.date.trim()) s.date = r.date.trim();
         if (typeof r.id === "number" && Number.isInteger(r.id)) {
           s.id = r.id;
           if (!byId.has(r.id)) byId.set(r.id, s); // unverified: ids are assumed unique per response

@@ -20,7 +20,7 @@ import { isDisputed } from "@/lib/research/status";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
-type Source = { url: string; title?: string };
+type Source = { url: string; title?: string; snippet?: string; date?: string };
 type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
 type Resp = { configured: boolean; model: string; entries: Entry[] };
 type AskResp = { entry: Entry; effort: string | null; costUsd: number | null };
@@ -43,8 +43,6 @@ export function ResearchView({ project }: ViewProps) {
   const claims = useItems(project.id, "research/claims");
 
   const [cost, setCost] = useState("");
-  // Titles of sources are known only in the answer to the question just asked (the table keeps URLs).
-  const [titles, setTitles] = useState<Record<string, string>>({});
   const askM = useMutation({
     mutationFn: (q: string) => api<AskResp>("/api/research", { method: "POST", body: JSON.stringify({ projectId: project.id, query: q }) }),
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: keys.research(project.id) }), qc.invalidateQueries({ queryKey: keys.events(project.id) })]),
@@ -59,8 +57,6 @@ export function ResearchView({ project }: ViewProps) {
     try {
       const r = await askM.mutateAsync(q);
       setQuery("");
-      const named = Object.fromEntries((r.entry.sources ?? []).filter((x) => x.title).map((x) => [x.url, x.title as string]));
-      setTitles((t) => ({ ...t, ...named }));
       if (typeof r.costUsd === "number") setCost(`Perplexity estimated the cost of that answer at $${r.costUsd.toFixed(4)}${r.effort ? ` (effort ${r.effort})` : ""}.`);
     } catch (e) {
       setError((e as Error).message);
@@ -123,7 +119,7 @@ export function ResearchView({ project }: ViewProps) {
         <ul className="space-y-4">
           {state.entries.map((e) => (
             <motion.li key={e.id} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
-              <EntryCard entry={e} claims={claims} projectId={project.id} titles={titles} />
+              <EntryCard entry={e} claims={claims} projectId={project.id} />
             </motion.li>
           ))}
         </ul>
@@ -155,12 +151,12 @@ function Answer({ text, citations }: { text: string; citations: string[] }) {
   );
 }
 
-function EntryCard({ entry, claims, projectId, titles }: { entry: Entry; claims: Claims; projectId: string; titles: Record<string, string> }) {
+function EntryCard({ entry, claims, projectId }: { entry: Entry; claims: Claims; projectId: string }) {
   const [adding, setAdding] = useState<string | null>(null);
   const [using, setUsing] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
-  const sources: Source[] = (entry.sources ?? entry.citations.map((url): Source => ({ url }))).map((x) => ({ url: x.url, title: x.title ?? titles[x.url] }));
+  const sources: Source[] = entry.sources ?? entry.citations.map((url): Source => ({ url }));
 
   const addClaim = async () => {
     const title = (adding ?? "").trim();
@@ -189,10 +185,7 @@ function EntryCard({ entry, claims, projectId, titles }: { entry: Entry; claims:
             <li key={src.url} className="text-xs">
               <div className="flex flex-wrap items-start gap-2">
                 <span className="font-mono text-muted">[{i + 1}]</span>
-                <span className="min-w-0 flex-1">
-                  <span className="text-primary">{src.title ?? hostname(src.url)}</span>{" "}
-                  <a href={src.url} target="_blank" rel="noopener noreferrer" className="break-all text-link hover:underline">{src.url}</a>
-                </span>
+                <SourceLine source={src} />
                 <Button size="chip" variant="outline" aria-expanded={using === src.url} onClick={() => { setUsing(using === src.url ? null : src.url); setNote(""); }}>
                   Use as evidence
                 </Button>
@@ -237,6 +230,24 @@ function EntryCard({ entry, claims, projectId, titles }: { entry: Entry; claims:
   );
 }
 
+/** A source as a reader wants it: the title with the site's name, or the address when there is no title. */
+function SourceLine({ source }: { source: Source }) {
+  const title = source.title?.trim();
+  return (
+    <span className="min-w-0 flex-1">
+      {title ? (
+        <>
+          <a href={source.url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:text-link hover:underline">{title}</a>
+          <span className="text-muted"> · {hostname(source.url)}{source.date ? ` · ${source.date}` : ""}</span>
+        </>
+      ) : (
+        <a href={source.url} target="_blank" rel="noopener noreferrer" className="break-all text-link hover:underline">{source.url}</a>
+      )}
+      {source.snippet && <span className="mt-0.5 block line-clamp-2 text-secondary">{source.snippet}</span>}
+    </span>
+  );
+}
+
 function EvidenceForm({ claims, source, researchId, projectId, onCancel, onDone }: {
   claims: Item[];
   source: Source;
@@ -257,7 +268,7 @@ function EvidenceForm({ claims, source, researchId, projectId, onCancel, onDone 
     if (!claim || !verdict) return;
     setErr("");
     try {
-      const r = await add.mutateAsync({ claimId: claim.id, url: source.url, title: source.title, quote: quote.trim() || undefined, researchId, verdict });
+      const r = await add.mutateAsync({ claimId: claim.id, url: source.url, title: source.title?.trim() || undefined, quote: quote.trim() || undefined, researchId, verdict });
       onDone(`Saved as evidence on "${claim.title}". The claim is now ${r.status}${r.disputed ? " (disputed: sources disagree)" : ""}.`);
     } catch (e) {
       setErr((e as Error).message);
