@@ -195,6 +195,50 @@
       ],
       "source": "https://github.com/wireviz/WireViz",
       "notes": "planner/harness.py starts the wireviz command as a subprocess and reads its svg and bom files. It is never imported, so the GPL-3 code is not linked into the planner or the app."
+    },
+    {
+      "name": "CaseMaker (engine source)",
+      "version": "commit 8988792b627dd646e5acd02017a871aee1d0616c, 2026-11-20",
+      "license": "Apache-2.0",
+      "licenseEvidence": "vendor/casemaker/LICENSE is the Apache License 2.0 text and vendor/casemaker/NOTICE opens 'Case Maker, Copyright 2026 Electric RV Corporation'; both copied from https://github.com/SlyWombat/CaseMaker at that commit, read 21 November 2026. NOTICE also lists fonts, opentype.js and occt-import-js (LGPL-2.1); none of those is copied or bundled here (stubbed), see vendor/casemaker/UPSTREAM.md.",
+      "use": "copied source",
+      "origin": "Forked into this repository so the enclosure generator can run CaseMaker's engine headless on the server",
+      "referencedIn": [
+        "vendor/casemaker/entry.ts",
+        "vendor/casemaker/dist/engine.mjs",
+        "src/lib/enclosure/casemaker.ts"
+      ],
+      "source": "https://github.com/SlyWombat/CaseMaker",
+      "changes": "None to the copied files. Added entry.ts, build.mjs, stubs/ and the committed bundle dist/engine.mjs; see vendor/casemaker/UPSTREAM.md."
+    },
+    {
+      "name": "YAPP_Box (YAPPgenerator_v3.scad)",
+      "version": "commit f9400c419ef1dea7dc0b3607876989b4f3faa2b7 (3.3.8), 2025-08-24",
+      "license": "MIT",
+      "licenseEvidence": "planner/vendor/yapp_box/LICENSE is the MIT licence, 'Copyright (c) 2022 Willem Aandewiel', copied from https://github.com/mrWheel/YAPP_Box at that commit, read 21 November 2026.",
+      "use": "copied source",
+      "origin": "Vendored so the planner service can render a project box with OpenSCAD",
+      "referencedIn": [
+        "planner/vendor/yapp_box/YAPPgenerator_v3.scad",
+        "planner/enclosure.py",
+        "planner/Dockerfile"
+      ],
+      "source": "https://github.com/mrWheel/YAPP_Box",
+      "changes": "None. The file is copied unchanged; see planner/vendor/yapp_box/UPSTREAM.md."
+    },
+    {
+      "name": "OpenSCAD (Debian package openscad)",
+      "version": "2021.01 in the Debian package the planner image installs",
+      "license": "GPL-2.0-or-later with the CGAL exception (as the Debian package states it)",
+      "licenseEvidence": "/usr/share/doc/openscad/copyright in the installed Debian package: 'Files: * ... License: GPL-2+ with CGAL exception', read 21 November 2026.",
+      "use": "separate process",
+      "origin": "Installed by apt in planner/Dockerfile; the planner runs it as a command line program and reads the STL it writes",
+      "referencedIn": [
+        "planner/Dockerfile",
+        "planner/enclosure.py"
+      ],
+      "source": "https://openscad.org",
+      "notes": "Not linked into the planner and not modified. The planner image ships it as a Debian package; the YAPP_Box file is passed to it as an input."
     }
   ],
   "useOverrides": {

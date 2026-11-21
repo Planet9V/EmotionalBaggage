@@ -1,0 +1,245 @@
+import type { Mm } from './units';
+
+export type ComponentKind =
+  | 'usb-c'
+  | 'usb-a'
+  | 'usb-b'
+  | 'micro-usb'
+  | 'hdmi'
+  | 'micro-hdmi'
+  | 'barrel-jack'
+  | 'ethernet-rj45'
+  | 'gpio-header'
+  | 'sd-card'
+  | 'flat-cable'
+  | 'fan-mount'
+  | 'text-label'
+  | 'antenna-connector'
+  | 'custom';
+
+export type CutoutShape = 'rect' | 'round';
+
+export type Facing = '+x' | '-x' | '+y' | '-y' | '+z' | '-z';
+
+export interface MountingHole {
+  id: string;
+  x: Mm;
+  y: Mm;
+  diameter: Mm;
+}
+
+export interface BoardComponent {
+  id: string;
+  kind: ComponentKind;
+  position: { x: Mm; y: Mm; z: Mm };
+  size: { x: Mm; y: Mm; z: Mm };
+  facing?: Facing;
+  cutoutMargin?: Mm;
+  cutoutShape?: CutoutShape;
+  /** Optional procedural-fixture id (e.g. 'xlr-3', 'audio-jack-3-5'). When
+   * absent, the placeholder falls back to the component's `kind`-based shape. */
+  fixtureId?: string;
+  /** Silkscreen string, meaningful only for `kind: 'text-label'` components —
+   * a printed legend such as "GPIO", "DIGITAL" or "PWR". Rendered in the
+   * picker's data-driven top view (#130); informational only, it never feeds
+   * the cutout pipeline. Absent → the label draws nothing (as before). */
+  text?: string;
+}
+
+/** A thin cantilever snap clip that retains a secondary board's edge. */
+export interface BoardClip {
+  /** Which board edge the clip sits just outboard of and hooks inward over. */
+  edge: '+x' | '-x' | '+y' | '-y';
+  /** Position along that edge, measured from the board's min corner (mm). */
+  offset: Mm;
+  /** Clip width along the edge (mm). Defaults to a nominal ~6 mm; set small to
+   * squeeze into a narrow gap between edge components. */
+  width?: Mm;
+  /** 'clip' (default): two-jaw catch — shelf + snap finger over the board.
+   * 'shelf': support tab only — a solid pedestal from the wall to `reach`
+   * under the board, floor to board underside, NO finger. For an end with
+   * no room above the board (e.g. the C61's overhanging PCB antenna). */
+  style?: 'clip' | 'shelf';
+  /** How far the bottom jaw reaches in under the board (mm). Defaults to the
+   * snap-finger overhang (~1.2); support tabs want more (C61 antenna end: 10). */
+  reach?: Mm;
+}
+
+/**
+ * A second PCB held above the case floor by thin snap clips (no screws). Used
+ * for daughterboards that co-locate in the same case — e.g. SlyTherm's MSR-2
+ * mmWave module, held 10 mm up with its radar facing the floor/front.
+ */
+export interface SecondaryBoardMount {
+  id: string;
+  /** Origin-relative XY of the board's min corner (mm). */
+  position: { x: Mm; y: Mm };
+  /** Board footprint + thickness (mm). */
+  size: { x: Mm; y: Mm; z: Mm };
+  /** Gap from the case floor top to the board's underside (mm). */
+  standoffHeight: Mm;
+  /** How far each clip hooks inward over the board top (mm). */
+  overhang?: Mm;
+  clips: BoardClip[];
+}
+
+/**
+ * A finished module in a vendor shell, described well enough to mount it.
+ *
+ * Z convention matches the physical stack, measured from the FRONT face
+ * (glass) backwards:
+ *   0 .. flangeThickness                     front flange (= pcb.size x/y outline)
+ *   flangeThickness .. + body.depth          rear body (smaller, centred-ish)
+ * Mounting bosses stand on the flange's REAR face, inside the rim left over
+ * around the rear body, and are `bossHeight` tall — so they usually sit
+ * recessed relative to the rear body's back face.
+ */
+export interface EnclosureModule {
+  /** Thickness of the front flange plate (the full outline). */
+  flangeThickness: Mm;
+  /** Raised rear body, origin-relative to the module outline's min corner. */
+  body: { x: Mm; y: Mm; width: Mm; height: Mm; depth: Mm };
+  /** Outer diameter of each mounting boss (positions come from mountingHoles). */
+  bossDiameter: Mm;
+  /** How far each boss stands proud of the flange's rear face. */
+  bossHeight: Mm;
+  /**
+   * Things that stand proud of the REAR BODY's side faces and must never be
+   * squashed — the Guition panel's three soft buttons, for instance. A frame
+   * whose opening hugs the rear body would otherwise hold them permanently
+   * pressed.
+   *
+   * The frame cuts a channel at each: open into the opening, and open through
+   * the frame's FULL thickness, so the feature slides straight in along the
+   * insertion path and is never compressed on the way to a recess.
+   */
+  edgeProtrusions?: EdgeProtrusion[];
+  /**
+   * Rear slide-on mounting channel (Ubiquiti U7 Pro Outdoor style): a
+   * T-slot recessed into the device's back face, open at its BOTTOM end.
+   * The device is hung by lowering it onto a male T-bracket until the
+   * channel's closed top end lands on the bracket's top. Present → the
+   * stand archetype's 'slider' mount can build that bracket.
+   *
+   * All dimensions are measured on the DEVICE with calipers:
+   *   cavityWidth  — full channel width BEHIND the retention lips
+   *   throatWidth  — the opening between the two lips (< cavityWidth)
+   *   lipDepth     — from the device's outer back face to the lips' inner faces
+   *   totalDepth   — from the outer back face to the channel floor (> lipDepth)
+   *   length       — usable channel length along the slide direction
+   *   topFromDeviceBottom — device's bottom edge to the channel's closed TOP
+   *                  end; sets how high the device hangs on the bracket
+   */
+  sliderChannel?: SliderChannel;
+}
+
+/** Rear T-slot mounting channel — see EnclosureModule.sliderChannel. */
+export interface SliderChannel {
+  cavityWidth: Mm;
+  throatWidth: Mm;
+  lipDepth: Mm;
+  totalDepth: Mm;
+  length: Mm;
+  topFromDeviceBottom: Mm;
+}
+
+/** A bump on one of the rear body's side faces (button, latch, connector shell). */
+export interface EdgeProtrusion {
+  id: string;
+  /** Which face of the rear body it sticks out of. */
+  edge: '+x' | '-x' | '+y' | '-y';
+  /** Span along that edge, in module coords (mm). */
+  from: Mm;
+  to: Mm;
+  /** How far it stands proud of that face (mm). */
+  depth: Mm;
+}
+
+export type MeasurementMethod =
+  | 'datasheet'
+  | 'open-source-cad'
+  | 'physical-measurement';
+
+export interface BoardVisualAssets {
+  /** glTF/GLB 3D model: a path under `public/` for a bundled built-in board
+   * (e.g. `/board-assets/rpi-4b/model.glb`), or an absolute URL for a
+   * community board whose assets live in the library repo (#130). */
+  glb?: string;
+  /** Top-down PNG/JPG — same path-or-absolute-URL rules as `glb`. Shown in
+   * the board picker in place of the synthesised SVG when present. */
+  topImage?: string;
+  /** Side-view PNG/JPG — same path-or-absolute-URL rules as `glb`. */
+  sideImage?: string;
+  /** SPDX expression or URL to manufacturer license. REQUIRED whenever any
+   * of glb/topImage/sideImage is present (enforced by the schema): licensed
+   * material may not ship without a nameable redistribution licence. */
+  license?: string;
+  /** Where the assets came from (e.g. manufacturer doc URL). REQUIRED
+   * whenever any asset is present, alongside `license`. */
+  sourceUrl?: string;
+}
+
+export interface BoardProfile {
+  /** Board-profile format version; absent = 1. Bump on breaking changes. */
+  schemaVersion?: number;
+  id: string;
+  name: string;
+  manufacturer: string;
+  pcb: { size: { x: Mm; y: Mm; z: Mm } };
+  mountingHoles: MountingHole[];
+  components: BoardComponent[];
+  defaultStandoffHeight: Mm;
+  recommendedZClearance: Mm;
+  /** Board-retention seat shoulder. When true AND boardRetention='snap', the
+   * snap compiler adds a raised perimeter rim that brings the cavity walls in
+   * to the PCB/glass footprint over the seat height, so a face-down panel
+   * seats in a snug pocket instead of floating in the internal-clearance gap.
+   * Needed when clearance/side exceeds the finger overhang (e.g. the
+   * ESP32-S3-Touch-LCD-4.3B glass would otherwise slip past the fingers). */
+  retentionShoulder?: boolean;
+  /** Scope board-retention (snap fingers + seat shoulder) to this sub-rectangle
+   * of the PCB (origin-relative mm) instead of the full footprint. Used when the
+   * board is extended past the retained panel (e.g. SlyTherm extends +X for the
+   * MSR-2 bay) so the screen's rim/fingers stay on the screen and don't wrap the
+   * extension. On a side whose footprint edge is far from the cavity wall, the
+   * shoulder becomes a standalone internal rib instead of filling to the wall. */
+  retentionFootprint?: { x: Mm; y: Mm; width: Mm; height: Mm };
+  /** Explicit board-retention clip placements (edge + offset from the
+   * retention footprint's min corner along that edge). Overrides the default
+   * one-clip-per-wall-center layout when the edge centers are occupied —
+   * headers flush to the edge, USB stacks, an antenna overhang. Each clip is
+   * a two-jaw catch: a shelf the board rests on plus the ramped finger above,
+   * separated by the PCB thickness, carried on a spine grounded to the floor
+   * (so a clip far from a wall never floats in free space). */
+  retentionClips?: BoardClip[];
+  /** Secondary boards held on snap clips above the floor (e.g. SlyTherm MSR-2). */
+  secondaryBoardMounts?: SecondaryBoardMount[];
+  source?: string;
+  /** Independent confirmation of dimensions (e.g., open-source CAD repo). */
+  crossReference?: string;
+  /** Datasheet revision string, e.g. "Rev 1.4 — 2023-08". */
+  datasheetRevision?: string;
+  /** #622 — free-text assumptions and unmeasured dimensions: what the profile
+   * guessed, and what a caliper should confirm before printing. Shown in the
+   * board picker under the provenance. */
+  notes?: string;
+  /** Set when this "board" is not a bare PCB but a FINISHED module in its own
+   * shell (e.g. the Guition JC4880P443C touch panel). The case archetypes that
+   * hold such a module — the desk stand — need its shell geometry, not a
+   * cavity: pcb.size is the module's overall outline, and this block describes
+   * the shell's front flange, the rear body that must pass through a frame's
+   * opening, and the mounting bosses that `mountingHoles` locates. */
+  enclosure?: EnclosureModule;
+  measurementMethod?: MeasurementMethod;
+  visualAssets?: BoardVisualAssets;
+  /** #128 — per-board version from a community index (string or number).
+   * Bump it when the board's data changes; the app compares it against the
+   * cached copy to flag boards that changed upstream. Built-ins leave it
+   * absent, and an absent version on both sides counts as unchanged. */
+  version?: string | number;
+  builtin: boolean;
+  /** Issue #71 — set when this profile is a clone of a built-in. HAT
+   * compatibility checks accept the clonedFrom id as well as `id` so users
+   * don't lose shield compatibility just by cloning the board for editing. */
+  clonedFrom?: string;
+}

@@ -1,0 +1,1042 @@
+import type { BoardProfile, StandParams } from '@/types';
+import {
+  cube,
+  cylinder,
+  difference,
+  mesh,
+  roundedRectPrism,
+  rotate,
+  translate,
+  union,
+  type BuildOp,
+} from './buildPlan';
+import { screwHole } from './fasteners';
+import { WALL_HEAD_D, WALL_HEAD_RECESS, WALL_SCREW_D } from './rack';
+
+/**
+ * Desk stand for a finished display module (BoardProfile.enclosure).
+ *
+ * Two fused features, printed as ONE part standing on its foot:
+ *
+ *   FRAME — a plate matching the module's outline. The module's rear body
+ *   passes THROUGH the frame's opening; its front flange seats on the frame's
+ *   front face; its mounting bosses sink into counterbored pockets so the
+ *   flange sits flush. Screws pass from the frame's BACK into the bosses.
+ *   The middle is open, so back-facing connectors (the Guition panel plugs its
+ *   USB-C straight out the back) stay reachable and nothing traps heat.
+ *
+ *   FOOT — a plate on the desk, braced to the frame by a gusset at each side.
+ *   The gussets live in the frame's side rims, keeping the area behind the
+ *   opening clear for cables.
+ *
+ * Print orientation: as modelled. Standing on the foot, the frame leans back
+ * by `tiltAngleDeg`, so its faces sit at (90 - tilt)° to the bed — 75° at the
+ * default 15°, comfortably self-supporting. The gussets taper to a point as
+ * they rise, so every layer lands on the one below.
+ *
+ * Frame-local coords (before the tilt is applied):
+ *   x: 0..W across the screen        y: 0..H up the screen
+ *   z: 0 = BACK face, z = T = FRONT face (the side the module seats against)
+ */
+
+/** Rise of the frame's bottom edge into the foot, so the two fuse manifold. */
+const FOOT_EMBED = 2;
+/** Gussets bite this far into the frame's back face, so they fuse. */
+const GUSSET_BITE = 1.5;
+/** Pocket clearance around a boss (per side, on the diameter). */
+const BOSS_FIT = 0.4;
+/** Screw-head counterbore on the frame's back face. */
+const HEAD_CLEARANCE = 1.8;
+const HEAD_DEPTH = 1.5;
+/** Overshoot so cutters punch cleanly through faces. */
+const OVER = 1;
+
+export interface StandDims {
+  /** Frame plate, before tilting. */
+  frameW: number;
+  frameH: number;
+  frameT: number;
+  /** Overall stand envelope once tilted and stood on its foot. */
+  outerX: number;
+  outerY: number;
+  outerZ: number;
+}
+
+export function computeStandDims(board: BoardProfile, stand: StandParams): StandDims {
+  const t = (stand.tiltAngleDeg * Math.PI) / 180;
+  const frameW = board.pcb.size.x + 2 * stand.bezelMargin;
+  const frameH = board.pcb.size.y + 2 * stand.bezelMargin;
+  const frameT = stand.frameThickness;
+  // Tilted frame reaches back by (H·sin t) and its own thickness (T·cos t).
+  const reach = frameH * Math.sin(t) + frameT * Math.cos(t);
+  return {
+    frameW,
+    frameH,
+    frameT,
+    outerX: frameW,
+    outerY: Math.max(stand.baseDepth, reach + 2),
+    outerZ: stand.baseThickness - FOOT_EMBED + frameH * Math.cos(t) + frameT * Math.sin(t),
+  };
+}
+
+/**
+ * Triangular prism extruded along X, from a triangle given in the (y, z)
+ * plane. Vertices are wound so the prism is a closed, outward-facing solid
+ * regardless of the caller's ordering.
+ */
+function triPrismX(
+  tri: readonly [[number, number], [number, number], [number, number]], // three (y, z) pairs
+  xMin: number,
+  xMax: number,
+): BuildOp {
+  const a = tri[0];
+  let b = tri[1];
+  let c = tri[2];
+  // Force CCW in (y, z) so the caps' winding below is consistent.
+  const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  if (cross < 0) {
+    const swap = b;
+    b = c;
+    c = swap;
+  }
+  const positions: number[] = [];
+  for (const [y, z] of [a, b, c]) positions.push(xMin, y, z); // 0,1,2
+  for (const [y, z] of [a, b, c]) positions.push(xMax, y, z); // 3,4,5
+  const tris = [
+    0, 2, 1, // -x cap (outward normal -x → CW seen from +x)
+    3, 4, 5, // +x cap
+    0, 1, 4, 0, 4, 3, // side a-b
+    1, 2, 5, 1, 5, 4, // side b-c
+    2, 0, 3, 2, 3, 5, // side c-a
+  ];
+  return mesh(new Float32Array(positions), new Uint32Array(tris));
+}
+
+/**
+ * Triangular prism extruded along Y, from a triangle given in the (x, z)
+ * plane. Same purpose as `triPrismX` (closed, outward-facing solid whatever
+ * the caller's vertex order) — but the caps are wound differently, because a
+ * triangle CCW in (x, z) has its natural normal along −y, not +y. Verified by
+ * volume in the pocket-carrier spec.
+ */
+function triPrismY(
+  tri: readonly [[number, number], [number, number], [number, number]], // three (x, z) pairs
+  yMin: number,
+  yMax: number,
+): BuildOp {
+  const a = tri[0];
+  let b = tri[1];
+  let c = tri[2];
+  // Force CCW in (x, z) so the caps' winding below is consistent.
+  const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  if (cross < 0) {
+    const swap = b;
+    b = c;
+    c = swap;
+  }
+  const positions: number[] = [];
+  for (const [x, z] of [a, b, c]) positions.push(x, yMin, z); // 0,1,2
+  for (const [x, z] of [a, b, c]) positions.push(x, yMax, z); // 3,4,5
+  const tris = [
+    0, 1, 2, // -y cap
+    3, 5, 4, // +y cap
+    0, 4, 1, 0, 3, 4, // side a-b
+    1, 4, 5, 1, 5, 2, // side b-c
+    2, 3, 0, 2, 5, 3, // side c-a
+  ];
+  return mesh(new Float32Array(positions), new Uint32Array(tris));
+}
+
+// ---- Wall-mount defaults (see StandParams) ---------------------------------
+export const WALL_DEFAULTS = {
+  shroudDepth: 22,
+  shroudWall: 4,
+  plateThickness: 4,
+  plateBorder: 12,
+  drywallScrewDiameter: 4.4,
+  drywallHeadDiameter: 8.5,
+} as const;
+/** Snap finger: a cantilever standing off the plate with an outward barb. */
+const FINGER_H = 12;
+const FINGER_T = 2.4;
+const FINGER_W = 12;
+const BARB_P = 1.5; // how far the barb juts out past the finger face
+const BARB_H = 2.5;
+/** Plate-to-shroud-cavity clearance, per side. */
+const PLATE_FIT = 0.3;
+/** Edge-protrusion channels: slack along the edge, and off the bump's tip. */
+const CHANNEL_MARGIN = 1.5;
+const CHANNEL_CLEAR = 0.6;
+/** Thinner than this and a leftover rib isn't worth printing — take it out. */
+const MIN_RIB = 1.2;
+
+/**
+ * Board X → frame X. **The frame's X is MIRRORED relative to the board's.**
+ *
+ * Board coordinates are the module's BACK view (that's how the vendor drawing
+ * is dimensioned). The module seats FACE-TO-FACE against the frame: its flange
+ * rear touches the frame's front, so board +z points into the frame (= frame
+ * −z), while board +y still has to point up (the buttons are on the bottom
+ * edge). A rigid placement with z flipped and y kept must flip x — it's a 180°
+ * turn about the vertical axis. Turn a phone around to face you and a button on
+ * its back-LEFT ends up on your RIGHT.
+ *
+ * The bosses (108×60, centred) and the rear body are both symmetric in x, so
+ * they land correctly either way and hide this. The three soft buttons are not
+ * symmetric: get this wrong and their channels are cut on the wrong side.
+ */
+function mirrorX(board: BoardProfile, stand: StandParams, boardX: number): number {
+  return stand.bezelMargin + (board.pcb.size.x - boardX);
+}
+
+/**
+ * The frame plate, flat, in local coords (z: 0 = BACK, T = FRONT — the front
+ * is the face the module's flange seats against). Shared by both mounts.
+ */
+function buildFrameLocal(board: BoardProfile, stand: StandParams, W: number, H: number, T: number): BuildOp {
+  const enc = board.enclosure!;
+  const m = stand.bezelMargin;
+  const outerR = Math.min(5, W / 4, H / 4);
+  const cuts: BuildOp[] = [];
+
+  // Opening: the module's rear body passes straight through.
+  const clr = stand.openingClearance;
+  const openW = enc.body.width + 2 * clr;
+  const openH = enc.body.height + 2 * clr;
+  cuts.push(
+    translate(
+      [mirrorX(board, stand, enc.body.x + enc.body.width) - clr, m + enc.body.y - clr, -OVER],
+      roundedRectPrism(openW, openH, T + 2 * OVER, Math.min(3, openW / 4, openH / 4)),
+    ),
+  );
+
+  // Per mounting hole: a pocket the boss sinks into (open on the FRONT face),
+  // a screw clearance hole through, and a head counterbore on the BACK face.
+  const pocketDepth = enc.bossHeight + 0.2;
+  for (const h of board.mountingHoles) {
+    const hx = mirrorX(board, stand, h.x);
+    const hy = m + h.y;
+    cuts.push(
+      translate(
+        [hx, hy, T - pocketDepth],
+        cylinder(pocketDepth + OVER, (enc.bossDiameter + BOSS_FIT) / 2, 48),
+      ),
+    );
+    cuts.push(translate([hx, hy, -OVER], cylinder(T + 2 * OVER, stand.screwHoleDiameter / 2, 32)));
+    cuts.push(
+      translate(
+        [hx, hy, -OVER],
+        cylinder(HEAD_DEPTH + OVER, (stand.screwHoleDiameter + HEAD_CLEARANCE) / 2, 32),
+      ),
+    );
+  }
+
+  return difference([roundedRectPrism(W, H, T, outerR), ...cuts]);
+}
+
+/**
+ * Channels for anything standing proud of the rear body's side faces — the
+ * Guition panel's three soft buttons. Without these the frame's opening hugs
+ * the body and holds the buttons permanently pressed.
+ *
+ * Returned in FRAME-LOCAL coords, but they must be subtracted from the whole
+ * assembled part, not just the frame: the desk stand's frame sinks its bottom
+ * edge into the foot, and the buttons live exactly in that overlap — cut the
+ * frame alone and the foot fills the channel straight back in.
+ *
+ * Each channel runs through the frame's FULL thickness, so the button slides in
+ * along the insertion path and is never pressed in to reach a recess. It opens
+ * into the frame's opening, and if the rib left outboard of it would be thinner
+ * than MIN_RIB it is taken right out to the frame's edge — a sub-millimetre
+ * sliver of plastic there is neither printable nor useful.
+ */
+export function buildEdgeChannels(
+  board: BoardProfile,
+  stand: StandParams,
+  W: number,
+  H: number,
+  T: number,
+): BuildOp[] {
+  const enc = board.enclosure!;
+  const m = stand.bezelMargin;
+  // Body edges in FRAME space. X is mirrored (see mirrorX), so the body's -x
+  // face becomes the frame's high-x side and vice versa.
+  const bx0 = mirrorX(board, stand, enc.body.x + enc.body.width);
+  const bx1 = mirrorX(board, stand, enc.body.x);
+  const by0 = m + enc.body.y;
+  const by1 = by0 + enc.body.height;
+  const zLo = -OVER;
+  const zLen = T + 2 * OVER;
+  const out: BuildOp[] = [];
+  for (const p of enc.edgeProtrusions ?? []) {
+    const reach = p.depth + CHANNEL_CLEAR;
+    if (p.edge === '-y' || p.edge === '+y') {
+      // The span runs along x, so it mirrors (and its ends swap).
+      const a = mirrorX(board, stand, Math.max(p.from, p.to)) - CHANNEL_MARGIN;
+      const b = mirrorX(board, stand, Math.min(p.from, p.to)) + CHANNEL_MARGIN;
+      let yLo = p.edge === '-y' ? by0 - reach : by1 - 0.5;
+      let yHi = p.edge === '-y' ? by0 + 0.5 : by1 + reach;
+      if (p.edge === '-y' && yLo < MIN_RIB) yLo = -OVER;
+      if (p.edge === '+y' && H - yHi < MIN_RIB) yHi = H + OVER;
+      out.push(translate([a, yLo, zLo], cube([b - a, yHi - yLo, zLen])));
+    } else {
+      // A bump on the body's -x face lands on the frame's +x side, and vice
+      // versa. The span runs along y, which is not mirrored.
+      const a = m + Math.min(p.from, p.to) - CHANNEL_MARGIN;
+      const b = m + Math.max(p.from, p.to) + CHANNEL_MARGIN;
+      const frameEdge = p.edge === '-x' ? '+x' : '-x';
+      let xLo = frameEdge === '-x' ? bx0 - reach : bx1 - 0.5;
+      let xHi = frameEdge === '-x' ? bx0 + 0.5 : bx1 + reach;
+      if (frameEdge === '-x' && xLo < MIN_RIB) xLo = -OVER;
+      if (frameEdge === '+x' && W - xHi < MIN_RIB) xHi = W + OVER;
+      out.push(translate([xLo, a, zLo], cube([xHi - xLo, b - a, zLen])));
+    }
+  }
+  return out;
+}
+
+/**
+ * Where the module sits, for the viewport to draw it IN PLACE rather than flat.
+ *
+ * Compose in this order (all in the stand's world frame):
+ *   1. Ry(180°)  — the face-to-face turn (see mirrorX): x → −x, z → −z
+ *   2. translate(frameOffset)   — lands the module on the frame's front face
+ *   3. Rx(rotXDeg)              — the frame's own tilt (desk); 0 for wall
+ *   4. translate(worldOffset)
+ */
+export interface ModulePlacement {
+  frameOffset: [number, number, number];
+  rotXDeg: number;
+  worldOffset: [number, number, number];
+}
+
+export function standModulePlacement(
+  board: BoardProfile,
+  stand: StandParams,
+): ModulePlacement | null {
+  const enc = board.enclosure;
+  if (!enc) return null;
+  if ((stand.mount ?? 'desk') === 'slider') {
+    const d = computeSliderDims(board, stand);
+    if (!d) return null;
+    // The device's BACK face (board z = full module depth) seats on the
+    // column's front face (column-local z = colT), centred on the column,
+    // hanging so its bottom edge sits topFromDeviceBottom below the top.
+    const devD = enc.flangeThickness + enc.body.depth;
+    return {
+      frameOffset: [
+        d.colX0 + (d.colW + board.pcb.size.x) / 2,
+        d.colH - enc.sliderChannel!.topFromDeviceBottom,
+        d.colT + devD,
+      ],
+      rotXDeg: 90 - stand.tiltAngleDeg,
+      worldOffset: [0, d.TyCol, d.Tz],
+    };
+  }
+  const m = stand.bezelMargin;
+  const T = stand.frameThickness;
+  const t = (stand.tiltAngleDeg * Math.PI) / 180;
+  // After Ry(180) the module's x,z are negated; shift it back into place. The
+  // flange's rear face (board z = flangeThickness) must land on the frame's
+  // front face (frame z = T).
+  const frameOffset: [number, number, number] = [
+    m + board.pcb.size.x,
+    m,
+    T + enc.flangeThickness,
+  ];
+  if ((stand.mount ?? 'desk') === 'wall') {
+    const D = stand.shroudDepth ?? WALL_DEFAULTS.shroudDepth;
+    return { frameOffset, rotXDeg: 0, worldOffset: [0, 0, D] };
+  }
+  if ((stand.mount ?? 'desk') === 'pocket') {
+    const d = computePocketDims(board, stand);
+    if (!d) return null;
+    // The tray's own frame: the pocket's floor face is at z = plateT and its
+    // inner left face at x = earReach + plateT (the ear, then the wall). The
+    // module nests with its bottom edge on the floor and its back against the
+    // plate — standing up, not leaning — and Ry(180) turns its face out of the
+    // pocket, for the same reason it turns the module's face out of the desk
+    // frame (see mirrorX).
+    const fit = (d.innerW - board.pcb.size.x) / 2;
+    const innerX0 = d.earReach + d.plateT;
+    return {
+      frameOffset: [innerX0 + fit + board.pcb.size.x, d.plateT, d.plateT + d.moduleD],
+      rotXDeg: 0,
+      worldOffset: [0, 0, 0],
+    };
+  }
+  return {
+    frameOffset,
+    rotXDeg: 90 - stand.tiltAngleDeg,
+    worldOffset: [0, T * Math.cos(t) + 2, stand.baseThickness - FOOT_EMBED],
+  };
+}
+
+/**
+ * Build the desk stand: frame + foot + gussets, fused into a single solid.
+ * Returns null when the board isn't a finished enclosure module (a stand has
+ * nothing to grip on a bare PCB).
+ */
+export function buildStandOp(board: BoardProfile, stand: StandParams): BuildOp | null {
+  const enc = board.enclosure;
+  if (!enc) return null;
+
+  const d = computeStandDims(board, stand);
+  const { frameW: W, frameH: H, frameT: T } = d;
+  const t = (stand.tiltAngleDeg * Math.PI) / 180;
+  const sinT = Math.sin(t);
+  const cosT = Math.cos(t);
+
+  const frameLocal = buildFrameLocal(board, stand, W, H, T);
+
+  // ---- Place the frame: lean it back, stand it on the foot ----------------
+  // Rotation about world X by (90° - tilt) maps local +y (up the screen) to
+  // world +z and tips the top backwards into +y. Derivation:
+  //   world.y = y·sin t − z·cos t     world.z = y·cos t + z·sin t
+  // so the frame's min y is −T·cos t (bottom-front edge) and min z is 0.
+  const rotated = rotate([90 - stand.tiltAngleDeg, 0, 0], frameLocal);
+  const frontOffset = 2; // keep the frame's toe just inside the foot's front lip
+  const Ty = T * cosT + frontOffset;
+  const Tz = stand.baseThickness - FOOT_EMBED;
+  const frame = translate([0, Ty, Tz], rotated);
+
+  // ---- Foot ---------------------------------------------------------------
+  const baseDepth = Math.max(stand.baseDepth, H * sinT + T * cosT + 12);
+  const foot = translate(
+    [0, 0, 0],
+    roundedRectPrism(W, baseDepth, stand.baseThickness, Math.min(4, W / 6)),
+  );
+
+  // ---- Side gussets -------------------------------------------------------
+  // The frame's BACK face (local z = 0) sweeps world y = Ty + (z − Tz)·tan t.
+  // Anchor the gusset's vertical leg on that plane, biting GUSSET_BITE into it
+  // so the union fuses, and run its foot back along the base plate.
+  const backFaceY = (z: number) => Ty + (z - Tz) * (sinT / cosT) - GUSSET_BITE;
+  const zBot = stand.baseThickness;
+  const zTop = stand.baseThickness + stand.gussetHeightFraction * H * cosT;
+  const yHeel = baseDepth - 2;
+  const tri: [[number, number], [number, number], [number, number]] = [
+    [backFaceY(zBot), zBot], // at the frame, on the foot
+    [yHeel, zBot], // back of the foot
+    [backFaceY(zTop), zTop], // up the frame's back
+  ];
+  const gussets: BuildOp[] = [];
+  if (yHeel > backFaceY(zBot) + 4 && zTop > zBot + 4) {
+    const gt = stand.gussetThickness;
+    gussets.push(triPrismX(tri, 0, gt));
+    gussets.push(triPrismX(tri, W - gt, W));
+  }
+
+  // ---- Flush front --------------------------------------------------------
+  // The part is printed FACE DOWN: the frame's front face goes on the bed. But
+  // the foot's front lip is a VERTICAL face while the frame's front is tilted,
+  // so the lip stands proud of the frame's plane (~T·sin t at the top of the
+  // foot) and the part would rock on that lip instead of bedding on the frame.
+  // Shave everything forward of the frame's front plane, so the frame face and
+  // the foot's front edge end up coplanar — one flat surface on the bed.
+  const BIG = 500;
+  const frontHalfSpace = translate(
+    [0, Ty, Tz],
+    rotate(
+      [90 - stand.tiltAngleDeg, 0, 0],
+      translate([-BIG, -BIG, T], cube([W + 2 * BIG, H + 2 * BIG, BIG])),
+    ),
+  );
+
+  // Button channels, placed with the frame. Subtracted from the ASSEMBLED part
+  // so they also cut the foot the frame's bottom edge is embedded in — the
+  // buttons sit right in that overlap, and cutting the frame alone leaves the
+  // foot filling the channel back in.
+  const channels = buildEdgeChannels(board, stand, W, H, T).map((c) =>
+    translate([0, Ty, Tz], rotate([90 - stand.tiltAngleDeg, 0, 0], c)),
+  );
+
+  return difference([union([foot, frame, ...gussets]), frontHalfSpace, ...channels]);
+}
+
+// ---- Slider mount ----------------------------------------------------------
+// A device with a rear T-slot channel (enclosure.sliderChannel) hangs on a
+// male T-bracket: a tilted column on an anti-tip foot, the bracket on the
+// column's front face. The device is lowered onto the bracket until the
+// channel's closed TOP end lands on the bracket's top — gravity is the
+// retention, no screws. One fused part, printed standing on its foot (the
+// column leans back by only tiltAngleDeg, self-supporting).
+
+/** Axial fit: lip inner face ↔ wing underside, and wing top ↔ channel floor. */
+const SLIDER_AXIAL_FIT = 0.3;
+/** Gap between the device's bottom edge and the foot's top face when seated. */
+const SLIDER_BOTTOM_CLEAR = 6;
+/** Foot in front of the device's bottom-front corner — the anti-tip reserve. */
+const SLIDER_FRONT_MARGIN = 30;
+/** Foot behind the column's top-back corner (gusset heel room). */
+const SLIDER_BACK_MARGIN = 12;
+/** Overlap embeds so the union fuses into one shell (see buildWallPlate). */
+const SLIDER_EMBED = 0.8;
+
+export interface SliderDims {
+  /** Column plate, in its local frame (x across, y up, z back→front). */
+  colW: number;
+  colH: number;
+  colT: number;
+  /** Column's x offset on the foot (centred). */
+  colX0: number;
+  footW: number;
+  baseDepth: number;
+  /** Column translate (world), same composition as the desk frame. */
+  TyCol: number;
+  Tz: number;
+  /** Male T-profile: throat passes the lips, wings lock behind them. */
+  throatW: number;
+  wingW: number;
+  wingT: number;
+  /** Total protrusion of the male past the column's front face. */
+  protrusion: number;
+  /** Vertical length of the male (channel engagement). */
+  engagement: number;
+  /** World z of the device's bottom edge when seated. */
+  deviceBottomZ: number;
+}
+
+export function computeSliderDims(board: BoardProfile, stand: StandParams): SliderDims | null {
+  const enc = board.enclosure;
+  const ch = enc?.sliderChannel;
+  if (!enc || !ch) return null;
+  const t = (stand.tiltAngleDeg * Math.PI) / 180;
+  const sinT = Math.sin(t);
+  const cosT = Math.cos(t);
+  const colT = stand.frameThickness;
+  const colW = ch.cavityWidth + 2 * stand.bezelMargin;
+  const Tz = stand.baseThickness - FOOT_EMBED;
+  // Column top = bracket top = the channel's closed top end when seated, so
+  // the device bottom hangs topFromDeviceBottom below it (measured along the
+  // column). Tall enough that the device clears the foot.
+  const colH = ch.topFromDeviceBottom + (SLIDER_BOTTOM_CLEAR + FOOT_EMBED) / cosT;
+  const devD = enc.flangeThickness + enc.body.depth;
+  const yDevBot = colH - ch.topFromDeviceBottom; // device bottom, column-local y
+  // Setback: the foot must reach SLIDER_FRONT_MARGIN past the device's
+  // bottom-front corner, which sits devD in front of the column's face.
+  const S = Math.max(5, SLIDER_FRONT_MARGIN + devD * cosT - yDevBot * sinT);
+  const TyCol = S + colT * cosT;
+  const baseDepth = Math.max(stand.baseDepth, TyCol + colH * sinT + SLIDER_BACK_MARGIN);
+  const footW = Math.max(colW + 2 * stand.gussetThickness + 20, 0.75 * board.pcb.size.x);
+  const fit = stand.openingClearance;
+  const wingT = ch.totalDepth - ch.lipDepth - 2 * SLIDER_AXIAL_FIT;
+  if (wingT < 0.8) return null; // channel too shallow to lock a printable wing
+  return {
+    colW,
+    colH,
+    colT,
+    colX0: (footW - colW) / 2,
+    footW,
+    baseDepth,
+    TyCol,
+    Tz,
+    throatW: ch.throatWidth - 2 * fit,
+    wingW: ch.cavityWidth - 2 * fit,
+    wingT,
+    protrusion: ch.lipDepth + SLIDER_AXIAL_FIT + wingT,
+    engagement: ch.length - 2,
+    deviceBottomZ: Tz + yDevBot * cosT,
+  };
+}
+
+/**
+ * Build the slider bench stand: foot + tilted column + male T-bracket +
+ * gussets, fused into a single solid. Null when the board has no
+ * enclosure.sliderChannel (nothing to slide into).
+ */
+export function buildSliderStandOp(board: BoardProfile, stand: StandParams): BuildOp | null {
+  const d = computeSliderDims(board, stand);
+  if (!d) return null;
+  const { colW: CW, colH: CH, colT: CT } = d;
+  const t = (stand.tiltAngleDeg * Math.PI) / 180;
+  const sinT = Math.sin(t);
+  const cosT = Math.cos(t);
+
+  // ---- Column + male T-profile, in column-local coords --------------------
+  // (x 0..CW, y 0..CH up, z 0 = BACK face, z = CT = FRONT face.)
+  const plate = roundedRectPrism(CW, CH, CT, Math.min(3, CW / 4));
+  const yBot = CH - d.engagement;
+  const P = d.protrusion;
+  const ch = board.enclosure!.sliderChannel!;
+  // Throat: passes between the channel's lips, and runs the full protrusion
+  // so the wings have a spine to fuse onto.
+  const throat = translate(
+    [(CW - d.throatW) / 2, yBot, CT - SLIDER_EMBED],
+    cube([d.throatW, d.engagement, P + SLIDER_EMBED]),
+  );
+  // Wings: lock behind the lips. Their underside sits SLIDER_AXIAL_FIT past
+  // the lips' inner faces; their top face clears the channel floor by the same.
+  const wings = translate(
+    [(CW - d.wingW) / 2, yBot, CT + ch.lipDepth + SLIDER_AXIAL_FIT],
+    cube([d.wingW, d.engagement, d.wingT]),
+  );
+  // 45° chamfers on the male's two ends. Top: lead-in, so the channel's lips
+  // ride over the wings as the device is lowered on. Bottom: turns the male's
+  // underside from a near-horizontal 6+ mm overhang into a printable slope.
+  const xCut0 = (CW - d.wingW) / 2 - 1;
+  const xCut1 = (CW + d.wingW) / 2 + 1;
+  const cutTop = triPrismX(
+    [
+      [CH, CT],
+      [CH - P - 1, CT + P + 1],
+      [CH + P + 2, CT + P + 1],
+    ],
+    xCut0,
+    xCut1,
+  );
+  const cutBot = triPrismX(
+    [
+      [yBot, CT],
+      [yBot + P + 1, CT + P + 1],
+      [yBot - P - 2, CT + P + 1],
+    ],
+    xCut0,
+    xCut1,
+  );
+  const columnLocal = difference([union([plate, throat, wings]), cutTop, cutBot]);
+
+  // ---- Place the column: lean it back, stand it on the foot ---------------
+  // Same composition as the desk frame (rotate about world X by 90° − tilt).
+  const column = translate(
+    [d.colX0, d.TyCol, d.Tz],
+    rotate([90 - stand.tiltAngleDeg, 0, 0], columnLocal),
+  );
+
+  // ---- Foot ---------------------------------------------------------------
+  const foot = roundedRectPrism(d.footW, d.baseDepth, stand.baseThickness, Math.min(4, d.footW / 6));
+
+  // ---- Side gussets, bracing the column's back against the foot -----------
+  const backFaceY = (z: number) => d.TyCol + (z - d.Tz) * (sinT / cosT) - GUSSET_BITE;
+  const zBot = stand.baseThickness - 1; // embed into the foot so the union fuses
+  const zTop = stand.baseThickness + stand.gussetHeightFraction * CH * cosT;
+  const yHeel = d.baseDepth - 2;
+  const gussets: BuildOp[] = [];
+  if (yHeel > backFaceY(zBot) + 4 && zTop > zBot + 4) {
+    const gt = stand.gussetThickness;
+    const tri: [[number, number], [number, number], [number, number]] = [
+      [backFaceY(zBot), zBot],
+      [yHeel, zBot],
+      [backFaceY(zTop), zTop],
+    ];
+    gussets.push(triPrismX(tri, d.colX0, d.colX0 + gt));
+    gussets.push(triPrismX(tri, d.colX0 + CW - gt, d.colX0 + CW));
+  }
+
+  return union([foot, column, ...gussets]);
+}
+
+/**
+ * Wall mount — two parts that snap together.
+ *
+ *   WALL PLATE ("lid"): screws to the drywall. Big open middle so the cable
+ *   comes straight out of the wall into the cavity. Two counterbored screw
+ *   holes on the vertical centreline (two screws, not one, so it can't
+ *   rotate). Four cantilever fingers stand off it, each with an outward barb.
+ *
+ *   BODY: the same frame the module screws into, plus a shroud — a box of
+ *   walls standing off the frame's back that houses the USB plug and the wire
+ *   slack. Four windows through the shroud walls receive the plate's barbs.
+ *
+ * Assembly: plate to the wall first, then push the body on. The shroud's inner
+ * walls cam the fingers inward until the barbs spring out into the windows; the
+ * barbs' flat undersides then bear on the windows' lower edges and resist pull-
+ * off. The barbs show through the windows, so a small screwdriver in each
+ * window releases the body.
+ *
+ * Local Z for both parts: 0 = the wall, +z = out of the wall toward the viewer.
+ */
+function wallGeom(board: BoardProfile, stand: StandParams) {
+  const enc = board.enclosure!;
+  const W = board.pcb.size.x + 2 * stand.bezelMargin;
+  const H = board.pcb.size.y + 2 * stand.bezelMargin;
+  const T = stand.frameThickness;
+  const D = stand.shroudDepth ?? WALL_DEFAULTS.shroudDepth;
+  const SW = stand.shroudWall ?? WALL_DEFAULTS.shroudWall;
+  const P = stand.plateThickness ?? WALL_DEFAULTS.plateThickness;
+  // Cavity inside the shroud; the plate drops into it with a slip fit.
+  const cavW = W - 2 * SW;
+  const cavH = H - 2 * SW;
+  const plateW = cavW - 2 * PLATE_FIT;
+  const plateH = cavH - 2 * PLATE_FIT;
+  const plateX = SW + PLATE_FIT;
+  const plateY = SW + PLATE_FIT;
+  // Barb sits at the top of each finger.
+  const barbZ0 = P + FINGER_H - BARB_H;
+  // Fingers: two on the bottom edge, two on the top, at 1/4 and 3/4 across.
+  const fingerXs = [plateX + plateW * 0.25 - FINGER_W / 2, plateX + plateW * 0.75 - FINGER_W / 2];
+  return { enc, W, H, T, D, SW, P, cavW, cavH, plateW, plateH, plateX, plateY, barbZ0, fingerXs };
+}
+
+function buildWallBody(board: BoardProfile, stand: StandParams): BuildOp {
+  const g = wallGeom(board, stand);
+  const { W, H, T, D, SW, barbZ0, fingerXs } = g;
+  const outerR = Math.min(5, W / 4, H / 4);
+
+  // Shroud: a box of walls off the frame's back, open toward the wall.
+  const shroud = difference([
+    roundedRectPrism(W, H, D, outerR),
+    translate(
+      [SW, SW, -OVER],
+      roundedRectPrism(g.cavW, g.cavH, D + 2 * OVER, Math.max(0.1, outerR - SW)),
+    ),
+  ]);
+
+  // Frame sits on the shroud's front, its BACK (z = 0 local) facing the wall.
+  const frame = translate([0, 0, D], buildFrameLocal(board, stand, W, H, T));
+
+  // Windows through the shroud walls where the plate's barbs land. Their LOWER
+  // edge is what the barb's flat underside catches on, so keep the slop small.
+  const winZ0 = barbZ0 - 0.15;
+  const winH = BARB_H + 2;
+  const windows: BuildOp[] = [];
+  for (const fx of fingerXs) {
+    // bottom wall (y ≈ 0) and top wall (y ≈ H)
+    windows.push(
+      translate([fx - 1, -OVER, winZ0], cube([FINGER_W + 2, SW + 2 * OVER, winH])),
+    );
+    windows.push(
+      translate([fx - 1, H - SW - OVER, winZ0], cube([FINGER_W + 2, SW + 2 * OVER, winH])),
+    );
+  }
+
+  // Button channels — same reasoning as the desk stand: subtract from the whole
+  // body, so a channel that reaches the frame's edge also clears the shroud
+  // wall standing directly behind it.
+  const channels = buildEdgeChannels(board, stand, W, H, T).map((c) =>
+    translate([0, 0, D], c),
+  );
+
+  return difference([union([shroud, frame]), ...windows, ...channels]);
+}
+
+function buildWallPlate(board: BoardProfile, stand: StandParams): BuildOp {
+  const g = wallGeom(board, stand);
+  const { P, plateW, plateH, plateX, plateY, barbZ0, fingerXs } = g;
+  const border = stand.plateBorder ?? WALL_DEFAULTS.plateBorder;
+  const screwD = stand.drywallScrewDiameter ?? WALL_DEFAULTS.drywallScrewDiameter;
+  const headD = stand.drywallHeadDiameter ?? WALL_DEFAULTS.drywallHeadDiameter;
+
+  const plate = translate(
+    [plateX, plateY, 0],
+    roundedRectPrism(plateW, plateH, P, Math.min(4, plateW / 6)),
+  );
+
+  const cuts: BuildOp[] = [];
+  // Big central opening — the wire comes straight out of the wall through it.
+  const openW = plateW - 2 * border;
+  const openH = plateH - 2 * border;
+  cuts.push(
+    translate(
+      [plateX + border, plateY + border, -OVER],
+      roundedRectPrism(openW, openH, P + 2 * OVER, Math.min(6, openW / 6, openH / 6)),
+    ),
+  );
+
+  // Two drywall screws on the vertical centreline, in the top and bottom
+  // borders (the middle is open). Heads counterbored from the FRONT so the
+  // plate still lies flat against the wall.
+  const cx = plateX + plateW / 2;
+  const headDepth = Math.min(2.5, P - 1.5);
+  for (const cy of [plateY + border / 2, plateY + plateH - border / 2]) {
+    cuts.push(translate([cx, cy, -OVER], cylinder(P + 2 * OVER, screwD / 2, 32)));
+    cuts.push(
+      translate([cx, cy, P - headDepth], cylinder(headDepth + OVER, headD / 2, 32)),
+    );
+  }
+  const plateBody = difference([plate, ...cuts]);
+
+  // Snap fingers. Each is a thin cantilever off the plate's front face with an
+  // outward barb: flat underside (the catch) and a ramp on top (the lead-in
+  // the shroud wall cams against on assembly). Printed plate-down, the ramp
+  // rises and the catch is a small 1.5 mm ledge — no supports needed.
+  //
+  // EMBED matters: a finger that merely TOUCHES the plate's face, or a barb
+  // that merely touches the finger's face, is a zero-volume contact — the
+  // union leaves them as separate shells and the plate exports as loose
+  // pieces. Bite into the parent so the solids actually overlap.
+  const EMBED_F = 0.8;
+  const parts: BuildOp[] = [plateBody];
+  const yBot = plateY;
+  const yTop = plateY + plateH;
+  for (const fx of fingerXs) {
+    // Bottom edge: finger's outer face at y = yBot, barb juts toward -y.
+    parts.push(
+      translate([fx, yBot, P - EMBED_F], cube([FINGER_W, FINGER_T, FINGER_H + EMBED_F])),
+    );
+    parts.push(
+      triPrismX(
+        [
+          [yBot + EMBED_F, barbZ0], // inside the finger, so the barb fuses to it
+          [yBot - BARB_P, barbZ0], // barb tip — the flat catch face
+          [yBot + EMBED_F, barbZ0 + BARB_H], // ramp back into the finger
+        ],
+        fx,
+        fx + FINGER_W,
+      ),
+    );
+    // Top edge: mirrored, barb juts toward +y.
+    parts.push(
+      translate([fx, yTop - FINGER_T, P - EMBED_F], cube([FINGER_W, FINGER_T, FINGER_H + EMBED_F])),
+    );
+    parts.push(
+      triPrismX(
+        [
+          [yTop - EMBED_F, barbZ0],
+          [yTop + BARB_P, barbZ0],
+          [yTop - EMBED_F, barbZ0 + BARB_H],
+        ],
+        fx,
+        fx + FINGER_W,
+      ),
+    );
+  }
+  return union(parts);
+}
+
+// ---- Pocket carrier (wall shelf, #151) -------------------------------------
+// A carrier pocket: a wall-mounted tray the finished module NESTS into. Not a
+// frame and not a joint — "dumb and effective", like the reviewed system's
+// wall shelf (ToolStack review #147). Retention is gravity plus three walls;
+// the module's own face stays fully visible, so there is deliberately NO front
+// lip: nothing would block a straight forward pull, and nothing should.
+//
+// The geometry comes from the module's outer envelope alone: the pocket hugs
+// the module's outline (its front flange — the same `pcb.size` outline the
+// desk frame is built on) and its depth is the module's own thickness plus
+// finger room at the mouth. Everything else follows from the pocket.
+//
+// Local frame (this part's own print frame, first octant):
+//   x: 0 = the plate's left edge (over the ear)   y: 0 = the plate's bottom edge
+//   z: 0 = the WALL (the plate's rear face), z = T = the pocket's floor face,
+//      mouth at T + pocketDepth
+// so the part datums on the wall plane exactly like the wall-mount parts.
+//
+// Print orientation: AS MODELLED. The plate lies on the bed and the three
+// walls rise off it as walls — no supports, no flip, counterbores facing up.
+// Mounted, the part is that same solid turned 90°: the print's floor becomes
+// the shelf, the plate's rear face becomes the wall.
+
+/** One gauge for the plate, walls, floor and ribs — the rack's ear/gusset
+ *  gauge (EAR_T). A pocket is not a place for a thickness knob. */
+const POCKET_T = 4;
+/** Nesting fit per side, when the caller asks for less than this. */
+const POCKET_MIN_FIT = 0.3;
+/** Pocket depth past the module's own thickness: finger room to lift it out. */
+const POCKET_LIFT = 10;
+/** 45° entry chamfer at the pocket mouth. */
+const POCKET_LEAD = 3;
+/** How far each ear reaches out past the side wall, for its wall screw. */
+const POCKET_EAR_REACH = 18;
+/** 45° rib leg, outboard of each side wall. Kept under the ear's own reach
+ *  (see the cap at its use) so a rib can never poke past the plate's edge. */
+const POCKET_RIB_LEG = 16;
+/** Overlap bites, so the ribs fuse to the plate, the wall AND the floor. */
+const POCKET_BITE = 1;
+/** Plate height at which an ear earns a second wall screw. One screw per ear
+ *  is a hinge; two spread up the plate cannot let the tray swing. */
+const POCKET_TWO_SCREW_H = 60;
+
+export interface PocketDims {
+  /** Pocket opening: the module's outline + the fit, per side. */
+  innerW: number;
+  innerH: number;
+  /** The module's own thickness: front flange + the deepest thing behind it. */
+  moduleD: number;
+  /** Floor face to mouth. */
+  pocketD: number;
+  /** Back plate + walls (one gauge). */
+  plateT: number;
+  earReach: number;
+  /** Back plate outline, ears included. */
+  plateW: number;
+  plateH: number;
+  /** Wall screws: x of each ear's hole (mirrored), and their ys up the plate. */
+  earScrewX: number;
+  earScrewYs: number[];
+}
+
+export function computePocketDims(board: BoardProfile, stand: StandParams): PocketDims | null {
+  const enc = board.enclosure;
+  if (!enc) return null;
+  const fit = Math.max(POCKET_MIN_FIT, stand.openingClearance);
+  const innerW = board.pcb.size.x + 2 * fit;
+  const innerH = board.pcb.size.y + 2 * fit;
+  const moduleD = enc.flangeThickness + Math.max(enc.body.depth, enc.bossHeight);
+  const plateT = POCKET_T;
+  const plateW = innerW + 2 * (plateT + POCKET_EAR_REACH);
+  const plateH = innerH + plateT;
+  const n = plateH >= POCKET_TWO_SCREW_H ? 2 : 1;
+  const earScrewYs = Array.from({ length: n }, (_, i) => (plateH * (i + 1)) / (n + 1));
+  return {
+    innerW,
+    innerH,
+    moduleD,
+    pocketD: moduleD + POCKET_LIFT,
+    plateT,
+    earReach: POCKET_EAR_REACH,
+    plateW,
+    plateH,
+    // The centre of each ear — so hole and its mirror land in the same spot on
+    // both sides.
+    earScrewX: POCKET_EAR_REACH / 2,
+    earScrewYs,
+  };
+}
+
+/**
+ * Build the pocket carrier: one wall shelf — back plate with a screw ear each
+ * side, a floor and two walls around the pocket, 45° lead-ins at the mouth,
+ * and a rib outboard of each wall. Null when the board isn't a finished
+ * module (there's no envelope to size a pocket from).
+ */
+export function buildPocketOp(board: BoardProfile, stand: StandParams): BuildOp | null {
+  const d = computePocketDims(board, stand);
+  if (!d) return null;
+  const T = d.plateT;
+  const mouth = T + d.pocketD;
+
+  // ---- Solid: plate (ears included), then the tray box it carries ---------
+  // The tray box is floor + both walls in one piece: the cavity cut below
+  // leaves exactly those three. It starts POCKET_BITE inside the plate so the
+  // union is a genuine overlap, not a touching contact.
+  const plate = cube([d.plateW, d.plateH, T]);
+  // `earReach` is the plate's overhang PAST the wall's outer face, so the tray
+  // box starts right at the ear's outer edge and both ears come out the same
+  // width. (Starting it at T + earReach instead would leave the left ear T
+  // wider than the right, and mirror the wall screw into the wall.)
+  const wx0 = d.earReach; // left wall's outer face
+  const trayW = d.innerW + 2 * T;
+  const tray = translate(
+    [wx0, 0, T - POCKET_BITE],
+    cube([trayW, d.plateH, d.pocketD + POCKET_BITE]),
+  );
+
+  // ---- Cavity, and the 45° lead-ins at its mouth --------------------------
+  const innerX0 = wx0 + T;
+  const innerX1 = innerX0 + d.innerW;
+  const cavity = translate([innerX0, T, T], cube([d.innerW, d.innerH, d.pocketD + OVER]));
+  const lead = POCKET_LEAD;
+  // #839 — THE LEAD CUTS OVERSHOOT THE MOUTH BY `OVER`. Each wedge's top edge used to lie exactly
+  // in the tray's top plane, and manifold 3.5's boolean leaves those coincident faces as a
+  // ZERO-VOLUME shell on that plane (a "second component" with no volume — the pocket-tray split).
+  // Raising the wedge's top corner to `mouth + OVER` extends the SAME 45° face (the hypotenuse
+  // still passes through the old top-corner point) into the air above the part, so no cut face is
+  // coplanar with a solid's any more and the boolean has nothing to leave behind. The part's
+  // geometry below the mouth is unchanged.
+  const leadTop = mouth + OVER;
+  // Sides: wedge in (x, z), down the wall's full height.
+  const leadLeft = triPrismY(
+    [
+      [innerX0, mouth - lead],
+      [innerX0, leadTop],
+      [innerX0 - lead - OVER, leadTop],
+    ],
+    T,
+    d.plateH + OVER,
+  );
+  const leadRight = triPrismY(
+    [
+      [innerX1, mouth - lead],
+      [innerX1, leadTop],
+      [innerX1 + lead + OVER, leadTop],
+    ],
+    T,
+    d.plateH + OVER,
+  );
+  // Floor: the same chamfer across the tray's width, so the module's bottom
+  // edge rides in instead of catching on the floor's front lip.
+  const leadFloor = triPrismX(
+    [
+      [T, mouth - lead],
+      [T, leadTop],
+      [T - lead - OVER, leadTop],
+    ],
+    wx0,
+    wx0 + trayW,
+  );
+
+  // ---- Ribs: one 45° web per side, in the plate/wall corner ---------------
+  // They sit at floor level — where the module's weight bends the wall away
+  // from the plate — and are skipped when the ear screws come down far enough
+  // to share that band.
+  const ribs: BuildOp[] = [];
+  const lowestScrew = Math.min(...d.earScrewYs);
+  if (lowestScrew - WALL_HEAD_D / 2 > 2 * T + POCKET_BITE) {
+    const B = POCKET_BITE;
+    // A longer leg would leave the plate's outline, and the plate's outline —
+    // ears included — is the part's. Cap it at the ear's own reach.
+    const leg = Math.min(POCKET_RIB_LEG, d.earReach - 2 * B);
+    const rib = (xWall: number, dir: 1 | -1): BuildOp =>
+      triPrismY(
+        [
+          [xWall + dir * B, T - B],
+          [xWall + dir * B, T + leg],
+          [xWall - dir * leg, T - B],
+        ],
+        0,
+        2 * T,
+      );
+    ribs.push(rib(wx0, 1), rib(wx0 + trayW, -1));
+  }
+
+  // ---- The user's own wall screws, through the ear of each side -----------
+  // Same fixings the rack's wall-mount ears take (WALL_SCREW_D / WALL_HEAD_D),
+  // for the same reason: whatever goes into the wall is whatever they have.
+  const cuts: BuildOp[] = [];
+  for (const sx of [d.earScrewX, d.plateW - d.earScrewX]) {
+    for (const sy of d.earScrewYs) {
+      cuts.push(
+        screwHole({
+          size: 'M4',
+          // Entry face is the plate's FRONT — the head faces the room, and the
+          // screw travels back through the plate into the wall.
+          at: [sx, sy, T],
+          axis: '-z',
+          through: T + OVER,
+          clearanceD: WALL_SCREW_D,
+          head: 'socket-cap',
+          headD: WALL_HEAD_D,
+          recess: WALL_HEAD_RECESS,
+          material: T,
+          segments: 24,
+          recessSegments: 32,
+        }),
+      );
+    }
+  }
+
+  return difference([
+    union([plate, tray, ...ribs]),
+    cavity,
+    leadLeft,
+    leadRight,
+    leadFloor,
+    ...cuts,
+  ]);
+}
+
+/**
+ * The stand's print parts. Desk → one fused part. Wall → the body and the
+ * wall plate it snaps onto. Pocket → the wall shelf the module nests in.
+ * Null when the board isn't a finished module.
+ */
+export function buildStandNodes(
+  board: BoardProfile,
+  stand: StandParams,
+): Array<{ id: string; op: BuildOp }> | null {
+  if (!board.enclosure) return null;
+  const mount = stand.mount ?? 'desk';
+  if (mount === 'wall') {
+    return [
+      { id: 'wall-body', op: buildWallBody(board, stand) },
+      { id: 'wall-plate', op: buildWallPlate(board, stand) },
+    ];
+  }
+  if (mount === 'pocket') {
+    const op = buildPocketOp(board, stand);
+    return op ? [{ id: 'pocket-tray', op }] : null;
+  }
+  const op = mount === 'slider' ? buildSliderStandOp(board, stand) : buildStandOp(board, stand);
+  return op ? [{ id: 'stand', op }] : null;
+}

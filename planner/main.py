@@ -153,3 +153,28 @@ def harness(req: HarnessRequest):
         return render_harness(req)
     except HarnessError as e:
         raise HTTPException(status_code=e.status, detail=e.message)
+
+
+# ---- enclosure generation (plan 5.8). Additive: everything lives in enclosure.py.
+import shutil as _shutil
+
+from fastapi import HTTPException
+from enclosure import BoxSpec as _BoxSpec, EnclosureError as _EnclosureError, YAPP_VERSION as _YAPP_VERSION, generate as _generate_yapp
+
+
+@app.get("/enclosure/health")
+def enclosure_health():
+    exe = _shutil.which("openscad")
+    return {"ok": exe is not None, "openscad": exe, "yapp": _YAPP_VERSION}
+
+
+@app.post("/enclosure/yapp")
+def enclosure_yapp(spec: _BoxSpec, timeout: float = 120.0):
+    """Runs YAPP_Box in OpenSCAD for the spec. Answers 503 when OpenSCAD is missing, 504 on the time limit, 422 when it refuses."""
+    if not _shutil.which("openscad"):
+        raise HTTPException(503, "OpenSCAD is not installed in the planner container.")
+    try:
+        return _generate_yapp(spec, timeout=max(10.0, min(timeout, 300.0)))
+    except _EnclosureError as e:
+        text = str(e)
+        raise HTTPException(504 if "did not finish" in text else 422, text)

@@ -21,6 +21,7 @@ export type Section = {
     | "decisions"
     | "schematic"
     | "layout"
+    | "enclosure"
     | "buildsheet"
     | "builds"
     | "economics"
@@ -174,6 +175,12 @@ export const STAGES: Stage[] = [
         blurb: "Where each part sits inside the envelope. Drag to move; the 3D model follows.",
         view: "layout",
         store: "design/bom",
+      },
+      {
+        key: "enclosure",
+        label: "Enclosure",
+        blurb: "Generate a printable base and lid around the parts, with the openings they need, and check the result.",
+        view: "enclosure",
       },
       {
         key: "bom",

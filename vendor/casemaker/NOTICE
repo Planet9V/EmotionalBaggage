@@ -1,0 +1,175 @@
+Case Maker
+Copyright 2026 Electric RV Corporation
+
+This product includes software developed as part of the Case Maker project
+(https://github.com/SlyWombat/CaseMaker).
+
+Bundled fonts
+-------------
+
+The text-label feature embeds the following fonts, each licensed under the
+SIL Open Font License, Version 1.1 (https://openfontlicense.org). The full
+licence text for each is kept alongside the font data in
+casemaker-app/src/engine/fonts/licenses/. The font files are unmodified and
+were obtained from the Google Fonts repository (https://github.com/google/fonts,
+directory ofl/<family>/), where the OFL.txt shipped with each family matches the
+licence string embedded in the font files themselves.
+
+  Barlow (Regular, Bold)
+    Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+    SIL OFL 1.1 - casemaker-app/src/engine/fonts/licenses/Barlow-OFL.txt
+
+  IBM Plex Mono (Regular, Bold)
+    Copyright 2017 IBM Corp., with Reserved Font Name "Plex"
+    SIL OFL 1.1 - casemaker-app/src/engine/fonts/licenses/IBMPlexMono-OFL.txt
+
+  IBM Plex Serif (Regular, Bold)
+    Copyright 2017 IBM Corp., with Reserved Font Name "Plex" (per OFL.txt; the
+    font files' own copyright field reads "Copyright 2020 IBM Corp.")
+    SIL OFL 1.1 - casemaker-app/src/engine/fonts/licenses/IBMPlexSerif-OFL.txt
+
+The fonts are embedded as base64 in src/engine/fonts/bundledFontData.ts (generated
+by scripts/gen-font-data.mjs) purely for runtime use; the font files are not
+renamed or altered, so the Reserved Font Name provisions are not engaged.
+Glyph outlines extracted from them for engraving are output geometry, not a
+distribution of the Font Software.
+
+Bundled stroke font (single-line engraving)
+-------------------------------------------
+
+The single-line engraving feature bundles the coordinate data of the Hershey
+Roman Simplex ("rowmans") face, in the James Hurt distribution format, at
+casemaker-app/src/engine/fonts/stroke/hersheySimplex.ts.
+
+  The Hershey Fonts were originally created by Dr. A. V. Hershey while working
+  at the U. S. National Bureau of Standards. They are in the public domain.
+
+  The format of the font data in this distribution was originally created by
+  James Hurt, Cognition, Inc., 900 Technology Park Drive, Billerica, MA 01821.
+
+The full use terms are kept in
+casemaker-app/src/engine/fonts/licenses/Hershey-PublicDomain.txt. The data is
+used for any purpose under the public-domain terms above, with these
+acknowledgements distributed alongside it, and is not converted into the
+U.S. NTIS format. Source: https://github.com/kamalmostafa/hershey-fonts
+(hershey-fonts/rowmans.jhf).
+
+Third-party libraries
+---------------------
+
+opentype.js (MIT) - https://github.com/opentypejs/opentype.js - parses the fonts
+above and any user-supplied TTF/OTF.
+
+OpenCascade Technology via occt-import-js (LGPL-2.1)
+----------------------------------------------------
+occt-import-js - https://github.com/kovacsv/occt-import-js
+OpenCascade Technology - https://dev.opencascade.org
+Reads STEP files at import (#774): the tessellation shown and stored is the
+library's. The package is used as published and unmodified. In the web build its
+WebAssembly module is served as its own asset and fetched only when a STEP is
+opened, so a compatible build can replace it; the desktop build is made from
+this same open source, so relinking it with a replaced module is available to
+anyone. The library's full licence texts ship unmodified with the package
+(node_modules/occt-import-js/dist/license.occt-import-js.txt and
+license.occt.txt), and the source is the package itself plus OpenCascade's own
+releases. The application around it is Apache-2.0 and its source is public
+(https://github.com/SlyWombat/CaseMaker).
+
+Sample models
+-------------
+
+samples/Rack/ holds the files of "Mini Rack" by Meuon (Printables model 1307276, Creative Commons Attribution 4.0 International,
+https://creativecommons.org/licenses/by/4.0/). See samples/Rack/ATTRIBUTION.md.
+
+Vendor reference documents (samples/cad-references/), the four whose licence is stated in the file itself; each is kept unmodified:
+
+  Raspberry Pi Pico Datasheet (samples/cad-references/boards/rpi-pico/pico-datasheet.pdf)
+    (c) 2020-2024 Raspberry Pi Ltd (formerly Raspberry Pi (Trading) Ltd.). The file states: "This documentation is licensed under a
+    Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND)." (https://creativecommons.org/licenses/by-nd/4.0/).
+    The file's own condition, quoted: "RPL grants users permission to use the RESOURCES solely in conjunction with the Raspberry Pi
+    products. All other use of the RESOURCES is prohibited. No licence is granted to any other RPL or other third party intellectual
+    property right." No adaptation of this file is made or offered.
+
+  BeagleBone Black System Reference Manual (samples/cad-references/boards/beaglebone-black/from-beagleboard/BBB_SRM.pdf)
+    BeagleBoard.org Foundation. The file states: "This work is licensed under the Creative Commons Attribution-Share Alike 3.0 Unported
+    License" (https://creativecommons.org/licenses/by-sa/3.0/) and "All derivative works are to be attributed to Gerald Coley of
+    BeagleBoard.org."
+
+  BBC micro:bit V2 schematics, V2.00 and V2.21 (samples/cad-references/boards/microbit-v2/from-microbit-foundation/)
+    Micro:bit Educational Foundation. The title block of each schematic states "Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)"
+    (https://creativecommons.org/licenses/by-sa/4.0/; the licence text is kept beside them in LICENSE.md).
+
+The other vendor documents that were kept there have been removed; each folder's REMOVED-DOCUMENTS.md names them.
+
+Third-party software that ships
+------------------------------
+
+----- BEGIN GENERATED THIRD-PARTY LIST (npm run notice; do not edit by hand) -----
+
+Every package below is bundled into a shipped build (the web page, the desktop page or the
+built CLI); the list is read from the builds' own module lists. Each licence text is in
+THIRD-PARTY-LICENSES.txt, copied from the package as installed, byte for byte, with the
+copyright notices as the package ships them.
+
+  @babel/runtime 7.29.2 - MIT - ships in: web, desktop
+  @react-three/drei 10.7.7 - MIT - ships in: web, desktop
+  @react-three/fiber 9.6.0 - MIT - ships in: web, desktop
+  @tauri-apps/api 2.12.3 - Apache-2.0 OR MIT - ships in: desktop, cli
+  comlink 4.4.2 - Apache-2.0 - ships in: web, desktop
+  fflate 0.8.2 - MIT - ships in: web, desktop, cli
+  immer 11.1.4 - MIT - ships in: web, desktop
+  its-fine 2.0.0 - MIT - ships in: web, desktop
+  manifold-3d 3.5.4 - Apache-2.0 - ships in: web, desktop, cli
+  marked 18.0.2 - MIT - ships in: web, desktop
+  nanoid 5.1.9 - MIT - ships in: web, desktop, cli
+  occt-import-js 0.0.23 - LGPL-2.1 - ships in: web, desktop
+  opentype.js 2.0.0 - MIT - ships in: web, desktop, cli
+  react 19.2.5 - MIT - ships in: web, desktop, cli
+  react-dom 19.2.5 - MIT - ships in: web, desktop
+  react-use-measure 2.1.7 - MIT - ships in: web, desktop
+  scheduler 0.27.0 - MIT - ships in: web, desktop
+  suspend-react 0.1.3 - MIT - ships in: web, desktop
+  three 0.184.0 - MIT - ships in: web, desktop
+  three-stdlib 2.36.1 - MIT - ships in: web, desktop
+  use-sync-external-store 1.6.0 - MIT - ships in: web, desktop
+  zod 4.3.6 - MIT - ships in: web, desktop, cli
+  zundo 2.3.0 - MIT - ships in: web, desktop
+  zustand 5.0.12 - MIT - ships in: web, desktop, cli
+
+Code compiled into a WebAssembly module (not visible in a module list):
+  manifold.wasm: Manifold (the manifold-3d package) - Apache-2.0 - "Copyright 2020 The Manifold Authors" (the upstream CMake header at v3.5.4) - https://github.com/elalish/manifold
+  manifold.wasm: Clipper2 (statically linked, commit 46f639177fe418f9689e8ddb74f08a870c71f5b4) - BSL-1.0 - its licence file states no copyright line - https://github.com/AngusJohnson/Clipper2
+  occt-import-js.wasm: OpenCascade Technology (the occt-import-js package) - LGPL-2.1 - see the package's own licence files (quoted whole in THIRD-PARTY-LICENSES.txt) - https://github.com/kovacsv/occt-import-js
+
+Node.js 24.22.2 - MIT, with the licences of the components compiled into it (V8, OpenSSL, ICU, zlib and others) in its own LICENSE file - ships in: the package's runtime, unmodified, as the deb (Linux x64) and the Windows installer (x64) - https://nodejs.org/dist/v24.22.2/
+
+Rust crates linked into the desktop and house programs: 393 (the release build's normal
+dependencies for x86_64-unknown-linux-gnu and x86_64-pc-windows-msvc; every one is named, with its licence text, in
+THIRD-PARTY-LICENSES.txt). By licence expression:
+   191  MIT OR Apache-2.0
+    99  MIT
+    42  Apache-2.0 OR MIT
+    18  Unicode-3.0
+     7  Unlicense OR MIT
+     6  MIT/Apache-2.0
+     6  MPL-2.0
+     2  Apache-2.0
+     2  Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT
+     2  Apache-2.0/MIT
+     2  BSD-3-Clause
+     2  MIT OR Zlib OR Apache-2.0
+     2  Unlicense/MIT
+     1  (MIT OR Apache-2.0) AND Unicode-3.0
+     1  0BSD OR MIT OR Apache-2.0
+     1  Apache-2.0 / MIT
+     1  Apache-2.0 AND MIT
+     1  Apache-2.0 OR BSL-1.0
+     1  BSD-2-Clause OR Apache-2.0 OR MIT
+     1  BSD-3-Clause AND MIT
+     1  BSD-3-Clause/MIT
+     1  CC0-1.0 OR MIT-0 OR Apache-2.0
+     1  MIT AND BSD-3-Clause
+     1  MIT OR Apache-2.0 OR Zlib
+     1  Zlib
+
+----- END GENERATED THIRD-PARTY LIST -----

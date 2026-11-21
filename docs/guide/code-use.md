@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit f56c7a3 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit a3ca05a by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,13 +16,13 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 578 packages (42 direct, 536 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 602 packages (43 direct, 559 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 447 |
+| MIT | 469 |
 | ISC | 48 |
-| Apache-2.0 | 43 |
+| Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
 | BlueOak-1.0.0 | 5 |
@@ -85,6 +85,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | embla-carousel-react | 8.6.0 | MIT | linked library | yes |
 | framer-motion | 14.14.0 | MIT | linked library | yes |
 | lucide-react | 1.77.0 | ISC | linked library | yes |
+| manifold-3d | 3.5.5 | Apache-2.0 | linked library | yes |
 | mermaid | 12.3.0 | MIT | linked library | yes |
 | motion | 14.14.0 | MIT | linked library | yes |
 | nanoid | 6.0.2 | MIT | linked library | yes |
@@ -125,11 +126,13 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | Name | Version or tag | Licence | How it is used | Source |
 | --- | --- | --- | --- | --- |
 | AI Elements components | as fetched from https://elements.ai-sdk.dev/api/registry on 2026-11-20 | Apache-2.0 | copied source | https://github.com/vercel/ai-elements |
+| CaseMaker (engine source) | commit 8988792b627dd646e5acd02017a871aee1d0616c, 2026-11-20 | Apache-2.0 | copied source | https://github.com/SlyWombat/CaseMaker |
 | Graphviz (apt package graphviz) | as installed by apt in the planner image (Debian) | EPL-1.0 (Graphviz; the Debian package also contains libraries under their own licences) | separate process | https://graphviz.org/ |
 | Inter (typeface) | Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0 | OFL-1.1 | font files | https://github.com/rsms/inter |
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
 | occt-import-js (OpenCascade STEP reader, WebAssembly) | as copied from the npm package occt-import-js | LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it) | copied source | https://github.com/kovacsv/occt-import-js |
+| OpenSCAD (Debian package openscad) | 2021.01 in the Debian package the planner image installs | GPL-2.0-or-later with the CGAL exception (as the Debian package states it) | separate process | https://openscad.org |
 | pgvector (Docker image pgvector/pgvector) | 0.8.7-pg19-trixie (default; PG_IMAGE may override it) | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | pgvector (Docker image pgvector/pgvector, CI only) | pg17 | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | PostgreSQL | 19 (inside pgvector/pgvector:0.8.7-pg19-trixie) | PostgreSQL | separate process | https://www.postgresql.org |
@@ -137,14 +140,21 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | UI components (Button, Dialog, Input, Table, Card, StatusBadge) | as committed in eb362b6 (2026-11-20) | owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT) | copied source | https://github.com/shadcn-ui/ui |
 | WireViz (Python package, run as a command) | 0.4.1 | GPL-3.0 | separate process | https://github.com/wireviz/WireViz |
+| YAPP_Box (YAPPgenerator_v3.scad) | commit f9400c419ef1dea7dc0b3607876989b4f3faa2b7 (3.3.8), 2025-08-24 | MIT | copied source | https://github.com/mrWheel/YAPP_Box |
 
 **AI Elements components**: origin Vercel's AI Elements registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them.
 
+**CaseMaker (engine source)**: origin Forked into this repository so the enclosure generator can run CaseMaker's engine headless on the server. None to the copied files. Added entry.ts, build.mjs, stubs/ and the committed bundle dist/engine.mjs; see vendor/casemaker/UPSTREAM.md.
+
 **occt-import-js (OpenCascade STEP reader, WebAssembly)**: origin npm package occt-import-js, copied into public/vendor/occt so the browser can load it from the same origin. None. The files are as the package ships them (about 7.6 MB of wasm).
+
+**OpenSCAD (Debian package openscad)**: origin Installed by apt in planner/Dockerfile; the planner runs it as a command line program and reads the STL it writes.
 
 **shadcn/ui components added by its CLI**: origin https://ui.shadcn.com registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css.
 
 **UI components (Button, Dialog, Input, Table, Card, StatusBadge)**: origin Planet9V/eigenia, the owner's own project (owner's statement, 20 November 2026). Re-themed to Eigenia design tokens (per the file headers). On 20 November 2026 button.tsx gained the variant and size names shadcn/ui components pass, and dialog.tsx gained DialogHeader.
+
+**YAPP_Box (YAPPgenerator_v3.scad)**: origin Vendored so the planner service can render a project box with OpenSCAD. None. The file is copied unchanged; see planner/vendor/yapp_box/UPSTREAM.md.
 
 The file that references each entry, and the evidence for its licence, are in `THIRD_PARTY_NOTICES.md`.
 

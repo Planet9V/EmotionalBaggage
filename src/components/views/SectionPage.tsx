@@ -11,6 +11,7 @@ import { BuildSheetView } from "./BuildSheetView";
 import { BuildsView } from "@/components/builds/BuildsView";
 import { DecisionsView } from "./DecisionsView";
 import { LayoutView } from "./LayoutView";
+import { EnclosureView } from "@/components/enclosure/EnclosureView";
 import { SchematicView } from "./SchematicView";
 import { ChallengeView } from "./ChallengeView";
 import { ItemsView } from "./ItemsView";
@@ -48,6 +49,7 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   decisions: DecisionsView,
   schematic: SchematicView,
   layout: LayoutView,
+  enclosure: EnclosureView,
   buildsheet: BuildSheetView,
   builds: BuildsView,
   economics: EconomicsView,

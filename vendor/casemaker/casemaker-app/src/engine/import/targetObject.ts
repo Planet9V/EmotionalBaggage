@@ -1,0 +1,341 @@
+/**
+ * The reference object a job's 3D primitives are positioned against (#435).
+ *
+ * The file is read ONCE at import: it is parsed for its bounding size and returned as base64. The
+ * SHA-256 is the object's identity and the mesh cache key; re-importing the same bytes therefore
+ * decodes once.
+ *
+ * #720 — NO SIZE CAP. The bytes do not ride in the persisted job any more: the store keeps them in
+ * an IndexedDB blob keyed by the SHA-256 and the localStorage copy carries only the hash, the size
+ * and the name (the .cutjob file still embeds them, so a saved document stays self-contained). A
+ * 12 MB model is an ordinary goal now; nothing is decimated, because the heightfield is sampled at
+ * the job's grid pitch whatever the mesh's triangle count.
+ *
+ * Pure parsing lives in `stlParser.ts` / `threeMfParser.ts`; the STEP kernel (#774) is a lazy
+ * import of `stepMesh.ts`. Only `readTargetObjectFile` touches the browser's `File` and
+ * `crypto.subtle`, and it never throws — every failure is a sentence the person who picked the
+ * file is told.
+ */
+
+import type { EngraveTargetObject } from '@/types/engraveJob';
+import { arrayBufferToBase64 } from './base64';
+import { parseStl, type ParsedMesh } from './stlParser';
+import { objUnitSentence, parseObj } from './objParser';
+import { parse3MF, threeMfUnitSentence } from './threeMfParser';
+import { decodePng } from './png';
+import { DEFAULT_RELIEF_DEPTH_MM } from '@/engine/cnc/engrave/relief';
+
+export type TargetObjectFormat = EngraveTargetObject['format'];
+
+export type TargetObjectRead =
+  | {
+      ok: true;
+      id: string;
+      name: string;
+      format: TargetObjectFormat;
+      sha256: string;
+      data: string;
+      size: { x: number; y: number; z: number };
+      /**
+       * #991 — base64 of the per-triangle B-rep face id (little-endian `Uint32Array`), for a
+       * STEP the door converted. Kept with the target so the app plans the STEP's B-rep path
+       * (whole-face patches), not a plain triangulation of the same solid.
+       */
+      faceId?: string;
+      /**
+       * #825 — a fact the import must state about the file it read, in one sentence: an OBJ has
+       * no unit of its own, so the door says which reading its numbers got. Absent for the
+       * formats whose numbers are already the app's millimetres by definition.
+       */
+      note?: string;
+    }
+  | { ok: false; error: string };
+
+/**
+ * The file's SOURCE kind. `step` is not a stored format: a STEP is tessellated at the door
+ * (#774) and stored as the binary STL `formatOf` maps everything mesh-shaped to, so the rest of
+ * the app keeps reading one mesh format.
+ */
+type SourceFormat = TargetObjectFormat | 'step';
+
+function formatOf(name: string): SourceFormat | null {
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.stl')) return 'stl';
+  if (lower.endsWith('.3mf')) return '3mf';
+  // #825 — Makera Studio reads OBJ; so does this door (and the stock's) now.
+  if (lower.endsWith('.obj')) return 'obj';
+  // #774 — a STEP/STP is a B-rep; the CAD kernel turns it into a mesh before anything else sees it.
+  if (lower.endsWith('.step') || lower.endsWith('.stp')) return 'step';
+  // #672 — a picture is a goal: its luminance is the heightfield the goal pipeline surfaces.
+  if (lower.endsWith('.png')) return 'png';
+  return null;
+}
+
+/**
+ * #672 — a picture carries no physical size, so the import FITS it onto the blank: the natural
+ * size is the pixel count at the SVG fallback (25.4/96 mm per pixel, the same assumption the trace
+ * dialog states), scaled to fit `fit` with the aspect kept. The row's width field rescales it
+ * later; the relief depth is the labelled CAM default until the operator states one.
+ */
+export interface ImageFit {
+  maxWidth: number;
+  maxHeight: number;
+}
+
+const NATURAL_MM_PER_PX = 25.4 / 96;
+
+/**
+ * #1029 — ONE NON-FINITE VERTEX HAS NO SHAPE. A binary STL carries raw float32 bits, so a NaN or
+ * ±Infinity parses without complaint and then either throws an unusable number or traps the
+ * kernel's whole instance (the failure mode depends on the build). The sentence names the count
+ * and the first offending triangle; both parses below — the door's and the cached plan-path one —
+ * refuse with it.
+ */
+export function nonFiniteMeshSentence(name: string, mesh: ParsedMesh): string | null {
+  const vertices = mesh.positions.length / 3;
+  let bad = 0;
+  let firstTriangle = -1;
+  for (let v = 0; v < vertices; v++) {
+    const x = mesh.positions[3 * v]!;
+    const y = mesh.positions[3 * v + 1]!;
+    const z = mesh.positions[3 * v + 2]!;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+      bad++;
+      if (firstTriangle < 0) firstTriangle = Math.floor(v / 3);
+    }
+  }
+  const bboxFinite =
+    mesh.bbox.min.every((n) => Number.isFinite(n)) && mesh.bbox.max.every((n) => Number.isFinite(n));
+  if (bad === 0 && bboxFinite) return null;
+  return (
+    `goal-mesh-non-finite: ${name} has ${bad} of ${vertices} vertices that are not finite numbers` +
+    `${firstTriangle < 0 ? '' : ` (first at triangle ${firstTriangle})`}.`
+  );
+}
+
+/**
+ * Read a picked `.stl` / `.3mf` / `.step` as a reference object. `id` is supplied by the caller
+ * (the store's `newTargetObjectId`), so this module stays free of the store and the id convention
+ * lives in one place.
+ */
+export async function readTargetObjectFile(
+  file: File,
+  id: string,
+  opts: { fit?: ImageFit } = {},
+): Promise<TargetObjectRead> {
+  const format = formatOf(file.name);
+  if (format === null) {
+    return { ok: false, error: `${file.name} is not an STL, 3MF, OBJ, STEP or PNG file.` };
+  }
+  if (file.size === 0) return { ok: false, error: `${file.name} is empty.` };
+
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await file.arrayBuffer();
+  } catch {
+    return { ok: false, error: `${file.name} could not be read.` };
+  }
+
+  if (format === 'png') {
+    // #672 — the relief's picture: validated by the same decoder the worker samples with, so a
+    // 16-bit or interlaced file is refused HERE with its sentence rather than at Generate.
+    const decoded = decodePng(new Uint8Array(bytes));
+    if (!decoded.ok) {
+      return { ok: false, error: `${file.name} cannot be a relief: ${decoded.error}.` };
+    }
+    const { width, height } = decoded.image;
+    const natural = { x: width * NATURAL_MM_PER_PX, y: height * NATURAL_MM_PER_PX };
+    const scale =
+      opts.fit === undefined ? 1 : Math.min(opts.fit.maxWidth / natural.x, opts.fit.maxHeight / natural.y);
+    let sha256: string;
+    try {
+      const { sha256Hex } = await import('./meshStock');
+      sha256 = await sha256Hex(bytes);
+    } catch {
+      return { ok: false, error: `${file.name} could not be hashed.` };
+    }
+    return {
+      ok: true,
+      id,
+      name: file.name,
+      format: 'png',
+      sha256,
+      data: arrayBufferToBase64(bytes),
+      size: { x: natural.x * scale, y: natural.y * scale, z: DEFAULT_RELIEF_DEPTH_MM },
+    };
+  }
+
+  // #774 — a STEP is converted ONCE, here: the kernel tessellates the B-rep and the job stores
+  // the binary STL, so the id/hash/embed contract below is the one every mesh already has. The
+  // file's own name is kept, so the row still says which file was picked.
+  //
+  // #991 — AT THE RECOGNITION READ, WITH THE FACE IDS. The plan classifies the mesh through its
+  // B-rep faces (one face, one patch); the kernel's display defaults split whole faces into
+  // many triangles and the dropped ids made the same solid read as a plain triangulation (the
+  // tray: 63 rims against the cards' 38, 28 fillets misread as modelled chamfers).
+  let stored: ArrayBuffer = bytes;
+  let mesh: ParsedMesh;
+  let note: string | undefined;
+  let faceId: string | undefined;
+  try {
+    if (format === 'step') {
+      const { stepToStl } = await import('./stepMesh');
+      const converted = await stepToStl(bytes, 'recognition');
+      stored = converted.stl;
+      mesh = converted.mesh;
+      if (converted.faceId !== undefined) {
+        faceId = arrayBufferToBase64(
+          converted.faceId.buffer.slice(converted.faceId.byteOffset, converted.faceId.byteOffset + converted.faceId.byteLength) as ArrayBuffer,
+        );
+      }
+    } else if (format === 'obj') {
+      // #825 — the OBJ's own bytes are embedded (they are what the hash identifies), and the
+      // parser's unit reading is stated on the result: an OBJ has no unit, so the door says
+      // whether the file's numbers were taken as mm or converted from the unit it declared.
+      const parsed = parseObj(bytes);
+      mesh = parsed;
+      note = objUnitSentence(file.name, parsed.unit);
+    } else if (format === '3mf') {
+      // #1130 — a 3MF declares its unit on `<model unit="…">`, and the parser converts it. A unit
+      // other than the millimetre default was a reading the file imposed, so the door states it;
+      // a millimetre file needs no note (its numbers are already the app's millimetres).
+      const parsed = parse3MF(bytes);
+      mesh = parsed;
+      if (parsed.unit.mmPerUnit !== 1) note = threeMfUnitSentence(file.name, parsed.unit);
+    } else {
+      mesh = parseStl(bytes);
+    }
+  } catch (error) {
+    const why = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      error: format === 'step' ? `${file.name} could not be read as STEP: ${why}` : `${file.name} could not be parsed: ${why}`,
+    };
+  }
+  if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+    return { ok: false, error: `${file.name} holds no triangles, so it has no shape to show.` };
+  }
+
+  // #1029 — a non-finite vertex must never reach the booleans; refused here, by name, with the
+  // count that decided it — the same discipline `goal-mesh-unclosable` applies one layer down.
+  const nonFinite = nonFiniteMeshSentence(file.name, mesh);
+  if (nonFinite !== null) return { ok: false, error: nonFinite };
+
+  const size = {
+    x: mesh.bbox.max[0] - mesh.bbox.min[0],
+    y: mesh.bbox.max[1] - mesh.bbox.min[1],
+    z: mesh.bbox.max[2] - mesh.bbox.min[2],
+  };
+  if (!(size.x > 0 && size.y > 0 && size.z > 0)) {
+    return { ok: false, error: `${file.name} is flat in at least one direction; a target object needs volume.` };
+  }
+
+  let sha256: string;
+  try {
+    // Lazy import so the headless graph (surface3d → targetObjectMesh, #534) never STATICALLY pulls
+    // in meshStock → designImport → platform/features, which is browser-only (__FEATURE_SIM__,
+    // window). This reader runs only in the browser file picker, where that chain is fine.
+    const { sha256Hex } = await import('./meshStock');
+    sha256 = await sha256Hex(stored);
+  } catch {
+    return { ok: false, error: `${file.name} could not be hashed.` };
+  }
+
+  return {
+    ok: true,
+    id,
+    name: file.name,
+    // A STEP was converted to the mesh above; what is EMBEDDED — and what the hash identifies — is
+    // that mesh's binary STL, so the document says so.
+    format: format === 'step' ? 'stl' : format,
+    sha256,
+    data: arrayBufferToBase64(stored),
+    size,
+    ...(faceId === undefined ? {} : { faceId }),
+    ...(note === undefined ? {} : { note }),
+  };
+}
+
+/**
+ * #685 — the whole TARGET OBJECT a picked goal file makes: the reader above, then the placement
+ * every goal import uses (centred in X/Y with its top flush on the stock's top face), marked as
+ * the shape to MAKE.
+ *
+ * The wizard's Surface a mesh pick asks for this file, and a wizard portal cannot own the panel's
+ * file input, so the step reads the file the same way the panel's goal door does. The panel keeps
+ * its own copy for now (#685 leaves the panel swap to the picker alone).
+ */
+export async function readGoalObjectFile(
+  file: File,
+  id: string,
+  stock: { length: number; width: number },
+): Promise<{ ok: true; target: EngraveTargetObject; note?: string } | { ok: false; error: string }> {
+  // A PICTURE has no physical size: fit it onto the blank, aspect kept — the same door as the
+  // panel's goal import (#672).
+  const isPng = /\.png$/i.test(file.name);
+  const result = await readTargetObjectFile(
+    file,
+    id,
+    isPng
+      ? { fit: { maxWidth: Math.max(1, stock.length - 4), maxHeight: Math.max(1, stock.width - 4) } }
+      : {},
+  );
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    ...(result.note === undefined ? {} : { note: result.note }),
+    target: {
+      id: result.id,
+      name: result.name,
+      format: result.format,
+      sha256: result.sha256,
+      data: result.data,
+      size: result.size,
+      position: { x: stock.length / 2, y: stock.width / 2, z: 0 },
+      rotation: 0,
+      enabled: true,
+      role: 'goal',
+    },
+  };
+}
+
+const meshCache = new Map<string, ParsedMesh>();
+
+/**
+ * The parsed mesh for an embedded target object, cached by its SHA-256. A decode failure is a
+ * malformed document rather than a user error; the viewport treats it as "draw nothing".
+ */
+export function targetObjectMesh(target: Pick<EngraveTargetObject, 'sha256' | 'format'> & { data?: string }): ParsedMesh {
+  // #672 — a picture has no mesh: its heights are sampled from the pixels (surface3d's image
+  // branch). The viewport's draw catches this and draws nothing, which is the honest picture of a
+  // relief that has not been cut yet.
+  if (target.format === 'png') {
+    throw new Error('a picture relief has no mesh to draw — its heights come from the pixels');
+  }
+  const cached = meshCache.get(target.sha256);
+  if (cached) return cached;
+  // #720 — the bytes may be missing (the blob store lost them, or they have not been re-attached
+  // yet): the call sites draw nothing, and Generate refuses with the sentence that says so.
+  if (target.data === undefined) throw new Error('the mesh bytes are not loaded');
+  const bytes = ((): ArrayBuffer => {
+    const binary = atob(target.data);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out.buffer;
+  })();
+  // #825 — an OBJ's embedded bytes are its text; the same parser the door used reads them back,
+  // so a saved goal draws and surfaces the mesh the import measured.
+  const parsed =
+    target.format === '3mf' ? parse3MF(bytes) : target.format === 'obj' ? parseObj(bytes) : parseStl(bytes);
+  // #1029 — a stored job imported before the door's guard still parses here; refuse it before any
+  // `new tl.Manifold(mesh)` / CrossSection conversion can trap the worker.
+  const nonFinite = nonFiniteMeshSentence('the mesh', parsed);
+  if (nonFinite !== null) throw new Error(nonFinite);
+  meshCache.set(target.sha256, parsed);
+  return parsed;
+}
+
+/** Test hook: an embedded file replaced under the same hash must not serve a stale mesh. */
+export function clearTargetObjectMeshCache(): void {
+  meshCache.clear();
+}

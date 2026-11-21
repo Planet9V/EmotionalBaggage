@@ -1,0 +1,201 @@
+import type { CaseParameters, BoardProfile, HatPlacement, HatProfile } from '@/types';
+import type { DisplayPlacement, DisplayProfile } from '@/types/display';
+import { cavityClearance } from '@/engine/coords';
+import { difference, roundedRectPrism, translate, type BuildOp } from './buildPlan';
+import { lidIsRecessed } from './lidMode';
+
+export interface ShellDims {
+  outerX: number;
+  outerY: number;
+  outerZ: number;
+  cavityX: number;
+  cavityY: number;
+  cavityZ: number;
+}
+
+/**
+ * Compute the additional internal Z height required by stacked HATs.
+ * Each enabled HAT contributes (lift + pcb.z + tallest +z component height).
+ * Unknown hatId entries are ignored (defensive — the project store may carry
+ * stale references after a HAT is removed).
+ */
+export const HOST_HAT_CLEARANCE = 0.5;
+
+function tallestPlusZ(profile: { components: BoardProfile['components']; pcb: BoardProfile['pcb'] }, includePcb: boolean): number {
+  // Issue #32: count the Z extent of every component, not just +z-facing ones.
+  // A +y-facing connector body (e.g., XLR-3 at z=24mm) still occupies
+  // vertical space in the cavity even though it pierces a side wall.
+  return profile.components.reduce(
+    (m, c) => Math.max(m, c.position.z + c.size.z),
+    includePcb ? profile.pcb.size.z : 0,
+  );
+}
+
+export function computeStackedHatHeight(
+  hats: HatPlacement[] | undefined,
+  resolveHat: (id: string) => HatProfile | undefined,
+  hostBoard?: BoardProfile,
+): number {
+  if (!hats || hats.length === 0) return 0;
+  const ordered = [...hats].sort((a, b) => a.stackIndex - b.stackIndex);
+  const hostTallest = hostBoard ? tallestPlusZ(hostBoard, false) : 0;
+  let total = 0;
+  let firstEnabled = true;
+  for (const placement of ordered) {
+    if (!placement.enabled) continue;
+    const profile = resolveHat(placement.hatId);
+    if (!profile) continue;
+    let lift = placement.liftOverride ?? profile.headerHeight;
+    if (firstEnabled && hostTallest > 0) {
+      lift = Math.max(lift, hostTallest + HOST_HAT_CLEARANCE);
+    }
+    firstEnabled = false;
+    const tallest = tallestPlusZ(profile, true);
+    total += lift + tallest;
+  }
+  return total;
+}
+
+/**
+ * Issue #46 — `hats` and `resolveHat` are required, not optional. Every shell
+ * dimension (`outerZ`, `cavityZ`) depends on the HAT stack, so any caller
+ * that omits HATs is computing the wrong envelope. Pass `[]` and `() =>
+ * undefined` explicitly only when the call site truly has no HATs to resolve.
+ *
+ * Issue #105 — optional `display` + `resolveDisplay` parameters. When
+ * provided AND the display's PCB is larger than the host's, the cavity
+ * grows so the case envelope contains the display. Optional to avoid
+ * rippling through every caller; ProjectCompiler is the only call site
+ * that has the project's display in scope and passes it.
+ */
+export function computeShellDims(
+  board: BoardProfile,
+  params: CaseParameters,
+  hats: HatPlacement[],
+  resolveHat: (id: string) => HatProfile | undefined,
+  display: DisplayPlacement | null | undefined = null,
+  resolveDisplay: (id: string) => DisplayProfile | undefined = () => undefined,
+): ShellDims {
+  const { wallThickness: wall, floorThickness: floor, zClearance } = params;
+  const cl = cavityClearance(params);
+  const pcb = board.pcb.size;
+  // Issue #105 — when a display is mounted with a PCB wider than the host,
+  // the case must grow to contain it. The display PCB is positioned at
+  // (placement.offset, placement.offset, hostTop + standoff); we take the
+  // MAX of the host envelope and the display's farthest extent.
+  let displayMaxX = pcb.x;
+  let displayMaxY = pcb.y;
+  let displayTopAddedZ = 0;
+  if (display && display.enabled) {
+    const profile = resolveDisplay(display.displayId);
+    if (profile) {
+      const offX = display.offset?.x ?? 0;
+      const offY = display.offset?.y ?? 0;
+      displayMaxX = Math.max(pcb.x, offX + profile.pcb.size.x);
+      displayMaxY = Math.max(pcb.y, offY + profile.pcb.size.y);
+      displayTopAddedZ = profile.overallHeight;
+    }
+  }
+  const cavityX = displayMaxX + cl.xMin + cl.xMax;
+  const cavityY = displayMaxY + cl.yMin + cl.yMax;
+  const stackHeight = computeStackedHatHeight(hats, resolveHat, board);
+  // Issue #66 — host's own tallest +z component must always fit, even with
+  // no HATs present. `recommendedZClearance` was set too low on several
+  // built-in boards (Pi 4 / Pi 5: USB3 stack is 16 mm tall but
+  // recommendedZClearance was 5–8). Compute the host's tallest excursion
+  // above the PCB top and use it as a defensive floor for the clearance
+  // budget.
+  const hostTallestAbovePcb = board.components.reduce(
+    (m, c) => Math.max(m, c.position.z + c.size.z - pcb.z),
+    0,
+  );
+  // Issue #74 — guarantee at least lidThickness + 2 mm of solid wall above
+  // the tallest cutout so the lid pocket / snap catches don't slice into the
+  // port openings. Without this, the placement-validator's rim warning
+  // fires on stock projects (e.g. GIGA + DMX, where the XLR cutout reaches
+  // 0.7 mm into the rim margin).
+  const RIM_MARGIN = 2;
+  // Issue #105 — display sits ABOVE the host PCB (mounted on standoffs);
+  // its overallHeight contributes to the tallest +z excursion.
+  const tallestAbovePcb = Math.max(hostTallestAbovePcb, stackHeight, displayTopAddedZ);
+  const rimSafe = tallestAbovePcb + params.lidThickness + RIM_MARGIN;
+  const baseClearance = Math.max(zClearance, stackHeight, hostTallestAbovePcb, rimSafe, displayTopAddedZ);
+  const extra = Math.max(0, params.extraCavityZ ?? 0);
+  const cavityZ = board.defaultStandoffHeight + pcb.z + baseClearance + extra;
+  // When the lid is recessed (issue #30), the case envelope extends above the
+  // cavity by lidThickness + 1mm ledge so the lid drops in flush with the rim.
+  // A clamshell lid (#117) sits ON the rim instead, so it takes no recess.
+  const recessExtra = lidIsRecessed(params) ? params.lidThickness + 1 : 0;
+  return {
+    outerX: cavityX + 2 * wall,
+    outerY: cavityY + 2 * wall,
+    outerZ: floor + cavityZ + recessExtra,
+    cavityX,
+    cavityY,
+    cavityZ,
+  };
+}
+
+/**
+ * Issue #105 — `display` + `resolveDisplay` are optional. When provided AND
+ * the display PCB is larger than the host's, the resulting shell envelope
+ * grows so the case contains the display. Other compilers that recompute
+ * shellDims internally without the display still see the host-only
+ * envelope; that's a known partial fix tracked separately.
+ */
+export function buildOuterShell(
+  board: BoardProfile,
+  params: CaseParameters,
+  hats: HatPlacement[],
+  resolveHat: (id: string) => HatProfile | undefined,
+  display: DisplayPlacement | null | undefined = null,
+  resolveDisplay: (id: string) => DisplayProfile | undefined = () => undefined,
+): BuildOp {
+  const dims = computeShellDims(board, params, hats, resolveHat, display, resolveDisplay);
+  const { wallThickness: wall, floorThickness: floor } = params;
+
+  // Issue #81 — vertical-edge rounding. Outer corners use cornerRadius;
+  // inner cavity corners use cornerRadius - wallThickness so the wall
+  // thickness stays uniform around the corner. Floor and lid (top/bottom
+  // horizontal edges) are NOT rounded — out of scope. cornerRadius === 0
+  // falls back to plain cubes so legacy builds stay byte-identical.
+  const outerR = Math.max(0, params.cornerRadius);
+  const innerR = Math.max(0, outerR - wall);
+
+  const outer = roundedRectPrism(dims.outerX, dims.outerY, dims.outerZ, outerR);
+  const overshoot = 1;
+  const cavity = translate(
+    [wall, wall, floor],
+    roundedRectPrism(dims.cavityX, dims.cavityY, dims.cavityZ + overshoot, innerR),
+  );
+
+  if (lidIsRecessed(params)) {
+    // Recess pocket: oversized rectangular cut at the top to receive the lid,
+    // sitting on a 1mm ledge above the cavity (issue #30). The pocket itself
+    // is rounded too — outer-rim radius matches the case envelope so the lid
+    // (also rounded) drops in flush; inner radius matches the wall offset.
+    const recessLedge = 1;
+    const recessOffset = Math.max(0.5, wall - 0.5);
+    const pocketX = dims.cavityX + 2 * recessOffset;
+    const pocketY = dims.cavityY + 2 * recessOffset;
+    const pocketZ = params.lidThickness + 0.5;
+    const pocketOriginX = wall - recessOffset;
+    const pocketOriginY = wall - recessOffset;
+    const pocketOriginZ = dims.outerZ - pocketZ;
+    // Pocket radius matches the OUTER envelope radius (not outerR -
+    // recessOffset, which gave a non-uniform-width rim and mismatched
+    // pocket↔lid corners). With the pocket sized at cavity + 2·recessOffset
+    // and inset by recessOffset on each side, using outerR keeps the rim
+    // a uniform recessOffset wide all the way around the corner — which is
+    // how typical injection-molded enclosures look.
+    const pocketR = Math.max(0, outerR);
+    void recessLedge;
+    const pocket = translate(
+      [pocketOriginX, pocketOriginY, pocketOriginZ],
+      roundedRectPrism(pocketX, pocketY, pocketZ + overshoot, pocketR),
+    );
+    return difference([outer, cavity, pocket]);
+  }
+
+  return difference([outer, cavity]);
+}
