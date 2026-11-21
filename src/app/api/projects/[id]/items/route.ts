@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, requireProject, route } from "@/lib/api/route";
 import { defaultStatus, newItem, STORE_STATUSES, STORES } from "@/lib/api/schemas";
+import { assertRoomFor } from "@/lib/api/limits";
 import { assertNewClaim } from "@/lib/research/rules";
 import { assertNewPrintJob } from "@/lib/slicing/rules";
 import { addedDetail } from "@/lib/trace/changes";
@@ -35,6 +36,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   await assertNewContent(id, b);
   if (CONTENT_STORES.has(b.section)) b.data = await withFlags(id, b.section, b.title, b.body ?? "", b.data ?? {});
   const row = await tx(async (c) => {
+    await assertRoomFor(c, id);
     await assertLinks(c, id, b.section, b.data);
     await assertBuildMayPass(c, id, { section: b.section, title: b.title, status: b.status ?? defaultStatus(b.section), data: b.data ?? {} });
     const res = await c.query<ItemRow>(

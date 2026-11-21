@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, notFound, recordId, route } from "@/lib/api/route";
-import { assertStatus, itemPatch, parseData } from "@/lib/api/schemas";
+import { assertStatus, dataSizeProblem, itemPatch, parseData } from "@/lib/api/schemas";
+import { z } from "zod";
 import { assertClaimChange } from "@/lib/research/rules";
 import { changedDetail, itemDiff, removedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
@@ -35,6 +36,11 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
       const merged = { ...was.data, ...(data ?? {}) };
       data = await withFlags(was.project_id, was.section, b.title ?? was.title, b.body ?? was.body, merged);
       await assertContentAllowed(was.project_id, was.section, b.status ?? was.status, b.title ?? was.title, b.body ?? was.body, data);
+    }
+    // the row as it will be: a patch may only add keys, so the merged data is what must fit (robustness review S8)
+    if (data) {
+      const size = dataSizeProblem(was.section, { ...was.data, ...data });
+      if (size) throw new z.ZodError([{ code: "custom", path: ["data"], message: size, input: undefined }]);
     }
     await assertLinks(c, was.project_id, was.section, data);
     await assertBuildMayPass(c, was.project_id, { section: was.section, title: b.title ?? was.title, status: b.status ?? was.status, data: { ...was.data, ...(data ?? {}) } });

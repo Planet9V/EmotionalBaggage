@@ -45,12 +45,52 @@ export function hasNul(v: unknown, depth = 0): boolean {
   return false;
 }
 
+/** The largest request body a route takes unless it says otherwise (route(handler, { maxBodyBytes })). */
+export const DEFAULT_MAX_BODY_BYTES = 4 * 1024 * 1024;
+
+export type RouteOptions = {
+  /** the largest body this route reads; a larger one is refused with 413 before it is parsed */
+  maxBodyBytes?: number;
+  /** the sentence for that 413 */
+  tooLarge?: string;
+};
+
+const megabytes = (n: number) => `${Math.round((n / (1024 * 1024)) * 10) / 10} MB`;
+
+/** Reads at most `max` bytes of a stream; null when there is more. */
+async function readCapped(body: ReadableStream<Uint8Array>, max: number): Promise<Uint8Array | null> {
+  const reader = body.getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      // not awaited: a cancelled branch of a cloned (teed) body settles only once the other branch is cancelled too
+      void reader.cancel().catch(() => undefined);
+      return null;
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.byteLength;
+  }
+  return out;
+}
+
 /**
- * Refuses a NUL character anywhere in the path, the query or a non-multipart body, before the handler runs
- * (so before any model call). PostgreSQL text cannot hold U+0000, so such a value could only end in a 500.
- * Multipart uploads are not read here; a NUL in one of their text fields reaches the database's 22021, a 400.
+ * Checks the request before the handler runs (robustness review S2 and S8), so before any model call:
+ * - the body may not be larger than the route takes: a Content-Length over the limit is a 413 before
+ *   anything is read; a body sent without one is counted as it is read, up to the limit;
+ * - a NUL character (U+0000) may not appear in the path, the query or a non-multipart body: PostgreSQL text
+ *   cannot hold it, so it could only end in a 500. A multipart upload's text fields are not read here; a NUL
+ *   there reaches the database's 22021, which answers 400.
  */
-async function refuseNul(req: Request) {
+async function guardRequest(req: Request, opts: RouteOptions) {
   let u: URL | null = null;
   try {
     u = new URL(req.url);
@@ -70,8 +110,19 @@ async function refuseNul(req: Request) {
     for (const [k, v] of u.searchParams) if (k.includes("\u0000") || v.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
   }
   if (SAFE_METHODS.has(req.method.toUpperCase()) || !req.body) return;
-  if (/multipart\/form-data/i.test(req.headers.get("content-type") ?? "")) return;
-  const text = await req.clone().text();
+  const max = opts.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
+  const tooLarge = () => new HttpError(413, opts.tooLarge ?? `The request is larger than ${megabytes(max)}, the most this address takes.`);
+  const declared = req.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared.trim()) && Number(declared) > max) throw tooLarge();
+  const multipart = /multipart\/form-data/i.test(req.headers.get("content-type") ?? "");
+  if (multipart) {
+    // an upload sent in chunks with no length cannot be measured before it is parsed
+    if (declared === null && /chunked/i.test(req.headers.get("transfer-encoding") ?? "")) throw new HttpError(411, "Send the upload with a Content-Length.");
+    return;
+  }
+  const bytes = await readCapped(req.clone().body!, max);
+  if (!bytes) throw tooLarge();
+  const text = new TextDecoder().decode(bytes);
   if (text.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
   if (/\\u0000/i.test(text)) {
     let parsed: unknown;
@@ -183,7 +234,7 @@ export function sessionOf(req: Request): Session {
  */
 type Wrapped<A extends unknown[]> = (...args: A extends [] ? [req: Request] : A) => Promise<Response>;
 
-function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, open: boolean): Wrapped<A> {
+function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, open: boolean, opts: RouteOptions = {}): Wrapped<A> {
   return async (...args): Promise<Response> => {
     try {
       const req = requestOf(args);
@@ -192,7 +243,7 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
       if (!SAFE_METHODS.has(req.method.toUpperCase()) && !sameOrigin(req)) {
         throw new HttpError(403, "This request came from another site and was refused.");
       }
-      await refuseNul(req);
+      await guardRequest(req, opts);
       if (!open) {
         const session = await sessionFromRequest(req);
         if (!session) throw new HttpError(401, SIGN_IN_REQUIRED);
@@ -219,8 +270,8 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
  * route answers without a session.
  */
 export const route = Object.assign(
-  <A extends unknown[]>(handler: (...args: A) => Promise<Response>) => wrap(handler, false),
-  { open: <A extends unknown[]>(handler: (...args: A) => Promise<Response>) => wrap(handler, true) }
+  <A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions) => wrap(handler, false, opts),
+  { open: <A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions) => wrap(handler, true, opts) }
 );
 
 /** Reads and validates a JSON body. A body that is not JSON is a 400, not an empty object. */

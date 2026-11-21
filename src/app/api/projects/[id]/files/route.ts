@@ -9,6 +9,8 @@ type Row = { id: string; name: string; mime: string; kind: string; size: number;
 const META = "id, name, mime, kind, size, sha256, meta, created_at";
 const shape = (r: Row) => ({ id: Number(r.id), name: r.name, mime: r.mime, kind: r.kind, size: r.size, sha256: r.sha256, meta: r.meta, createdAt: r.created_at });
 const MAX = 25 * 1024 * 1024;
+/** room in the request for the multipart boundaries and the kind and meta fields */
+const MULTIPART_ROOM = 64 * 1024;
 
 export const GET = route(async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
@@ -22,15 +24,16 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const { id } = await params;
   await requireProject(id);
   const form = await req.formData().catch(() => null);
-  const file = form?.get("file");
+  if (!form) throw new HttpError(400, "The upload could not be read. Send it as multipart/form-data with a file field.");
+  const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "file is required" }, { status: 400 });
   if (file.size > MAX) return NextResponse.json({ error: "Files are limited to 25 MB." }, { status: 413 });
   const bytes = Buffer.from(await file.arrayBuffer());
   const sha = createHash("sha256").update(bytes).digest("hex");
-  const kind = String(form?.get("kind") ?? "upload").slice(0, 40) || "upload";
+  const kind = String(form.get("kind") ?? "upload").slice(0, 40) || "upload";
   let parsed: unknown;
   try {
-    parsed = JSON.parse(String(form?.get("meta") ?? "{}"));
+    parsed = JSON.parse(String(form.get("meta") ?? "{}"));
   } catch {
     throw new HttpError(400, "meta must be JSON.");
   }
@@ -44,4 +47,4 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     return res.rows;
   });
   return NextResponse.json({ file: shape(rows[0]) }, { status: 201 });
-});
+}, { maxBodyBytes: MAX + MULTIPART_ROOM, tooLarge: "Files are limited to 25 MB." });

@@ -19,7 +19,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Static build output and the favicon never reach the proxy. Everything else does, and
-  // pageGate() lets through the sign-in page, the API and files from public/.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Static build output, the favicon and the API never reach the proxy; pageGate() lets through the sign-in
+  // page and files from public/. The API is left out because the proxy buffers every request body it sees
+  // (and cuts it at proxyClientMaxBodySize), while route() checks each API body's size itself before reading
+  // it and answers 413 (robustness review S8). pageGate() still lets /api through for any caller.
+  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico).*)"],
 };
