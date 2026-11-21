@@ -180,13 +180,13 @@ export function startX(options?: Partial<XOptions>) {
       }
       const b = req.body as { text?: string; media?: { media_ids?: string[] }; reply?: { in_reply_to_tweet_id?: string } };
       if (!b?.text) return json(400, { errors: [{ message: "text is required" }] });
-      const id = String(1900000000000000000n + BigInt(o.posts.length + 1));
+      const id = String(BigInt("1900000000000000000") + BigInt(o.posts.length + 1));
       o.posts.push({ id, text: b.text, media: b.media?.media_ids, replyTo: b.reply?.in_reply_to_tweet_id });
       return json(201, { data: { id, text: b.text, edit_history_tweet_ids: [id] } });
     }
     const m = /^\/2\/users\/([0-9]+)\/mentions$/.exec(req.path);
     if (req.method === "GET" && m) {
-      const since = req.query.since_id ? BigInt(req.query.since_id) : 0n;
+      const since = req.query.since_id ? BigInt(req.query.since_id) : BigInt(0);
       const data = o.mentions.filter((x) => BigInt(x.id) > since);
       return json(200, data.length ? { data, includes: { users: data.map((x) => ({ id: x.author_id, username: `user${x.author_id.slice(-3)}`, name: "Someone" })) }, meta: { result_count: data.length } } : { meta: { result_count: 0 } });
     }

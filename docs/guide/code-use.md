@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit a3ca05a by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit df913d8 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 602 packages (43 direct, 559 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 603 packages (44 direct, 559 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 469 |
+| MIT | 470 |
 | ISC | 48 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
@@ -92,6 +92,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | next | 16.4.6 | MIT | linked library | yes |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
 | occt-import-js | 0.0.23 | LGPL-2.1 | linked library | no |
+| papaparse | 5.7.1 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |
 | react | 19.3.0 | MIT | linked library | yes |
@@ -174,6 +175,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @testing-library/dom | 10.4.2 | MIT |
 | @testing-library/react | 16.3.3 | MIT |
 | @types/node | 22.20.5 | MIT |
+| @types/papaparse | 5.5.2 | MIT |
 | @types/pg | 8.23.1 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
