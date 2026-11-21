@@ -131,3 +131,21 @@ def test_openscad_builds_a_watertight_base_and_lid_with_the_opening_in_the_front
     ring = lambda y: [p for p in pts if abs(p[1] - y) < 0.01 and abs(math.hypot(p[0] - 20, p[2] - 10) - 4) < 0.1]
     assert ring(0), "the round opening is not in the front wall (low Y)"
     assert not ring(30), "an opening appeared in the back wall"
+
+
+# Robustness review S9: NaN or Infinity in the spec reached the generator and answered 500.
+@pytest.mark.parametrize("bad", ["NaN", "Infinity", "-Infinity"])
+def test_a_number_that_is_not_finite_is_a_422(bad):
+    body = '{"outer": [40, 30, %s], "wall": 2, "floor": 2, "lid": 2, "cornerRadius": 2, "clearance": 0.5, "lidType": "slip", ' \
+        '"screw": {"name": "M2", "clearance": 2.4, "pin": 2, "pilot": 1.8, "boss": 4.4}}' % bad
+    r = client.post("/enclosure/yapp", content=body, headers={"content-type": "application/json"})
+    assert r.status_code == 422, r.text
+    nested = small(openings=[{"face": "front", "shape": "circle", "center": [20, 0, 10], "width": 8, "height": 8}])
+    text = __import__("json").dumps(nested).replace('"width": 8', '"width": %s' % bad)
+    r2 = client.post("/enclosure/yapp", content=text, headers={"content-type": "application/json"})
+    assert r2.status_code == 422, r2.text
+
+
+def test_a_timeout_that_is_not_finite_is_a_422():
+    r = client.post("/enclosure/yapp?timeout=nan", json=small())
+    assert r.status_code == 422

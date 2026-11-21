@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 VENDOR = Path(__file__).parent / "vendor" / "yapp_box"
 GENERATOR = "YAPPgenerator_v3.scad"
@@ -33,7 +33,13 @@ DEFAULT_TIMEOUT = 120.0
 Face = Literal["left", "right", "front", "back", "top", "bottom"]
 
 
-class Opening(BaseModel):
+class _Spec(BaseModel):
+    """Every number must be finite: NaN or Infinity is a 422, never a crash in the generator."""
+
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
+class Opening(_Spec):
     face: Face
     shape: Literal["rect", "circle"]
     center: tuple[float, float, float]
@@ -42,7 +48,7 @@ class Opening(BaseModel):
     label: str = ""
 
 
-class Screw(BaseModel):
+class Screw(_Spec):
     name: str
     clearance: float
     pin: float
@@ -50,25 +56,25 @@ class Screw(BaseModel):
     boss: float
 
 
-class Hole(BaseModel):
+class Hole(_Spec):
     x: float
     y: float
     diameter: float
 
 
-class Standoffs(BaseModel):
+class Standoffs(_Spec):
     holes: list[Hole]
     height: float
     pcbThickness: float
 
 
-class PartBox(BaseModel):
+class PartBox(_Spec):
     ref: str
     min: tuple[float, float, float]
     max: tuple[float, float, float]
 
 
-class BoxSpec(BaseModel):
+class BoxSpec(_Spec):
     outer: tuple[float, float, float]
     wall: float = Field(ge=0.8)
     floor: float = Field(ge=0.8)
