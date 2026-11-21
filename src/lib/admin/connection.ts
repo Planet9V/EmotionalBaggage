@@ -2,7 +2,8 @@
 // { ok, message, detail? }. Every call is read-only except Perplexity's, which has no free call (see testPerplexity). A failed test is a normal answer, not an error. Secrets never appear in the answer:
 // any text that comes back from outside is cleaned of the key that was sent before it is shown.
 import { pool, ready } from "@/lib/db";
-import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
+import { boundElsewhere, originOf, secretFor } from "@/lib/secretOrigin";
+import { DEFAULT_BASE_URL } from "@/lib/settings";
 import { AGENT_PATH, baseUrl as perplexityBase, DEFAULT_EFFORT, readResponse } from "@/lib/research/perplexity";
 import { audit } from "./audit";
 import { plannerUrl } from "./planner";
@@ -107,12 +108,55 @@ async function modelKey(provider: "ollama" | "lmstudio" | "openrouter", baseUrl:
     const message = boundElsewhere(MODEL_LABEL[provider], s.boundTo, baseUrl);
     return { key: null, refusal: { ok: false, message, detail: { keyBoundTo: s.boundTo } } };
   }
-  return { key: s.value };
+  return { key: s.value?.trim() || null };
+}
+
+/** OpenRouter's own public address: the one host whose error text is shown, because it is not an address a user chose to probe. */
+const isOpenRouterItself = (baseUrl: string) => originOf(baseUrl) === originOf(DEFAULT_BASE_URL.openrouter);
+
+/**
+ * OpenRouter answers GET /models to anyone, key or no key, so a model list proves nothing about the key.
+ * GET /key is its call for "is this key good" (openrouter.ai/docs/api/api-reference/api-keys/get-current-key,
+ * read 21 November 2026). Answers a failure when the key is missing or refused, else null. A host that has no
+ * /key (a proxy in front of OpenRouter) is not held against the key.
+ */
+async function openRouterKeyProblem(baseUrl: string, key: string | null): Promise<TestResult | null> {
+  if (!key) return { ok: false, message: "OpenRouter needs a key, and none is saved for this address. Add it in Admin, Credentials." };
+  const c = await call(`${baseUrl}/key`, { headers: { authorization: `Bearer ${key}` } }, [key]);
+  if ("fail" in c) return null;
+  if (c.res.status === 401 || c.res.status === 403) {
+    const says = isOpenRouterItself(baseUrl) ? await upstreamSays(c.res, [key]) : (await c.res.body?.cancel().catch(() => undefined), undefined);
+    const ending = key.length >= 12 ? ` The key sent ends in ${key.slice(-4)}.` : "";
+    return {
+      ok: false,
+      message: `OpenRouter does not accept this key (HTTP ${c.res.status})${says ? `: ${says.replace(/[.\s]+$/, "")}` : ""}.${ending} Compare it with the key on openrouter.ai, Keys, and paste it again in Admin, Credentials.`,
+      detail: { status: c.res.status, ...(says ? { says } : {}) },
+    };
+  }
+  await c.res.body?.cancel().catch(() => undefined);
+  return null;
+}
+
+/** The ids in an OpenAI-style model list at `url`, or null when the list could not be read. */
+async function modelIds(url: string, key: string | null): Promise<string[] | null> {
+  const c = await call(url, { headers: key ? { authorization: `Bearer ${key}` } : {} }, [key]);
+  if ("fail" in c) return null;
+  if (c.res.status !== 200) {
+    await c.res.body?.cancel().catch(() => undefined);
+    return null;
+  }
+  const j = (await readJson(c.res)) as { data?: { id?: unknown }[] } | undefined;
+  if (!j || !Array.isArray(j.data)) return null;
+  return j.data.map((m) => m?.id).filter((x): x is string => typeof x === "string");
 }
 
 async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise<TestResult> {
   const { key, refusal } = await modelKey(t.provider, t.baseUrl, t.apiKey);
   if (refusal) return refusal;
+  if (t.provider === "openrouter") {
+    const bad = await openRouterKeyProblem(t.baseUrl, key);
+    if (bad) return bad;
+  }
   const c = await call(`${t.baseUrl}/models`, { headers: key ? { authorization: `Bearer ${key}` } : {} }, [key]);
   if ("fail" in c) return c.fail;
   if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
@@ -121,11 +165,16 @@ async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise
   const ids = j.data.map((m) => m?.id).filter((x): x is string => typeof x === "string");
   const shown = ids.slice(0, 20);
   if (t.model && !ids.includes(t.model)) {
+    // OpenRouter keeps its embedding models in a list of their own (GET /embeddings/models), not in /models.
+    if (t.provider === "openrouter" && (await modelIds(`${t.baseUrl}/embeddings/models`, key))?.includes(t.model)) {
+      return { ok: false, message: `${t.model} is an embedding model on OpenRouter. Choose it under Embedding model, not here.`, detail: { models: shown, total: ids.length } };
+    }
     return { ok: false, message: "Reachable, but that model is not in its list.", detail: { models: shown, total: ids.length } };
   }
+  const keyNote = t.provider === "openrouter" ? " OpenRouter accepts the key." : "";
   return {
     ok: true,
-    message: t.model ? `Reachable, and ${t.model} is in its list.` : `Reachable. It lists ${ids.length} model${ids.length === 1 ? "" : "s"}.`,
+    message: (t.model ? `Reachable, and ${t.model} is in its list.` : `Reachable. It lists ${ids.length} model${ids.length === 1 ? "" : "s"}.`) + keyNote,
     detail: { models: shown, total: ids.length },
   };
 }
@@ -133,11 +182,24 @@ async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise
 async function testEmbedding(t: Extract<ConnectionTest, { kind: "embedding" }>): Promise<TestResult> {
   const { key, refusal } = await modelKey(t.provider, t.baseUrl, t.apiKey);
   if (refusal) return refusal;
+  if (t.provider === "openrouter") {
+    const bad = await openRouterKeyProblem(t.baseUrl, key);
+    if (bad) return bad;
+  }
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (key) headers.authorization = `Bearer ${key}`;
   const c = await call(`${t.baseUrl}/embeddings`, { method: "POST", headers, body: JSON.stringify({ model: t.model, input: "hello" }) }, [key]);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
+  if (c.res.status !== 200) {
+    if (t.provider !== "openrouter") return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
+    // The key was accepted a moment ago, so this is about the model or the account, and OpenRouter's own words say which.
+    const failed = await httpFailure(c.res, "OpenRouter", [key], MODEL_PATH_HINT, isOpenRouterItself(t.baseUrl));
+    const says = typeof failed.detail?.says === "string" ? ` OpenRouter says: ${failed.detail.says.replace(/[.\s]+$/, "")}.` : "";
+    const listed = await modelIds(`${t.baseUrl}/embeddings/models`, key);
+    const inList = listed ? (listed.includes(t.model) ? ` ${t.model} is in OpenRouter's list of embedding models.` : ` ${t.model} is not in OpenRouter's list of embedding models (${listed.length} listed): check the name.`) : "";
+    const message = c.res.status === 401 || c.res.status === 403 ? `OpenRouter accepted the key but refused the embedding call (HTTP ${c.res.status}).${says}${inList} Check the key's limits and allowed providers on openrouter.ai.` : `${failed.message}${says}${inList}`;
+    return { ok: false, message, detail: { ...failed.detail, ...(listed ? { embeddingModels: listed.slice(0, 20), total: listed.length } : {}) } };
+  }
   const j = (await readJson(c.res)) as { data?: { embedding?: unknown }[] } | undefined;
   const vec = j?.data?.[0]?.embedding;
   if (!Array.isArray(vec) || !vec.length || !vec.every((n) => typeof n === "number")) {

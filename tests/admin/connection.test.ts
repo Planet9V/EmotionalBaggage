@@ -83,8 +83,34 @@ describe("kind: model", () => {
 
     const wrong = await test({ kind: "model", provider: "openrouter", baseUrl: `${s.url}/api/v1`, apiKey: "sk-wrong-key-111111111" });
     expect(wrong.body.ok).toBe(false);
-    expect(wrong.body.message).toMatch(/refused the key \(HTTP 401\)/);
+    expect(wrong.body.message).toMatch(/OpenRouter does not accept this key \(HTTP 401\)/);
     expect(JSON.stringify(wrong.body)).not.toContain("sk-wrong-key-111111111");
+  });
+
+  // OpenRouter answers /models to anyone, so the list proves nothing about the key; /key does.
+  it("OpenRouter: a wrong key is caught even though the model list is public, and a right one is said to be accepted", async () => {
+    const KEY = "sk-or-v1-right-key-0000000000ab";
+    const s = await track(openai.start({ prefix: "/api/v1", apiKey: KEY, models: ["openai/gpt-x"], openRouter: { embeddingModels: ["qwen/qwen3-embedding-8b"] } }));
+    const base = { kind: "model", provider: "openrouter", baseUrl: `${s.url}/api/v1` };
+    const wrong = await test({ ...base, apiKey: "sk-or-v1-wrong-key-00000000wxyz" });
+    expect(wrong.body.ok).toBe(false);
+    expect(wrong.body.message).toMatch(/OpenRouter does not accept this key \(HTTP 401\)/);
+    expect(wrong.body.message).toContain("ends in wxyz");
+    expect(JSON.stringify(wrong.body)).not.toContain("sk-or-v1-wrong-key-00000000wxyz");
+    const none = await test(base);
+    expect(none.body).toMatchObject({ ok: false, message: expect.stringMatching(/needs a key/) });
+    const right = await test({ ...base, apiKey: KEY });
+    expect(right.body.ok).toBe(true);
+    expect(right.body.message).toMatch(/OpenRouter accepts the key/);
+    expect(s.requests.filter((x) => x.path === "/api/v1/key").length).toBe(2);
+  });
+
+  it("OpenRouter: an embedding model typed as the reasoning model is named as one, not called missing", async () => {
+    const KEY = "sk-or-v1-right-key-0000000000ab";
+    const s = await track(openai.start({ prefix: "/api/v1", apiKey: KEY, models: ["openai/gpt-x"], openRouter: { embeddingModels: ["qwen/qwen3-embedding-8b"] } }));
+    const r = await test({ kind: "model", provider: "openrouter", baseUrl: `${s.url}/api/v1`, model: "qwen/qwen3-embedding-8b", apiKey: KEY });
+    expect(r.body.ok).toBe(false);
+    expect(r.body.message).toBe("qwen/qwen3-embedding-8b is an embedding model on OpenRouter. Choose it under Embedding model, not here.");
   });
 
   it("explains a server error, a wrong path, a timeout and a refused connection", async () => {
@@ -154,6 +180,22 @@ describe("kind: embedding", () => {
     s.set({ failWith: undefined, delayMs: 2000 });
     setConnectionTestLimit(150);
     expect((await test({ ...base, apiKey: "right-key-000000000000" })).body.message).toBe("No answer within 150 ms.");
+  });
+
+  it("OpenRouter: the embedding test checks the key first, finds the model in the embedding list, and names a wrong model name", async () => {
+    const KEY = "sk-or-v1-right-key-0000000000ab";
+    const s = await track(openai.start({ prefix: "/api/v1", apiKey: KEY, dimensions: 8, models: ["openai/gpt-x"], openRouter: { embeddingModels: ["qwen/qwen3-embedding-8b"] } }));
+    const base = { kind: "embedding", provider: "openrouter", baseUrl: `${s.url}/api/v1`, model: "qwen/qwen3-embedding-8b", dims: 8 };
+    const ok = await test({ ...base, apiKey: KEY });
+    expect(ok.body).toMatchObject({ ok: true, detail: { width: 8 } });
+    const wrongKey = await test({ ...base, apiKey: "sk-or-v1-wrong-key-00000000wxyz" });
+    expect(wrongKey.body.message).toMatch(/OpenRouter does not accept this key \(HTTP 401\)/);
+    // the embedding call was never made with a key OpenRouter refused
+    expect(s.requests.filter((x) => x.path === "/api/v1/embeddings").length).toBe(1);
+    const wrongName = await test({ ...base, model: "qwen/qwen3-embedding", apiKey: KEY });
+    expect(wrongName.body.ok).toBe(false);
+    expect(wrongName.body.message).toMatch(/is not in OpenRouter's list of embedding models \(1 listed\): check the name/);
+    expect(wrongName.body.detail).toMatchObject({ embeddingModels: ["qwen/qwen3-embedding-8b"], total: 1 });
   });
 
   it("requires dims", async () => {

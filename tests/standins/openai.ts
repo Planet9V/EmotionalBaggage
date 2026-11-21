@@ -37,6 +37,14 @@ export type OpenAIOptions = FailureOptions & {
   dimensions: number;
   /** assistant reply; default echoes the last user message */
   reply?: string | ((messages: { role: string; content: unknown }[]) => string);
+  /**
+   * Behave as OpenRouter does: GET {prefix}/models and GET {prefix}/embeddings/models answer without a key,
+   * GET {prefix}/key answers only to the right key, and the embedding models are in their own list
+   * [OR-KEY] https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key (GET /key, 401 without a key)
+   * [OR-EMB-LIST] https://openrouter.ai/docs/api/api-reference/embeddings/list-embeddings-models (GET /embeddings/models)
+   * Both read 21 November 2026. That /models needs no key is from the public endpoint answering search crawlers; unverified by a call from here.
+   */
+  openRouter?: { embeddingModels: string[] };
   /** a test's own vectors (for search by meaning between texts that share no word); default embeddingFor */
   embed?: (text: string, dimensions: number) => number[];
 };
@@ -67,8 +75,14 @@ function unauthorized(): Reply {
 export function start(options?: Partial<OpenAIOptions>) {
   return startStandIn<OpenAIOptions>(DEFAULTS, (req, o) => {
     const prefix = o.prefix.replace(/\/$/, "");
-    if (o.apiKey !== undefined && bearer(req.headers) !== o.apiKey) return unauthorized();
     const route = `${req.method} ${req.path}`;
+    const open = !!o.openRouter && (route === `GET ${prefix}/models` || route === `GET ${prefix}/embeddings/models`);
+    if (!open && o.apiKey !== undefined && bearer(req.headers) !== o.apiKey) {
+      // [OR-KEY] the documented 401 body
+      return o.openRouter ? json(401, { error: { code: 401, message: bearer(req.headers) ? "User not found." : "Missing Authentication header" } }) : unauthorized();
+    }
+    if (o.openRouter && route === `GET ${prefix}/key`) return json(200, { data: { label: "sk-or-v1-sta...din", limit: null, usage: 0, is_provisioning_key: false } }); // [OR-KEY]
+    if (o.openRouter && route === `GET ${prefix}/embeddings/models`) return json(200, { data: o.openRouter.embeddingModels.map((id) => ({ id, name: id })) }); // [OR-EMB-LIST]
 
     if (route === `GET ${prefix}/models`) {
       return json(200, {
@@ -131,6 +145,7 @@ export function start(options?: Partial<OpenAIOptions>) {
       // input: string or array of strings [OLLAMA]; token arrays are not supported by Ollama either
       const inputs = typeof b.input === "string" ? [b.input] : Array.isArray(b.input) && b.input.every((s) => typeof s === "string") ? (b.input as string[]) : null;
       if (!inputs) return json(400, { error: { message: "input must be a string or an array of strings (stand-in)", type: "invalid_request_error" } }); // unverified
+      if (o.openRouter && !o.openRouter.embeddingModels.includes(b.model ?? "")) return json(404, { error: { code: 404, message: "No endpoints found (stand-in)" } }); // unverified wording
       const dim = typeof b.dimensions === "number" && b.dimensions > 0 ? b.dimensions : o.dimensions; // dimensions [OAI-EMB] [OLLAMA]
       return json(200, {
         object: "list", // [OAI-EMB]

@@ -134,6 +134,8 @@ None of this has been run against a real Ollama, LM Studio or OpenRouter yet; it
 
 After changing `.env`, run `docker compose up -d` again.
 
+**OpenRouter.** Test asks OpenRouter itself whether it accepts the key (`GET /key`), because OpenRouter gives its model list to anyone, key or no key. A refused key is reported with OpenRouter's own words and the last four characters of the key that was sent. OpenRouter keeps embedding models in a list of their own, so the embedding test looks there, and says so when a name is not in it. An embedding model typed under Reasoning model is named as one.
+
 ## Drafting, the reviewer and impact
 
 Drafting, the reviewer and realignment all use the reasoning model chosen in Models. Without one, the buttons explain why and link there. The impact notice needs the planner service; when it cannot be reached the notice says so and nothing else is affected.
