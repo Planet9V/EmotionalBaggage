@@ -3,6 +3,9 @@ import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { HttpError, requireProject, route } from "@/lib/api/route";
 import { plannerUrl } from "@/lib/admin/planner";
 import { STORE, toPart, toWire, type Wire } from "@/lib/domain";
+import { pinNames, routePartsOf } from "@/lib/geometry/pins3d";
+import { pinsByItem } from "@/lib/parts/pins";
+import { pinsOfProject } from "@/lib/parts/server";
 import { buildHarnessRequest, type HarnessOutcome } from "@/lib/geometry/harness";
 import { buildRouteRequest, routeState, type RoutePart } from "@/lib/geometry/routing";
 
@@ -23,14 +26,17 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
   const wires = items.filter((i) => i.section === STORE.wiring).map(toWire).filter((w): w is Wire => w !== null);
   if (!wires.length) throw new HttpError(400, "There are no wires to draw. Add them in Schematic first.");
 
-  const routeParts: RoutePart[] = parts.filter((p) => p.geometry && p.ref).map((p) => ({ id: p.item.id, ref: p.ref, geometry: p.geometry!, pins: p.item.data.pins }));
+  const pins = await pinsOfProject(id);
+  const routeParts: RoutePart[] = routePartsOf(parts, pins);
   const built = buildRouteRequest(routeParts, wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })));
   const lengths = new Map<number, number>();
   for (const w of wires) {
     const fp = built.fingerprints.get(w.item.id);
     if (w.routed && fp && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fp) === "current") lengths.set(w.item.id, w.routed.lengthMm);
   }
-  const { request, problems } = buildHarnessRequest(project.name, parts, wires, lengths);
+  const byItem = pinsByItem(pins);
+  const wireNames = (ref: string) => wires.flatMap((w) => [w.from === ref ? w.fromPin : "", w.to === ref ? w.toPin : ""]).filter(Boolean);
+  const { request, problems } = buildHarnessRequest(project.name, parts, wires, lengths, (p) => pinNames(p.item, byItem.get(p.item.id) ?? [], wireNames(p.ref)));
   if (!request) throw new HttpError(400, "No wire joins two parts that are in the bill of materials, so there is nothing to draw.", { problems });
 
   const url = await plannerUrl();

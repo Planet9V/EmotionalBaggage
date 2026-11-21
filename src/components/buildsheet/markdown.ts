@@ -1,4 +1,5 @@
 import type { Wire } from "@/lib/domain";
+import type { PinRow } from "@/lib/parts/pins";
 import { AMPACITY_SOURCE, DEFAULT_STRIP, specRows, stripSummary, totalsByColour } from "./wiresheet";
 import {
   CHECK_TEXT, ROUND_TO, beforePower, connectionsByPart, consumables, counts, cutList, totalsByClass,
@@ -16,6 +17,8 @@ export function buildMarkdown(opts: {
   routing: number;
   allowance: number;
   strips?: Record<string, number>;
+  /** pin rows of the concept, so a route to a real pin position reads as current */
+  pins?: PinRow[];
 }): string {
   const { projectName, steps, parts, routing, allowance } = opts;
   const strips = opts.strips ?? DEFAULT_STRIP;
@@ -52,7 +55,7 @@ export function buildMarkdown(opts: {
     L.push("");
   }
 
-  const cuts = cutList(steps, parts, routing, allowance);
+  const cuts = cutList(steps, parts, routing, allowance, opts.pins ?? []);
   L.push("## Wire cut list", "");
   const nRouted = cuts.filter((r) => r.length?.source === "routed").length;
   L.push(`Routed length = the planner's path through the enclosure + ${allowance} mm (strip and slack), rounded up to ${ROUND_TO} mm. Estimate (fallback where a wire is not routed, or its route is out of date) = straight-line distance between the two parts' assembled centres x ${routing} (routing factor) + ${allowance} mm, rounded up to ${ROUND_TO} mm. ${nRouted} of ${cuts.length} wires are routed. Colours are suggested.`, "");

@@ -16,6 +16,8 @@ import { EditBar, ExportBar, MeasureReadout, PartsTable, RoutePanel, SectionPane
 import { useShapes } from "@/lib/geometry/useShapes";
 import { assembly3mf, assemblyStl, type ExportPart } from "@/lib/geometry/export";
 import { bundleRadius, buildRouteRequest, routeState, type RouteOutcome } from "@/lib/geometry/routing";
+import { routePartsOf } from "@/lib/geometry/pins3d";
+import { usePins } from "@/lib/parts/client";
 import { snap } from "@/lib/geometry/rotation";
 import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
@@ -74,6 +76,7 @@ export function ModelView({ project }: ViewProps) {
   const [classOff, setClassOff] = useState<Set<NetClass>>(() => new Set());
   const [explodeBy, setExplodeBy] = useState("");
   const wiringItems = useItems(project.id, STORE.wiring);
+  const { pins: pinRows } = usePins(project.id);
   const qc = useQueryClient();
   const [mode, setMode] = useState<TransformMode>("translate");
   const [measure, setMeasure] = useState(false);
@@ -156,15 +159,19 @@ export function ModelView({ project }: ViewProps) {
   }, [explodeByValid, explodeBy, wires, parts]);
 
   // Which wires have a current route, and which are out of date.
-  const fingerprints = useMemo(
+  const routeBuilt = useMemo(
     () =>
       buildRouteRequest(
-        parts.filter((p) => p.geometry && p.ref).map((p) => ({ id: p.item.id, ref: p.ref, geometry: p.geometry as PartGeometry, pins: p.item.data.pins })),
+        // the same pin positions the route request uses (pin rows, else the library entry), so a fresh route reads as current
+        routePartsOf(parts, pinRows ?? []),
         wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })),
         { cell: routeCell }
-      ).fingerprints,
-    [parts, wires, routeCell]
+      ),
+    [parts, wires, routeCell, pinRows]
   );
+  const fingerprints = routeBuilt.fingerprints;
+  /** wire ends placed at the middle of a part face because the part has no position for that pin */
+  const approximateEnds = useMemo(() => [...routeBuilt.pinSources.values()].reduce((n, [a, b]) => n + (a === "face" ? 1 : 0) + (b === "face" ? 1 : 0), 0), [routeBuilt]);
   const routeCounts = useMemo(() => {
     let routed = 0;
     let stale = 0;
@@ -637,6 +644,7 @@ export function ModelView({ project }: ViewProps) {
           />
           {!wiringItems.loading && wires.length === 0 && parts.length > 0 && <p className="text-xs text-muted">{NO_WIRES}</p>}
           {wiresOn && wirePlan.note && <p className="text-xs text-warning">{wirePlan.note}</p>}
+          {wires.length > 0 && <p className="text-xs text-muted" data-testid="approximate-ends">{approximateEnds === 0 ? "Every wire end that can be routed is at a real pin position." : `${approximateEnds} wire end${approximateEnds === 1 ? " is" : "s are"} approximate: the part has no position for that pin, so the end is the middle of the part's face. Pin positions come from the part's pins or its library entry.`}</p>}
           {wiresOn && wirePlan.draw.length > 0 && <p className="text-xs text-muted">{wirePlan.draw.length} wire{wirePlan.draw.length === 1 ? " is" : "s are"} drawn as straight curves between part centres: {explodePct === 0 ? "not routed yet, or the route is out of date." : "the exploded view does not show routes."}</p>}
           <EditBar
             mode={mode}

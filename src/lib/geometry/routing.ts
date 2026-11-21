@@ -15,7 +15,7 @@ export type RoutePart = {
   id: number;
   ref: string;
   geometry: Geometry;
-  /** the part row's raw `data.pins`: names, or objects with a position once the part library provides them */
+  /** pins with a position in the part's own frame ({ name, pos: [x, y, z] }), from `pinPoints` in ./pins3d.ts */
   pins?: unknown;
 };
 
@@ -48,10 +48,10 @@ function declaredPin(part: RoutePart, pin: string): V3 | null {
 }
 
 /**
- * Where a wire ends on a part. THE ONE FUNCTION to repoint when the part library provides real
- * pin positions: read the pin from the part, turn it with the part's rotation and add its
- * position. Until a part has a position for the pin, the end is the centre of the box face that
- * looks toward the other end of the wire, and the result says so (`source: "face"`).
+ * Where a wire ends on a part: the pin's position (from the part's pin rows or its library entry,
+ * worked out by `pinPoints` in ./pins3d.ts), turned with the part's rotation and added to its
+ * position. When the pin has no position, the end is the centre of the box face that looks toward
+ * the other end of the wire, and the result says so (`source: "face"`).
  */
 export function pinPosition(part: RoutePart, pin: string, towards: readonly number[]): PinPoint {
   const g = part.geometry;

@@ -4,6 +4,8 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { HttpError, body, requireProject, route } from "@/lib/api/route";
 import { plannerUrl } from "@/lib/admin/planner";
 import { STORE, toPart, toWire, type Wire } from "@/lib/domain";
+import { routePartsOf } from "@/lib/geometry/pins3d";
+import { pinsOfProject } from "@/lib/parts/server";
 import { ROUTED_KEYS, buildRouteRequest, toRoutedFields, type PlannerResult, type RouteOutcome, type RoutePart, type RouteWire } from "@/lib/geometry/routing";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -31,11 +33,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
 
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [id, [STORE.parts, STORE.wiring]]);
   const items = rows.map(toItem);
-  const parts: RoutePart[] = items
-    .filter((i) => i.section === STORE.parts)
-    .map(toPart)
-    .filter((p) => p.geometry && p.ref)
-    .map((p) => ({ id: p.item.id, ref: p.ref, geometry: p.geometry!, pins: p.item.data.pins }));
+  // Wire ends at real pin positions (pin rows, else the library entry), the face centre otherwise.
+  const parts: RoutePart[] = routePartsOf(items.filter((i) => i.section === STORE.parts).map(toPart), await pinsOfProject(id));
   const wires = items.filter((i) => i.section === STORE.wiring).map(toWire).filter((w): w is Wire => w !== null);
   const routeWires: RouteWire[] = wires.map((w) => ({ id: w.item.id, name: w.name || w.net || `${w.from} to ${w.to}`, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin }));
 

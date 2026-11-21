@@ -1,6 +1,8 @@
 // Everything the build sheet shows is derived here from the wiring and parts stores.
 // Nothing in this file holds a value typed by hand except the three generic check
 // sentences, the colour list and the two default estimate settings, all labelled as such in the UI.
+import { pinPoints } from "@/lib/geometry/pins3d";
+import { pinsByItem, type PinRow } from "@/lib/parts/pins";
 import { NET_CLASSES, partsByRef, pinsOf, toWire, type Geometry, type NetClass, type Part, type Wire } from "@/lib/domain";
 import type { Item } from "@/lib/types";
 import { buildRouteRequest, routeState, type RoutePart } from "@/lib/geometry/routing";
@@ -193,10 +195,11 @@ export function routedLengthMm(w: Wire): number | null {
 
 const roundUp = (raw: number) => Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO;
 
-/** Current route fingerprint per wire row id, from the parts and wires as they are now. */
-export function routeFingerprints(parts: Map<string, PartLite>, wires: Wire[]): Map<number, string> {
+/** Current route fingerprint per wire row id, from the parts, their pins (rows, else library) and wires as they are now. */
+export function routeFingerprints(parts: Map<string, PartLite>, wires: Wire[], pins: PinRow[] = []): Map<number, string> {
+  const byItem = pinsByItem(pins);
   const rp: RoutePart[] = [];
-  for (const p of parts.values()) if (p.geometry && p.ref) rp.push({ id: p.item.id, ref: p.ref, geometry: p.geometry, pins: p.item.data.pins });
+  for (const p of parts.values()) if (p.geometry && p.ref) rp.push({ id: p.item.id, ref: p.ref, geometry: p.geometry, pins: pinPoints(p.item, byItem.get(p.item.id) ?? [], p.geometry) });
   return buildRouteRequest(rp, wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin }))).fingerprints;
 }
 
@@ -233,9 +236,9 @@ export type CutRow = {
   length: Length;
 };
 
-export function cutList(steps: Step[], parts: Map<string, PartLite>, routing: number, allowance: number): CutRow[] {
+export function cutList(steps: Step[], parts: Map<string, PartLite>, routing: number, allowance: number, pins: PinRow[] = []): CutRow[] {
   const nets = signalNetsOf(steps);
-  const fingerprints = routeFingerprints(parts, steps.map((s) => s.wire));
+  const fingerprints = routeFingerprints(parts, steps.map((s) => s.wire), pins);
   return steps.map(({ n, wire }) => ({
     step: n,
     wire,
