@@ -25,7 +25,62 @@ const PG: Record<string, [number, string]> = {
   "23503": [404, "The concept or record this refers to does not exist."],
   "23505": [409, "That already exists."],
   "23514": [400, "A value in the request is not allowed."],
+  // a NUL character or bytes that are not valid text
+  "22021": [400, "A value in the request contains a character that cannot be stored."],
+  "22P05": [400, "A value in the request contains a character that cannot be stored."],
+  // program_limit_exceeded, for example a value too large for an index
+  "54000": [400, "A value in the request is too large to store."],
 };
+
+export const NUL_REFUSED = "A value in the request contains a NUL character (\\u0000), which cannot be stored. Remove it and try again.";
+
+/** True when any string (or object key) inside a parsed JSON value contains U+0000. */
+export function hasNul(v: unknown, depth = 0): boolean {
+  if (typeof v === "string") return v.includes("\u0000");
+  if (depth > 200 || v === null || typeof v !== "object") return false;
+  if (Array.isArray(v)) return v.some((x) => hasNul(x, depth + 1));
+  for (const [k, x] of Object.entries(v)) if (k.includes("\u0000") || hasNul(x, depth + 1)) return true;
+  return false;
+}
+
+/**
+ * Refuses a NUL character anywhere in the path, the query or a non-multipart body, before the handler runs
+ * (so before any model call). PostgreSQL text cannot hold U+0000, so such a value could only end in a 500.
+ * Multipart uploads are not read here; a NUL in one of their text fields reaches the database's 22021, a 400.
+ */
+async function refuseNul(req: Request) {
+  let u: URL | null = null;
+  try {
+    u = new URL(req.url);
+  } catch {
+    u = null;
+  }
+  if (u) {
+    for (const seg of u.pathname.split("/")) {
+      let d = seg;
+      try {
+        d = decodeURIComponent(seg);
+      } catch {
+        // a malformed escape is the handler's to refuse
+      }
+      if (d.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
+    }
+    for (const [k, v] of u.searchParams) if (k.includes("\u0000") || v.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
+  }
+  if (SAFE_METHODS.has(req.method.toUpperCase()) || !req.body) return;
+  if (/multipart\/form-data/i.test(req.headers.get("content-type") ?? "")) return;
+  const text = await req.clone().text();
+  if (text.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
+  if (/\\u0000/i.test(text)) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return; // not JSON: body() answers that
+    }
+    if (hasNul(parsed)) throw new HttpError(400, NUL_REFUSED);
+  }
+}
 
 /** Unique rules the database enforces, in the user's terms. */
 const CONFLICT: Record<string, string> = {
@@ -135,6 +190,7 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
       if (!SAFE_METHODS.has(req.method.toUpperCase()) && !sameOrigin(req)) {
         throw new HttpError(403, "This request came from another site and was refused.");
       }
+      await refuseNul(req);
       if (!open) {
         const session = await sessionFromRequest(req);
         if (!session) throw new HttpError(401, SIGN_IN_REQUIRED);

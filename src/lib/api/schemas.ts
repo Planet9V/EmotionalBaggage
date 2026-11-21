@@ -26,8 +26,16 @@ export const STORES = Object.keys(STORE_STATUSES);
 
 const text = (max: number) => z.string().max(max);
 
-/** `data` is always a plain object: never an array, a string or null. */
-export const dataObject = z.record(z.string(), z.unknown());
+/** Longest data.externalId: a service's id with its prefix ("amazon:", "x:", "review:"); a unique index reads it. */
+export const EXTERNAL_ID_MAX = 120;
+
+/** `data` is always a plain object: never an array, a string or null. data.externalId, when present, is a short text. */
+export const dataObject = z.record(z.string(), z.unknown()).superRefine((d, ctx) => {
+  const v = d.externalId;
+  if (v === undefined) return;
+  if (typeof v !== "string") ctx.addIssue({ code: "custom", path: ["externalId"], message: "must be text" });
+  else if (v.length > EXTERNAL_ID_MAX) ctx.addIssue({ code: "custom", path: ["externalId"], message: `must be ${EXTERNAL_ID_MAX} characters or fewer` });
+});
 
 /**
  * Checks `data` against its section's schema and returns it normalised
