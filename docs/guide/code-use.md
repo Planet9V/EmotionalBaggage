@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit ebbdb17 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit de6b694 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,13 +16,13 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 548 packages (40 direct, 508 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 551 packages (40 direct, 511 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
 | MIT | 421 |
+| Apache-2.0 | 47 |
 | ISC | 47 |
-| Apache-2.0 | 44 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
 | BlueOak-1.0.0 | 5 |
@@ -144,6 +144,8 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 
 | Package | Version | Licence |
 | --- | --- | --- |
+| @axe-core/playwright | 4.14.0 | MPL-2.0 |
+| @playwright/test | 1.65.1 | Apache-2.0 |
 | @tailwindcss/postcss | 4.3.5 | MIT |
 | @testing-library/dom | 10.4.2 | MIT |
 | @testing-library/react | 16.3.3 | MIT |
