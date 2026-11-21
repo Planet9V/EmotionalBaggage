@@ -11,6 +11,7 @@ import { POST as duplicate } from "@/app/api/projects/[id]/duplicate/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { SEED_PROJECT } from "@/lib/seed";
+import { GET as getSettings, PUT as putSettings } from "@/app/api/admin/settings/route";
 import { ctx, json, read, SEEDED, sessionCookieHeader } from "./helpers";
 
 type Concept = {
@@ -28,6 +29,7 @@ type Concept = {
 };
 type One = { project: Concept };
 type List = { projects: Concept[] };
+type SettingsBody = { settings: { defaultConcept: string | null } };
 type Err = { error: string; issues?: { field: string; problem: string }[] };
 
 const OWNED = ["items", "files", "events", "messages", "research", "gates"] as const;
@@ -290,10 +292,43 @@ describe("concepts API", () => {
       const before = await counts(p.id);
       const r = await remove(p.id, { confirm: "ZZ Test Delete" });
       expect(r.status).toBe(200);
-      expect(r.body.deleted).toEqual({ concept: p.id, name: "ZZ Test Delete", ...before });
+      expect(r.body.deleted).toEqual({ concept: p.id, name: "ZZ Test Delete", ...before, defaultCleared: false });
       expect(before).toMatchObject({ items: 5, files: 1, messages: 1, research: 1, gates: 1 });
       expect(await counts(p.id)).toEqual({ items: 0, files: 0, events: 0, messages: 0, research: 0, gates: 0 });
       expect((await get(p.id)).status).toBe(404);
+    });
+
+    it("clears Admin's default concept in the same transaction when it names the deleted concept", async () => {
+      const p = await create("ZZ Test Delete Default");
+      await putSettings(json("PUT", { defaultConcept: p.id }));
+      expect((await read<SettingsBody>(await getSettings(json("GET")))).body.settings.defaultConcept).toBe(p.id);
+      const r = await remove(p.id, { confirm: "ZZ Test Delete Default" });
+      expect(r.status).toBe(200);
+      expect(r.body.deleted).toMatchObject({ concept: p.id, defaultCleared: true });
+      expect((await read<SettingsBody>(await getSettings(json("GET")))).body.settings.defaultConcept).toBeNull();
+      const lines = await q<{ action: string; detail: { was?: string } }>(
+        "SELECT action, detail FROM audit_log WHERE action='setting.cleared' AND detail->>'was' = $1",
+        [p.id]
+      );
+      expect(lines).toHaveLength(1);
+    });
+
+    it("leaves a default concept that names another concept alone", async () => {
+      const keep = await create("ZZ Test Default Kept");
+      const gone = await create("ZZ Test Delete Other");
+      await putSettings(json("PUT", { defaultConcept: keep.id }));
+      const r = await remove(gone.id, { confirm: "ZZ Test Delete Other" });
+      expect(r.body.deleted).toMatchObject({ defaultCleared: false });
+      expect((await read<SettingsBody>(await getSettings(json("GET")))).body.settings.defaultConcept).toBe(keep.id);
+      await putSettings(json("PUT", { defaultConcept: null }));
+    });
+
+    it("keeps the default concept when the delete is refused", async () => {
+      const p = await create("ZZ Test Delete Refused Default");
+      await putSettings(json("PUT", { defaultConcept: p.id }));
+      expect((await remove(p.id, { confirm: "wrong" })).status).toBe(400);
+      expect((await read<SettingsBody>(await getSettings(json("GET")))).body.settings.defaultConcept).toBe(p.id);
+      await putSettings(json("PUT", { defaultConcept: null }));
     });
   });
 

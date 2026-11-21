@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, GitBranch, Moon, Plug, Plus, Sun, BookOpen } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
@@ -10,6 +10,7 @@ import { messageOf, queries } from "@/lib/queries";
 import { STAGES } from "@/lib/menu";
 import type { Project } from "@/lib/types";
 import { SessionControls } from "@/app/account/SessionControls";
+import { ConceptFromUrl } from "@/components/concepts/ConceptFromUrl";
 
 const KEY = "c2r.project";
 const NO_PROJECTS: Project[] = [];
@@ -133,7 +134,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
               <p className="mt-1">{error}</p>
             </div>
           ) : (
-            children
+            <>
+              <Suspense fallback={null}><ConceptFromUrl /></Suspense>
+              {children}
+            </>
           )}
         </main>
       </div>
