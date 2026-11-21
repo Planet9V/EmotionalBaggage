@@ -98,15 +98,13 @@ export const positioningData = z.looseObject({
 // 8.4 -------------------------------------------------------------------------------------------
 
 export const pricingData = z.looseObject({
-  kind: z.enum(["price", "channel", "assumptions"]).optional(),
+  kind: z.enum(["price", "assumptions"]).optional(),
   priceMinor: z.number().int().min(0).max(1_000_000_000).optional(),
-  /** the currency a price or channel fee was saved in: the concept's (projects.currency) at the time.
+  /** the currency a price was saved in: the concept's (projects.currency) at the time.
    * Pricing has no currency setting of its own; an older "assumptions" row's currency is ignored. */
   currency: text(3).optional(),
   /** which of the three approaches suggested it, or "own" when typed */
   approach: z.enum(["cost-plus", "competitor", "value", "own"]).optional(),
-  feePercent: z.number().min(0).max(100).optional(),
-  fixedFeeMinor: z.number().int().min(0).max(1_000_000_000).optional(),
   targetMarginPercent: z.number().min(0).max(99).optional(),
   valueMinor: z.number().int().min(0).max(1_000_000_000).optional(),
   valueNote: text().optional(),

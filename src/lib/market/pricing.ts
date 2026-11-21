@@ -3,7 +3,7 @@
 //
 // The unit cost and the currency are not this module's: both come from the unit economics
 // (src/lib/economics), so pricing, campaigns, content and the report quote one figure.
-import type { UnitCost as EconomicsUnitCost } from "@/lib/economics/compute";
+import { channelFeeMinor, channelFeeRates, type ChannelFees, type UnitCost as EconomicsUnitCost } from "@/lib/economics/compute";
 
 /**
  * What one unit costs to make, as pricing reads it. `known` is false when the number is
@@ -17,8 +17,6 @@ export function pricingUnitCost(u: EconomicsUnitCost): UnitCost {
   return { known: u.complete, minor: u.total, currency: u.currency, missing: u.missing.map((m) => m.what), batchSize: u.batchSize };
 }
 
-export type Channel = { name: string; feePercent: number; fixedFeeMinor: number };
-
 export type Margin = {
   priceMinor: number;
   feeMinor: number;
@@ -30,8 +28,9 @@ export type Margin = {
 };
 
 /** Margin per unit for one price in one channel: price less unit cost less the channel's fees. */
-export function margin(priceMinor: number, unit: UnitCost, channel: Pick<Channel, "feePercent" | "fixedFeeMinor">): Margin {
-  const feeMinor = Math.round((priceMinor * channel.feePercent) / 100) + channel.fixedFeeMinor;
+export function margin(priceMinor: number, unit: UnitCost, channel: ChannelFees): Margin {
+  // The fee arithmetic is the economics' own (sales/channels rows), so both screens show the same fee.
+  const feeMinor = channelFeeMinor(channel, priceMinor, unit.currency).total;
   const marginMinor = priceMinor - unit.minor - feeMinor;
   return {
     priceMinor,
@@ -46,10 +45,11 @@ export function margin(priceMinor: number, unit: UnitCost, channel: Pick<Channel
  * Cost plus: the price at which the margin, as a share of the price and after the channel's
  * fees, is the target. null when the fees and target leave nothing (they add to 100 percent or more).
  */
-export function costPlusPrice(unit: UnitCost, targetMarginPercent: number, channel: Pick<Channel, "feePercent" | "fixedFeeMinor">): number | null {
-  const share = 1 - channel.feePercent / 100 - targetMarginPercent / 100;
+export function costPlusPrice(unit: UnitCost, targetMarginPercent: number, channel: ChannelFees): number | null {
+  const fees = channelFeeRates(channel, unit.currency);
+  const share = 1 - fees.percent / 100 - targetMarginPercent / 100;
   if (share <= 0) return null;
-  return Math.ceil((unit.minor + channel.fixedFeeMinor) / share);
+  return Math.ceil((unit.minor + fees.fixedMinor) / share);
 }
 
 export type Competitor = { name: string; priceMinor: number; currency: string; sourced: boolean };

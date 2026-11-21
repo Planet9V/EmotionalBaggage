@@ -101,6 +101,7 @@ export function ready() {
       const vector = await vectorSupport();
       await seedOnce();
       await seedAdditions();
+      await (await import("./economics/movePricingChannels")).movePricingChannels(pool());
       return vector;
     })().catch((e) => {
       g.__c2rReady = undefined;

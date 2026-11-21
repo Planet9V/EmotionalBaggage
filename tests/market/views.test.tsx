@@ -62,7 +62,7 @@ describe("pricing", () => {
     mockServer([
       row(1, "design/bom", { title: "Board", data: { line: 6 } }),
       row(2, "design/bom", { title: "Case", data: { line: 4 } }),
-      row(3, "marketing/pricing", { title: "Amazon", data: { kind: "channel", feePercent: 15, fixedFeeMinor: 0 }, status: "draft" }),
+      row(3, "sales/channels", { title: "Amazon", data: { platformPercent: 10, paymentPercent: 5 }, status: "planned" }),
       row(4, "marketing/pricing", { title: "$25.00", data: { kind: "price", priceMinor: 2500, currency: "USD", approach: "own" }, status: "draft" }),
     ]);
     mount(<PricingView {...propsFor("marketing", "pricing")} />);

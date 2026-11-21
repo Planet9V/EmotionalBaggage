@@ -12,9 +12,9 @@ import { InlineEdit } from "@/components/parts/InlineEdit";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { competitorRange, costPlusPrice, margin, position, pricingUnitCost, type Competitor } from "@/lib/market/pricing";
 import { useEconomicsRows, useProductionSettings } from "@/lib/economics/client";
-import { referenceUnitCost } from "@/lib/economics/compute";
-import { formatMoney, parseMinor, toInputText } from "@/lib/economics/money";
-import { readEconomics } from "@/lib/economics/read";
+import { NO_FEES, channelFeeRates, referenceUnitCost, type ChannelFees } from "@/lib/economics/compute";
+import { formatMoney, parseMinor, toInputText, toMinor } from "@/lib/economics/money";
+import { readChannel, readEconomics } from "@/lib/economics/read";
 import { pricingData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
@@ -24,9 +24,7 @@ import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui
 import { Field } from "@/components/ui/field";
 
 type PriceRow = { item: Item; priceMinor: number; approach: string; note: string; currency: string };
-type ChannelRow = { item: Item; name: string; feePercent: number; fixedFeeMinor: number };
-
-const NO_CHANNEL: ChannelRow["item"] | null = null;
+type ChannelCol = ChannelFees & { id: number | null; name: string };
 
 export function PricingView({ project, store }: ViewProps) {
   const pricing = useItems(project.id, store);
@@ -45,10 +43,9 @@ export function PricingView({ project, store }: ViewProps) {
   // A price saved before the concept's currency changed is in the old currency: it is listed, not compared.
   const prices = allPrices.filter((p) => p.currency === currency);
   const otherPrices = allPrices.filter((p) => p.currency !== currency);
-  const channelRows: ChannelRow[] = parsed.filter((p) => p.d.kind === "channel").map((p) => ({ item: p.it, name: p.it.title, feePercent: p.d.feePercent ?? 0, fixedFeeMinor: p.d.fixedFeeMinor ?? 0 }));
-  const channels = channelRows.length ? channelRows : null;
-  const implicit = [{ item: NO_CHANNEL, name: "No channel fee", feePercent: 0, fixedFeeMinor: 0 }];
-  const cols: { name: string; feePercent: number; fixedFeeMinor: number }[] = channels ?? implicit;
+  // Channels and their fees are the Sales channels' (unit economics); Pricing only reads them.
+  const channelRows: ChannelCol[] = econ.rows.channels.map(readChannel).map((c) => ({ ...c, id: c.id, name: c.title }));
+  const cols: ChannelCol[] = channelRows.length ? channelRows : [{ ...NO_FEES, id: null, name: "No channel fee" }];
 
   const econUnit = useMemo(() => referenceUnitCost(readEconomics(econ.rows, currency)), [econ.rows, currency]);
   const unit = pricingUnitCost(econUnit);
@@ -110,25 +107,24 @@ export function PricingView({ project, store }: ViewProps) {
 
       <section aria-labelledby="channels" className="space-y-2">
         <h2 id="channels" className="text-sm font-semibold text-primary">Channels and what each takes</h2>
-        <p className="text-sm text-secondary">Enter each channel&apos;s fee as the platform states it. The percent is taken from the price; the fixed fee is per unit.</p>
+        <p className="text-sm text-secondary">The channels and their fees are the ones on <Link className="text-link underline" href="/s/sales/channels">Sales channels</Link>: the platform fee and the payment fee, each a percent of the price plus a fixed amount per unit. Change a fee there and every margin here follows.</p>
         <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
-          {channelRows.length > 0 && (
+          {channelRows.length > 0 ? (
             <Table aria-label="Channels">
-              <TableHeader><TableRow><TableHead>Channel</TableHead><TableHead>Fee, percent of price</TableHead><TableHead>Fixed fee per unit</TableHead><TableHead><span className="sr-only">Remove</span></TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Channel</TableHead><TableHead>Platform fee</TableHead><TableHead>Payment fee</TableHead></TableRow></TableHeader>
               <TableBody>
                 {channelRows.map((c) => (
-                  <TableRow key={c.item.id}>
-                    <TableCell><InlineEdit label="Channel name" value={c.name} onSave={(v) => (v.trim() ? saveOrMessage(patch(c.item.id, { title: v.trim() })) : "A channel needs a name.")} /></TableCell>
-                    <TableCell><InlineEdit label="Fee percent" mono value={String(c.feePercent)} onSave={(v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 100 ? saveOrMessage(patch(c.item.id, { data: { feePercent: n } })) : "Enter a percent from 0 to 100."; }} /></TableCell>
-                    <TableCell><InlineEdit label="Fixed fee" mono value={toInputText(c.fixedFeeMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null ? "Enter an amount, zero or more." : saveOrMessage(patch(c.item.id, { data: { fixedFeeMinor: m } })); }} /></TableCell>
-                    <TableCell><Button size="icon-sm" variant="ghost" aria-label={`Remove ${c.name}`} onClick={() => void guard(remove(c.item.id))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button></TableCell>
+                  <TableRow key={c.id}>
+                    <TableCell>{c.name}</TableCell>
+                    <TableCell className="font-mono text-sm">{feeText(c.platformPercent, c.platformFixed, currency)}</TableCell>
+                    <TableCell className="font-mono text-sm">{feeText(c.paymentPercent, c.paymentFixed, currency)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          ) : (
+            <p className="text-xs text-muted">No sales channels yet. Margins are shown with no channel fee until you add one on <Link className="text-link underline" href="/s/sales/channels">Sales channels</Link>.</p>
           )}
-          <ChannelForm currency={currency} onAdd={(name, fee, fixed) => guard(add({ section: store, title: name, data: { kind: "channel", feePercent: fee, fixedFeeMinor: fixed, currency }, status: "draft" }))} />
-          {!channelRows.length && <p className="text-xs text-muted">No channels yet. Margins are shown with no channel fee until you add one.</p>}
         </Card>
       </section>
 
@@ -207,7 +203,7 @@ export function PricingView({ project, store }: ViewProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Price</TableHead>
-                  {cols.map((c) => <TableHead key={c.name}>{c.name}<span className="block text-[10px] font-normal text-muted">{c.feePercent}%{c.fixedFeeMinor ? ` + ${formatMoney(c.fixedFeeMinor, currency)}` : ""} fee</span></TableHead>)}
+                  {cols.map((c) => { const f = channelFeeRates(c, currency); return <TableHead key={c.id ?? c.name}>{c.name}<span className="block text-[10px] font-normal text-muted">{f.percent}%{f.fixedMinor ? ` + ${formatMoney(f.fixedMinor, currency)}` : ""} fee</span></TableHead>; })}
                   <TableHead>Against competitors</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -224,7 +220,7 @@ export function PricingView({ project, store }: ViewProps) {
                       const m = margin(p.priceMinor, unit, c);
                       const neg = m.marginMinor < 0;
                       return (
-                        <TableCell key={c.name} className="whitespace-nowrap">
+                        <TableCell key={c.id ?? c.name} className="whitespace-nowrap">
                           <span className={`font-mono ${neg ? "text-danger" : "text-primary"}`}>{formatMoney(m.marginMinor, currency)}</span>
                           <span className="ml-1.5 font-mono text-xs text-secondary">{m.marginPercent === null ? "" : `${m.marginPercent.toFixed(1)}%`}</span>
                           {neg && <span className="ml-1.5 text-xs text-danger">loss</span>}
@@ -258,31 +254,8 @@ export function PricingView({ project, store }: ViewProps) {
   );
 }
 
-function ChannelForm({ currency, onAdd }: { currency: string; onAdd: (name: string, fee: number, fixed: number) => Promise<unknown> }) {
-  const [name, setName] = useState("");
-  const [fee, setFee] = useState("");
-  const [fixed, setFixed] = useState("");
-  const [err, setErr] = useState("");
-  const go = async () => {
-    const f = fee.trim() ? Number(fee) : 0;
-    const x = fixed.trim() ? parseMinor(fixed, currency) : 0;
-    if (!name.trim()) return setErr("Name the channel.");
-    if (!Number.isFinite(f) || f < 0 || f > 100) return setErr("The fee is a percent from 0 to 100.");
-    if (x === null) return setErr("The fixed fee is an amount, zero or more.");
-    setErr("");
-    await onAdd(name.trim(), f, x);
-    setName(""); setFee(""); setFixed("");
-  };
-  return (
-    <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
-      <Field label="Channel" className="w-52"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Amazon, direct" /></Field>
-      <Field label="Fee, percent" className="w-28"><Input inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="15" /></Field>
-      <Field label="Fixed fee per unit" className="w-36"><Input inputMode="decimal" value={fixed} onChange={(e) => setFixed(e.target.value)} placeholder="0.00" /></Field>
-      <Button type="submit" variant="outline"><Plus className="h-4 w-4" aria-hidden /> Add channel</Button>
-      {err && <p role="alert" className="w-full text-sm text-danger">{err}</p>}
-    </form>
-  );
-}
+const feeText = (percent: number | null, fixed: number | null, currency: string) =>
+  percent === null && fixed === null ? "not entered" : `${percent ?? 0}%${fixed ? ` + ${formatMoney(toMinor(fixed, currency), currency)}` : ""}`;
 
 function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: number) => Promise<unknown> }) {
   const [v, setV] = useState("");
