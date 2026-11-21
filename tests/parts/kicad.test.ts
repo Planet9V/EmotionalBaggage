@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -134,7 +134,9 @@ describe("KiCad schematic export", () => {
       console.warn("kicad-cli is not installed here; the KiCad load check did not run.");
       return;
     }
-    const dir = mkdtempSync(join(tmpdir(), "c2r-kicad-"));
+    // CI sets KICAD_KEEP_DIR so the exported file is kept and uploaded when KiCad refuses it.
+    const dir = process.env.KICAD_KEEP_DIR ?? mkdtempSync(join(tmpdir(), "c2r-kicad-"));
+    mkdirSync(dir, { recursive: true });
     const { parts, wires } = seeded();
     const file = join(dir, "example.kicad_sch");
     writeFileSync(file, kicadSchematic(buildCircuit(parts, wires, []), { ...META, project: "example" }));
