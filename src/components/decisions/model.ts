@@ -1,6 +1,7 @@
 // Pure logic for the decision tree view: state of each decision, the tree,
 // the walkthrough order, the route taken so far, captions and the layout.
 // Nothing here invents a decision or an outcome; it only reads what the store holds.
+import dagre from "@dagrejs/dagre";
 import { decisionReady, type Decision, type DecisionOption } from "@/lib/domain";
 import { findSection } from "@/lib/menu";
 
@@ -213,52 +214,40 @@ export function shownChildren(key: string, input: LayoutInput) {
 }
 
 /**
- * Left to right: each decision in its column by depth, its options stacked under its card,
- * its children to the right, the card centred against the span of its children.
+ * Left to right (dagre, a tree with parents centred against their children): each decision is one box
+ * as tall as its card plus the options stacked under it; the options are then placed under the card.
  */
 export function layout(input: LayoutInput): Placed[] {
-  const out: Placed[] = [];
   const block = (key: string) => {
     const n = shownOptions(input.byKey.get(key)!, input).length;
     return CARD_H + (n ? OPT_GAP + n * (OPT_H + OPT_GAP) : 0);
   };
-  const span = new Map<string, number>();
-  const measure = (key: string, guard: Set<string>): number => {
-    if (guard.has(key)) return block(key);
-    guard.add(key);
-    const kids = shownChildren(key, input);
-    const kidSpan = kids.reduce((s, k, i) => s + measure(k, guard) + (i ? ROW_GAP : 0), 0);
-    const h = Math.max(block(key), kidSpan);
-    span.set(key, h);
-    return h;
+  const roots = input.only ? input.tree.roots.filter((k) => input.only!.has(k)) : input.tree.roots;
+  const g = new dagre.graphlib.Graph();
+  g.setGraph({ rankdir: "LR", nodesep: ROW_GAP, ranksep: COL - CARD_W, marginx: 0, marginy: 0, ranker: "tight-tree" });
+  g.setDefaultEdgeLabel(() => ({}));
+  const seen = new Set<string>();
+  const add = (key: string) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    g.setNode(key, { width: CARD_W, height: block(key) });
+    for (const k of shownChildren(key, input)) {
+      add(k);
+      g.setEdge(key, k);
+    }
   };
-  const place = (key: string, depth: number, top: number, guard: Set<string>) => {
-    if (guard.has(key)) return;
-    guard.add(key);
-    const h = span.get(key) ?? block(key);
-    const b = block(key);
-    const y = top + (h - b) / 2;
-    const x = depth * COL;
+  for (const r of roots) add(r);
+  dagre.layout(g);
+
+  const out: Placed[] = [];
+  for (const key of g.nodes()) {
+    const n = g.node(key);
+    const x = Math.round(n.x - CARD_W / 2);
+    const y = Math.round(n.y - n.height / 2);
     out.push({ kind: "decision", key, x, y });
     shownOptions(input.byKey.get(key)!, input).forEach((o, i) =>
       out.push({ kind: "option", key, option: o.id, x: x + OPT_INDENT, y: y + CARD_H + OPT_GAP + i * (OPT_H + OPT_GAP) }),
     );
-    const kids = shownChildren(key, input);
-    const kidSpan = kids.reduce((s, k, i) => s + (span.get(k) ?? block(k)) + (i ? ROW_GAP : 0), 0);
-    let t = top + (h - kidSpan) / 2;
-    for (const k of kids) {
-      place(k, depth + 1, t, guard);
-      t += (span.get(k) ?? block(k)) + ROW_GAP;
-    }
-  };
-  const roots = input.only ? input.tree.roots.filter((k) => input.only!.has(k)) : input.tree.roots;
-  const mg = new Set<string>();
-  for (const r of roots) measure(r, mg);
-  let top = 0;
-  const pg = new Set<string>();
-  for (const r of roots) {
-    place(r, 0, top, pg);
-    top += (span.get(r) ?? block(r)) + ROW_GAP * 2;
   }
   return out;
 }

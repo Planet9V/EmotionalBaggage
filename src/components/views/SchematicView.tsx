@@ -16,7 +16,7 @@ import { SymbolCanvas } from "@/components/schematic/SymbolCanvas";
 import { buildSymbolGraph, symbolNodeSize, readSymbolPos, SCALE, type SymNode } from "@/components/schematic/symbolGraph";
 import { ErcPanel } from "@/components/schematic/ErcPanel";
 import { TitleBlock } from "@/components/schematic/TitleBlock";
-import { elkLayout, type LayoutNode } from "@/components/schematic/elk";
+import { elkLayout, type LayoutNode } from "@/lib/graphLayout";
 import { symbolLayout } from "@/lib/parts/symbols";
 import "@/components/schematic/print.css";
 import {
@@ -188,7 +188,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
     const edges = wires.map((w) => ({ id: String(w.item.id), source: w.from, sourcePort: `${w.from}\u0000${w.fromPin || "?"}`, target: w.to, targetPort: `${w.to}\u0000${w.toPin || "?"}` }));
     elkLayout(nodes, edges)
       .then((pos) => live && setPinsLayout(pos))
-      .catch(() => undefined); // the hand-written arrangement stays
+      .catch(() => undefined); // the parts stay where they are
     return () => {
       live = false;
     };

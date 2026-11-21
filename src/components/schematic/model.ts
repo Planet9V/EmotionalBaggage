@@ -47,104 +47,8 @@ function pinClass(ref: string, pin: string, wires: Wire[]): NetClass | null {
 
 // ───────── automatic layout
 
-type Group = "left" | "right" | "top" | "bottom" | "loose";
-const GAP_X = 150;
-const GAP_Y = 36;
-const GAP_V = 90;
-
-/** Where a part sits around the centre, from its nets first and its ref designator second. */
-export function groupOf(ref: string, wires: Wire[]): Group {
-  const classes = new Set<NetClass>();
-  for (const w of wires) if (w.from === ref || w.to === ref) classes.add(w.netClass);
-  if (!classes.size) return "loose";
-  if ([...classes].every((c) => c === "power" || c === "ground")) return "left";
-  if (classes.has("audio")) return "right";
-  if (/^(S|SW|BTN|KEY|RV|POT)\d/i.test(ref)) return "bottom";
-  if (/^(SPK|LS|LED|D|DS|M|BZ|K|LCD|OLED)\d/i.test(ref)) return "right";
-  return "top";
-}
-
-/**
- * A tidy first arrangement: the part with the most wires in the centre, power sources to its
- * left, sensors above, outputs to the right, controls below. Parts further from the centre
- * (by wire hops) go one column or row further out. Positions are node top-left corners.
- */
-export function autoLayout(refs: string[], wires: Wire[], pinCount: (ref: string) => number): Record<string, XY> {
-  const out: Record<string, XY> = {};
-  if (!refs.length) return out;
-  const degree = (r: string) => wires.filter((w) => w.from === r || w.to === r).length;
-  const centre = refs.reduce((best, r) => (degree(r) > degree(best) ? r : best), refs[0]);
-  const hc = nodeHeight(pinCount(centre));
-  out[centre] = { x: 0, y: 0 };
-
-  // hops from the centre over wires
-  const adj = new Map<string, Set<string>>();
-  const link = (a: string, b: string) => {
-    if (a === b) return;
-    if (!adj.has(a)) adj.set(a, new Set());
-    adj.get(a)!.add(b);
-  };
-  for (const w of wires) {
-    link(w.from, w.to);
-    link(w.to, w.from);
-  }
-  const hops = new Map<string, number>([[centre, 0]]);
-  const queue = [centre];
-  while (queue.length) {
-    const r = queue.shift()!;
-    for (const n of adj.get(r) ?? []) {
-      if (!hops.has(n)) {
-        hops.set(n, hops.get(r)! + 1);
-        queue.push(n);
-      }
-    }
-  }
-
-  const groups = new Map<Group, Map<number, string[]>>();
-  for (const r of refs) {
-    if (r === centre) continue;
-    const g = groupOf(r, wires);
-    const d = Math.max(1, hops.get(r) ?? 1);
-    if (!groups.has(g)) groups.set(g, new Map());
-    const byDepth = groups.get(g)!;
-    byDepth.set(d, [...(byDepth.get(d) ?? []), r]);
-  }
-  const h = (r: string) => nodeHeight(pinCount(r));
-
-  const column = (list: string[], x: number) => {
-    const total = list.reduce((a, r) => a + h(r), 0) + GAP_Y * (list.length - 1);
-    let y = hc / 2 - total / 2;
-    for (const r of list) {
-      out[r] = { x, y: Math.round(y) };
-      y += h(r) + GAP_Y;
-    }
-  };
-  // rows sit off the centre line (top to the left, bottom to the right) so their wires leave
-  // the centre part from its sides instead of stacking on one vertical run
-  const row = (list: string[], y: number, shift: number) => {
-    const step = NODE_W + GAP_X / 2;
-    const total = list.length * NODE_W + (list.length - 1) * (GAP_X / 2);
-    list.forEach((r, i) => (out[r] = { x: Math.round(NODE_W / 2 - total / 2 + i * step + shift), y: Math.round(y) }));
-  };
-  const SHIFT = Math.round(NODE_W * 0.75);
-  const depths = (g: Group) => [...(groups.get(g)?.entries() ?? [])].sort((a, b) => a[0] - b[0]);
-
-  for (const [d, list] of depths("left")) column(list, -(NODE_W + GAP_X) * d);
-  for (const [d, list] of depths("right")) column(list, (NODE_W + GAP_X) * d);
-  let top = 0;
-  for (const [, list] of depths("top")) {
-    const tallest = Math.max(...list.map(h));
-    top -= GAP_V + tallest;
-    row(list, top, -SHIFT);
-  }
-  let bottom = hc;
-  for (const [, list] of [...depths("bottom"), ...depths("loose")]) {
-    bottom += GAP_V;
-    row(list, bottom, SHIFT);
-    bottom += Math.max(...list.map(h));
-  }
-  return out;
-}
+/** Where a part sits until elkjs has laid the schematic out (a row, in ref order), or if it cannot. */
+const placeholder = (refs: string[]): Record<string, XY> => Object.fromEntries(refs.map((r, i) => [r, { x: i * (NODE_W + 60), y: 0 }]));
 
 // ───────── the graph the canvas and the SVG both draw
 
@@ -168,7 +72,7 @@ export type Segment = {
 export type Graph = { nodes: SNode[]; segments: Segment[]; byId: Map<string, SNode> };
 
 /** `ignoreSaved` lays every node out afresh (the Tidy action); the overlay still wins. */
-/** `layout`: positions by ref from the elkjs layout (./elk.ts); refs it lacks fall back to `autoLayout`. */
+/** `layout`: positions by ref from the elkjs layout (@/lib/graphLayout); refs it lacks wait in a row. */
 export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string, XY>, ignoreSaved = false, layout?: Record<string, XY>): Graph {
   const byRef = new Map<string, Part>();
   for (const p of parts) if (!byRef.has(p.ref)) byRef.set(p.ref, p);
@@ -192,7 +96,7 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
     }
   }
 
-  const auto = { ...autoLayout(refs, wires, (r) => pinList.get(r)?.length ?? 1), ...(layout ?? {}) };
+  const auto = { ...placeholder(refs), ...(layout ?? {}) };
   const pos = new Map<string, XY>();
   for (const r of refs) pos.set(r, overlay[nodeId(r)] ?? (ignoreSaved ? null : byRef.get(r)?.schematic) ?? auto[r] ?? { x: 0, y: 0 });
 
