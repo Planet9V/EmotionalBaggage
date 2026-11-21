@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, BookOpen, FileText, Gauge, GitBranch, LayoutList, Link2, ListChecks, MessagesSquare, Moon, PenLine, Plug, Plus, Settings, Sun } from "lucide-react";
+import { Activity, BookOpen, FileText, Gauge, GitBranch, LayoutList, Link2, ListChecks, MessagesSquare, Moon, PenLine, Plug, Plus, Printer, Settings, Sun } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
 import { sectionsFor } from "@/lib/productTypes";
@@ -102,37 +102,47 @@ function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Stages">
-            {sectionsFor((project as { productType?: string } | null)?.productType ?? "").map((st) => (
-              <div key={st.key} className="mb-3">
-                <p className="flex items-baseline gap-2 px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
-                  <span className="font-mono text-[10px] text-link">{String(st.n).padStart(2, "0")}</span>
-                  {st.label}
-                </p>
-                {st.sections.map((s) => {
-                  const href = `/s/${st.key}/${s.key}`;
-                  return (
-                    <Link key={s.key} href={href} className={link(href, pathname === href)}>
-                      {s.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
+          {/* One scrolling region for everything that can grow; only the theme and the session stay pinned. */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+            <nav aria-label="Whole concept" className="mb-3 space-y-0.5">
+              <p className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary">Whole concept</p>
+              <Link href="/chat" className={link("/chat", pathname === "/chat")}><MessagesSquare className="h-3.5 w-3.5" aria-hidden /> Chat</Link>
+              <Link href="/process" className={link("/process", pathname === "/process")}><ListChecks className="h-3.5 w-3.5" aria-hidden /> Process</Link>
+              <Link href="/plan" className={link("/plan", pathname === "/plan")}><GitBranch className="h-3.5 w-3.5" aria-hidden /> Order of operations</Link>
+              <Link href="/drafts" className={link("/drafts", pathname === "/drafts")}><PenLine className="h-3.5 w-3.5" aria-hidden /> Drafts</Link>
+              <Link href="/optimise" className={link("/optimise", pathname === "/optimise")}><Gauge className="h-3.5 w-3.5" aria-hidden /> Optimise</Link>
+              <Link href="/traceability" className={link("/traceability", pathname === "/traceability")}><Link2 className="h-3.5 w-3.5" aria-hidden /> Traceability</Link>
+              <Link href="/activity" className={link("/activity", pathname === "/activity")}><Activity className="h-3.5 w-3.5" aria-hidden /> Activity</Link>
+              <Link href="/report" className={link("/report", pathname === "/report")}><FileText className="h-3.5 w-3.5" aria-hidden /> Report</Link>
+            </nav>
+            <nav aria-label="Stages">
+              {sectionsFor((project as { productType?: string } | null)?.productType ?? "").map((st) => (
+                <div key={st.key} className="mb-3">
+                  <p className="flex items-baseline gap-2 px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                    <span className="font-mono text-[10px] text-link">{String(st.n).padStart(2, "0")}</span>
+                    {st.label}
+                  </p>
+                  {st.sections.map((s) => {
+                    const href = `/s/${st.key}/${s.key}`;
+                    return (
+                      <Link key={s.key} href={href} className={link(href, pathname === href)}>
+                        {s.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+            <nav aria-label="Workbench" className="mt-1 space-y-0.5 border-t border-hairline pt-3">
+              <p className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary">Workbench</p>
+              <Link href="/integrations" className={link("/integrations", pathname === "/integrations")}><Plug className="h-3.5 w-3.5" aria-hidden /> Integrations</Link>
+              <Link href="/admin" className={link("/admin", pathname === "/admin")}><Settings className="h-3.5 w-3.5" aria-hidden /> Admin</Link>
+              <Link href="/printers" className={link("/printers", pathname === "/printers")}><Printer className="h-3.5 w-3.5" aria-hidden /> Supported printers</Link>
+              <Link href="/docs" className={link("/docs", pathname.startsWith("/docs"))}><BookOpen className="h-3.5 w-3.5" aria-hidden /> Documentation</Link>
+            </nav>
+          </div>
 
           <div className="space-y-0.5 border-t border-hairline px-2 py-2">
-            <Link href="/chat" className={link("/chat", pathname === "/chat")}><MessagesSquare className="h-3.5 w-3.5" aria-hidden /> Chat</Link>
-            <Link href="/process" className={link("/process", pathname === "/process")}><ListChecks className="h-3.5 w-3.5" aria-hidden /> Process</Link>
-            <Link href="/plan" className={link("/plan", pathname === "/plan")}><GitBranch className="h-3.5 w-3.5" aria-hidden /> Order of operations</Link>
-            <Link href="/drafts" className={link("/drafts", pathname === "/drafts")}><PenLine className="h-3.5 w-3.5" aria-hidden /> Drafts</Link>
-            <Link href="/optimise" className={link("/optimise", pathname === "/optimise")}><Gauge className="h-3.5 w-3.5" aria-hidden /> Optimise</Link>
-            <Link href="/traceability" className={link("/traceability", pathname === "/traceability")}><Link2 className="h-3.5 w-3.5" aria-hidden /> Traceability</Link>
-            <Link href="/activity" className={link("/activity", pathname === "/activity")}><Activity className="h-3.5 w-3.5" aria-hidden /> Activity</Link>
-            <Link href="/report" className={link("/report", pathname === "/report")}><FileText className="h-3.5 w-3.5" aria-hidden /> Report</Link>
-            <Link href="/integrations" className={link("/integrations", pathname === "/integrations")}><Plug className="h-3.5 w-3.5" aria-hidden /> Integrations</Link>
-            <Link href="/admin" className={link("/admin", pathname === "/admin")}><Settings className="h-3.5 w-3.5" aria-hidden /> Admin</Link>
-            <Link href="/docs" className={link("/docs", pathname.startsWith("/docs"))}><BookOpen className="h-3.5 w-3.5" aria-hidden /> Documentation</Link>
             <button type="button" onClick={toggleTheme} className={`${link("", false)} w-full`}>
               {dark ? <Sun className="h-3.5 w-3.5" aria-hidden /> : <Moon className="h-3.5 w-3.5" aria-hidden />}
               {dark ? "Light theme" : "Dark theme"}

@@ -323,11 +323,15 @@ describe("kind: printer", () => {
     expect((await test({ kind: "printer", family: "moonraker", access: { address: locked.url, apiKey: "moon-key-0000000000" } })).body.message).toMatch(/server error/);
   });
 
-  it("file-only is always ok; planned families are not built yet", async () => {
+  it("file-only is always ok; every other family has an adapter and says so when it cannot be reached", async () => {
     expect((await test({ kind: "printer", family: "file-only" })).body.ok).toBe(true);
     const r = await test({ kind: "printer", family: "prusalink", access: { address: "http://prusa.invalid", username: "maker", password: "pw" } });
-    expect(r.body).toEqual({ ok: false, message: "A connection test for Prusa (PrusaLink) is not built yet." });
-    expect((await test({ kind: "printer", family: "elegoo" })).body.message).toMatch(/not built yet/);
+    expect(r.body.ok).toBe(false);
+    expect(r.body.message).not.toMatch(/not built yet/);
+    expect(JSON.stringify(r.body)).not.toContain("pw\"");
+    const e = await test({ kind: "printer", family: "elegoo", access: { address: "http://elegoo.invalid" } });
+    expect(e.body.ok).toBe(false);
+    expect(e.body.message).not.toMatch(/not built yet/);
   });
 
   it("validates, and answers 404 for an unknown printer", async () => {

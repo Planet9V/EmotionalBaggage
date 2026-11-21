@@ -274,9 +274,10 @@ describe("printers", () => {
     expect(by.octoprint.status).toBe("supported");
     expect(by.moonraker.fields.find((f) => f.name === "apiKey")!.required).toBe(false);
     expect(by["file-only"]).toMatchObject({ status: "supported", fields: [] });
-    for (const id of ["prusalink", "duet", "bambu", "creality", "elegoo"]) expect(by[id].status).toBe("planned");
-    expect(by.creality.fields).toEqual([]);
-    expect(by.elegoo.fields).toEqual([]);
+    for (const id of ["prusalink", "duet", "bambu", "creality", "elegoo"]) expect(by[id].status).toBe("supported");
+    expect(by.creality.fields.map((f) => f.name)).toEqual(["address", "apiKey"]);
+    expect(by.elegoo.fields.map((f) => f.name)).toEqual(["address", "apiKey"]);
+    expect(by.bambu.fields.find((f) => f.name === "serial")!.required).toBe(true);
   });
 
   it("adds a printer, keeps the address in its column, and never returns the key", async () => {
@@ -325,7 +326,7 @@ describe("printers", () => {
 
   it("accepts file-only with no fields and Bambu with an IP address", async () => {
     expect((await addP({ name: "ZZ Admin Hand", family: "file-only" })).status).toBe(201);
-    const b = await addP({ name: "ZZ Admin Bambu", family: "bambu", model: "P2S", access: { address: "192.168.1.9", accessCode: "12345678" } });
+    const b = await addP({ name: "ZZ Admin Bambu", family: "bambu", model: "P2S", access: { address: "192.168.1.9", accessCode: "12345678", serial: "01P00A000000000" } });
     expect(b.status).toBe(201);
     expect(b.body.printer.access.accessCode).toEqual({ set: true, secret: true, value: null, last4: null });
   });
@@ -423,7 +424,7 @@ describe("printer status route", () => {
       const before = octo.requests.length;
       const body = await statusBody();
       expect(body).toMatchObject({ configured: true, kind: "octoprint", source: "admin", name: "ZZ Admin Status Octo", printerId: made.body.printer.id, state: "Operational", progress: null });
-      expect(octo.requests.slice(before).map((r) => [r.path, r.headers["x-api-key"]])).toEqual([["/api/job", OCTO_KEY]]);
+      expect(octo.requests.slice(before).map((r) => [r.path, r.headers["x-api-key"]])).toEqual([["/api/job", OCTO_KEY], ["/api/printer", OCTO_KEY]]);
       expect(JSON.stringify(body)).not.toContain(OCTO_KEY);
     } finally {
       delete process.env.PRINTER_KIND;
@@ -431,9 +432,9 @@ describe("printer status route", () => {
     }
   });
 
-  it("reports a planned family as having no adapter, and file-only as print by hand", async () => {
+  it("reports a printer that cannot be reached as an error, and file-only as print by hand", async () => {
     const duet = await read<{ printer: PrinterView }>(await addPrinter(json("POST", { name: "ZZ Admin Duet", family: "duet", access: { address: "http://duet.invalid" } })));
-    expect(await statusBody()).toMatchObject({ configured: true, kind: "duet", error: expect.stringMatching(/No adapter for Duet/) });
+    expect(await statusBody()).toMatchObject({ configured: true, kind: "duet", error: expect.any(String) });
     await patchPrinter(json("PATCH", { enabled: false }), ctx(String(duet.body.printer.id)));
     await addPrinter(json("POST", { name: "ZZ Admin By Hand", family: "file-only" }));
     expect(await statusBody()).toMatchObject({ configured: true, kind: "file-only", note: expect.stringMatching(/file-only/) });

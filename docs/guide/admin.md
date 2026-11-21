@@ -115,6 +115,20 @@ Drafting, the reviewer and realignment all use the reasoning model chosen in Mod
 
 Both need the planner service (`PLANNER_URL`). `ROUTE_PLANNER_SECONDS` (default 30) is how long routing may take. The planner image includes Graphviz and WireViz; WireViz is run as a separate program.
 
+## Enclosure generation
+
+YAPP_Box needs the planner service and OpenSCAD inside it (the planner image installs it). A planner without OpenSCAD answers 503 and the screen shows YAPP_Box as not available; CaseMaker still works. Generating is recorded in Activity with the checks.
+
+## Printers
+
+- **Bambu Lab:** at the printer turn on LAN Only mode and Developer Mode, then enter its IP address, access code and serial number. An X1 needs a microSD card to start a print from the network. The printer's certificate is self-signed, so the certificate check is skipped for this local connection only (MQTT on 8883, FTPS on 990); nothing else in the app does this. Anyone on that network able to answer as the printer could read the access code.
+- **Prusa (PrusaLink):** the password under Settings, Network, PrusaLink; the user name defaults to `maker`. An API key also works.
+- **Duet:** standalone or with a single-board computer is detected; an empty password works when none is set. The Duet protocol puts the password in the sign-in address sent to the printer; it is not logged or stored anywhere else.
+- **OctoPrint and Klipper (Moonraker):** address and API key.
+- **Creality and Elegoo:** Moonraker, usually port 7125, marked Experimental.
+
+Starting and stopping a print always need a confirmation, and every printer action is written to the audit log without any secret. No adapter has been run against a real printer yet: the Test button on your own machine is the first real check.
+
 ## Checking it is healthy
 
 - `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.

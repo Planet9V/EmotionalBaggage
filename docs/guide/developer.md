@@ -177,6 +177,18 @@ Generators live in `src/lib/ai/drafts/registry.ts`: write the generator object (
 
 Shapes come from `src/lib/geometry/shapes.ts`. Rotation is three Euler XYZ angles in degrees; the scene is Y up in millimetres; STL files are Z up (file x, y, z maps to scene x, z, minus y). `POST /api/projects/[id]/route-wires` calls the planner's `/route` with part boxes as obstacles and stores `routedLengthMm`, a fingerprint and a thinned path on each wire row; `pinPosition()` in `src/lib/geometry/routing.ts` is the one place a wire end is located. STEP files are read in the browser by occt-import-js, loaded from `public/vendor/occt`. `POST /harness` in the planner runs the `wireviz` command as a subprocess.
 
+## Parts, pins and electrical checks
+
+Part kinds are code (`src/lib/parts/kinds.ts`) and are the one list the parts list, schematic, checks and drafting use. Pins are rows in `pins` (migration 0014), written through `PUT /api/items/[id]/pins` (replaces the set, records before and after) or by approving a drafted part. A part's pins resolve in order: own rows, library entry, the kind's default pins, the names its wires use (`partPins`). `buildCircuit` gives the nets shared by the checks (`erc.ts`), the symbol view and the KiCad export (`kicad.ts`). A library entry (`src/lib/parts/library/*.ts`) needs a source and a `figures` sentence for every voltage or current; a test enforces it. The KiCad export is checked by kicad-cli in CI only.
+
+## Enclosures
+
+`src/lib/enclosure` holds the spec (built from `design/bom` rows), the generators (`casemaker.ts` in-process from the vendored source in `vendor/casemaker`, rebuilt with `node vendor/casemaker/build.mjs`; `yapp.ts` calls the planner, which runs OpenSCAD on the vendored `planner/vendor/yapp_box`), and `checks.ts`, which measures results with manifold-3d. The concept frame is Y up in mm with the origin at the centre of the floor; generators use Z up from the outer bottom corner. The saved choice is one row in `design/enclosure`.
+
+## Printers
+
+Import from `@/lib/printers`: `createAdapter`, `adapterForRow`, `runPrinterAction`, `uploadToPrinter`, `printerStatuses`. Every adapter implements `test, status, upload, start, pause, resume, cancel` and throws `PrinterError` with a safe sentence. Start and cancel need `confirm: true`; upload never starts a print. Add a model in `models.ts`; every fact needs an https source (`validateModels()`). Stand-ins for tests are in `tests/standins/`.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

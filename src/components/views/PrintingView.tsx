@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState, ErrorLine, Field, Select, statusOptions } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { Modal } from "@/components/parts/Modal";
+import { PrintersPanel } from "@/components/printers/PrintersPanel";
 
 import { api, saveOrMessage, useFilesChanged, useItems } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
@@ -25,10 +26,6 @@ const bytes = (n: number) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 10
 const when = (iso: string) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-};
-const left = (s: number) => {
-  const m = Math.round(s / 60);
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
 };
 const fileIdOf = (it: Item): number | null => {
   const v = it.data.fileId;
@@ -63,7 +60,7 @@ export function PrintingView({ project, section, store }: ViewProps) {
 
   return (
     <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8">
-      <PrinterPanel />
+      <PrintersPanel />
 
       {actionError || jobs.writeError ? <ErrorLine>{actionError || jobs.writeError}</ErrorLine> : null}
 
@@ -221,59 +218,6 @@ export function PrintingView({ project, section, store }: ViewProps) {
         </div>
       </Modal>
     </motion.div>
-  );
-}
-
-function PrinterPanel() {
-  // Polled every 10 s while shown (see queries.printer). The last good reading is replaced by the error if a poll fails, as before.
-  const printer = useQuery(queries.printer());
-  const fetchError = printer.isError ? messageOf(printer.error) : "";
-  const p = printer.data ?? null;
-
-  return (
-    <section aria-labelledby="printer-h" className="rounded-xl border border-hairline bg-surface p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="printer-h" className="text-base font-semibold tracking-tight text-primary">Printer</h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">Refreshes every 10 s</span>
-      </div>
-      <div className="mt-3 text-sm text-secondary" aria-live="polite">
-        {fetchError ? (
-          <ErrorLine>{fetchError}</ErrorLine>
-        ) : !p ? (
-          <p>Reading printer status.</p>
-        ) : !p.configured ? (
-          <div className="space-y-2">
-            <p className="flex items-center gap-2"><StatusBadge tone="neutral">Not configured</StatusBadge></p>
-            <p>
-              Set <span className="font-mono text-primary">PRINTER_KIND</span> to <span className="font-mono text-primary">octoprint</span> or <span className="font-mono text-primary">moonraker</span> and <span className="font-mono text-primary">PRINTER_URL</span> in the .env file. OctoPrint also needs <span className="font-mono text-primary">PRINTER_API_KEY</span>. Then restart.
-            </p>
-            <p>Bambu Lab printers are not supported yet. Sending a file to the printer is not built yet either, so you start each print from the printer or its own software.</p>
-          </div>
-        ) : p.error ? (
-          <div className="space-y-2">
-            <p className="flex items-center gap-2"><StatusBadge tone="danger">Error</StatusBadge><span className="font-mono text-xs">{p.kind}</span></p>
-            <ErrorLine>{p.error}</ErrorLine>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="flex flex-wrap items-center gap-2">
-              <StatusBadge tone={statusTone((p.state ?? "").toLowerCase())}>{p.state ?? "unknown state"}</StatusBadge>
-              <span className="font-mono text-xs">{p.kind}</span>
-            </p>
-            <dl className="grid gap-x-8 gap-y-1 sm:grid-cols-3">
-              <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">File</dt><dd className="break-all text-primary">{p.file || "none"}</dd></div>
-              <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Progress</dt><dd className="font-mono text-primary">{p.progress != null ? `${p.progress.toFixed(1)}%` : "not reported"}</dd></div>
-              <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Time left</dt><dd className="font-mono text-primary">{p.secondsLeft != null ? left(p.secondsLeft) : "not reported"}</dd></div>
-            </dl>
-            {p.progress != null && (
-              <div role="progressbar" aria-label="Print progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(p.progress)} className="h-2 overflow-hidden rounded-full bg-subtle">
-                <div className="h-full rounded-full bg-dutchOrange transition-[width] duration-500" style={{ width: `${Math.min(100, Math.max(0, p.progress))}%` }} />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </section>
   );
 }
 

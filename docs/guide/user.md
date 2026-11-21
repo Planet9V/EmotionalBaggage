@@ -67,6 +67,20 @@ In **3D model**, select a part, pick Move or Rotate and drag (steps of 1 mm and 
 
 **Route wires** needs the planner. Each wire is routed around the parts and its length is saved; the build sheet then shows "routed" lengths. Moving a part marks those lengths out of date until you route again. A wire end with no pin position starts at the middle of the part's face, and the page says how many do. **Draw the harness** on the Wiring page draws the harness diagram with WireViz.
 
+## Parts, pins and the schematic
+
+In the bill of materials, open **Kind and pins** on a part. Choose its kind and, if one matches, a library entry. An entry gives real pin names and, where a datasheet states them, voltages and currents, each with a link to its source; where makers differ, no figure is given. **Change these pins** edits a part's own pins: kind, symbol side, voltage range or voltage given, most current, bus line, optional, pulled up. Kind and pins show only for product types that have a schematic.
+
+On the schematic, switch between **Symbols** and **Pins and wires**; selecting a wire or a pin lights it in both. **Electrical checks** lists findings worst first; press one to select its rows. A part with no library entry gets fewer checks and the panel says so. **Print or PDF** prints the sheet with its title block; the revision is the concept's newest named build. The KiCad schematic downloads from Wiring files.
+
+## Enclosure
+
+**Design, Enclosure** builds a printable base and lid around your parts. It needs at least one part with a size and place in Physical layout, and says so when there is none. Pick a generator: CaseMaker runs inside the workbench in a few seconds; YAPP_Box runs in OpenSCAD in the planner service and takes about a minute, and shows as not available, with the reason, when the planner is not running. Set the parameters (the defaults are under each field; problems show as you type) and press Generate, or Generate with both to compare side by side. Under the 3D preview are five checks worked out on the generated model, each marked met or not met with its numbers: base watertight, lid watertight, lid closes, every part fits with the stated clearance, every opening lines up with its part. Download the base STL, the lid STL (print side down) and the generator's own source file.
+
+## Printers
+
+Printers are added in Admin, Printers by choosing the model from the supported list, which is also at `/printers` with the source for every fact. **Prototype, 3D printing** shows each printer's state, file, progress, time left and temperatures. Pause and Resume act directly; Stop asks first and names the printer and the file. Test checks the connection. A printer marked Experimental is built from documentation that does not name your model: run Test before relying on it. A file-only printer gets the file and the steps to carry it over.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

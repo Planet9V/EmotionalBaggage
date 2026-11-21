@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 269c886 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 83702eb by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,12 +16,12 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 602 packages (44 direct, 558 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 636 packages (46 direct, 590 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 469 |
-| ISC | 48 |
+| MIT | 502 |
+| ISC | 49 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 8 |
@@ -78,6 +78,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @tanstack/react-query | 5.108.2 | MIT | linked library | yes |
 | @xyflow/react | 13.0.2 | MIT | linked library | yes |
 | ai | 7.0.179 | Apache-2.0 | linked library | yes |
+| basic-ftp | 6.2.6 | MIT | linked library | yes |
 | class-variance-authority | 0.7.1 | Apache-2.0 | linked library | yes |
 | clsx | 2.1.1 | MIT | linked library | yes |
 | cmdk | 1.1.1 | MIT | linked library | yes |
@@ -89,6 +90,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | manifold-3d | 3.5.5 | Apache-2.0 | linked library | yes |
 | mermaid | 12.3.0 | MIT | linked library | yes |
 | motion | 14.14.0 | MIT | linked library | yes |
+| mqtt | 5.16.1 | MIT | linked library | yes |
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
@@ -183,8 +185,10 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
 | @types/three | 0.187.0 | MIT |
+| aedes | 1.2.0 | MIT |
 | eslint | 9.39.5 | MIT |
 | eslint-config-next | 16.4.6 | MIT |
+| ftp-srv | 4.6.3 | MIT |
 | jsdom | 31.0.1 | MIT |
 | license-checker-rseidelsohn | 4.4.2 | BSD-3-Clause |
 | postcss | 8.5.33 | MIT |
