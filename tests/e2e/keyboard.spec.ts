@@ -177,7 +177,7 @@ test.describe("focus after a dialog closes", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
-    expect(await focused(page)).toBe(addName);
+    await expect.poll(() => focused(page)).toBe(addName);
 
     // 2. the add dialog, saved: focus is on the new row
     await add.focus();
@@ -192,7 +192,7 @@ test.describe("focus after a dialog closes", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
-    expect(await focused(page)).toBe("Focus check question");
+    await expect.poll(() => focused(page)).toBe("Focus check question");
   });
 
   test("the decision dialog and the row assistant return focus to their openers", async ({ page }) => {
@@ -205,7 +205,7 @@ test.describe("focus after a dialog closes", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
-    expect(await focused(page)).toBe(name);
+    await expect.poll(() => focused(page)).toBe(name);
 
     await page.goto("/s/marketing/personas");
     await page.waitForLoadState("networkidle");
