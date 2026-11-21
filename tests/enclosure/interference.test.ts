@@ -62,7 +62,7 @@ describe("placing a part", () => {
   const lp = (id: number, ref: string, size: number[], pos: number[]): LayoutPart => ({ id, ref, label: ref, geometry: box(size, pos) as LayoutPart["geometry"] });
   it("goes to the first free spot, not on top of another part", () => {
     const placed = [lp(1, "P1", [40, 10, 20], [-15, 5, -15])];
-    const inner = { min: [-38, 2, -28], max: [38, 40, 28] };
+    const inner = { min: [-38, 2, -28] as [number, number, number], max: [38, 40, 28] as [number, number, number] };
     const spot = firstFreeSpot([20, 5, 15], placed, inner);
     const next = lp(2, "P2", [20, 5, 15], [spot.x, 2.5, spot.z]);
     expect(findOverlaps([...placed, next])).toEqual([]);
