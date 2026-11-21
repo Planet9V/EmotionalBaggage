@@ -5,8 +5,25 @@ import type { Item } from "@/lib/types";
 import { toPart } from "@/lib/domain";
 import { PartCard } from "@/components/sourcing/PartCard";
 import { ShoppingList } from "@/components/sourcing/ShoppingList";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { freshClient } from "../client/mockServer";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+/** The drafts the engine holds for the concept, as GET /api/drafts answers; other calls are recorded. */
+function draftsApi(drafts: unknown[] = []) {
+  const calls: { method: string; path: string }[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(String(input), "http://t");
+    calls.push({ method: (init?.method ?? "GET").toUpperCase(), path: url.pathname });
+    const body = url.pathname === "/api/drafts" ? { drafts, pending: {} } : { draft: {}, item: null, before: null };
+    return new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+  }));
+  return calls;
+}
 
 const PAGE = "https://www.mouser.com/ProductDetail/ABC-1/";
 const offer = { id: "o1", supplier: "Mouser", price: 12, packSize: 100, checkedAt: "2026-11-21", source: "entered" };
@@ -14,12 +31,27 @@ const item = (sourcing: unknown, status = "to buy", extra: Record<string, unknow
 const draft = { id: "d1", kind: "offer", createdAt: "2026-11-21", researchId: 3, model: "stub/model", citation: PAGE, offer: { id: "x", supplier: "Mouser", price: 1.25, packSize: 10, checkedAt: "2026-11-21", source: "research", citation: PAGE } };
 
 function open(it: Item, onSave = vi.fn(async () => undefined), onResearch = vi.fn()) {
-  render(<ul><PartCard part={toPart(it)} currency="USD" onSave={onSave} onResearch={onResearch} /></ul>);
+  if (!vi.isMockFunction(globalThis.fetch)) draftsApi();
+  render(<QueryClientProvider client={freshClient()}><ul><PartCard part={toPart(it)} currency="USD" onSave={onSave} onResearch={onResearch} /></ul></QueryClientProvider>);
   fireEvent.click(screen.getByRole("button", { name: /Open/ }));
   return { onSave, onResearch };
 }
 
 describe("a part's sourcing", () => {
+  it("shows a research draft from the drafting engine with its page; accepting approves the draft, never edits the part", async () => {
+    const calls = draftsApi([
+      { id: 77, projectId: "p", generator: "sourcing.prices", targetStore: "design/bom", title: "Offer: Mouser, 1.25 USD per 10", body: "In stock", data: { value: {} }, op: { op: "append", field: "sourcing.offers" }, sources: [{ kind: "research", id: 3, title: PAGE }], model: "sonar", provider: "perplexity", status: "draft", runId: "r", reason: "", createdAt: "", decidedAt: null, decidedBy: null, itemId: 9 },
+      { id: 78, projectId: "p", generator: "sourcing.prices", targetStore: "design/bom", title: "Offer for another part", body: "", data: { value: {} }, op: { op: "append", field: "sourcing.offers" }, sources: [], model: "", provider: "", status: "draft", runId: "r", reason: "", createdAt: "", decidedAt: null, decidedBy: null, itemId: 10 },
+    ]);
+    const { onSave } = open(item({ offers: [], alternates: [], drafts: [] }));
+    const li = (await screen.findByText("Offer: Mouser, 1.25 USD per 10")).closest("li")!;
+    expect(within(li).getByRole("link", { name: "www.mouser.com" }).getAttribute("href")).toBe(PAGE);
+    expect(screen.queryByText("Offer for another part")).toBeNull();
+    fireEvent.click(within(li).getByRole("button", { name: "Accept as offer" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.path === "/api/drafts/77/approve")).toBe(true));
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it("opens to the distributor links, which open in a new tab and say the app never buys", () => {
     open(item(undefined));
     const links = screen.getAllByRole("link").filter((a) => /Digi-Key|Mouser|LCSC|Adafruit|SparkFun|Amazon|AliExpress|McMaster/.test(a.textContent ?? ""));

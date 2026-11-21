@@ -1,22 +1,31 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
+import { useProductionSettings } from "@/lib/economics/client";
+import { effectiveAdRule, type AdRule } from "@/lib/campaigns/adRule";
+import { formatMoney } from "@/lib/economics/money";
+import { minorDigits, toMajor, toMinor as majorToMinor } from "@/lib/economics/money";
 import { AD_CHANNELS, checkChannel, measure, type ChannelSpec, type FieldSpec, type FieldValues } from "@/lib/content/channels";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { asFlags, Count, FlagList, MessageLine, Panel, Problems, SourceLink, StatusPill } from "./shared";
 
 const STATUSES = ["draft", "approved", "running", "paused", "killed"];
-const toMinor = (s: string) => (s.trim() === "" ? undefined : Math.round(Number(s) * 100));
-const fromMinor = (n: unknown) => (typeof n === "number" ? (n / 100).toFixed(2) : "");
+// Money is in the concept's one currency (projects.currency, set on Unit economics), in its own minor unit.
+const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : majorToMinor(Number(s), cur));
+const fromMinor = (n: unknown, cur: string) => (typeof n === "number" ? toMajor(n, cur).toFixed(minorDigits(cur)) : "");
 
 export function AdsView({ project, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
+  const { currency } = useProductionSettings(project.id);
+  // The campaign that runs an ad governs its stop and scale rule; the ad shows that rule instead of its own.
+  const campaigns = useItems(project.id, "marketing/campaigns");
   const [channelId, setChannelId] = useState(AD_CHANNELS[0].id);
   const spec = AD_CHANNELS.find((c) => c.id === channelId)!;
   const ads = useMemo(() => items.filter((i) => i.data.channel === channelId), [items, channelId]);
@@ -96,7 +105,7 @@ export function AdsView({ project, store }: ViewProps) {
         <ul className="space-y-4">
           {ads.map((a) => (
             <li key={a.id}>
-              <AdCard ad={a} spec={spec} onSave={(c) => patch(a.id, c)} onDelete={() => remove(a.id)} />
+              <AdCard ad={a} spec={spec} cur={currency} governing={effectiveAdRule(a, campaigns.items)} onSave={(c) => patch(a.id, c)} onDelete={() => remove(a.id)} />
             </li>
           ))}
         </ul>
@@ -151,18 +160,17 @@ function limitText(f: FieldSpec) {
   return bits.join(", ") || "none";
 }
 
-function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; onSave: (c: { data?: Record<string, unknown>; status?: string; title?: string; body?: string }) => Promise<unknown>; onDelete: () => Promise<unknown> }) {
+function AdCard({ ad, spec, cur, governing, onSave, onDelete }: { ad: Item; spec: ChannelSpec; cur: string; governing: AdRule; onSave: (c: { data?: Record<string, unknown>; status?: string; title?: string; body?: string }) => Promise<unknown>; onDelete: () => Promise<unknown> }) {
   const saved = (ad.data.fields ?? {}) as FieldValues;
   const [vals, setVals] = useState<FieldValues>(saved);
   const [rule, setRule] = useState(String(ad.data.stopRule ?? ""));
-  const [ceiling, setCeiling] = useState(fromMinor(ad.data.costPerOrderCeilingMinor));
-  const [minSpend, setMinSpend] = useState(fromMinor(ad.data.minSpendBeforeJudgingMinor));
+  const [ceiling, setCeiling] = useState(fromMinor(ad.data.costPerOrderCeilingMinor, cur));
+  const [minSpend, setMinSpend] = useState(fromMinor(ad.data.minSpendBeforeJudgingMinor, cur));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const problems = checkChannel(spec, vals);
   const hard = problems.filter((p) => p.level === "refuse");
-  const dirty = JSON.stringify(vals) !== JSON.stringify(saved) || rule !== String(ad.data.stopRule ?? "") || ceiling !== fromMinor(ad.data.costPerOrderCeilingMinor) || minSpend !== fromMinor(ad.data.minSpendBeforeJudgingMinor);
-  const cur = String(ad.data.currency ?? "");
+  const dirty = JSON.stringify(vals) !== JSON.stringify(saved) || rule !== String(ad.data.stopRule ?? "") || ceiling !== fromMinor(ad.data.costPerOrderCeilingMinor, cur) || minSpend !== fromMinor(ad.data.minSpendBeforeJudgingMinor, cur);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -181,7 +189,7 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
       const lead = first ? (Array.isArray(vals[first.key]) ? (vals[first.key] as string[])[0] : String(vals[first.key])) : "new variant";
       return onSave({
         title: `${spec.label}: ${lead}`.slice(0, 120),
-        data: { fields: vals, stopRule: rule, costPerOrderCeilingMinor: toMinor(ceiling), minSpendBeforeJudgingMinor: toMinor(minSpend) },
+        data: { fields: vals, stopRule: rule, costPerOrderCeilingMinor: toMinor(ceiling, cur), minSpendBeforeJudgingMinor: toMinor(minSpend, cur) },
       });
     });
 
@@ -206,7 +214,15 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
 
       <div className="mt-4 rounded-lg border border-hairline bg-subtle p-3">
         <h3 className="text-xs font-semibold text-primary">Stop and scale rule</h3>
-        <p className="text-[11px] text-muted">The two numbers are read by the campaign tracking. They are yours to set; none is filled in for you.</p>
+        {governing.source === "campaign" ? (
+          <div className="mt-1 space-y-1 text-sm text-secondary" data-testid="campaign-rule">
+            <p>{governing.sentence} Its rule governs: stop above {governing.stopAboveMinor === null ? "no line set" : formatMoney(governing.stopAboveMinor, cur)} per order, judged after {governing.afterSpendMinor === null ? "no spend set" : formatMoney(governing.afterSpendMinor, cur)}{governing.scaleBelowMinor !== null ? `, scale below ${formatMoney(governing.scaleBelowMinor, cur)}` : ""}.</p>
+            {governing.alsoIn.length > 0 && <p className="text-xs text-muted">Also run by {governing.alsoIn.map((c) => `"${c.title}"`).join(", ")}; the first campaign&apos;s rule is the one shown and applied.</p>}
+            <p className="text-xs text-muted">Change it on <Link className="text-link underline" href="/s/marketing/campaigns">Campaigns</Link>. The ad&apos;s own numbers below are kept for when no campaign runs it.</p>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted">The two numbers are read by the campaign tracking. They are yours to set; none is filled in for you. When a campaign runs this ad, the campaign&apos;s rule governs instead.</p>
+        )}
         <div className="mt-2 grid gap-3 md:grid-cols-3">
           <Field label="The rule, in a sentence"><Textarea rows={3} value={rule} onChange={(e) => setRule(e.target.value)} /></Field>
           <Field label={`Highest cost per order you accept${cur ? ` (${cur})` : ""}`} hint={`Stop when ${spec.costWord} stays above this.`}>

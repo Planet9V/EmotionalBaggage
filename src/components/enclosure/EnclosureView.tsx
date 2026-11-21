@@ -20,6 +20,7 @@ import type { ViewProps } from "@/components/views/types";
 import { generate, getStatus, type GenerateAnswer, type ResultFailed, type ResultOk } from "./client";
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
 import { ResultPanel } from "./ResultPanel";
+import { SendToPrinting } from "./SendToPrinting";
 
 const BOM = "design/bom";
 const SAVE_STORE = "design/enclosure";
@@ -77,7 +78,8 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
       setSaveState("saving");
       try {
         const data = { enclosureGenerator: g, params: p };
-        if (row) await patch(row.id, { data: { ...row.data, ...data } });
+        // only the choice: the server merges it, so the checks it keeps on the row (data.checked) are never written back stale
+        if (row) await patch(row.id, { data });
         else await add({ section: SAVE_STORE, title: "Enclosure settings", data });
         setSaveState("saved");
       } catch {
@@ -102,6 +104,8 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
     setRunning(which);
     try {
       const answer: GenerateAnswer = await generate(project.id, which, usable);
+      // The server keeps the checks on the saved choice for the Design gate; reload it so a later save does not write back an older copy.
+      void saved.reload();
       setHeld((h) => {
         const next = { ...h };
         for (const r of answer.results) next[r.key] = { result: r, inputKey };
@@ -178,6 +182,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </p>
         ) : null}
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
+        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => persist(generator, usable)} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
       </Panel>
 
       <Panel title="Parameters" note="Defaults are shown under each field. The checks hold the result to the clearance you set." action={

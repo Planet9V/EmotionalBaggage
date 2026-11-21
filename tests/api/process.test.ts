@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { q } from "@/lib/db";
 import { POST as addProject } from "@/app/api/projects/route";
 import { GET as getProcess } from "@/app/api/projects/[id]/process/route";
-import { POST as override } from "@/app/api/projects/[id]/gates/route";
+import { POST as override, DELETE as withdraw } from "@/app/api/projects/[id]/gates/route";
 import { POST as moveStage } from "@/app/api/projects/[id]/stage/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import type { ProcessResponse } from "@/lib/process/state";
@@ -17,6 +17,7 @@ async function create(name: string, extra: Record<string, unknown> = {}) {
 }
 const state = async (id: string) => read<ProcessResponse & Err>(await getProcess(json("GET"), ctx(id)));
 const doOverride = async (id: string, b: unknown) => read<ProcessResponse & Err>(await override(json("POST", b), ctx(id)));
+const doWithdraw = async (id: string, stage: string) => read<ProcessResponse & Err>(await withdraw(json("DELETE", { stage }), ctx(id)));
 const move = async (id: string, stage: string) => read<ProcessResponse & Err>(await moveStage(json("POST", { stage }), ctx(id)));
 const add = (id: string, section: string, title: string, extra: Record<string, unknown> = {}) =>
   addItem(json("POST", { section, title, ...extra }), ctx(id));
@@ -133,5 +134,36 @@ describe("process API", () => {
       body: JSON.stringify({ stage: "concept", reason: "x" }),
     });
     expect((await override(req, ctx(id))).status).toBe(403);
+  });
+
+  it("an override can be withdrawn, recorded with who, when and the reason withdrawn; then the gate holds again", async () => {
+    const id = await create("ZZ Process Withdraw");
+    expect((await doWithdraw(id, "concept")).status).toBe(409);
+    expect((await doOverride(id, { stage: "concept", reason: "Checked by phone" })).status).toBe(200);
+    const w = await doWithdraw(id, "concept");
+    expect(w.status).toBe(200);
+    expect(w.body.gates.find((g) => g.stage === "concept")).toMatchObject({ overridden: false, note: "", decidedBy: "demo" });
+    expect(w.body.history[0]).toMatchObject({ kind: "gate.override-withdrawn", data: { stage: "concept", by: "demo", before: { overridden: true, note: "Checked by phone" }, after: { overridden: false } } });
+    expect((await q("SELECT 1 FROM audit_log WHERE project_id=$1 AND action='gate.override-withdrawn' AND id > $2", [id, since])).length).toBe(1);
+    expect((await move(id, "research")).status).toBe(409);
+    expect((await doWithdraw(id, "concept")).status).toBe(409);
+  });
+
+  it("the Design gate of an electronics concept reads the electrical checks: an error holds it", async () => {
+    const id = await create("ZZ Process Electrical", { oneLiner: "x" });
+    await q("UPDATE projects SET stage='design' WHERE id=$1", [id]);
+    expect((await add(id, "design/bom", "Board", { data: { ref: "U1" } })).status).toBe(201);
+    // a wire to a part that is not in the bill of materials is an electrical error
+    expect((await add(id, "design/wiring", "Signal", { data: { from: "U1", fromPin: "GPIO1", to: "U9", toPin: "IN" } })).status).toBe(201);
+    const r = await state(id);
+    expect(r.body.facts.erc?.ok).toBe(false);
+    const m = await move(id, "prototype");
+    expect(m.status).toBe(409);
+    const unmet = m.body.detail!.unmet;
+    expect(unmet.find((u) => u.id === "design.electrical")).toMatchObject({ href: "/s/design/schematic" });
+    expect(unmet.find((u) => u.id === "design.electrical")!.detail).toMatch(/error/);
+    // a printed part shows no schematic, so it has no electrical check and no facts.erc
+    const printed = await create("ZZ Process Printed", { productType: "printed" });
+    expect((await state(printed)).body.facts).toMatchObject({ currency: "USD", erc: null });
   });
 });

@@ -143,6 +143,10 @@ The slicer is a separate, optional service: OrcaSlicer 2.5.0 (AGPL-3.0) run as i
 - **X:** an OAuth 2.0 client ID (and secret for a Web App client). Register `<app address>/api/channels/x/callback` exactly in the X console, or set the callback address field when the app sits behind a proxy, then press Connect X account. X charges per use; the dated cost statement is shown before the first send, and Test connection costs one user read.
 - **Instagram:** paste the long-lived token and the account ID, then work through the checklist. For an app serving only your own professional account, Meta's Standard Access is enough; App Review is for Advanced Access. Tokens last 60 days and there is no refresh button yet.
 
+## Slicer address
+
+Admin, Printers has the slicer address at the top: the saved address is used first and `SLICER_URL` is the fallback. Test calls the slicer's `/health`.
+
 ## Checking it is healthy
 
 - `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.

@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useItems } from "@/lib/client";
-import { messageOf, queries } from "@/lib/queries";
+import { keys, messageOf, queries } from "@/lib/queries";
+import type { AttackRecord } from "@/lib/ai/drafts/shared";
 import type { Item } from "@/lib/types";
-import { ApiError, ATTACK_MESSAGE, useChallengeRow, useDraftActions } from "./api";
+import { ApiError, useAttackRow, useDraftActions } from "./api";
 import { MODELS_HREF } from "./DraftPanel";
 
 const GENERATOR: Record<string, string> = { "concept/press": "press-release", "concept/faq": "faq" };
@@ -22,6 +23,17 @@ type Msg = { id: number; role: string; content: string; createdAt: string; itemI
 export function CritiquePanel({ projectId, store }: { projectId: string; store: string }) {
   const rows = useItems(projectId, store);
   const thread = useQuery(queries.challenge(projectId));
+  const qc = useQueryClient();
+  // The server attacks after approval; while a row says "running", look again every few seconds.
+  const running = rows.items.some((r) => (r.data.attack as AttackRecord | undefined)?.state === "running");
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(() => {
+      void qc.invalidateQueries({ queryKey: keys.itemsOf(projectId) });
+      void qc.invalidateQueries({ queryKey: keys.challenge(projectId) });
+    }, 3000);
+    return () => clearInterval(t);
+  }, [running, qc, projectId]);
   if (!GENERATOR[store]) return null;
   if (rows.loading || thread.isPending) return <Skeleton role="status" aria-label="Loading the reviewer's critiques" className="h-16 w-full bg-subtle" />;
   if (!rows.items.length) return null;
@@ -29,7 +41,7 @@ export function CritiquePanel({ projectId, store }: { projectId: string; store: 
   return (
     <section aria-labelledby="critique-h" className="rounded-2xl border border-hairline bg-surface p-4">
       <h2 id="critique-h" className="text-sm font-semibold text-primary">The reviewer&apos;s attack</h2>
-      <p className="mt-0.5 text-xs text-secondary">Each approved row is put to the reviewer once. Revise with the critique to get a new draft you can approve or reject.</p>
+      <p className="mt-0.5 text-xs text-secondary">Each approved row is put to the reviewer once, by the server, right after approval. Revise with the critique to get a new draft you can approve or reject.</p>
       {thread.error && <p role="alert" className="mt-2 text-sm text-danger">{messageOf(thread.error)}</p>}
       <ul className="mt-3 space-y-3">
         {rows.items.map((row) => (
@@ -41,11 +53,12 @@ export function CritiquePanel({ projectId, store }: { projectId: string; store: 
 }
 
 function CritiqueRow({ projectId, store, row, critique, configured }: { projectId: string; store: string; row: Item; critique: Msg | null; configured: boolean }) {
-  const attack = useChallengeRow(projectId);
+  const attack = useAttackRow(projectId);
   const { run } = useDraftActions(projectId);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [confirm, setConfirm] = useState(0);
+  const state = (row.data.attack as AttackRecord | undefined) ?? null;
 
   const revise = (supersede = false) => {
     if (!critique) return;
@@ -66,8 +79,10 @@ function CritiqueRow({ projectId, store, row, critique, configured }: { projectI
       <p className="text-sm font-medium text-primary wrap-anywhere">{row.title}</p>
       {critique ? (
         <p className="mt-1.5 whitespace-pre-wrap text-sm text-secondary">{critique.content}</p>
-      ) : attack.isPending ? (
+      ) : attack.isPending || state?.state === "running" ? (
         <p role="status" className="mt-1.5 text-sm text-secondary">The reviewer is reading it.</p>
+      ) : state?.state === "failed" ? (
+        <p className="mt-1.5 text-sm text-warning">The attack after approval did not happen: {state.reason}</p>
       ) : (
         <p className="mt-1.5 text-sm text-muted">Not attacked yet.</p>
       )}
@@ -81,8 +96,8 @@ function CritiqueRow({ projectId, store, row, critique, configured }: { projectI
       {(error || attack.error) && <p role="alert" className="mt-2 text-sm text-danger wrap-anywhere">{error || messageOf(attack.error)}</p>}
       {note && <p role="status" className="mt-2 text-sm text-success">{note}</p>}
       <div className="mt-2 flex flex-wrap gap-2">
-        {!critique && (
-          <Button size="sm" variant="outline" disabled={!configured || attack.isPending} onClick={() => attack.mutate({ itemId: row.id, message: ATTACK_MESSAGE[store] })}>
+        {!critique && state?.state !== "running" && state?.state !== "done" && (
+          <Button size="sm" variant="outline" disabled={!configured || attack.isPending} onClick={() => attack.mutate({ itemId: row.id })}>
             {attack.error ? "Retry the attack" : "Attack it"}
           </Button>
         )}

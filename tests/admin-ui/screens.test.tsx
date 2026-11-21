@@ -23,6 +23,8 @@ const settingsOf = (o: Partial<AdminSettings> = {}): AdminSettings => ({
   embeddingModel: null,
   plannerUrl: null,
   plannerEffective: { url: null, source: null },
+  slicerUrl: null,
+  slicerEffective: { url: null, source: null },
   defaultConcept: null,
   defaultBaseUrl: DEFAULTS,
   ...o,

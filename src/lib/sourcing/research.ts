@@ -1,13 +1,16 @@
 // "Find alternates" and "Check prices": ask the research client (Perplexity; billed) and keep what comes back as drafts.
 // A draft is saved only when the page it names is among the sources the answer cited. A price with no such page is dropped and
 // reported, never stored as a fact. The answer itself is saved as a research row the way the Research screen saves one.
-// (When the drafts engine of another branch is merged, saveDrafts is the one function to repoint.)
+// The drafts go to the shared drafting engine (src/lib/ai/drafts): each is an "append" draft on the
+// part, reviewed with its source page, and approving it is the only way it is added to the part.
 import { ITEM_COLS, logEventIn, q, tx, type ItemRow } from "@/lib/db";
+import { saveDrafts } from "@/lib/ai/drafts/run";
+import type { Draft as EngineDraft } from "@/lib/ai/drafts/shared";
 import { HttpError, notFound } from "@/lib/api/route";
 import { getCredential } from "@/lib/settings";
 import { ask, type Source } from "@/lib/research/perplexity";
 import { toStoredSource } from "@/lib/research/schemas";
-import { readSourcing, newId, offerSchema, alternateSchema, type Draft, type Sourcing } from "./schemas";
+import { newId, offerSchema, alternateSchema, type Draft } from "./schemas";
 
 export type Kind = "prices" | "alternates";
 
@@ -67,7 +70,10 @@ export function parseAnswer(kind: Kind, answer: string, sources: Source[], curre
   return { drafts, dropped };
 }
 
-export type ResearchOutcome = { researchId: number; drafts: Draft[]; dropped: string[]; costUsd: number | null; sources: number };
+export type ResearchOutcome = { researchId: number; drafts: EngineDraft[]; dropped: string[]; costUsd: number | null; sources: number };
+
+/** The engine generator ids, one per kind. */
+export const SOURCING_GENERATOR: Record<Kind, string> = { prices: "sourcing.prices", alternates: "sourcing.alternates" };
 
 /** Asks, stores the answer as a research row, and saves the drafts on the part. `confirm` must be true: the call is billed. */
 export async function researchPart(projectId: string, partId: number, kind: Kind, confirm: boolean, signal?: AbortSignal): Promise<ResearchOutcome> {
@@ -90,18 +96,38 @@ export async function researchPart(projectId: string, partId: number, kind: Kind
       [projectId, `${kind === "prices" ? "Prices" : "Alternates"} for ${part.title}`, r.answer, JSON.stringify(r.sources.map((s) => s.url)), JSON.stringify(r.sources.map(toStoredSource)), r.model]
     );
     const researchId = Number(res.rows[0].id);
-    const now = new Date().toISOString();
-    const drafts: Draft[] = parsed.drafts.map((d) => ({
-      ...d, id: newId("d"), createdAt: now, model: r.model, researchId,
-      ...(d.offer ? { offer: { ...d.offer, researchId } } : {}), ...(d.alternate ? { alternate: { ...d.alternate, researchId } } : {}),
-    }));
-    const cur2 = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 FOR UPDATE`, [partId])).rows[0];
-    if (!cur2) throw notFound("That part");
-    const s: Sourcing = readSourcing(cur2.data);
-    const next: Sourcing = { ...s, drafts: [...s.drafts, ...drafts].slice(-40) };
-    await c.query("UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1", [partId, JSON.stringify({ sourcing: next })]);
-    await logEventIn(c, projectId, "sourcing.researched", `Asked research for ${kind} on "${part.title}": ${drafts.length} draft${drafts.length === 1 ? "" : "s"} saved, ${parsed.dropped.length} dropped`, {
-      itemId: partId, researchId, kind, costUsd: r.costUsd ?? null, drafts: drafts.length, dropped: parsed.dropped,
+    const lock = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 FOR UPDATE`, [partId])).rows[0];
+    if (!lock) throw notFound("That part");
+    const source = (url: string) => ({ kind: "research" as const, id: researchId, title: url.slice(0, 300) });
+    const out = await saveDrafts(
+      {
+        projectId,
+        generator: SOURCING_GENERATOR[kind],
+        label: `${kind === "prices" ? "Check prices" : "Find alternates"} for "${part.title}"`,
+        targetStore: "design/bom",
+        model: r.model,
+        provider: "perplexity",
+        dropped: parsed.dropped.map((d) => ({ title: d.split(":")[0], reason: d.split(":").slice(1).join(":").trim() || d })),
+        record: { itemId: partId, researchId, kind, costUsd: r.costUsd ?? null },
+        drafts: parsed.drafts.map((d) =>
+          d.offer
+            ? {
+                proposed: { title: `Offer: ${d.offer.supplier}, ${d.offer.price} ${cur} per ${d.offer.packSize}`, body: d.offer.stock ?? "", data: {}, op: { op: "append" as const, field: "sourcing.offers" }, itemId: partId },
+                data: { value: { ...d.offer, researchId } },
+                sources: [source(d.citation)],
+              }
+            : {
+                proposed: { title: `Alternate: ${d.alternate!.name}${d.alternate!.partNumber ? ` (${d.alternate!.partNumber})` : ""}`, body: d.alternate!.whatChanges ?? "", data: {}, op: { op: "append" as const, field: "sourcing.alternates" }, itemId: partId },
+                data: { value: { ...d.alternate!, researchId } },
+                sources: [source(d.citation)],
+              }
+        ),
+      },
+      c
+    );
+    const drafts = out.drafts;
+    await logEventIn(c, projectId, "sourcing.researched", `Asked research for ${kind} on "${part.title}": ${drafts.length} draft${drafts.length === 1 ? "" : "s"} saved for review, ${parsed.dropped.length} dropped`, {
+      itemId: partId, researchId, kind, costUsd: r.costUsd ?? null, drafts: drafts.length, dropped: parsed.dropped, runId: out.runId,
     });
     return { researchId, drafts, dropped: parsed.dropped, costUsd: r.costUsd ?? null, sources: r.sources.length };
   });

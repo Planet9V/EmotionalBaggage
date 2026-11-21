@@ -1,5 +1,6 @@
 "use client";
 
+import { ComputedSections } from "@/components/plan/computedSections";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, ArrowRight } from "lucide-react";
@@ -222,6 +223,8 @@ function OverviewBody({ project }: { project: Project }) {
             })}
           </ol>
         )}
+
+        <ComputedSections projectId={project.id} />
 
         <section aria-labelledby="activity-h">
           <h2 id="activity-h" className="text-base font-semibold tracking-tight text-primary">Recent activity</h2>

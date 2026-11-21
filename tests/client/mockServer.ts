@@ -11,7 +11,8 @@ type Rule = { method: string; match: (path: string, body: unknown) => boolean; s
  * PATCH applies the change the way src/app/api/items/[id]/route.ts does (COALESCE on the columns,
  * `data || change` on data) at the moment the request arrives, and answers after its delay.
  */
-export function mockServer(rows: Item[]) {
+export function mockServer(rows: Item[], opts: { settings?: { currency?: string; regions?: string[]; productType?: string } } = {}) {
+  const settings = { currency: "USD", regions: [] as string[], productType: "electronics", ...opts.settings };
   const db = new Map(rows.map((r) => [r.id, structuredClone(r)]));
   const calls: Call[] = [];
   const rules: Rule[] = [];
@@ -70,6 +71,8 @@ export function mockServer(rows: Item[]) {
       out = { integrations: [{ key: "x", name: "X", purpose: "", env: [], configured: false, built: "no", note: "" }], database: { connected: true, vector: false }, planner: { connected: false } };
     } else if (/^\/api\/projects\/[^/]+\/plan$/.test(url.pathname)) {
       out = { engine: "fallback", nodes: [], order: [], criticalPath: [], totalMinutes: 0, cycles: [] };
+    } else if (/^\/api\/projects\/[^/]+\/production-settings$/.test(url.pathname) && method === "GET") {
+      out = { ...settings };
     } else if (/^\/api\/projects\/[^/]+\/events$/.test(url.pathname)) {
       out = { events: [] };
     } else {

@@ -1,5 +1,5 @@
 import { HttpError, route } from "@/lib/api/route";
-import { logEvent } from "@/lib/db";
+import { logEvent, q } from "@/lib/db";
 import { adChannel } from "@/lib/content/channels";
 import { adsCsv } from "@/lib/content/exports";
 import { attachment, fileSafe, param, projectOf } from "@/lib/content/http";
@@ -14,5 +14,7 @@ export const GET = route(async (req: Request) => {
   const ads = (await rowsOf(p.id, CONTENT.ads)).filter((a) => a.data.channel === spec.id && ["approved", "running", "paused"].includes(a.status));
   if (!ads.length) throw new HttpError(409, `There are no approved ${spec.label} ads to export.`);
   logEvent(p.id, "content.exported", `Exported ${ads.length} ${spec.label} ads as CSV`, { kind: "ads", channel: spec.id, count: ads.length });
-  return attachment(adsCsv(spec, ads, p.name), "text/csv; charset=utf-8", `${fileSafe(p.name)}-${spec.id}.csv`);
+  const campaigns = await rowsOf(p.id, CONTENT.campaigns);
+  const currency = (await q<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [p.id]))[0]?.currency || "USD";
+  return attachment(adsCsv(spec, ads, p.name, campaigns, currency), "text/csv; charset=utf-8", `${fileSafe(p.name)}-${spec.id}.csv`);
 });

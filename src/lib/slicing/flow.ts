@@ -1,6 +1,7 @@
 // The print flow on the server: slice, send, start, control, track, record. Each step checks the job's status against the state
 // machine in jobState.ts, records what happened with logEventIn, and never moves hardware without a confirm that names the printer
 // and the file.
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { createHash } from "node:crypto";
 import { ITEM_COLS, logEventIn, q, tx, toItem, type ItemRow } from "@/lib/db";
 import { HttpError, notFound } from "@/lib/api/route";
@@ -48,7 +49,8 @@ async function move(c: Parameters<typeof logEventIn>[0], row: ItemRow, m: Omit<M
     `UPDATE items SET status=$2, data = data || $3::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
     [row.id, m.to, JSON.stringify(m.data ?? {})]
   );
-  await logEventIn(c, row.project_id, m.kind, m.summary, { itemId: Number(row.id), before: { status: from }, after: { status: m.to }, ...(m.detail ?? {}) });
+  // every field the move changed (status and the run's data), before and after
+  await logEventIn(c, row.project_id, m.kind, m.summary, { ...(m.detail ?? {}), ...changedDetail(res.rows[0], itemDiff(row, res.rows[0])) });
   return res.rows[0];
 }
 
@@ -127,17 +129,28 @@ export async function sliceJob(id: number) {
 // ---------------------------------------------------------------- send and start
 
 /** The file a printer gets and what it is called there. The same function names it in the confirm and in the upload. */
+/**
+ * Which sliced file goes to this printer, chosen from the file types its adapter lists
+ * (`capabilities.fileTypes`), in the adapter's own order of preference: the first listed type the
+ * slice produced wins. A Bambu printer lists the sliced project (.3mf) first, so it gets the project
+ * when there is one; a Klipper printer lists G-code only.
+ */
 export function planSend(row: ItemRow, port: PrinterPort): { name: string; fileId: number; kind: "gcode" | "project" } {
   const d = jobData(row);
   const s = d.slice;
   if (!s) throw new HttpError(409, "Slice the job first.");
+  const GCODE = [".gcode", ".gco", ".g", ".bgcode"];
+  const PROJECT = [".3mf", ".gcode.3mf"];
   const types = port.capabilities.fileTypes.map((t) => t.toLowerCase());
-  const wantsGcode = types.some((t) => [".gcode", ".gco", ".g", ".bgcode"].includes(t));
-  const useProject = !wantsGcode && !!s.projectFileId && types.some((t) => t === ".3mf" || t === ".gcode.3mf");
-  if (!wantsGcode && !useProject) throw new HttpError(409, "This printer takes neither G-code nor a sliced project file.");
-  if (useProject) return { name: printerFileName(row.title, ".gcode.3mf", row.id), fileId: s.projectFileId!, kind: "project" };
-  if (s.gcodeFileId == null) throw new HttpError(409, "The sliced file is missing. Slice the job again.");
-  return { name: printerFileName(row.title, ".gcode", row.id), fileId: s.gcodeFileId, kind: "gcode" };
+  for (const t of types) {
+    if (PROJECT.includes(t) && s.projectFileId) return { name: printerFileName(row.title, ".gcode.3mf", row.id), fileId: s.projectFileId, kind: "project" };
+    if (GCODE.includes(t)) {
+      if (s.gcodeFileId == null) throw new HttpError(409, "The sliced file is missing. Slice the job again.");
+      return { name: printerFileName(row.title, ".gcode", row.id), fileId: s.gcodeFileId, kind: "gcode" };
+    }
+  }
+  if (types.some((t) => PROJECT.includes(t))) throw new HttpError(409, "This printer takes a sliced project file, and the slice made none. Slice the job again.");
+  throw new HttpError(409, "This printer takes neither G-code nor a sliced project file.");
 }
 
 export function assertConfirm(confirm: Confirm | undefined, printerName: string, fileName: string, what: string) {
@@ -322,7 +335,7 @@ export async function recordResult(id: number, r: ResultInput) {
     } else {
       const res = await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [row.id, JSON.stringify({ result })]);
       out = res.rows[0];
-      await logEventIn(c, row.project_id, "print.result", `Recorded the result of "${row.title}": ${r.outcome}`, { itemId: Number(row.id), result: { ...result, notes: result.notes ? "(written)" : "" }, buildKey: d.buildKey ?? null });
+      await logEventIn(c, row.project_id, "print.result", `Recorded the result of "${row.title}": ${r.outcome}`, { result: { ...result, notes: result.notes ? "(written)" : "" }, buildKey: d.buildKey ?? null, ...changedDetail(out, itemDiff(cur0, out)) });
     }
     return toItem(out);
   });

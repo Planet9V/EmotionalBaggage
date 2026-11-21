@@ -7,6 +7,9 @@ import { pool, q } from "@/lib/db";
 import { POST as routeWires } from "@/app/api/projects/[id]/route-wires/route";
 import { POST as harness } from "@/app/api/projects/[id]/harness/route";
 import { GET as getItems } from "@/app/api/projects/[id]/items/route";
+import { PUT as setPins } from "@/app/api/items/[id]/pins/route";
+import { routePartsOf } from "@/lib/geometry/pins3d";
+import { pinsOfProject } from "@/lib/parts/server";
 import { anonymous, ctx, json, read } from "./helpers";
 import { add, events, newConcept, patch } from "../trace/helpers";
 import { buildRouteRequest, routeState } from "@/lib/geometry/routing";
@@ -302,5 +305,26 @@ describe("the model of the test", () => {
     );
     expect(built.request?.nets).toHaveLength(2);
     expect(built.skipped).toHaveLength(1);
+  });
+});
+
+describe("wire ends at real pin positions (integration item 4)", () => {
+  it("a part's pin rows put its wire ends at the pins; the rest stay on a face, and the count says so", async () => {
+    process.env.PLANNER_URL = inject("plannerUrl");
+    const sp = (await items("design/bom")).find((i) => i.data.ref === "SP1")!;
+    // the speaker's two pins on its top, 3 mm either side of its centre along x
+    const put = await setPins(json("PUT", { pins: [{ name: "+", kind: "passive", position: { x: -3, y: 0 } }, { name: "-", kind: "passive", position: { x: 3, y: 0 } }] }), ctx(String(sp.id)));
+    expect(put.status).toBe(200);
+    const r = await read<Outcome>(await post());
+    expect(r.status).toBe(200);
+    expect(r.body.faceEnds).toBe(2); // the controller has no pin positions; the speaker's two ends are real
+    const parts = (await items("design/bom")).map(toPart);
+    const built = buildRouteRequest(routePartsOf(parts, await pinsOfProject(project)), (await items("design/wiring")).map(toWire).filter((w) => w !== null).map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })));
+    const plus = built.request!.nets.find((n) => n.terminals.some((t) => t.id === "SP1.+"))!;
+    // speaker centre (28, 5, 0), size 10 x 6 x 10: the pin is on the top face (y = 8) at x = 25
+    expect(plus.terminals.find((t) => t.id === "SP1.+")!.pos).toEqual([25, 8, 0]);
+    // the stored route is current against the same pin positions the 3D view uses
+    const w = (await items("design/wiring")).find((i) => i.title === "Speaker plus")!;
+    expect(routeState({ routedLengthMm: w.data.routedLengthMm as number, routedFingerprint: w.data.routedFingerprint as string }, built.fingerprints.get(w.id)!)).toBe("current");
   });
 });

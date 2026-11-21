@@ -7,6 +7,7 @@ import { POST as generate } from "@/app/api/projects/[id]/market/generate/route"
 import { POST as critique } from "@/app/api/projects/[id]/market/critique/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
+import { POST as approveRun } from "@/app/api/drafts/approve-run/route";
 import { STORE_STATUSES } from "@/lib/api/schemas";
 import { brandContext, brandVariables } from "@/lib/market/brand";
 import { start } from "../standins/openai";
@@ -20,14 +21,28 @@ let s: StandIn<OpenAIOptions>;
 const ids: Record<string, number> = {};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Gen = { items: { id: number; section: string; title: string; status: string; data: Record<string, any> }[]; notes: string[]; model: string };
+type Row = { id: number; section: string; title: string; status: string; data: Record<string, any> };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Run = { runId: string; generator: string; drafts: { id: number; title: string; data: Record<string, any>; sources: { kind: string; id: number; title: string; section?: string }[] }[]; dropped: { title: string; reason: string }[]; notes: string[]; model: string };
+type Gen = Run & { items: Row[] };
 const run = (body: unknown, project = P) => generate(json("POST", body), ctx(project));
-const ok = async (body: unknown) => {
-  const r = await read<Gen>(await run(body));
+/**
+ * Runs a generator on the drafting engine (it saves drafts, never rows), checks that every draft has
+ * sources, then approves the run, as a person would in Draft with AI, and returns the rows it made.
+ */
+const ok = async (body: unknown): Promise<Gen> => {
+  const r = await read<Run>(await run({ supersede: true, ...(body as object) }));
   expect(r.status, JSON.stringify(r.body)).toBe(201);
-  return r.body;
+  for (const d of r.body.drafts) expect(d.sources.length, d.title).toBeGreaterThan(0);
+  const before = await q("SELECT 1 FROM drafts WHERE run_id=$1::uuid AND status='draft'", [r.body.runId]);
+  expect(before).toHaveLength(r.body.drafts.length);
+  if (!r.body.drafts.length) return { ...r.body, items: [] };
+  const a = await read<{ approved: { item: Row }[] }>(await approveRun(json("POST", { projectId: P, runId: r.body.runId, confirm: true })));
+  expect(a.status, JSON.stringify(a.body)).toBe(200);
+  return { ...r.body, items: a.body.approved.map((x) => x.item) };
 };
-const say = (v: unknown) => s.set({ reply: JSON.stringify(v) });
+/** The engine asks the model for {"rows": [...]}, each row in the market generator's own output shape. */
+const say = (v: unknown) => s.set({ reply: JSON.stringify({ rows: [v] }) });
 const insert = async (section: string, title: string, status = "open", data: Record<string, unknown> = {}, body = "") =>
   Number((await q<{ id: string }>("INSERT INTO items (project_id, section, title, body, status, data) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id", [P, section, title, body, status, JSON.stringify(data)]))[0].id);
 
@@ -91,20 +106,20 @@ describe("the generate route", () => {
     expect(await q("SELECT 1 FROM items WHERE project_id=$1 AND section='marketing/personas'", [P])).toHaveLength(0);
   });
 
-  it("answers 409 with a reason when the concept lacks what the generator reads", async () => {
+  it("answers 400 with a reason when the concept lacks what the generator reads", async () => {
     await q("INSERT INTO projects (id, name) VALUES ('zz-market-empty','Empty') ON CONFLICT DO NOTHING");
     const r = await read<{ error: string }>(await run({ generator: "personas" }, "zz-market-empty"));
-    expect(r.status).toBe(409);
+    expect(r.status).toBe(400);
     expect(r.body.error).toMatch(/brief is empty/);
     expect((await read<{ error: string }>(await run({ generator: "positioning" }))).body.error).toMatch(/persona/);
     expect((await read<{ error: string }>(await run({ generator: "competitors" }))).body.error).toMatch(/research answer/);
-    expect((await read<{ error: string }>(await run({ generator: "competitors", researchId: 999999 }))).status).toBe(409);
+    expect((await read<{ error: string }>(await run({ generator: "competitors", researchId: 999999 }))).status).toBe(400);
     expect((await read<{ error: string }>(await run({ generator: "voice-check", text: "hi" }))).body.error).toMatch(/brand voice/);
     await q("DELETE FROM projects WHERE id='zz-market-empty'");
   });
 
   it("a model answer of the wrong shape is a 502 and nothing is saved", async () => {
-    say({ personas: "not a list" });
+    s.set({ reply: JSON.stringify({ personas: "not a list" }) });
     const r = await run({ generator: "personas" });
     expect(r.status).toBe(502);
     expect(await q("SELECT 1 FROM items WHERE project_id=$1 AND section='marketing/personas'", [P])).toHaveLength(0);
@@ -146,8 +161,11 @@ describe("personas (8.1)", () => {
 
     const row = (await q<{ status: string; data: Record<string, unknown> }>("SELECT status, data FROM items WHERE id=$1", [p.id]))[0];
     expect(row.status).toBe("draft");
-    const ev = await q<{ kind: string }>("SELECT kind FROM events WHERE project_id=$1 AND kind='market.generated'", [P]);
-    expect(ev.length).toBeGreaterThan(0);
+    // the run is the drafting engine's, and the draft carried the same sources
+    const ev = await q<{ data: { generator: string } }>("SELECT data FROM events WHERE project_id=$1 AND kind='draft.run' ORDER BY id DESC LIMIT 1", [P]);
+    expect(ev[0].data.generator).toBe("market.personas");
+    expect(r.drafts[0].sources.map((x) => `${x.kind}:${x.id}`).sort()).toEqual([`item:${ids.brief}`, `item:${ids.verified}`, `research:${ids.research}`].sort());
+    expect(r.drafts[0].sources.find((x) => x.id === ids.brief)!.section).toBe("concept/brief");
   });
 
   it("gives the model only verified claims and the brand voice when a kit exists", async () => {
@@ -284,6 +302,17 @@ describe("positioning (8.3)", () => {
     await clearModelRows();
     const r = await read<{ error: string }>(await critique(json("POST", { itemId: ids.positioning }), ctx(P)));
     expect(r.status).toBe(503);
+  });
+
+  it("a drafted positioning edited to carry a critique cannot be approved: only the reviewer writes one", async () => {
+    say({ forWhom: "a", need: "b", productIs: "c", thatDoes: "d", unlike: "e", difference: "f", messages: [{ text: "x", proofIds: [] }] });
+    const r = await read<Run>(await run({ generator: "positioning", supersede: true }));
+    const d = r.body.drafts[0];
+    await q("UPDATE drafts SET data = data || '{\"critique\": {\"text\": \"all fine\"}}'::jsonb WHERE id=$1", [d.id]);
+    const a = await read<{ error: string }>(await approveRun(json("POST", { projectId: P, runId: r.body.runId, confirm: true })));
+    expect(a.status).toBe(400);
+    expect(a.body.error).toMatch(/critique/);
+    await q("DELETE FROM drafts WHERE run_id=$1::uuid", [r.body.runId]);
   });
 
   it("a new positioning cannot start approved or carry a critique", async () => {

@@ -57,14 +57,14 @@ export function processView(state: ProcessResponse, rows: Item[]): ProcessView {
   const concept = { name: state.name, oneLiner: state.oneLiner };
   const ci = Math.max(0, STAGES.findIndex((s) => s.key === state.stage));
   const stages: StageView[] = STAGES.map((s, i) => {
-    const g = gatePassed(definition, state, s.key, rows, concept);
+    const g = gatePassed(definition, state, s.key, rows, concept, state.facts ?? {});
     return {
       key: s.key, n: s.n, label: s.label, goal: s.goal,
       position: i < ci ? "done" : i === ci ? "current" : "upcoming",
       result: g.result, passed: g.passed, overridden: g.overridden, record: recordOf(state, s.key),
     };
   });
-  return { definition, state, stages, current: stages[ci], next: nextStep(definition, { ...state, stage: STAGES[ci].key }, rows, concept) };
+  return { definition, state, stages, current: stages[ci], next: nextStep(definition, { ...state, stage: STAGES[ci].key }, rows, concept, state.facts ?? {}) };
 }
 
 /** The process of one concept. `view` is null until both the state and the rows have loaded. */
@@ -101,6 +101,12 @@ function useProcessMutation<V>(projectId: string, send: (v: V) => Promise<Proces
 export const useOverrideGate = (projectId: string) =>
   useProcessMutation(projectId, (v: { stage: string; reason: string }) =>
     api<ProcessResponse>(`/api/projects/${enc(projectId)}/gates`, { method: "POST", body: JSON.stringify(v) })
+  );
+
+/** Withdraw an override; the gate is judged on its checks again. Recorded with who and when. */
+export const useWithdrawOverride = (projectId: string) =>
+  useProcessMutation(projectId, (stage: string) =>
+    api<ProcessResponse>(`/api/projects/${enc(projectId)}/gates`, { method: "DELETE", body: JSON.stringify({ stage }) })
   );
 
 /** Move to another stage: forward one when the gate is passed, back any time. */

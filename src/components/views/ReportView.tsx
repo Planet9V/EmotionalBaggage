@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { fmtBytes } from "@/components/plan/format";
 import { buildReport, slugify, toMarkdown, type Block } from "@/components/plan/report";
 import { useConcept, type ConceptPart } from "@/components/plan/useConcept";
+import { sectionsToBlocks, useReportSections } from "@/components/plan/computedSections";
+import { messageOf } from "@/lib/queries";
 import { api, useProject } from "@/lib/client";
 import type { FileMeta, Project } from "@/lib/types";
 
@@ -62,12 +64,13 @@ function ReportBody({ project }: { project: Project }) {
   const [saved, setSaved] = useState<FileMeta | null>(null);
   const [saveError, setSaveError] = useState("");
 
-  const blocks = useMemo(() => buildReport(project, data, errors), [project, data, errors]);
+  const computed = useReportSections(project.id);
+  const blocks = useMemo(() => [...buildReport(project, data, errors), ...sectionsToBlocks(computed.data, messageOf(computed.error))], [project, data, errors, computed.data, computed.error]);
   const generatedIso = loadedAt?.toISOString() ?? "";
   const generatedLabel = loadedAt ? loadedAt.toLocaleString(undefined, { dateStyle: "long", timeStyle: "medium" }) : "";
   const stamp = generatedIso.replace(/[:.]/g, "-").slice(0, 19);
   const base = `${slugify(project.name)}-report-${stamp}`;
-  const ready = !loading && !!loadedAt;
+  const ready = !loading && !!loadedAt && !computed.isPending;
 
   const markdown = () => toMarkdown(project, generatedLabel ? `${generatedLabel} (${generatedIso})` : "", blocks);
 

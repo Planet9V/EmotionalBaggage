@@ -23,6 +23,7 @@ import {
   groupByPart, hubRef, partMap, sequence, toWires, isSoldered,
 } from "@/components/buildsheet/derive";
 import { buildMarkdown } from "@/components/buildsheet/markdown";
+import { usePins } from "@/lib/parts/client";
 import type { ViewProps } from "./types";
 
 type Mode = "order" | "part";
@@ -88,7 +89,8 @@ export function BuildSheetView({ project, store }: ViewProps) {
   const hub = useMemo(() => hubRef(wires), [wires]);
   const groups = useMemo(() => groupByPart(steps, hub), [steps, hub]);
   const blocks = useMemo(() => connectionsByPart(steps), [steps]);
-  const cuts = useMemo(() => cutList(steps, parts, routing.value, allowance.value), [steps, parts, routing.value, allowance.value]);
+  const { pins: pinRows } = usePins(project.id);
+  const cuts = useMemo(() => cutList(steps, parts, routing.value, allowance.value, pinRows), [steps, parts, routing.value, allowance.value, pinRows]);
   const [strips, setStrips] = useState<Record<string, number>>(DEFAULT_STRIP);
   const spec = useMemo(() => specRows(steps, parts, routing.value, allowance.value, strips), [steps, parts, routing.value, allowance.value, strips]);
   const refs = useMemo(() => [...new Set(wires.flatMap((w) => [w.from, w.to]))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), [wires]);
@@ -100,7 +102,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
     void wiring.patch(id, { status: next });
   };
 
-  const markdown = () => buildMarkdown({ projectName: project.name, steps, parts, routing: routing.value, allowance: allowance.value, strips });
+  const markdown = () => buildMarkdown({ projectName: project.name, steps, parts, routing: routing.value, allowance: allowance.value, strips, pins: pinRows });
 
   const save = async () => {
     setSaving(true);

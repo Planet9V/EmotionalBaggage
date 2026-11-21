@@ -17,7 +17,6 @@ export type WireDraft = {
   fromPin: string;
   to: string;
   toPin: string;
-  via: string;
   order: number;
   status: string;
 };
@@ -56,11 +55,10 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
           fromPin: mode.wire.fromPin,
           to: mode.wire.to,
           toPin: mode.wire.toPin,
-          via: mode.wire.via,
           order: mode.wire.order,
           status: mode.wire.status,
         }
-      : { name: "", net: "", netClass: "signal", note: "", from: mode.from, fromPin: mode.fromPin, to: mode.to, toPin: mode.toPin, via: "", order: nextOrder, status: "to solder" }
+      : { name: "", net: "", netClass: "signal", note: "", from: mode.from, fromPin: mode.fromPin, to: mode.to, toPin: mode.toPin, order: nextOrder, status: "to solder" }
   );
   const [classTouched, setClassTouched] = useState(editing);
   const [confirming, setConfirming] = useState(false);

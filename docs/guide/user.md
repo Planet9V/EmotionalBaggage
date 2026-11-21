@@ -120,6 +120,18 @@ None of this has run against a real Amazon, X or Instagram account; each screen 
 - **Reviews and questions** (Sales): add, paste or import a CSV (a text, review, body or question column is needed). Set topic and sentiment, or have them suggested as drafts. "What customers keep asking" groups the rows; "Turn into a requirement" makes a draft requirement that cites them.
 - **Sales monitor:** pick the marketplace and press Sync now; there is no automatic sync. Amazon's own daily totals sit beside the order rows for comparison and are never counted twice. Only order id, date, items, marketplace, currency and status are kept; no buyer or address details are requested.
 
+## How the parts fit together
+
+- **One unit cost and one currency.** Pricing, campaign margins, ads, the landing page price and the report all use the unit cost and the currency from Unit economics; set the currency there. A part with no price is named and left out of the total, never counted as zero.
+- **Gates read real checks.** Besides rows and decisions, gates now use the electrical checks, the enclosure's five checks on the saved choice, production readiness, and proof on released content. Gates still only warn; an override needs a typed reason and can be withdrawn on the Process page. The stage changes only on the Process page.
+- **One place for AI drafts.** Market pieces, the compliance checklist and sourcing's price and alternate research now wait for review in Draft with AI at the top of their page, like every other draft. Unit economics cost lines and the decision tree have no generator: review them by hand.
+- **Press releases and FAQ entries** are attacked once by the reviewer on the server right after approval, whether or not you stay on the page.
+- **Wire ends** use real pin positions from the part's pins or its library entry when they exist; the 3D page says how many wire ends are still approximate.
+- **Send to printing** on the Enclosure page stores the base and lid, upright for a printer, as files of the concept and they appear in 3D printing. A build lists the print jobs that name it.
+- **An ad run by a campaign** follows that campaign's stop and scale rule.
+- **Duplicate** carries currency, regions, product type, pins, campaigns and print jobs (as queued, without results); tracked links get new codes with no clicks. Drafts, results, history and credentials are not copied.
+- **The report and the overview** end with "Worked out from the rows": economics, compliance, builds, the enclosure and its checks, electrical checks, launch dates and campaign verdicts, as tables and sentences.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.

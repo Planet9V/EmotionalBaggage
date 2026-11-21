@@ -24,7 +24,6 @@ export function ConnectionsTable({ blocks, parts }: { blocks: PartConn[]; parts:
                   <TableHead>Connects to</TableHead>
                   <TableHead>Net</TableHead>
                   <TableHead>Class</TableHead>
-                  <TableHead>Via</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -47,7 +46,6 @@ export function ConnectionsTable({ blocks, parts }: { blocks: PartConn[]; parts:
                         {r.netClass}
                       </span>
                     </TableCell>
-                    <TableCell className="font-mono">{r.via || ""}</TableCell>
                     <TableCell><StatusBadge tone={statusTone(r.status)}>{r.status}</StatusBadge></TableCell>
                   </TableRow>
                 ))}

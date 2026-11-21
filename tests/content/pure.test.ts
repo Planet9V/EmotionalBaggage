@@ -220,6 +220,16 @@ describe("exports", () => {
     expect(out).toContain("12.50");
     expect(out).toContain("50.00");
   });
+  it("writes the rule that governs each ad: the campaign's when a campaign runs it, in the concept's currency", () => {
+    const spec = AD_CHANNELS.find((c) => c.id === "reddit-ads")!;
+    const ad = { ...item({ fields: { headline: "Hello" }, stopRule: "Own rule", costPerOrderCeilingMinor: 1250, minSpendBeforeJudgingMinor: 5000 }), id: 42 };
+    const campaign = { ...ad, id: 7, section: "marketing/campaigns", title: "Spring", data: { kind: "campaign", creative: [{ section: "marketing/ads", itemId: 42 }], rule: { stopAboveMinor: 800, afterSpendMinor: 3000 } } };
+    const out = adsCsv(spec, [ad], "Bag", [campaign], "JPY");
+    expect(out).toContain("campaign: Spring");
+    expect(out).toContain("Cost per order ceiling (JPY)");
+    expect(out).toContain(",800,3000,");
+    expect(out).not.toContain("12.50");
+  });
   it("writes a listing as text and as one flat-file row", () => {
     const l = { title: "Title", bullets: ["b1", "b2"], description: "Desc", searchTerms: "a b" };
     expect(listingText(l, "default")).toContain("b2");

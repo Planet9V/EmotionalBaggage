@@ -24,9 +24,12 @@ export type GenerateBody = {
   note?: string;
   kind?: "Name" | "Tagline";
 };
-export type GenerateResult = { items: Item[]; notes: string[]; model: string };
+export type GenerateResult = { drafts: { id: number; title: string }[]; dropped: { title: string; reason: string }[]; notes: string[]; model: string };
 
-/** Runs one generator; the new drafts appear in every list of the concept when it finishes. */
+/**
+ * Runs one generator on the shared drafting engine. Its rows wait as drafts, with their sources, in
+ * Draft with AI at the top of the page; approving one there is the only way it becomes a row here.
+ */
 export function useGenerate(projectId: string) {
   const qc = useQueryClient();
   const [notes, setNotes] = useState<string[]>([]);
@@ -34,8 +37,15 @@ export function useGenerate(projectId: string) {
     mutationFn: (b: GenerateBody) =>
       api<GenerateResult>(`/api/projects/${encodeURIComponent(projectId)}/market/generate`, { method: "POST", body: JSON.stringify(b) }),
     onMutate: () => setNotes([]),
-    onSuccess: (r) => setNotes(r.notes),
-    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: keys.itemsOf(projectId) }), qc.invalidateQueries({ queryKey: keys.events(projectId) })]),
+    onSuccess: (r) =>
+      setNotes([
+        r.drafts.length
+          ? `${r.drafts.length} ${r.drafts.length === 1 ? "draft is" : "drafts are"} waiting for review in Draft with AI at the top of this page. Each becomes a row only when you approve it.`
+          : "The model proposed nothing that could be kept.",
+        ...r.dropped.map((d) => `${d.title}: ${d.reason}`),
+        ...r.notes,
+      ]),
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: ["drafts", projectId] }), qc.invalidateQueries({ queryKey: keys.events(projectId) })]),
   });
   return { run: m.mutateAsync, pending: m.isPending, error: messageOf(m.error), notes, reset: () => { m.reset(); setNotes([]); } };
 }
@@ -73,7 +83,7 @@ export function GeneratedLine({ from }: { from: unknown }) {
 export const Notes = ({ notes }: { notes: string[] }) =>
   notes.length ? (
     <div role="status" className="rounded-md border border-hairline bg-subtle px-3 py-2 text-xs text-secondary">
-      <p className="font-medium text-primary">Left out of the draft:</p>
+      <p className="font-medium text-primary">About this run:</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-4">
         {notes.map((n, i) => <li key={i}>{n}</li>)}
       </ul>

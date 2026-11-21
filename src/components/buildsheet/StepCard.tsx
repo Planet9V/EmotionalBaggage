@@ -18,7 +18,6 @@ function End({ refId, pin, parts }: { refId: string; pin: string; parts: Map<str
 
 export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<string, PartLite>; onStatus: (s: string) => void }) {
   const w = step.wire;
-  const via = w.via ? parts.get(w.via) : undefined;
   return (
     <li
       className="rounded-xl border border-hairline bg-surface p-4 print:break-inside-avoid"
@@ -48,12 +47,6 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
             <span aria-label="to" className="text-muted">→</span>
             <End refId={w.to} pin={w.toPin} parts={parts} />
           </p>
-          {w.via && (
-            <p className="mt-1 text-[13px] text-secondary">
-              through <span className="font-mono text-primary">{w.via}</span>{" "}
-              <span className="text-muted">({via ? via.title : "not in the bill of materials"}{via?.spec ? `, ${via.spec}` : ""})</span>
-            </p>
-          )}
           {w.note && <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-primary">{w.note}</p>}
           <div className="mt-3 border-t border-hairline pt-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Check</p>

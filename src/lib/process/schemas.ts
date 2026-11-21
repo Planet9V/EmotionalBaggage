@@ -12,3 +12,6 @@ export const overrideBody = z.object({
 
 /** POST /api/projects/[id]/stage: move the concept to another stage. */
 export const stageBody = z.object({ stage });
+
+/** DELETE /api/projects/[id]/gates: withdraw the override of one stage's gate. */
+export const withdrawBody = z.object({ stage });

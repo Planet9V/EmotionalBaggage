@@ -24,6 +24,7 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { dataSchemaFor } from "@/lib/domain/schemas";
 import type { Item } from "@/lib/types";
 import { assertDraftAllowed, withFlags } from "@/lib/content/rules";
+import { assertMarketChange, assertNewMarket } from "@/lib/market/rules";
 import type { Draft, DraftOp, DraftSource, DraftStatus } from "./shared";
 
 export const DRAFT_COLS =
@@ -53,9 +54,31 @@ const iso = (v: Date | string | null) => (v === null ? null : v instanceof Date 
 
 /** The operation kept in data._draft, read defensively. */
 export function readOp(data: Record<string, unknown>): DraftOp {
-  const raw = data?._draft as { op?: unknown; reason?: unknown } | undefined;
-  const op = raw?.op === "replace" || raw?.op === "remove" ? raw.op : "add";
-  return { op, ...(typeof raw?.reason === "string" && raw.reason ? { reason: raw.reason } : {}) };
+  const raw = data?._draft as { op?: unknown; reason?: unknown; field?: unknown } | undefined;
+  const op = raw?.op === "replace" || raw?.op === "remove" || raw?.op === "append" ? raw.op : "add";
+  return {
+    op,
+    ...(typeof raw?.reason === "string" && raw.reason ? { reason: raw.reason } : {}),
+    ...(op === "append" && typeof raw?.field === "string" ? { field: raw.field } : {}),
+  };
+}
+
+/** Lists a draft may append to, as dotted paths inside a row's data. Anything else is refused. */
+export const APPEND_FIELDS = new Set(["sourcing.offers", "sourcing.alternates"]);
+
+/** The row's data with `value` added to the list at the dotted `field`, creating objects on the way. Pure. */
+export function appendAt(data: Record<string, unknown>, field: string, value: unknown): Record<string, unknown> {
+  const keys = field.split(".");
+  const out: Record<string, unknown> = structuredClone(data ?? {});
+  let at: Record<string, unknown> = out;
+  for (const k of keys.slice(0, -1)) {
+    const next = at[k];
+    at[k] = next && typeof next === "object" && !Array.isArray(next) ? next : {};
+    at = at[k] as Record<string, unknown>;
+  }
+  const last = keys[keys.length - 1];
+  at[last] = [...(Array.isArray(at[last]) ? (at[last] as unknown[]) : []), value];
+  return out;
 }
 
 /** The row's data as it would be saved: everything except the `_draft` note. */
@@ -130,7 +153,7 @@ export function checkFields(store: string, title: string, body: string, data: Re
   if (!t) throw new HttpError(400, "The title cannot be empty.");
   if (t.length > 300) throw new HttpError(400, "The title is longer than 300 characters.");
   if (body.length > 20_000) throw new HttpError(400, "The details are longer than 20,000 characters.");
-  if (op.op === "remove") return { title: t, body, data };
+  if (op.op === "remove" || op.op === "append") return { title: t, body, data };
   const r = dataSchemaFor(store).safeParse(data);
   if (!r.success) {
     const i = r.error.issues[0];
@@ -171,6 +194,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
   if (d.status !== "draft") throw decidedAlready(d);
   const op = readOp(d.data);
   const fields = checkFields(d.target_store, d.title, d.body, rowData(d.data), op);
+  if (op.op === "append") return approveAppend(c, d, op, fields.data);
   if (op.op !== "remove") await assertDraftAllowed(d.project_id, d.target_store, fields.title, fields.body, fields.data);
   const actor = currentActor() || null;
   let before: Item | null = null;
@@ -184,14 +208,21 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
     before = toItem(was.rows[0]);
   }
 
+  // The marketing rules hold on this path too: a drafted positioning cannot arrive approved or carrying a
+  // critique (only the reviewer writes one), and a replacement keeps the critique rule.
+  if (op.op === "add") assertNewMarket({ section: d.target_store, data: fields.data, status: defaultStatus(d.target_store) });
+  if (op.op === "replace" && before) assertMarketChange({ section: before.section, status: before.status, data: before.data }, { data: fields.data });
+
   if (op.op === "remove") {
     await c.query("DELETE FROM items WHERE id=$1", [d.item_id]);
   } else if (op.op === "replace") {
+    // The reviewer's attack record stays with the row: a revision that answers it is not attacked again.
+    const kept = before && before.data.attack !== undefined ? { ...fields.data, attack: before.data.attack } : fields.data;
     const r = await c.query<ItemRow>(`UPDATE items SET title=$2, body=$3, data=$4, updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [
       d.item_id,
       fields.title,
       fields.body,
-      JSON.stringify(fields.data),
+      JSON.stringify(kept),
     ]);
     item = toItem(r.rows[0]);
   } else {
@@ -228,6 +259,41 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
     sources: d.sources,
     ...(before ? { before: { title: before.title, body: before.body, data: before.data } } : {}),
     ...(item ? { after: { title: item.title, body: item.body, data: item.data } } : {}),
+  });
+  return { draft: toDraftRow(u.rows[0]), item, before };
+}
+
+/** Approves an "append" draft: adds its value to a list inside the row as the row is now, recorded with before and after. */
+async function approveAppend(c: PoolClient, d: DraftDbRow, op: DraftOp, data: Record<string, unknown>): Promise<Approved> {
+  if (!op.field || !APPEND_FIELDS.has(op.field)) throw new HttpError(400, "This draft names a list that cannot be added to.");
+  if (d.item_id === null) throw new HttpError(409, "The row this draft would add to no longer exists. Reject the draft.");
+  const was = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2 AND section=$3 FOR UPDATE`, [d.item_id, d.project_id, d.target_store]);
+  if (!was.rows[0]) throw new HttpError(409, "The row this draft would add to no longer exists. Reject the draft.");
+  const before = toItem(was.rows[0]);
+  const next = appendAt(before.data, op.field, data.value);
+  const checked = dataSchemaFor(d.target_store).safeParse(next);
+  if (!checked.success) {
+    const i = checked.error.issues[0];
+    throw new HttpError(400, `The row would not be valid with this added: data.${i?.path.join(".") || "(value)"}: ${i?.message ?? "invalid"}.`);
+  }
+  const r = await c.query<ItemRow>(`UPDATE items SET data=$2, updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [d.item_id, JSON.stringify(checked.data)]);
+  const item = toItem(r.rows[0]);
+  const u = await c.query<DraftDbRow>(`UPDATE drafts SET status='approved', decided_at=now(), decided_by=$2 WHERE id=$1 RETURNING ${DRAFT_COLS}`, [d.id, currentActor() || null]);
+  const top = op.field.split(".")[0];
+  await logEventIn(c, d.project_id, "draft.approved", `Approved a draft: added "${d.title}" to ${before.title}`, {
+    draftId: Number(d.id),
+    runId: d.run_id,
+    generator: d.generator,
+    op: "append",
+    field: op.field,
+    itemId: item.id,
+    section: item.section,
+    title: item.title,
+    model: d.model,
+    provider: d.provider,
+    sources: d.sources,
+    before: { [`data.${top}`]: before.data[top] ?? null },
+    after: { [`data.${top}`]: item.data[top] },
   });
   return { draft: toDraftRow(u.rows[0]), item, before };
 }

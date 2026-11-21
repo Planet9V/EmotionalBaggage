@@ -58,6 +58,7 @@ export const adminSettingsPut = z
     reasoningModel: reasoningChoice.nullable().optional(),
     embeddingModel: embeddingChoice.nullable().optional(),
     plannerUrl: httpUrl.nullable().optional(),
+    slicerUrl: httpUrl.nullable().optional(),
     defaultConcept: z.string().trim().min(1, "cannot be empty; send null to clear it").max(80).nullable().optional(),
   })
   .strict()
@@ -122,6 +123,7 @@ export const connectionTest = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("amazon-sp") }).strict(),
   z.object({ kind: z.literal("x") }).strict(),
   z.object({ kind: z.literal("instagram") }).strict(),
+  z.object({ kind: z.literal("slicer"), url: httpUrl.optional() }).strict(),
   z.object({ kind: z.literal("database") }).strict(),
 ]);
 

@@ -2,6 +2,9 @@ import type { PoolClient } from "pg";
 import { ITEM_COLS, toItem, type ItemRow } from "@/lib/db";
 import type { Item } from "@/lib/types";
 import type { GateRecord } from "./evaluate";
+import type { GateFacts } from "./computed";
+import { ercForProject } from "@/lib/parts/server";
+import { sectionVisible } from "@/lib/productTypes";
 
 // Reading a concept's process state on the server. Writes are in the routes, inside one tx().
 
@@ -17,7 +20,7 @@ export const toGate = (r: GateRow): GateRecord => ({
 });
 
 /** The kinds of event the Process page lists as its history. */
-export const PROCESS_EVENT_KINDS = ["gate.overridden", "stage.advanced", "stage.moved-back"] as const;
+export const PROCESS_EVENT_KINDS = ["gate.overridden", "gate.override-withdrawn", "stage.advanced", "stage.moved-back"] as const;
 
 export type ProcessEvent = { id: number; kind: string; summary: string; data: Record<string, unknown>; createdAt: string };
 
@@ -39,4 +42,16 @@ export async function historyOf(c: Runner, projectId: string): Promise<ProcessEv
     [projectId, [...PROCESS_EVENT_KINDS]]
   );
   return r.rows.map((e) => ({ id: Number(e.id), kind: e.kind, summary: e.summary, data: e.data ?? {}, createdAt: new Date(e.created_at).toISOString() }));
+}
+
+/**
+ * What the gates need beyond the rows: the concept's currency, and the electrical checks' counts for a
+ * product type that shows a schematic (they read the pins table, so they are worked out here).
+ */
+export async function factsOf(c: Runner, projectId: string, productType: string): Promise<GateFacts> {
+  const r = await c.query<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]);
+  const currency = r.rows[0]?.currency || "USD";
+  if (!sectionVisible(productType, "design", "schematic")) return { currency, erc: null };
+  const e = await ercForProject(projectId);
+  return { currency, erc: { ok: e.ok, errors: e.errors, warnings: e.warnings } };
 }

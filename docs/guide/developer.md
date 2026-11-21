@@ -207,6 +207,10 @@ Pure modules in `src/lib/campaigns` (metrics, the stop and scale rule, budget, m
 
 Everything that sends goes through `send()` in `src/lib/channels/send.ts`, with a confirmation `{ channel, itemId, textSha256 }` taken from `GET /api/channels/send/preview`; a changed text is refused. Outside calls use `channelFetch` and the token buckets in `rateLimit.ts`. Rows read from a service carry `data.externalId`, kept unique per concept and section by migration 0021. Test-only environment variables point the clients at stand-ins: `AMAZON_LWA_TOKEN_URL`, `AMAZON_SP_BASE_URL`, `X_API_BASE_URL`, `X_AUTHORIZE_URL`, `INSTAGRAM_GRAPH_BASE_URL`.
 
+## Joins between features
+
+Gate check kinds are listed in `src/lib/process/computed.ts`; facts only the server knows come from `factsOf`. The drafting engine's `load`, `params`, `sources`, `append` and `saveDrafts` let a feature's own screen run a generator. `src/lib/geometry/pins3d.ts` is the one source of 3D pin positions. `src/lib/campaigns/adRule.ts` resolves the rule that governs an ad. `src/lib/concepts/copy.ts` decides what a duplicate carries. `src/lib/report/sections.ts` builds the computed report sections. `src/lib/ai/drafts/attack.ts` runs the reviewer's attack after approval, claimed by one atomic update so it never runs twice. Every new route that writes must be listed in `tests/trace/write-paths.test.ts` with where it records its change.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

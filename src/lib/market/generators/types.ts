@@ -1,8 +1,8 @@
-// The shape every marketing generator has. It is the shape the shared drafting engine
+// The shape every marketing generator has. The shared drafting engine
 // (src/lib/ai/drafts/, another branch) uses, so a generator can move onto it unchanged:
 //   { id, label, from, to, applies, buildPrompt(context), schema }
 // A generator is a plain module: no UI, no storage, no model client. `runGenerator` in
-// src/lib/market/run.ts loads the context, calls completeJson and saves the rows as drafts.
+// src/lib/market/drafting.ts puts each one on the shared drafting engine (src/lib/ai/drafts).
 import type { z } from "zod";
 import type { Item } from "@/lib/types";
 import type { GeneratedFrom } from "../schemas";

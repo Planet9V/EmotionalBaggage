@@ -229,6 +229,20 @@ export function unitCost(inputs: EconomicsInputs, batchSize: number): UnitCost {
   };
 }
 
+/**
+ * The batch size every screen outside Unit economics quotes a unit cost at: the first planned batch
+ * that has a size, or 1 when none is planned. Pricing, campaigns, content and the report all use it,
+ * so the same concept never shows two unit costs.
+ */
+export function referenceBatchSize(inputs: EconomicsInputs): number {
+  return wholeBatch(inputs.batches.find((b) => b.units !== null)?.units ?? 1);
+}
+
+/** The concept's unit cost at the reference batch size. The one number other features read. */
+export function referenceUnitCost(inputs: EconomicsInputs): UnitCost {
+  return unitCost(inputs, referenceBatchSize(inputs));
+}
+
 export type FixedCosts = { lines: { key: string; label: string; amount: number; how: string; /** paid once per batch, not once in all */ setup: boolean }[]; total: number; missing: Missing[] };
 
 /** Costs paid once in all: tooling and certification rows, tooling named on a manufacturing method, and one run of every setup row. */

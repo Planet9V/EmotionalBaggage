@@ -18,6 +18,7 @@ import { pool, q } from "@/lib/db";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { POST as researchRoute } from "@/app/api/projects/[id]/sourcing/research/route";
+import { POST as approveRoute } from "@/app/api/drafts/[id]/approve/route";
 import { ctx, json, read, SEEDED } from "../api/helpers";
 
 // Row data read back from the database: shape checked by the assertions, not by the type.
@@ -35,6 +36,9 @@ async function makePart(data: Record<string, unknown> = {}) {
 }
 const ask = (partId: number, kind: "prices" | "alternates", confirm = true) => researchRoute(json("POST", { partId, kind, confirm }), ctx(SEEDED));
 const sourcingOf = async (id: number) => (await q<{ data: Loose }>("SELECT data FROM items WHERE id=$1", [id]))[0].data.sourcing;
+/** Undecided engine drafts on this part. */
+const draftsOf = async (id: number) => q<Loose>("SELECT id, generator, title, data, sources, status FROM drafts WHERE item_id=$1 AND status='draft' ORDER BY id", [id]);
+type EngineDraft = { id: number; generator: string; title: string; data: Loose; op: { op: string; field?: string }; sources: { kind: string; id: number; title: string }[]; itemId: number };
 
 beforeEach(() => {
   process.env.PERPLEXITY_API_KEY = "test-key";
@@ -56,26 +60,40 @@ describe("Check prices and Find alternates", () => {
     expect(answer.calls).toBe(0);
   });
 
-  it("saves a cited price as a draft with its page, saves the answer as research, and drops the uncited line", async () => {
+  it("saves a cited price as an engine draft with its page, saves the answer as research, and drops the uncited line", async () => {
     const p = await makePart();
-    const r = await read<{ drafts: { kind: string; citation: string; offer: { supplier: string; price: number } }[]; dropped: string[] }>(await ask(p.id, "prices"));
+    const r = await read<{ drafts: EngineDraft[]; dropped: string[]; researchId: number }>(await ask(p.id, "prices"));
     expect(r.status).toBe(201);
     expect(r.body.drafts).toHaveLength(1);
-    expect(r.body.drafts[0]).toMatchObject({ kind: "offer", citation: PAGE, offer: { supplier: "Mouser", price: 1.25 } });
+    expect(r.body.drafts[0]).toMatchObject({ generator: "sourcing.prices", itemId: p.id, op: { op: "append", field: "sourcing.offers" }, data: { value: { supplier: "Mouser", price: 1.25, citation: PAGE, source: "research" } } });
+    expect(r.body.drafts[0].sources).toEqual([{ kind: "research", id: r.body.researchId, title: PAGE }]);
     expect(r.body.dropped.join()).toMatch(/Ghost: no cited page/);
     const s = await sourcingOf(p.id);
-    expect(s.drafts).toHaveLength(1);
-    expect(s.offers).toEqual([]);
+    expect(s?.offers ?? []).toEqual([]);
     const rows = await q("SELECT 1 FROM research WHERE query = 'Prices for test: buck converter'");
     expect(rows).toHaveLength(1);
+    const run = await q<{ data: Loose }>("SELECT data FROM events WHERE kind='draft.run' AND data->>'generator'='sourcing.prices' ORDER BY id DESC LIMIT 1");
+    expect(run[0].data).toMatchObject({ itemId: p.id, drafts: 1 });
   });
 
-  it("never puts a draft among the offers or the unit price by itself", async () => {
+  it("never puts a draft among the offers or the unit price by itself; approving it adds the offer to the part as it is then", async () => {
     const p = await makePart();
-    await ask(p.id, "prices");
+    const r = await read<{ drafts: EngineDraft[] }>(await ask(p.id, "prices"));
     const row = (await q<{ data: Loose }>("SELECT data FROM items WHERE id=$1", [p.id]))[0].data;
     expect(row.unit).toBeUndefined();
-    expect(row.sourcing.chosen).toBeUndefined();
+    expect(row.sourcing?.chosen).toBeUndefined();
+    // the user edits the part after the draft was made: approval must not overwrite that
+    expect((await patchItem(json("PATCH", { data: { qty: 7 } }), ctx(String(p.id)))).status).toBe(200);
+    const a = await approveRoute(json("POST"), ctx(String(r.body.drafts[0].id)));
+    expect(a.status).toBe(200);
+    const after = (await q<{ data: Loose }>("SELECT data FROM items WHERE id=$1", [p.id]))[0].data;
+    expect(after.qty).toBe(7);
+    expect(after.sourcing.offers).toHaveLength(1);
+    expect(after.sourcing.offers[0]).toMatchObject({ supplier: "Mouser", citation: PAGE });
+    expect(after.unit).toBeUndefined();
+    const ev = await q<{ data: Loose }>("SELECT data FROM events WHERE kind='draft.approved' AND (data->>'itemId')::bigint=$1 ORDER BY id DESC LIMIT 1", [p.id]);
+    expect(ev[0].data).toMatchObject({ op: "append", field: "sourcing.offers", before: { "data.sourcing": null } });
+    expect(ev[0].data.after["data.sourcing"].offers).toHaveLength(1);
   });
 
   it("saves nothing when the answer cites no page", async () => {
@@ -83,21 +101,21 @@ describe("Check prices and Find alternates", () => {
     const p = await makePart();
     const r = await read<{ drafts: unknown[] }>(await ask(p.id, "prices"));
     expect(r.body.drafts).toEqual([]);
-    expect((await sourcingOf(p.id))?.drafts ?? []).toEqual([]);
+    expect(await draftsOf(p.id)).toEqual([]);
   });
 
   it("saves alternates as drafts too", async () => {
     answer.text = `LM2596 module | LM2596 | pins differ, 3 A | ${PAGE}`;
     const p = await makePart();
-    const r = await read<{ drafts: { kind: string; alternate: { name: string } }[] }>(await ask(p.id, "alternates"));
-    expect(r.body.drafts[0]).toMatchObject({ kind: "alternate", alternate: { name: "LM2596 module" } });
+    const r = await read<{ drafts: EngineDraft[] }>(await ask(p.id, "alternates"));
+    expect(r.body.drafts[0]).toMatchObject({ generator: "sourcing.alternates", op: { field: "sourcing.alternates" }, data: { value: { name: "LM2596 module" } } });
   });
 
   it("adds to the drafts already waiting instead of replacing them", async () => {
     const p = await makePart();
     await ask(p.id, "prices");
     await ask(p.id, "prices");
-    expect((await sourcingOf(p.id)).drafts).toHaveLength(2);
+    expect(await draftsOf(p.id)).toHaveLength(2);
   });
 
   it("passes Perplexity's trouble on in plain words and saves nothing", async () => {

@@ -7,7 +7,7 @@ import { STAGES } from "@/lib/menu";
 import { processFor } from "@/lib/process/definitions";
 import { gatePassed, stageLabel } from "@/lib/process/evaluate";
 import { stageBody } from "@/lib/process/schemas";
-import { gatesOf, itemsOf } from "@/lib/process/server";
+import { factsOf, gatesOf, itemsOf } from "@/lib/process/server";
 import { processResponse } from "@/lib/process/state";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -34,7 +34,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
 
     if (ti < fi) {
       await c.query("UPDATE projects SET stage=$2, updated_at=now() WHERE id=$1", [id, b.stage]);
-      await logEventIn(c, id, "stage.moved-back", `Moved back from ${stageLabel(from)} to ${stageLabel(b.stage)}`, { from, to: b.stage, by: currentActor() });
+      await logEventIn(c, id, "stage.moved-back", `Moved back from ${stageLabel(from)} to ${stageLabel(b.stage)}`, { from, to: b.stage, by: currentActor(), before: { stage: from }, after: { stage: b.stage } });
       return processResponse(c, id);
     }
 
@@ -43,7 +43,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     }
 
     const state = { stage: from, gates: await gatesOf(c, id) };
-    const g = gatePassed(processFor(p.product_type), state, from, await itemsOf(c, id), { name: p.name, oneLiner: p.one_liner });
+    const g = gatePassed(processFor(p.product_type), state, from, await itemsOf(c, id), { name: p.name, oneLiner: p.one_liner }, await factsOf(c, id, p.product_type));
     if (!g.passed) {
       const unmet = g.result.checks.filter((x) => !x.met).map((x) => ({ id: x.id, label: x.label, detail: x.detail, href: x.href }));
       throw new HttpError(
@@ -67,7 +67,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       id,
       "stage.advanced",
       `Advanced from ${stageLabel(from)} to ${stageLabel(b.stage)}${how === "override" ? " on an override" : " with every check met"}`,
-      { from, to: b.stage, passedBy: how, by: currentActor() }
+      { from, to: b.stage, passedBy: how, by: currentActor(), before: { stage: from }, after: { stage: b.stage } }
     );
     return processResponse(c, id);
   });

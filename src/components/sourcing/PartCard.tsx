@@ -13,6 +13,7 @@ import { pieceUnitPrice } from "@/lib/sourcing/list";
 import { newId, ORDER_STATUSES, orderSchema, readSourcing, type Draft, type Offer, type Sourcing } from "@/lib/sourcing/schemas";
 import type { Kind } from "@/lib/sourcing/research";
 import { OfferForm } from "./OfferForm";
+import { ResearchDrafts } from "./ResearchDrafts";
 
 export type Change = { status?: string; data?: Record<string, unknown> };
 
@@ -115,7 +116,8 @@ export function PartCard({ part, currency, onSave, onResearch }: {
                 <Button size="sm" variant="outline" onClick={() => onResearch("alternates")}><Sparkles className="h-3.5 w-3.5" aria-hidden /> Find alternates</Button>
               </div>
             </div>
-            {!s.drafts.length ? <p className="text-sm text-secondary">No drafts. A draft is a suggestion with the page it came from. It counts as nothing until you accept it.</p> : (
+            <ResearchDrafts projectId={part.item.projectId} partId={part.item.id} />
+            {!s.drafts.length ? null : (
               <ul className="space-y-2">
                 {s.drafts.map((d) => (
                   <li key={d.id} className="rounded-lg border border-dashed border-hairline p-3 text-sm">

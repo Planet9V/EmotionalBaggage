@@ -16,6 +16,8 @@ import { EditBar, ExportBar, MeasureReadout, PartsTable, RoutePanel, SectionPane
 import { useShapes } from "@/lib/geometry/useShapes";
 import { assembly3mf, assemblyStl, type ExportPart } from "@/lib/geometry/export";
 import { bundleRadius, buildRouteRequest, routeState, type RouteOutcome } from "@/lib/geometry/routing";
+import { routePartsOf } from "@/lib/geometry/pins3d";
+import { usePins } from "@/lib/parts/client";
 import { snap } from "@/lib/geometry/rotation";
 import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
@@ -74,6 +76,7 @@ export function ModelView({ project }: ViewProps) {
   const [classOff, setClassOff] = useState<Set<NetClass>>(() => new Set());
   const [explodeBy, setExplodeBy] = useState("");
   const wiringItems = useItems(project.id, STORE.wiring);
+  const { pins: pinRows } = usePins(project.id);
   const qc = useQueryClient();
   const [mode, setMode] = useState<TransformMode>("translate");
   const [measure, setMeasure] = useState(false);
@@ -120,13 +123,13 @@ export function ModelView({ project }: ViewProps) {
   // A focused part that was deleted or lost its geometry simply stops being focused (focus is null).
   const focused = focus !== null;
 
-  /** Wires that touch the focused part, as an end or in series. */
-  const touching = useMemo(() => (focus && focus.ref ? wires.filter((w) => w.from === focus.ref || w.to === focus.ref || w.via === focus.ref) : []), [focus, wires]);
+  /** Wires that touch the focused part. A part in series is its own part with a wire to each pin. */
+  const touching = useMemo(() => (focus && focus.ref ? wires.filter((w) => w.from === focus.ref || w.to === focus.ref) : []), [focus, wires]);
   const neighbourIds = useMemo(() => {
     const ids = new Set<number>();
     if (!focus) return ids;
     for (const w of touching) {
-      for (const r of [w.from, w.to, w.via]) {
+      for (const r of [w.from, w.to]) {
         const p = r ? partByRef.get(r) : undefined;
         if (p && p.item.id !== focus.item.id && p.geometry) ids.add(p.item.id);
       }
@@ -151,20 +154,24 @@ export function ModelView({ project }: ViewProps) {
     if (!explodeByValid) return null;
     const match = (w: Wire) => (explodeBy.startsWith("class:") ? w.netClass === explodeBy.slice(6) : w.net === explodeBy.slice(4));
     const refs = new Set<string>();
-    for (const w of wires) if (match(w)) for (const r of [w.from, w.to, w.via]) if (r) refs.add(r);
+    for (const w of wires) if (match(w)) for (const r of [w.from, w.to]) if (r) refs.add(r);
     return new Map(parts.map((p) => [p.item.id, p.ref && refs.has(p.ref) ? 1 : 0]));
   }, [explodeByValid, explodeBy, wires, parts]);
 
   // Which wires have a current route, and which are out of date.
-  const fingerprints = useMemo(
+  const routeBuilt = useMemo(
     () =>
       buildRouteRequest(
-        parts.filter((p) => p.geometry && p.ref).map((p) => ({ id: p.item.id, ref: p.ref, geometry: p.geometry as PartGeometry, pins: p.item.data.pins })),
+        // the same pin positions the route request uses (pin rows, else the library entry), so a fresh route reads as current
+        routePartsOf(parts, pinRows ?? []),
         wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })),
         { cell: routeCell }
-      ).fingerprints,
-    [parts, wires, routeCell]
+      ),
+    [parts, wires, routeCell, pinRows]
   );
+  const fingerprints = routeBuilt.fingerprints;
+  /** wire ends placed at the middle of a part face because the part has no position for that pin */
+  const approximateEnds = useMemo(() => [...routeBuilt.pinSources.values()].reduce((n, [a, b]) => n + (a === "face" ? 1 : 0) + (b === "face" ? 1 : 0), 0), [routeBuilt]);
   const routeCounts = useMemo(() => {
     let routed = 0;
     let stale = 0;
@@ -193,12 +200,12 @@ export function ModelView({ project }: ViewProps) {
       else if (!a.geometry || !b.geometry) noGeometry++;
       else if (hidden.has(a.item.id) || hidden.has(b.item.id)) hiddenEnd++;
       else if (!classOff.has(w.netClass)) {
-        const ends = `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}${w.via ? ` via ${w.via}` : ""}`;
+        const ends = `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`;
         const current = w.routed && w.routed.path.length >= 2 && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fingerprints.get(w.item.id) ?? "") === "current";
         if (assembled && current && w.routed) {
           routed.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, length: w.routed.lengthMm, color: NET_COLOR[w.netClass], path: w.routed.path, radius: 0.6 });
         } else {
-          draw.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, color: NET_COLOR[w.netClass], a: a.item.id, b: b.item.id, via: w.via });
+          draw.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, color: NET_COLOR[w.netClass], a: a.item.id, b: b.item.id, via: "" });
         }
       }
     }
@@ -236,7 +243,7 @@ export function ModelView({ project }: ViewProps) {
         otherId: other && other.geometry ? other.item.id : null,
         net: w.net,
         color: NET_COLOR[w.netClass],
-        via: end ? w.via : "",
+        via: "",
         status: w.status,
         series: end ? "" : `In series: ${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`,
       };
@@ -637,6 +644,7 @@ export function ModelView({ project }: ViewProps) {
           />
           {!wiringItems.loading && wires.length === 0 && parts.length > 0 && <p className="text-xs text-muted">{NO_WIRES}</p>}
           {wiresOn && wirePlan.note && <p className="text-xs text-warning">{wirePlan.note}</p>}
+          {wires.length > 0 && <p className="text-xs text-muted" data-testid="approximate-ends">{approximateEnds === 0 ? "Every wire end that can be routed is at a real pin position." : `${approximateEnds} wire end${approximateEnds === 1 ? " is" : "s are"} approximate: the part has no position for that pin, so the end is the middle of the part's face. Pin positions come from the part's pins or its library entry.`}</p>}
           {wiresOn && wirePlan.draw.length > 0 && <p className="text-xs text-muted">{wirePlan.draw.length} wire{wirePlan.draw.length === 1 ? " is" : "s are"} drawn as straight curves between part centres: {explodePct === 0 ? "not routed yet, or the route is out of date." : "the exploded view does not show routes."}</p>}
           <EditBar
             mode={mode}

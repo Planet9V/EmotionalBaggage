@@ -107,6 +107,9 @@ export const PART_KINDS: readonly PartKindInfo[] = [
   { id: "regulator", label: "Regulator", category: "regulator", symbol: "box", defaultPins: [{ name: "VIN", kind: "power_in" }, { name: "VOUT", kind: "power_out" }, { name: "GND", kind: "ground" }] },
   { id: "microcontroller", label: "Microcontroller", category: "microcontroller", symbol: "box", defaultPins: [] },
   { id: "display", label: "Display", category: "display", symbol: "box", defaultPins: [] },
+  // The enclosure needs to tell these apart: a microphone gets a sound hole, a circuit board gets standoffs.
+  { id: "microphone", label: "Microphone", category: "sensor", symbol: "box", defaultPins: [] },
+  { id: "circuit board", label: "Circuit board", category: "mechanical", symbol: "box", defaultPins: [] },
   { id: "mechanical", label: "Mechanical", category: "mechanical", symbol: "box", defaultPins: [] },
   { id: "enclosure", label: "Enclosure", category: "mechanical", symbol: "box", defaultPins: [] },
   { id: "printed part", label: "Printed part", category: "mechanical", symbol: "box", defaultPins: [] },

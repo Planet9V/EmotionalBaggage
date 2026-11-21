@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { z } from "zod";
 import { complete, getReasoning } from "@/lib/ai/models";
 import { REVIEWER_SYSTEM, reviewerContext } from "@/lib/ai/reviewer";
@@ -57,11 +58,12 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   });
 
   const saved = await tx(async (c) => {
+    const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 FOR UPDATE`, [itemId])).rows[0];
     const upd = await c.query<ItemRow>(
       `UPDATE items SET data = data || jsonb_build_object('critique', $2::jsonb), updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
       [itemId, JSON.stringify({ text, at: new Date().toISOString(), model: info.model, fingerprint: positioningFingerprint(item.data) })]
     );
-    await logEventIn(c, id, "market.critique", "The reviewer attacked the positioning", { itemId, model: info.model });
+    await logEventIn(c, id, "market.critique", "The reviewer attacked the positioning", { ...changedDetail(upd.rows[0], itemDiff(was, upd.rows[0])), model: info.model });
     return upd.rows[0];
   });
   return NextResponse.json({ item: toItem(saved) });

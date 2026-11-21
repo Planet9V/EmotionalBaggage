@@ -69,11 +69,11 @@ export function ComplianceView({ project }: ViewProps) {
     setDraftError("");
     setNotice("");
     try {
-      const r = await api<{ created: Item[]; skipped: number; model: string }>(`/api/projects/${encodeURIComponent(project.id)}/compliance/draft`, { method: "POST" });
-      await qc.invalidateQueries({ queryKey: keys.itemsOf(project.id) });
+      const r = await api<{ drafts: unknown[]; dropped: unknown[] }>(`/api/projects/${encodeURIComponent(project.id)}/compliance/draft`, { method: "POST" });
+      await qc.invalidateQueries({ queryKey: ["drafts", project.id] });
       setNotice(
-        r.created.length
-          ? `${r.created.length} drafted ${r.created.length === 1 ? "row" : "rows"} added${r.skipped ? `; ${r.skipped} already on the list` : ""}. Each stays a draft until you confirm it.`
+        r.drafts.length
+          ? `${r.drafts.length} ${r.drafts.length === 1 ? "draft is" : "drafts are"} waiting for review in Draft with AI at the top of this page${r.dropped.length ? `; ${r.dropped.length} left out` : ""}. Approve one to add it here, then confirm it.`
           : "Nothing new to add: every topic the model proposed is already on the list.",
       );
     } catch (e) {

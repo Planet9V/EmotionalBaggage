@@ -61,7 +61,17 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     for (const cid of new Set(b.rows.flatMap((r) => (r.creativeId ? [r.creativeId] : [])))) labels.set(cid, (await requireCreative(c, id, cid)).title);
     let added = 0;
     let replaced = 0;
+    // the figures each saved day had, and have now, for the record
+    const before: Record<string, unknown>[] = [];
+    const after: Record<string, unknown>[] = [];
     for (const r of b.rows) {
+      const old = (await c.query<{ spend_minor: string; impressions: string; clicks: string; orders: string; revenue_minor: string }>(
+        "SELECT spend_minor, impressions, clicks, orders, revenue_minor FROM campaign_results WHERE campaign_id=$1 AND COALESCE(creative_id, 0)=$2 AND day=$3",
+        [b.campaignId, r.creativeId ?? 0, r.day]
+      )).rows[0];
+      const key = { day: r.day, creativeId: r.creativeId ?? null };
+      if (old) before.push({ ...key, spend: Number(old.spend_minor), impressions: Number(old.impressions), clicks: Number(old.clicks), orders: Number(old.orders), revenue: Number(old.revenue_minor) });
+      after.push({ ...key, spend: r.spend, impressions: r.impressions, clicks: r.clicks, orders: r.orders, revenue: r.revenue });
       const res = await c.query<{ inserted: boolean }>(
         `INSERT INTO campaign_results (project_id, campaign_id, creative_id, creative_label, day, spend_minor, impressions, clicks, orders, revenue_minor, source)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
@@ -82,6 +92,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       source: b.source,
       from: days[0],
       to: days[days.length - 1],
+      before: { results: before },
+      after: { results: after },
     });
     return { added, replaced };
   });
@@ -96,8 +108,16 @@ export const DELETE = route(async (req: Request, { params }: Ctx) => {
   const b = await body(req, remove);
   const campaign = await requireCampaign(id, b.campaignId);
   const removed = await tx(async (c) => {
-    const r = await c.query(`DELETE FROM campaign_results WHERE project_id=$1 AND campaign_id=$2 AND id = ANY($3)`, [id, b.campaignId, b.ids]);
-    await logEventIn(c, id, "campaign.results.removed", `Removed ${r.rowCount ?? 0} result rows from "${campaign.title}"`, { campaignId: b.campaignId, ids: b.ids });
+    const r = await c.query<{ id: string; day: string; creative_id: string | null; spend_minor: string; clicks: string; orders: string }>(
+      `DELETE FROM campaign_results WHERE project_id=$1 AND campaign_id=$2 AND id = ANY($3) RETURNING id, to_char(day, 'YYYY-MM-DD') AS day, creative_id, spend_minor, clicks, orders`,
+      [id, b.campaignId, b.ids]
+    );
+    await logEventIn(c, id, "campaign.results.removed", `Removed ${r.rowCount ?? 0} result rows from "${campaign.title}"`, {
+      campaignId: b.campaignId,
+      ids: b.ids,
+      before: { results: r.rows.map((x) => ({ id: Number(x.id), day: x.day, creativeId: x.creative_id === null ? null : Number(x.creative_id), spend: Number(x.spend_minor), clicks: Number(x.clicks), orders: Number(x.orders) })) },
+      after: { results: [] },
+    });
     return r.rowCount ?? 0;
   });
   const rows = await q(`SELECT ${RESULT_COLS} FROM campaign_results WHERE project_id=$1 AND campaign_id=$2 ORDER BY day, id`, [id, b.campaignId]);

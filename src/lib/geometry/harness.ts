@@ -13,7 +13,6 @@ export type HarnessWire = {
   toPin: string;
   colour: string;
   net: string;
-  via: string;
   lengthMm?: number;
 };
 
@@ -38,7 +37,14 @@ export function declaredPins(raw: unknown): string[] {
  * @param lengths routed run per wire row id, in mm. A wire with no entry is drawn with no length:
  *   the drawing never carries a guessed number.
  */
-export function buildHarnessRequest(title: string, parts: Part[], wires: Wire[], lengths: ReadonlyMap<number, number>): { request: HarnessRequest | null; problems: string[] } {
+export function buildHarnessRequest(
+  title: string,
+  parts: Part[],
+  wires: Wire[],
+  lengths: ReadonlyMap<number, number>,
+  /** a part's pin names as every view resolves them (pin rows, library, kind); the row's own data.pins when not given */
+  pinsOf: (p: Part) => string[] = (p) => declaredPins(p.item.data.pins),
+): { request: HarnessRequest | null; problems: string[] } {
   const byRef = new Map<string, Part>();
   for (const p of parts) if (p.ref && !byRef.has(p.ref)) byRef.set(p.ref, p);
   const problems: string[] = [];
@@ -59,7 +65,7 @@ export function buildHarnessRequest(title: string, parts: Part[], wires: Wire[],
       title: title.slice(0, 120) || "Harness",
       connectors: used.map((ref) => {
         const p = byRef.get(ref) as Part;
-        return { ref, title: p.item.title.slice(0, 120), pins: declaredPins(p.item.data.pins).slice(0, 400) };
+        return { ref, title: p.item.title.slice(0, 120), pins: pinsOf(p).slice(0, 400) };
       }),
       wires: usable.map(({ wire: w }) => {
         const colour = suggestedColour(w, nets);
@@ -72,7 +78,6 @@ export function buildHarnessRequest(title: string, parts: Part[], wires: Wire[],
           toPin: w.toPin,
           colour,
           net: w.net,
-          via: w.via,
           ...(len !== undefined ? { lengthMm: len } : {}),
         };
       }),

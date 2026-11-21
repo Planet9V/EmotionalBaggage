@@ -14,8 +14,6 @@ export type Wire = {
   fromPin: string;
   to: string;
   toPin: string;
-  /** ref of a part in series on this wire (a resistor), or "" */
-  via: string;
   status: string;
   /** the routed run through the enclosure from the planner (plan 5.12), or null when this wire was never routed */
   routed: RoutedWire | null;
@@ -66,7 +64,6 @@ export function toWire(item: Item): Wire | null {
     fromPin: str(item.data.fromPin),
     to,
     toPin: str(item.data.toPin),
-    via: str(item.data.via),
     status: item.status,
     routed: readRouted(item.data),
   };

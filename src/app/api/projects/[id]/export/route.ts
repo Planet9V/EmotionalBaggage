@@ -5,7 +5,10 @@ import { EXPORT_FORMAT, loadConceptIn } from "@/lib/api/concepts";
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * One JSON document with everything the concept owns, sent as a download.
+ * One JSON document with everything the concept owns, sent as a download: the concept with its
+ * product type, currency and sales regions, items (print jobs included), files, pins, tracked links
+ * (their set-up, not their clicks), events, research, messages and gates.
+ * Not in it: AI drafts, campaign results and link clicks, audit lines and credentials.
  * Read in one REPEATABLE READ transaction, so the parts agree with each other.
  */
 export const GET = route(async (_req: Request, { params }: Ctx) => {
@@ -13,6 +16,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
   const doc = await tx(async (c) => {
     await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
     const concept = await loadConceptIn(c, id);
+    const settings = (await c.query<{ currency: string; sales_regions: string[] }>("SELECT currency, sales_regions FROM projects WHERE id=$1", [id])).rows[0];
     const all = async <T,>(sql: string) => (await c.query<T & Record<string, unknown>>(sql, [id])).rows;
     const items = await all<Record<string, unknown>>(
       `SELECT id::int AS id, section, title, body, data, status, sort, created_at AS "createdAt", updated_at AS "updatedAt"
@@ -38,13 +42,19 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
     const pins = await all<Record<string, unknown>>(
       `SELECT id::int AS id, item_id::int AS "itemId", name, kind, side, position, voltage, data, sort FROM pins WHERE project_id=$1 ORDER BY item_id, sort, id`
     );
+    // Tracked links as set up; `campaignId` and `creativeId` are ids in `items` above. Clicks are results and stay out.
+    const trackedLinks = await all<Record<string, unknown>>(
+      `SELECT id::int AS id, campaign_id::int AS "campaignId", creative_id::int AS "creativeId", creative_label AS "creativeLabel", base_url AS "baseUrl", destination,
+              utm_source AS "utmSource", utm_medium AS "utmMedium", utm_campaign AS "utmCampaign", utm_content AS "utmContent", utm_term AS "utmTerm", code, disabled
+         FROM tracked_links WHERE project_id=$1 ORDER BY id`
+    );
     // PostgreSQL's base64 breaks lines every 76 characters; the document carries it unbroken.
     for (const f of files) f.bytesBase64 = String(f.bytesBase64).replace(/\n/g, "");
     return {
       format: EXPORT_FORMAT,
       exportedAt: new Date().toISOString(),
-      concept,
-      counts: { items: items.length, events: events.length, research: research.length, messages: messages.length, gates: gates.length, files: files.length },
+      concept: { ...concept, currency: settings.currency, salesRegions: settings.sales_regions },
+      counts: { items: items.length, events: events.length, research: research.length, messages: messages.length, gates: gates.length, files: files.length, pins: pins.length, trackedLinks: trackedLinks.length },
       items,
       events,
       research,
@@ -52,6 +62,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
       gates,
       files,
       pins,
+      trackedLinks,
     };
   });
   return new Response(JSON.stringify(doc, null, 2), {

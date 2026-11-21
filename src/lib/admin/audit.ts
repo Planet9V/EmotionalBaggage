@@ -8,7 +8,7 @@ export const AUDIT_LIMIT = 200;
 export type AuditEntry = {
   at: string;
   action: "set" | "replaced" | "removed" | "tested";
-  /** a provider id, "printer:<family>", "planner" or "database" */
+  /** a provider id, "printer:<family>", "planner", "slicer" or "database" */
   provider: string;
   /** the field, or null when the entry is about the whole provider */
   field: string | null;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { z } from "zod";
 import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, notFound, recordId, route } from "@/lib/api/route";
@@ -22,7 +23,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
        WHERE id=$1 RETURNING ${ITEM_COLS}`,
       [id, b.status, new Date().toISOString()]
     );
-    await logEventIn(c, was.project_id, "compliance.confirmed", `Confirmed compliance row "${was.title}" as ${b.status}`, { itemId: id });
+    await logEventIn(c, was.project_id, "compliance.confirmed", `Confirmed compliance row "${was.title}" as ${b.status}`, changedDetail(res.rows[0], itemDiff(was, res.rows[0])));
     return res.rows[0];
   });
   return NextResponse.json({ item: toItem(row) });

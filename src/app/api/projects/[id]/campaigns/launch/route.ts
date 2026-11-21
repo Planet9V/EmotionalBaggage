@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { addedDetail } from "@/lib/trace/changes";
 import { z } from "zod";
 import { currentActor } from "@/lib/actor";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
@@ -36,14 +37,16 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     const made = instantiate(t, { launchKey, launchDate: b.launchDate, title: b.title, usedKeys: new Set(keys.rows.map((r) => r.key)) });
     const ids: number[] = [];
     for (const row of [made.launch, ...made.steps]) {
-      const r = await c.query<{ id: string }>(
+      const r = await c.query<ItemRow>(
         `INSERT INTO items (project_id, section, title, body, data, status, sort)
-         VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort),0)+1 FROM items WHERE project_id=$1)) RETURNING id`,
+         VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort),0)+1 FROM items WHERE project_id=$1)) RETURNING ${ITEM_COLS}`,
         [id, LAUNCH_STORE, row.title.slice(0, 300), row.body, JSON.stringify(row.data), row.status]
       );
       ids.push(Number(r.rows[0].id));
+      // each row is recorded as added, with every field it starts with, so its History has its first line
+      await logEventIn(c, id, "item.added", `Added "${r.rows[0].title}" to ${LAUNCH_STORE} from the ${t.label} template`, addedDetail(r.rows[0]));
     }
-    await logEventIn(c, id, "launch.created", `Started the ${t.label} launch for ${b.launchDate} with ${made.steps.length} steps (by ${currentActor() ?? "someone"})`, { template: t.id, launchKey, launchDate: b.launchDate, steps: made.steps.length, launchItemId: ids[0] });
+    await logEventIn(c, id, "launch.created", `Started the ${t.label} launch for ${b.launchDate} with ${made.steps.length} steps (by ${currentActor() ?? "someone"})`, { template: t.id, launchKey, launchDate: b.launchDate, steps: made.steps.length, launchItemId: ids[0], after: { launchKey, launchDate: b.launchDate, rows: ids.length } });
     return { launchKey, launchItemId: ids[0], steps: made.steps.length };
   });
   const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [id, LAUNCH_STORE])).map(toItem);

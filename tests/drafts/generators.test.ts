@@ -267,7 +267,9 @@ describe("product types", () => {
     const g = await read<GeneratorsReply>(await GENERATORS(json("GET", undefined, `http://t/x?projectId=${PHYS}&kind=section`)));
     // The content generators (src/lib/content/generators) apply to every product type; this list is about the engineering ones.
     const content = new Set(CONTENT_GENERATORS.map((c) => c.id));
-    expect(g.body.generators.map((x) => x.id).filter((id) => !content.has(id))).toEqual(["press-release", "faq", "requirements", "parts", "assembly", "tests", "campaigns", "replies", "review-tags"]);
+    // The marketing and compliance generators (on the engine since integration item 3) apply to every type too.
+    const everyType = (id: string) => content.has(id) || id.startsWith("market.") || id === "compliance";
+    expect(g.body.generators.map((x) => x.id).filter((id) => !everyType(id))).toEqual(["press-release", "faq", "requirements", "parts", "assembly", "tests", "campaigns", "replies", "review-tags"]);
     await addItem(PHYS, "design/requirements", "Holds 120 kg", { key: "phys-1" });
     script.parts = { rows: [{ ref: "LEG1", title: "Leg", spec: "Beech", kind: "mechanical", qty: 3, pins: [{ name: "1", role: "passive" }] }] };
     const r = await run({ projectId: PHYS, generator: "parts" });

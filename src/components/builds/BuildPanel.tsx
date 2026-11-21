@@ -12,6 +12,7 @@ import { criteriaOf } from "@/lib/trace/builds";
 import { freshKey } from "@/lib/trace/coverage";
 import { keyOf, listOf } from "@/lib/trace/spec";
 import type { Item } from "@/lib/types";
+import { BuildPrintJobs } from "./BuildPrintJobs";
 
 /**
  * What the build editor adds to the generic row editor: dates, exit criteria, and the tests the build must pass.
@@ -133,6 +134,7 @@ export function BuildPanel({ item, projectId }: { item: Item; projectId: string 
         emptyText="No acceptance test matches. Add tests in Prototype, Acceptance tests."
       />
       <p className="text-[11px] leading-snug text-muted">Marking the build passed is refused while a criterion is unmet or a linked test has not passed.</p>
+      <BuildPrintJobs projectId={projectId} buildKey={keyOf(build.data)} />
       {error && (
         <p role="alert" className="text-sm text-danger wrap-anywhere">
           {error}

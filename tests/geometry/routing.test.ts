@@ -157,3 +157,28 @@ describe("boxOf agrees with the router's obstacles", () => {
     expect(o && o.max[0] - o.min[0]).toBeCloseTo(30, 6);
   });
 });
+
+describe("pin positions from the part library (integration item 4)", () => {
+  it("a library part's pins are scaled to the part's size, put on its top face, and turned with it", async () => {
+    const { pinPoints, routePartsOf } = await import("@/lib/geometry/pins3d");
+    const { toPart } = await import("@/lib/domain");
+    const { pinPosition, buildRouteRequest } = await import("@/lib/geometry/routing");
+    // battery-holder-3xaa: 58 x 48 outline, "+" at x -5, y 24 and "-" at x 5, y 24
+    const item = { id: 1, projectId: "p", section: "design/bom", title: "Cells", body: "", status: "to buy", sort: 1, data: { ref: "BT1", library: "battery-holder-3xaa", geometry: { shape: "box", size: [116, 20, 96], pos: [0, 10, 0], basis: "typical" } } };
+    const g = toPart(item).geometry!;
+    expect(pinPoints(item, [], g)).toEqual([{ name: "+", pos: [-10, 10, 48] }, { name: "-", pos: [10, 10, 48] }]);
+    const [part] = routePartsOf([toPart(item)], []);
+    expect(pinPosition(part, "+", [100, 0, 0])).toEqual({ pos: [-10, 20, 48], source: "pin" });
+    // turned a quarter round the vertical axis: x and z swap
+    const turned = { ...part, geometry: { ...part.geometry, rotation: [0, 90, 0] as [number, number, number] } };
+    const at = pinPosition(turned, "+", [100, 0, 0]);
+    expect(at.source).toBe("pin");
+    expect(at.pos.map((v) => Math.round(v))).toEqual([48, 20, 10]);
+    // a pin with no position falls back to the face that looks toward the other end
+    expect(pinPosition(part, "NC", [100, 10, 0]).source).toBe("face");
+    // in a route request, the count of face ends follows
+    const other = { ...toPart({ ...item, id: 2, data: { ref: "U1", geometry: { shape: "box", size: [10, 10, 10], pos: [100, 5, 0], basis: "typical" } } }) };
+    const built = buildRouteRequest(routePartsOf([toPart(item), other], []), [{ id: 9, name: "w", from: "BT1", fromPin: "+", to: "U1", toPin: "VIN" }]);
+    expect(built.pinSources.get(9)).toEqual(["pin", "face"]);
+  });
+});

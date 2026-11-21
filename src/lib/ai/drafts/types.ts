@@ -5,7 +5,7 @@
 // checking each row against the target section's schema, saving drafts) is the engine's, in run.ts.
 import type { z } from "zod";
 import type { Item } from "@/lib/types";
-import type { DraftOp } from "./shared";
+import type { DraftOp, DraftSource } from "./shared";
 
 export type ConceptInfo = { id: string; name: string; oneLiner: string; productType: string; /** the concept's currency, for generators that work with money */ currency?: string };
 
@@ -22,6 +22,12 @@ export type GenContext = {
   revise?: { items: Item[]; why: string };
   /** a critique from the reviewer to answer in the revision */
   critique?: string;
+  /** what the person asked for in this run (a research answer to read, how many, a note) */
+  params?: Record<string, unknown>;
+  /** what the generator's own `load` read beyond rows (research answers, sales regions) */
+  extra?: Record<string, unknown>;
+  /** the model that answered; set by the engine before rows are checked */
+  model?: string;
 };
 
 /** What one output row becomes: a new row, a replacement of an existing one, or a removal. */
@@ -34,6 +40,8 @@ export type Proposed = {
   itemId?: number;
   /** ids of source rows the model said it used; checked against what it was given */
   basedOn?: number[];
+  /** sources the generator worked out itself (research answers, for example); used as they are */
+  sources?: DraftSource[];
 };
 
 export type ToDraft = { ok: true; drafts: Proposed[]; notes?: string[] } | { ok: false; reason: string };
@@ -49,6 +57,8 @@ export type Generator<Row = Record<string, unknown>> = {
   to: string;
   /** "section": a Draft with AI button on the target section; "optimise": run from /optimise */
   kind: "section" | "optimise";
+  /** reads what the prompt needs beyond rows of `from` (research answers, settings); server only */
+  load?(concept: ConceptInfo, params: Record<string, unknown>): Promise<Record<string, unknown>>;
   applies(productType: string): boolean;
   /** a sentence when there is nothing to work from; "" when it can run */
   blocked(ctx: GenContext): string;

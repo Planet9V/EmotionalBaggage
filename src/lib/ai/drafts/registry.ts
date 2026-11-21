@@ -8,8 +8,10 @@ import { campaignPlan } from "@/lib/campaigns/generator";
 import type { OptimiseAction } from "./measure";
 import { CHANNEL_GENERATORS } from "@/lib/channels/generators";
 import { CONTENT_GENERATORS } from "@/lib/content/generators";
+import { MARKET_DRAFT_GENERATORS } from "@/lib/market/drafting";
+import { complianceGenerator } from "@/lib/compliance/draft";
 
-export const GENERATORS: Generator<never>[] = [pressRelease, faq, requirements, parts, wiring, assembly, tests, optimiseCost, optimiseParts, optimisePrint, ...CONTENT_GENERATORS, campaignPlan, ...CHANNEL_GENERATORS] as unknown as Generator<never>[];
+export const GENERATORS: Generator<never>[] = [pressRelease, faq, requirements, parts, wiring, assembly, tests, optimiseCost, optimiseParts, optimisePrint, ...CONTENT_GENERATORS, campaignPlan, ...MARKET_DRAFT_GENERATORS, complianceGenerator, ...CHANNEL_GENERATORS] as unknown as Generator<never>[];
 
 export const OPTIMISE_GENERATOR: Record<OptimiseAction, string> = { cost: optimiseCost.id, parts: optimiseParts.id, print: optimisePrint.id };
 

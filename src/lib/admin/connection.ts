@@ -6,6 +6,7 @@ import { getCredential } from "@/lib/settings";
 import { AGENT_PATH, baseUrl as perplexityBase, DEFAULT_EFFORT, readResponse } from "@/lib/research/perplexity";
 import { audit } from "./audit";
 import { plannerUrl } from "./planner";
+import { slicerUrl } from "@/lib/slicing/config";
 import { getPrinterRow, requireFamily, resolveAccess, valuesOf } from "./printers";
 import { createAdapter } from "@/lib/printers/factory";
 import type { ConnectionTest } from "./schemas";
@@ -218,6 +219,18 @@ async function testPlanner(t: Extract<ConnectionTest, { kind: "planner" }>): Pro
   return { ok: true, message: `The planner answered (NetworkX ${j.networkx ?? "unknown"}).`, detail: { url, networkx: j.networkx ?? null } };
 }
 
+async function testSlicer(t: Extract<ConnectionTest, { kind: "slicer" }>): Promise<TestResult> {
+  const url = t.url ?? (await slicerUrl());
+  if (!url) return { ok: false, message: "No slicer address is saved and SLICER_URL is not set." };
+  const c = await call(`${url}/health`, {}, []);
+  if ("fail" in c) return c.fail;
+  if (c.res.status !== 200) return httpFailure(c.res, "The slicer", []);
+  const j = (await readJson(c.res)) as { ok?: boolean; slicerInstalled?: boolean; orcaVersion?: string } | undefined;
+  if (!j?.ok || j.orcaVersion === undefined) return { ok: false, message: "Something answered, but not the slicer service. Check the address." };
+  if (j.slicerInstalled === false) return { ok: false, message: `The slicer service answered, but OrcaSlicer ${j.orcaVersion} is not installed in it.`, detail: { url, orcaVersion: j.orcaVersion } };
+  return { ok: true, message: `The slicer answered (OrcaSlicer ${j.orcaVersion}).`, detail: { url, orcaVersion: j.orcaVersion } };
+}
+
 async function testDatabase(): Promise<TestResult> {
   const dbPassword = (() => {
     try {
@@ -274,6 +287,10 @@ export async function runConnectionTest(t: ConnectionTest): Promise<TestResult> 
     case "planner":
       result = await testPlanner(t);
       provider = "planner";
+      break;
+    case "slicer":
+      result = await testSlicer(t);
+      provider = "slicer";
       break;
     case "database":
       result = await testDatabase();

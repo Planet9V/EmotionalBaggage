@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 const base = (o: Partial<ProcessResponse> = {}): ProcessResponse => ({
-  projectId: "toy", name: "Wooden toy", oneLiner: "A pull-along duck", productType: "physical", stage: "research", gates: [], history: [], ...o,
+  projectId: "toy", name: "Wooden toy", oneLiner: "A pull-along duck", productType: "physical", stage: "research", gates: [], history: [], facts: { currency: "USD", erc: null }, ...o,
 });
 let id = 1;
 const row = (section: string, status: string, data: Record<string, unknown> = {}, title = `row ${id}`): Item => ({ id: id++, projectId: "toy", section, title, body: "", data, status, sort: id });

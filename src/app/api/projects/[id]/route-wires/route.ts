@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { z } from "zod";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { HttpError, body, requireProject, route } from "@/lib/api/route";
 import { plannerUrl } from "@/lib/admin/planner";
 import { STORE, toPart, toWire, type Wire } from "@/lib/domain";
+import { routePartsOf } from "@/lib/geometry/pins3d";
+import { pinsOfProject } from "@/lib/parts/server";
 import { ROUTED_KEYS, buildRouteRequest, toRoutedFields, type PlannerResult, type RouteOutcome, type RoutePart, type RouteWire } from "@/lib/geometry/routing";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -31,11 +34,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
 
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [id, [STORE.parts, STORE.wiring]]);
   const items = rows.map(toItem);
-  const parts: RoutePart[] = items
-    .filter((i) => i.section === STORE.parts)
-    .map(toPart)
-    .filter((p) => p.geometry && p.ref)
-    .map((p) => ({ id: p.item.id, ref: p.ref, geometry: p.geometry!, pins: p.item.data.pins }));
+  // Wire ends at real pin positions (pin rows, else the library entry), the face centre otherwise.
+  const parts: RoutePart[] = routePartsOf(items.filter((i) => i.section === STORE.parts).map(toPart), await pinsOfProject(id));
   const wires = items.filter((i) => i.section === STORE.wiring).map(toWire).filter((w): w is Wire => w !== null);
   const routeWires: RouteWire[] = wires.map((w) => ({ id: w.item.id, name: w.name || w.net || `${w.from} to ${w.to}`, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin }));
 
@@ -84,13 +84,23 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     for (const w of wires) {
       const net = byNet.get(`w${w.item.id}`);
       if (!net) continue;
+      const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2 FOR UPDATE`, [w.item.id, id])).rows[0];
+      if (!was) continue;
+      // each wire's routed fields, before and after, so its History shows the length it had and has
+      const record = async (now: ItemRow | undefined, summary: string) => {
+        if (!now) return;
+        const d = itemDiff(was, now);
+        if (Object.keys(d.before).length || Object.keys(d.after).length) await logEventIn(c, id, "wire.routed", summary, changedDetail(now, d));
+      };
       if (net.ok) {
         const fields = toRoutedFields(net, result.cell, at, built.fingerprints.get(w.item.id) ?? "");
-        await c.query(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 AND project_id=$3`, [w.item.id, JSON.stringify(fields), id]);
+        const now = (await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 AND project_id=$3 RETURNING ${ITEM_COLS}`, [w.item.id, JSON.stringify(fields), id])).rows[0];
+        await record(now, `Routed "${w.name || w.net || "wire"}": ${fields.routedLengthMm} mm`);
         routed++;
       } else {
         // A wire that no longer routes must not keep an old length.
-        await c.query(`UPDATE items SET data = data - $2::text[], updated_at = now() WHERE id=$1 AND project_id=$3`, [w.item.id, [...ROUTED_KEYS], id]);
+        const now = (await c.query<ItemRow>(`UPDATE items SET data = data - $2::text[], updated_at = now() WHERE id=$1 AND project_id=$3 RETURNING ${ITEM_COLS}`, [w.item.id, [...ROUTED_KEYS], id])).rows[0];
+        await record(now, `"${w.name || w.net || "wire"}" no longer routes; its old length was removed`);
         failed.push({ wireId: w.item.id, name: w.name || w.net || `${w.from} to ${w.to}`, reasons: net.problems.map((p) => `${p.terminal}: ${p.reason}`) });
       }
     }
@@ -102,6 +112,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       requestedCellMm: result.requested_cell,
       cells: result.grid.cells,
       plannerMs,
+      // each wire's own change is its own "wire.routed" event with before and after; this is the run
+      after: { routed, failed: failed.map((f) => f.wireId) },
     });
   });
 

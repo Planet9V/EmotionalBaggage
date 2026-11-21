@@ -162,7 +162,7 @@ describe("the review card", () => {
     await waitFor(() => expect(calls.some((c) => c.path === "/api/drafts/11/approve")).toBe(true));
   });
 
-  it("an approved press release is put to the reviewer once", async () => {
+  it("an approved press release is attacked by the server: the browser does not call the reviewer", async () => {
     const press = draft({ targetStore: "concept/press", generator: "press-release", title: "Doorbell" });
     const { calls } = adminServer([
       on("POST", "/api/drafts/11/approve", () => ({ body: { draft: { ...press, status: "approved" }, item: row({ id: 77, section: "concept/press" }), before: null } })),
@@ -170,8 +170,9 @@ describe("the review card", () => {
     ]);
     renderWithClient(<DraftCard draft={press} />);
     fireEvent.click(screen.getByRole("button", { name: /Approve/ }));
-    await waitFor(() => expect(calls.filter((c) => c.path === "/api/challenge")).toHaveLength(1));
-    expect(calls.find((c) => c.path === "/api/challenge")!.body).toMatchObject({ projectId: P, itemId: 77, message: expect.stringContaining("Attack this press release") });
+    await waitFor(() => expect(calls.some((c) => c.path === "/api/drafts/11/approve")).toBe(true));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls.filter((c) => c.path === "/api/challenge")).toHaveLength(0);
   });
 
   it("a refused rejection shows the server's reason", async () => {

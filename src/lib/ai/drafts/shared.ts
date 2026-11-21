@@ -6,8 +6,12 @@ export type DraftStatus = "draft" | "approved" | "rejected";
 /** A row a draft was generated from. */
 export type DraftSource = { kind: "item" | "research" | "message"; id: number; title: string; section?: string };
 
-/** What an optimisation or a realignment asks of an existing row. Kept in `data._draft`, never saved into the row. */
-export type DraftOp = { op: "add" | "replace" | "remove"; reason?: string };
+/**
+ * What a draft asks of the target store. Kept in `data._draft`, never saved into the row.
+ * "append": add `data.value` to the list at `field` (a dotted path such as "sourcing.offers") inside the
+ * existing row `itemId`, read as it is at approval, so nothing else on the row is overwritten.
+ */
+export type DraftOp = { op: "add" | "replace" | "remove" | "append"; reason?: string; field?: string };
 
 export type Draft = {
   id: number;
@@ -123,3 +127,15 @@ export const STORE_HREF: Record<string, string> = {
 };
 
 export const storeHref = (store: string) => STORE_HREF[store] ?? `/s/${store}`;
+
+/** The words the reviewer is asked with when an approved press release or FAQ entry is attacked (once, by the server). */
+export const ATTACK_MESSAGE: Record<string, string> = {
+  "concept/press": "Attack this press release. What would a sceptical buyer, journalist or investor say is wrong with it?",
+  "concept/faq": "Attack this FAQ answer. Is it straight, and what question does it dodge?",
+};
+
+/** What the server keeps on an attacked row (data.attack). Written only by src/lib/ai/drafts/attack.ts. */
+export type AttackRecord =
+  | { state: "running"; at: string; by: string }
+  | { state: "done"; at: string; by: string; model: string; messageId: number }
+  | { state: "failed"; at: string; by: string; reason: string };

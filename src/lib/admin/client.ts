@@ -31,10 +31,11 @@ export type ConnectionTest =
   | { kind: "perplexity"; apiKey?: string }
   | { kind: "printer"; id?: number; family?: string; access?: Record<string, string | null> }
   | { kind: "planner"; url?: string }
+  | { kind: "slicer"; url?: string }
   | { kind: "database" }
   | { kind: "amazon-sp" | "x" | "instagram" };
 export type IndexResult = { ok: true; indexed: number; skipped: number; failed: number; model: string; dims: number; search: string; error?: string };
-export type SettingsChange = Partial<Pick<AdminSettings, "reasoningModel" | "embeddingModel" | "plannerUrl">>;
+export type SettingsChange = Partial<Pick<AdminSettings, "reasoningModel" | "embeddingModel" | "plannerUrl" | "slicerUrl">>;
 export type PrinterInput = { name?: string; family?: string; model?: string; enabled?: boolean; access?: Record<string, string | null> };
 
 /** The tabs of /admin, in order. The tab is kept in the address as ?tab=. */

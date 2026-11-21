@@ -1,9 +1,10 @@
-// The install-wide settings Admin may read and write: the two models, the planner address, the default concept.
-// Only these four keys are writable here; seed.example and audit.* are not.
+// The install-wide settings Admin may read and write: the two models, the planner and slicer addresses, the default concept.
+// Only these five keys are writable here; seed.example and audit.* are not.
 import { auditIn } from "@/lib/db";
 import { q, tx } from "@/lib/db";
 import { DEFAULT_BASE_URL, getSetting, SETTING, type ModelChoice } from "@/lib/settings";
 import { plannerAddress, type PlannerAddress } from "./planner";
+import { slicerAddress, type SlicerAddress } from "@/lib/slicing/config";
 import { invalid } from "./schemas";
 
 export type AdminSettings = {
@@ -13,26 +14,32 @@ export type AdminSettings = {
   plannerUrl: string | null;
   /** what the app actually uses, and where it comes from */
   plannerEffective: PlannerAddress;
+  /** the saved slicer address; null means the SLICER_URL environment variable applies */
+  slicerUrl: string | null;
+  slicerEffective: SlicerAddress;
   defaultConcept: string | null;
   /** suggested base addresses per provider, for the form */
   defaultBaseUrl: typeof DEFAULT_BASE_URL;
 };
 
 export async function readAdminSettings(): Promise<AdminSettings> {
-  const [reasoningModel, embeddingModel, plannerUrl, defaultConcept, plannerEffective] = await Promise.all([
+  const [reasoningModel, embeddingModel, plannerUrl, defaultConcept, plannerEffective, slicerUrl, slicerEffective] = await Promise.all([
     getSetting<ModelChoice | null>(SETTING.reasoningModel, null),
     getSetting<ModelChoice | null>(SETTING.embeddingModel, null),
     getSetting<string | null>(SETTING.plannerUrl, null),
     getSetting<string | null>(SETTING.defaultConcept, null),
     plannerAddress(),
+    getSetting<string | null>(SETTING.slicerUrl, null),
+    slicerAddress(),
   ]);
-  return { reasoningModel, embeddingModel, plannerUrl, plannerEffective, defaultConcept, defaultBaseUrl: DEFAULT_BASE_URL };
+  return { reasoningModel, embeddingModel, plannerUrl, plannerEffective, slicerUrl, slicerEffective, defaultConcept, defaultBaseUrl: DEFAULT_BASE_URL };
 }
 
 export type AdminSettingsChange = {
   reasoningModel?: ModelChoice | null;
   embeddingModel?: ModelChoice | null;
   plannerUrl?: string | null;
+  slicerUrl?: string | null;
   defaultConcept?: string | null;
 };
 
@@ -40,6 +47,7 @@ const KEY: Record<keyof AdminSettingsChange, string> = {
   reasoningModel: SETTING.reasoningModel,
   embeddingModel: SETTING.embeddingModel,
   plannerUrl: SETTING.plannerUrl,
+  slicerUrl: SETTING.slicerUrl,
   defaultConcept: SETTING.defaultConcept,
 };
 

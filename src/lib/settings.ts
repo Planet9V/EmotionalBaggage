@@ -65,6 +65,7 @@ export const SETTING = {
   reasoningModel: "models.reasoning",
   embeddingModel: "models.embedding",
   plannerUrl: "planner.url",
+  slicerUrl: "slicer.url",
   defaultConcept: "concepts.default",
 } as const;
 
