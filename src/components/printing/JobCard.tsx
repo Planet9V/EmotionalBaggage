@@ -9,7 +9,8 @@ import type { Item } from "@/lib/types";
 import { FILE_ONLY_STEPS } from "@/lib/slicing/fileOnlySteps";
 import { STATUS_WORDS, normaliseStatus, printJobData, type PrintStatus } from "@/lib/slicing/jobState";
 import { duration } from "@/lib/slicing/format";
-import { usePlan, usePrintActions, useTrack } from "@/lib/slicing/queries";
+import { usePlan, usePrintActions, useSlicer, useTrack } from "@/lib/slicing/queries";
+import { OwnSlicer } from "./OwnSlicer";
 import { ResultForm } from "./ResultForm";
 import { ErrorLine } from "@/components/ui/states";
 import { Modal } from "@/components/ui/modal";
@@ -24,7 +25,11 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
   const parsed = printJobData.safeParse(job.data);
   const d = parsed.success ? parsed.data : (job.data as never);
   const hasSlice = !!d.slice && ["sliced", "sent", "printing", "done", "failed", "cancelled"].includes(status);
+  const slicer = useSlicer();
+  const slicerReady = !!slicer.data?.ok;
   const ready = !!(d.fileId && d.printerId && d.printerMaker && d.printerModel);
+  /** no slicer here, or the job was set up without a slicer profile: it is sliced in the person's own slicer */
+  const elsewhere = status === "queued" && !!d.fileId && !!slicer.data && (!slicerReady || !d.printerMaker);
   const live = status === "sent" || status === "printing";
   const act = usePrintActions(projectId, job.id);
   const plan = usePlan(job.id, ["sliced", "sent", "printing", "done"].includes(status));
@@ -61,11 +66,11 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-primary">{job.title}</p>
           <p className="mt-0.5 text-xs text-secondary">
-            {d.fileName || "No file"} on {d.printerName || "no printer"}{d.printerModel ? ` (sliced as ${d.printerMaker} ${d.printerModel})` : ""}
+            {d.fileName ? d.fileName : "File not set"} · {d.printerName ? `printer ${d.printerName}` : "printer not set"}{d.printerModel ? ` (sliced as ${d.printerMaker} ${d.printerModel})` : ""}
             {buildTitle ? <> &middot; build {buildTitle}</> : null}
           </p>
           <p className="mt-0.5 font-mono text-[11px] text-muted">
-            {d.material || "material not set"} · {d.layerHeight ?? "?"} mm · {d.infill ?? "?"}% infill · {d.supports ? "supports on" : "no supports"}
+            {d.material || "material not set"} · {d.layerHeight != null ? `${d.layerHeight} mm layers` : "layer height not set"} · {d.infill != null ? `${d.infill}% infill` : "infill not set"} · {d.supports ? "supports on" : "no supports"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -80,13 +85,13 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
 
       {hasSlice && d.slice ? (
         <Card variant="well" className="rounded-lg p-3" aria-label="What the slicer says">
-          <p className="text-xs font-medium text-secondary">From OrcaSlicer {d.slice.orcaVersion}, read from its own output</p>
+          <p className="text-xs font-medium text-secondary">{d.slice.byHand ? `Entered by hand, from ${d.slice.byHand.slicer}` : `From OrcaSlicer ${d.slice.orcaVersion ?? ""}, read from its own output`}</p>
           <dl className="mt-1 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-3">
             <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Print time</dt><dd className="font-mono text-primary">{duration(d.slice.seconds)}</dd></div>
-            <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Filament</dt><dd className="font-mono text-primary">{d.slice.filamentG} g, {(d.slice.filamentMm / 1000).toFixed(2)} m</dd></div>
+            <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Filament</dt><dd className="font-mono text-primary">{d.slice.filamentG} g{d.slice.filamentMm != null ? `, ${(d.slice.filamentMm / 1000).toFixed(2)} m` : ""}</dd></div>
             <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Layers</dt><dd className="font-mono text-primary">{d.slice.layers ?? "not reported"}</dd></div>
           </dl>
-          <p className="mt-1 break-words font-mono text-[11px] text-muted">{d.slice.profile.machine} · {d.slice.profile.process} · {d.slice.profile.filament}</p>
+          {d.slice.profile ? <p className="mt-1 break-words font-mono text-[11px] text-muted">{d.slice.profile.machine} · {d.slice.profile.process} · {d.slice.profile.filament}</p> : null}
           {d.slice.warnings.length > 0 && <ul className="mt-1 list-disc pl-5 text-xs text-warning">{d.slice.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
         </Card>
       ) : null}
@@ -115,12 +120,12 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {(status === "queued" || status === "sliced") && (
+        {(status === "queued" || status === "sliced") && slicerReady && !d.slice?.byHand && (
           <Button size="sm" onClick={() => void run(() => act.slice.mutateAsync())} disabled={busy || !ready} title={ready ? undefined : "Choose a file, a printer and a slicer profile first"}>
             <Scissors className="h-3.5 w-3.5" aria-hidden /> {act.slice.isPending ? "Slicing, this can take a minute" : status === "sliced" ? "Slice again" : "Slice"}
           </Button>
         )}
-        {status === "queued" && <Button size="sm" variant="outline" onClick={onEdit} disabled={busy}>{ready ? "Edit job" : "Choose file and printer"}</Button>}
+        {status === "queued" && <Button size="sm" variant="outline" onClick={onEdit} disabled={busy}>{d.fileId && d.printerId ? "Edit job" : "Choose file and printer"}</Button>}
         {status === "slicing" && <span role="status" className="text-sm text-secondary">The slicer is working. This page updates when it is done.</span>}
 
         {status === "sliced" && p && !p.fileOnly && p.send && p.printer && (
@@ -147,12 +152,22 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
         {(status === "failed" || status === "cancelled") && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(onRequeue)}>Queue again</Button>}
       </div>
 
+      {elsewhere && (
+        <OwnSlicer
+          projectId={projectId}
+          jobId={job.id}
+          fileId={d.fileId ?? null}
+          fileName={d.fileName}
+          reason={!slicerReady ? "This install has no slicer service set up, so the job is sliced outside the app." : "This job has no slicer profile, so it is sliced outside the app."}
+        />
+      )}
+
       {status === "sliced" && p?.fileOnly && p.download && (
         <Card variant="well" className="rounded-lg p-3 text-sm" aria-label="File only">
           <p className="font-medium text-primary">{p.printer ? `${p.printer.name} has no connection from here` : "Choose a printer"}: take the file to it</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-secondary">{FILE_ONLY_STEPS.map((s) => <li key={s}>{s}</li>)}</ol>
           <div className="mt-2 flex flex-wrap gap-2">
-            <a href={`/api/files/${p.download.gcodeFileId}`} className={buttonVariants({ variant: "outline", size: "sm" })}><Download className="h-3.5 w-3.5" aria-hidden /> Download G-code</a>
+            {p.download.gcodeFileId != null && <a href={`/api/files/${p.download.gcodeFileId}`} className={buttonVariants({ variant: "outline", size: "sm" })}><Download className="h-3.5 w-3.5" aria-hidden /> Download G-code</a>}
             {p.download.projectFileId != null && <a href={`/api/files/${p.download.projectFileId}`} className={buttonVariants({ variant: "outline", size: "sm" })}><Download className="h-3.5 w-3.5" aria-hidden /> Download sliced .3mf</a>}
           </div>
         </Card>

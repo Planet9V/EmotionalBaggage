@@ -21,7 +21,7 @@ export type Plan = {
   capabilities: { status: boolean; upload: boolean; start: boolean; pause: boolean; resume: boolean; cancel: boolean; fileTypes: string[]; notes: string[]; experimental?: boolean };
   fileOnly: boolean;
   send: { name: string; fileId: number; kind: string } | null;
-  download: { gcodeFileId: number; projectFileId: number | null } | null;
+  download: { gcodeFileId: number | null; projectFileId: number | null } | null;
 };
 
 export const printKeys = {

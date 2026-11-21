@@ -25,6 +25,11 @@ import { Card } from "@/components/ui/Card";
 
 const NO_FILES: never[] = [];
 
+/** A sentence with `code` spans, shown as text with the code in the mono face. */
+function CodeText({ text }: { text: string }) {
+  return <>{text.split("`").map((part, i) => (i % 2 ? <span key={i} className="font-mono text-primary">{part}</span> : <span key={i}>{part}</span>))}</>;
+}
+
 export function PrintFlowView({ project, store }: ViewProps) {
   const jobs = useItems(project.id, store);
   const bom = useItems(project.id, "design/bom");
@@ -71,8 +76,8 @@ export function PrintFlowView({ project, store }: ViewProps) {
           ) : slicer.isLoading ? (
             <p>Asking the slicer service.</p>
           ) : !s?.configured ? (
-            <p>
-              No slicer service is set up, so jobs cannot be sliced here. Start it with <span className="font-mono text-primary">docker compose --profile slicer up -d slicer</span> and save its address (<span className="font-mono text-primary">http://slicer:8000</span>) in <Link className="text-link underline" href="/admin?tab=printers">Admin, Printers</Link>; the SLICER_URL environment variable is the fallback. You can still queue jobs.
+            <p data-testid="slicer-not-set-up">
+              <CodeText text={s?.message ?? ""} /> <Link className="text-link underline" href="/admin?tab=printers">Open Admin, Printers</Link>.
             </p>
           ) : !s.ok ? (
             <div className="space-y-2"><ErrorLine>{s.message}</ErrorLine><Button size="sm" variant="outline" onClick={() => void slicer.refetch()}>Check again</Button></div>

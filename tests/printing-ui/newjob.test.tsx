@@ -2,7 +2,7 @@
 // New print job: the enclosure saved on the Enclosure page is the first choice, and "Send to printing"
 // opens the dialog with its file already chosen.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { NewJobDialog, enclosureFirst } from "@/components/printing/NewJobDialog";
 import type { FileMeta } from "@/lib/types";
 import { renderWithClient, shimBrowser } from "../admin-ui/harness";
@@ -21,7 +21,23 @@ const FILES = [
   file(5, "x.gcode.3mf"),
 ];
 
+const printer = { id: 2, name: "Shed printer", family: "file-only", model: "Generic", enabled: true } as never;
+const notSetUp = { configured: false, ok: false, message: "No slicer service is set up on this install.", printers: [], materials: [] };
+
 describe("New print job", () => {
+  it("queues a job with no slicer profile when the install has no slicer (D8)", async () => {
+    const onCreate = vi.fn(async () => {});
+    renderWithClient(<NewJobDialog open onOpenChange={() => {}} files={FILES} parts={[]} builds={[]} printers={[printer]} slicer={notSetUp} onCreate={onCreate} initialFileId="4" />);
+    expect(await screen.findByText("Slicer profile (not needed)")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Printer"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("Material"), { target: { value: "PETG" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add job" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalled());
+    const made = (onCreate.mock.calls[0] as unknown as [{ data: Record<string, unknown> }])[0];
+    expect(made.data).toMatchObject({ fileId: 4, printerId: 2, material: "PETG", layerHeight: 0.2 });
+    expect(made.data.printerMaker).toBeUndefined();
+  });
+
   it("lists the Enclosure page's files first, newest first, then other case-like files, then the rest", () => {
     const { enclosure, rest } = enclosureFirst(FILES);
     expect(enclosure.map((f) => f.id)).toEqual([4, 3, 2]);
