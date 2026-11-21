@@ -262,7 +262,7 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       return { ...base, met, detail: met ? "Set." : "Not set.", action: `Give the concept ${FIELD_NAMES[f]}` };
     }
     case "electrical":
-      return { ...base, ...electricalCheck(facts) };
+      return { ...base, ...electricalCheck(facts, rows) };
     case "enclosure":
       return { ...base, ...enclosureCheck(rows) };
     case "production-ready":

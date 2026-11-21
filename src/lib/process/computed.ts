@@ -36,8 +36,10 @@ export const ENCLOSURE_STORE = "design/enclosure";
 /** What the generate route stores on the saved choice, per generator. */
 export type EnclosureChecked = { fingerprint: string; at: string; checks: { key: string; label: string; ok: boolean; detail?: string }[] };
 
-export function electricalCheck(facts: GateFacts): Computed {
+export function electricalCheck(facts: GateFacts, rows: Item[] = []): Computed {
   const href = "/s/design/schematic";
+  // No wire means no circuit to check: "no errors" would be a pass on nothing (U27).
+  if (!rows.some((r) => r.section === "design/wiring")) return { met: false, detail: "No schematic yet: there are no wires to check.", action: "Draw the first wire on the schematic", href };
   const e = facts.erc;
   if (!e) return { met: false, detail: "The electrical checks have not been worked out yet.", action: "Open the schematic to run the electrical checks", href };
   return {

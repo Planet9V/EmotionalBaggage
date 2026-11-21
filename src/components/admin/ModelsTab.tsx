@@ -7,7 +7,7 @@ import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useProject } from "@/lib/client";
@@ -148,7 +148,7 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
       description={
         kind === "embedding"
           ? "Turns text into vectors so search can find rows by meaning, not only by matching words."
-          : "Drafts and reviews your concept: the reviewer in Concept, Challenge uses it today."
+          : "Writes every draft (requirements, parts, wiring, tests, marketing and replies), the reviewer's challenges and the chat. Each draft waits for your approval."
       }
       actions={
         <>
@@ -181,18 +181,16 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
         ) : null}
         <div className="grid gap-4 lg:grid-cols-2">
           <Field id={id("provider")} label="Provider" required error={errors.provider}>
-            <Select value={form.provider || undefined} onValueChange={(v) => choose(v as ProviderId)}>
-              <SelectTrigger id={id("provider")} className="w-full border-hairline bg-surface" {...describe(id("provider"), { error: errors.provider })}>
-                <SelectValue placeholder="Choose a provider" />
-              </SelectTrigger>
-              <SelectContent>
-                {PROVIDER_IDS.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {PROVIDER_LABEL[p]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <NativeSelect id={id("provider")} value={form.provider || ""} onChange={(e) => choose(e.target.value as ProviderId)} {...describe(id("provider"), { error: errors.provider })}>
+              <option value="" disabled>
+                Choose a provider
+              </option>
+              {PROVIDER_IDS.map((p) => (
+                <option key={p} value={p}>
+                  {PROVIDER_LABEL[p]}
+                </option>
+              ))}
+            </NativeSelect>
           </Field>
           <Field
             id={id("baseUrl")}

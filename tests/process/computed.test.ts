@@ -31,8 +31,11 @@ describe("gates that read other features' checks", () => {
   it("electrical: met only when the server's counts show no error", () => {
     const c = find("electronics", "design", "design.electrical");
     expect(evaluateCheck(c, [], {}, {}).met).toBe(false);
-    expect(evaluateCheck(c, [], {}, { erc: { ok: false, errors: 2, warnings: 1 } })).toMatchObject({ met: false, detail: "2 errors and 1 warning in the electrical checks." });
-    expect(evaluateCheck(c, [], {}, { erc: { ok: true, errors: 0, warnings: 3 } })).toMatchObject({ met: true, detail: "No errors, 3 warnings to read." });
+    // no wire, no circuit: never "Met: no errors" on an empty schematic (U27)
+    expect(evaluateCheck(c, [], {}, { erc: { ok: true, errors: 0, warnings: 0 } })).toMatchObject({ met: false, detail: "No schematic yet: there are no wires to check." });
+    const wired = [{ id: 1, projectId: "p", section: "design/wiring", title: "w", body: "", data: {}, status: "to solder", sort: 1 }];
+    expect(evaluateCheck(c, wired, {}, { erc: { ok: false, errors: 2, warnings: 1 } })).toMatchObject({ met: false, detail: "2 errors and 1 warning in the electrical checks." });
+    expect(evaluateCheck(c, wired, {}, { erc: { ok: true, errors: 0, warnings: 3 } })).toMatchObject({ met: true, detail: "No errors, 3 warnings to read." });
   });
 
   it("enclosure: the saved choice's checks count only while they describe today's parts and settings", () => {

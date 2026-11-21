@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { StatusTone } from "@/lib/statusTones";
 import { messageOf } from "@/lib/queries";
@@ -34,6 +34,12 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Field, describe } from "@/components/ui/field";
 import { EmptyState, LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
+
+/** "Creality (experimental)": the family and what the app can do with it, without saying it twice (U27). */
+export function familyOptionLabel(f: Pick<PrinterFamily, "id" | "status" | "fields" | "label"> & { experimental?: boolean }) {
+  const status = familyStatus(f).label.toLowerCase();
+  return f.label.toLowerCase().includes(`(${status})`) ? f.label : `${f.label} (${status})`;
+}
 
 /** What this app can do with a family today, in words. Shown on every family, honestly. */
 export function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields"> & { experimental?: boolean }): { label: string; tone: StatusTone; detail: string } {
@@ -152,25 +158,25 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
           <ModelPicker id={id("pick")} value={modelId} onPick={pickModel} />
         </Field>
         <Field id={id("family")} label="Family" required error={errors.family}>
-          <Select
-            value={familyId || undefined}
-            onValueChange={(v) => {
-              setFamilyId(v);
+          <NativeSelect
+            id={id("family")}
+            value={familyId}
+            onChange={(e) => {
+              setFamilyId(e.target.value);
               setErrors({});
               test.reset();
             }}
+            {...describe(id("family"), { error: errors.family })}
           >
-            <SelectTrigger id={id("family")} className="w-full border-hairline bg-surface" {...describe(id("family"), { error: errors.family })}>
-              <SelectValue placeholder="Choose a family" />
-            </SelectTrigger>
-            <SelectContent>
-              {families.map((f) => (
-                <SelectItem key={f.id} value={f.id}>
-                  {f.label} ({familyStatus(f).label.toLowerCase()})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="" disabled>
+              Choose a family
+            </option>
+            {families.map((f) => (
+              <option key={f.id} value={f.id}>
+                {familyOptionLabel(f)}
+              </option>
+            ))}
+          </NativeSelect>
         </Field>
         <Field id={id("model")} label="Printer model" hint="Optional, for your own reference.">
           <Input id={id("model")} value={model} onChange={(e) => setModel(e.target.value)} {...describe(id("model"), { hint: true })} />
