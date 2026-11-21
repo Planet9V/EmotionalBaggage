@@ -13,7 +13,7 @@ import { messageOf } from "@/lib/queries";
 import { sectionHref } from "@/lib/chat/shared";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { validateParams, withDefaults } from "@/lib/enclosure/validate";
-import { DEFAULT_PARAMS, FACE_AXES, GENERATORS, GENERATOR_KEYS, type EnclosureParams, type GeneratorKey } from "@/lib/enclosure/types";
+import { DEFAULT_PARAMS, GENERATORS, GENERATOR_KEYS, type EnclosureParams, type GeneratorKey } from "@/lib/enclosure/types";
 import type { ViewProps } from "@/components/views/types";
 import { generate, getStatus, type GenerateAnswer, type ResultFailed, type ResultOk } from "./client";
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
