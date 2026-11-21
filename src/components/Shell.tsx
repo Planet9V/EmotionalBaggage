@@ -69,7 +69,14 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   // The open section's link scrolls into view in the sidebar, so a long menu never hides where you are (U19).
   useEffect(() => {
-    document.querySelectorAll<HTMLElement>('aside a[aria-current="page"]').forEach((a) => a.scrollIntoView?.({ block: "nearest" }));
+    // Scroll the sidebar's own list, not scrollIntoView: Chrome then moves where the next Tab starts, which would put
+    // the first Tab on the link after this one instead of on "Skip to content".
+    document.querySelectorAll<HTMLElement>('aside a[aria-current="page"]').forEach((a) => {
+      const box = a.closest<HTMLElement>(".overflow-y-auto");
+      if (!box) return;
+      const top = a.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+      if (top < box.scrollTop || top + a.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = Math.max(0, top - box.clientHeight / 2);
+    });
   }, [pathname]);
 
   const link = (href: string, active: boolean) =>
