@@ -63,7 +63,7 @@ function TraceBody({ project }: { project: Project }) {
 
   if (loading) {
     return (
-      <div className="space-y-3" aria-busy="true" aria-label="Loading traceability">
+      <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading traceability">
         <div className="h-48 animate-pulse rounded-xl bg-subtle" />
         <div className="h-24 animate-pulse rounded-xl bg-subtle" />
       </div>

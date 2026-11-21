@@ -82,7 +82,7 @@ function ActivityBody({ project }: { project: Project }) {
       </div>
 
       {a.loading ? (
-        <div className="space-y-2" aria-busy="true" aria-label="Loading activity">
+        <div className="space-y-2" role="status" aria-busy="true" aria-label="Loading activity">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl bg-subtle" />
           ))}

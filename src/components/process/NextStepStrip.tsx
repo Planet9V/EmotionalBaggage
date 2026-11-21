@@ -19,7 +19,7 @@ function Strip({ projectId }: { projectId: string }) {
 
   if (loading) {
     return (
-      <div className={frame} aria-busy="true" aria-label="Working out the next step">
+      <div className={frame} role="status" aria-busy="true" aria-label="Working out the next step">
         <Skeleton className="h-3.5 w-20" />
         <Skeleton className="h-3.5 w-72 max-w-full" />
       </div>

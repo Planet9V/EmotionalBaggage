@@ -22,7 +22,7 @@ export function HistoryPanel({ item, onRestore }: { item: Item; onRestore: (id: 
 
   if (h.loading) {
     return (
-      <div className="space-y-2 px-5 py-4" aria-busy="true" aria-label="Loading history">
+      <div className="space-y-2 px-5 py-4" role="status" aria-busy="true" aria-label="Loading history">
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-16 animate-pulse rounded-xl bg-subtle" />
         ))}
