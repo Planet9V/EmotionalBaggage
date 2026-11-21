@@ -47,6 +47,7 @@ function install() {
       const one = /^\/api\/items\/(\d+)$/.exec(url.pathname);
       const hist = /^\/api\/items\/(\d+)\/history$/.exec(url.pathname);
       if (hist) return reply(200, { entries: history[Number(hist[1])] ?? [], next: null });
+      if (/^\/api\/items\/\d+\/reason$/.test(url.pathname) && method === "POST") return reply(200, { ok: true });
       if (/^\/api\/projects\/p1\/activity$/.test(url.pathname)) {
         const before = Number(url.searchParams.get("before") ?? 0);
         const page = before ? 1 : 0;
@@ -103,7 +104,7 @@ afterEach(() => {
 });
 
 const entry = (id: number, extra: Partial<HistoryEntry> = {}): HistoryEntry => ({
-  id, at: "2026-11-20T10:00:00.000Z", actor: "demo", kind: "item.edited", summary: `Edited "Row" in concept/brief`, itemId: 1, section: "concept/brief", title: "Row", changes: [], ...extra,
+  id, at: "2026-11-20T10:00:00.000Z", actor: "demo", kind: "item.edited", summary: `Edited "Row" in concept/brief`, itemId: 1, section: "concept/brief", title: "Row", changes: [], reason: "", reasonLater: null, canAddReason: false, ...extra,
 });
 
 describe("History panel", () => {
@@ -374,5 +375,60 @@ describe("builds", () => {
     expect(await screen.findByText("No builds yet")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Add build/ }));
     expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+});
+
+describe("the why (process review 3)", () => {
+  const row = item(1, "concept/brief", "Row", { body: "two", status: "open" });
+
+  it("shows the reason on a change, and says when it was added later", async () => {
+    history[1] = [
+      entry(4, { reason: "Decided in the review" }),
+      entry(3, { reason: "Added afterwards", reasonLater: { by: "ana", at: "2026-11-21T09:00:00.000Z" } }),
+    ];
+    renderWith(<HistoryPanel item={row} onRestore={vi.fn()} />);
+    expect(await screen.findByText("Decided in the review")).toBeTruthy();
+    expect(screen.getByText(/added later by ana/)).toBeTruthy();
+  });
+
+  it("offers Add reason only on the line the server marks, and saves it against that line", async () => {
+    history[1] = [entry(4, { canAddReason: true }), entry(3)];
+    renderWith(<HistoryPanel item={row} onRestore={vi.fn()} />);
+    const buttons = await screen.findAllByRole("button", { name: "Add reason" });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]);
+    fireEvent.change(screen.getByLabelText("Why (kept in the history)"), { target: { value: "Agreed with the client" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save reason" }));
+    await waitFor(() => expect(calls.find((c) => c.path === "/api/items/1/reason")?.body).toEqual({ why: "Agreed with the client", forEvent: 4 }));
+  });
+
+  it("sends the optional why with a restore, and nothing when the field is empty", async () => {
+    history[1] = [entry(2, { changes: [{ field: "body", label: "Details", before: "one", after: "two", restorable: true }] })];
+    const onRestore = vi.fn(async () => {});
+    renderWith(<HistoryPanel item={row} onRestore={onRestore} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Restore this value of Details/ }));
+    await waitFor(() => expect(onRestore).toHaveBeenLastCalledWith(1, { body: "one" }));
+    fireEvent.change(screen.getByLabelText(/Why you are restoring/), { target: { value: "The new text was wrong" } });
+    fireEvent.click(screen.getByRole("button", { name: /Restore this value of Details/ }));
+    await waitFor(() => expect(onRestore).toHaveBeenLastCalledWith(1, { body: "one", why: "The new text was wrong" }));
+  });
+
+  it("the row editor asks for a why only when the status changes, and sends it with the save", async () => {
+    const onSave = vi.fn(async () => {});
+    renderWith(<ItemDrawer item={row} onClose={() => {}} sectionLabel="Brief" columns={[]} statuses={["open", "done"]} onSave={onSave} onDelete={async () => {}} />);
+    expect(screen.queryByLabelText("Why (kept in the history)")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "done" } });
+    fireEvent.change(screen.getByLabelText("Why (kept in the history)"), { target: { value: "Shipped" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(1, expect.objectContaining({ status: "done", why: "Shipped" })));
+  });
+
+  it("a status change with no reason sends none", async () => {
+    const onSave = vi.fn(async () => {});
+    renderWith(<ItemDrawer item={row} onClose={() => {}} sectionLabel="Brief" columns={[]} statuses={["open", "done"]} onSave={onSave} onDelete={async () => {}} />);
+    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "done" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect((onSave.mock.calls[0] as unknown[])[1]).not.toHaveProperty("why");
   });
 });

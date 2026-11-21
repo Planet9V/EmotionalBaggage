@@ -105,12 +105,14 @@ export const useOverrideGate = (projectId: string) =>
 
 /** Withdraw an override; the gate is judged on its checks again. Recorded with who and when. */
 export const useWithdrawOverride = (projectId: string) =>
-  useProcessMutation(projectId, (stage: string) =>
-    api<ProcessResponse>(`/api/projects/${enc(projectId)}/gates`, { method: "DELETE", body: JSON.stringify({ stage }) })
-  );
+  useProcessMutation(projectId, (v: string | { stage: string; why?: string }) => {
+    const { stage, why } = typeof v === "string" ? { stage: v, why: undefined } : v;
+    return api<ProcessResponse>(`/api/projects/${enc(projectId)}/gates`, { method: "DELETE", body: JSON.stringify({ stage, ...(why?.trim() ? { why: why.trim() } : {}) }) });
+  });
 
 /** Move to another stage: forward one when the gate is passed, back any time. */
 export const useMoveStage = (projectId: string) =>
-  useProcessMutation(projectId, (stage: string) =>
-    api<ProcessResponse>(`/api/projects/${enc(projectId)}/stage`, { method: "POST", body: JSON.stringify({ stage }) })
-  );
+  useProcessMutation(projectId, (v: string | { stage: string; why?: string }) => {
+    const { stage, why } = typeof v === "string" ? { stage: v, why: undefined } : v;
+    return api<ProcessResponse>(`/api/projects/${enc(projectId)}/stage`, { method: "POST", body: JSON.stringify({ stage, ...(why?.trim() ? { why: why.trim() } : {}) }) });
+  });

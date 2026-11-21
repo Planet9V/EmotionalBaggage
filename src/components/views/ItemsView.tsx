@@ -19,6 +19,7 @@ import { CLAIMS_SECTION } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
+import { announceMove } from "@/components/trace/movedToast";
 import { LoadingShape } from "@/components/ui/states";
 
 type Layout = "board" | "table";
@@ -236,7 +237,11 @@ export function ItemsView({ project, section, store }: ViewProps) {
           </Button>
         </div>
       ) : layout === "board" ? (
-        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={(id, status) => patch(id, { status })} cardExtra={cardExtra} />
+        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={async (id, status) => {
+          await patch(id, { status });
+          const moved = items.find((i) => i.id === id);
+          if (moved) announceMove(moved, status);
+        }} cardExtra={cardExtra} />
       ) : (
         <ItemsTable items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onStatus={move} extraColumn={extraColumn} />
       )}

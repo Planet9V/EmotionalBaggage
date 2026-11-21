@@ -72,6 +72,7 @@ const WRITE_PATHS: Record<string, string> = {
   "index/route.ts": "none: stores search vectors worked out from rows; no row or setting changes",
   "items/[id]/confirm/route.ts": "self",
   "items/[id]/pins/route.ts": "self",
+  "items/[id]/reason/route.ts": "src/lib/trace/reason.ts",
   "items/[id]/route.ts": "self",
   "print-jobs/[id]/control/route.ts": "src/lib/slicing/flow.ts",
   "print-jobs/[id]/result/route.ts": "src/lib/slicing/flow.ts",

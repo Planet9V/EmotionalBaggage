@@ -199,7 +199,14 @@ export function AuditTab() {
                             )}
                           </TableCell>
                           <TableCell className="align-top font-mono text-xs">{e.action}</TableCell>
-                          <TableCell className="align-top text-xs text-primary">{e.summary}</TableCell>
+                          <TableCell className="align-top text-xs text-primary">
+                            {e.summary}
+                            {typeof e.detail?.reason === "string" && e.detail.reason && !e.summary.includes(e.detail.reason) ? (
+                              <span className="mt-1 block text-secondary wrap-anywhere">
+                                <span className="font-medium text-primary">Why:</span> {e.detail.reason}
+                              </span>
+                            ) : null}
+                          </TableCell>
                         </TableRow>
                         {isOpen ? (
                           <TableRow className="hover:bg-transparent">

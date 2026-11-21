@@ -10,6 +10,7 @@ import { messageOf } from "@/lib/queries";
 import { useMoveStage, useWithdrawOverride, type ProcessView, type StageView } from "@/lib/process/client";
 import { CheckList } from "./CheckList";
 import { OverrideDialog } from "./OverrideDialog";
+import { ReasonDialog } from "./ReasonDialog";
 import { gateBadge } from "./gateBadge";
 import { fmtDateTime } from "@/lib/format";
 
@@ -20,16 +21,10 @@ import { fmtDateTime } from "@/lib/format";
  */
 export function ProcessStepper({ projectId, view }: { projectId: string; view: ProcessView }) {
   const [overriding, setOverriding] = useState<StageView | null>(null);
+  // Moving back and withdrawing an override ask for an optional reason first.
+  const [asking, setAsking] = useState<{ kind: "back" | "withdraw"; stage: StageView } | null>(null);
   const move = useMoveStage(projectId);
   const withdraw = useWithdrawOverride(projectId);
-  const withdrawOf = async (stage: StageView) => {
-    try {
-      await withdraw.mutateAsync(stage.key);
-      toast.success(`Withdrew the override of the ${stage.label} gate.`);
-    } catch (e) {
-      toast.error(messageOf(e) || "The override was not withdrawn.");
-    }
-  };
 
   const goTo = async (stage: StageView, verb: string) => {
     try {
@@ -54,13 +49,41 @@ export function ProcessStepper({ projectId, view }: { projectId: string; view: P
             next={nextOf(i)}
             busy={move.isPending || withdraw.isPending}
             onAdvance={() => nextOf(i) && goTo(nextOf(i)!, "Moved to")}
-            onBack={() => goTo(s, "Moved back to")}
+            onBack={() => setAsking({ kind: "back", stage: s })}
             onOverride={() => setOverriding(s)}
-            onWithdraw={() => void withdrawOf(s)}
+            onWithdraw={() => setAsking({ kind: "withdraw", stage: s })}
           />
         ))}
       </ol>
       {overriding && <OverrideDialog projectId={projectId} stage={overriding} onClosed={() => setOverriding(null)} />}
+      {asking?.kind === "back" && (
+        <ReasonDialog
+          eyebrow={`Stage ${String(asking.stage.n).padStart(2, "0")} · ${asking.stage.label}`}
+          title={`Move back to ${asking.stage.label}?`}
+          description="The later stages keep their rows. Only the stage the concept is in changes."
+          confirm="Move back"
+          busyLabel="Moving..."
+          onConfirm={async (why) => {
+            await move.mutateAsync({ stage: asking.stage.key, why });
+            toast.success(`Moved back to ${asking.stage.label}.`);
+          }}
+          onClosed={() => setAsking(null)}
+        />
+      )}
+      {asking?.kind === "withdraw" && (
+        <ReasonDialog
+          eyebrow={`Stage ${String(asking.stage.n).padStart(2, "0")} · ${asking.stage.label}`}
+          title={`Withdraw the override of the ${asking.stage.label} gate?`}
+          description="The gate is judged on its checks again. The stage does not move."
+          confirm="Withdraw override"
+          busyLabel="Withdrawing..."
+          onConfirm={async (why) => {
+            await withdraw.mutateAsync({ stage: asking.stage.key, why });
+            toast.success(`Withdrew the override of the ${asking.stage.label} gate.`);
+          }}
+          onClosed={() => setAsking(null)}
+        />
+      )}
     </>
   );
 }

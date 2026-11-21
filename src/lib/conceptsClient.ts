@@ -116,7 +116,11 @@ export function useDuplicateConcept() {
 export function useArchiveConcept() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api<{ project: Concept }>(`/api/projects/${enc(id)}/archive`, { method: "POST" }).then((r) => r.project),
+    // `why` is optional and kept in the history
+    mutationFn: (v: string | { id: string; why?: string }) => {
+      const { id, why } = typeof v === "string" ? { id: v, why: undefined } : v;
+      return api<{ project: Concept }>(`/api/projects/${enc(id)}/archive`, { method: "POST", ...(why?.trim() ? { body: JSON.stringify({ why }) } : {}) }).then((r) => r.project);
+    },
     onSuccess: (c) => writeCached(qc, c.id, c),
     onSettled: () => refreshConcepts(qc),
   });
@@ -135,8 +139,8 @@ export function useRestoreConcept() {
 export function useDeleteConcept() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, confirm }: { id: string; confirm: string }) =>
-      api<{ deleted: DeletedConcept }>(`/api/projects/${enc(id)}`, { method: "DELETE", body: JSON.stringify({ confirm }) }).then((r) => r.deleted),
+    mutationFn: ({ id, confirm, why }: { id: string; confirm: string; why?: string }) =>
+      api<{ deleted: DeletedConcept }>(`/api/projects/${enc(id)}`, { method: "DELETE", body: JSON.stringify({ confirm, ...(why?.trim() ? { why } : {}) }) }).then((r) => r.deleted),
     onSuccess: (_d, { id }) => {
       writeCached(qc, id, null);
       qc.removeQueries({ queryKey: conceptKeys.one(id) });

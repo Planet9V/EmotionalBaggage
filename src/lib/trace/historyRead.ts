@@ -1,12 +1,19 @@
 // Server side of the change history: reads the install-wide audit log (which has who and when) for one row or one concept.
 import { z } from "zod";
-import { q } from "@/lib/db";
+import { currentActor } from "@/lib/actor";
+import { pool, q } from "@/lib/db";
+import { latestOwnChange } from "./reason";
 import { changesOf, type HistoryEntry, type HistoryPage } from "./history";
 
 type Line = { id: string; at: string; actor: string; action: string; summary: string; detail: Record<string, unknown> };
 
-const shape = (r: Line): HistoryEntry => {
+/** A reason added after the change, by whom and when: item.reason lines name the line they explain. */
+type Late = Map<number, { reason: string; by: string; at: string }>;
+
+const shape = (r: Line, late: Late = new Map()): HistoryEntry => {
   const d = r.detail ?? {};
+  const own = typeof d.reason === "string" ? d.reason : "";
+  const l = late.get(Number(r.id));
   return {
     id: Number(r.id),
     at: r.at,
@@ -17,8 +24,21 @@ const shape = (r: Line): HistoryEntry => {
     section: typeof d.section === "string" ? d.section : null,
     title: typeof d.title === "string" ? d.title : null,
     changes: changesOf(d, r.action),
+    reason: own || l?.reason || "",
+    reasonLater: !own && l ? { by: l.by, at: l.at } : null,
+    canAddReason: false,
   };
 };
+
+/** The reasons added later for these lines, read in one query. */
+async function lateReasons(rows: Line[]): Promise<Late> {
+  const ids = rows.map((r) => String(r.id));
+  const out: Late = new Map();
+  if (!ids.length) return out;
+  const found = await q<{ at: string; actor: string; detail: Record<string, unknown> }>("SELECT at, actor, detail FROM audit_log WHERE action='item.reason' AND detail->>'forEvent' = ANY($1) ORDER BY id", [ids]);
+  for (const f of found) if (typeof f.detail.reason === "string") out.set(Number(f.detail.forEvent), { reason: f.detail.reason, by: f.actor, at: f.at });
+  return out;
+}
 
 const COLS = "id, at, actor, action, summary, detail";
 
@@ -31,11 +51,16 @@ export const historyQuery = z.object({
 export async function readItemHistory(projectId: string, itemId: number, f: z.infer<typeof historyQuery>): Promise<HistoryPage> {
   const rows = await q<Line>(
     `SELECT ${COLS} FROM audit_log
-     WHERE project_id = $1 AND detail->>'itemId' = $2 AND ($3::bigint IS NULL OR id < $3)
+     WHERE project_id = $1 AND detail->>'itemId' = $2 AND action <> 'item.reason' AND ($3::bigint IS NULL OR id < $3)
      ORDER BY id DESC LIMIT ${f.limit + 1}`,
     [projectId, String(itemId), f.before ?? null]
   );
-  return page(rows, f.limit);
+  const out = await page(rows, f.limit);
+  // "Add reason" is offered on the signed-in person's latest change to this row, while it has none.
+  const actor = currentActor();
+  const mine = actor ? await latestOwnChange(pool(), projectId, itemId, actor) : null;
+  if (mine && !mine.hasReason) for (const e of out.entries) if (e.id === mine.id) e.canAddReason = true;
+  return out;
 }
 
 /** What the Activity page can filter by: the part of an action before the dot. */
@@ -58,6 +83,7 @@ export async function readActivity(projectId: string, f: z.infer<typeof activity
   if (f.kind) add("a.action LIKE ?", `${f.kind}.%`);
   // Older lines carry no section; the row they are about, if it still exists, says which one it is in.
   if (f.section) add("COALESCE(a.detail->>'section', (SELECT i.section FROM items i WHERE i.project_id = a.project_id AND i.id::text = a.detail->>'itemId')) = ?", f.section);
+  cond.push("a.action <> 'item.reason'");
   const rows = await q<Line>(
     `SELECT a.id, a.at, a.actor, a.action, a.summary, a.detail FROM audit_log a WHERE ${cond.join(" AND ")} ORDER BY a.id DESC LIMIT ${f.limit + 1}`,
     args
@@ -65,8 +91,10 @@ export async function readActivity(projectId: string, f: z.infer<typeof activity
   return page(rows, f.limit);
 }
 
-function page(rows: Line[], limit: number): HistoryPage {
+async function page(rows: Line[], limit: number): Promise<HistoryPage> {
   const more = rows.length > limit;
-  const entries = (more ? rows.slice(0, limit) : rows).map(shape);
+  const shown = more ? rows.slice(0, limit) : rows;
+  const late = await lateReasons(shown);
+  const entries = shown.map((r) => shape(r, late));
   return { entries, next: more ? entries[entries.length - 1].id : null };
 }

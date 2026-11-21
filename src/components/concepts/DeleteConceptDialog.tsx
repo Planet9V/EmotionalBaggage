@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingShape } from "@/components/ui/states";
 import { messageOf, queries } from "@/lib/queries";
 import { exportHref, useDeleteConcept, type Concept, type DeletedConcept } from "@/lib/conceptsClient";
+import { WhyField } from "@/components/trace/WhyField";
 import { ConceptDialog, FormError, fieldLabel } from "./ConceptDialog";
 import { plural } from "@/lib/format";
 
@@ -29,6 +30,7 @@ export function DeleteConceptDialog({
   const [open, setOpen] = useState(true);
   const del = useDeleteConcept();
   const [typed, setTyped] = useState("");
+  const [why, setWhy] = useState("");
   const [error, setError] = useState("");
   // Once the delete has gone through, nothing may ask for the concept again (it would answer 404).
   const live = !del.isPending && !del.isSuccess;
@@ -43,7 +45,7 @@ export function DeleteConceptDialog({
     if (!matchesName || busy) return;
     setError("");
     try {
-      const d = await del.mutateAsync({ id: concept.id, confirm: typed });
+      const d = await del.mutateAsync({ id: concept.id, confirm: typed, why });
       onDone(d);
       setOpen(false);
     } catch (err) {
@@ -105,6 +107,9 @@ export function DeleteConceptDialog({
             aria-describedby="delete-confirm-name"
             data-autofocus
           />
+        </div>
+        <div className="mt-4">
+          <WhyField id="delete-why" value={why} onChange={setWhy} hint="Kept in the audit log with the deletion." />
         </div>
         <FormError message={error} />
         <div className="mt-5 flex justify-end gap-2">

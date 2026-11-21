@@ -9,6 +9,7 @@ import { assertBuildMayPass, assertLinks, demoteBrokenBuilds, relinkKey, REVERTE
 import { lostByEdit, PASSED } from "@/lib/trace/builds";
 import { STORE } from "@/lib/domain/schemas";
 import { keyOf } from "@/lib/trace/spec";
+import { reasonDetail } from "@/lib/trace/why";
 import { mirrorLinks } from "@/lib/trace/mirror";
 import { assertMarketChange } from "@/lib/market/rules";
 import { assertAttackUntouched } from "@/lib/ai/drafts/attack";
@@ -22,7 +23,7 @@ type Ctx = { params: Promise<{ id: string }> };
 /** data is merged key by key, so a view can patch one field without resending the rest. */
 export const PATCH = route(async (req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That row");
-  const b = await body(req, itemPatch);
+  const { why, ...b } = await body(req, itemPatch);
   const now = await tx(async (c) => {
     const before = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 FOR UPDATE`, [id]);
     const was = before.rows[0];
@@ -92,7 +93,7 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     await mirrorLinks(c, was, row);
     // A write that changes nothing leaves no line: the record holds changes, not clicks.
     if (Object.keys(diff.after).length || Object.keys(diff.before).length) {
-      const detail = changedDetail(row, diff);
+      const detail = { ...changedDetail(row, diff), ...reasonDetail(why) };
       if (row.status !== was.status) {
         await logEventIn(c, row.project_id, "item.status", `"${row.title}" moved from ${was.status} to ${row.status}${autoReason ? `: ${autoReason}` : ""}`, autoReason ? { ...detail, reason: autoReason, auto: true } : detail);
       } else {

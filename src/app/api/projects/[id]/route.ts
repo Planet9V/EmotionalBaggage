@@ -3,6 +3,7 @@ import { auditIn, logEventIn, tx } from "@/lib/db";
 import { body, HttpError, route } from "@/lib/api/route";
 import { conceptPatch, loadConcept, loadConceptIn, lockConcept, OWNED_TABLES } from "@/lib/api/concepts";
 import { SETTING } from "@/lib/settings";
+import { reasonDetail, whyField } from "@/lib/trace/why";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -64,6 +65,8 @@ export const DELETE = route(async (req: Request, { params }: Ctx) => {
     raw = undefined;
   }
   const confirm = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as { confirm?: unknown }).confirm : undefined;
+  const rawWhy = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as { why?: unknown }).why : undefined;
+  const why = whyField.parse(rawWhy) ?? "";
   const deleted = await tx(async (c) => {
     const was = await lockConcept(c, id);
     if (typeof confirm !== "string" || confirm !== was.name) {
@@ -88,7 +91,7 @@ export const DELETE = route(async (req: Request, { params }: Ctx) => {
     await auditIn(c, {
       action: "project.deleted",
       summary: `Concept "${was.name}" deleted with everything in it`,
-      detail: { counts, defaultCleared },
+      detail: { counts, defaultCleared, ...reasonDetail(why) },
       projectId: id,
       projectName: was.name,
     });

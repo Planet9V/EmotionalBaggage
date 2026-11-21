@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { STAGES } from "@/lib/menu";
+import { whyField } from "@/lib/trace/why";
 
 const STAGE_KEYS = STAGES.map((s) => s.key) as [string, ...string[]];
 const stage = z.enum(STAGE_KEYS, { message: `must be one of: ${STAGE_KEYS.join(", ")}` });
@@ -11,7 +12,8 @@ export const overrideBody = z.object({
 });
 
 /** POST /api/projects/[id]/stage: move the concept to another stage. */
-export const stageBody = z.object({ stage });
+/** `why`: optional, kept in the history (moving back says why most often). */
+export const stageBody = z.object({ stage, why: whyField });
 
 /** DELETE /api/projects/[id]/gates: withdraw the override of one stage's gate. */
-export const withdrawBody = z.object({ stage });
+export const withdrawBody = z.object({ stage, why: whyField });

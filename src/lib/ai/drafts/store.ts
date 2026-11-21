@@ -30,6 +30,7 @@ import { assertRoomFor } from "@/lib/api/limits";
 import { demoteBrokenBuilds, relinkKey } from "@/lib/trace/links";
 import { mirrorLinks } from "@/lib/trace/mirror";
 import { keyOf } from "@/lib/trace/spec";
+import { reasonDetail } from "@/lib/trace/why";
 
 export const DRAFT_COLS =
   "id, project_id, generator, target_store, title, body, data, sources, model, provider, status, run_id, reason, created_at, decided_at, decided_by, item_id";
@@ -194,11 +195,11 @@ export async function editDraft(id: number, e: Edit): Promise<Draft> {
 export type Approved = { draft: Draft; item: Item | null; before: Item | null };
 
 /** Approves one locked draft inside a transaction. */
-async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
+async function approveIn(c: PoolClient, d: DraftDbRow, why = ""): Promise<Approved> {
   if (d.status !== "draft") throw decidedAlready(d);
   const op = readOp(d.data);
   const fields = checkFields(d.target_store, d.title, d.body, rowData(d.data), op);
-  if (op.op === "append") return approveAppend(c, d, op, fields.data);
+  if (op.op === "append") return approveAppend(c, d, op, fields.data, why);
   if (op.op !== "remove") await assertDraftAllowed(d.project_id, d.target_store, fields.title, fields.body, fields.data);
   const actor = currentActor() || null;
   let before: Item | null = null;
@@ -280,12 +281,13 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
     sources: d.sources,
     ...(before ? { before: { title: before.title, body: before.body, data: before.data } } : {}),
     ...(item ? { after: { title: item.title, body: item.body, data: item.data } } : {}),
+    ...reasonDetail(why),
   });
   return { draft: toDraftRow(u.rows[0]), item, before };
 }
 
 /** Approves an "append" draft: adds its value to a list inside the row as the row is now, recorded with before and after. */
-async function approveAppend(c: PoolClient, d: DraftDbRow, op: DraftOp, data: Record<string, unknown>): Promise<Approved> {
+async function approveAppend(c: PoolClient, d: DraftDbRow, op: DraftOp, data: Record<string, unknown>, why = ""): Promise<Approved> {
   if (!op.field || !APPEND_FIELDS.has(op.field)) throw new HttpError(400, "This draft names a list that cannot be added to.");
   if (d.item_id === null) throw new HttpError(409, "The row this draft would add to no longer exists. Reject the draft.");
   const was = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2 AND section=$3 FOR UPDATE`, [d.item_id, d.project_id, d.target_store]);
@@ -315,15 +317,16 @@ async function approveAppend(c: PoolClient, d: DraftDbRow, op: DraftOp, data: Re
     sources: d.sources,
     before: { [`data.${top}`]: before.data[top] ?? null },
     after: { [`data.${top}`]: item.data[top] },
+    ...reasonDetail(why),
   });
   return { draft: toDraftRow(u.rows[0]), item, before };
 }
 
-export async function approveDraft(id: number, projectId?: string): Promise<Approved> {
+export async function approveDraft(id: number, projectId?: string, why = ""): Promise<Approved> {
   return tx(async (c) => {
     const d = await lockDraft(c, id);
     if (projectId && d.project_id !== projectId) throw notFound("That draft");
-    return approveIn(c, d);
+    return approveIn(c, d, why);
   });
 }
 

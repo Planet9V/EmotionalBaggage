@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useItemHistory, historyKeys } from "@/lib/trace/client";
 import { restoreBody, type HistoryChange } from "@/lib/trace/history";
 import type { Item } from "@/lib/types";
 import { HistoryEntryView } from "./HistoryEntryView";
+import { WhyField } from "./WhyField";
+import { api } from "@/lib/http";
 import { LoadingShape } from "@/components/ui/states";
 
 /**
@@ -16,10 +19,19 @@ export function HistoryPanel({ item, onRestore }: { item: Item; onRestore: (id: 
   const qc = useQueryClient();
   const h = useItemHistory(item.id);
 
+  // An optional reason for the next restore, kept with it in the history.
+  const [why, setWhy] = useState("");
   const restore = async (c: HistoryChange) => {
-    await onRestore(item.id, restoreBody(c.field, c.before));
+    await onRestore(item.id, { ...restoreBody(c.field, c.before), ...(why.trim() ? { why: why.trim() } : {}) });
+    setWhy("");
     await qc.invalidateQueries({ queryKey: historyKeys.item(item.id) });
   };
+  const addReason = async (entry: { id: number }, text: string) => {
+    await api(`/api/items/${item.id}/reason`, { method: "POST", body: JSON.stringify({ why: text, forEvent: entry.id }) });
+    await qc.invalidateQueries({ queryKey: historyKeys.item(item.id) });
+    await qc.invalidateQueries({ queryKey: ["history", "activity"] });
+  };
+  const canRestore = h.entries.some((e) => e.changes.some((c) => c.restorable));
 
   if (h.loading) {
     return (
@@ -46,9 +58,10 @@ export function HistoryPanel({ item, onRestore }: { item: Item; onRestore: (id: 
   }
   return (
     <div className="space-y-3 px-5 py-4">
+      {canRestore && <WhyField id="restore-why" value={why} onChange={setWhy} label="Why you are restoring (kept in the history)" hint="Optional. Used by the next Restore." />}
       <ol className="space-y-2" aria-label="Changes to this row, newest first">
         {h.entries.map((e) => (
-          <HistoryEntryView key={e.id} entry={e} current={item} onRestore={restore} />
+          <HistoryEntryView key={e.id} entry={e} current={item} onRestore={restore} onAddReason={addReason} />
         ))}
       </ol>
       {h.error && (

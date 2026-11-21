@@ -99,6 +99,40 @@ describe("ProcessStepper", () => {
   });
 });
 
+describe("the optional why on moving back and withdrawing an override (process review 3)", () => {
+  it("Move back asks for an optional reason, sends it, and sends none when left empty", async () => {
+    const state = base({ stage: "design" });
+    const { calls } = adminServer([on("POST", "/api/projects/toy/stage", () => ({ body: { ...state, stage: "concept" } }))]);
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(state, [])} />);
+    fireEvent.click(within(screen.getByTestId("stage-concept")).getByRole("button", { name: /Move back to Concept/ }));
+    let dialog = await screen.findByRole("dialog");
+    expect(calls).toHaveLength(0);
+    fireEvent.change(within(dialog).getByLabelText("Why (kept in the history)"), { target: { value: "The brief changed" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Move back" }));
+    await waitFor(() => expect(calls).toEqual([{ method: "POST", path: "/api/projects/toy/stage", body: { stage: "concept", why: "The brief changed" } }]));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Moved back to Concept."));
+    cleanup();
+    calls.length = 0;
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(state, [])} />);
+    fireEvent.click(within(screen.getByTestId("stage-concept")).getByRole("button", { name: /Move back to Concept/ }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Move back" }));
+    await waitFor(() => expect(calls).toEqual([{ method: "POST", path: "/api/projects/toy/stage", body: { stage: "concept" } }]));
+  });
+
+  it("Withdraw override asks for an optional reason first", async () => {
+    const state = base({ gates: [{ stage: "research", status: "go", overridden: true, note: "Checked", decidedBy: "demo", decidedAt: "2026-11-20T10:00:00.000Z" }] });
+    const { calls } = adminServer([on("DELETE", "/api/projects/toy/gates", () => ({ body: base() }))]);
+    renderWithClient(<ProcessStepper projectId="toy" view={processView(state, [])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw override" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(calls).toHaveLength(0);
+    fireEvent.change(within(dialog).getByLabelText("Why (kept in the history)"), { target: { value: "Evidence arrived" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Withdraw override" }));
+    await waitFor(() => expect(calls).toEqual([{ method: "DELETE", path: "/api/projects/toy/gates", body: { stage: "research", why: "Evidence arrived" } }]));
+  });
+});
+
 describe("NextStepStrip", () => {
   it("shows the next step and why for the open concept", async () => {
     adminServer([

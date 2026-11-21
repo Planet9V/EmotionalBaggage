@@ -8,6 +8,7 @@ import { evaluateGate, gateOf, stageLabel } from "@/lib/process/evaluate";
 import { overrideBody, withdrawBody } from "@/lib/process/schemas";
 import { factsOf, itemsOf, type GateRow } from "@/lib/process/server";
 import { processResponse } from "@/lib/process/state";
+import { reasonDetail } from "@/lib/trace/why";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -65,6 +66,7 @@ export const DELETE = route(async (req: Request, { params }: Ctx) => {
       by,
       before: { overridden: true, note: g.note, decidedBy: g.decided_by, decidedAt: g.decided_at ? new Date(g.decided_at).toISOString() : null },
       after: { overridden: false, note: "", decidedBy: by },
+      ...reasonDetail(b.why),
     });
     return processResponse(c, id);
   });
