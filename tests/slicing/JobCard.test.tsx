@@ -36,7 +36,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-const show = (j: Item) => render(<QueryClientProvider client={freshClient()}><ul><JobCard projectId="p" job={j} onDelete={() => {}} onRequeue={async () => {}} /></ul></QueryClientProvider>);
+const show = (j: Item) => render(<QueryClientProvider client={freshClient()}><ul><JobCard projectId="p" job={j} onDelete={() => {}} onEdit={() => {}} onRequeue={async () => {}} /></ul></QueryClientProvider>);
 
 describe("a sliced job", () => {
   it("shows the slicer's time and filament, with the version and the profile it used", async () => {
@@ -115,5 +115,16 @@ describe("a queued job", () => {
     expect(screen.getByRole("button", { name: "Slice" })).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain("No 0.05 mm profile");
     expect(screen.queryByRole("button", { name: /Send to/ })).toBeNull();
+  });
+});
+
+describe("a queued job that is not ready", () => {
+  it("cannot be sliced until a file, a printer and a profile are chosen, and offers to choose them", async () => {
+    plan = fullPlan;
+    const onEdit = vi.fn();
+    render(<QueryClientProvider client={freshClient()}><ul><JobCard projectId="p" job={job("queued", { slice: undefined, fileId: null, printerId: null })} onDelete={() => {}} onEdit={onEdit} onRequeue={async () => {}} /></ul></QueryClientProvider>);
+    expect((screen.getByRole("button", { name: "Slice" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Choose file and printer" }));
+    expect(onEdit).toHaveBeenCalled();
   });
 });

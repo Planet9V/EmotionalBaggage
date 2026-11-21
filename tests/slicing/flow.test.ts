@@ -301,6 +301,29 @@ describe("a printer with no adapter gets the file and the steps", () => {
   });
 });
 
+describe("a printer with no adapter: the result is how the job learns it was printed", () => {
+  it("records a hand-carried print through sent and printing to done, and logs the hand-over", async () => {
+    restore();
+    restore = setPortFactory(() => new FileOnlyPort());
+    const j = await sliced();
+    const r = await read<Body>(await act(result, j.id, { outcome: "good", actualG: 3.9, photoFileIds: [] }));
+    expect(r.status).toBe(200);
+    expect(r.body.item.status).toBe("done");
+    const d = (await get(j.id)).data;
+    expect(d.handedOver).toBe(true);
+    expect(d.sentName).toBe(`test_lid-${j.id}.gcode`);
+    expect(await events("print.handed-over", j.id)).toBe("1");
+  });
+
+  it("keeps a bad photo from leaving the job half moved", async () => {
+    restore();
+    restore = setPortFactory(() => new FileOnlyPort());
+    const j = await sliced();
+    expect((await act(result, j.id, { outcome: "good", photoFileIds: [999999999] })).status).toBe(400);
+    expect((await get(j.id)).status).toBe("sliced");
+  });
+});
+
 describe("the plain row route cannot reach the hardware", () => {
   const patch = (id: number, payload: unknown) => patchItem(json("PATCH", payload), ctx(String(id)));
 

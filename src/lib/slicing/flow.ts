@@ -295,17 +295,30 @@ export async function recordResult(id: number, r: ResultInput) {
   return tx(async (c) => {
     const row = await loadJob(id, true, c);
     const status = normaliseStatus(row.status);
-    if (!["sent", "printing", "done", "failed", "cancelled"].includes(status)) throw new HttpError(409, "Record a result once the print has been sent to the printer.");
+    let cur0 = row;
+    let status0 = status;
+    if (status === "sliced") {
+      // A printer this app cannot reach: the person carried the file there. Recording the result is how the job learns that.
+      const d0 = jobData(row);
+      const printer = await loadPrinter(d0.printerId);
+      const port = portOf(printer);
+      if (port.capabilities.upload) throw new HttpError(409, `Send the file to ${printer.name} first, so the app knows what was printed.`);
+      const name = planSend(row, port).name;
+      cur0 = await move(c, cur0, { to: "sent", data: { sentAt: stamp(), sentName: name, handedOver: true }, kind: "print.handed-over", summary: `"${row.title}" was taken to ${printer.name} by hand as ${name}`, detail: { printer: printer.name, file: name } });
+      cur0 = await move(c, cur0, { to: "printing", data: { startedAt: stamp() }, kind: "print.started", summary: `"${row.title}" was printed on ${printer.name} (started by hand)`, detail: { printer: printer.name, byHand: true } });
+      status0 = "printing";
+    }
+    if (!["sent", "printing", "done", "failed", "cancelled"].includes(status0)) throw new HttpError(409, "Record a result once the print has been sent to the printer.");
     if (r.photoFileIds.length) {
       const ok = await c.query<{ id: string }>("SELECT id FROM files WHERE project_id=$1 AND id = ANY($2::bigint[])", [row.project_id, r.photoFileIds]);
       if (ok.rows.length !== new Set(r.photoFileIds).size) throw new HttpError(400, "A photo named here is not stored in this concept.");
     }
-    const d = jobData(row);
+    const d = jobData(cur0);
     const result = { ...r, finishedAt: d.result?.finishedAt ?? stamp() };
     const target: PrintStatus = r.outcome === "failed" ? "failed" : "done";
-    let out = row;
-    if (status !== target && status !== "cancelled" && canMove(status, target)) {
-      out = await move(c, row, { to: target, data: { result }, kind: "print.result", summary: `Recorded the result of "${row.title}": ${r.outcome}`, detail: { result: { ...result, notes: result.notes ? "(written)" : "" }, buildKey: d.buildKey ?? null } });
+    let out = cur0;
+    if (status0 !== target && status0 !== "cancelled" && canMove(status0, target)) {
+      out = await move(c, cur0, { to: target, data: { result }, kind: "print.result", summary: `Recorded the result of "${row.title}": ${r.outcome}`, detail: { result: { ...result, notes: result.notes ? "(written)" : "" }, buildKey: d.buildKey ?? null } });
     } else {
       const res = await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [row.id, JSON.stringify({ result })]);
       out = res.rows[0];

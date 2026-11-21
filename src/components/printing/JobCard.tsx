@@ -18,11 +18,12 @@ type Pending = null | { kind: "send" | "start" | "cancel"; printer: string; file
 
 const dt = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "");
 
-export function JobCard({ projectId, job, buildTitle, onDelete, onRequeue }: { projectId: string; job: Item; buildTitle?: string; onDelete: () => void; onRequeue: () => Promise<unknown> }) {
+export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeue }: { projectId: string; job: Item; buildTitle?: string; onDelete: () => void; onEdit: () => void; onRequeue: () => Promise<unknown> }) {
   const status = normaliseStatus(job.status) as PrintStatus;
   const parsed = printJobData.safeParse(job.data);
   const d = parsed.success ? parsed.data : (job.data as never);
   const hasSlice = !!d.slice && ["sliced", "sent", "printing", "done", "failed", "cancelled"].includes(status);
+  const ready = !!(d.fileId && d.printerId && d.printerMaker && d.printerModel);
   const live = status === "sent" || status === "printing";
   const act = usePrintActions(projectId, job.id);
   const plan = usePlan(job.id, ["sliced", "sent", "printing", "done"].includes(status));
@@ -114,10 +115,11 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onRequeue }: { p
 
       <div className="flex flex-wrap items-center gap-2">
         {(status === "queued" || status === "sliced") && (
-          <Button size="sm" onClick={() => void run(() => act.slice.mutateAsync())} disabled={busy}>
+          <Button size="sm" onClick={() => void run(() => act.slice.mutateAsync())} disabled={busy || !ready} title={ready ? undefined : "Choose a file, a printer and a slicer profile first"}>
             <Scissors className="h-3.5 w-3.5" aria-hidden /> {act.slice.isPending ? "Slicing, this can take a minute" : status === "sliced" ? "Slice again" : "Slice"}
           </Button>
         )}
+        {status === "queued" && <Button size="sm" variant="outline" onClick={onEdit} disabled={busy}>{ready ? "Edit job" : "Choose file and printer"}</Button>}
         {status === "slicing" && <span role="status" className="text-sm text-secondary">The slicer is working. This page updates when it is done.</span>}
 
         {status === "sliced" && p && !p.fileOnly && p.send && p.printer && (
@@ -138,7 +140,7 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onRequeue }: { p
         {(status === "queued" || status === "sliced") && (
           <Button size="sm" variant="ghost" onClick={() => void run(() => act.control.mutateAsync({ action: "cancel" }))} disabled={busy}>Cancel job</Button>
         )}
-        {["sent", "printing", "done", "failed", "cancelled"].includes(status) && (
+        {(["sent", "printing", "done", "failed", "cancelled"].includes(status) || (status === "sliced" && p?.fileOnly)) && (
           <Button size="sm" variant="outline" onClick={() => setResultOpen((v) => !v)} aria-expanded={resultOpen}>{d.result ? "Edit result" : "Record result"}</Button>
         )}
         {(status === "failed" || status === "cancelled") && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(onRequeue)}>Queue again</Button>}

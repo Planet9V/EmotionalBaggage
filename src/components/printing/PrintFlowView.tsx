@@ -32,6 +32,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
   const filesQ = useQuery(queries.files(project.id));
   const [adding, setAdding] = useState(false);
   const [del, setDel] = useState<Item | null>(null);
+  const [editing, setEditing] = useState<Item | null>(null);
   const [actionError, setActionError] = useState("");
 
   const parts = useMemo(() => bom.items.map(toPart).filter((p) => p.geometry?.print === true || p.item.status === "to print").map((p) => ({ ref: p.ref, title: p.item.title })), [bom.items]);
@@ -90,7 +91,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
         ) : (
           <ul className="space-y-3">
             {jobs.items.map((j) => (
-              <JobCard key={j.id} projectId={project.id} job={j} buildTitle={buildTitle(j)} onDelete={() => setDel(j)} onRequeue={() => jobs.patch(j.id, { status: "queued" })} />
+              <JobCard key={j.id} projectId={project.id} job={j} buildTitle={buildTitle(j)} onDelete={() => setDel(j)} onEdit={() => setEditing(j)} onRequeue={() => jobs.patch(j.id, { status: "queued" })} />
             ))}
           </ul>
         )}
@@ -107,6 +108,20 @@ export function PrintFlowView({ project, store }: ViewProps) {
         slicer={s}
         onCreate={async (v) => { await jobs.add({ section: store, title: v.title, status: "queued", data: v.data }); }}
       />
+      {editing ? (
+        <NewJobDialog
+          key={editing.id}
+          open
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          editing={editing}
+          files={files}
+          parts={parts}
+          builds={buildOpts}
+          printers={printers.data ?? []}
+          slicer={s}
+          onCreate={async (v) => { await jobs.patch(editing.id, { title: v.title, data: v.data }); }}
+        />
+      ) : null}
       <Modal open={!!del} onOpenChange={(o) => !o && setDel(null)} title="Delete this print job?" description="The stored files, including any sliced G-code, are kept.">
         <p className="text-sm font-medium text-primary">{del?.title}</p>
         <div className="mt-4 flex justify-end gap-2">

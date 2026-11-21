@@ -9,14 +9,14 @@ import { Modal } from "@/components/parts/Modal";
 import { matchPrinter } from "@/lib/slicing/match";
 import type { SlicerState } from "@/lib/slicing/queries";
 import type { PrinterView } from "@/lib/admin/printers";
-import type { FileMeta } from "@/lib/types";
+import type { FileMeta, Item } from "@/lib/types";
 
 export type NewJob = { title: string; data: Record<string, unknown> };
 
 const ENCLOSURE = /enclosure|tray|lid|case|shell|base/i;
 export const isPrintable = (f: FileMeta) => /\.(stl|3mf)$/i.test(f.name) && !/\.gcode\.3mf$/i.test(f.name);
 
-export function NewJobDialog({ open, onOpenChange, files, parts, builds, printers, slicer, onCreate }: {
+export function NewJobDialog({ open, onOpenChange, files, parts, builds, printers, slicer, onCreate, editing }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   files: FileMeta[];
@@ -25,23 +25,27 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   printers: PrinterView[];
   slicer: SlicerState | undefined;
   onCreate: (j: NewJob) => Promise<void>;
+  /** a queued job to change instead of a new one; the parent gives the dialog a new key per job */
+  editing?: Item | null;
 }) {
+  const was = (editing?.data ?? {}) as Record<string, unknown>;
+  const str = (k: string, d = "") => (was[k] == null ? d : String(was[k]));
   const printable = useMemo(() => files.filter(isPrintable), [files]);
   const enclosure = printable.filter((f) => ENCLOSURE.test(f.name));
   const rest = printable.filter((f) => !ENCLOSURE.test(f.name));
   const usable = printers.filter((p) => p.enabled);
   const profiles = (slicer?.printers ?? []).filter((p) => p.available);
 
-  const [title, setTitle] = useState("");
-  const [fileId, setFileId] = useState("");
-  const [part, setPart] = useState("");
-  const [printerId, setPrinterId] = useState("");
-  const [modelKey, setModelKey] = useState("");
-  const [material, setMaterial] = useState("PLA");
-  const [layer, setLayer] = useState("0.2");
-  const [infill, setInfill] = useState("15");
-  const [supports, setSupports] = useState(false);
-  const [buildKey, setBuildKey] = useState("");
+  const [title, setTitle] = useState(editing?.title ?? "");
+  const [fileId, setFileId] = useState(str("fileId"));
+  const [part, setPart] = useState(str("part"));
+  const [printerId, setPrinterId] = useState(str("printerId"));
+  const [modelKey, setModelKey] = useState(was.printerMaker && was.printerModel ? `${str("printerMaker")}|${str("printerModel")}` : "");
+  const [material, setMaterial] = useState(str("material", "PLA"));
+  const [layer, setLayer] = useState(str("layerHeight", "0.2"));
+  const [infill, setInfill] = useState(str("infill", "15"));
+  const [supports, setSupports] = useState(!!was.supports);
+  const [buildKey, setBuildKey] = useState(str("buildKey"));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -89,7 +93,7 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
           material, layerHeight: Number(layer), infill: n, supports, ...(buildKey ? { buildKey } : {}),
         },
       });
-      setTitle(""); setFileId(""); setPart("");
+      if (!editing) { setTitle(""); setFileId(""); setPart(""); }
       onOpenChange(false);
     } catch (x) {
       setErr((x as Error).message);
@@ -99,7 +103,7 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="New print job" description="Pick what to print and where. The slicer works out time and material when you slice it." wide>
+    <Modal open={open} onOpenChange={onOpenChange} title={editing ? "Edit print job" : "New print job"} description="Pick what to print and where. The slicer works out time and material when you slice it." wide>
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
         <Field label="File to print" hint={printable.length ? "Stored .stl and .3mf files of this concept." : undefined} className="sm:col-span-2">
           <Select value={fileId} onChange={(e) => pickFile(e.target.value)} required>
@@ -157,7 +161,7 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
         {err ? <div className="sm:col-span-2"><ErrorLine>{err}</ErrorLine></div> : null}
         <div className="flex justify-end gap-2 sm:col-span-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" disabled={busy}>{busy ? "Adding" : "Add job"}</Button>
+          <Button type="submit" disabled={busy}>{busy ? "Saving" : editing ? "Save job" : "Add job"}</Button>
         </div>
       </form>
     </Modal>
