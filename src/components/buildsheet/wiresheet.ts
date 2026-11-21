@@ -49,31 +49,84 @@ export function wireCurrent(w: Wire, parts: Map<string, PartLite>): Current {
   return { mA: top.mA, basis: "part", from: top.ref };
 }
 
-/** The gauge shown for a wire: the user's typed one wins and says so; else the table's choice from the current. */
-export type Gauge = { awg: number | null; label: string; why: string; set: "user" | "table" | "none" };
+/**
+ * The gauge shown for a wire and the rule that decided it. A gauge typed on the wire wins. Otherwise the thicker of
+ * the gauge the current needs (the ampacity table, single wire in free air) and the thinnest wire the connectors at
+ * its ends accept (their makers' data sheets). `decided` says which, in words, for the sheet; `warning` flags a wire
+ * that is too thick or too thin for a connector.
+ */
+export type Gauge = { awg: number | null; label: string; why: string; set: "user" | "table" | "connector" | "none"; decided: string; warning?: string };
 
-export function gaugeOf(w: Wire, cur: Current): Gauge {
+type EndRange = { ref: string; label: string; range: WireRange | null };
+
+const ASSUMPTION = "single wire in free air; a tight bundle or a warm enclosure needs a thicker wire";
+
+export function gaugeOf(w: Wire, cur: Current, ends: EndRange[] = []): Gauge {
+  const ranged = ends.filter((e): e is EndRange & { range: WireRange } => !!e.range);
+  const unsourced = ends.filter((e) => !e.range && e.label);
+  const unsourcedNote = unsourced.length ? ` ${[...new Set(unsourced.map((e) => e.label))].join(", ")}: accepted wire sizes not sourced, so not checked.` : "";
+  const fits = (awg: number) => {
+    const bad = ranged.filter((e) => awg < e.range.thickest || awg > e.range.thinnest);
+    return bad.length ? `${awg} AWG is outside what ${bad.map((e) => `${e.label} at ${e.ref} takes (${e.range.thickest} to ${e.range.thinnest} AWG)`).join(" and ")}.` : undefined;
+  };
   const typed = numOf((w.item.data as Record<string, unknown>).gauge);
-  if (typed !== null) return { awg: Math.round(typed), label: `${Math.round(typed)} AWG`, why: "set on this wire", set: "user" };
+  if (typed !== null) {
+    const awg = Math.round(typed);
+    return { awg, label: `${awg} AWG`, why: "set on this wire", set: "user", decided: `Typed on this wire.${unsourcedNote}`, warning: fits(awg) };
+  }
+  // the connectors' thinnest accepted wire, the most demanding end
+  const floor = ranged.length ? ranged.reduce((a, b) => (b.range.thinnest < a.range.thinnest ? b : a)) : null;
   const g = gaugeFor(cur.mA);
-  if (g.kind === "chosen")
-    return { awg: g.awg, label: `${g.awg} AWG`, why: `${cur.mA} mA${cur.basis === "part" ? ` from ${cur.from}` : ""}; ${g.awg} AWG carries up to ${g.amps} A as chassis wiring`, set: "table" };
-  if (g.kind === "above") return { awg: null, label: "over table", why: `${g.mA} mA is more than the ${g.maxAmps} A the table goes to`, set: "none" };
-  return { awg: null, label: "not set", why: "no current is set for this wire or its parts", set: "none" };
+  const curText = cur.mA !== null ? `${cur.mA} mA${cur.basis === "part" ? ` from ${cur.from}` : ""}` : "";
+  if (g.kind === "above") return { awg: null, label: "over table", why: `${g.mA} mA is more than the ${g.maxAmps} A the table goes to`, set: "none", decided: `${g.mA} mA is more than the table covers. Size it from the wire maker's data.` };
+  if (g.kind === "chosen") {
+    if (floor && floor.range.thinnest < g.awg) {
+      const awg = floor.range.thinnest;
+      return {
+        awg, label: `${awg} AWG`, set: "connector",
+        why: `${curText} needs only ${g.awg} AWG, but ${floor.label} at ${floor.ref} takes ${floor.range.thickest} to ${floor.range.thinnest} AWG`,
+        decided: `Connector: ${floor.label} at ${floor.ref} holds ${floor.range.thinnest} AWG at the thinnest (${floor.range.source.label}); the current alone (${curText}) would allow ${g.awg} AWG.${unsourcedNote}`,
+        warning: fits(awg),
+      };
+    }
+    return {
+      awg: g.awg, label: `${g.awg} AWG`, set: "table",
+      why: `${curText}; ${g.awg} AWG carries up to ${g.amps} A as chassis wiring`,
+      decided: `Current: ${curText} needs ${g.awg} AWG, which carries up to ${g.amps} A (${ASSUMPTION}).${floor ? ` ${floor.label} accepts it.` : ""}${unsourcedNote}`,
+      warning: fits(g.awg),
+    };
+  }
+  if (floor) {
+    const awg = floor.range.thinnest;
+    return { awg, label: `${awg} AWG`, set: "connector", why: `no current set; ${floor.label} at ${floor.ref} takes ${floor.range.thickest} to ${floor.range.thinnest} AWG`, decided: `Connector only: no current is set, so this is the thinnest wire ${floor.label} at ${floor.ref} holds (${floor.range.source.label}). Set the current to check it carries enough.${unsourcedNote}`, warning: fits(awg) };
+  }
+  return { awg: null, label: "not set", why: "no current is set for this wire or its parts", set: "none", decided: `No current is set for this wire or its parts.${unsourcedNote}` };
 }
 
 // ------------------------------------------------------------------ strip lengths
 
+/**
+ * Connection types, their starting strip lengths and the wire sizes each terminal accepts. `awg` is taken from the
+ * terminal maker's own data sheet and names it; null means no maker's figure could be read for a type this generic,
+ * so nothing is constrained and the sheet says "not sourced". Read on 21 Nov 2026:
+ *  - Dupont 2.54 mm: the name comes from the Berg (now Amphenol FCI) Mini-PV terminal; FCI's data sheet for the
+ *    Mini-PV Basics+ crimp 48051-000LF gives 22 to 26 AWG. Unbranded "Dupont" terminals copy it and may differ.
+ *  - JST XH: JST's XH data sheet, applicable wire AWG #30 to #22 (contact 001 for 28 to 22, 002 for 30 to 26).
+ *  - JST PH: JST's PH data sheet, applicable wire AWG #32 to #24.
+ *  - Molex KK 254, ferrules, screw terminals and lugs: each depends on the exact terminal; not sourced.
+ */
+export type WireRange = { thickest: number; thinnest: number; source: { label: string; url: string } };
+
 export const CONNECTIONS = [
-  { key: "solder", label: "Soldered to a pad or pin", strip: 4 },
-  { key: "dupont", label: "Dupont 2.54 mm crimp", strip: 3 },
-  { key: "jst-xh", label: "JST XH crimp", strip: 2.5 },
-  { key: "jst-ph", label: "JST PH crimp", strip: 2 },
-  { key: "molex-kk", label: "Molex KK 2.54 mm crimp", strip: 2.5 },
-  { key: "ferrule", label: "Ferrule in a screw terminal", strip: 8 },
-  { key: "screw", label: "Bare wire in a screw terminal", strip: 6 },
-  { key: "lug", label: "Ring or spade lug", strip: 6 },
-] as const;
+  { key: "solder", label: "Soldered to a pad or pin", strip: 4, awg: null },
+  { key: "dupont", label: "Dupont 2.54 mm crimp", strip: 3, awg: { thickest: 22, thinnest: 26, source: { label: "Amphenol FCI Mini-PV Basics+ 48051-000LF data sheet", url: "https://nonprod.docs.rs-online.com/ab4f/0900766b8145084a.pdf" } } },
+  { key: "jst-xh", label: "JST XH crimp", strip: 2.5, awg: { thickest: 22, thinnest: 30, source: { label: "JST XH connector data sheet", url: "https://www.jst-mfg.com/product/pdf/eng/eXH.pdf" } } },
+  { key: "jst-ph", label: "JST PH crimp", strip: 2, awg: { thickest: 24, thinnest: 32, source: { label: "JST PH connector data sheet", url: "https://www.jst-mfg.com/product/pdf/eng/ePH.pdf" } } },
+  { key: "molex-kk", label: "Molex KK 2.54 mm crimp", strip: 2.5, awg: null },
+  { key: "ferrule", label: "Ferrule in a screw terminal", strip: 8, awg: null },
+  { key: "screw", label: "Bare wire in a screw terminal", strip: 6, awg: null },
+  { key: "lug", label: "Ring or spade lug", strip: 6, awg: null },
+] as const satisfies readonly { key: string; label: string; strip: number; awg: WireRange | null }[];
 export type ConnectionKey = (typeof CONNECTIONS)[number]["key"];
 
 /**
@@ -86,6 +139,14 @@ export const connectionOf = (p: PartLite | undefined): string => {
   const v = p?.item.data.connection;
   return typeof v === "string" && CONNECTIONS.some((c) => c.key === v) ? v : "";
 };
+
+/** The connection type at each end of a wire, with the wire sizes its terminal accepts (null: not sourced). */
+export function endRanges(w: Wire, parts: Map<string, PartLite>): EndRange[] {
+  return [w.from, w.to].flatMap((ref) => {
+    const c = CONNECTIONS.find((x) => x.key === connectionOf(parts.get(ref)));
+    return c ? [{ ref, label: c.label, range: c.awg as WireRange | null }] : [];
+  });
+}
 
 export type SpecRow = {
   step: number;
@@ -111,7 +172,7 @@ export function specRows(steps: Step[], parts: Map<string, PartLite>, routing: n
     const colourSet = typeof typed === "string" && typed.trim() !== "";
     const current = wireCurrent(wire, parts);
     return {
-      step: n, wire, colour: colourSet ? String(typed).trim().toLowerCase() : suggestedColour(wire, nets), colourSet, current, gauge: gaugeOf(wire, current),
+      step: n, wire, colour: colourSet ? String(typed).trim().toLowerCase() : suggestedColour(wire, nets), colourSet, current, gauge: gaugeOf(wire, current, endRanges(wire, parts)),
       length: estimateLength(wire, parts, routing, allowance), stripFrom: stripOf(wire.from), stripTo: stripOf(wire.to),
     };
   });
