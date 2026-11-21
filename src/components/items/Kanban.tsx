@@ -1,37 +1,72 @@
 "use client";
 
-import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  pointerWithin,
+  rectIntersection,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+  type Announcements,
+} from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { NativeSelect } from "@/components/ui/native-select";
+import { toastError } from "@/components/ui/states";
 import { statusTone } from "@/lib/statusTones";
 import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { prim } from "./shared";
-import { useReducedMotion } from "@/lib/useReducedMotion";
-import { Card } from "@/components/ui/Card";
 
 type Props = {
   items: Item[];
   statuses: string[];
   columns: Column[];
   onOpen: (id: number) => void;
-  onMove: (id: number, status: string) => void | Promise<void>;
+  /** Resolves when the server accepted the move; rejects with the server's sentence when it refused (the screen has already rolled back). */
+  onMove: (id: number, status: string) => unknown | Promise<unknown>;
   /** extra content under a card's fields, for sections that show more than columns (claims show evidence) */
   cardExtra?: (item: Item) => ReactNode;
+  /** Replaces the card's content. `grip` is the drag handle to place in it; the article, focus ring and Move to list stay. */
+  renderCard?: (item: Item, grip: ReactNode) => ReactNode;
+  /** Words for the empty column hint. */
+  emptyHint?: string;
+};
+
+// A pointer over a column wins; otherwise the nearest rectangle (keyboard drags have no pointer).
+const collide: CollisionDetection = (args) => {
+  const hit = pointerWithin(args);
+  return hit.length ? hit : rectIntersection(args);
 };
 
 /**
- * Board layout: one column per status. Cards move by drag and drop, by the Move to list on the card
- * (touch and screen readers) or by focusing a card and pressing Shift with the left or right arrow.
- * Every move is announced in a polite live region.
+ * Board layout: one column per status, on dnd-kit. Cards move by dragging the grip (mouse, touch, or the
+ * keyboard: Space to lift, arrows to choose a column, Space to drop, Escape to cancel), by the Move to list
+ * on the card, or by focusing a card and pressing Shift with the left or right arrow. What the screen reader
+ * hears is what happened: a move is announced after the server answered, and a refused move says so, with
+ * the server's reason, and where the card stays.
  */
-export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra }: Props) {
-  const reduce = useReducedMotion();
-  const [over, setOver] = useState<string | null>(null);
+export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, renderCard, emptyHint }: Props) {
   const [say, setSay] = useState("");
-  const dragged = useRef<number | null>(null);
+  const [active, setActive] = useState<Item | null>(null);
   const refocus = useRef<number | null>(null);
   const root = useRef<HTMLDivElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
 
   // After a keyboard move the card remounts in its new column; give it focus back.
   useEffect(() => {
@@ -43,21 +78,40 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra }: 
     }
   }, [items]);
 
-  const move = (item: Item, status: string, viaKeyboard = false) => {
+  const count = (st: string) => items.filter((x) => x.status === st).length;
+
+  const move = async (item: Item, status: string, viaKeyboard = false) => {
     if (item.status === status) return;
+    const from = item.status;
     if (viaKeyboard) refocus.current = item.id;
-    setSay(`${item.title} moved to ${status}. ${items.filter((x) => x.status === status).length + 1} in ${status}.`);
-    void onMove(item.id, status);
+    setSay(`Moving ${item.title} to ${status}.`);
+    try {
+      await onMove(item.id, status);
+      setSay(`${item.title} moved to ${status}. ${count(status)} in ${status}.`);
+    } catch (e) {
+      const reason = (e as Error).message || "The server refused the change.";
+      refocus.current = viaKeyboard ? item.id : null;
+      setSay(`${item.title} was not moved: ${reason} It stays in ${from}.`);
+      toastError(`${item.title}: ${reason}`);
+    }
   };
 
-  const drop = (status: string) => (e: DragEvent) => {
-    e.preventDefault();
-    setOver(null);
-    const raw = e.dataTransfer.getData("text/plain");
-    const id = raw ? Number(raw) : dragged.current;
-    dragged.current = null;
-    const item = items.find((x) => x.id === id);
-    if (item) move(item, status);
+  const nameOf = (id: string | number) => items.find((i) => i.id === Number(id))?.title ?? "Card";
+  const colOf = (id: unknown) => (typeof id === "string" && id.startsWith("col:") ? id.slice(4) : null);
+  // The drag announcements say what is being done, never that a move has happened: that is announced once the server has answered.
+  const announcements: Announcements = {
+    onDragStart: ({ active: a }) => `Picked up ${nameOf(a.id)}. Use the arrow keys to choose a status, Space to drop, Escape to cancel.`,
+    onDragOver: ({ active: a, over }) => (over && colOf(over.id) ? `${nameOf(a.id)} is over ${colOf(over.id)}.` : `${nameOf(a.id)} is not over a status.`),
+    onDragEnd: ({ active: a, over }) => (over && colOf(over.id) ? `Dropped ${nameOf(a.id)} on ${colOf(over.id)}. Saving.` : `${nameOf(a.id)} was dropped outside a status and was not changed.`),
+    onDragCancel: ({ active: a }) => `Cancelled. ${nameOf(a.id)} was not changed.`,
+  };
+
+  const onDragStart = (e: DragStartEvent) => setActive(items.find((i) => i.id === Number(e.active.id)) ?? null);
+  const onDragEnd = (e: DragEndEvent) => {
+    setActive(null);
+    const st = colOf(e.over?.id);
+    const item = items.find((i) => i.id === Number(e.active.id));
+    if (item && st) void move(item, st);
   };
 
   return (
@@ -65,88 +119,90 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra }: 
       <p role="status" aria-live="polite" className="sr-only">
         {say}
       </p>
-      <p className="mb-2 text-xs text-muted">Drag a card, use its Move to list, or focus a card and press Shift with an arrow key.</p>
-      <div className="-mx-1 snap-x overflow-x-auto px-1 pb-3">
-        <ol className="grid grid-flow-col auto-cols-[minmax(15rem,82vw)] gap-3 sm:auto-cols-[minmax(15rem,1fr)]">
-          {statuses.map((st) => {
-            const cards = items.filter((x) => x.status === st).sort((a, b) => a.sort - b.sort);
-            return (
-              <li
-                key={st}
-                aria-label={`${st}: ${cards.length} items`}
-                data-status={st}
-                className={`flex min-w-0 snap-start flex-col self-stretch overflow-hidden rounded-xl border bg-subtle transition-shadow duration-150 ${
-                  over === st ? "border-dutchOrange ring-2 ring-dutchOrange" : "border-hairline"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
-                  if (over !== st) setOver(st);
-                }}
-                onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(null);
-                }}
-                onDrop={drop(st)}
-              >
-                <div className="flex items-center justify-between gap-2 border-b border-hairline px-3 py-2">
-                  <StatusBadge tone={statusTone(st)}>{st}</StatusBadge>
-                  <span className="font-mono text-[11px] text-secondary" aria-hidden>
-                    {cards.length}
-                  </span>
-                </div>
-                <ul className="max-h-152 flex-1 space-y-2 overflow-y-auto p-2">
-                  {cards.map((it, i) => (
-                    <BoardCard
-                      key={it.id}
-                      item={it}
-                      index={i}
-                      reduce={!!reduce}
-                      statuses={statuses}
-                      columns={columns}
-                      onOpen={onOpen}
-                      extra={cardExtra?.(it)}
-                      onMove={(s, kb) => move(it, s, kb)}
-                      onDragStart={(e) => {
-                        dragged.current = it.id;
-                        e.dataTransfer.setData("text/plain", String(it.id));
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
-                    />
-                  ))}
-                  {!cards.length && (
-                    <li className="rounded-lg border border-dashed border-hairline px-2 py-4 text-center text-[11px] text-muted">Drop an item here</li>
-                  )}
-                </ul>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+      <p className="mb-2 text-xs text-muted">Drag a card by its grip (Space to lift it from the keyboard), use its Move to list, or focus a card and press Shift with an arrow key.</p>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={collide}
+        accessibility={{ announcements, screenReaderInstructions: { draggable: "Press Space to lift the card, the arrow keys to choose a status, Space to drop it, Escape to cancel." } }}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => setActive(null)}
+      >
+        <div className="-mx-1 snap-x overflow-x-auto px-1 pb-3">
+          <ol className="grid grid-flow-col auto-cols-[minmax(15rem,82vw)] gap-3 sm:auto-cols-[minmax(15rem,1fr)]">
+            {statuses.map((st) => (
+              <Column key={st} status={st} emptyHint={emptyHint} cards={items.filter((x) => x.status === st).sort((a, b) => a.sort - b.sort)}>
+                {(it, i) => (
+                  <BoardCard
+                    key={it.id}
+                    item={it}
+                    index={i}
+                    statuses={statuses}
+                    columns={columns}
+                    onOpen={onOpen}
+                    extra={cardExtra?.(it)}
+                    renderCard={renderCard}
+                    onMove={(s, kb) => void move(it, s, kb)}
+                  />
+                )}
+              </Column>
+            ))}
+          </ol>
+        </div>
+        <DragOverlay dropAnimation={null}>
+          {active ? <div className="rounded-lg border border-dutchOrange bg-surface p-2.5 text-[13px] font-semibold text-primary shadow-lg">{active.title}</div> : null}
+        </DragOverlay>
+      </DndContext>
     </div>
+  );
+}
+
+function Column({ status, cards, children, emptyHint }: { status: string; cards: Item[]; children: (it: Item, i: number) => ReactNode; emptyHint?: string }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `col:${status}` });
+  return (
+    <li
+      ref={setNodeRef}
+      aria-label={`${status}: ${cards.length} items`}
+      data-status={status}
+      className={cn(
+        "flex min-w-0 snap-start flex-col self-stretch overflow-hidden rounded-xl border bg-subtle transition-shadow duration-150",
+        isOver ? "border-dutchOrange ring-2 ring-dutchOrange" : "border-hairline",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-hairline px-3 py-2">
+        <StatusBadge tone={statusTone(status)}>{status}</StatusBadge>
+        <span className="font-mono text-[11px] text-secondary" aria-hidden>
+          {cards.length}
+        </span>
+      </div>
+      <ul className="max-h-152 flex-1 space-y-2 overflow-y-auto p-2">
+        {cards.map((it, i) => children(it, i))}
+        {!cards.length && <li className="rounded-lg border border-dashed border-hairline px-2 py-4 text-center text-[11px] text-secondary">{emptyHint ?? "Drop an item here"}</li>}
+      </ul>
+    </li>
   );
 }
 
 function BoardCard({
   item,
   index,
-  reduce,
   statuses,
   columns,
   onOpen,
   extra,
+  renderCard,
   onMove,
-  onDragStart,
 }: {
   item: Item;
   index: number;
-  reduce: boolean;
   statuses: string[];
   columns: Column[];
   onOpen: (id: number) => void;
   extra?: ReactNode;
+  renderCard?: (item: Item, grip: ReactNode) => ReactNode;
   onMove: (status: string, viaKeyboard: boolean) => void;
-  onDragStart: (e: DragEvent) => void;
 }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: item.id });
   const pos = statuses.indexOf(item.status);
   const key = (e: KeyboardEvent) => {
     if (!e.shiftKey || e.target !== e.currentTarget) return;
@@ -156,19 +212,32 @@ function BoardCard({
       onMove(statuses[next]!, true);
     }
   };
+  const grip = (
+    <button
+      type="button"
+      ref={setActivatorNodeRef}
+      {...listeners}
+      {...attributes}
+      aria-label={`Drag ${item.title}`}
+      className="shrink-0 cursor-grab touch-none rounded text-muted hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing"
+    >
+      <GripVertical className="h-3.5 w-3.5" aria-hidden />
+    </button>
+  );
   const pairs = columns.map((c) => ({ label: c.label, value: prim(item.data[c.key]) })).filter((p) => p.value);
   return (
-    <li className="animate-enter" style={{ animationDelay: `${(Math.min(index * 0.03, 0.24)) * 1000}ms` }}>
-      <Card variant="flat" as="article" draggable
- tabIndex={0}
- data-card-id={item.id}
- onDragStart={onDragStart}
- onKeyDown={key}
- aria-label={`${item.title}, ${item.status}`}
- aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
- className="rounded-lg group cursor-grab p-2.5 shadow-xs transition-colors duration-150 hover:border-dutchOrange/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange active:cursor-grabbing">
+    <li ref={setNodeRef} className={cn("animate-enter", isDragging && "opacity-40")} style={{ animationDelay: `${Math.min(index * 0.03, 0.24) * 1000}ms` }}>
+      <article
+        tabIndex={0}
+        data-card-id={item.id}
+        onKeyDown={key}
+        aria-label={`${item.title}, ${item.status}`}
+        aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
+        className="group rounded-lg border border-hairline bg-surface p-2.5 shadow-xs transition-colors duration-150 hover:border-dutchOrange/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+      >
+        {renderCard ? renderCard(item, grip) : (<>
         <div className="flex items-start gap-1.5">
-          <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
+          <span className="mt-0.5">{grip}</span>
           <button
             type="button"
             onClick={() => onOpen(item.id)}
@@ -191,21 +260,17 @@ function BoardCard({
           </dl>
         )}
         {extra && <div className="mt-2 pl-5">{extra}</div>}
-        <div className="mt-2 pl-5">
-          <select
-            value={item.status}
-            onChange={(e) => onMove(e.target.value, false)}
-            aria-label={`Move ${item.title} to a status`}
-            className="h-8 w-full rounded-md border border-hairline bg-canvas px-1.5 text-[11px] text-secondary hover:border-dutchOrange/60 focus:border-dutchOrange focus:outline-hidden"
-          >
+        </>)}
+        {!renderCard && <div className="mt-2 pl-5">
+          <NativeSelect value={item.status} onChange={(e) => onMove(e.target.value, false)} aria-label={`Move ${item.title} to a status`} className="h-8 px-1.5 text-[11px] text-secondary">
             {statuses.map((s) => (
               <option key={s} value={s}>
                 {s === item.status ? "Move to another status" : s}
               </option>
             ))}
-          </select>
-        </div>
-      </Card>
+          </NativeSelect>
+        </div>}
+      </article>
     </li>
   );
 }

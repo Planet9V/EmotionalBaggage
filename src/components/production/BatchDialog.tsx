@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { readBatch } from "@/lib/economics/read";
@@ -21,61 +23,63 @@ export function BatchDialog({ open, onOpenChange, initial, onSave }: { open: boo
   );
 }
 
+const schema = z.object({
+  title: z.string().trim().min(1, "Give the batch a name."),
+  units: z.string().refine((v) => {
+    const n = Number(v.replace(/,/g, ""));
+    return Number.isInteger(n) && n >= 1;
+  }, "Units: enter a whole number of at least 1."),
+  date: z.string(),
+  build: z.string(),
+  status: z.string(),
+});
+type Values = z.infer<typeof schema>;
+
 function Form({ initial, onCancel, onSave }: { initial: Item | null; onCancel: () => void; onSave: (v: BatchDraft) => Promise<void> }) {
   const was = initial ? readBatch(initial) : null;
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [units, setUnits] = useState(was?.units ? String(was.units) : "");
-  const [date, setDate] = useState(was?.targetDate ?? "");
-  const [build, setBuild] = useState(was?.build ?? "");
-  const [status, setStatus] = useState(initial?.status ?? STATUSES[0]);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { title: initial?.title ?? "", units: was?.units ? String(was.units) : "", date: was?.targetDate ?? "", build: was?.build ?? "", status: initial?.status ?? STATUSES[0] },
+  });
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    const n = Number(units.replace(/,/g, ""));
-    if (!title.trim()) return setError("Give the batch a name.");
-    if (!Number.isInteger(n) || n < 1) return setError("Units: enter a whole number of at least 1.");
-    setBusy(true);
-    setError("");
+  const submit = handleSubmit(async (v) => {
     try {
-      await onSave({ title: title.trim(), status, data: { units: n, targetDate: date, build: build.trim() } });
+      await onSave({ title: v.title.trim(), status: v.status, data: { units: Number(v.units.replace(/,/g, "")), targetDate: v.date, build: v.build.trim() } });
     } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
+      setError("root", { message: (err as Error).message });
     }
-  };
+  });
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <Field label="Name">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Name" autoFocus />
+      <Field id="batch-name" label="Name" error={errors.title?.message}>
+        <Input id="batch-name" autoFocus aria-invalid={!!errors.title} {...register("title")} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Units">
-          <Input inputMode="numeric" value={units} onChange={(e) => setUnits(e.target.value)} aria-label="Units" />
+        <Field id="batch-units" label="Units" error={errors.units?.message}>
+          <Input id="batch-units" inputMode="numeric" aria-invalid={!!errors.units} {...register("units")} />
         </Field>
-        <Field label="Target date">
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Target date" />
+        <Field id="batch-date" label="Target date">
+          <Input id="batch-date" type="date" {...register("date")} />
         </Field>
       </div>
-      <Field label="Build it belongs to" hint="Name the build the way the acceptance tests do. Tests that name no build count for every build.">
-        <Input value={build} onChange={(e) => setBuild(e.target.value)} aria-label="Build it belongs to" />
+      <Field id="batch-build" label="Build it belongs to" hint="Name the build the way the acceptance tests do. Tests that name no build count for every build.">
+        <Input id="batch-build" {...register("build")} />
       </Field>
-      <Field label="Status">
-        <NativeSelect value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
+      <Field id="batch-status" label="Status">
+        <NativeSelect id="batch-status" {...register("status")}>
           {STATUSES.map((s) => (
             <option key={s}>{s}</option>
           ))}
         </NativeSelect>
       </Field>
-      {error ? <ErrorLine>{error}</ErrorLine> : null}
+      {errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={busy}>
-          {busy ? "Saving" : "Save"}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Saving" : "Save"}
         </Button>
       </div>
     </form>

@@ -235,7 +235,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
           </Button>
         </div>
       ) : layout === "board" ? (
-        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={move} cardExtra={cardExtra} />
+        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={(id, status) => patch(id, { status })} cardExtra={cardExtra} />
       ) : (
         <ItemsTable items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onStatus={move} extraColumn={extraColumn} />
       )}

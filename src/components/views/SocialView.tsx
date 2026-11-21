@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Copy, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useItems } from "@/lib/client";
 import { messageOf, queries, type Integration, type IntegrationsReport } from "@/lib/queries";
-import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { SOCIAL_CHANNELS, checkSocial, socialChannel } from "@/lib/content/channels";
@@ -19,6 +18,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
+import { Kanban } from "@/components/items/Kanban";
 
 const NO_INTEGRATIONS: Integration[] = [];
 const socialOnly = (r: IntegrationsReport) => r.integrations.filter((i) => i.key === "x" || i.key === "instagram");
@@ -41,10 +41,8 @@ export function SocialView({ project, section, store }: ViewProps) {
   const integError = messageOf(integQuery.error);
   const [compose, setCompose] = useState<{ item: Item | null } | null>(null);
   const [del, setDel] = useState<Item | null>(null);
-  const [over, setOver] = useState<string | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
-  const dragged = useRef<number | null>(null);
   const [tab, setTab] = useState<"board" | "calendar">("board");
 
   const move = (it: Item, status: string) => {
@@ -98,77 +96,54 @@ export function SocialView({ project, section, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading the posts" />
       ) : (
-        <div className="grid gap-3 md:grid-cols-3">
-          {columns.map((col, ci) => {
-            const posts = items.filter((i) => i.status === col);
+        <Kanban
+          items={items}
+          statuses={columns}
+          columns={[]}
+          onOpen={(id) => setCompose({ item: items.find((x) => x.id === id) ?? null })}
+          onMove={(id, status) => patch(id, { status })}
+          emptyHint="Nothing here."
+          renderCard={(p, grip) => {
+            const ch = channelOf(p);
+            const n = len(p.body);
+            const ci = columns.indexOf(p.status);
+            const col = p.status;
             return (
-              <section
-                key={col}
-                aria-label={`${col}, ${posts.length} posts`}
-                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (over !== col) setOver(col); }}
-                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(null); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setOver(null);
-                  const id = Number(e.dataTransfer.getData("text/plain")) || dragged.current;
-                  dragged.current = null;
-                  const it = items.find((x) => x.id === id);
-                  if (it) move(it, col);
-                }}
-                className={cn("flex min-h-48 flex-col rounded-xl border border-hairline bg-subtle transition-shadow", over === col && "ring-2 ring-dutchOrange")}
-              >
-                <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
-                  <StatusBadge tone={statusTone(col)}>{col}</StatusBadge>
-                  <span className="font-mono text-xs text-muted">{posts.length}</span>
+              <>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+                    {grip} {ch}
+                  </span>
+                  {ch === "X" && (
+                    <span className={cn("font-mono text-[11px]", n > X_LIMIT ? "text-danger" : "text-muted")} aria-label={`${n} of ${X_LIMIT} characters`}>{n}/{X_LIMIT}</span>
+                  )}
                 </div>
-                <ul className="flex-1 space-y-2 p-2">
-                  {posts.length === 0 && <li className="px-1 py-3 text-xs text-muted">Nothing here.</li>}
-                  {posts.map((p) => {
-                    const ch = channelOf(p);
-                    const n = len(p.body);
-                    return (
-                      <Card variant="flat" as="li" key={p.id}
- draggable
- onDragStart={(e) => { dragged.current = p.id; e.dataTransfer.setData("text/plain", String(p.id)); e.dataTransfer.effectAllowed = "move"; }}
- className="p-3">
-                        <div className="mb-1.5 flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-                            <GripVertical className="h-3.5 w-3.5" aria-hidden /> {ch}
-                          </span>
-                          {ch === "X" && (
-                            <span className={cn("font-mono text-[11px]", n > X_LIMIT ? "text-danger" : "text-muted")} aria-label={`${n} of ${X_LIMIT} characters`}>{n}/{X_LIMIT}</span>
-                          )}
-                        </div>
-                        <p className="whitespace-pre-wrap wrap-break-word text-sm text-primary">{p.body || p.title}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-1">
-                          {ci > 0 && (
-                            <Button size="chip" variant="outline" onClick={() => move(p, columns[ci - 1])} aria-label={`Move to ${columns[ci - 1]}`}>
-                              <ArrowLeft className="h-3 w-3" aria-hidden /> {columns[ci - 1]}
-                            </Button>
-                          )}
-                          {ci < columns.length - 1 && (
-                            <Button size="chip" variant="outline" onClick={() => move(p, columns[ci + 1])} aria-label={`Move to ${columns[ci + 1]}`}>
-                              {columns[ci + 1] === "posted" ? "Mark as posted" : columns[ci + 1]} <ArrowRight className="h-3 w-3" aria-hidden />
-                            </Button>
-                          )}
-                          {col === "approved" && (
-                            <Button size="chip" variant="subtle" onClick={() => void copy(p)}>
-                              {copied === p.id ? <Check className="h-3 w-3" aria-hidden /> : <Copy className="h-3 w-3" aria-hidden />} {copied === p.id ? "Copied" : "Copy"}
-                            </Button>
-                          )}
-                          <span className="ml-auto flex">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit post" onClick={() => setCompose({ item: p })}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Delete post" onClick={() => setDel(p)}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
-                          </span>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </ul>
-              </section>
+                <p className="whitespace-pre-wrap wrap-break-word text-sm text-primary">{p.body || p.title}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-1">
+                  {ci > 0 && (
+                    <Button size="chip" variant="outline" onClick={() => move(p, columns[ci - 1])} aria-label={`Move to ${columns[ci - 1]}`}>
+                      <ArrowLeft className="h-3 w-3" aria-hidden /> {columns[ci - 1]}
+                    </Button>
+                  )}
+                  {ci < columns.length - 1 && (
+                    <Button size="chip" variant="outline" onClick={() => move(p, columns[ci + 1])} aria-label={`Move to ${columns[ci + 1]}`}>
+                      {columns[ci + 1] === "posted" ? "Mark as posted" : columns[ci + 1]} <ArrowRight className="h-3 w-3" aria-hidden />
+                    </Button>
+                  )}
+                  {col === "approved" && (
+                    <Button size="chip" variant="subtle" onClick={() => void copy(p)}>
+                      {copied === p.id ? <Check className="h-3 w-3" aria-hidden /> : <Copy className="h-3 w-3" aria-hidden />} {copied === p.id ? "Copied" : "Copy"}
+                    </Button>
+                  )}
+                  <span className="ml-auto flex">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit post" onClick={() => setCompose({ item: p })}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Delete post" onClick={() => setDel(p)}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
+                  </span>
+                </div>
+              </>
             );
-          })}
-        </div>
+          }}
+        />
       )}
       {!loading && items.some((i) => !columns.includes(i.status)) && (
         <p className="text-xs text-warning">Some posts have a status that is not a column here, so they are not shown.</p>
