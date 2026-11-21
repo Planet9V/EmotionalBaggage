@@ -7,6 +7,7 @@ import type { Item, Project } from "@/lib/types";
 import { cellText, storeLabel } from "./format";
 import type { ConceptData, ConceptPart } from "./useConcept";
 import { fmtBytes, fmtDateTime, fmtMinutes } from "@/lib/format";
+import { sentText } from "@/lib/channels/sentText";
 
 /** One report, built once, rendered to the page and to Markdown from the same blocks. */
 export type Block =
@@ -20,10 +21,32 @@ export type Block =
 
 const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN);
 
+/** "leadTimeDays" -> "lead time days", for a field name shown to a reader. */
+const words = (k: string) => k.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase();
+
+/** A field's value in words: a list is counted, an object shows its plain values, never raw JSON. */
+function readable(k: string, v: unknown, data: Record<string, unknown>): string {
+  if (k === "sent") return sentText(data);
+  if (Array.isArray(v)) {
+    const plain = v.filter((x) => ["string", "number", "boolean"].includes(typeof x));
+    return plain.length === v.length && v.length <= 6 ? plain.join(", ") : `${v.length} ${v.length === 1 ? "entry" : "entries"}`;
+  }
+  if (v && typeof v === "object") {
+    const flat = Object.entries(v as Record<string, unknown>).filter(([, x]) => ["string", "number", "boolean"].includes(typeof x) && x !== "");
+    return flat.length ? flat.slice(0, 4).map(([a, x]) => `${words(a)} ${String(x)}`).join(", ") : "";
+  }
+  return cellText(v);
+}
+
+/** Fields the report never shows: internal markers and the draft and step machinery. */
+const HIDDEN = new Set(["_draft", "sending", "sendError", "sendUnknown", "key", "after", "minutes", "noProof", "checked", "geometry", "schematic", "symbolPos", "sourcing"]);
+
 function extraFields(it: Item, skip: Set<string>) {
   return Object.entries(it.data)
-    .filter(([k, v]) => !skip.has(k) && v !== "" && v !== null && v !== undefined)
-    .map(([k, v]) => `${k}: ${cellText(v)}`)
+    .filter(([k, v]) => !skip.has(k) && !HIDDEN.has(k) && !k.startsWith("_") && v !== "" && v !== null && v !== undefined)
+    .map(([k, v]) => [words(k), readable(k, v, it.data)] as const)
+    .filter(([, v]) => v !== "")
+    .map(([k, v]) => `${k}: ${v}`)
     .join("; ");
 }
 
@@ -147,6 +170,10 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
         } else if (!errors.research) blocks.push({ t: "empty" });
       } else if (section.view === "model") {
         blocks.push(...modelBlocks(byStore.get("design/bom") ?? [], data));
+        if (rows.length) blocks.push(genericTable(section, rows));
+      } else if (section.view === "results" || section.view === "links") {
+        // kept in their own tables, not as rows: the figures are in the computed sections at the end
+        blocks.push({ t: "p", text: section.view === "results" ? "Results are kept in their own table; the figures are under Campaign results, in Worked out from the rows, below." : "Tracked links are kept in their own table; they are listed under Tracked links, in Worked out from the rows, below.", muted: true });
         if (rows.length) blocks.push(genericTable(section, rows));
       } else if (!rows.length) {
         blocks.push({ t: "empty" });

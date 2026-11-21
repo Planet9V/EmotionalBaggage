@@ -5,6 +5,19 @@
 import { HttpError } from "@/lib/api/route";
 import { CHANNEL } from "./schemas";
 
+const DONE: Record<string, string> = { [CHANNEL.social]: "posted", [CHANNEL.replies]: "sent" };
+
+/**
+ * A post or reply moved to posted (sent) by hand, with nothing sent by the app. Kept (the person may have
+ * posted it themselves) but recorded as such: `sent.byHand`, so no screen or report reads it as a send the
+ * app made. Returns the marker to merge into the row's data, or null when the change is not that.
+ */
+export function handMarkedSent(was: { section: string; status: string; data: Record<string, unknown> }, change: { status?: string }, actor: string): { sent: { byHand: true; at: string; by: string } } | null {
+  const done = DONE[was.section];
+  if (!done || change.status !== done || was.status === done || was.data.sent) return null;
+  return { sent: { byHand: true, at: new Date().toISOString(), by: actor || "unknown" } };
+}
+
 export const SEND_SECTIONS = new Set<string>([CHANNEL.social, CHANNEL.replies]);
 export const SEND_SERVER_ONLY = ["sent", "sending", "sendError", "sendUnknown"] as const;
 
