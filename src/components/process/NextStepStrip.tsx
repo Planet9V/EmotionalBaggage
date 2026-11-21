@@ -7,6 +7,7 @@ import { useProcess } from "@/lib/process/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingShape } from "@/components/ui/states";
 import { DeepLinkFocus, focusHash } from "./DeepLinkFocus";
+import { SkippedGates } from "./SkippedGates";
 
 /** The compact next step under every page title, for the concept that is open. Nothing when no concept is open. */
 export function NextStepStrip() {
@@ -44,6 +45,7 @@ function Strip({ projectId }: { projectId: string }) {
   }
   const { next, current } = view;
   return (
+    <>
     <div className={frame} data-testid="next-step-strip">
       <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
         {String(current.n).padStart(2, "0")} {current.label}
@@ -58,5 +60,11 @@ function Strip({ projectId }: { projectId: string }) {
         <span className="font-semibold text-primary">Why:</span> {next.reason}
       </span>
     </div>
+    {view.skipped.length > 0 && (
+      <div className="no-print border-t border-hairline px-8 py-2" data-testid="skipped-gates-strip">
+        <SkippedGates projectId={projectId} skipped={view.skipped} compact />
+      </div>
+    )}
+    </>
   );
 }

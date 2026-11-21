@@ -9,6 +9,7 @@ import { CheckList } from "./CheckList";
 import { gateBadge } from "./gateBadge";
 import { Card } from "@/components/ui/Card";
 import { focusHash } from "./DeepLinkFocus";
+import { SkippedGates } from "./SkippedGates";
 
 /** The next step in full, for the overview: what to do, why, and the current stage's gate. */
 export function NextStepCard({ projectId, showGate = true }: { projectId: string; showGate?: boolean }) {
@@ -57,6 +58,11 @@ export function NextStepCard({ projectId, showGate = true }: { projectId: string
       <p className="mt-2 max-w-3xl text-sm text-secondary">
         <span className="font-semibold text-primary">Why:</span> {next.reason}
       </p>
+      {view.skipped.length > 0 && (
+        <div className="mt-4">
+          <SkippedGates projectId={projectId} skipped={view.skipped} />
+        </div>
+      )}
       {showGate && <div className="mt-4">
         <h3 id="current-gate-h" className="flex items-center gap-2 text-sm font-semibold text-primary">
           The {current.label} gate <StatusBadge tone={badge.tone}>{badge.text}</StatusBadge>

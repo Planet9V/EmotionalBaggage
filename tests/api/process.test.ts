@@ -166,4 +166,40 @@ describe("process API", () => {
     const printed = await create("ZZ Process Printed", { productType: "printed" });
     expect((await state(printed)).body.facts).toMatchObject({ currency: "USD", erc: null });
   });
+
+  it("flags a stage entered behind a gate that is neither passed nor overridden (process review 4)", async () => {
+    const id = await create("ZZ Process Skipped");
+    expect((await state(id)).body.skipped).toEqual([]);
+    expect((await doOverride(id, { stage: "concept", reason: "Checked by phone" })).status).toBe(200);
+    expect((await move(id, "research")).status).toBe(200);
+    // overridden: nothing skipped
+    expect((await state(id)).body.skipped).toEqual([]);
+    // withdrawing the override leaves the concept in Research with the Concept gate unpassed
+    const w = await doWithdraw(id, "concept");
+    expect(w.body.stage).toBe("research");
+    expect(w.body.skipped).toHaveLength(1);
+    expect(w.body.skipped[0]).toMatchObject({ stage: "concept", label: "Concept", enteredStage: "research", enteredLabel: "Research", regressed: false });
+    expect(w.body.skipped[0].unmet.length).toBeGreaterThan(0);
+    expect(w.body.skipped[0].unmet[0]).toHaveProperty("href");
+    // moving back clears it
+    expect((await move(id, "concept")).status).toBe(200);
+    expect((await state(id)).body.skipped).toEqual([]);
+  });
+
+  it("a gate that was passed on its checks and no longer is reads as regressed, not as never passed", async () => {
+    const id = await create("ZZ Process Regressed", { oneLiner: "x" });
+    const rows = [await add(id, "concept/brief", "One"), await add(id, "concept/brief", "Two"), await add(id, "concept/brief", "Three")];
+    expect(rows.every((r) => r.status === 201)).toBe(true);
+    const dec = await add(id, "concept/decisions", "Go?", { data: { key: "go", options: [{ id: "y", label: "Yes" }], chosen: "y" } });
+    expect(dec.status).toBe(201);
+    const adv = await move(id, "research");
+    expect(adv.status, JSON.stringify(adv.body)).toBe(200);
+    expect((await state(id)).body.skipped).toEqual([]);
+    // a brief line removed after advancing
+    const first = (await read<{ item: { id: number } }>(rows[0])).body.item.id;
+    await q("DELETE FROM items WHERE id=$1", [first]);
+    const after = await state(id);
+    expect(after.body.skipped).toHaveLength(1);
+    expect(after.body.skipped[0]).toMatchObject({ stage: "concept", regressed: true });
+  });
 });

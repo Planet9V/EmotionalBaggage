@@ -284,3 +284,43 @@ export function nextStep(definition: ProcessDefinition, state: ProcessState, row
     href: "/process#advance",
   };
 }
+
+/**
+ * A stage before the current one whose gate is neither passed nor overridden: the concept is further on than its
+ * gates allow (an override was withdrawn after it advanced, or evidence went bad since). Warns; never stops anything.
+ */
+export type SkippedGate = {
+  /** the gate that is not passed */
+  stage: string;
+  label: string;
+  /** the stage that was entered behind it */
+  enteredStage: string;
+  enteredLabel: string;
+  /** true when the gate was passed on its checks once and no longer is; false when it was never passed */
+  regressed: boolean;
+  unmet: { id: string; label: string; detail: string; action: string; href: string }[];
+};
+
+export function skippedGates(definition: ProcessDefinition, state: ProcessState, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): SkippedGate[] {
+  const ci = Math.max(0, STAGES.findIndex((s) => s.key === state.stage));
+  const out: SkippedGate[] = [];
+  for (let i = 0; i < ci; i++) {
+    const key = STAGES[i].key;
+    const g = gatePassed(definition, state, key, rows, concept, facts);
+    if (g.passed) continue;
+    const rec = recordOf(state, key);
+    out.push({
+      stage: key,
+      label: STAGES[i].label,
+      enteredStage: STAGES[i + 1].key,
+      enteredLabel: STAGES[i + 1].label,
+      regressed: rec?.status === "go" && !rec.overridden,
+      unmet: g.result.checks.filter((c) => !c.met).map((c) => ({ id: c.id, label: c.label, detail: c.detail, action: c.action, href: c.href })),
+    });
+  }
+  return out;
+}
+
+/** The sentence for a skipped gate. */
+export const skippedSentence = (s: Pick<SkippedGate, "label" | "enteredLabel" | "regressed">) =>
+  s.regressed ? `The ${s.label} gate no longer passes, and the concept is already in ${s.enteredLabel} or later.` : `${s.enteredLabel} was entered without passing the ${s.label} gate.`;

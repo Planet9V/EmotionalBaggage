@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ArrowRight, Undo2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { useMoveStage, useWithdrawOverride, type ProcessView, type StageView } f
 import { CheckList } from "./CheckList";
 import { OverrideDialog } from "./OverrideDialog";
 import { ReasonDialog } from "./ReasonDialog";
+import { REVEAL_EVENT } from "./SkippedGates";
 import { gateBadge } from "./gateBadge";
 import { fmtDateTime } from "@/lib/format";
 
@@ -95,6 +96,24 @@ function StageRow({
   onAdvance: () => void; onBack: () => void; onOverride: () => void; onWithdraw: () => void;
 }) {
   const [open, setOpen] = useState(stage.position === "current");
+  const li = useRef<HTMLLIElement>(null);
+  // "Show what is missing" (from here, the overview or the strip) opens this stage's checks and brings it into view.
+  useEffect(() => {
+    const reveal = () => {
+      setOpen(true);
+      li.current?.scrollIntoView?.({ block: "start" });
+      li.current?.querySelector<HTMLElement>("h2")?.focus();
+    };
+    const onEvent = (e: Event) => (e as CustomEvent<string>).detail === stage.key && reveal();
+    const onHash = () => window.location.hash === `#gate-${stage.key}` && reveal();
+    onHash();
+    window.addEventListener(REVEAL_EVENT, onEvent);
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      window.removeEventListener(REVEAL_EVENT, onEvent);
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, [stage.key]);
   const badge = gateBadge(stage);
   const current = stage.position === "current";
   const headId = `stage-${stage.key}-h`;
@@ -109,6 +128,8 @@ function StageRow({
 
   return (
     <li
+      ref={li}
+      id={`gate-${stage.key}`}
       className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 pb-6"
       aria-current={current ? "step" : undefined}
       data-position={stage.position}
@@ -121,7 +142,7 @@ function StageRow({
       </span>
       <Collapsible open={open} onOpenChange={setOpen} className="min-w-0 pt-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 id={headId} className="text-base font-semibold tracking-tight text-primary">{stage.label}</h2>
+          <h2 id={headId} tabIndex={-1} className="text-base font-semibold tracking-tight text-primary focus:outline-hidden">{stage.label}</h2>
           {current && <StatusBadge tone="info">Current</StatusBadge>}
           <StatusBadge tone={badge.tone}>{badge.text}</StatusBadge>
           {stage.position === "done" && (
