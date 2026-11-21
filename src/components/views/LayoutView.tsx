@@ -33,6 +33,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { downloadFile } from "@/lib/download";
 import { fileSlug } from "@/lib/format";
 import { EmptyState, LoadingBlocks } from "@/components/ui/states";
+import { PlacedParts } from "@/components/layout/PlacedParts";
 import { Card } from "@/components/ui/Card";
 
 const BOM_STORE = "design/bom";
@@ -266,7 +267,7 @@ export function LayoutView({ project }: ViewProps) {
   });
 
   return (
-    <div className="flex flex-col gap-4 outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
+    <div id="layout-workspace" role="group" aria-label="Layout: arrow keys move the selected part" className="flex flex-col gap-4 outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
       {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       {notice && (
         <p role="status" className={`rounded-md px-3 py-2 text-sm ${notice.tone === "ok" ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
@@ -316,6 +317,7 @@ export function LayoutView({ project }: ViewProps) {
             onCreate={createEnclosure}
           />
           <PartsTray parts={tray} selectedId={selectedId} onPlace={(id) => startDraft(id)} onSelect={setSelectedId} />
+          <PlacedParts parts={placed} selectedId={selectedId} onSelect={setSelectedId} />
         </div>
 
         <section className="order-1 min-w-0 xl:order-2" aria-label="Layout views">
