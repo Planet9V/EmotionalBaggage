@@ -118,6 +118,8 @@ Tests: `tests/auth/session.setup.ts` creates a real session for `demo` before ea
 - Never put a key, password or token in `detail`. A refused sign-in records no user name, because people type passwords into that box by mistake.
 - Reading: `GET /api/admin/audit` (newest first; `project`, `action`, `q`, `before`, `limit`) and `GET /api/admin/audit/export` (a file, one JSON object per line, oldest first).
 
+Migration 0026 makes `audit_log` append-only with triggers. Tests that must clear lines use `tests/auditBypass.ts`, which needs a superuser. A reason added later is a new `item.reason` line that names the line it explains (`forEvent`). A gate check that is true for zero rows must set `allowEmpty`. A drafting generator of kind `links` stays out of the section buttons. Seeding runs inside `ready()` and uses a pool client, never `tx()`.
+
 ## Styling
 
 Tailwind 4. There is no `tailwind.config`; the theme is in `src/app/globals.css`. The Eigenia tokens are set per theme in the `:root` and `.dark` blocks and given Tailwind names in `@theme`.
