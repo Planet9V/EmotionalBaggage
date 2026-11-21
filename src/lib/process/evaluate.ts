@@ -3,7 +3,7 @@ import { DECISIONS_STORE, UNLOCK_STORES } from "@/lib/plan";
 import { toDecision } from "@/lib/domain/decision";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
-import { campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
+import { buildPassedCheck, campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
 
 export type { GateFacts } from "./computed";
 
@@ -228,6 +228,8 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       return { ...base, ...countCheck(facts.links, check.params.min, { one: "tracked link", where: "Tracked links", href: base.href, verb: "Make a tracked link for a campaign" }) };
     case "content-approved":
       return { ...base, ...contentApprovedCheck(rows, check.params.section, sectionLabel(check.params.section), check.anchor) };
+    case "build-passed":
+      return { ...base, ...buildPassedCheck(rows, check.anchor, check.todo) };
     case "campaign-results":
       return { ...base, ...countCheck(facts.results, check.params.min, { one: "day of results", many: "days of results", where: "Campaign results", href: base.href, verb: "Enter a campaign's results by hand, by paste or from a CSV" }) };
   }

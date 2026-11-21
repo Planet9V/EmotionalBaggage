@@ -1,8 +1,8 @@
 // Plan 3.7: a named build cannot be marked passed while a criterion is unmet or a linked test has not passed.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { pool } from "@/lib/db";
-import { add, drop, newConcept, patch } from "./helpers";
-import { buildProgress, passRefusal } from "@/lib/trace/builds";
+import { pool, q } from "@/lib/db";
+import { add, drop, events, newConcept, patch, remove } from "./helpers";
+import { buildProgress, lostEvidence, passRefusal } from "@/lib/trace/builds";
 
 let project = "";
 let t1 = 0;
@@ -122,5 +122,89 @@ describe("build progress, the same function the card and the server use", () => 
   });
   it("names a linked test that no longer exists", () => {
     expect(passRefusal({ title: "x", status: "planned", data: { tests: ["gone"] } }, [])).toContain("no longer exists");
+  });
+});
+
+describe("a passed build reads live evidence (process review 2)", () => {
+  let p2 = "";
+  let tA = 0;
+  let tB = 0;
+  let b = 0;
+  const statusLines = async () => (await events(p2)).filter((e) => e.kind === "item.status" && e.data.auto === true);
+  beforeAll(async () => {
+    p2 = await newConcept("Live evidence");
+    tA = (await add(p2, "prototype/tests", "Drop test", { data: { key: "ta" }, status: "pass" })).body.item.id;
+    tB = (await add(p2, "prototype/tests", "Idle test", { data: { key: "tb" }, status: "pass" })).body.item.id;
+    b = (await add(p2, "prototype/builds", "EVT", { status: "passed", data: { tests: ["ta", "tb"], criteria: [{ text: "Boots", met: true }] } })).body.item.id;
+  });
+  afterAll(async () => {
+    await drop(p2);
+  });
+  const reset = async () => {
+    // put the world back: both tests pass, the build is passed with its evidence
+    await patch(tA, { status: "pass" });
+    await patch(tB, { status: "pass" });
+    const bs = await q<{ status: string }>("SELECT status FROM items WHERE id=$1", [b]);
+    if (bs[0].status !== "passed") await patch(b, { status: "passed", data: { tests: ["ta", "tb"], criteria: [{ text: "Boots", met: true }] } });
+  };
+
+  it("a linked test going to fail sends the build back to testing, in the same transaction, with the reason", async () => {
+    const r = await patch(tA, { status: "fail" });
+    expect(r.status).toBe(200);
+    const row = (await q<{ status: string; data: Record<string, unknown> }>("SELECT status, data FROM items WHERE id=$1", [b]))[0];
+    expect(row.status).toBe("testing");
+    expect(row.data.revertedBecause).toContain("Drop test no longer passes (fail)");
+    const lines = await statusLines();
+    expect(lines).toHaveLength(1);
+    expect(lines[0].summary).toContain('"EVT" moved from passed to testing: Drop test no longer passes');
+    expect(lines[0].data.reason).toContain("Drop test no longer passes");
+    // and the gate does not count it
+    const again = await patch(b, { status: "passed" });
+    expect(again.status).toBe(400);
+  });
+
+  it("passing it again clears the reason", async () => {
+    await patch(tA, { status: "pass" });
+    const ok = await patch(b, { status: "passed" });
+    expect(ok.status).toBe(200);
+    expect(ok.body.item.data.revertedBecause).toBe("");
+  });
+
+  it("deleting a linked test sends the build back and names the deleted test", async () => {
+    await reset();
+    expect((await remove(tB)).status).toBe(200);
+    const row = (await q<{ status: string; data: Record<string, unknown> }>("SELECT status, data FROM items WHERE id=$1", [b]))[0];
+    expect(row.status).toBe("testing");
+    expect(row.data.revertedBecause).toContain("Idle test was deleted");
+    tB = (await add(p2, "prototype/tests", "Idle test", { data: { key: "tb" }, status: "pass" })).body.item.id;
+  });
+
+  it("removing a test's key sends the build back too", async () => {
+    await patch(b, { data: { tests: ["ta", "tb"] } });
+    await reset();
+    await patch(tB, { data: { key: "" } });
+    const row = (await q<{ status: string; data: Record<string, unknown> }>("SELECT status, data FROM items WHERE id=$1", [b]))[0];
+    expect(row.status).toBe("testing");
+    expect(String(row.data.revertedBecause)).toContain("Idle test");
+  });
+
+  it("a passed build that gives up a linked test or an exit criterion in an edit goes back to testing", async () => {
+    await patch(tB, { data: { key: "tb" } });
+    await patch(b, { data: { tests: ["ta", "tb"] } });
+    await reset();
+    const r = await patch(b, { data: { tests: ["ta"] } });
+    expect(r.status).toBe(200);
+    expect(r.body.item.status).toBe("testing");
+    expect(String(r.body.item.data.revertedBecause)).toContain("the test tb was unlinked");
+    await patch(b, { data: { tests: ["ta", "tb"] }, status: "passed" });
+    const c = await patch(b, { data: { criteria: [] } });
+    expect(c.status).toBe(400); // zero criteria cannot stay passed: refused, not silently kept
+  });
+
+  it("the build card and the Process gate read the live evidence even for a stored passed build that lost it", async () => {
+    const stale = { title: "Old", status: "passed", data: { tests: ["ta"], criteria: [{ text: "x", met: true }] } };
+    expect(lostEvidence(stale, [{ title: "Drop test", status: "fail", data: { key: "ta" } }])).toEqual(["Drop test no longer passes (fail)"]);
+    expect(lostEvidence(stale, [{ title: "Drop test", status: "pass", data: { key: "ta" } }])).toEqual([]);
+    expect(lostEvidence({ ...stale, data: {} }, [])).toEqual(["it has no exit criterion and no linked test"]);
   });
 });

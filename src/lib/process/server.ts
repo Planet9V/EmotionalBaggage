@@ -38,7 +38,8 @@ export async function itemsOf(c: Runner, projectId: string): Promise<Item[]> {
 
 export async function historyOf(c: Runner, projectId: string): Promise<ProcessEvent[]> {
   const r = await c.query<{ id: string; kind: string; summary: string; data: Record<string, unknown>; created_at: Date }>(
-    "SELECT id, kind, summary, data, created_at FROM events WHERE project_id=$1 AND kind = ANY($2) ORDER BY id DESC LIMIT 200",
+    // the gate and stage events, and a passed build sent back to testing because its evidence went bad (data.auto)
+    "SELECT id, kind, summary, data, created_at FROM events WHERE project_id=$1 AND (kind = ANY($2) OR (kind = 'item.status' AND data->>'auto' = 'true')) ORDER BY id DESC LIMIT 200",
     [projectId, [...PROCESS_EVENT_KINDS]]
   );
   return r.rows.map((e) => ({ id: Number(e.id), kind: e.kind, summary: e.summary, data: e.data ?? {}, createdAt: new Date(e.created_at).toISOString() }));

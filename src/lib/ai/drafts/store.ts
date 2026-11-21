@@ -21,13 +21,13 @@ import { currentActor } from "@/lib/actor";
 import { HttpError, notFound } from "@/lib/api/route";
 import { defaultStatus, STORE_STATUSES } from "@/lib/api/schemas";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
-import { dataSchemaFor } from "@/lib/domain/schemas";
+import { dataSchemaFor, STORE } from "@/lib/domain/schemas";
 import type { Item } from "@/lib/types";
 import { assertDraftAllowed, withFlags } from "@/lib/content/rules";
 import { assertMarketChange, assertNewMarket } from "@/lib/market/rules";
 import type { Draft, DraftOp, DraftSource, DraftStatus } from "./shared";
 import { assertRoomFor } from "@/lib/api/limits";
-import { relinkKey } from "@/lib/trace/links";
+import { demoteBrokenBuilds, relinkKey } from "@/lib/trace/links";
 import { mirrorLinks } from "@/lib/trace/mirror";
 import { keyOf } from "@/lib/trace/spec";
 
@@ -220,6 +220,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
   if (op.op === "remove") {
     const gone = await c.query<ItemRow>(`DELETE FROM items WHERE id=$1 RETURNING ${ITEM_COLS}`, [d.item_id]);
     // Rows that linked to the removed one lose the link, each recorded (as a hand deletion does).
+    if (gone.rows[0] && gone.rows[0].section === STORE.tests && keyOf(gone.rows[0].data)) await demoteBrokenBuilds(c, d.project_id, { [keyOf(gone.rows[0].data)]: gone.rows[0].title });
     if (gone.rows[0]) await relinkKey(c, gone.rows[0], keyOf(gone.rows[0].data), null, `the linked row "${gone.rows[0].title}" was removed by an approved draft`);
   } else if (op.op === "replace") {
     // The reviewer's attack record stays with the row: a revision that answers it is not attacked again.

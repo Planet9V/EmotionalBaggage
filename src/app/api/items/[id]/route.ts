@@ -5,7 +5,9 @@ import { assertStatus, dataSizeProblem, itemPatch, parseData } from "@/lib/api/s
 import { z } from "zod";
 import { assertClaimChange } from "@/lib/research/rules";
 import { changedDetail, itemDiff, removedDetail } from "@/lib/trace/changes";
-import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
+import { assertBuildMayPass, assertLinks, demoteBrokenBuilds, relinkKey, REVERTED } from "@/lib/trace/links";
+import { lostByEdit, PASSED } from "@/lib/trace/builds";
+import { STORE } from "@/lib/domain/schemas";
 import { keyOf } from "@/lib/trace/spec";
 import { mirrorLinks } from "@/lib/trace/mirror";
 import { assertMarketChange } from "@/lib/market/rules";
@@ -50,6 +52,21 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     }
     await assertLinks(c, was.project_id, was.section, data);
     await assertBuildMayPass(c, was.project_id, { section: was.section, title: b.title ?? was.title, status: b.status ?? was.status, data: { ...was.data, ...(data ?? {}) } });
+    // A passed build that gives up a linked test or an exit criterion goes back to testing, with the reason kept (process review 2).
+    let status = b.status;
+    let autoReason = "";
+    if (was.section === STORE.builds && was.status === PASSED && (b.status ?? was.status) === PASSED && data) {
+      const lost = lostByEdit(was.data, { ...was.data, ...data });
+      if (lost.length) {
+        status = REVERTED;
+        autoReason = lost.join("; ");
+        data = { ...data, revertedBecause: autoReason };
+      }
+    }
+    // Passed again: the old reason for sending it back is cleared.
+    if (was.section === STORE.builds && status === PASSED && was.status !== PASSED && typeof was.data.revertedBecause === "string" && was.data.revertedBecause) {
+      data = { ...(data ?? {}), revertedBecause: "" };
+    }
     const res = await c.query<ItemRow>(
       `UPDATE items SET
          title = COALESCE($2, title),
@@ -59,25 +76,31 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
          sort = COALESCE($6, sort),
          updated_at = now()
        WHERE id=$1 RETURNING ${ITEM_COLS}`,
-      [id, b.title ?? null, b.body ?? null, data ? JSON.stringify(data) : null, b.status ?? null, b.sort ?? null]
+      [id, b.title ?? null, b.body ?? null, data ? JSON.stringify(data) : null, status ?? null, b.sort ?? null]
     );
     const row = res.rows[0];
     const diff = itemDiff(was, row);
     // A key that changed or went away takes the links that named it with it, in this transaction.
     const oldKey = keyOf(was.data);
     const newKey = keyOf(row.data);
-    if (oldKey && oldKey !== newKey) await relinkKey(c, row, oldKey, newKey || null, newKey ? `the key ${oldKey} became ${newKey}` : `the key ${oldKey} was removed`);
+    if (oldKey && oldKey !== newKey) {
+      // A test that lost its key can no longer be found by the builds that name it: they go back first.
+      if (!newKey && was.section === STORE.tests) await demoteBrokenBuilds(c, row.project_id, { [oldKey]: was.title });
+      await relinkKey(c, row, oldKey, newKey || null, newKey ? `the key ${oldKey} became ${newKey}` : `the key ${oldKey} was removed`);
+    }
     // A link added or removed at this end is added or removed at the other end too.
     await mirrorLinks(c, was, row);
     // A write that changes nothing leaves no line: the record holds changes, not clicks.
     if (Object.keys(diff.after).length || Object.keys(diff.before).length) {
       const detail = changedDetail(row, diff);
-      if (b.status && b.status !== was.status) {
-        await logEventIn(c, row.project_id, "item.status", `"${row.title}" moved from ${was.status} to ${row.status}`, detail);
+      if (row.status !== was.status) {
+        await logEventIn(c, row.project_id, "item.status", `"${row.title}" moved from ${was.status} to ${row.status}${autoReason ? `: ${autoReason}` : ""}`, autoReason ? { ...detail, reason: autoReason, auto: true } : detail);
       } else {
         await logEventIn(c, row.project_id, "item.edited", `Edited "${row.title}" in ${row.section}`, detail);
       }
     }
+    // The gate reads live evidence: a test that no longer passes takes the passed builds that name it back to testing.
+    if (was.section === STORE.tests && row.status !== was.status) await demoteBrokenBuilds(c, row.project_id);
     return row;
   });
   return NextResponse.json({ item: toItem(now) });
@@ -90,6 +113,8 @@ export const DELETE = route(async (_req: Request, { params }: Ctx) => {
     const row = res.rows[0];
     if (!row) throw notFound("That row");
     // Rows that linked to this one lose the link in the same transaction, each recorded.
+    // A deleted test takes the passed builds that named it back to testing, before their lists lose its key.
+    if (row.section === STORE.tests && keyOf(row.data)) await demoteBrokenBuilds(c, row.project_id, { [keyOf(row.data)]: row.title });
     const unlinked = await relinkKey(c, row, keyOf(row.data), null, `the linked row "${row.title}" was deleted`);
     await logEventIn(c, row.project_id, "item.removed", `Removed "${row.title}" from ${row.section}`, removedDetail(row, unlinked.length ? { unlinked: unlinked.map((u) => ({ itemId: u.id, title: u.title, field: u.field })) } : {}));
   });

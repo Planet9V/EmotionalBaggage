@@ -25,7 +25,8 @@ export type CheckKind =
   | "campaign-budget"
   | "tracked-links"
   | "campaign-results"
-  | "content-approved";
+  | "content-approved"
+  | "build-passed";
 
 /** Concept fields a `field-set` check can ask for. */
 export type ConceptField = "name" | "oneLiner";
@@ -77,7 +78,9 @@ export type Check =
   /** campaign results (their own table, counted on the server: GateFacts.results) */
   | (Base & { kind: "campaign-results"; params: { min: number } })
   /** a content row in this section is released (approved or later); the next step names what stops the first draft (src/lib/content/rules.ts) */
-  | (Base & { kind: "content-approved"; params: { section: string } });
+  | (Base & { kind: "content-approved"; params: { section: string } })
+  /** a build is marked passed and its evidence still holds, read live from the rows (src/lib/trace/builds.ts) */
+  | (Base & { kind: "build-passed"; params: Record<string, never> });
 
 export type Gate = { stage: string; checks: Check[] };
 
@@ -110,7 +113,7 @@ const requirementsClosed: Check = { id: "design.requirements-open", label: "No r
 const inHand: Check = { id: "prototype.parts-in-hand", label: "Every bought part is in hand", kind: "all-status", params: { section: "prototype/sourcing", statuses: ["in hand", "to print"] } };
 const testsWritten: Check = { id: "prototype.tests", label: "At least one acceptance test is written", kind: "min-rows", anchor: "draft-with-ai", params: { section: "prototype/tests", min: 1 } };
 const testsPass: Check = { id: "prototype.tests-pass", label: "Every acceptance test passes", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"] } };
-const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "min-rows", anchor: "add-build", todo: "Add a build with its exit criteria and tests", params: { section: "prototype/builds", min: 1, statuses: ["passed"] } };
+const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "build-passed", anchor: "add-build", todo: "Add a build with its exit criteria and tests", params: {} };
 const printJob: Check = { id: "prototype.print-jobs", label: "At least one print job is set up", kind: "min-rows", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", min: 1 } };
 // The print job statuses since migration 0018: a finished print is "done" (the gate asked for "printed", which no job can reach).
 const printed: Check = { id: "prototype.printed", label: "Every print job is printed", kind: "all-status", params: { section: "prototype/printing", statuses: ["done"] } };
@@ -250,6 +253,8 @@ export function checkSection(check: Check): string | null {
       return "marketing/results";
     case "content-approved":
       return check.params.section;
+    case "build-passed":
+      return "prototype/builds";
     case "field-set":
       return null;
   }
