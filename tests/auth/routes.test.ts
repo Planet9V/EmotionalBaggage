@@ -9,7 +9,7 @@ import { anonymous, ctx, json, read, sessionCookieHeader } from "../api/helpers"
 const API_DIR = join(process.cwd(), "src", "app", "api");
 const METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
 /** The only routes that answer without a session. Adding one here is a decision, not a fix. */
-const OPEN = new Set(["/api/auth/sign-in", "/api/auth/sign-out", "/api/auth/me", "/api/health"]);
+const OPEN = new Set(["/api/auth/sign-in", "/api/auth/sign-out", "/api/auth/me", "/api/health", "/api/access-requests"]);
 
 /** Every route.ts under src/app/api, as its URL path, found on disk so a new route cannot be missed. */
 function routeFiles(dir = API_DIR): { file: string; path: string }[] {

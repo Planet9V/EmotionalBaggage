@@ -1,6 +1,6 @@
 "use client";
 
-// The Admin area: one page with five tabs. The tab is kept in the address (?tab=) so a link can open one.
+// The Admin area: one page with six tabs. The tab is kept in the address (?tab=) so a link can open one.
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,8 +10,9 @@ import { CredentialsTab } from "./CredentialsTab";
 import { ModelsTab } from "./ModelsTab";
 import { PrintersTab } from "./PrintersTab";
 import { AuditTab } from "./AuditTab";
+import { AccessRequestsTab } from "./AccessRequestsTab";
 
-const LABEL: Record<AdminTab, string> = { setup: "Setup", credentials: "Credentials", models: "Models", printers: "Printers", audit: "Audit log" };
+const LABEL: Record<AdminTab, string> = { setup: "Setup", credentials: "Credentials", models: "Models", printers: "Printers", audit: "Audit log", access: "Access requests" };
 
 export function AdminView() {
   const params = useSearchParams();
@@ -22,7 +23,7 @@ export function AdminView() {
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Admin" blurb="Models, keys, printers and the audit log for this install. Everything is saved in its own database." />
+      <PageHeader eyebrow="Settings" title="Admin" blurb="Models, keys, printers, the audit log and access requests for this install. Everything is saved in its own database." />
       <div className="px-8 py-6">
         <Tabs value={tab} onValueChange={(v) => isAdminTab(v) && go(v)} className="gap-5">
           <TabsList className="h-auto w-full max-w-full flex-wrap justify-start gap-1 bg-subtle sm:w-fit">
@@ -46,6 +47,9 @@ export function AdminView() {
           </TabsContent>
           <TabsContent value="audit">
             <AuditTab />
+          </TabsContent>
+          <TabsContent value="access" className="max-w-6xl">
+            <AccessRequestsTab />
           </TabsContent>
         </Tabs>
       </div>

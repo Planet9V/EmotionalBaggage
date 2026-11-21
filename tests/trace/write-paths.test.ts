@@ -34,6 +34,8 @@ const RECORDS = /\b(logEvent|logEventIn|audit|auditIn)\(/;
  * route hands the write to. "none: ...": the route writes nothing a person changed, and why.
  */
 const WRITE_PATHS: Record<string, string> = {
+  "access-requests/route.ts": "src/lib/accessRequests/store.ts",
+  "admin/access-requests/[id]/route.ts": "src/lib/accessRequests/store.ts",
   "admin/credentials/[provider]/[field]/route.ts": "src/lib/admin/credentials.ts",
   "admin/credentials/[provider]/route.ts": "src/lib/admin/credentials.ts",
   "admin/printers/[id]/route.ts": "self",

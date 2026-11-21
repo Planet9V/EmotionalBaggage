@@ -7,6 +7,8 @@
 export const SESSION_COOKIE = "c2r_session";
 
 const SIGN_IN_PATH = "/sign-in";
+/** The public page about the workbench. A signed-out visit to `/` lands here instead of the sign-in form. */
+const WELCOME_PATH = "/welcome";
 
 /**
  * Where to go after signing in, from the `next` parameter. Only a path on this site is accepted:
@@ -29,9 +31,11 @@ export function safeNext(next: string | null | undefined): string {
   }
 }
 
-/** Paths a signed-out browser may open: the sign-in page, the API (route() answers 401 itself), short tracked links and static files. */
+/** Paths a signed-out browser may open: the sign-in page, the welcome page, the API (route() answers 401 itself), short tracked links and static files. */
 export function isPublicPath(pathname: string): boolean {
   if (pathname === SIGN_IN_PATH || pathname.startsWith(`${SIGN_IN_PATH}/`)) return true;
+  // the welcome page and its printable one-page overview (/welcome/overview)
+  if (pathname === WELCOME_PATH || pathname.startsWith(`${WELCOME_PATH}/`)) return true;
   if (pathname === "/api" || pathname.startsWith("/api/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   // Short tracked links (src/app/l/[code]/route.ts): a visitor to a campaign link has no session.
@@ -53,6 +57,8 @@ export function isPublicPath(pathname: string): boolean {
  */
 export function pageGate(pathname: string, search: string, hasSessionCookie: boolean): string | null {
   if (hasSessionCookie || isPublicPath(pathname)) return null;
+  // The bare address is the front door: a visitor with no session sees what the workbench is first.
+  if (pathname === "/") return WELCOME_PATH;
   const back = safeNext(pathname + (search ?? ""));
   return `${SIGN_IN_PATH}?next=${encodeURIComponent(back)}`;
 }

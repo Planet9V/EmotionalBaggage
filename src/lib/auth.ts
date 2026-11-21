@@ -276,6 +276,47 @@ const sqlDelay = (free: number, f: string) =>
   `make_interval(secs => CASE WHEN ${f} <= ${free} THEN 0 ELSE LEAST(${MAX_DELAY_MS / 1000}, power(2, LEAST(30, ${f} - ${free} - 1))) END)`;
 
 /**
+ * Counts one try in `sign_in_attempts` under (key, client) and sets the wait before the next one, in one
+ * statement, so parallel tries cannot slip past. Answers null when the try may go ahead, or the time the
+ * key and client are waiting until (the try is then not counted). A count is forgotten after
+ * ATTEMPT_RESET_MS with no try.
+ */
+async function claimTry(c: PoolClient, key: string, client: string, free: number, now: Date, resetBefore: Date): Promise<Date | null> {
+  const counted = "(CASE WHEN a.last_attempt_at <= $4::timestamptz THEN 1 ELSE a.failures + 1 END)";
+  const r = await c.query(
+    `INSERT INTO sign_in_attempts AS a (username_key, client, failures, last_attempt_at, next_allowed_at)
+     VALUES ($1, $2, 1, $3::timestamptz, $3::timestamptz + ${sqlDelay(free, "1")})
+     ON CONFLICT (username_key, client) DO UPDATE SET
+       failures = ${counted},
+       last_attempt_at = $3::timestamptz,
+       next_allowed_at = $3::timestamptz + ${sqlDelay(free, counted)}
+     WHERE a.next_allowed_at <= $3::timestamptz`,
+    [key, client, now, resetBefore]
+  );
+  if (r.rowCount) return null;
+  const w = await c.query<{ next_allowed_at: Date }>("SELECT next_allowed_at FROM sign_in_attempts WHERE username_key = $1 AND client = $2", [key, client]);
+  return w.rows[0] ? new Date(w.rows[0].next_allowed_at) : now;
+}
+
+/**
+ * The sign-in throttle, for another open form (the access request on /welcome). Every try counts, not only
+ * failures: after `free` tries from one client address within the hour, each further try must wait 1 s,
+ * 2 s, 4 s ... (at most 15 minutes) after the one before, the same rule as wrong passwords. `bucket` names
+ * the form; it is stored with a leading space, and sign-in names are trimmed before they are counted, so a
+ * bucket can never share a row with a username.
+ */
+export async function throttleOpenForm(bucket: string, client: string, free: number, opts: { now?: Date } = {}): Promise<{ ok: true } | { ok: false; retryAfterSeconds: number }> {
+  const now = opts.now ?? new Date();
+  const resetBefore = new Date(now.getTime() - ATTEMPT_RESET_MS);
+  const key = ` ${bucket}`;
+  const addr = (client || "unknown").slice(0, 100);
+  await q("DELETE FROM sign_in_attempts WHERE last_attempt_at <= $1 AND next_allowed_at <= $2", [resetBefore, now]);
+  const until = await tx((c) => claimTry(c, key, addr, free, now, resetBefore));
+  if (!until) return { ok: true };
+  return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil((until.getTime() - now.getTime()) / 1000)) };
+}
+
+/**
  * Checks a username and password and starts a session.
  *
  * - Takes the same work whether or not the name exists: an unknown name is checked against a
@@ -306,24 +347,11 @@ export async function signIn(username: string, password: string, userAgent: stri
   );
 
   // Claim this try: refused while the address or the pair is waiting; otherwise counted, with its wait set.
-  const counted = "(CASE WHEN a.last_attempt_at <= $4::timestamptz THEN 1 ELSE a.failures + 1 END)";
   const waitUntil = await tx(async (c): Promise<Date | null> => {
     const addr = await c.query<{ next_allowed_at: Date }>("SELECT next_allowed_at FROM sign_in_attempts WHERE username_key = '' AND client = $1", [client]);
     const addrUntil = addr.rows[0] ? new Date(addr.rows[0].next_allowed_at) : null;
     if (addrUntil && addrUntil.getTime() > now.getTime()) return addrUntil;
-    const pair = await c.query(
-      `INSERT INTO sign_in_attempts AS a (username_key, client, failures, last_attempt_at, next_allowed_at)
-       VALUES ($1, $2, 1, $3::timestamptz, $3::timestamptz + ${sqlDelay(PAIR_FREE_FAILURES, "1")})
-       ON CONFLICT (username_key, client) DO UPDATE SET
-         failures = ${counted},
-         last_attempt_at = $3::timestamptz,
-         next_allowed_at = $3::timestamptz + ${sqlDelay(PAIR_FREE_FAILURES, counted)}
-       WHERE a.next_allowed_at <= $3::timestamptz`,
-      [key, client, now, resetBefore]
-    );
-    if (pair.rowCount) return null;
-    const w = await c.query<{ next_allowed_at: Date }>("SELECT next_allowed_at FROM sign_in_attempts WHERE username_key = $1 AND client = $2", [key, client]);
-    return w.rows[0] ? new Date(w.rows[0].next_allowed_at) : now;
+    return claimTry(c, key, client, PAIR_FREE_FAILURES, now, resetBefore);
   });
   if (waitUntil) return { ok: false, reason: "wait", retryAfterSeconds: Math.max(1, Math.ceil((waitUntil.getTime() - now.getTime()) / 1000)) };
 
