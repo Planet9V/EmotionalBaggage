@@ -57,6 +57,13 @@ export const draftQueries = {
       queryFn: ({ signal }) => call<GeneratorsReply>(`/api/drafts/generators?projectId=${enc(projectId)}&kind=section${store ? `&store=${enc(store)}` : ""}`, { signal }),
       enabled: !!projectId,
     }),
+  /** The link-drafting generator (Traceability), which no section's Draft with AI button lists. */
+  links: (projectId: string) =>
+    queryOptions({
+      queryKey: [...draftKeys.generators(projectId, "links")],
+      queryFn: ({ signal }) => call<GeneratorsReply>(`/api/drafts/generators?projectId=${enc(projectId)}&kind=links`, { signal }),
+      enabled: !!projectId,
+    }),
   optimise: (projectId: string) =>
     queryOptions({
       queryKey: draftKeys.optimise(projectId),

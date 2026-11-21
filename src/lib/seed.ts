@@ -634,3 +634,31 @@ export const SEED_ADDITIONS: Record<string, SeedItem[]> = {
   "concept/decisions": SEED_DECISIONS,
   "design/wiring": SEED_WIRING,
 };
+
+/**
+ * The links the example's own texts support, between its requirements, acceptance tests and parts. Each entry
+ * says why in the words of the rows themselves; nothing here is a guess about what "probably" serves what.
+ * Requirements with no entry (Free-fall, Carousel, Conveyor, Inverted, Governor tests, Controls, Enclosure and
+ * Firmware tests) have no test written for them yet: that is the honest state of the example, and the gap the
+ * Traceability page is for.
+ */
+export type SeedLink = { requirement: string; tests: string[]; parts: string[]; because: string };
+
+const AUDIO = ["U3", "SPK1", "SD1"];
+const DETECT_BECAUSE = "its response is a spoken gag, played by the DFPlayer from the microSD through the speaker, and it is detected by the IMU";
+
+export const SEED_LINKS: SeedLink[] = [
+  { requirement: "Detect: Hard impact", tests: ["Drop"], parts: ["U2", ...AUDIO], because: `the Drop test's pass text is the impact gag within 1 s; ${DETECT_BECAUSE}` },
+  { requirement: "Detect: Weigh-in", tests: ["Weigh-in"], parts: ["U2", ...AUDIO], because: `the Weigh-in test holds the unit dead still for 4 s inside the 3.5-6 s window; ${DETECT_BECAUSE}` },
+  { requirement: "Detect: Handle grab", tests: ["Carry"], parts: ["U2", ...AUDIO], because: `the Carry test is the handle carry that gives the dinner gag; ${DETECT_BECAUSE}` },
+  { requirement: "Detect: Free-fall", tests: [], parts: ["U2", ...AUDIO], because: DETECT_BECAUSE },
+  { requirement: "Detect: Carousel", tests: [], parts: ["U2", ...AUDIO], because: DETECT_BECAUSE },
+  { requirement: "Detect: Conveyor", tests: [], parts: ["U2", ...AUDIO], because: DETECT_BECAUSE },
+  { requirement: "Detect: Inverted", tests: [], parts: ["U2", ...AUDIO], because: DETECT_BECAUSE },
+  { requirement: "Detect: Dark idle", tests: ["Idle"], parts: ["U2", ...AUDIO], because: `the Idle test is two hours untouched and the dark-idle gag at the wake poll; ${DETECT_BECAUSE}` },
+  { requirement: "Governor", tests: [], parts: ["U1"], because: "the per-class latch and the hourly counter run in the firmware on the MCU" },
+  { requirement: "Power", tests: ["Sleep current"], parts: ["BT1", "BAT", "S1"], because: "the Sleep current test measures the 200 µA limit; the requirement names the three AA cells and the master slide switch" },
+  { requirement: "Controls", tests: [], parts: ["S2", "R2"], because: "the one button is S2, and R2 is its pull-up (the bill of materials says so)" },
+  { requirement: "Enclosure", tests: [], parts: ["ENC1", "HW1", "STR1", "SPK1", "U2"], because: "the shell is ENC1, the sensor is screwed to it with HW1, the strap channel takes STR1 and the grille faces the speaker" },
+  { requirement: "Firmware sketch compiles", tests: [], parts: ["U1"], because: "the sketch is for the ESP32-S3 on U1" },
+];

@@ -2,7 +2,7 @@ import { currentActor } from "./actor";
 import { join } from "node:path";
 import { runner } from "node-pg-migrate";
 import { Pool, type PoolClient } from "pg";
-import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "./seed";
+import { SEED_ADDITIONS, SEED_ITEMS, SEED_LINKS, SEED_PROJECT } from "./seed";
 
 // One pool per process. DATABASE_URL points at PostgreSQL (pgvector image in Docker).
 const g = globalThis as unknown as { __c2rPool?: Pool; __c2rReady?: Promise<{ vector: boolean; vectorProblem: string | null }> };
@@ -101,6 +101,7 @@ export function ready() {
       const vector = await vectorSupport();
       await seedOnce();
       await seedAdditions();
+      await seedLinks();
       return vector;
     })().catch((e) => {
       g.__c2rReady = undefined;
@@ -176,6 +177,67 @@ async function seedAdditions() {
       marker,
       `Seeded ${items.length} rows into ${store} from the source documents`,
     ]);
+  }
+}
+
+/**
+ * Links the example's requirements, tests and parts where its own texts say they correspond (SEED_LINKS), once per
+ * database and only for rows still there. Each link is written at both ends and recorded as a history line that says
+ * why, so the Activity page and the traceability matrix of the example are not empty.
+ */
+async function seedLinks() {
+  const db = pool();
+  const has = await db.query("SELECT 1 FROM projects WHERE id=$1", [SEED_PROJECT.id]);
+  if (!has.rowCount) return;
+  const done = await db.query("SELECT 1 FROM events WHERE project_id=$1 AND kind='seed.links'", [SEED_PROJECT.id]);
+  if (done.rowCount) return;
+  const { ensureKey, mirrorLinks } = await import("./trace/mirror");
+  const { changedDetail } = await import("./trace/changes");
+  const c = await db.connect();
+  try {
+    await c.query("BEGIN");
+    // Another process starting at the same time must not seed twice.
+    await c.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`seed.links:${SEED_PROJECT.id}`]);
+    if ((await c.query("SELECT 1 FROM events WHERE project_id=$1 AND kind='seed.links'", [SEED_PROJECT.id])).rowCount) {
+      await c.query("ROLLBACK");
+      return;
+    }
+    const find = async (section: string, field: "title" | "ref", value: string) =>
+      (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 AND ${field === "title" ? "title" : "data->>'ref'"} = $3 ORDER BY id LIMIT 1 FOR UPDATE`, [SEED_PROJECT.id, section, value])).rows[0];
+    let linked = 0;
+    for (const link of SEED_LINKS) {
+      const req = await find("design/requirements", "title", link.requirement);
+      if (!req) continue;
+      const tests = (await Promise.all(link.tests.map((t) => find("prototype/tests", "title", t)))).filter((x): x is ItemRow => !!x);
+      const parts = (await Promise.all(link.parts.map((p) => find("design/bom", "ref", p)))).filter((x): x is ItemRow => !!x);
+      if (!tests.length && !parts.length) continue;
+      const reqKey = await ensureKey(c, req);
+      const testKeys = [];
+      for (const t of tests) testKeys.push(await ensureKey(c, t));
+      const partKeys = [];
+      for (const p of parts) partKeys.push(await ensureKey(c, p));
+      const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1`, [req.id])).rows[0];
+      const have = (f: string) => (Array.isArray(was.data[f]) ? (was.data[f] as unknown[]).filter((x): x is string => typeof x === "string") : []);
+      const nextTests = [...new Set([...have("tests"), ...testKeys])];
+      const nextParts = [...new Set([...have("parts"), ...partKeys])];
+      const upd = await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [req.id, JSON.stringify({ tests: nextTests, parts: nextParts })]);
+      const now = upd.rows[0];
+      const what = [tests.length ? `${tests.length} test${tests.length === 1 ? "" : "s"}` : "", parts.length ? `${parts.length} part${parts.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ");
+      await logEventIn(c, SEED_PROJECT.id, "item.edited", `"${now.title}": linked to ${what} from the source documents (${reqKey})`, {
+        ...changedDetail(now, { before: { "data.tests": have("tests"), "data.parts": have("parts") }, after: { "data.tests": nextTests, "data.parts": nextParts } }),
+        reason: link.because,
+        seeded: true,
+      });
+      await mirrorLinks(c, { data: { ...was.data, tests: have("tests"), parts: have("parts") } }, now);
+      linked += tests.length + parts.length;
+    }
+    await logEventIn(c, SEED_PROJECT.id, "seed.links", `Linked the example's requirements, tests and parts where its own texts say they correspond (${linked} links)`, { links: linked });
+    await c.query("COMMIT");
+  } catch (e) {
+    await c.query("ROLLBACK").catch(() => undefined);
+    throw e;
+  } finally {
+    c.release();
   }
 }
 

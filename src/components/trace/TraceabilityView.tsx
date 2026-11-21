@@ -12,6 +12,7 @@ import { statusTone } from "@/lib/statusTones";
 import { traceOf } from "@/lib/trace/coverage";
 import type { Item, Project } from "@/lib/types";
 import { Coverage } from "./Coverage";
+import { DraftLinks } from "./DraftLinks";
 import { NoConcept, LoadingShape } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
@@ -93,6 +94,7 @@ function TraceBody({ project }: { project: Project }) {
 
   return (
     <div className="space-y-6">
+      <DraftLinks projectId={project.id} gaps={t.untested.length + t.orphanTests.length + t.unusedParts.length} />
       <section aria-label="Requirements by test">
         <h2 className="mb-2 text-sm font-semibold tracking-tight text-primary">Requirements by test</h2>
         {t.tests.length ? (
