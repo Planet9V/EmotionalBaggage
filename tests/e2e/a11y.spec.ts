@@ -13,14 +13,16 @@ async function audit(page: Page, path: string, info: TestInfo): Promise<Found> {
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
   await page.waitForLoadState("networkidle");
-  // The landing page previews are fully sandboxed frames (sandbox="", no scripts, opaque origin) on purpose, so
-  // axe cannot run inside them; its frame-by-frame run then waits until the test times out (measured: no answer
-  // in 60 s). On a page that has one, axe runs in one pass over the page with frames left out: the page around
-  // them, and each frame element's own title, are still checked.
-  const sandboxed = (await page.locator('iframe[sandbox=""]').count()) > 0;
-  const axe = new AxeBuilder({ page });
-  if (sandboxed) axe.options({ iframes: false }).setLegacyMode();
+  // The app's only frames are the landing page previews, fully sandboxed (sandbox="", no scripts, opaque
+  // origin) on purpose. axe cannot run inside them, and its frame-by-frame run then waits until the test times
+  // out (measured: no answer in 60 s; a frame can appear after a check for it has run, so
+  // the choice is made for every page, not per page). So axe runs in one pass over the page with frames left
+  // out: the page around them, and each frame element's own title, are still checked. A frame that is not
+  // sandboxed would be left out too, so the audit fails on one rather than skip it unseen.
+  const axe = new AxeBuilder({ page }).options({ iframes: false }).setLegacyMode();
   const result = await axe.analyze();
+  const unsandboxed = await page.locator('iframe:not([sandbox=""])').count();
+  expect(unsandboxed, `${path} has a frame that is not fully sandboxed; this audit leaves frames out, so give it its own audit`).toBe(0);
   const line = (v: (typeof result.violations)[number]) =>
     `${path} [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} element${v.nodes.length === 1 ? "" : "s"}: ${v.nodes
       .slice(0, 3)
