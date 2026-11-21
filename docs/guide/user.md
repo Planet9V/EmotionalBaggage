@@ -58,6 +58,8 @@ After the wizard you land on the overview. The app does not yet tell you what to
 | Section | What you do there |
 |---|---|
 | Brief | Record what the product is, who it is for, why now. |
+| Press release | The announcement you would publish on launch day, written before anything is built. Draft it with AI from the brief; once approved the reviewer attacks it once, and you can revise with the critique. |
+| FAQ | The questions buyers and sceptics will ask, with straight answers. Draft with AI from the brief and press release; approved entries are attacked by the reviewer like the press release. |
 | Challenge | Ask the AI reviewer to push back on the proposition. Needs an AI key; without one the box is disabled. |
 | Names and taglines | Collect candidates and move them between candidate, shortlist, chosen and rejected. |
 | Decision tree | Lay out the decisions the concept depends on. Click a decision to see its options, outcomes and what it depends on, and choose an option. A decision cannot be chosen until the decisions it depends on are made. |
