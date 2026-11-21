@@ -29,7 +29,9 @@ RUN git clone -q --depth 1 --branch "${ORCA_TAG}" --filter=blob:none --sparse ht
  && cd /opt/orca-src && git sparse-checkout set resources/profiles \
  && test "$(git rev-parse HEAD)" = "${ORCA_COMMIT}" \
  && mv resources/profiles /opt/orca/profiles-src && cd / && rm -rf /opt/orca-src \
- && ln -s /opt/orca/profiles-src /opt/orca/profiles
+ && ln -s /opt/orca/profiles-src /opt/orca/profiles \
+ # The extracted AppImage keeps its owner-only folder modes; the service runs as another user and must read them.
+ && chmod -R a+rX /opt/orca
 
 RUN python3 -m venv /opt/venv
 COPY requirements.txt /srv/requirements.txt
