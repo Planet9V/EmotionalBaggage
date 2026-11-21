@@ -7,6 +7,9 @@ export { stepsFromItems } from "./domain/step";
 /** The section that holds the decision tree. */
 export const DECISIONS_STORE = "concept/decisions";
 
+/** Sections whose rows carry a key so other rows can name them, but which are not work to schedule. */
+export const NOT_STEPS = new Set(["design/requirements"]);
+
 /** A node of the plan graph before it is scheduled. */
 export type GraphNode = Omit<PlanNode, "start" | "finish" | "wave" | "critical" | "blocked">;
 
@@ -52,7 +55,7 @@ export function planGraph(items: Item[]): PlanGraphResult {
   const duplicates = new Set<string>();
 
   for (const i of items) {
-    if (!isStep(i)) continue;
+    if (!isStep(i) || NOT_STEPS.has(i.section)) continue;
     const id = String(i.data.key);
     if (seen.has(id)) {
       duplicates.add(id);

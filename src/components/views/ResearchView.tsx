@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef, useState } from "react";
+import { Fragment, Suspense, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { Search } from "lucide-react";
@@ -19,6 +19,7 @@ import { VERDICT_LABEL, useEvidence } from "@/lib/research/client";
 import { VERDICTS, type Verdict } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
+import { FromUrl } from "@/components/drafts/FromUrl";
 
 type Source = { url: string; title?: string; snippet?: string; date?: string };
 type Entry = { id: number; query: string; answer: string; citations: string[]; sources?: Source[]; model: string; createdAt: string };
@@ -41,6 +42,9 @@ export function ResearchView({ project }: ViewProps) {
   const [error, setError] = useState("");
   const box = useRef<HTMLInputElement>(null);
   const claims = useItems(project.id, "research/claims");
+  // "Verify this" on a row arrives as ?ask=<the row's text>&claim=<id>: the question is filled in and
+  // the claim is chosen in each evidence form.
+  const [preferClaim, setPreferClaim] = useState("");
 
   const [cost, setCost] = useState("");
   const askM = useMutation({
@@ -83,6 +87,9 @@ export function ResearchView({ project }: ViewProps) {
         </Card>
       )}
 
+      <Suspense fallback={null}>
+        <FromUrl names={["ask", "claim"]} onParams={(v) => { if (v.ask) setQuery(v.ask); if (v.claim) setPreferClaim(v.claim); box.current?.focus(); }} />
+      </Suspense>
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
         <label htmlFor="rq" className="text-sm font-medium text-primary">Question</label>
         <div className="flex gap-2">
@@ -119,7 +126,7 @@ export function ResearchView({ project }: ViewProps) {
         <ul className="space-y-4">
           {state.entries.map((e) => (
             <motion.li key={e.id} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
-              <EntryCard entry={e} claims={claims} projectId={project.id} />
+              <EntryCard entry={e} claims={claims} projectId={project.id} preferClaim={preferClaim} />
             </motion.li>
           ))}
         </ul>
@@ -151,7 +158,7 @@ function Answer({ text, citations }: { text: string; citations: string[] }) {
   );
 }
 
-function EntryCard({ entry, claims, projectId }: { entry: Entry; claims: Claims; projectId: string }) {
+function EntryCard({ entry, claims, projectId, preferClaim = "" }: { entry: Entry; claims: Claims; projectId: string; preferClaim?: string }) {
   const [adding, setAdding] = useState<string | null>(null);
   const [using, setUsing] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -197,6 +204,7 @@ function EntryCard({ entry, claims, projectId }: { entry: Entry; claims: Claims;
                   source={src}
                   researchId={entry.id}
                   projectId={projectId}
+                  preferClaim={preferClaim}
                   onCancel={() => setUsing(null)}
                   onDone={(msg) => { setUsing(null); setNote(msg); }}
                 />
@@ -248,7 +256,8 @@ function SourceLine({ source }: { source: Source }) {
   );
 }
 
-function EvidenceForm({ claims, source, researchId, projectId, onCancel, onDone }: {
+function EvidenceForm({ claims, source, researchId, projectId, preferClaim = "", onCancel, onDone }: {
+  preferClaim?: string;
   claims: Item[];
   source: Source;
   researchId: number;
@@ -257,7 +266,7 @@ function EvidenceForm({ claims, source, researchId, projectId, onCancel, onDone 
   onDone: (message: string) => void;
 }) {
   const { add } = useEvidence(projectId);
-  const [claimId, setClaimId] = useState("");
+  const [claimId, setClaimId] = useState(() => (claims.some((c) => String(c.id) === preferClaim) ? preferClaim : ""));
   const [verdict, setVerdict] = useState<Verdict | "">("");
   const [quote, setQuote] = useState("");
   const [err, setErr] = useState("");

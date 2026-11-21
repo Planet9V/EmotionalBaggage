@@ -93,6 +93,8 @@ export const newProject = z.object({
 export const challengeTurn = z.object({
   projectId: text(80).min(1),
   message: text(8000).trim().min(1, "is required"),
+  /** "Challenge this": the row the reviewer argues against; the exchange keeps a link to it */
+  itemId: z.number().int().positive().optional(),
 });
 
 export const researchAsk = z.object({

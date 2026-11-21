@@ -1,25 +1,32 @@
 import { NextResponse } from "next/server";
-import { logEvent, q } from "@/lib/db";
-import { body as readBody, requireProject, route } from "@/lib/api/route";
+import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
+import { body as readBody, HttpError, requireProject, route } from "@/lib/api/route";
+import { reviewerSystem } from "@/lib/ai/reviewer";
 import { challengeTurn } from "@/lib/api/schemas";
 import { complete, getReasoning, type ChatMessage } from "@/lib/ai/models";
-import { REVIEWER_SYSTEM, reviewerContext } from "@/lib/ai/reviewer";
 
 /** Turns of earlier conversation sent with each new message. */
 const HISTORY = 40;
 
-type Msg = { id: string; role: string; content: string; created_at: string };
+type Msg = { id: string; role: string; content: string; created_at: string; item_id: string | null; item_section?: string | null; item_title?: string | null };
 
 export const GET = route(async (req: Request) => {
   const projectId = new URL(req.url).searchParams.get("projectId") ?? "";
   await requireProject(projectId);
-  const rows = await q<Msg>("SELECT id, role, content, created_at FROM messages WHERE project_id=$1 ORDER BY id", [projectId]);
+  // A "Challenge this" exchange names its row, so the screen can link back to it.
+  const rows = await q<Msg>(
+    `SELECT m.id, m.role, m.content, m.created_at, m.item_id, i.section AS item_section, i.title AS item_title
+       FROM messages m LEFT JOIN items i ON i.id = m.item_id WHERE m.project_id=$1 ORDER BY m.id`,
+    [projectId]
+  );
   // Configured: a reasoning model is chosen in Admin and its required key is present.
   const reasoning = await getReasoning();
   return NextResponse.json({
     configured: reasoning.ok,
     model: reasoning.ok ? reasoning.info.model : "",
-    messages: rows.map((m) => ({ id: Number(m.id), role: m.role, content: m.content, createdAt: m.created_at })),
+    messages: rows.map((m) => ({ id: Number(m.id), role: m.role, content: m.content, createdAt: m.created_at, itemId: m.item_id === null ? null : Number(m.item_id),
+      ...(m.item_id !== null ? { item: { section: m.item_section ?? "", title: m.item_title ?? "" } } : {}),
+    })),
   });
 });
 
@@ -28,9 +35,15 @@ export const POST = route(async (req: Request) => {
   const proj = [await requireProject(b.projectId)];
   const reasoning = await getReasoning();
   if (!reasoning.ok) return NextResponse.json({ error: reasoning.reason }, { status: 503 });
-  const context = await reviewerContext(proj[0]);
+  // "Challenge this": the row must belong to this concept; the exchange keeps a link back to it.
+  let focus: ReturnType<typeof toItem> | null = null;
+  if (b.itemId !== undefined) {
+    const r = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2`, [b.itemId, b.projectId]);
+    if (!r.length) throw new HttpError(404, "That row was not found in this concept.");
+    focus = toItem(r[0]);
+  }
   const history = (
-    await q<Msg>("SELECT id, role, content, created_at FROM messages WHERE project_id=$1 ORDER BY id DESC LIMIT $2", [b.projectId, HISTORY])
+    await q<Msg>("SELECT id, role, content, created_at, item_id FROM messages WHERE project_id=$1 ORDER BY id DESC LIMIT $2", [b.projectId, HISTORY])
   ).reverse();
   const messages: ChatMessage[] = [
     ...history.filter((m) => m.role === "user" || m.role === "assistant").map((m) => ({ role: m.role as ChatMessage["role"], content: m.content })),
@@ -40,12 +53,18 @@ export const POST = route(async (req: Request) => {
   // Provider failures leave as plain sentences with a status (502, 504) through the route wrapper.
   const { text: reply } = await complete({
     use: reasoning,
-    system: `${REVIEWER_SYSTEM}\n\nWhat is on record for this concept:\n${context}`,
+    system: await reviewerSystem(proj[0], focus),
     messages,
     maxOutputTokens: 1200,
     signal: req.signal,
   });
-  await q("INSERT INTO messages (project_id, role, content) VALUES ($1,'user',$2), ($1,'assistant',$3)", [b.projectId, b.message, reply]);
-  await logEvent(b.projectId, "challenge.turn", "The proposition was challenged by the AI reviewer");
-  return NextResponse.json({ reply });
+  await tx(async (c) => {
+    await c.query("INSERT INTO messages (project_id, role, content, item_id) VALUES ($1,'user',$2,$4), ($1,'assistant',$3,$4)", [b.projectId, b.message, reply, focus?.id ?? null]);
+    if (focus) {
+      await logEventIn(c, b.projectId, "challenge.row", `The AI reviewer argued against "${focus.title}"`, { itemId: focus.id, section: focus.section });
+    } else {
+      await logEventIn(c, b.projectId, "challenge.turn", "The proposition was challenged by the AI reviewer");
+    }
+  });
+  return NextResponse.json(focus ? { reply, itemId: focus.id } : { reply });
 });

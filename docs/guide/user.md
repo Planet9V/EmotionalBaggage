@@ -51,6 +51,16 @@ Not verified: chat has been run against a stand-in model only, so nothing here s
 - **Activity** (in the sidebar) lists every change in the concept, filtered by section and kind.
 - **Traceability.** In a requirement's editor, pick the tests that check it and the parts it needs; a pick saves at once. Requirements then show "2 tests, 1 part" or "No test covers this". The Traceability page shows the requirement-by-test matrix with each test's status, and three lists of gaps: requirements with no test, tests that check no requirement, and parts no requirement needs. Deleting a test or part asks first and removes it from every requirement and build that named it.
 
+## Drafting with AI, challenge and impact
+
+Sections a generator can fill have a **Draft with AI** button. It says what it will read; when you run it, the rows it proposes wait for review as drafts, each with the rows it came from. Edit, approve or reject each one, or approve a whole run. A draft never counts as a row until you approve it. Running again asks before marking older waiting drafts superseded. Generators read approved rows only.
+
+An approved press release or FAQ entry is attacked once by the reviewer; **Revise with this critique** makes a new draft. In any row's editor, **Challenge this** asks the reviewer to argue against the row (saved in Challenge with a link back), and **Verify this** opens Research with the row as the question.
+
+After you change a decision, a requirement or a part, a notice says how many rows it affects. **Show what it affects** lists them by section with the reason, and **Propose updates** drafts changes to them, each shown before and after. Unit economics and the decision tree are listed as "Review by hand".
+
+**Drafts** in the sidebar lists every draft of the concept. **Optimise** offers lower parts cost, fewer parts and shorter print time, measured from your rows: cost only when every part is priced, print time only from times entered after slicing.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.
@@ -64,6 +74,8 @@ After the wizard you land on the overview. The app does not yet tell you what to
 | Section | What you do there |
 |---|---|
 | Brief | Record what the product is, who it is for, why now. |
+| Press release | The announcement you would publish on launch day, written before anything is built. Draft it with AI from the brief; once approved the reviewer attacks it once, and you can revise with the critique. |
+| FAQ | The questions buyers and sceptics will ask, with straight answers. Draft with AI from the brief and press release; approved entries are attacked by the reviewer like the press release. |
 | Challenge | Ask the AI reviewer to push back on the proposition. Needs an AI key; without one the box is disabled. |
 | Names and taglines | Collect candidates and move them between candidate, shortlist, chosen and rejected. |
 | Decision tree | Lay out the decisions the concept depends on. Click a decision to see its options, outcomes and what it depends on, and choose an option. A decision cannot be chosen until the decisions it depends on are made. |

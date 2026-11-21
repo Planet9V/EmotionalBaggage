@@ -107,6 +107,10 @@ None of this has been run against a real Ollama, LM Studio or OpenRouter yet; it
 
 After changing `.env`, run `docker compose up -d` again.
 
+## Drafting, the reviewer and impact
+
+Drafting, the reviewer and realignment all use the reasoning model chosen in Models. Without one, the buttons explain why and link there. The impact notice needs the planner service; when it cannot be reached the notice says so and nothing else is affected.
+
 ## Checking it is healthy
 
 - `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.

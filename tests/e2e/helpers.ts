@@ -29,7 +29,7 @@ export const ALLOWED_FAILED_REQUESTS: { page: RegExp; path: RegExp; status: numb
 export const OPTIONAL_ROUTES = ["/admin", "/chat", "/concepts"];
 
 /** Pages not in the sidebar that must always be checked. Sidebar and docs links are collected from the page. */
-export const FIXED_ROUTES = ["/", "/plan", "/report", "/integrations", "/docs", "/account", "/new"];
+export const FIXED_ROUTES = ["/", "/plan", "/report", "/integrations", "/docs", "/account", "/new", "/drafts", "/optimise"];
 
 type Bucket = { pageErrors: string[]; consoleErrors: string[]; failedRequests: string[] };
 

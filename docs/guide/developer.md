@@ -169,6 +169,10 @@ Word search is PostgreSQL full-text search: `items.search` and `research.search`
 
 Chat routes: `GET` and `POST /api/projects/[id]/chats`; `GET` and `DELETE /api/chats/[id]`; `POST /api/chats/[id]/messages { message }`, which returns an AI SDK UI message stream whose metadata carries the numbered sources, how they were found, and the model. It falls back to text search when search by meaning is not ready, and answers 503 with no reasoning model. Tables: `chats` and `chat_messages` (`migrations/0007_chat.sql`). Helpers safe for the browser are in `src/lib/chat/shared.ts`; the prompt and retrieval are in `src/lib/chat/server.ts`; the screen is `src/app/chat/page.tsx` with `src/components/chat/`, built from the AI Elements components.
 
+## Drafting
+
+Generators live in `src/lib/ai/drafts/registry.ts`: write the generator object (`id, label, from, to, applies, buildPrompt, schema, toDraft`) and add it to `GENERATORS`. `run.ts` checks every returned row against the generator's schema and the target section's data schema and drops rows that fail. The `drafts` table is migration 0012; approval (`store.ts`) is the only path from a draft to `items`. Impact edges are built in `impact.ts`; reachability comes from `POST /impact` in `planner/impact.py`. Optimisation figures come only from `measure.ts`. The reviewer's prompt is in `src/lib/ai/reviewer.ts` and every feature that asks the reviewer uses it. Keyed requirements are not steps (`NOT_STEPS` in `src/lib/plan.ts`).
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

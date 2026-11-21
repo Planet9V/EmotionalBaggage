@@ -12,6 +12,7 @@ import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { ItemDialogShell } from "./ItemDialogShell";
 import { Field, SELECT_CLS, TEXTAREA_CLS, prim } from "./shared";
+import { RowAssist } from "@/components/drafts/RowAssist";
 
 type Change = { title: string; body: string; status: string; data: Record<string, unknown> };
 type Restore = (id: number, change: Record<string, unknown>) => Promise<void>;
@@ -233,6 +234,8 @@ function EditForm({
           <Input id="edit-step-after" value={after} onChange={(e) => setAfter(e.target.value)} className="font-mono" placeholder="p0, p2" />
         </Field>
       </fieldset>
+
+      <RowAssist item={item} />
 
       {error && (
         <p role="alert" className="text-sm text-danger">

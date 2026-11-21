@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
 import { LayoutGrid, Plus, Rows3, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { STORE } from "@/lib/domain/schemas";
 import { CLAIMS_SECTION } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
+import { FromUrl } from "@/components/drafts/FromUrl";
 
 type Layout = "board" | "table";
 const layoutListeners = new Set<() => void>();
@@ -132,6 +133,8 @@ export function ItemsView({ project, section, store }: ViewProps) {
 
   const dialogs = (
     <>
+      {/* ?item=<id> opens that row's editor, so a link (from the reviewer, a draft) can point at one row. */}
+      <Suspense fallback={null}><FromUrl names={["item"]} onParams={(v) => setOpenId(Number(v.item) || null)} /></Suspense>
       <AddItemDialog
         open={adding}
         onOpenChange={setAdding}

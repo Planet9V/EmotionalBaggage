@@ -67,6 +67,22 @@ export const STAGES: Stage[] = [
         addLabel: "Add to brief",
       },
       {
+        key: "press",
+        label: "Press release",
+        blurb: "The announcement you would publish on launch day, written first and attacked by the reviewer.",
+        view: "items",
+        statuses: ["draft", "reviewed", "final"],
+        addLabel: "Add press release",
+      },
+      {
+        key: "faq",
+        label: "FAQ",
+        blurb: "The questions buyers and sceptics will ask, with straight answers.",
+        view: "items",
+        statuses: ["draft", "reviewed", "final"],
+        addLabel: "Add question",
+      },
+      {
         key: "challenge",
         label: "Challenge",
         blurb: "An AI reviewer that pushes back on the proposition and asks what it rests on.",
@@ -477,4 +493,6 @@ export const CLOSED = new Set([
   "killed",
   "in hand",
   "tested",
+  "final",
+  "passed",
 ]);
