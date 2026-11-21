@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logEvent, q } from "@/lib/db";
+import { logEventIn, q, tx } from "@/lib/db";
 import { notFound, recordId, route } from "@/lib/api/route";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -24,8 +24,17 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
 
 export const DELETE = route(async (_req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That file");
-  const rows = await q<{ project_id: string; name: string }>("DELETE FROM files WHERE id=$1 RETURNING project_id, name", [id]);
-  if (!rows.length) throw notFound("That file");
-  await logEvent(rows[0].project_id, "file.removed", `Removed file ${rows[0].name}`);
+  await tx(async (c) => {
+    const res = await c.query<{ project_id: string; name: string; kind: string; size: number; sha256: string }>(
+      "DELETE FROM files WHERE id=$1 RETURNING project_id, name, kind, size, sha256",
+      [id]
+    );
+    const f = res.rows[0];
+    if (!f) throw notFound("That file");
+    await logEventIn(c, f.project_id, "file.removed", `Removed file ${f.name}`, {
+      fileId: id,
+      before: { name: f.name, kind: f.kind, size: f.size, sha256: f.sha256 },
+    });
+  });
   return NextResponse.json({ ok: true });
 });

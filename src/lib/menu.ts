@@ -21,7 +21,8 @@ export type Section = {
     | "decisions"
     | "schematic"
     | "layout"
-    | "buildsheet";
+    | "buildsheet"
+    | "builds";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -206,6 +207,14 @@ export const STAGES: Stage[] = [
         columns: [{ key: "pass", label: "Pass condition" }],
         statuses: ["not run", "pass", "fail"],
         addLabel: "Add test",
+      },
+      {
+        key: "builds",
+        label: "Builds",
+        blurb: "Named builds (works-like, looks-like, EVT, DVT, PVT), each with its exit criteria and the tests it must pass.",
+        view: "builds",
+        statuses: ["planned", "building", "testing", "passed", "failed"],
+        addLabel: "Add build",
       },
     ],
   },

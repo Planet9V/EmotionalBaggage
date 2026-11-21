@@ -7,6 +7,9 @@ export const STORE = {
   parts: "design/bom",
   wiring: "design/wiring",
   decisions: "concept/decisions",
+  requirements: "design/requirements",
+  tests: "prototype/tests",
+  builds: "prototype/builds",
 } as const;
 
 const text = (max = 400) => z.string().max(max);
@@ -122,7 +125,27 @@ export const decisionData = z.looseObject({
   source: text().optional(),
 });
 
+/** A requirement links to the acceptance tests that check it and the parts it needs, by key (checked in src/lib/trace/links.ts). */
+export const requirementData = z.looseObject({
+  ...step,
+  tests: keyList.optional(),
+  parts: keyList.optional(),
+});
+
+const day = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date like 2026-12-31")]);
+
+/** A named build: its exit criteria, the tests it must pass, and its dates. The name is the title and the goal is the body. */
+export const buildData = z.looseObject({
+  ...step,
+  criteria: z.array(z.object({ text: text(300).trim().min(1, "a criterion needs text"), met: z.boolean().default(false) })).max(50).optional(),
+  tests: keyList.optional(),
+  start: day.optional(),
+  end: day.optional(),
+});
+
 const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
+  [STORE.requirements]: requirementData,
+  [STORE.builds]: buildData,
   [STORE.parts]: partData,
   [STORE.wiring]: wireData,
   [STORE.decisions]: decisionData,

@@ -3,6 +3,9 @@ import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, notFound, recordId, route } from "@/lib/api/route";
 import { assertStatus, itemPatch, parseData } from "@/lib/api/schemas";
 import { assertClaimChange } from "@/lib/research/rules";
+import { changedDetail, itemDiff, removedDetail } from "@/lib/trace/changes";
+import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
+import { keyOf } from "@/lib/trace/spec";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -18,6 +21,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     // Claims: evidence only through /api/research/evidence; a hand-set status the evidence allows.
     assertClaimChange(was, b);
     const data = parseData(was.section, b.data);
+    await assertLinks(c, was.project_id, was.section, data);
+    await assertBuildMayPass(c, was.project_id, { section: was.section, title: b.title ?? was.title, status: b.status ?? was.status, data: { ...was.data, ...(data ?? {}) } });
     const res = await c.query<ItemRow>(
       `UPDATE items SET
          title = COALESCE($2, title),
@@ -30,10 +35,19 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
       [id, b.title ?? null, b.body ?? null, data ? JSON.stringify(data) : null, b.status ?? null, b.sort ?? null]
     );
     const row = res.rows[0];
-    if (b.status && b.status !== was.status) {
-      await logEventIn(c, row.project_id, "item.status", `"${row.title}" moved from ${was.status} to ${row.status}`, { itemId: row.id });
-    } else {
-      await logEventIn(c, row.project_id, "item.edited", `Edited "${row.title}" in ${row.section}`, { itemId: row.id });
+    const diff = itemDiff(was, row);
+    // A key that changed or went away takes the links that named it with it, in this transaction.
+    const oldKey = keyOf(was.data);
+    const newKey = keyOf(row.data);
+    if (oldKey && oldKey !== newKey) await relinkKey(c, row, oldKey, newKey || null, newKey ? `the key ${oldKey} became ${newKey}` : `the key ${oldKey} was removed`);
+    // A write that changes nothing leaves no line: the record holds changes, not clicks.
+    if (Object.keys(diff.after).length || Object.keys(diff.before).length) {
+      const detail = changedDetail(row, diff);
+      if (b.status && b.status !== was.status) {
+        await logEventIn(c, row.project_id, "item.status", `"${row.title}" moved from ${was.status} to ${row.status}`, detail);
+      } else {
+        await logEventIn(c, row.project_id, "item.edited", `Edited "${row.title}" in ${row.section}`, detail);
+      }
     }
     return row;
   });
@@ -46,7 +60,9 @@ export const DELETE = route(async (_req: Request, { params }: Ctx) => {
     const res = await c.query<ItemRow>(`DELETE FROM items WHERE id=$1 RETURNING ${ITEM_COLS}`, [id]);
     const row = res.rows[0];
     if (!row) throw notFound("That row");
-    await logEventIn(c, row.project_id, "item.removed", `Removed "${row.title}" from ${row.section}`);
+    // Rows that linked to this one lose the link in the same transaction, each recorded.
+    const unlinked = await relinkKey(c, row, keyOf(row.data), null, `the linked row "${row.title}" was deleted`);
+    await logEventIn(c, row.project_id, "item.removed", `Removed "${row.title}" from ${row.section}`, removedDetail(row, unlinked.length ? { unlinked: unlinked.map((u) => ({ itemId: u.id, title: u.title, field: u.field })) } : {}));
   });
   return NextResponse.json({ ok: true });
 });

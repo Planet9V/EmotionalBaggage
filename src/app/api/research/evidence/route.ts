@@ -36,6 +36,8 @@ async function save(c: PoolClient, row: ItemRow, before: EvidenceEntry[], after:
       : `Evidence removed from "${row.title}": ${where}; status ${statusBefore} → ${statusAfter}`;
   await logEventIn(c, row.project_id, change.action === "added" ? "claim.evidence.added" : "claim.evidence.removed", summary, {
     itemId: now.id,
+    section: now.section,
+    title: now.title,
     url: change.entry.url,
     verdict: change.entry.verdict,
     before: { status: statusBefore, evidence: before },
