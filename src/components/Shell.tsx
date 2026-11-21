@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, FileText, GitBranch, LayoutList, Link2, MessagesSquare, Moon, Plug, Plus, Settings, Sun, BookOpen } from "lucide-react";
+import { Activity, FileText, GitBranch, LayoutList, Link2, ListChecks, MessagesSquare, Moon, Plug, Plus, Settings, Sun, BookOpen } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
-import { STAGES } from "@/lib/menu";
+import { sectionsFor } from "@/lib/productTypes";
 import type { Project } from "@/lib/types";
 import { SessionControls } from "@/app/account/SessionControls";
 import { ConceptFromUrl } from "@/components/concepts/ConceptFromUrl";
@@ -103,7 +103,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Stages">
-            {STAGES.map((st) => (
+            {sectionsFor((project as { productType?: string } | null)?.productType ?? "").map((st) => (
               <div key={st.key} className="mb-3">
                 <p className="flex items-baseline gap-2 px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
                   <span className="font-mono text-[10px] text-link">{String(st.n).padStart(2, "0")}</span>
@@ -123,6 +123,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="space-y-0.5 border-t border-hairline px-2 py-2">
             <Link href="/chat" className={link("/chat", pathname === "/chat")}><MessagesSquare className="h-3.5 w-3.5" aria-hidden /> Chat</Link>
+            <Link href="/process" className={link("/process", pathname === "/process")}><ListChecks className="h-3.5 w-3.5" aria-hidden /> Process</Link>
             <Link href="/plan" className={link("/plan", pathname === "/plan")}><GitBranch className="h-3.5 w-3.5" aria-hidden /> Order of operations</Link>
             <Link href="/traceability" className={link("/traceability", pathname === "/traceability")}><Link2 className="h-3.5 w-3.5" aria-hidden /> Traceability</Link>
             <Link href="/activity" className={link("/activity", pathname === "/activity")}><Activity className="h-3.5 w-3.5" aria-hidden /> Activity</Link>

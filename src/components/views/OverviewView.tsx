@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { NextStepCard } from "@/components/process/NextStepCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { fmtTime, storeHref, storeLabel } from "@/components/plan/format";
 import { useConcept, type ConceptData, type ConceptPart } from "@/components/plan/useConcept";
@@ -68,9 +69,11 @@ function OverviewBody({ project }: { project: Project }) {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title={project.name} blurb={project.oneLiner} />
+      <PageHeader eyebrow="Overview" title={project.name} blurb={project.oneLiner} nextStep={false} />
 
       <div className="space-y-8 px-8 py-6">
+        <NextStepCard projectId={project.id} />
+
         {failed.length > 0 && (
           <div className="rounded-xl border border-hairline bg-danger-soft p-4 text-sm text-danger" role="alert">
             {failed.map(([k, v]) => (

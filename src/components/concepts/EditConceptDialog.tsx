@@ -4,10 +4,9 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { STAGES } from "@/lib/menu";
 import { messageOf } from "@/lib/queries";
 import { useEditConcept, type Concept, type ConceptChange } from "@/lib/conceptsClient";
-import { ConceptDialog, FormError, fieldLabel, selectClass } from "./ConceptDialog";
+import { ConceptDialog, FormError, fieldLabel } from "./ConceptDialog";
 import { joinWords, newlyHidden, TYPE_OPTIONS, typeLabel } from "./model";
 
 /** Name, one-line description, product type and stage. A refused save keeps the form and shows the server's reason. */
@@ -28,7 +27,7 @@ export function EditConceptDialog({
       onClosed={onClosed}
       eyebrow="Edit concept"
       title={concept ? concept.name : ""}
-      description="Change the name, the one-line description, the product type or the stage."
+      description="Change the name, the one-line description or the product type."
     >
       {concept && (
         <EditForm
@@ -49,7 +48,6 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
   const [name, setName] = useState(concept.name);
   const [oneLiner, setOneLiner] = useState(concept.oneLiner);
   const [type, setType] = useState(concept.productType);
-  const [stage, setStage] = useState(concept.stage);
   const [error, setError] = useState("");
   const hiding = newlyHidden(concept.productType, type);
 
@@ -60,7 +58,6 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
     if (name !== concept.name) change.name = name;
     if (oneLiner !== concept.oneLiner) change.oneLiner = oneLiner;
     if (type !== concept.productType) change.productType = type;
-    if (stage !== concept.stage) change.stage = stage;
     if (!Object.keys(change).length) {
       onSaved(concept);
       return;
@@ -122,14 +119,9 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
             </p>
           )}
         </fieldset>
-        <div>
-          <label htmlFor="concept-stage" className={fieldLabel}>Stage</label>
-          <select id="concept-stage" className={selectClass} value={stage} onChange={(e) => setStage(e.target.value)}>
-            {STAGES.map((s) => (
-              <option key={s.key} value={s.key}>{String(s.n).padStart(2, "0")} {s.label}</option>
-            ))}
-          </select>
-        </div>
+        <p className="text-xs text-secondary">
+          The stage is changed on the <a className="text-link underline" href="/process">Process page</a>, where each stage has a gate.
+        </p>
       </div>
       <FormError message={error} />
       <div className="mt-5 flex justify-end gap-2">

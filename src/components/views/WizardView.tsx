@@ -12,6 +12,9 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import { useProject } from "@/lib/client";
 import { useCreateConcept } from "@/lib/conceptsClient";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "@/lib/queries";
+import { processQuery, processView } from "@/lib/process/client";
 import { AreaField, Field, TextField, selectClass } from "@/components/wizard/fields";
 import {
   SOURCES, buildGroups, buildItems, emptyAnswers, nextKey, stepError, type Answers, type NameRow, type PartRow,
@@ -23,13 +26,14 @@ const STEPS = [
   { title: "Product", blurb: "How it works, whether any of it is printed, and the parts." },
   { title: "Proof", blurb: "The cheapest test that would show it is worth building." },
   { title: "Selling", blurb: "Where it sells first, at what price, and what it might be called." },
-  { title: "Review", blurb: "Everything below is created when you press Create. Go back to change any of it." },
+  { title: "Review", blurb: "Everything below is created when you press Create. Go back to change any of it. Then you go straight to the concept's first next step." },
 ];
 
 export function WizardView() {
   const router = useRouter();
   const { select } = useProject();
   const createConcept = useCreateConcept();
+  const qc = useQueryClient();
   const reduce = useReducedMotion();
   const [a, setA] = useState<Answers>(emptyAnswers);
   const [step, setStep] = useState(1);
@@ -67,10 +71,21 @@ export function WizardView() {
       // A mutation: it puts the new concept into every cached concept list, so the sidebar has it at once.
       const made = await createConcept.mutateAsync({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), items: buildItems(a) });
       select(made.id);
-      router.push("/");
+      router.push(await firstStepHref(made.id));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
+    }
+  };
+
+  /** Where the new concept's first next step is (plan 3.9). Loading it also fills the cache the page will read. */
+  const firstStepHref = async (id: string) => {
+    try {
+      const [state, rows] = await Promise.all([qc.fetchQuery(processQuery(id)), qc.fetchQuery(queries.items(id, null))]);
+      return processView(state, rows).next.href;
+    } catch {
+      // The concept exists; if its process cannot be read now, the overview still shows it.
+      return "/";
     }
   };
 
@@ -79,7 +94,7 @@ export function WizardView() {
 
   return (
     <>
-      <PageHeader eyebrow="New concept" title="Start a concept" blurb="Answer what you know. Blank answers stay blank, and the ones that matter become open questions." />
+      <PageHeader eyebrow="New concept" title="Start a concept" blurb="Answer what you know. Blank answers stay blank, and the ones that matter become open questions." nextStep={false} />
       <div className="grid gap-8 px-8 py-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <nav aria-label="Progress" className="lg:sticky lg:top-6 lg:self-start">
           <ol className="space-y-1">
