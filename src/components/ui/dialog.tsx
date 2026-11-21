@@ -36,23 +36,55 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/** The element focused when a dialog opened, if it is still on the page and can take focus. */
+function usable(el: HTMLElement | null | undefined) {
+  return el && el.isConnected && el !== document.body && !el.closest("[inert]") ? el : null;
+}
+
+/**
+ * Focus goes back where it came from when any dialog closes (Escape, Close, Save): to `returnFocus()` when
+ * the caller names an element (the new row after a create), else to the element that opened the dialog.
+ * Radix returns focus only to a DialogTrigger, and most dialogs here are opened from state, which left
+ * focus on the page body. A row that renders a moment after the close is focused on the next frame.
+ */
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   // showCloseButton is accepted because shadcn/ui components pass it; this dialog draws no close button of its own.
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showCloseButton?: boolean }
->(({ className, children, showCloseButton, ...props }, ref) => (
-  <DialogPrimitive.Content
-    data-close-button={showCloseButton ? "" : undefined}
-    ref={ref}
-    className={cn(
-      "z-50 flex flex-col overflow-hidden border border-hairline bg-surface shadow-2xl",
-      className
-    )}
-    {...props}
-  >
-    {children}
-  </DialogPrimitive.Content>
-));
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; returnFocus?: () => HTMLElement | null | undefined }
+>(({ className, children, showCloseButton, returnFocus, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+  const opener = React.useRef<HTMLElement | null>(null);
+  return (
+    <DialogPrimitive.Content
+      data-close-button={showCloseButton ? "" : undefined}
+      ref={ref}
+      className={cn(
+        "z-50 flex flex-col overflow-hidden border border-hairline bg-surface shadow-2xl",
+        className
+      )}
+      onOpenAutoFocus={(e) => {
+        const a = document.activeElement;
+        opener.current = a instanceof HTMLElement && a !== document.body ? a : null;
+        onOpenAutoFocus?.(e);
+      }}
+      onCloseAutoFocus={(e) => {
+        onCloseAutoFocus?.(e);
+        if (e.defaultPrevented) return;
+        const named = usable(returnFocus?.());
+        const back = named ?? usable(opener.current);
+        if (!back) return; // Radix's own handling: a DialogTrigger, if there is one
+        e.preventDefault();
+        back.focus();
+        requestAnimationFrame(() => {
+          const later = usable(returnFocus?.()) ?? (document.activeElement === document.body ? usable(opener.current) : null);
+          if (later && later !== document.activeElement) later.focus();
+        });
+      }}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Content>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogTitle = React.forwardRef<

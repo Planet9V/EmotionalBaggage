@@ -147,3 +147,72 @@ test.describe("wizard", () => {
     await request.delete(`/api/projects/${id}`, { data: { confirm: name } });
   });
 });
+
+/** The element that has focus, described for an assertion: its accessible text or label. */
+async function focused(page: Page) {
+  return page.evaluate(() => {
+    const a = document.activeElement as HTMLElement | null;
+    if (!a || a === document.body) return "body";
+    return (a.getAttribute("aria-label") || a.textContent || a.tagName).trim().slice(0, 80);
+  });
+}
+
+test.describe("focus after a dialog closes", () => {
+  test("Escape returns focus to the opener, Save to the new row, and an edit to the edited row", async ({ page }) => {
+    await page.goto("/s/concept/questions");
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Table" }).click();
+    const add = page.getByRole("button", { name: /^Add/ }).first();
+    const addName = (await add.textContent())!.trim();
+
+    // 1. the add dialog, closed with Escape
+    await add.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    expect(await focused(page)).toBe(addName);
+
+    // 2. the add dialog, saved: focus is on the new row
+    await add.focus();
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Title").fill("Focus check question");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect.poll(() => focused(page)).toBe("Focus check question");
+
+    // 3. the row editor, closed with Escape: back on the row
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    expect(await focused(page)).toBe("Focus check question");
+  });
+
+  test("the decision dialog and the row assistant return focus to their openers", async ({ page }) => {
+    await page.goto("/s/concept/decisions");
+    await page.waitForLoadState("networkidle");
+    const add = page.getByRole("button", { name: /Add decision/ }).first();
+    await add.focus();
+    const name = await focused(page);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    expect(await focused(page)).toBe(name);
+
+    await page.goto("/s/marketing/personas");
+    await page.waitForLoadState("networkidle");
+    const menu = page.getByRole("button", { name: /^Ask the assistant about/ }).first();
+    if (await menu.count()) {
+      await menu.focus();
+      const label = await focused(page);
+      await page.keyboard.press("Enter");
+      await page.getByRole("menuitem", { name: /Challenge this/ }).press("Enter");
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
+      await expect.poll(() => focused(page)).toBe(label);
+    }
+  });
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
+import { Suspense, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { LayoutGrid, ListPlus, Plus, Rows3, Search, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,11 @@ import { EmptyState, LoadingShape } from "@/components/ui/states";
 type Layout = "board" | "table";
 const layoutListeners = new Set<() => void>();
 
+/** A row on screen by id: its title button in the table, or its card on the board. */
+function rowElement(id: number) {
+  return document.querySelector<HTMLElement>(`[data-row-id="${id}"], [data-card-id="${id}"]`);
+}
+
 export function ItemsView({ project, stage, section, store }: ViewProps) {
   const { items, loading, error, reload, add, patch, remove } = useItems(project.id, store);
   const configured = section.statuses ?? DEFAULT_STATUSES;
@@ -47,6 +52,8 @@ export function ItemsView({ project, stage, section, store }: ViewProps) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  /** the row just created, which takes focus when the add dialog closes */
+  const created = useRef<number | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
 
@@ -146,9 +153,11 @@ export function ItemsView({ project, stage, section, store }: ViewProps) {
         columns={columns}
         statuses={configured}
         onCreate={async (d) => {
-          await add({ section: store, title: d.title, body: d.body || undefined, data: d.data, status: d.status });
+          const made = await add({ section: store, title: d.title, body: d.body || undefined, data: d.data, status: d.status });
+          created.current = made?.id ?? null;
           setAdding(false);
         }}
+        returnFocus={() => (created.current === null ? null : rowElement(created.current))}
       />
       <ItemDrawer
         item={opened}

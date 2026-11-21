@@ -121,7 +121,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
                 <tr data-row className="animate-enter border-b border-hairline transition-colors hover:bg-subtle" style={{ animationDelay: `${Math.min(i * 0.025, 0.25) * 1000}ms` }} key={row.id}>
                   {visible.has("title") && (
                     <TableCell className="max-w-88 font-medium text-primary">
-                      <button type="button" data-nav="title" onClick={() => onOpen(it.id)} className="text-left wrap-anywhere hover:text-link focus-visible:outline-hidden focus-visible:underline">
+                      <button type="button" data-nav="title" data-row-id={it.id} onClick={() => onOpen(it.id)} className="text-left wrap-anywhere hover:text-link focus-visible:outline-hidden focus-visible:underline">
                         {it.title}
                       </button>
                     </TableCell>

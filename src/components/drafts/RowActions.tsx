@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MessageSquareMore, Search, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -24,12 +24,13 @@ export function RowActions({ item, label }: { item: AssistRow; label?: string })
   const name = (label ?? item.title) || "this row";
   const challenge = useChallengeRow(item.projectId);
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const notConfigured = /reasoning model|Admin, Models|needs a key/i.test(messageOf(challenge.error));
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="ghost" size="sm" aria-label={`Ask the assistant about ${name}`} title="Ask the assistant" className="h-8 px-2 text-secondary">
+          <Button ref={trigger} type="button" variant="ghost" size="sm" aria-label={`Ask the assistant about ${name}`} title="Ask the assistant" className="h-8 px-2 text-secondary">
             <MessageSquareMore className="h-4 w-4" aria-hidden />
           </Button>
         </DropdownMenuTrigger>
@@ -50,7 +51,7 @@ export function RowActions({ item, label }: { item: AssistRow; label?: string })
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Modal open={open} onOpenChange={setOpen} title={`Challenge: ${name}`} description="The reviewer argues against this row. The exchange is saved in Challenge.">
+      <Modal open={open} onOpenChange={setOpen} returnFocus={() => trigger.current} title={`Challenge: ${name}`} description="The reviewer argues against this row. The exchange is saved in Challenge.">
         {challenge.isPending ? (
           <p role="status" className="text-sm text-secondary">The reviewer is reading it.</p>
         ) : challenge.error ? (
