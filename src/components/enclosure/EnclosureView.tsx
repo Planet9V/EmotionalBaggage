@@ -20,6 +20,7 @@ import type { ViewProps } from "@/components/views/types";
 import { generate, getStatus, type GenerateAnswer, type ResultFailed, type ResultOk } from "./client";
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
 import { ResultPanel } from "./ResultPanel";
+import { SendToPrinting } from "./SendToPrinting";
 
 const BOM = "design/bom";
 const SAVE_STORE = "design/enclosure";
@@ -180,6 +181,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </p>
         ) : null}
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
+        <div className="mt-3"><SendToPrinting projectId={project.id} disabled={blocked || !row || saveState === "saving"} reason={blocked ? "Fix the problems listed below first." : !row ? "The choice is saved a moment after you pick a generator." : "Saving the choice."} /></div>
       </Panel>
 
       <Panel title="Parameters" note="Defaults are shown under each field. The checks hold the result to the clearance you set." action={

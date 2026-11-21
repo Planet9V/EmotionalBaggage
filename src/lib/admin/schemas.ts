@@ -58,6 +58,7 @@ export const adminSettingsPut = z
     reasoningModel: reasoningChoice.nullable().optional(),
     embeddingModel: embeddingChoice.nullable().optional(),
     plannerUrl: httpUrl.nullable().optional(),
+    slicerUrl: httpUrl.nullable().optional(),
     defaultConcept: z.string().trim().min(1, "cannot be empty; send null to clear it").max(80).nullable().optional(),
   })
   .strict()
@@ -118,6 +119,7 @@ export const connectionTest = z.discriminatedUnion("kind", [
     .strict()
     .refine((v) => v.id !== undefined || v.family !== undefined, { message: "send id (a saved printer) or family and access (a printer not saved yet)", path: ["id"] }),
   z.object({ kind: z.literal("planner"), url: httpUrl.optional() }).strict(),
+  z.object({ kind: z.literal("slicer"), url: httpUrl.optional() }).strict(),
   z.object({ kind: z.literal("database") }).strict(),
 ]);
 

@@ -147,6 +147,28 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
       setBusy("");
     }
   };
+  /** The same 3MF, stored as a file of the concept, where 3D printing offers it for a new job. */
+  const save3mf = async () => {
+    const bodies = printedBodies();
+    if (!bodies.length) return;
+    setBusy("3mf-save");
+    setNotice(null);
+    try {
+      const buf = await bodies3mf(bodies);
+      const name = `${slug(projectId)}-printed.3mf`;
+      const form = new FormData();
+      form.append("file", new File([buf], name, { type: "model/3mf" }));
+      form.append("kind", "3mf");
+      form.append("meta", JSON.stringify({ printedParts: true, objects: bodies.length }));
+      await api<{ file: FileMeta }>(`/api/projects/${projectId}/files`, { method: "POST", body: form });
+      await loadFiles();
+      setNotice({ tone: "ok", text: `Stored ${name} with ${bodies.length} object${bodies.length === 1 ? "" : "s"}. 3D printing offers it for a new job.` });
+    } catch (e) {
+      setNotice({ tone: "bad", text: `Could not store the 3MF: ${(e as Error).message}` });
+    } finally {
+      setBusy("");
+    }
+  };
   const anyPrinted = printable.some((p) => (p.geometry as PartGeometry).print === true && bodiesFor(p.geometry as PartGeometry, params).bodies.length > 0);
 
   const saveBody = async (p: Part, b: Body) => {
@@ -257,6 +279,9 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" disabled={!anyPrinted || busy === "3mf"} onClick={() => void download3mf()}>
             <Download className="h-3.5 w-3.5" /> {busy === "3mf" ? "Writing 3MF" : "Download 3MF of all printed parts"}
+          </Button>
+          <Button size="sm" variant="outline" disabled={!anyPrinted || busy === "3mf-save"} onClick={() => void save3mf()}>
+            <Save className="h-3.5 w-3.5" /> {busy === "3mf-save" ? "Storing 3MF" : "Send 3MF to 3D printing"}
           </Button>
           {!anyPrinted && <span className="text-xs text-muted">Tick Printed on a part to include it.</span>}
         </div>

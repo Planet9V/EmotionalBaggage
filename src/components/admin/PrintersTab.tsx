@@ -29,6 +29,7 @@ import { ModelPicker } from "@/components/printers/ModelPicker";
 import { findModel, type PrinterModel } from "@/lib/printers/models";
 import { findModelFor } from "@/lib/printers/modelLookup";
 import { ConfirmButton, describe, Empty, FormField, LoadError, LoadingBlocks, Panel, SaveError, SavedNote, TestOutcome, useFlag } from "./shared";
+import { SlicerAddress } from "./SlicerSection";
 
 /** What this app can do with a family today, in words. Shown on every family, honestly. */
 export function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields"> & { experimental?: boolean }): { label: string; tone: StatusTone; detail: string } {
@@ -355,6 +356,7 @@ export function PrintersTab() {
 
   return (
     <div className="space-y-4">
+      <SlicerAddress />
       <Panel
         title="Printers"
         description={

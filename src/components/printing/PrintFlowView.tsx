@@ -66,7 +66,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
             <p>Asking the slicer service.</p>
           ) : !s?.configured ? (
             <p>
-              No slicer service is set up, so jobs cannot be sliced here. Start it with <span className="font-mono text-primary">docker compose --profile slicer up -d slicer</span> and set <span className="font-mono text-primary">SLICER_URL</span> to <span className="font-mono text-primary">http://slicer:8000</span>, then restart. You can still queue jobs.
+              No slicer service is set up, so jobs cannot be sliced here. Start it with <span className="font-mono text-primary">docker compose --profile slicer up -d slicer</span> and save its address (<span className="font-mono text-primary">http://slicer:8000</span>) in <a className="text-link underline" href="/admin?tab=printers">Admin, Printers</a>; the SLICER_URL environment variable is the fallback. You can still queue jobs.
             </p>
           ) : !s.ok ? (
             <div className="space-y-2"><ErrorLine>{s.message}</ErrorLine><Button size="sm" variant="outline" onClick={() => void slicer.refetch()}>Check again</Button></div>
