@@ -52,11 +52,15 @@ def reqs(pg, label, href):
         if r["status"] in ("open", "blocked"): status(r["id"], "done")
     log("     (API) requirements moved to done")
 
-@on(r"in Sourcing to in hand")
+@on(r"(in Sourcing|parts?) to in hand")
 def sourcing(pg, label, href):
-    for r in items("design/bom"):
-        if r["status"] not in ("in hand", "to print"): status(r["id"], "in hand")
-    log("     (API) parts marked in hand")
+    # The walk's concept is a printed product: its first part is printed on your own printer, as a person would set it
+    # (the print checks apply only when a part is to be printed, U2); the rest are bought and in hand.
+    rows = items("design/bom")
+    for n, r in enumerate(rows):
+        if n == 0: a.patch(f"/api/items/{r['id']}", {"status": "to print", "data": {"source": "Own printer"}}, ok=200)
+        elif r["status"] not in ("in hand", "to print"): status(r["id"], "in hand")
+    log("     (API) first part to print on your own printer, the rest in hand")
 
 @on(r"^Advance to ")
 def advance(pg, label, href):
@@ -82,7 +86,7 @@ def print_job(pg, label, href):
     st, j = a.post(f"/api/projects/{PID}/items", {"section": "prototype/printing", "title": "Cable clip", "status": "queued", "data": {"fileId": f["id"], "fileName": "clip.stl", "printerId": printer["id"], "printerName": printer["name"], "printerMaker": "Bambu Lab", "printerModel": "A1", "material": "PLA", "layerHeight": 0.2, "infill": 15, "supports": False}}, ok=201)
     log("     (API) print job set up, status", j["item"]["status"])
 
-@on(r'^Move "?.*"? in 3D printing to done')
+@on(r'^Move "?.*"? (in 3D printing|print jobs?) to done')
 def printed(pg, label, href):
     for job in items("prototype/printing"):
         if job["status"] == "done": continue
@@ -97,7 +101,7 @@ def printed(pg, label, href):
         a.post(f"/api/print-jobs/{jid}/result", {"outcome": "good", "photoFileIds": []}, ok=200)
     log("     (API) sliced, sent, started and recorded as good:", [j["status"] for j in items("prototype/printing")])
 
-@on(r'^Move .* in Acceptance tests to pass')
+@on(r'^Move .* (in Acceptance tests|acceptance tests?) to pass')
 def tests_pass(pg, label, href):
     for t in items("prototype/tests"):
         if t["status"] != "pass": status(t["id"], "pass")
