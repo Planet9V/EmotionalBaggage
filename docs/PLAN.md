@@ -144,19 +144,19 @@ Model hosts, model names, addresses, keys and printers are all set in Admin at o
 - [x] 2.5 Admin, Models: reasoning and embedding model with provider, address, name and width; presets for Qwen3 Embedding 8B at 4,096; Test; Index the current concept. Done 20 Nov.
 - [x] 2.6 Admin, Printers: add, edit, switch on and off, remove, Test; the form is built from each family's definition and says what the app can do with that family today. Done 20 Nov.
 - [x] 2.6a Admin, Audit log: filters by concept (deleted ones marked), kind of change and text; detail per line; download. Done 20 Nov. Not verified for 2.4 to 2.6a: no connection test has been pressed against a real service.
-- [ ] 2.7 Product types: electronics in an enclosure, printed part only, and non-electronic product. A type sets which sections a concept shows, its requirement columns and its gates. **Done when** a wooden-toy concept shows no schematic or soldering section.
+- [x] 2.7 Product types: each type sets its sections, its requirement columns and its gates; the sidebar and pages hide what a type does not use; a wooden-toy concept shows no schematic or soldering section (tested). Done 21 Nov.
 
 ### Phase 3: a guided process
 
-- [ ] 3.1 Stage state per concept: current stage, gate status, and one "next step" on every screen.
-- [ ] 3.2 Gates per product type with required evidence; unmet gates warn and can be overridden with a recorded reason.
-- [ ] 3.3 Decisions that unlock a section warn in that section until decided.
-- [ ] 3.4 Change history: every edit records before and after.
-- [ ] 3.5 Requirements linked to acceptance tests and to parts.
-- [ ] 3.6 Computed economics: parts total to unit cost; price, platform fees and unit cost to margin per channel.
-- [ ] 3.7 Named builds (works-like, looks-like, EVT, DVT, PVT) with exit criteria.
-- [ ] 3.8 Compliance section per product type, as a checklist the AI drafts and the user confirms. Marked clearly as a prompt for the user's own checking, not as advice.
-- [ ] 3.9 Wizard rebuilt on Stepperize; it ends on the first "next step", not the overview.
+- [x] 3.1 Stage state per concept and one next step on every page (under the title), in full on the overview and the Process page. Done 21 Nov.
+- [x] 3.2 Gates per product type as data (six kinds of check), evaluated by one pure function in browser and server; an unmet gate warns and can be overridden with a typed reason, recorded with who and when; advancing is refused with the unmet checks listed. Done 21 Nov. Open: the concept API can still set the stage directly; an override cannot be withdrawn.
+- [x] 3.3 A section whose unlocking decision is not made shows a warning naming the decision; it stays usable. Done 21 Nov.
+- [x] 3.4 Change history: every write path records before and after per field (tested path by path); a History tab on every row with who, when, before and after and Restore; an Activity page for the concept. Done 21 Nov. Long text shows side by side, not as a diff.
+- [x] 3.5 Requirements linked to acceptance tests and parts, checked on the server; coverage shown per requirement; a Traceability page with the matrix and three lists of gaps; deleting a linked row removes the dangling links in the same transaction. Done 21 Nov.
+- [x] 3.6 Computed economics: unit cost from parts and cost lines, margin per channel, break-even, unit cost by batch size with price breaks; a part with no price is named, never counted as zero; every figure shows how it was worked out. Done 21 Nov, 74 tests.
+- [x] 3.7 Named builds with exit criteria and linked tests; "Mark passed" is refused on the server while a criterion is unmet or a test has not passed. Done 21 Nov.
+- [x] 3.8 Compliance checklist per concept and sales region, drafted by the reasoning model from the brief and parts and confirmed row by row; stated on the page and the report as a prompt for the user's own checking, not advice. Done 21 Nov. Drafting has run against a stand-in only.
+- [ ] 3.9 Wizard rebuilt on Stepperize; it ends on the first "next step", not the overview. **Done 21 Nov:** it ends on the first next step. **Still to do:** the rebuild (wave C), and asking for the product type.
 
 ### Phase 4: the assistant across the pipeline
 
@@ -206,9 +206,9 @@ Every draft is saved as a draft, records what it was generated from, and needs a
 
 ### Phase 7: production
 
-- [ ] 7.1 Batch plan with cost per batch size from the computed economics.
-- [ ] 7.2 Supplier and manufacturing-method records per product type.
-- [ ] 7.3 Production readiness gate drawing on tests, compliance and builds.
+- [x] 7.1 Batch plan with worked-out unit cost and cash needed per batch. Done 21 Nov.
+- [x] 7.2 Suppliers, part prices with price breaks, and manufacturing methods feeding the economics. Done 21 Nov.
+- [x] 7.3 Production readiness: four checks (tests, compliance, parts priced and sourced, economics complete) on the batch plan. Done 21 Nov. Still to wire into the production gate.
 
 ### Phase 8: going to market
 
@@ -216,16 +216,16 @@ The review found stages 5 to 7 are lists filled in by hand, and version 2 of thi
 
 **Market and positioning**
 
-- [ ] 8.1 Audience: personas drafted from the brief and research, each with the problem, the trigger to buy and the objection. Edited and approved by the owner.
-- [ ] 8.2 Competitors and alternatives: researched with citations (Perplexity), kept as a comparison table with price, claim and weakness.
-- [ ] 8.3 Positioning statement and message hierarchy: one positioning line, three supporting messages, proof for each, generated from 8.1 and 8.2 and attacked by the reviewer before approval.
-- [ ] 8.4 Pricing: price options against unit cost (3.6) and competitor prices, with margin per channel worked out, not typed.
+- [x] 8.1 Personas drafted from the brief, verified claims and research; edited and approved. Done 21 Nov; model-backed parts have run against stand-ins only.
+- [x] 8.2 Competitors and alternatives as a sortable table; prices and claims only from a cited research answer or the user; unsourced rows marked. Done 21 Nov; model-backed parts have run against stand-ins only.
+- [x] 8.3 Positioning line and three messages with proof flags; the reviewer must attack it once before approval. Done 21 Nov; model-backed parts have run against stand-ins only.
+- [x] 8.4 Pricing worked out against unit cost, channel fees and competitor prices. Done 21 Nov; model-backed parts have run against stand-ins only.
 
 **Brand**
 
-- [ ] 8.5 Name and tagline generation, with a screening checklist per candidate (domain, marketplace, trademark search links). Marked clearly as a prompt for the owner's own checks, not a clearance.
-- [ ] 8.6 Brand kit per concept: voice and tone rules with do and do-not examples, colours, type, logo files uploaded by the owner. Stored once and applied to every generated piece and to the landing page.
-- [ ] 8.7 Product imagery list: the shots a listing and ads need, taken from the 3D model as renders where possible, with uploads for photographs.
+- [x] 8.5 Names and taglines with reasons and a checklist of links the user follows; the app never claims a name is available. Done 21 Nov; model-backed parts have run against stand-ins only.
+- [x] 8.6 Brand kit: voice rules, colours with computed contrast, type, logos, boilerplate, a voice-check tool, and brand context for other generators. Done 21 Nov; model-backed parts have run against stand-ins only.
+- [x] 8.7 Imagery list with uploads; hero and detail shots can be rendered from the 3D model. Done 21 Nov; model-backed parts have run against stand-ins only.
 
 **Content and ads**
 
