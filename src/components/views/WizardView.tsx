@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
-import { api, useProject } from "@/lib/client";
-import type { Project } from "@/lib/types";
+import { useProject } from "@/lib/client";
+import { useCreateConcept } from "@/lib/conceptsClient";
 import { AreaField, Field, TextField, selectClass } from "@/components/wizard/fields";
 import {
   SOURCES, buildGroups, buildItems, emptyAnswers, nextKey, stepError, type Answers, type NameRow, type PartRow,
@@ -28,7 +28,8 @@ const STEPS = [
 
 export function WizardView() {
   const router = useRouter();
-  const { reload, select } = useProject();
+  const { select } = useProject();
+  const createConcept = useCreateConcept();
   const reduce = useReducedMotion();
   const [a, setA] = useState<Answers>(emptyAnswers);
   const [step, setStep] = useState(1);
@@ -63,12 +64,9 @@ export function WizardView() {
     setBusy(true);
     setError("");
     try {
-      const r = await api<{ project: Project }>("/api/projects", {
-        method: "POST",
-        body: JSON.stringify({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), items: buildItems(a) }),
-      });
-      await reload();
-      select(r.project.id);
+      // A mutation: it puts the new concept into every cached concept list, so the sidebar has it at once.
+      const made = await createConcept.mutateAsync({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), items: buildItems(a) });
+      select(made.id);
       router.push("/");
     } catch (e) {
       setError((e as Error).message);

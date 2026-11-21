@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auditIn, logEventIn, tx } from "@/lib/db";
 import { body, HttpError, route } from "@/lib/api/route";
 import { conceptPatch, loadConcept, loadConceptIn, lockConcept, OWNED_TABLES } from "@/lib/api/concepts";
+import { SETTING } from "@/lib/settings";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -44,6 +45,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
 /**
  * Deletes the concept and, by the database's cascade, everything it owns.
  * The body must be { "confirm": "<the concept's exact name>" }.
+ * If Admin's default concept is this one, the setting is cleared in the same transaction,
+ * so it never names a concept that no longer exists.
  */
 export const DELETE = route(async (req: Request, { params }: Ctx) => {
   const { id } = await params;
@@ -65,15 +68,24 @@ export const DELETE = route(async (req: Request, { params }: Ctx) => {
       counts[t] = r.rows[0].n;
     }
     await c.query("DELETE FROM projects WHERE id=$1", [id]);
+    const cleared = await c.query("DELETE FROM settings WHERE key=$1 AND value = to_jsonb($2::text)", [SETTING.defaultConcept, id]);
+    const defaultCleared = (cleared.rowCount ?? 0) > 0;
+    if (defaultCleared) {
+      await auditIn(c, {
+        action: "setting.cleared",
+        summary: `Setting ${SETTING.defaultConcept} cleared because the concept it named was deleted`,
+        detail: { key: SETTING.defaultConcept, value: null, was: id },
+      });
+    }
     // The concept's own activity list goes with it; this line does not.
     await auditIn(c, {
       action: "project.deleted",
       summary: `Concept "${was.name}" deleted with everything in it`,
-      detail: { counts },
+      detail: { counts, defaultCleared },
       projectId: id,
       projectName: was.name,
     });
-    return { concept: id, name: was.name, ...counts };
+    return { concept: id, name: was.name, ...counts, defaultCleared };
   });
   return NextResponse.json({ deleted });
 });

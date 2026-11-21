@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     // Starts the real NetworkX planner (planner/) for the run; the plan API test talks to it.
     globalSetup: ["tests/plan/planner.setup.ts"],
     // Signs the default user in before each test file, so json() in tests/api/helpers.ts is authenticated.
