@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { z } from "zod";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { HttpError, body, requireProject, route } from "@/lib/api/route";
@@ -83,13 +84,23 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     for (const w of wires) {
       const net = byNet.get(`w${w.item.id}`);
       if (!net) continue;
+      const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2 FOR UPDATE`, [w.item.id, id])).rows[0];
+      if (!was) continue;
+      // each wire's routed fields, before and after, so its History shows the length it had and has
+      const record = async (now: ItemRow | undefined, summary: string) => {
+        if (!now) return;
+        const d = itemDiff(was, now);
+        if (Object.keys(d.before).length || Object.keys(d.after).length) await logEventIn(c, id, "wire.routed", summary, changedDetail(now, d));
+      };
       if (net.ok) {
         const fields = toRoutedFields(net, result.cell, at, built.fingerprints.get(w.item.id) ?? "");
-        await c.query(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 AND project_id=$3`, [w.item.id, JSON.stringify(fields), id]);
+        const now = (await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 AND project_id=$3 RETURNING ${ITEM_COLS}`, [w.item.id, JSON.stringify(fields), id])).rows[0];
+        await record(now, `Routed "${w.name || w.net || "wire"}": ${fields.routedLengthMm} mm`);
         routed++;
       } else {
         // A wire that no longer routes must not keep an old length.
-        await c.query(`UPDATE items SET data = data - $2::text[], updated_at = now() WHERE id=$1 AND project_id=$3`, [w.item.id, [...ROUTED_KEYS], id]);
+        const now = (await c.query<ItemRow>(`UPDATE items SET data = data - $2::text[], updated_at = now() WHERE id=$1 AND project_id=$3 RETURNING ${ITEM_COLS}`, [w.item.id, [...ROUTED_KEYS], id])).rows[0];
+        await record(now, `"${w.name || w.net || "wire"}" no longer routes; its old length was removed`);
         failed.push({ wireId: w.item.id, name: w.name || w.net || `${w.from} to ${w.to}`, reasons: net.problems.map((p) => `${p.terminal}: ${p.reason}`) });
       }
     }
@@ -101,6 +112,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       requestedCellMm: result.requested_cell,
       cells: result.grid.cells,
       plannerMs,
+      // each wire's own change is its own "wire.routed" event with before and after; this is the run
+      after: { routed, failed: failed.map((f) => f.wireId) },
     });
   });
 

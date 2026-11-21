@@ -1,6 +1,7 @@
 // The print flow on the server: slice, send, start, control, track, record. Each step checks the job's status against the state
 // machine in jobState.ts, records what happened with logEventIn, and never moves hardware without a confirm that names the printer
 // and the file.
+import { changedDetail, itemDiff } from "@/lib/trace/changes";
 import { createHash } from "node:crypto";
 import { ITEM_COLS, logEventIn, q, tx, toItem, type ItemRow } from "@/lib/db";
 import { HttpError, notFound } from "@/lib/api/route";
@@ -48,7 +49,8 @@ async function move(c: Parameters<typeof logEventIn>[0], row: ItemRow, m: Omit<M
     `UPDATE items SET status=$2, data = data || $3::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
     [row.id, m.to, JSON.stringify(m.data ?? {})]
   );
-  await logEventIn(c, row.project_id, m.kind, m.summary, { itemId: Number(row.id), before: { status: from }, after: { status: m.to }, ...(m.detail ?? {}) });
+  // every field the move changed (status and the run's data), before and after
+  await logEventIn(c, row.project_id, m.kind, m.summary, { ...(m.detail ?? {}), ...changedDetail(res.rows[0], itemDiff(row, res.rows[0])) });
   return res.rows[0];
 }
 
@@ -333,7 +335,7 @@ export async function recordResult(id: number, r: ResultInput) {
     } else {
       const res = await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [row.id, JSON.stringify({ result })]);
       out = res.rows[0];
-      await logEventIn(c, row.project_id, "print.result", `Recorded the result of "${row.title}": ${r.outcome}`, { itemId: Number(row.id), result: { ...result, notes: result.notes ? "(written)" : "" }, buildKey: d.buildKey ?? null });
+      await logEventIn(c, row.project_id, "print.result", `Recorded the result of "${row.title}": ${r.outcome}`, { result: { ...result, notes: result.notes ? "(written)" : "" }, buildKey: d.buildKey ?? null, ...changedDetail(out, itemDiff(cur0, out)) });
     }
     return toItem(out);
   });

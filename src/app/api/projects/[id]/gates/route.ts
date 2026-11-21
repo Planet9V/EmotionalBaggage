@@ -32,7 +32,14 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
          SET status = 'go', overridden = true, note = EXCLUDED.note, decided_by = EXCLUDED.decided_by, decided_at = EXCLUDED.decided_at`,
       [id, b.stage, b.reason, currentActor()]
     );
-    await logEventIn(c, id, "gate.overridden", `Overrode the ${stageLabel(b.stage)} gate: ${b.reason}`, { stage: b.stage, reason: b.reason, unmet, by: currentActor() });
+    await logEventIn(c, id, "gate.overridden", `Overrode the ${stageLabel(b.stage)} gate: ${b.reason}`, {
+      stage: b.stage,
+      reason: b.reason,
+      unmet,
+      by: currentActor(),
+      before: { overridden: false },
+      after: { overridden: true, note: b.reason, decidedBy: currentActor() },
+    });
     return processResponse(c, id);
   });
   return NextResponse.json(out);

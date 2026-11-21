@@ -69,7 +69,13 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
         [id, b.campaignId, creative?.id ?? null, creative?.title ?? "", b.baseUrl.trim(), built.link.url, p.utm_source, p.utm_medium, p.utm_campaign, p.utm_content ?? "", p.utm_term ?? "", code, currentActor() ?? ""]
       );
       if (r.rows.length) {
-        await logEventIn(c, id, "campaign.link", `Made a ${code ? "short link" : "UTM link"} for "${campaign.title}"${creative ? ` and "${creative.title}"` : ""}`, { linkId: Number(r.rows[0].id), campaignId: b.campaignId, creativeId: creative?.id ?? null, short: !!code });
+        await logEventIn(c, id, "campaign.link", `Made a ${code ? "short link" : "UTM link"} for "${campaign.title}"${creative ? ` and "${creative.title}"` : ""}`, {
+          linkId: Number(r.rows[0].id),
+          campaignId: b.campaignId,
+          creativeId: creative?.id ?? null,
+          short: !!code,
+          after: { destination: built.link.url, code, utmSource: p.utm_source, utmMedium: p.utm_medium, utmCampaign: p.utm_campaign, utmContent: p.utm_content ?? "", utmTerm: p.utm_term ?? "" },
+        });
         return Number(r.rows[0].id);
       }
     }

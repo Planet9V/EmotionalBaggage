@@ -26,8 +26,9 @@ export const PUT = route(async (req: Request, { params }: Ctx) => {
   await requireProject(id);
   const b = await body(req, z.object({ channel, saved: savedMapping }));
   await tx(async (c) => {
+    const was = (await c.query<{ value: unknown }>("SELECT value FROM settings WHERE key=$1", [keyOf(id, b.channel)])).rows[0]?.value ?? null;
     await c.query("INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()", [keyOf(id, b.channel), JSON.stringify(b.saved)]);
-    await logEventIn(c, id, "campaign.csv-mapping", `Remembered the column mapping for ${b.channel} reports`, { channel: b.channel, columns: Object.keys(b.saved.mapping).length });
+    await logEventIn(c, id, "campaign.csv-mapping", `Remembered the column mapping for ${b.channel} reports`, { channel: b.channel, columns: Object.keys(b.saved.mapping).length, before: { mapping: was }, after: { mapping: b.saved } });
   });
   return NextResponse.json({ channel: b.channel, saved: b.saved });
 });

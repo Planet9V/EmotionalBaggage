@@ -100,7 +100,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       newId,
       "project.duplicated",
       `Duplicated from "${s.name}" (${sourceId}): ${copied.items} rows, ${copied.files} files and ${copied.links} tracked links`,
-      { sourceId, sourceName: s.name, ...copied }
+      { sourceId, sourceName: s.name, ...copied, after: { name: b.name, productType: s.product_type, stage: s.stage, currency: s.currency, salesRegions: s.sales_regions, ...copied } }
     );
     return loadConceptIn(c, newId);
   });

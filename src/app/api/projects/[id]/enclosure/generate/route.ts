@@ -60,7 +60,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
       id,
       "enclosure.generated",
       `Generated an enclosure with ${results.map((r) => `${r.key}${r.ok ? "" : " (failed)"}`).join(" and ")}`,
-      { ...change, generators: results.map((r) => ({ key: r.key, ok: r.ok, checks: r.ok ? r.checks.map((x) => ({ key: x.key, ok: x.ok })) : undefined, error: r.ok ? undefined : r.error })) }
+      { ...change, before: (change as { before?: unknown }).before ?? null, after: (change as { after?: unknown }).after ?? null, generators: results.map((r) => ({ key: r.key, ok: r.ok, checks: r.ok ? r.checks.map((x) => ({ key: x.key, ok: x.ok })) : undefined, error: r.ok ? undefined : r.error })) }
     );
   });
   return NextResponse.json({
