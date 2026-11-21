@@ -50,13 +50,24 @@ describe("audit log", () => {
   });
 
   it("hide leaves out sign-ins that started but keeps refused ones", async () => {
-    await audit({ action: "session.started", summary: "hide-probe signed in", actor: "hide-probe" });
-    await audit({ action: "session.refused", summary: "hide-probe was refused", actor: "" });
-    const shown = await log("?q=hide-probe");
+    const who = `hide-probe-${Date.now()}`;
+    await audit({ action: "session.started", summary: `${who} signed in`, actor: who });
+    await audit({ action: "session.refused", summary: `${who} was refused`, actor: "" });
+    const shown = await log(`?q=${who}`);
     expect(shown.entries.map((e) => e.action).sort()).toEqual(["session.refused", "session.started"]);
-    const hidden = await log("?q=hide-probe&hide=session.started");
+    const hidden = await log(`?q=${who}&hide=session.started`);
     expect(hidden.entries.map((e) => e.action)).toEqual(["session.refused"]);
     expect((await log("?hide=session.started")).entries.some((e) => e.action === "session.started")).toBe(false);
+  });
+
+  it("refuses to change or remove a line, even from SQL, and keeps the line", async () => {
+    await audit({ action: "audit.probe", summary: "append-only probe", actor: "probe" });
+    const [line] = await q<{ id: string }>("SELECT id FROM audit_log WHERE action='audit.probe' ORDER BY id DESC LIMIT 1");
+    await expect(q("UPDATE audit_log SET summary='changed' WHERE id=$1", [line.id])).rejects.toThrow(/append-only/);
+    await expect(q("DELETE FROM audit_log WHERE id=$1", [line.id])).rejects.toThrow(/append-only/);
+    await expect(q("DELETE FROM audit_log WHERE project_id='nothing-matches'")).resolves.toBeDefined();
+    await expect(q("TRUNCATE audit_log")).rejects.toThrow(/cannot be truncated/);
+    expect((await q<{ summary: string }>("SELECT summary FROM audit_log WHERE id=$1", [line.id]))[0].summary).toBe("append-only probe");
   });
 
   it("downloads as a file, one JSON object per line, oldest first, and records that it was taken", async () => {

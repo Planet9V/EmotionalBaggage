@@ -3,6 +3,7 @@
 // sources are found by text; the tests that need search by meaning run only where pgvector exists
 // (GitHub Actions).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { rewriteAuditLog } from "../auditBypass";
 import { parseJsonEventStream, readUIMessageStream, uiMessageChunkSchema, type UIMessageChunk } from "ai";
 import { pool, q, ready } from "@/lib/db";
 import { GET as listChats, POST as createChat } from "@/app/api/projects/[id]/chats/route";
@@ -75,7 +76,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await s.close();
   await q("DELETE FROM projects WHERE id=$1", [PROJECT]);
-  await q("DELETE FROM audit_log WHERE project_id=$1", [PROJECT]);
+  await rewriteAuditLog("DELETE FROM audit_log WHERE project_id=$1", [PROJECT]);
   await clearModelRows();
   await pool().end();
 });

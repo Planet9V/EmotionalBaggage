@@ -1,5 +1,6 @@
 // Plan 3.4: every write path records the values before and after, and the history reads them back.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { rewriteAuditLog } from "../auditBypass";
 import { pool, q } from "@/lib/db";
 import { PATCH as patchProject } from "@/app/api/projects/[id]/route";
 import { POST as addFile } from "@/app/api/projects/[id]/files/route";
@@ -216,7 +217,7 @@ describe("the concept's activity", () => {
   it("finds the section of an older line from the row it is about", async () => {
     // a line written before `section` was recorded
     const row = (await add(project, "concept/names", "Old style row")).body.item;
-    await q("UPDATE audit_log SET detail = detail - 'section' WHERE project_id=$1 AND detail->>'itemId' = $2", [project, String(row.id)]);
+    await rewriteAuditLog("UPDATE audit_log SET detail = detail - 'section' WHERE project_id=$1 AND detail->>'itemId' = $2", [project, String(row.id)]);
     const names = await act("?section=concept/names");
     expect(names.body.entries.some((e) => e.itemId === row.id)).toBe(true);
   });

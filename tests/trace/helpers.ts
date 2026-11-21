@@ -1,5 +1,6 @@
 // Shared by the traceability tests: a concept of their own, so nothing depends on the example concept.
 import { q } from "@/lib/db";
+import { rewriteAuditLog } from "../auditBypass";
 import { POST as addProject } from "@/app/api/projects/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem, DELETE as removeItem } from "@/app/api/items/[id]/route";
@@ -41,5 +42,5 @@ export const events = (project: string) => q<{ kind: string; summary: string; da
 
 export async function drop(project: string) {
   await q("DELETE FROM projects WHERE id=$1", [project]);
-  await q("DELETE FROM audit_log WHERE project_id=$1", [project]);
+  await rewriteAuditLog("DELETE FROM audit_log WHERE project_id=$1", [project]);
 }
