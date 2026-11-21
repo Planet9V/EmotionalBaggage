@@ -2,7 +2,7 @@
 // { ok, message, detail? }. Every call is read-only except Perplexity's, which has no free call (see testPerplexity). A failed test is a normal answer, not an error. Secrets never appear in the answer:
 // any text that comes back from outside is cleaned of the key that was sent before it is shown.
 import { pool, ready } from "@/lib/db";
-import { getCredential } from "@/lib/settings";
+import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
 import { AGENT_PATH, baseUrl as perplexityBase, DEFAULT_EFFORT, readResponse } from "@/lib/research/perplexity";
 import { audit } from "./audit";
 import { plannerUrl } from "./planner";
@@ -11,6 +11,7 @@ import { getPrinterRow, requireFamily, resolveAccess, valuesOf } from "./printer
 import { createAdapter } from "@/lib/printers/factory";
 import type { ConnectionTest } from "./schemas";
 import { testChannel } from "@/lib/channels/connection";
+import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
 
@@ -36,6 +37,8 @@ export function scrub(text: string, secrets: (string | null | undefined)[]): str
 function networkFailure(e: unknown, secrets: (string | null | undefined)[], ms = limitMs): TestResult {
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
   if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, message: `No answer within ${seconds(ms)}.` };
+  const refused = blockedIn(e);
+  if (refused) return { ok: false, message: blockedSentence(refused) };
   const code = err?.cause?.code;
   if (code === "ECONNREFUSED") return { ok: false, message: "Nothing answered at that address (connection refused). Check the address and that the service is running." };
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") return { ok: false, message: "That host name could not be found. Check the address." };
@@ -62,8 +65,13 @@ async function upstreamSays(res: Response, secrets: (string | null | undefined)[
   }
 }
 
-async function httpFailure(res: Response, who: string, secrets: (string | null | undefined)[], notFoundHint = "Check the address."): Promise<TestResult> {
-  const says = await upstreamSays(res, secrets);
+/**
+ * The answer for a non-success status. `echo` false (model, embedding and planner tests, whose address any
+ * signed-in user can type) gives only the status and our own sentence: the remote body is never shown, so the
+ * test cannot be used to read an internal service (robustness review S3).
+ */
+async function httpFailure(res: Response, who: string, secrets: (string | null | undefined)[], notFoundHint = "Check the address.", echo = true): Promise<TestResult> {
+  const says = echo ? await upstreamSays(res, secrets) : (await res.body?.cancel().catch(() => undefined), undefined);
   const detail = { status: res.status, ...(says ? { says } : {}) };
   if (res.status === 401 || res.status === 403) return { ok: false, message: `${who} refused the key (HTTP ${res.status}). Check the key.`, detail };
   if (res.status === 404) return { ok: false, message: `${who} has nothing at that path (HTTP 404). ${notFoundHint}`, detail };
@@ -75,7 +83,7 @@ type Call = { res: Response } | { fail: TestResult };
 
 async function call(url: string, init: RequestInit, secrets: (string | null | undefined)[], ms = limitMs): Promise<Call> {
   try {
-    return { res: await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) }) };
+    return { res: await safeFetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) }) };
   } catch (e) {
     return { fail: networkFailure(e, secrets, ms) };
   }
@@ -91,16 +99,31 @@ async function readJson(res: Response): Promise<unknown> {
 
 const MODEL_PATH_HINT = "Check the address: Ollama and LM Studio usually end in /v1, OpenRouter in /api/v1.";
 
-async function modelKey(provider: "ollama" | "lmstudio" | "openrouter", given?: string) {
+const MODEL_LABEL = { ollama: "Ollama", lmstudio: "LM Studio", openrouter: "OpenRouter" } as const;
+
+/**
+ * The key for a model test: the one typed in the request (used once, never saved), else the saved key,
+ * but only when the address is on the host the saved key was saved for (src/lib/secretOrigin.ts).
+ * When the saved key belongs to another host it is not read at all: `refusal` says why, and the test
+ * goes no further for a provider that needs a key.
+ */
+async function modelKey(provider: "ollama" | "lmstudio" | "openrouter", baseUrl: string, given?: string): Promise<{ key: string | null; refusal?: TestResult }> {
   const g = given?.trim();
-  return g ? g : await getCredential(provider, "apiKey");
+  if (g) return { key: g };
+  const s = await secretFor(provider, "apiKey", baseUrl);
+  if (s.refused) {
+    const message = boundElsewhere(MODEL_LABEL[provider], s.boundTo, baseUrl);
+    return { key: null, refusal: { ok: false, message, detail: { keyBoundTo: s.boundTo } } };
+  }
+  return { key: s.value };
 }
 
 async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise<TestResult> {
-  const key = await modelKey(t.provider, t.apiKey);
+  const { key, refusal } = await modelKey(t.provider, t.baseUrl, t.apiKey);
+  if (refusal) return refusal;
   const c = await call(`${t.baseUrl}/models`, { headers: key ? { authorization: `Bearer ${key}` } : {} }, [key]);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT);
+  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
   const j = (await readJson(c.res)) as { data?: { id?: unknown }[] } | undefined;
   if (!j || !Array.isArray(j.data)) return { ok: false, message: "It answered, but not with a list of models. Check the address." };
   const ids = j.data.map((m) => m?.id).filter((x): x is string => typeof x === "string");
@@ -116,12 +139,13 @@ async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise
 }
 
 async function testEmbedding(t: Extract<ConnectionTest, { kind: "embedding" }>): Promise<TestResult> {
-  const key = await modelKey(t.provider, t.apiKey);
+  const { key, refusal } = await modelKey(t.provider, t.baseUrl, t.apiKey);
+  if (refusal) return refusal;
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (key) headers.authorization = `Bearer ${key}`;
   const c = await call(`${t.baseUrl}/embeddings`, { method: "POST", headers, body: JSON.stringify({ model: t.model, input: "hello" }) }, [key]);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT);
+  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
   const j = (await readJson(c.res)) as { data?: { embedding?: unknown }[] } | undefined;
   const vec = j?.data?.[0]?.embedding;
   if (!Array.isArray(vec) || !vec.length || !vec.every((n) => typeof n === "number")) {
@@ -145,7 +169,9 @@ const BILLED = "Perplexity bills each call, so this test was charged as one shor
 
 async function testPerplexity(t: Extract<ConnectionTest, { kind: "perplexity" }>): Promise<TestResult> {
   const given = t.apiKey?.trim();
-  const key = given ? given : await getCredential("perplexity", "apiKey");
+  const saved = given ? null : await secretFor("perplexity", "apiKey", perplexityBase());
+  if (saved?.refused) return { ok: false, message: boundElsewhere("Perplexity", saved.boundTo, perplexityBase()) };
+  const key = given ? given : saved?.value;
   if (!key) return { ok: false, message: "No key is saved." };
   const ms = limitMs === DEFAULT_LIMIT_MS ? PERPLEXITY_LIMIT_MS : limitMs;
   const c = await call(
@@ -190,7 +216,7 @@ async function testPrinter(t: Extract<ConnectionTest, { kind: "printer" }>): Pro
     const row = await getPrinterRow(t.id);
     familyId = t.family ?? row.family;
     const fam = requireFamily(familyId);
-    values = resolveAccess(fam, t.access, valuesOf(row)).values;
+    values = resolveAccess(fam, t.access, valuesOf(row), "test").values; // saved secrets stay behind if the address moved
   } else {
     familyId = t.family!;
     values = resolveAccess(requireFamily(familyId), t.access).values;
@@ -213,7 +239,7 @@ async function testPlanner(t: Extract<ConnectionTest, { kind: "planner" }>): Pro
   if (!url) return { ok: false, message: "No planner address is saved and PLANNER_URL is not set." };
   const c = await call(`${url}/health`, {}, []);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The planner", []);
+  if (c.res.status !== 200) return httpFailure(c.res, "The planner", [], "Check the address.", false);
   const j = (await readJson(c.res)) as { ok?: boolean; networkx?: string } | undefined;
   if (!j?.ok) return { ok: false, message: "Something answered, but not the planner. Check the address." };
   return { ok: true, message: `The planner answered (NetworkX ${j.networkx ?? "unknown"}).`, detail: { url, networkx: j.networkx ?? null } };

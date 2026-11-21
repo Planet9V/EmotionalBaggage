@@ -6,6 +6,7 @@ import { getPrinterRow } from "@/lib/admin/printers";
 import { PrinterError, scrub, type ActionResult, type PrinterFile, type StartOptions, type UploadResult } from "./adapter";
 import { adapterForRow } from "./factory";
 import { printerFamily } from "@/lib/admin/printerFamilies";
+import { assertConfirm, followPrinterAction, type Confirm } from "@/lib/slicing/flow";
 
 export type PrinterActionName = "start" | "pause" | "resume" | "cancel";
 
@@ -20,29 +21,44 @@ export function httpErrorOf(e: unknown): HttpError {
   throw e;
 }
 
+/**
+ * Start, pause, resume or cancel on a saved printer (robustness review S9). Start and cancel need the same named
+ * confirmation as a print job's Start: `confirm: { printer, file }`, the printer's name and the file exactly as the
+ * screen showed them. For cancel the file is the one the printer reports it is printing (else `name`). When a print
+ * job sent that file to that printer, the job moves too (printing, or cancelled).
+ */
 export async function runPrinterAction(
   printerId: number,
   action: PrinterActionName,
-  input: { confirm?: boolean; name?: string; options?: StartOptions } = {}
+  input: { confirm?: Confirm; name?: string; options?: StartOptions } = {}
 ): Promise<ActionResult> {
-  if (DESTRUCTIVE.includes(action) && input.confirm !== true) {
-    throw new HttpError(400, `${action === "start" ? "Starting a print moves the printer" : "Cancelling a print cannot be undone"}. Send confirm: true to go ahead.`);
-  }
   if (action === "start" && !input.name) throw new HttpError(400, "Starting a print needs the file name.");
   const row = await getPrinterRow(printerId);
   if (!row.enabled) throw new HttpError(409, "That printer is switched off in Admin, Printers.");
   const adapter = adapterForRow(row);
   const secretFields = (printerFamily(row.family)?.fields ?? []).filter((f) => f.secret).map((f) => f.name);
   const secrets = secretFields.map((n) => (row.access ?? {})[n]);
-  const detail = { printerId, family: row.family, action, ...(input.name ? { file: input.name } : {}) };
   try {
-    const result = action === "start" ? await adapter.start(input.name!, input.options) : await adapter[action]();
-    await audit({ action: `printer.${action}`, summary: `Printer "${row.name}" ${VERB[action]}${input.name ? `: ${input.name}` : ""}`, detail });
-    return result;
-  } catch (e) {
-    const clean = e instanceof PrinterError ? e.message : scrub(String((e as Error)?.message ?? e), secrets);
-    await audit({ action: `printer.${action}.failed`, summary: `Printer "${row.name}": ${action} did not go through`, detail: { ...detail, reason: clean.slice(0, 200) } });
-    throw httpErrorOf(e instanceof PrinterError ? e : new PrinterError("failed", clean));
+    let file = input.name ?? "";
+    if (action === "cancel") {
+      // nothing is asked of the printer until the confirm at least names it
+      if (!input.confirm || input.confirm.printer !== row.name) assertConfirm(input.confirm, row.name, file, "cancel this print");
+      const st = await adapter.status().catch(() => null);
+      file = st?.file ?? input.name ?? "";
+    }
+    if (DESTRUCTIVE.includes(action)) assertConfirm(input.confirm, row.name, file, action === "start" ? "start this print" : "cancel this print");
+    const detail = { printerId, family: row.family, action, ...(file ? { file } : {}) };
+    try {
+      const result = action === "start" ? await adapter.start(file, input.options) : await adapter[action]();
+      await audit({ action: `printer.${action}`, summary: `Printer "${row.name}" ${VERB[action]}${file ? `: ${file}` : ""}`, detail });
+      if ((action === "start" || action === "cancel") && file) await followPrinterAction(printerId, row.name, file, action);
+      return result;
+    } catch (e) {
+      if (e instanceof HttpError) throw e;
+      const clean = e instanceof PrinterError ? e.message : scrub(String((e as Error)?.message ?? e), secrets);
+      await audit({ action: `printer.${action}.failed`, summary: `Printer "${row.name}": ${action} did not go through`, detail: { ...detail, reason: clean.slice(0, 200) } });
+      throw httpErrorOf(e instanceof PrinterError ? e : new PrinterError("failed", clean));
+    }
   } finally {
     await adapter.close().catch(() => undefined);
   }

@@ -39,13 +39,13 @@ const PASSWORD = "routes-password";
 
 beforeAll(async () => {
   await q("DELETE FROM users WHERE username = $1", [NAME]);
-  await q("DELETE FROM sign_in_attempts WHERE username_key = $1", [NAME]);
+  await q("DELETE FROM sign_in_attempts WHERE username_key = $1 OR client IN ('unknown', '192.0.2.99')", [NAME]);
   await q("INSERT INTO users (username, password_hash) VALUES ($1, $2)", [NAME, await hashPassword(PASSWORD)]);
 });
 
 afterAll(async () => {
   await q("DELETE FROM users WHERE username = $1", [NAME]);
-  await q("DELETE FROM sign_in_attempts WHERE username_key LIKE 'zz-routes-%'");
+  await q("DELETE FROM sign_in_attempts WHERE username_key LIKE 'zz-routes-%' OR client IN ('unknown', '192.0.2.99')");
   await q("DELETE FROM projects WHERE id LIKE 'zz-test-origin%'");
   await pool().end();
 });
@@ -161,13 +161,20 @@ describe("the open routes work signed out", () => {
     expect(unknown).toEqual(wrong);
   });
 
-  it("sign-in refuses a locked name with 429 and a plain message", async () => {
+  it("sign-in answers 429 with Retry-After while a name and address must wait, never a lockout", async () => {
     const { POST } = await import("@/app/api/auth/sign-in/route");
     const name = "zz-routes-locked";
-    for (let i = 0; i < 5; i++) expect((await POST(anonymous("POST", { username: name, password: "nope" }))).status).toBe(401);
-    const r = await read<{ error: string }>(await POST(anonymous("POST", { username: name, password: "nope" })));
+    const from = (payload: unknown) => {
+      const r = anonymous("POST", payload);
+      r.headers.set("x-c2r-client-address", "192.0.2.99");
+      return r;
+    };
+    for (let i = 0; i < 4; i++) expect((await POST(from({ username: name, password: "nope" }))).status).toBe(401);
+    const res = await POST(from({ username: name, password: "nope" }));
+    const r = await read<{ error: string }>(res);
     expect(r.status).toBe(429);
-    expect(r.body.error).toMatch(/^Too many failed sign-in attempts for this username\. Try again in 1[45] minutes\.$/);
+    expect(r.body.error).toMatch(/^Too many failed sign-in attempts from here\. Try again in [12] seconds?\.$/);
+    expect(res.headers.get("retry-after")).toMatch(/^[12]$/);
   });
 
   it("sign-in validates its body", async () => {

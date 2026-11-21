@@ -71,7 +71,7 @@ function Card({ r }: { r: PrinterReading }) {
   const state = r.status?.state;
 
   const control = useMutation({
-    mutationFn: (a: "pause" | "resume" | "cancel") => (a === "cancel" ? cancelPrint(r.printerId) : controlPrinter(r.printerId, a)),
+    mutationFn: (a: "pause" | "resume" | "cancel") => (a === "cancel" ? cancelPrint(r.printerId, r.name, r.status?.file ?? "") : controlPrinter(r.printerId, a)),
     onSuccess: (res) => {
       setErr("");
       setNote(res.message);

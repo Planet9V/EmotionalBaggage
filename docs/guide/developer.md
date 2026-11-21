@@ -94,6 +94,8 @@ Every handler is wrapped with `route()` from `src/lib/api/route.ts`:
 
 A row's `section` must be a store the menu defines, its `status` must be one that section allows, and its `data` must satisfy that section's schema.
 
+Outbound calls to an address a user typed go through `safeFetch` (`src/lib/net/outbound.ts`): loopback and private addresses are allowed (printers and model hosts live there), link-local and metadata addresses are refused, and the address checked is the address connected to. A saved secret is bound to the host it was saved for and read with `secretFor` or `getSecretFor(provider, field, url)`. `route(handler, { maxBodyBytes })` caps the body (4 MB by default) and refuses a NUL character anywhere in a request. CSV is written only through `toCsvText` in `src/lib/csv.ts`.
+
 ## Sign-in
 
 Every API route needs a session by default. Wrap handlers in `route()` from `src/lib/api/route.ts`: it answers 401 `{ "error": "Sign in to continue." }` without a session, and 403 to a state-changing request whose `Origin` is another site. Inside a handler, `sessionOf(req)` gives `{ sessionId, userId, username, usingDefaultPassword }`.
@@ -197,7 +199,7 @@ Import from `@/lib/printers`: `createAdapter`, `adapterForRow`, `runPrinterActio
 
 ## Marketing content
 
-Content generators live in `src/lib/content/generators` and are spread into the drafting registry. Channel limits are in `src/lib/content/channels.ts`; a limit is enforced only when its `source` is the platform's own URL. `src/lib/content/rules.ts` is the only place that decides whether a content row may leave draft (called from PATCH, POST and draft approval); a stored `noProof` flag is never trusted. The landing page is one pure function (`renderPage`) used by the preview and the zip export. Posting code reads `GET /api/content/social/queue`. The preview frame uses `sandbox="allow-scripts"` without allow-same-origin on purpose.
+Content generators live in `src/lib/content/generators` and are spread into the drafting registry. Channel limits are in `src/lib/content/channels.ts`; a limit is enforced only when its `source` is the platform's own URL. `src/lib/content/rules.ts` is the only place that decides whether a content row may leave draft (called from PATCH, POST and draft approval); a stored `noProof` flag is never trusted. The landing page is one pure function (`renderPage`) used by the preview and the zip export. Posting code reads `GET /api/content/social/queue`. The preview frames use `sandbox=""` (no scripts, opaque origin); preview images are inlined as data URIs.
 
 ## Campaigns
 

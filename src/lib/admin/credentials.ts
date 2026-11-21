@@ -5,6 +5,7 @@ import { credentialSource, getCredential, type Provider } from "@/lib/settings";
 import { audit, type AuditEntry } from "./audit";
 import { lastFour, PROVIDER_DEFS, providerDef, type ProviderDef } from "./providers";
 import { invalid } from "./schemas";
+import { boundOrigin, currentOrigin, originOf } from "@/lib/secretOrigin";
 
 export type CredentialFieldView = {
   name: string;
@@ -19,6 +20,8 @@ export type CredentialFieldView = {
   value: string | null;
   /** when the saved value was last changed; null for environment values and unset fields */
   updatedAt: string | null;
+  /** secret fields only: the origin the value is sent to (it is never sent anywhere else); null when unset */
+  boundTo?: string | null;
 };
 
 export type ProviderView = {
@@ -47,6 +50,7 @@ async function viewOf(def: ProviderDef): Promise<ProviderView> {
       last4: f.secret ? lastFour(value) : null,
       value: f.secret ? null : value,
       updatedAt: at ? new Date(at).toISOString() : null,
+      boundTo: f.secret && value !== null ? await boundOrigin(def.id, f.name) : null,
     });
   }
   return {
@@ -85,17 +89,22 @@ export function checkCredentialFields(provider: string, fields: Record<string, s
   return { def, values };
 }
 
-export async function saveCredentials(def: ProviderDef, values: [string, string][]) {
+/**
+ * Saves values, each bound to the origin it may be sent to (src/lib/secretOrigin.ts): `address` when
+ * given (a model host typed with the key), else the address the install uses for that provider now.
+ */
+export async function saveCredentials(def: ProviderDef, values: [string, string][], address?: string) {
   const entries: Omit<AuditEntry, "at">[] = [];
+  const origin = (address ? originOf(address) : null) ?? (await currentOrigin(def.id));
   await tx(async (c) => {
     for (const [field, value] of values) {
       const had = await c.query("SELECT 1 FROM credentials WHERE provider=$1 AND field=$2 FOR UPDATE", [def.id, field]);
       await c.query(
-        `INSERT INTO credentials (provider, field, value) VALUES ($1,$2,$3)
-         ON CONFLICT (provider, field) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-        [def.id, field, value]
+        `INSERT INTO credentials (provider, field, value, bound_origin) VALUES ($1,$2,$3,$4)
+         ON CONFLICT (provider, field) DO UPDATE SET value = EXCLUDED.value, bound_origin = EXCLUDED.bound_origin, updated_at = now()`,
+        [def.id, field, value, origin]
       );
-      entries.push({ action: had.rowCount ? "replaced" : "set", provider: def.id, field });
+      entries.push({ action: had.rowCount ? "replaced" : "set", provider: def.id, field, ...(origin ? { boundTo: origin } : {}) });
     }
   });
   await audit(entries);

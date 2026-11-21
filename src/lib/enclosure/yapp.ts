@@ -3,6 +3,7 @@ import { plannerUrl } from "@/lib/admin/planner";
 import { frameOf, meshToConcept, toBoxSpec } from "./boxspec";
 import { parseStl } from "./stl";
 import type { EnclosureSpec, GeneratorOutput } from "./types";
+import { safeFetch } from "@/lib/net/outbound";
 
 /** Why YAPP_Box could not run, in words for the screen. `code` lets a caller treat "not running" differently from "refused". */
 export class GeneratorUnavailable extends Error {
@@ -29,7 +30,7 @@ export async function generateYapp(spec: EnclosureSpec, opts: { timeoutSeconds?:
   const limit = opts.timeoutSeconds ?? 120;
   let res: Response;
   try {
-    res = await fetch(`${url.replace(/\/$/, "")}/enclosure/yapp?timeout=${limit}`, {
+    res = await safeFetch(`${url.replace(/\/$/, "")}/enclosure/yapp?timeout=${limit}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(toBoxSpec(spec)),

@@ -542,12 +542,13 @@ describe("no full secret in any response", () => {
     standins.push(octo as unknown as StandIn<unknown>);
     process.env.X_ACCESS_TOKEN = ENV_SECRET;
     try {
+      // the model address first: a key is bound to the host in use when it is saved (moving it later removes the key)
+      await putSettings(json("PUT", { reasoningModel: { provider: "openrouter", baseUrl: "http://127.0.0.1:9/api/v1", model: "m" } }));
       for (const p of ["openrouter", "perplexity", "ollama", "lmstudio"]) await put(p, { apiKey: SECRET });
       await put("amazon-sp", { refreshToken: SECRET, clientId: SECRET, clientSecret: SECRET });
       await put("instagram", { accessToken: SECRET });
       const printer = await read<{ printer: PrinterView }>(await addPrinter(json("POST", { name: "ZZ Admin Scan", family: "octoprint", access: { address: octo.url, apiKey: SECRET } })));
       await addPrinter(json("POST", { name: "ZZ Admin Scan Bambu", family: "bambu", access: { address: "10.0.0.9", accessCode: SECRET } }));
-      await putSettings(json("PUT", { reasoningModel: { provider: "openrouter", baseUrl: "http://127.0.0.1:9/api/v1", model: "m" } }));
 
       const answers: Response[] = [
         await listCredentials(json("GET")),

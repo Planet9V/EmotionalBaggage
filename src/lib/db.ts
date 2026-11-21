@@ -5,7 +5,7 @@ import { Pool, type PoolClient } from "pg";
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "./seed";
 
 // One pool per process. DATABASE_URL points at PostgreSQL (pgvector image in Docker).
-const g = globalThis as unknown as { __c2rPool?: Pool; __c2rReady?: Promise<{ vector: boolean }> };
+const g = globalThis as unknown as { __c2rPool?: Pool; __c2rReady?: Promise<{ vector: boolean; vectorProblem: string | null }> };
 
 export function pool() {
   if (!g.__c2rPool) {
@@ -44,10 +44,19 @@ async function migrate() {
  * With it, embeddings live in their own table. The vector column has no fixed width
  * because the embedding model is chosen in Admin; each width gets its own index when first used.
  */
-async function vectorSupport() {
+export type VectorState = { vector: boolean; vectorProblem: string | null };
+
+async function vectorSupport(): Promise<VectorState> {
   const db = pool();
   try {
     await db.query("CREATE EXTENSION IF NOT EXISTS vector");
+  } catch (e) {
+    // pgvector is not installed in this PostgreSQL: expected on some installs, and said so in Admin as the
+    // database test's "pgvector is not active". Logged once at start-up, not hidden.
+    console.warn(`[db] pgvector is not available, so search by meaning is off: ${(e as Error).message}`);
+    return { vector: false, vectorProblem: null };
+  }
+  try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS embeddings (
         id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -72,9 +81,14 @@ async function vectorSupport() {
     await db.query("ALTER TABLE embeddings ADD COLUMN IF NOT EXISTS bq bit varying GENERATED ALWAYS AS (binary_quantize(embedding)::bit varying) STORED");
     // Every search is for one concept, one model and one width.
     await db.query("CREATE INDEX IF NOT EXISTS embeddings_scope ON embeddings (project_id, model, dims)");
-    return true;
-  } catch {
-    return false;
+    return { vector: true, vectorProblem: null };
+  } catch (e) {
+    // pgvector is there but its table could not be made: a real fault, logged and shown in Admin, Setup.
+    // The table is made here rather than in a migration because its vector column has no fixed width
+    // (the embedding model, and so the width, is chosen in Admin) and the extension is optional.
+    const message = (e as Error).message ?? String(e);
+    console.error("[db] the embeddings table could not be set up, so search by meaning is off:", message);
+    return { vector: false, vectorProblem: `The embeddings table could not be set up: ${message.slice(0, 300)}` };
   }
 }
 
@@ -87,7 +101,7 @@ export function ready() {
       const vector = await vectorSupport();
       await seedOnce();
       await seedAdditions();
-      return { vector };
+      return vector;
     })().catch((e) => {
       g.__c2rReady = undefined;
       throw e;

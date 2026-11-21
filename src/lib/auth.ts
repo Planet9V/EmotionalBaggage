@@ -29,11 +29,49 @@ export const MAX_USERNAME_LENGTH = 200;
 
 export const SESSION_DAYS = 30;
 const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
+/** However often it is used, a session ends this long after it began (robustness review S9). */
+export const ABSOLUTE_SESSION_DAYS = 90;
+const ABSOLUTE_MS = ABSOLUTE_SESSION_DAYS * 24 * 60 * 60 * 1000;
 /** A session's expiry moves forward when it is used, but at most once an hour, so reads are not writes. */
 const TOUCH_MS = 60 * 60 * 1000;
 
-export const MAX_FAILURES = 5;
-export const LOCK_WINDOW_MS = 15 * 60 * 1000;
+// Sign-in throttling (robustness review S4). There is no lockout: wrong passwords earn growing delays,
+// counted per (username, client address) and, separately, per client address. Someone guessing from
+// another address cannot delay the owner, and a correct password is always accepted once the delay
+// that applies to it has passed.
+/** Failures for one name from one address before delays start; then 1 s, 2 s, 4 s ... up to the cap. */
+export const PAIR_FREE_FAILURES = 3;
+/** Failures from one address, for any names, before that address is slowed down too. */
+export const ADDRESS_FREE_FAILURES = 20;
+export const MAX_DELAY_MS = 15 * 60 * 1000;
+/** A count is forgotten when nothing was tried for this long. */
+export const ATTEMPT_RESET_MS = 60 * 60 * 1000;
+/** The attempts table never holds more rows than this; the oldest go first. */
+export const MAX_ATTEMPT_ROWS = 10_000;
+
+/** The wait after `failures` failures, given the number that are free. */
+export function delayAfter(failures: number, free: number): number {
+  if (failures <= free) return 0;
+  return Math.min(MAX_DELAY_MS, 1000 * 2 ** Math.min(30, failures - free - 1));
+}
+
+/** The request header the server start script fills with the socket's address (scripts/client-address.cjs). */
+export const CLIENT_ADDRESS_HEADER = "x-c2r-client-address";
+
+/**
+ * The client's network address for throttling. X-Forwarded-For is trusted only when TRUST_PROXY is set
+ * (the app is behind a reverse proxy, which appends the address it saw: the right-most entry). Otherwise
+ * the address comes from the connection itself, put in CLIENT_ADDRESS_HEADER by scripts/client-address.cjs,
+ * which overwrites anything a client sends under that name. Without either, every request counts as one
+ * address ("unknown").
+ */
+export function clientAddress(req: Request): string {
+  if (/^(1|true|yes|on)$/i.test(process.env.TRUST_PROXY?.trim() ?? "")) {
+    const parts = (req.headers.get("x-forwarded-for") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1].slice(0, 100);
+  }
+  return (req.headers.get(CLIENT_ADDRESS_HEADER) ?? "").trim().slice(0, 100) || "unknown";
+}
 
 // ---------------------------------------------------------------------------------------------
 // Password hashing
@@ -190,20 +228,18 @@ export async function sessionFromRequest(req: Request, opts: { now?: Date } = {}
 export async function sessionFromToken(token: string, opts: { now?: Date } = {}): Promise<Session | null> {
   if (!TOKEN.test(token)) return null;
   const now = opts.now ?? new Date();
-  const rows = await q<{ id: string; user_id: string; last_seen_at: Date; username: string; password_changed_at: Date | null }>(
-    `SELECT s.id, s.user_id, s.last_seen_at, u.username, u.password_changed_at
+  const rows = await q<{ id: string; user_id: string; created_at: Date; last_seen_at: Date; username: string; password_changed_at: Date | null }>(
+    `SELECT s.id, s.user_id, s.created_at, s.last_seen_at, u.username, u.password_changed_at
        FROM sessions s JOIN users u ON u.id = s.user_id
-      WHERE s.token_sha256 = $1 AND s.expires_at > $2`,
-    [sha256(token), now]
+      WHERE s.token_sha256 = $1 AND s.expires_at > $2 AND s.created_at > $3`,
+    [sha256(token), now, new Date(now.getTime() - ABSOLUTE_MS)]
   );
   if (!rows.length) return null;
   const r = rows[0];
   if (now.getTime() - new Date(r.last_seen_at).getTime() >= TOUCH_MS) {
-    await q("UPDATE sessions SET last_seen_at = $2, expires_at = $3 WHERE id = $1", [
-      r.id,
-      now,
-      new Date(now.getTime() + SESSION_MS),
-    ]);
+    // sliding 30 days, never past 90 days from the sign-in
+    const end = Math.min(now.getTime() + SESSION_MS, new Date(r.created_at).getTime() + ABSOLUTE_MS);
+    await q("UPDATE sessions SET last_seen_at = $2, expires_at = $3 WHERE id = $1", [r.id, now, new Date(end)]);
   }
   return {
     sessionId: Number(r.id),
@@ -211,6 +247,12 @@ export async function sessionFromToken(token: string, opts: { now?: Date } = {})
     username: r.username,
     usingDefaultPassword: r.password_changed_at === null,
   };
+}
+
+/** Ends every session of a user, this one included ("Sign out everywhere"). Answers how many ended. */
+export async function signOutEverywhere(userId: number): Promise<number> {
+  const rows = await q("DELETE FROM sessions WHERE user_id = $1 RETURNING id", [userId]);
+  return rows.length;
 }
 
 /** Ends the session the token belongs to. An unknown or malformed token is not an error. */
@@ -225,42 +267,65 @@ export async function signOut(token: string | null | undefined): Promise<void> {
 export type SignInResult =
   | { ok: true; token: string; session: Session }
   | { ok: false; reason: "invalid" }
-  | { ok: false; reason: "locked"; retryAfterSeconds: number };
+  | { ok: false; reason: "wait"; retryAfterSeconds: number };
 
 const usernameKey = (username: string) => username.trim().toLowerCase();
+
+/** The wait as SQL, for a failure count expression `f` (the same rule as delayAfter). */
+const sqlDelay = (free: number, f: string) =>
+  `make_interval(secs => CASE WHEN ${f} <= ${free} THEN 0 ELSE LEAST(${MAX_DELAY_MS / 1000}, power(2, LEAST(30, ${f} - ${free} - 1))) END)`;
 
 /**
  * Checks a username and password and starts a session.
  *
  * - Takes the same work whether or not the name exists: an unknown name is checked against a
  *   dummy hash, so the answer time does not tell a guesser which names are real.
- * - After 5 failed attempts for one name inside 15 minutes, further attempts for that name are
- *   refused until the 15 minutes from the first failure are over. The attempt is counted before
- *   the password is checked, in one statement, so parallel guesses cannot slip past the limit;
- *   a successful sign-in clears the count. Names that are not users are counted too.
- * - Expired sessions and stale attempt counts are deleted here, opportunistically.
+ * - Throttling, with no lockout: after PAIR_FREE_FAILURES wrong passwords for one name from one
+ *   client address, each further try from that address must wait 1 s, 2 s, 4 s ... (at most
+ *   15 minutes) after the one before; after ADDRESS_FREE_FAILURES failures from one address for any
+ *   names, that address waits the same way. A try made during its wait is refused without checking
+ *   the password and without counting. The try is counted, and its wait set, before the password is
+ *   checked, in one statement, so parallel guesses cannot slip past; a correct password clears the
+ *   count for its name and address. Names that are not users are counted too.
+ * - Expired sessions and stale attempt counts are deleted here, and the table is kept under
+ *   MAX_ATTEMPT_ROWS rows.
  */
-export async function signIn(username: string, password: string, userAgent: string, opts: { now?: Date } = {}): Promise<SignInResult> {
+export async function signIn(username: string, password: string, userAgent: string, opts: { now?: Date; client?: string } = {}): Promise<SignInResult> {
   const now = opts.now ?? new Date();
-  const windowStart = new Date(now.getTime() - LOCK_WINDOW_MS);
   const key = usernameKey(String(username ?? "")).slice(0, MAX_USERNAME_LENGTH);
+  const client = (opts.client ?? "unknown").slice(0, 100) || "unknown";
   const pw = String(password ?? "");
+  const resetBefore = new Date(now.getTime() - ATTEMPT_RESET_MS);
 
   await q("DELETE FROM sessions WHERE expires_at <= $1", [now]);
-  await q("DELETE FROM sign_in_attempts WHERE window_started_at <= $1", [windowStart]);
-
-  const [attempt] = await q<{ failures: number; window_started_at: Date }>(
-    `INSERT INTO sign_in_attempts AS a (username_key, failures, window_started_at) VALUES ($1, 1, $2)
-     ON CONFLICT (username_key) DO UPDATE SET
-       failures = CASE WHEN a.window_started_at <= $3 THEN 1 ELSE a.failures + 1 END,
-       window_started_at = CASE WHEN a.window_started_at <= $3 THEN $2 ELSE a.window_started_at END
-     RETURNING failures, window_started_at`,
-    [key, now, windowStart]
+  await q("DELETE FROM sign_in_attempts WHERE last_attempt_at <= $1 AND next_allowed_at <= $2", [resetBefore, now]);
+  await q(
+    `DELETE FROM sign_in_attempts WHERE ctid IN (
+       SELECT ctid FROM sign_in_attempts ORDER BY last_attempt_at DESC OFFSET $1)`,
+    [MAX_ATTEMPT_ROWS - 2] // room for the two rows this try may add
   );
-  if (attempt.failures > MAX_FAILURES) {
-    const until = new Date(attempt.window_started_at).getTime() + LOCK_WINDOW_MS;
-    return { ok: false, reason: "locked", retryAfterSeconds: Math.max(1, Math.ceil((until - now.getTime()) / 1000)) };
-  }
+
+  // Claim this try: refused while the address or the pair is waiting; otherwise counted, with its wait set.
+  const counted = "(CASE WHEN a.last_attempt_at <= $4::timestamptz THEN 1 ELSE a.failures + 1 END)";
+  const waitUntil = await tx(async (c): Promise<Date | null> => {
+    const addr = await c.query<{ next_allowed_at: Date }>("SELECT next_allowed_at FROM sign_in_attempts WHERE username_key = '' AND client = $1", [client]);
+    const addrUntil = addr.rows[0] ? new Date(addr.rows[0].next_allowed_at) : null;
+    if (addrUntil && addrUntil.getTime() > now.getTime()) return addrUntil;
+    const pair = await c.query(
+      `INSERT INTO sign_in_attempts AS a (username_key, client, failures, last_attempt_at, next_allowed_at)
+       VALUES ($1, $2, 1, $3::timestamptz, $3::timestamptz + ${sqlDelay(PAIR_FREE_FAILURES, "1")})
+       ON CONFLICT (username_key, client) DO UPDATE SET
+         failures = ${counted},
+         last_attempt_at = $3::timestamptz,
+         next_allowed_at = $3::timestamptz + ${sqlDelay(PAIR_FREE_FAILURES, counted)}
+       WHERE a.next_allowed_at <= $3::timestamptz`,
+      [key, client, now, resetBefore]
+    );
+    if (pair.rowCount) return null;
+    const w = await c.query<{ next_allowed_at: Date }>("SELECT next_allowed_at FROM sign_in_attempts WHERE username_key = $1 AND client = $2", [key, client]);
+    return w.rows[0] ? new Date(w.rows[0].next_allowed_at) : now;
+  });
+  if (waitUntil) return { ok: false, reason: "wait", retryAfterSeconds: Math.max(1, Math.ceil((waitUntil.getTime() - now.getTime()) / 1000)) };
 
   const fallback = await dummyHash();
   const users = await q<{ id: string; username: string; password_hash: string; password_changed_at: Date | null }>(
@@ -276,9 +341,21 @@ export async function signIn(username: string, password: string, userAgent: stri
     await verifyPassword(pw, fallback);
     ok = false;
   }
-  if (!ok || !user) return { ok: false, reason: "invalid" };
+  if (!ok || !user) {
+    // the address's own count: every failure from it, whatever the name
+    await q(
+      `INSERT INTO sign_in_attempts AS a (username_key, client, failures, last_attempt_at, next_allowed_at)
+       VALUES ('', $1, 1, $2::timestamptz, $2::timestamptz + ${sqlDelay(ADDRESS_FREE_FAILURES, "1")})
+       ON CONFLICT (username_key, client) DO UPDATE SET
+         failures = CASE WHEN a.last_attempt_at <= $3::timestamptz THEN 1 ELSE a.failures + 1 END,
+         last_attempt_at = $2::timestamptz,
+         next_allowed_at = GREATEST(a.next_allowed_at, $2::timestamptz + ${sqlDelay(ADDRESS_FREE_FAILURES, "(CASE WHEN a.last_attempt_at <= $3::timestamptz THEN 1 ELSE a.failures + 1 END)")})`,
+      [client, now, resetBefore]
+    );
+    return { ok: false, reason: "invalid" };
+  }
 
-  await q("DELETE FROM sign_in_attempts WHERE username_key = $1", [key]);
+  await q("DELETE FROM sign_in_attempts WHERE username_key = $1 AND client = $2", [key, client]);
   const token = await createSession(Number(user.id), userAgent, { now });
   const session = await sessionFromToken(token, { now });
   if (!session) throw new Error("A session that was just created could not be read back.");

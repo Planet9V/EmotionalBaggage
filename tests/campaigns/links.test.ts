@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUtmUrl, checkDestination, CODE_ALPHABET, CODE_RE, makeCode, slugify } from "@/lib/campaigns/links";
+import { buildUtmUrl, checkDestination, CODE_ALPHABET, CODE_RE, hostAllowed, makeCode, parseHosts, slugify } from "@/lib/campaigns/links";
 import { RateLimiter } from "@/lib/campaigns/rateLimit";
 
 describe("the UTM convention", () => {
@@ -39,7 +39,7 @@ describe("the UTM convention", () => {
 describe("destinations", () => {
   it.each([
     ["https://shop.example/path?x=1", true],
-    ["http://shop.example", true],
+    ["http://shop.example", false],
     ["javascript:alert(1)", false],
     ["data:text/html,hi", false],
     ["ftp://a.example", false],
@@ -49,6 +49,17 @@ describe("destinations", () => {
     ["", false],
     ["not a url", false],
   ])("%s", (u, ok) => expect(checkDestination(u).ok).toBe(ok));
+  it("accepts http only for localhost in development", () => {
+    expect(checkDestination("http://localhost:3000/p", { dev: true }).ok).toBe(true);
+    expect(checkDestination("http://localhost:3000/p", { dev: false }).ok).toBe(false);
+    expect(checkDestination("http://shop.example/", { dev: true }).ok).toBe(false);
+  });
+  it("matches hosts on the allow-list and their sub-domains only", () => {
+    expect(parseHosts("Shop.example, https://www.amazon.com/dp/x\nbad_host!")).toEqual({ hosts: ["shop.example", "www.amazon.com"], bad: ["bad_host!"] });
+    expect(hostAllowed("www.shop.example", ["shop.example"])).toBe(true);
+    expect(hostAllowed("shop.example.evil.test", ["shop.example"])).toBe(false);
+    expect(hostAllowed("evilshop.example", ["shop.example"])).toBe(false);
+  });
   it("refuses an address over 2,000 characters", () => {
     expect(checkDestination(`https://a.example/${"x".repeat(2000)}`).ok).toBe(false);
   });

@@ -26,16 +26,19 @@ export const printerFetchers = {
 export const controlPrinter = (id: number, action: "pause" | "resume") =>
   api<{ ok: boolean; message: string }>(`/api/printers/${id}/actions`, { method: "POST", body: JSON.stringify({ action }) });
 
-/** Cancel the running print. The caller must have shown its own confirmation first: the route refuses without `confirm: true`. */
-export const cancelPrint = (id: number) =>
-  api<{ ok: boolean; message: string }>(`/api/printers/${id}/actions`, { method: "POST", body: JSON.stringify({ action: "cancel", confirm: true }) });
+/**
+ * Cancel the running print. The caller must have shown its own confirmation naming the printer and the file: the route
+ * refuses unless `confirm` repeats both exactly (the file the printer reports it is printing).
+ */
+export const cancelPrint = (id: number, printer: string, file: string) =>
+  api<{ ok: boolean; message: string }>(`/api/printers/${id}/actions`, { method: "POST", body: JSON.stringify({ action: "cancel", name: file || undefined, confirm: { printer, file } }) });
 
 /**
  * Start a file that is already on the printer. The caller must have shown its own confirmation that names the printer and the
- * file: this sends `confirm: true`, and the server writes the audit line.
+ * file: this sends them as `confirm: { printer, file }`, and the server writes the audit line.
  */
-export const startPrint = (id: number, name: string, options: { plate?: number; useAms?: boolean; amsMapping?: number[]; timelapse?: boolean } = {}) =>
-  api<{ ok: boolean; message: string }>(`/api/printers/${id}/actions`, { method: "POST", body: JSON.stringify({ action: "start", name, confirm: true, ...options }) });
+export const startPrint = (id: number, printer: string, name: string, options: { plate?: number; useAms?: boolean; amsMapping?: number[]; timelapse?: boolean } = {}) =>
+  api<{ ok: boolean; message: string }>(`/api/printers/${id}/actions`, { method: "POST", body: JSON.stringify({ action: "start", name, confirm: { printer, file: name }, ...options }) });
 
 /** Send a file to the printer's own storage. It does not start the print. */
 export async function sendToPrinter(id: number, file: File, name?: string) {

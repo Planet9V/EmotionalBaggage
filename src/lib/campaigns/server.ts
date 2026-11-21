@@ -85,3 +85,10 @@ export async function economicsRowsOf(projectId: string): Promise<EconomicsRows>
   const of = (s: string) => rows.filter((i) => i.section === s);
   return { parts: of("design/bom"), economics: of("production/economics"), channels: of("sales/channels"), methods: of("production/methods"), batches: of("production/batches") };
 }
+
+/** The hosts the concept's tracked links may open, from its plan row (Marketing budget and rules). */
+export async function linkHostsOf(projectId: string): Promise<string[]> {
+  const rows = await q<{ hosts: unknown }>("SELECT data->'linkHosts' AS hosts FROM items WHERE project_id=$1 AND section=$2 AND data->>'kind' = 'plan' ORDER BY id LIMIT 1", [projectId, CAMPAIGN_STORE]);
+  const h = rows[0]?.hosts;
+  return Array.isArray(h) ? h.filter((x): x is string => typeof x === "string") : [];
+}

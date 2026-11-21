@@ -3,10 +3,12 @@
 // Built to the Agent API, POST /v1/agent, as documented on 20 Nov 2026. Every field read or sent
 // here is listed with the page it came from in docs/research/perplexity-api.md. The Sonar interface
 // (POST /v1/sonar) is not used: its support ended on 27 Sep 2026.
-import { getCredential, getSetting } from "@/lib/settings";
+import { getSetting } from "@/lib/settings";
+import { getSecretFor, PERPLEXITY_DEFAULT_BASE_URL, perplexityBaseUrl } from "@/lib/secretOrigin";
+import { safeFetch } from "@/lib/net/outbound";
 
 /** Address of the Perplexity API; tests point it at the stand-in. */
-export const DEFAULT_BASE_URL = "https://api.perplexity.ai";
+export const DEFAULT_BASE_URL = PERPLEXITY_DEFAULT_BASE_URL;
 export const AGENT_PATH = "/v1/agent";
 /** Setting that holds the effort level (Perplexity's pre-configured model and search setup). */
 export const MODEL_SETTING = "research.model";
@@ -67,7 +69,7 @@ export async function currentEffort(): Promise<string> {
   return typeof v === "string" && EFFORT_RE.test(v.trim()) ? v.trim() : DEFAULT_EFFORT;
 }
 
-export const baseUrl = () => (process.env.PERPLEXITY_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, "");
+export const baseUrl = perplexityBaseUrl;
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -154,7 +156,8 @@ function httpFailure(status: number, body: unknown, headers: Headers, key: strin
 /** Asks Perplexity one research question with web search. Never throws for an upstream problem. */
 export async function ask(opts: AskOptions): Promise<AskResult> {
   const question = opts.question.trim();
-  const key = opts.apiKey ?? (await getCredential("perplexity", "apiKey"));
+  // the saved key goes only to the host it was saved for (src/lib/secretOrigin.ts)
+  const key = opts.apiKey ?? (await getSecretFor("perplexity", "apiKey", baseUrl()));
   if (!key) return { ok: false, kind: "not_configured", message: "Perplexity is not connected. Add a key in Admin, Credentials." };
   const effort = opts.effort ?? (await currentEffort());
   const limit = opts.timeoutMs ?? TIMEOUT_MS;
@@ -164,7 +167,7 @@ export async function ask(opts: AskOptions): Promise<AskResult> {
 
   let res: Response;
   try {
-    res = await fetch(`${baseUrl()}${AGENT_PATH}`, {
+    res = await safeFetch(`${baseUrl()}${AGENT_PATH}`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({ effort, instructions: INSTRUCTIONS, input: question, tools: [{ type: "web_search" }] }),

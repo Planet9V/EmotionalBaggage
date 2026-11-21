@@ -63,6 +63,8 @@ export function useChannelActions(projectId: string) {
     fetchInbox: useMutation({ mutationFn: (channel: "x" | "instagram") => post<{ added: number; read: number; message: string }>("/api/channels/inbox/fetch", { projectId, channel }), onSettled: refresh }),
     send: useMutation({ mutationFn: (b: Omit<SendBody, "projectId">) => post<{ ok: true; id: string; url?: string; item: Item }>("/api/channels/send", { projectId, ...b }), onSettled: refresh }),
     setImage: useMutation({ mutationFn: (b: { itemId: number; imageUrl: string; altText?: string }) => post<Item>("/api/channels/instagram/image", { projectId, ...b }), onSettled: refresh }),
+    /** records what the user found on the channel after a send whose outcome is unknown (robustness review S9) */
+    resolveSend: useMutation({ mutationFn: (b: { kind: "post" | "reply"; itemId: number; outcome: "not-posted" | "posted" }) => post<{ item: Item }>("/api/channels/send/resolve", { projectId, ...b }), onSettled: refresh }),
     importReviews: useMutation({ mutationFn: (b: { text: string; source?: string; kind?: "review" | "question" }) => post<{ added: number; skipped: number; problems: string[] }>("/api/channels/reviews/import", { projectId, ...b }), onSettled: refresh }),
     toRequirement: useMutation({ mutationFn: (b: { title: string; detail: string; reviewIds: number[] }) => post<{ draftId: number; key: string }>("/api/channels/reviews/requirement", { projectId, ...b }), onSettled: refresh }),
     saveTicks: useMutation({

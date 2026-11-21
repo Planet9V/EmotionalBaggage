@@ -26,6 +26,7 @@ import type { Item } from "@/lib/types";
 import { assertDraftAllowed, withFlags } from "@/lib/content/rules";
 import { assertMarketChange, assertNewMarket } from "@/lib/market/rules";
 import type { Draft, DraftOp, DraftSource, DraftStatus } from "./shared";
+import { assertRoomFor } from "@/lib/api/limits";
 
 export const DRAFT_COLS =
   "id, project_id, generator, target_store, title, body, data, sources, model, provider, status, run_id, reason, created_at, decided_at, decided_by, item_id";
@@ -226,6 +227,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
     ]);
     item = toItem(r.rows[0]);
   } else {
+    await assertRoomFor(c, d.project_id);
     const r = await c.query<ItemRow>(
       `INSERT INTO items (project_id, section, title, body, data, status, sort)
        VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort),0)+1 FROM items WHERE project_id=$1))

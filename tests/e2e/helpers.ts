@@ -45,6 +45,10 @@ export function watch(page: Page, baseURL: string) {
   page.on("console", (m) => {
     if (m.type() !== "error") return;
     const loc = m.location();
+    // The landing preview frame is fully sandboxed (no allow-scripts) on purpose. Test tools (Playwright's
+    // own helpers, axe-core) inject a script into every frame, and Chrome logs that it blocked it. That is
+    // the sandbox working, not a fault of the page; any other message from the frame still counts.
+    if (/^Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed/.test(m.text())) return;
     bucket.consoleErrors.push(`${m.text()}${loc.url ? ` (${loc.url}:${loc.lineNumber})` : ""}`);
   });
   page.on("response", (r) => {

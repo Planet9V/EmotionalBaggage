@@ -8,6 +8,7 @@
  * leave its last four characters empty until the server answers with them.
  */
 import { keepPreviousData, queryOptions, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/http";
 import type { ProviderView } from "@/lib/admin/credentials";
 import type { AuditEntry } from "@/lib/admin/audit";
@@ -174,7 +175,12 @@ export function useSaveSettings() {
   const qc = useQueryClient();
   const refresh = useRefreshDerived();
   return useMutation({
-    mutationFn: (change: SettingsChange) => api<{ settings: AdminSettings }>("/api/admin/settings", { method: "PUT", body: JSON.stringify(change) }).then((r) => r.settings),
+    mutationFn: (change: SettingsChange) =>
+      api<{ settings: AdminSettings; notices?: string[] }>("/api/admin/settings", { method: "PUT", body: JSON.stringify(change) }).then((r) => {
+        // a model address moved to another host: the server says what happened to the saved key
+        for (const n of r.notices ?? []) toast.warning(n, { duration: 20_000 });
+        return r.settings;
+      }),
     onMutate: async (change) => {
       await qc.cancelQueries({ queryKey: adminKeys.settings() });
       const before = qc.getQueryData<AdminSettings>(adminKeys.settings());
@@ -183,7 +189,10 @@ export function useSaveSettings() {
     },
     onError: (_e, _v, c) => qc.setQueryData(adminKeys.settings(), c?.before),
     onSuccess: (s) => qc.setQueryData(adminKeys.settings(), s),
-    onSettled: refresh,
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: adminKeys.credentials() });
+      refresh();
+    },
   });
 }
 

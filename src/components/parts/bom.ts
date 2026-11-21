@@ -1,4 +1,5 @@
 import { sumLine, type Part } from "@/lib/domain";
+import { toCsvText } from "@/lib/csv";
 
 export const money = (n: number) => n.toFixed(2);
 
@@ -45,14 +46,11 @@ export function groupParts(parts: Part[], by: "none" | "source" | "status"): Gro
 export const CSV_COLUMNS = ["ref", "title", "spec", "qty", "source", "search", "line"] as const;
 export type CsvColumn = (typeof CSV_COLUMNS)[number];
 
-const esc = (v: string) => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-
+/** The parts list as CSV, through the one CSV writer (src/lib/csv.ts), which neutralises formula-looking cells. */
 export function toCsv(parts: Part[]): string {
-  const rows = [CSV_COLUMNS.join(",")];
-  for (const p of parts) {
-    rows.push([p.ref, p.item.title, p.item.body, p.qty === null ? "" : String(p.qty), p.source, p.search, p.line === null ? "" : money(p.line)].map(esc).join(","));
-  }
-  return rows.join("\r\n") + "\r\n";
+  const rows: unknown[][] = [[...CSV_COLUMNS]];
+  for (const p of parts) rows.push([p.ref, p.item.title, p.item.body, p.qty === null ? "" : p.qty, p.source, p.search, p.line === null ? "" : money(p.line)]);
+  return toCsvText(rows);
 }
 
 /** RFC 4180 style parser. The delimiter is tab when the first line has a tab, else comma. */

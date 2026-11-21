@@ -8,6 +8,9 @@ import { useItems } from "@/lib/client";
 import { CAMPAIGN_STORE } from "@/lib/campaigns/schemas";
 import { DEFAULT_MIN_CLICKS, DEFAULT_MIN_ORDERS, type PlanSettings } from "@/lib/campaigns/read";
 import { MoneyField, NumberField, readNumber } from "./fields";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/parts/controls";
+import { parseHosts } from "@/lib/campaigns/hosts";
 import type { useMoney } from "./hooks";
 
 type Money = ReturnType<typeof useMoney>;
@@ -27,6 +30,7 @@ export function PlanCard({ projectId, plan, money }: { projectId: string; plan: 
     by: plan.scaleByPercent === null ? "" : String(plan.scaleByPercent),
     clicks: String(plan.minClicks),
     orders: String(plan.minOrders),
+    hosts: plan.linkHosts.join(", "),
   }));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,7 +59,9 @@ export function PlanCard({ projectId, plan, money }: { projectId: string; plan: 
     if (by !== null && (Number.isNaN(by) || by < 0)) return bad("Scale by");
     if (clicks === null || Number.isNaN(clicks) || clicks < 0 || !Number.isInteger(clicks)) return setErr("The minimum clicks must be a whole number, zero or more.");
     if (orders === null || Number.isNaN(orders) || orders < 0 || !Number.isInteger(orders)) return setErr("The minimum orders must be a whole number, zero or more.");
-    const data: Record<string, unknown> = { kind: "plan", minClicks: clicks, minOrders: orders };
+    const hosts = parseHosts(vals.hosts);
+    if (hosts.bad.length) return setErr(`Not a host name: ${hosts.bad.join(", ")}. Write hosts such as shop.example or www.amazon.com, without https:// or a path.`);
+    const data: Record<string, unknown> = { kind: "plan", minClicks: clicks, minOrders: orders, linkHosts: hosts.hosts };
     // a field cleared is saved as null ("not set"), never as zero
     data.planTotalMinor = total;
     data.planMonthlyMinor = monthly;
@@ -94,6 +100,12 @@ export function PlanCard({ projectId, plan, money }: { projectId: string; plan: 
           <NumberField label="Too few clicks to judge, below" value={vals.clicks} onChange={set("clicks")} hint={`Default ${DEFAULT_MIN_CLICKS}. A result with fewer clicks and fewer orders than the minimums gets a warning.`} />
           <NumberField label="Too few orders to judge, below" value={vals.orders} onChange={set("orders")} hint={`Default ${DEFAULT_MIN_ORDERS}.`} />
         </div>
+        <Field
+          label="Hosts tracked links may open"
+          hint="Separate with commas: the landing page's host and your sales channels, for example shop.example, www.amazon.com. A tracked link can only send visitors to these hosts (and their sub-domains), over https."
+        >
+          <Input value={vals.hosts} onChange={(e) => set("hosts")(e.target.value)} placeholder="shop.example, www.amazon.com" />
+        </Field>
         {err && <ErrorLine>{err}</ErrorLine>}
         <div className="flex items-center gap-3">
           <Button type="submit" disabled={busy}>{busy ? "Saving" : "Save budget and rules"}</Button>

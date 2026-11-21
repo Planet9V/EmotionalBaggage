@@ -65,7 +65,7 @@ describe("Printers panel", () => {
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 
-  it("pause needs no confirmation; cancel asks first, names the printer and the file, and sends confirm: true only after Yes", async () => {
+  it("pause needs no confirmation; cancel asks first, names the printer and the file, and sends the printer and the file as the confirm only after Yes", async () => {
     const server = adminServer([
       statusRoute([reading()]),
       on("POST", "/api/printers/1/actions", (c) => ({ body: { ok: true, message: (c.body as { action: string }).action === "pause" ? "PrusaLink paused the print." : "PrusaLink stopped the print." } })),
@@ -88,7 +88,7 @@ describe("Printers panel", () => {
     fireEvent.click(within(card).getByRole("button", { name: "Stop print" }));
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Stop the print" }));
     await waitFor(() => expect(server.calls.filter((c) => c.method === "POST")).toHaveLength(2));
-    expect(server.calls.filter((c) => c.method === "POST")[1].body).toEqual({ action: "cancel", confirm: true });
+    expect(server.calls.filter((c) => c.method === "POST")[1].body).toEqual({ action: "cancel", name: "bracket.bgcode", confirm: { printer: "Bench Prusa", file: "bracket.bgcode" } });
   });
 
   it("a paused print offers Resume; an idle printer offers neither", async () => {

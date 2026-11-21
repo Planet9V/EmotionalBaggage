@@ -229,7 +229,7 @@ Wire lengths on the cut list are estimates from the distance between parts, not 
 | Sales monitor | Log sales by hand and see totals by channel. |
 | Channels and pricing | Record each channel's price, the platform's take and what is left. |
 
-> **Going to market is not built yet.** Stages 5 to 7 are lists you fill in by hand. Nothing is generated: no positioning, brand, tagline, ad or landing page is drafted for you, no landing page is rendered, nothing is posted, and no sales arrive from Amazon. The plan covers this in its go-to-market phase.
+> **Going to market.** Positioning, the brand kit, ads, the listing, the landing page, launch pieces, social posts, campaign plans and replies can be drafted for you; each is a draft until you approve it. The landing page is drawn as a preview behind sign-in and exported as a zip for you to host. An approved post goes to X or Instagram from Marketing, Posting, one at a time after you confirm what goes where. Amazon orders are read into the Sales monitor when you press Sync now. Nothing is published, sent or bought without your confirmation in the app.
 
 ## Order of operations and report
 

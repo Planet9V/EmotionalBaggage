@@ -11,6 +11,7 @@ import { GENERATORS, OPTIMISE_GENERATOR, generator as findGenerator, generatorsF
 import { buildContext, readConcept, runGenerator } from "./run";
 import { listDrafts } from "./store";
 import { readsText, type Draft, type GeneratorInfo, type GeneratorsReply, type RunResult } from "./shared";
+import { safeFetch } from "@/lib/net/outbound";
 
 /** The generators for a concept (optionally only those writing one store), with what each would read. */
 export async function generatorsInfo(projectId: string, opts: { store?: string; kind?: "section" | "optimise" } = {}): Promise<GeneratorsReply> {
@@ -66,7 +67,7 @@ export async function impactFor(projectId: string, itemId: number, timeoutMs = 4
   if (!url) return { engine: "unavailable", changed, note: `${PLANNER_DOWN} (No planner address is set.)` };
   let res: Response;
   try {
-    res = await fetch(`${url}/impact`, {
+    res = await safeFetch(`${url}/impact`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nodes: graph.nodes.map((n) => ({ id: n.id, section: n.section })), edges: graph.edges.map((e) => [e.from, e.to]), changed: [`i${itemId}`] }),

@@ -1,5 +1,6 @@
 // Where the planner service is: the address saved in Admin first, then the PLANNER_URL environment variable.
 import { getSetting, SETTING } from "@/lib/settings";
+import { safeFetch } from "@/lib/net/outbound";
 
 export type PlannerAddress = { url: string | null; source: "admin" | "environment" | null };
 
@@ -23,7 +24,7 @@ export async function plannerHealth(timeoutMs = 2500): Promise<PlannerHealth> {
   const { url, source } = await plannerAddress();
   if (!url) return { connected: false, url, source, error: "No planner address is saved in Admin and PLANNER_URL is not set" };
   try {
-    const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(timeoutMs) });
+    const r = await safeFetch(`${url}/health`, { signal: AbortSignal.timeout(timeoutMs) });
     const j = (await r.json().catch(() => ({}))) as { ok?: boolean; networkx?: string };
     return { connected: r.ok && j.ok !== false, url, source, networkx: j.networkx };
   } catch (e) {

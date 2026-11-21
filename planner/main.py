@@ -23,6 +23,18 @@ from routing import RouteRequest, route as route_wires
 app = FastAPI(title="Concept-to-realization planner")
 
 
+from fastapi.exceptions import RequestValidationError as _RequestValidationError
+from fastapi.responses import JSONResponse as _JSONResponse
+
+
+@app.exception_handler(_RequestValidationError)
+async def _validation_failed(_request, exc: _RequestValidationError):
+    """422 with each problem's place and message. The offending value is left out: it may be NaN or Infinity,
+    which JSON cannot carry, and FastAPI's own handler then fails with a 500."""
+    detail = [{k: v for k, v in e.items() if k in ("type", "loc", "msg")} for e in exc.errors()]
+    return _JSONResponse(status_code=422, content={"detail": detail})
+
+
 class Node(BaseModel):
     id: str = Field(min_length=1)
     # full duration of the node, in minutes
@@ -160,6 +172,8 @@ import shutil as _shutil
 
 from fastapi import HTTPException
 from enclosure import BoxSpec as _BoxSpec, EnclosureError as _EnclosureError, YAPP_VERSION as _YAPP_VERSION, generate as _generate_yapp
+from typing import Annotated as _Annotated
+from fastapi import Query as _Query
 
 
 @app.get("/enclosure/health")
@@ -169,7 +183,7 @@ def enclosure_health():
 
 
 @app.post("/enclosure/yapp")
-def enclosure_yapp(spec: _BoxSpec, timeout: float = 120.0):
+def enclosure_yapp(spec: _BoxSpec, timeout: _Annotated[float, _Query(allow_inf_nan=False)] = 120.0):
     """Runs YAPP_Box in OpenSCAD for the spec. Answers 503 when OpenSCAD is missing, 504 on the time limit, 422 when it refuses."""
     if not _shutil.which("openscad"):
         raise HTTPException(503, "OpenSCAD is not installed in the planner container.")

@@ -77,6 +77,8 @@ export type PlanSettings = {
   scaleByPercent: number | null;
   minClicks: number;
   minOrders: number;
+  /** hosts tracked links may open (src/lib/campaigns/links.ts hostAllowed) */
+  linkHosts: string[];
 };
 
 export function planOf(items: Item[]): PlanSettings {
@@ -92,5 +94,6 @@ export function planOf(items: Item[]): PlanSettings {
     scaleByPercent: n(d.scaleByPercent),
     minClicks: n(d.minClicks) ?? DEFAULT_MIN_CLICKS,
     minOrders: n(d.minOrders) ?? DEFAULT_MIN_ORDERS,
+    linkHosts: Array.isArray(d.linkHosts) ? d.linkHosts.filter((h): h is string => typeof h === "string") : [],
   };
 }

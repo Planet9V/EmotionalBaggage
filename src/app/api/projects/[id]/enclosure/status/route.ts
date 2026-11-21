@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { plannerAddress } from "@/lib/admin/planner";
 import { requireProject, route } from "@/lib/api/route";
+import { safeFetch } from "@/lib/net/outbound";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,7 +13,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
   let yapp: { available: boolean; code?: string; reason?: string; openscad?: string } = { available: false, code: "not-configured", reason: "No planner address is set. Set it in Admin or in PLANNER_URL." };
   if (url) {
     try {
-      const r = await fetch(`${url}/enclosure/health`, { signal: AbortSignal.timeout(2500) });
+      const r = await safeFetch(`${url}/enclosure/health`, { signal: AbortSignal.timeout(2500) });
       const j = (await r.json().catch(() => ({}))) as { openscad?: string | null; yapp?: string };
       if (!r.ok) yapp = { available: false, code: "unreachable", reason: `The planner answered ${r.status}; it may be an older build without the enclosure service.` };
       else if (!j.openscad) yapp = { available: false, code: "no-openscad", reason: "The planner is running but OpenSCAD is not installed in it." };

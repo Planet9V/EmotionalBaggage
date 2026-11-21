@@ -9,7 +9,8 @@ services:
     # The tag is checked to exist on Docker Hub by the CI "stack" job.
     image: ${PG_IMAGE:-pgvector/pgvector:0.8.7-pg19-trixie}
     # Settings for vector search, each with its reason and the measurement behind it in
-    # docs/design/vector-search.md. Sized for a machine that gives Docker 4 GB or more; change them in .env.
+    # docs/design/vector-search.md. Sized for a machine that gives Docker 4 GB or more (Docker Desktop: Settings,
+    # Resources, Memory); with less, lower them in .env as .env.example shows. Docker itself sets no memory limit here.
     command:
       - postgres
       # pgvector: about a quarter of the memory. PostgreSQL's own default is 128MB.
@@ -66,6 +67,7 @@ services:
   # OrcaSlicer at build time): `docker compose --profile slicer up -d --build`, then set SLICER_URL=http://slicer:8000 for web.
   slicer:
     profiles: ["slicer"]
+    # Built for this machine's architecture: OrcaSlicer 2.5.0 has official x86-64 and aarch64 builds (slicer/Dockerfile).
     build: ./slicer
     restart: unless-stopped
 
@@ -78,8 +80,10 @@ services:
       DATABASE_URL: postgresql://c2r:${PGPASSWORD:-c2r}@db:5432/c2r
       PLANNER_URL: http://planner:8000
       SLICER_URL: ${SLICER_URL:-}
+    # Published on this machine only by default. WEB_BIND=0.0.0.0 opens it to the network: change the demo / demo
+    # password first (docs/guide/admin.md, "Opening it to the network").
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     depends_on:
       db:
         condition: service_healthy

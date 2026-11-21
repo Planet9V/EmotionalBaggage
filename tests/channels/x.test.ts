@@ -7,6 +7,10 @@ import { POST as CONNECT } from "@/app/api/channels/x/connect/route";
 import { GET as CALLBACK } from "@/app/api/channels/x/callback/route";
 import { POST as ACK } from "@/app/api/channels/x/ack/route";
 import { POST as SEND } from "@/app/api/channels/send/route";
+import { POST as RESOLVE } from "@/app/api/channels/send/resolve/route";
+import { POST as ITEM_POST } from "@/app/api/projects/[id]/items/route";
+import { channelFetch } from "@/lib/channels/http";
+import { createServer } from "node:net";
 import { GET as PREVIEW } from "@/app/api/channels/send/preview/route";
 import { POST as FETCH } from "@/app/api/channels/inbox/fetch/route";
 import { PATCH as ITEM_PATCH } from "@/app/api/items/[id]/route";
@@ -244,6 +248,66 @@ describe("sending a post", () => {
     expect(row.data.sendError).toBeTruthy();
     const again = await send(id, { channel: "x", itemId: id, textSha256: p.body.textSha256 });
     expect(again.status).toBe(200);
+  });
+});
+
+// Robustness review S9: a sent post's markers could be cleared by a plain PATCH and its status set back to approved, and a
+// `sending` marker older than five minutes made a row sendable again even if the post had gone out.
+describe("send markers are the server's, and an unknown outcome blocks a re-send", () => {
+  const preview = async (id: number) => read<Preview & { error?: string }>(await PREVIEW(json("GET", undefined, `${BASE}/api/channels/send/preview?projectId=${P}&kind=post&itemId=${id}`)));
+  const send = async (id: number, confirm: Record<string, unknown>) => read<{ ok?: boolean; error?: string; detail?: unknown }>(await SEND(json("POST", { projectId: P, kind: "post", itemId: id, confirm })));
+  const resolve = async (id: number, outcome: string) => read<{ item?: { status: string; data: Record<string, unknown> }; error?: string }>(await RESOLVE(json("POST", { projectId: P, kind: "post", itemId: id, outcome })));
+
+  it("the reviewer's repro: a plain PATCH cannot clear sent or approve a sent post again", async () => {
+    const id = await addItem(P, "marketing/social", "Already out", { channel: "X", sent: { id: "1", at: "2026-11-21T00:00:00Z" } }, "Out.", "posted");
+    const clear = await read<{ error: string }>(await ITEM_PATCH(json("PATCH", { data: { sent: null } }), ctx(String(id))));
+    expect(clear.status).toBe(400);
+    expect(clear.body.error).toMatch(/"sent" is written when the post or reply is sent/);
+    const again = await read<{ error: string }>(await ITEM_PATCH(json("PATCH", { status: "approved" }), ctx(String(id))));
+    expect(again.status).toBe(409);
+    for (const k of ["sending", "sendError", "sendUnknown"]) {
+      expect((await read(await ITEM_PATCH(json("PATCH", { data: { [k]: null } }), ctx(String(id))))).status, k).toBe(400);
+    }
+    const made = await ITEM_POST(json("POST", { section: "marketing/social", title: "zz forged", data: { channel: "X", sent: { id: "9" } } }), ctx(P));
+    expect(made.status).toBe(400);
+  });
+
+  it("a stale sending marker is an unknown outcome: no re-send until the user records what the channel shows", async () => {
+    const at = new Date(Date.now() - 10 * 60_000).toISOString();
+    const id = await addItem(P, "marketing/social", "Interrupted", { channel: "X", sending: { at, by: "demo" } }, "Did it go?", "approved");
+    const p = await preview(id);
+    expect(p.body.sendable).toBe(false);
+    expect(p.body.outcomeUnknown).toBe(true);
+    expect(p.body.blocked).toMatch(/Outcome unknown: check the channel/);
+    const before = s.requests.filter((x) => x.path === "/2/tweets").length;
+    const r = await send(id, { channel: "x", itemId: id, textSha256: p.body.textSha256 });
+    expect(r.status).toBe(409);
+    expect(s.requests.filter((x) => x.path === "/2/tweets")).toHaveLength(before);
+
+    const checked = await resolve(id, "not-posted");
+    expect(checked.status).toBe(200);
+    const ev = await q<{ summary: string }>("SELECT summary FROM events WHERE project_id=$1 AND kind='channel.post.resolved' ORDER BY id DESC LIMIT 1", [P]);
+    expect(ev[0].summary).toMatch(/was not posted/);
+    const ok = await send(id, { channel: "x", itemId: id, textSha256: (await preview(id)).body.textSha256 });
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200);
+  });
+
+  it("recording that it was posted marks it sent and never sends it", async () => {
+    const id = await addItem(P, "marketing/social", "Timed out", { channel: "X", sendUnknown: { at: new Date().toISOString(), message: "X did not answer" } }, "Maybe out.", "approved");
+    expect((await resolve(id, "posted")).body.item).toMatchObject({ status: "posted" });
+    expect((await preview(id)).body.sendable).toBe(false);
+    expect((await resolve(id, "posted")).status).toBe(409);
+  });
+
+  it("a call that may have reached the service is marked as an unknown outcome; a refused connection is not", async () => {
+    const reset = createServer((sock) => sock.on("data", () => sock.destroy()));
+    await new Promise<void>((r) => reset.listen(0, "127.0.0.1", () => r()));
+    const port = (reset.address() as { port: number }).port;
+    const e1 = (await channelFetch("X", `http://127.0.0.1:${port}/2/tweets`, { method: "POST", body: "{}" }, []).then(() => null, (x) => x)) as { unknownOutcome?: boolean };
+    expect(e1.unknownOutcome).toBe(true);
+    await new Promise((r) => reset.close(r));
+    const e2 = (await channelFetch("X", `http://127.0.0.1:${port}/2/tweets`, { method: "POST", body: "{}" }, []).then(() => null, (x) => x)) as { unknownOutcome?: boolean };
+    expect(e2.unknownOutcome).toBe(false);
   });
 });
 

@@ -9,7 +9,9 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
-    public detail?: unknown
+    public detail?: unknown,
+    /** extra response headers, for example Retry-After */
+    public headers?: Record<string, string>
   ) {
     super(message);
   }
@@ -25,7 +27,113 @@ const PG: Record<string, [number, string]> = {
   "23503": [404, "The concept or record this refers to does not exist."],
   "23505": [409, "That already exists."],
   "23514": [400, "A value in the request is not allowed."],
+  // a NUL character or bytes that are not valid text
+  "22021": [400, "A value in the request contains a character that cannot be stored."],
+  "22P05": [400, "A value in the request contains a character that cannot be stored."],
+  // program_limit_exceeded, for example a value too large for an index
+  "54000": [400, "A value in the request is too large to store."],
 };
+
+export const NUL_REFUSED = "A value in the request contains a NUL character (\\u0000), which cannot be stored. Remove it and try again.";
+
+/** True when any string (or object key) inside a parsed JSON value contains U+0000. */
+export function hasNul(v: unknown, depth = 0): boolean {
+  if (typeof v === "string") return v.includes("\u0000");
+  if (depth > 200 || v === null || typeof v !== "object") return false;
+  if (Array.isArray(v)) return v.some((x) => hasNul(x, depth + 1));
+  for (const [k, x] of Object.entries(v)) if (k.includes("\u0000") || hasNul(x, depth + 1)) return true;
+  return false;
+}
+
+/** The largest request body a route takes unless it says otherwise (route(handler, { maxBodyBytes })). */
+export const DEFAULT_MAX_BODY_BYTES = 4 * 1024 * 1024;
+
+export type RouteOptions = {
+  /** the largest body this route reads; a larger one is refused with 413 before it is parsed */
+  maxBodyBytes?: number;
+  /** the sentence for that 413 */
+  tooLarge?: string;
+};
+
+const megabytes = (n: number) => `${Math.round((n / (1024 * 1024)) * 10) / 10} MB`;
+
+/** Reads at most `max` bytes of a stream; null when there is more. */
+async function readCapped(body: ReadableStream<Uint8Array>, max: number): Promise<Uint8Array | null> {
+  const reader = body.getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      // not awaited: a cancelled branch of a cloned (teed) body settles only once the other branch is cancelled too
+      void reader.cancel().catch(() => undefined);
+      return null;
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.byteLength;
+  }
+  return out;
+}
+
+/**
+ * Checks the request before the handler runs (robustness review S2 and S8), so before any model call:
+ * - the body may not be larger than the route takes: a Content-Length over the limit is a 413 before
+ *   anything is read; a body sent without one is counted as it is read, up to the limit;
+ * - a NUL character (U+0000) may not appear in the path, the query or a non-multipart body: PostgreSQL text
+ *   cannot hold it, so it could only end in a 500. A multipart upload's text fields are not read here; a NUL
+ *   there reaches the database's 22021, which answers 400.
+ */
+async function guardRequest(req: Request, opts: RouteOptions) {
+  let u: URL | null = null;
+  try {
+    u = new URL(req.url);
+  } catch {
+    u = null;
+  }
+  if (u) {
+    for (const seg of u.pathname.split("/")) {
+      let d = seg;
+      try {
+        d = decodeURIComponent(seg);
+      } catch {
+        // a malformed escape is the handler's to refuse
+      }
+      if (d.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
+    }
+    for (const [k, v] of u.searchParams) if (k.includes("\u0000") || v.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
+  }
+  if (SAFE_METHODS.has(req.method.toUpperCase()) || !req.body) return;
+  const max = opts.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
+  const tooLarge = () => new HttpError(413, opts.tooLarge ?? `The request is larger than ${megabytes(max)}, the most this address takes.`);
+  const declared = req.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared.trim()) && Number(declared) > max) throw tooLarge();
+  const multipart = /multipart\/form-data/i.test(req.headers.get("content-type") ?? "");
+  if (multipart) {
+    // an upload sent in chunks with no length cannot be measured before it is parsed
+    if (declared === null && /chunked/i.test(req.headers.get("transfer-encoding") ?? "")) throw new HttpError(411, "Send the upload with a Content-Length.");
+    return;
+  }
+  const bytes = await readCapped(req.clone().body!, max);
+  if (!bytes) throw tooLarge();
+  const text = new TextDecoder().decode(bytes);
+  if (text.includes("\u0000")) throw new HttpError(400, NUL_REFUSED);
+  if (/\\u0000/i.test(text)) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return; // not JSON: body() answers that
+    }
+    if (hasNul(parsed)) throw new HttpError(400, NUL_REFUSED);
+  }
+}
 
 /** Unique rules the database enforces, in the user's terms. */
 const CONFLICT: Record<string, string> = {
@@ -36,7 +144,7 @@ const CONFLICT: Record<string, string> = {
 
 function fail(e: unknown) {
   if (e instanceof HttpError) {
-    return NextResponse.json({ error: e.message, ...(e.detail ? { detail: e.detail } : {}) }, { status: e.status });
+    return NextResponse.json({ error: e.message, ...(e.detail ? { detail: e.detail } : {}) }, { status: e.status, ...(e.headers ? { headers: e.headers } : {}) });
   }
   if (e instanceof ZodError) {
     const issues = e.issues.map((i) => ({ field: i.path.join(".") || "(body)", problem: i.message }));
@@ -126,7 +234,7 @@ export function sessionOf(req: Request): Session {
  */
 type Wrapped<A extends unknown[]> = (...args: A extends [] ? [req: Request] : A) => Promise<Response>;
 
-function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, open: boolean): Wrapped<A> {
+function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, open: boolean, opts: RouteOptions = {}): Wrapped<A> {
   return async (...args): Promise<Response> => {
     try {
       const req = requestOf(args);
@@ -135,6 +243,7 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
       if (!SAFE_METHODS.has(req.method.toUpperCase()) && !sameOrigin(req)) {
         throw new HttpError(403, "This request came from another site and was refused.");
       }
+      await guardRequest(req, opts);
       if (!open) {
         const session = await sessionFromRequest(req);
         if (!session) throw new HttpError(401, SIGN_IN_REQUIRED);
@@ -161,8 +270,8 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
  * route answers without a session.
  */
 export const route = Object.assign(
-  <A extends unknown[]>(handler: (...args: A) => Promise<Response>) => wrap(handler, false),
-  { open: <A extends unknown[]>(handler: (...args: A) => Promise<Response>) => wrap(handler, true) }
+  <A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions) => wrap(handler, false, opts),
+  { open: <A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions) => wrap(handler, true, opts) }
 );
 
 /** Reads and validates a JSON body. A body that is not JSON is a 400, not an empty object. */

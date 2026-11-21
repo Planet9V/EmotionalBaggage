@@ -13,6 +13,7 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { embed, getEmbedding } from "@/lib/ai/models";
 import type { Item } from "@/lib/types";
 import { CHANNEL, reviewData, SENTIMENTS } from "./schemas";
+import { assertRoomFor } from "@/lib/api/limits";
 
 // ---------------------------------------------------------------------------------------------
 // Import
@@ -101,6 +102,7 @@ export async function importReviews(projectId: string, input: string, defaults: 
   if (!rows.length) return { added: 0, skipped: 0, problems: problems.length ? problems : ["Nothing to import: no rows with text were found."], columns };
   let added = 0;
   await tx(async (c) => {
+    await assertRoomFor(c, projectId, rows.length);
     for (const r of rows) {
       const data = reviewData.parse({
         kind: r.kind,

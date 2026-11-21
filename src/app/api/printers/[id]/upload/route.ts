@@ -9,11 +9,12 @@ const MAX = 100 * 1024 * 1024;
 export const POST = route(async (req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That printer");
   const form = await req.formData().catch(() => null);
-  const file = form?.get("file");
+  if (!form) throw new HttpError(400, "The upload could not be read. Send it as multipart/form-data with a file field.");
+  const file = form.get("file");
   if (!(file instanceof File)) throw new HttpError(400, "file is required.");
   if (file.size > MAX) throw new HttpError(413, "Files are limited to 100 MB.");
-  const given = form?.get("name");
+  const given = form.get("name");
   const name = typeof given === "string" && given.trim() ? given.trim() : file.name;
   const result = await uploadToPrinter(id, { data: new Uint8Array(await file.arrayBuffer()), contentType: file.type || undefined }, name);
   return NextResponse.json({ ok: true, name: result.name, message: result.message }, { status: 201 });
-});
+}, { maxBodyBytes: MAX + 64 * 1024, tooLarge: "Files are limited to 100 MB." });

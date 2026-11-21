@@ -102,7 +102,7 @@ const WHERE = { x: "X", instagram: "Instagram" } as const;
 export function SendDialog({ projectId, kind, itemId, onClose }: { projectId: string; kind: SendKind; itemId: number; onClose: () => void }) {
   const prev = useQuery(channelQueries.preview(projectId, kind, itemId));
   const status = useChannelStatus(projectId);
-  const { send, setImage } = useChannelActions(projectId);
+  const { send, setImage, resolveSend } = useChannelActions(projectId);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ id: string; url?: string } | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -194,6 +194,25 @@ export function SendDialog({ projectId, kind, itemId, onClose }: { projectId: st
             </div>
           ) : null}
           {p.blocked ? <p role="status" className="rounded-md bg-warning-soft px-3 py-2 text-warning">{p.blocked}</p> : null}
+          {p.outcomeUnknown ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-hairline bg-subtle p-3">
+              <p className="w-full text-secondary">Open {where} and look for this {kind}. Then record what you found; it is kept in the activity list.</p>
+              {(["not-posted", "posted"] as const).map((outcome) => (
+                <Button
+                  key={outcome}
+                  size="sm"
+                  variant="outline"
+                  disabled={resolveSend.isPending}
+                  onClick={() => {
+                    setError("");
+                    resolveSend.mutate({ kind, itemId, outcome }, { onSuccess: () => void prev.refetch(), onError: (e) => setError(messageOf(e)) });
+                  }}
+                >
+                  {outcome === "posted" ? `It is on ${where}` : `It is not on ${where}`}
+                </Button>
+              ))}
+            </div>
+          ) : null}
           {error ? <ErrorLine>{error}</ErrorLine> : null}
           <NotRealNote service={`Sending to ${where}`} />
           <div className="flex flex-wrap justify-end gap-2 border-t border-hairline pt-3">

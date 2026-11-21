@@ -106,6 +106,14 @@ describe("csv mapping", () => {
 describe("tracked links and the short redirect", () => {
   let code = "";
   let linkId = 0;
+  let planRow = 0;
+  // destinations must be on the concept's allow-list (Marketing budget and rules), robustness review S5
+  beforeAll(async () => {
+    planRow = await addItem(P, CAMPAIGN_STORE, "Marketing plan", { kind: "plan", linkHosts: ["shop.example", "169.254.169.254"] }, "", "planned");
+  });
+  afterAll(async () => {
+    await q("DELETE FROM items WHERE id=$1", [planRow]);
+  });
   const make = (extra: Record<string, unknown> = {}) => call<{ link: { id: number; code: string | null; destination: string; shortPath: string | null } }>(postLink, "POST", "links", { campaignId: camp, baseUrl: "https://shop.example/lamp", source: "meta", medium: "paid-social", ...extra });
 
   it("builds the UTM address and a short code", async () => {
@@ -126,6 +134,32 @@ describe("tracked links and the short redirect", () => {
     expect((await make({ baseUrl: "https://user:pw@shop.example/" })).status).toBe(400);
     expect((await make({ baseUrl: "ftp://shop.example/" })).status).toBe(400);
     expect((await make({ creativeId: camp })).status).toBe(400);
+  });
+
+  it("the reviewer's repro: refuses http, a host that is not on the list, and a metadata address even when listed", async () => {
+    const http = await make({ baseUrl: "http://shop.example/lamp" });
+    expect(http.status).toBe(400);
+    const phish = await make({ baseUrl: "https://evil.example/login" });
+    expect(phish.status).toBe(400);
+    expect((phish.body as unknown as { error: string }).error).toMatch(/not on this concept's list/);
+    const meta = await make({ baseUrl: "https://169.254.169.254/latest/meta-data/" });
+    expect(meta.status).toBe(400);
+    expect((meta.body as unknown as { error: string }).error).toMatch(/link-local/);
+    // a sub-domain of a listed host is allowed
+    expect((await make({ baseUrl: "https://www.shop.example/lamp", short: false })).status).toBe(201);
+  });
+
+  it("does not follow a destination the rules no longer allow, and shows nothing but a 404", async () => {
+    for (const destination of ["http://shop.example/old", "https://evil.example/", "https://169.254.169.254/"]) {
+      const c = `zz${Math.random().toString(36).slice(2, 8)}`.replace(/[^a-z0-9]/g, "a").slice(0, 8);
+      await q(
+        "INSERT INTO tracked_links (project_id, campaign_id, base_url, destination, utm_source, utm_medium, utm_campaign, code) VALUES ($1,$2,$3,$3,'x','cpc','c',$4)",
+        [P, camp, destination, c]
+      );
+      const r = await open(c);
+      expect({ destination, status: r.status, location: r.headers.get("location") }).toEqual({ destination, status: 404, location: null });
+      expect(await r.text()).toBe("This link does not exist.");
+    }
   });
 
   it("redirects to the saved destination only, and counts the click by day with nothing about the visitor", async () => {

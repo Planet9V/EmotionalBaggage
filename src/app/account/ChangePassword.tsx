@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { meQuery } from "./me";
+import { SignOutEverywhere } from "./SignOutEverywhere";
 
 const MIN = 8;
 
@@ -105,6 +106,7 @@ export function ChangePassword() {
           </div>
           <Button type="submit" disabled={busy}>{busy ? "Changing…" : "Change password"}</Button>
         </form>
+        <SignOutEverywhere />
       </div>
     </>
   );

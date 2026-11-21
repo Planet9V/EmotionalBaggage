@@ -4,6 +4,7 @@ import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { publicImageProblem } from "@/lib/channels/instagram";
 import { imageBody } from "@/lib/channels/requests";
 import { CHANNEL } from "@/lib/channels/schemas";
+import { checkAddress } from "@/lib/net/outbound";
 
 /** POST { projectId, itemId, imageUrl, altText? }: the public JPEG address Instagram will fetch for this post. Empty clears it. */
 export const POST = route(async (req: Request) => {
@@ -12,6 +13,9 @@ export const POST = route(async (req: Request) => {
   if (b.imageUrl) {
     const problem = publicImageProblem(b.imageUrl);
     if (problem) throw new HttpError(400, problem);
+    // the shared outbound rule, after resolving the name (src/lib/net/outbound.ts)
+    const refused = await checkAddress(b.imageUrl);
+    if (refused) throw new HttpError(400, `The image address is not allowed: ${refused}.`);
   }
   const item = await tx(async (c) => {
     const r = await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1 AND project_id=$2 AND section=$3 FOR UPDATE`, [b.itemId, b.projectId, CHANNEL.social]);

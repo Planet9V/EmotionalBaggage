@@ -54,11 +54,13 @@ A new install has one account: user `demo`, password `demo`. Opening the app tak
 
 **Signing out.** "Sign out" at the foot of the sidebar ends the session on the server and removes the cookie.
 
-**Too many failed attempts.** After 5 wrong passwords for a name within 15 minutes, that name is refused until 15 minutes after the first failure. Wait, or clear the count:
+**Too many failed attempts.** There is no lockout. After 3 wrong passwords for one name from one network address, each further try from that address has to wait: 1 second after the next failure, then 2, 4, 8 and so on, at most 15 minutes. After 20 wrong passwords from one address, whatever the names, that address waits the same way. A try made during a wait is refused with "Try again in ..." and does not count. The right password is always accepted once the wait that applies to it has passed, and it clears the count for that name and address. Someone guessing from another address does not slow you down. Counts are forgotten after an hour without a try. To clear them at once:
 
 ```
 docker compose exec db psql -U c2r c2r -c "DELETE FROM sign_in_attempts;"
 ```
+
+**Behind a reverse proxy.** The app takes the network address from the connection itself (the container starts with `node -r ./client-address.cjs server.js`, which records it). Behind a reverse proxy every request comes from the proxy, so set `TRUST_PROXY=1` for the web service: the app then reads the address from the right-most entry of `X-Forwarded-For`, which your proxy must append (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`). Never set it without a proxy in front: anyone could then send their own `X-Forwarded-For` and escape the per-address limits. Run with `next dev` or `next start`, the address is not recorded and every request counts as one address.
 
 **Lost password.** This puts the install back to `demo` / `demo`. It deletes the account and its sessions; concepts and their data do not belong to an account, so nothing else is lost. The app recreates the default account when it starts with no users:
 
@@ -70,8 +72,12 @@ docker compose restart web
 **What sign-in does not protect.** This is a public test with a published default password, and keys saved in Admin are stored in the database unencrypted.
 
 - Over plain http, anyone on the same network can read the password as it is typed and the session cookie, and use that cookie for up to 30 days. To use the app beyond your own machine, put it behind an HTTPS reverse proxy that sends `X-Forwarded-Proto: https` and passes the original `Host` header (nginx: `proxy_set_header Host $host;`); the cookie is then marked Secure. A proxy that rewrites `Host` makes every save answer 403. This has not been run behind a real proxy.
-- Anyone who can reach the app can lock the account for 15 minutes by sending 5 wrong passwords, and can do it again. There is no limit per network address.
+- Sign-in attempts are slowed per name and address and per address (above), not locked. Someone sharing your network address (the same office or home router) shares its waits.
 - There is one account and no roles: whoever signs in can read and change everything, including saved keys (which the app never shows in full, but which sit readable in the database).
+
+### Signing out
+
+Account, Sign out everywhere ends every session. A session ends 30 days after last use, and 90 days after sign-in in any case.
 
 ## The audit log
 
@@ -87,8 +93,27 @@ Every setting is optional except the database password. Keys, models, the planne
 |---|---|
 | `PGPASSWORD` | The database password. It applies when the database is first created; changing it later does not change an existing database. |
 | `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
-| `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY` | Fallbacks only. A key saved in Admin is used first. |
+| `WEB_BIND` | The address the app is published on. Default `127.0.0.1`: this machine only. See "Opening it to the network". |
+| `TRUST_PROXY` | `1` only behind a reverse proxy that appends `X-Forwarded-For`. See "Behind a reverse proxy" under Signing in. |
+| `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY` | Fallbacks only. A key saved in Admin is used first. A key from the environment is only ever sent to the provider's own address (`https://openrouter.ai`, `https://api.perplexity.ai` or `PERPLEXITY_BASE_URL`); to use a key with another model address, save it in Admin. |
 | `PRINTER_KIND`, `PRINTER_URL`, `PRINTER_API_KEY` | Printer status in Prototype, 3D printing. `PRINTER_KIND` is `octoprint` or `moonraker`. |
+| `AMAZON_SP_REFRESH_TOKEN`, `AMAZON_SP_CLIENT_ID`, `AMAZON_SP_CLIENT_SECRET`, `X_ACCESS_TOKEN`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID` | Fallbacks for the channel credentials (Amazon orders, X, Instagram). Saving them in Admin, Credentials is the usual way. |
+
+**Keys stay with their host.** Every key saved in Admin is recorded with the address (scheme, host and port) it was saved for, and is only ever sent there. A model key is saved for the model address in use at the time (Admin, Models). If you move a model to another host, the key is removed when no model uses the old host any more, and Admin says so; type the key again for the new address. A connection test at another address does not use the saved key: type the key in the test form (it is used for that test only and not saved). A printer whose address moves to another host needs its key, password or access code typed again in the same change.
+
+## Opening it to the network
+
+The app is published on `127.0.0.1` by default, so only this machine can reach it. To open it to your network, first change the `demo` / `demo` password (Account), then set `WEB_BIND=0.0.0.0` in `.env` and run `docker compose up -d`. Over plain http anyone on that network can read what is typed; see "What sign-in does not protect".
+
+## Memory for Docker
+
+The database settings (`shared_buffers` 1 GB, `maintenance_work_mem` 1 GB, `/dev/shm` 1 GB) assume Docker may use 4 GB or more. On Docker Desktop set it under Settings, Resources, Memory. With 2 GB, put these lines in `.env`: `PG_SHARED_BUFFERS=256MB`, `PG_EFFECTIVE_CACHE_SIZE=768MB`, `PG_MAINTENANCE_WORK_MEM=256MB`, `PG_SHM_SIZE=512mb`, `PG_MAX_PARALLEL_MAINTENANCE_WORKERS=1`. Vector index builds are then slower. The compose file sets no memory limit of its own.
+
+## Apple-silicon Macs
+
+The database image is published for arm64 as well as amd64 (CI checks that it offers both); the web and planner images are built on your machine from base images that are published for both. The slicer builds natively too: OrcaSlicer 2.5.0 publishes an aarch64 AppImage, which the slicer image uses on arm64 with its own pinned checksum. None of the stack has been run on an Apple-silicon Mac yet. If the arm64 slicer image does not work, build the x86-64 one under emulation (slower): `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose --profile slicer build slicer`. Or run the OrcaSlicer wrapper (`slicer/`) on another machine and point `SLICER_URL` at it.
+
+**Printers on the local network.** Names ending in `.local` (such as `octopi.local`) do not resolve inside the app's container. Use the printer's IP address.
 
 ## Models
 

@@ -43,7 +43,7 @@ export const saleData = z.looseObject({
   units: num.optional(),
   revenue: num.optional(),
   currency: text(3).optional(),
-  externalId: text(200).optional(),
+  externalId: text(120).optional(),
   orderId: text(60).optional(),
   marketplaceId: text(40).optional(),
   orderStatus: text(40).optional(),
@@ -62,7 +62,7 @@ export const reviewData = z.looseObject({
   productVersion: text(80).optional(),
   sentiment: z.union([z.literal(""), z.enum(SENTIMENTS)]).optional(),
   topic: text(80).optional(),
-  externalId: text(200).optional(),
+  externalId: text(120).optional(),
   /** requirement keys this row was turned into */
   requirements: z.array(text(120)).max(50).optional(),
 });
@@ -72,7 +72,7 @@ export const INBOX_CHANNELS = ["X", "Instagram"] as const;
 /** A mention, reply or comment read from X or Instagram. Only what a reply needs: no follower data. */
 export const inboxData = z.looseObject({
   channel: z.enum(INBOX_CHANNELS).optional(),
-  externalId: text(200).optional(),
+  externalId: text(120).optional(),
   /** the id on the service to reply to (tweet id or Instagram comment id) */
   replyTo: text(60).optional(),
   author: text(120).optional(),

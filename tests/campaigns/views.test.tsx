@@ -79,7 +79,7 @@ describe("campaigns view", () => {
       toCampaign(campaign(1, { budgetTotalMinor: 60000, startDate: "2026-12-01", endDate: "2026-12-30" }) as never),
       toCampaign(campaign(2, { budgetTotalMinor: 5000 }) as never),
     ];
-    const plan = { id: 9, totalMinor: 50000, monthlyMinor: 40000, allowableSharePercent: null, judgeAfterOrders: null, scaleBelowPercent: null, scaleByPercent: null, minClicks: 100, minOrders: 10 };
+    const plan = { id: 9, totalMinor: 50000, monthlyMinor: 40000, allowableSharePercent: null, judgeAfterOrders: null, scaleBelowPercent: null, scaleByPercent: null, minClicks: 100, minOrders: 10, linkHosts: [] };
     const money = { currency: "USD", format: (m: number) => `$${(m / 100).toFixed(2)}`, toInput: () => "", fromInput: () => null };
     render(<BudgetTable campaigns={cs} plan={plan} money={money} />);
     expect(screen.getByTestId("budget-sentence").textContent).toContain("$100.00 over the total marketing budget of $500.00");

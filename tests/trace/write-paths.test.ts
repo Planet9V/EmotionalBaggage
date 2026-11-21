@@ -18,6 +18,14 @@ import { PUT as saveMapping } from "@/app/api/projects/[id]/campaigns/csv-mappin
 import { ctx, json, read } from "../api/helpers";
 import { drop, events, newConcept } from "./helpers";
 
+/** Tracked links may only go to hosts on the concept's list (kept on its marketing plan row). */
+async function allowLinkHost(projectId: string, host: string) {
+  const data = JSON.stringify({ linkHosts: [host] });
+  const u = await q<{ id: number }>("UPDATE items SET data = data || $2::jsonb WHERE project_id=$1 AND section='marketing/campaigns' AND data->>'kind'='plan' RETURNING id", [projectId, data]);
+  if (!u.length) await q("INSERT INTO items (project_id, section, title, body, data, status, sort) VALUES ($1,'marketing/campaigns','Marketing plan','',$2::jsonb || '{\"kind\":\"plan\"}'::jsonb,'planned',99999)", [projectId, data]);
+}
+
+
 const ROOT = join(process.cwd(), "src/app/api");
 const WRITES = /export const (POST|PUT|PATCH|DELETE)\b/;
 const RECORDS = /\b(logEvent|logEventIn|audit|auditIn)\(/;
@@ -35,6 +43,7 @@ const WRITE_PATHS: Record<string, string> = {
   "admin/test/route.ts": "src/lib/admin/connection.ts",
   "auth/password/route.ts": "self",
   "auth/sign-in/route.ts": "self",
+  "auth/sign-out-everywhere/route.ts": "self",
   "auth/sign-out/route.ts": "none: ending a session changes no concept or setting; sign-in and refused sign-ins are recorded",
   "challenge/route.ts": "self",
   "channels/amazon/route.ts": "self",
@@ -44,6 +53,7 @@ const WRITE_PATHS: Record<string, string> = {
   "channels/instagram/review/route.ts": "self",
   "channels/reviews/import/route.ts": "src/lib/channels/reviews.ts",
   "channels/reviews/requirement/route.ts": "src/lib/channels/reviews.ts",
+  "channels/send/resolve/route.ts": "src/lib/channels/send.ts",
   "channels/send/route.ts": "src/lib/channels/send.ts",
   "channels/x/ack/route.ts": "src/lib/channels/inbox.ts",
   "channels/x/connect/route.ts": "self",
@@ -233,6 +243,7 @@ describe("the new write paths, called one by one", () => {
     expect((await removeResults(json("DELETE", { campaignId: camp, ids }), ctx(project))).status).toBe(200);
     expect((await last("campaign.results.removed")).before).toEqual({ results: [expect.objectContaining({ spend: 700 })] });
 
+    await allowLinkHost(project, "example.com");
     const link = await read<{ link: { id: number } }>(await makeLink(json("POST", { campaignId: camp, creativeId: ad, baseUrl: "https://example.com/", source: "meta", medium: "paid-social" }), ctx(project)));
     expect(link.status).toBe(201);
     expect((await last("campaign.link")).after).toMatchObject({ destination: expect.stringContaining("utm_content=ad") });

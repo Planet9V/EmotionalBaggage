@@ -65,7 +65,11 @@ export const adminSettingsPut = z
   .refine((v) => Object.keys(v).length > 0, { message: "nothing to change" });
 
 export const credentialsPut = z
-  .object({ fields: z.record(z.string().max(80), z.string().max(MAX_VALUE, "is too long")) })
+  .object({
+    fields: z.record(z.string().max(80), z.string().max(MAX_VALUE, "is too long")),
+    /** model hosts only: the address the key is for; a saved key is only ever sent to this host */
+    address: httpUrl.optional(),
+  })
   .strict();
 
 /** Values for a printer's access fields. Blank leaves a saved value unchanged; null removes an optional one. */

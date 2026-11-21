@@ -1,6 +1,6 @@
 // The shopping list: what is still to be bought, grouped by supplier, with totals worked out from the chosen offers.
 // Money is added in minor units (cents) so a total is never off by a rounding crumb. No currency conversion: one currency per concept.
-import Papa from "papaparse";
+import { toCsvText } from "@/lib/csv";
 import { readSourcing, type Offer } from "./schemas";
 
 export type ListPart = { id: number; ref: string; title: string; qty: number | null; status: string; data: Record<string, unknown> };
@@ -90,7 +90,7 @@ export function shoppingCsv(s: Shopping, currency: string): string {
   }
   for (const u of s.unchosen) rows.push(["No supplier chosen", u.ref, u.title, "", u.need, "", "", "", "", "", "", ""]);
   rows.push(["Total", "", "", "", "", "", "", "", "", money(s.totalCents), "", ""]);
-  return Papa.unparse(rows, { newline: "\r\n", escapeFormulae: true });
+  return toCsvText(rows, { trailingNewline: false });
 }
 
 /** The per-piece price a chosen offer gives the part (pack price over pack size), for the economics to read. */

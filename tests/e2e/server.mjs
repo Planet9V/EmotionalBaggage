@@ -124,7 +124,8 @@ for (;;) {
 console.log(`[e2e server] planner at ${plannerUrl}`);
 
 // 4. The app.
-const web = spawn(process.execPath, ["server.js"], {
+// the preload puts the connection's address where sign-in throttling reads it (scripts/client-address.cjs)
+const web = spawn(process.execPath, ["-r", `${ROOT}scripts/client-address.cjs`, "server.js"], {
   cwd: STANDALONE,
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, NODE_ENV: "production", HOSTNAME: "127.0.0.1", PORT, DATABASE_URL, PLANNER_URL: plannerUrl },

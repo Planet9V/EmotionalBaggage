@@ -3,6 +3,7 @@
 // Relative imports on purpose: a plain Node check can load this file without path aliases.
 import type { Item } from "@/lib/types";
 import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type NetClass, readXY, type Part, type Wire, type XY } from "@/lib/domain";
+import { toCsvText } from "@/lib/csv";
 
 export { CLASS_LABEL, readWires };
 export type { Part, XY };
@@ -402,10 +403,6 @@ export function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "concept";
 }
 
-const csvCell = (v: string | number) => {
-  const s = String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
 
 export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "note", "status"];
 
@@ -414,7 +411,7 @@ export function wiringCsv(wires: Wire[]): string {
   const rows = [...wires]
     .sort((a, b) => a.order - b.order || a.item.id - b.item.id)
     .map((w) => [w.order, w.name, w.net, w.netClass, w.from, w.fromPin, w.to, w.toPin, w.note, w.status]);
-  return [CSV_HEADER, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  return toCsvText([CSV_HEADER, ...rows]);
 }
 
 /** (b1) Netlist as plain text, grouped by the net name on each wire. */

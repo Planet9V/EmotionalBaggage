@@ -19,7 +19,7 @@ export function toSections(rows: Item[]): LandingSection[] {
     .map((r) => ({ id: r.id, kind: r.data.kind as LandingSection["kind"], content: (r.data.content ?? {}) as Record<string, unknown>, status: r.status, order: typeof r.data.order === "number" ? r.data.order : 0 }));
 }
 
-type FileRow = { id: string; name: string; mime: string };
+type FileRow = { id: string; name: string; mime: string; bytes?: Buffer };
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/svg+xml": "svg" };
 
 /** An approved price as the page shows it, in the concept's currency (projects.currency). A price saved in another currency is not shown. */
@@ -54,7 +54,10 @@ export async function landingEnv(projectId: string, name: string, sections: Land
     const state = proofStateOf({ id: r.id, section: r.section, title: r.title, body: r.body, status: r.status, data: r.data });
     if (state !== "not proof") labelOf.set(r.id, `${state[0].toUpperCase()}${state.slice(1)}: ${r.title}`.slice(0, 160));
   }
-  const files = imageIds.size ? await q<FileRow>("SELECT id, name, mime FROM files WHERE project_id=$1 AND id = ANY($2)", [projectId, [...imageIds]]) : [];
+  // The preview frame is sandboxed without allow-same-origin, so it cannot load /api/files (no session there):
+  // in preview mode the image bytes are inlined as data: addresses instead (robustness review S5).
+  const cols = mode === "preview" ? "id, name, mime, bytes" : "id, name, mime";
+  const files = imageIds.size ? await q<FileRow>(`SELECT ${cols} FROM files WHERE project_id=$1 AND id = ANY($2)`, [projectId, [...imageIds]]) : [];
   const fileById = new Map(files.map((f) => [Number(f.id), f]));
   const only = [...prices.values()].find((v) => v !== null) ?? null;
   const env: RenderEnv = {
@@ -69,7 +72,7 @@ export async function landingEnv(projectId: string, name: string, sections: Land
       const f = fileById.get(id);
       if (!f || !EXT[f.mime]) return null;
       const file = `images/${id}.${EXT[f.mime]}`;
-      return { src: mode === "preview" ? `/api/files/${id}` : file, file };
+      return { src: mode === "preview" && f.bytes ? `data:${f.mime};base64,${Buffer.from(f.bytes).toString("base64")}` : file, file };
     },
     scheme,
     boilerplate: kit?.boilerplate,

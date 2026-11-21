@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { logEvent, q } from "@/lib/db";
 import { body as readBody, requireProject, route } from "@/lib/api/route";
 import { researchAsk } from "@/lib/api/schemas";
-import { getCredential } from "@/lib/settings";
+import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { ask, currentEffort } from "@/lib/research/perplexity";
 import { readSources, toStoredSource } from "@/lib/research/schemas";
 
@@ -30,14 +30,14 @@ export const GET = route(async (req: Request) => {
   const projectId = new URL(req.url).searchParams.get("projectId") ?? "";
   await requireProject(projectId);
   const rows = await q<Row>(`SELECT ${COLS} FROM research WHERE project_id=$1 ORDER BY id DESC`, [projectId]);
-  const configured = !!(await getCredential("perplexity", "apiKey"));
+  const configured = !!(await getSecretFor("perplexity", "apiKey", perplexityBaseUrl()));
   return NextResponse.json({ configured, model: await currentEffort(), entries: rows.map((r) => shape(r)) });
 });
 
 export const POST = route(async (req: Request) => {
   const b = await readBody(req, researchAsk);
   await requireProject(b.projectId);
-  const key = await getCredential("perplexity", "apiKey");
+  const key = await getSecretFor("perplexity", "apiKey", perplexityBaseUrl());
   if (!key) return NextResponse.json({ error: NOT_CONNECTED }, { status: 503 });
 
   const r = await ask({ question: b.query, apiKey: key, signal: req.signal });

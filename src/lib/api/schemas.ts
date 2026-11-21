@@ -26,14 +26,46 @@ export const STORES = Object.keys(STORE_STATUSES);
 
 const text = (max: number) => z.string().max(max);
 
-/** `data` is always a plain object: never an array, a string or null. */
-export const dataObject = z.record(z.string(), z.unknown());
+/** Longest data.externalId: a service's id with its prefix ("amazon:", "x:", "review:"); a unique index reads it. */
+export const EXTERNAL_ID_MAX = 120;
+
+/** `data` is always a plain object: never an array, a string or null. data.externalId, when present, is a short text. */
+export const dataObject = z.record(z.string(), z.unknown()).superRefine((d, ctx) => {
+  const v = d.externalId;
+  if (v === undefined) return;
+  if (typeof v !== "string") ctx.addIssue({ code: "custom", path: ["externalId"], message: "must be text" });
+  else if (v.length > EXTERNAL_ID_MAX) ctx.addIssue({ code: "custom", path: ["externalId"], message: `must be ${EXTERNAL_ID_MAX} characters or fewer` });
+});
 
 /**
  * Checks `data` against its section's schema and returns it normalised
  * (numbers as numbers, key lists as arrays). Problems are reported under "data.<field>".
  */
+/**
+ * The most a row's `data` may hold, serialised (robustness review S8). Measured on the seeded example
+ * (largest: a decision, 718 bytes) and on what the app itself writes: a routed wire keeps up to 400 points
+ * (about 9 KB) and a landing section up to 60 items of 500 characters, so those sections get more room.
+ */
+export const DATA_LIMIT_BYTES = 64 * 1024;
+export const DATA_LIMIT_BY_SECTION: Record<string, number> = {
+  "design/wiring": 128 * 1024,
+  "marketing/landing": 256 * 1024,
+};
+export const dataLimitFor = (section: string) => DATA_LIMIT_BY_SECTION[section] ?? DATA_LIMIT_BYTES;
+
+/** A sentence when the row's data is larger than its section allows, else null. */
+export function dataSizeProblem(section: string, data: unknown): string | null {
+  const bytes = new TextEncoder().encode(JSON.stringify(data ?? {})).length;
+  const max = dataLimitFor(section);
+  return bytes > max ? `is ${Math.ceil(bytes / 1024)} KB; a row of this section holds at most ${max / 1024} KB` : null;
+}
+
 function sectionData(section: string, data: Record<string, unknown>, ctx: z.RefinementCtx) {
+  const size = dataSizeProblem(section, data);
+  if (size) {
+    ctx.addIssue({ code: "custom", path: ["data"], message: size });
+    return z.NEVER;
+  }
   const r = dataSchemaFor(section).safeParse(data);
   if (r.success) return r.data;
   for (const i of r.error.issues) ctx.addIssue({ code: "custom", path: ["data", ...i.path], message: i.message });
@@ -43,6 +75,8 @@ function sectionData(section: string, data: Record<string, unknown>, ctx: z.Refi
 /** The same check for a change to an existing row, whose section comes from the database. */
 export function parseData(section: string, data: Record<string, unknown> | undefined) {
   if (data === undefined) return undefined;
+  const size = dataSizeProblem(section, data);
+  if (size) throw new z.ZodError([{ code: "custom", path: ["data"], message: size, input: undefined }]);
   const r = dataSchemaFor(section).safeParse(data);
   if (r.success) return r.data;
   throw new z.ZodError(r.error.issues.map((i) => ({ ...i, path: ["data", ...i.path] })));

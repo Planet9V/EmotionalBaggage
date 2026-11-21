@@ -23,6 +23,7 @@ import { HttpError } from "@/lib/api/route";
 import { providerDef } from "@/lib/admin/providers";
 import { saveCredentials } from "@/lib/admin/credentials";
 import { getCredential } from "@/lib/settings";
+import { getSecretFor } from "@/lib/secretOrigin";
 import { ChannelError, channelFetch, readJson, upstreamError, xApiBase, xAuthorizeUrl } from "./http";
 import { limited, TokenBucket, channelClock } from "./rateLimit";
 import { saveXAccount, xAccount, type XAccount } from "./state";
@@ -58,7 +59,7 @@ export function resetX() {
 }
 
 export async function xClient() {
-  const [clientId, clientSecret, callbackUrl] = await Promise.all([getCredential("x", "clientId"), getCredential("x", "clientSecret"), getCredential("x", "callbackUrl")]);
+  const [clientId, clientSecret, callbackUrl] = await Promise.all([getCredential("x", "clientId"), getSecretFor("x", "clientSecret", xApiBase()), getCredential("x", "callbackUrl")]);
   return { clientId, clientSecret, callbackUrl };
 }
 
@@ -159,7 +160,7 @@ export async function finishXSignIn(code: string, p: Pending): Promise<XAccount>
 
 /** The saved access token, refreshed first when it has expired (or is about to) and a refresh token is saved. */
 export async function xAccessToken(force = false): Promise<string> {
-  const [token, refresh, account] = await Promise.all([getCredential("x", "accessToken"), getCredential("x", "refreshToken"), xAccount()]);
+  const [token, refresh, account] = await Promise.all([getSecretFor("x", "accessToken", xApiBase()), getSecretFor("x", "refreshToken", xApiBase()), xAccount()]);
   if (!token && !refresh) throw new HttpError(503, "X is not connected. Save the client ID in Admin, Credentials, then press Connect X account.");
   const expired = account?.expiresAt != null && account.expiresAt - 60_000 < channelClock().now();
   if ((force || expired || !token) && refresh) {
@@ -182,7 +183,7 @@ async function xGet<T>(path: string, token: string, secrets: (string | null)[]):
 async function withToken(send: (token: string) => Promise<Response>): Promise<{ res: Response; token: string }> {
   let token = await xAccessToken();
   let res = await send(token);
-  if (res.status === 401 && (await getCredential("x", "refreshToken"))) {
+  if (res.status === 401 && (await getSecretFor("x", "refreshToken", xApiBase()))) {
     await res.body?.cancel().catch(() => undefined);
     token = await xAccessToken(true);
     res = await send(token);
