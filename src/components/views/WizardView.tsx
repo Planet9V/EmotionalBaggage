@@ -76,7 +76,8 @@ export function WizardView() {
       // A mutation: it puts the new concept into every cached concept list, so the sidebar has it at once.
       const made = await createConcept.mutateAsync({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), productType: a.productType, items: buildItems(a) });
       select(made.id);
-      router.push(await firstStepHref(made.id));
+      // replace, not push: Back from the first step must not land on an empty wizard for a concept that now exists (U20)
+      router.replace(await firstStepHref(made.id));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
