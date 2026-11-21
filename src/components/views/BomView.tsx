@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Box, CircuitBoard, Download, Plus, Trash2, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +24,7 @@ import { statusOptions } from "@/lib/statusOptions";
 import { Modal } from "@/components/ui/modal";
 import { downloadFile } from "@/lib/download";
 import { Card } from "@/components/ui/Card";
+import { FromUrl } from "@/components/drafts/FromUrl";
 import { AddPartDialog, ImportDialog, StatusLegend } from "./bom/dialogs";
 
 type GroupBy = "none" | "source" | "status";
@@ -37,6 +38,11 @@ export function BomView({ project, section, store }: ViewProps) {
   const [actionError, setActionError] = useState("");
 
   const parts = useMemo(() => items.map(toPart), [items]);
+  // ?item=<id> (a link from Traceability, a draft) scrolls to that part and marks it.
+  const [focusId, setFocusId] = useState<number | null>(null);
+  useEffect(() => {
+    if (focusId !== null && !loading) document.getElementById(`part-${focusId}`)?.scrollIntoView({ block: "center" });
+  }, [focusId, loading]);
   // Kind and pins (plan 5.1) only for a product type that has a schematic: a non-electronic product shows none of it.
   const concept = useQuery(conceptQueries.one(project.id));
   const electrical = !!concept.data && sectionVisible(concept.data.productType, "design", "schematic");
@@ -64,6 +70,7 @@ export function BomView({ project, section, store }: ViewProps) {
 
   return (
     <div className="animate-enter space-y-4">
+      <Suspense fallback={null}><FromUrl names={["item"]} onParams={(v) => setFocusId(Number(v.item) || null)} /></Suspense>
       <div className="flex flex-wrap items-center gap-2">
         <Button onClick={() => setAdding(true)}>
           <Plus className="h-4 w-4" aria-hidden /> Add part
@@ -123,7 +130,7 @@ export function BomView({ project, section, store }: ViewProps) {
                     </TableRow>
                   )}
                   {g.parts.map((p) => (
-                    <TableRow key={p.item.id}>
+                    <TableRow key={p.item.id} id={`part-${p.item.id}`} className={focusId === p.item.id ? "bg-dutchOrange/10" : undefined} aria-current={focusId === p.item.id ? "true" : undefined}>
                       <TableCell>
                         <InlineEdit mono label={`reference of ${p.item.title}`} value={p.ref} onSave={(v) => saveOrMessage(setData(p, { ref: v.trim() }))} />
                       </TableCell>

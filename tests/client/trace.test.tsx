@@ -280,6 +280,20 @@ describe("traceability", () => {
     expect(screen.getByRole("region", { name: /Parts no requirement needs/ }).textContent).not.toContain("MCU");
   });
 
+  it("links each gap row, and each requirement in the matrix, to its row with ?item=<id>", async () => {
+    db = [
+      item(1, "design/requirements", "Sleeps at idle"),
+      item(2, "prototype/tests", "Orphan test", { data: { key: "t9" } }),
+      item(3, "design/bom", "Spare strap", { data: { ref: "S1" } }),
+    ];
+    renderWith(<TraceabilityView />);
+    const hrefOf = async (region: RegExp, name: string) => within(await screen.findByRole("region", { name: region })).getByRole("link", { name }).getAttribute("href");
+    expect(await hrefOf(/Requirements with no test/, "Sleeps at idle")).toBe("/s/design/requirements?item=1");
+    expect(await hrefOf(/Tests that check no requirement/, "Orphan test")).toBe("/s/prototype/tests?item=2");
+    expect(await hrefOf(/Parts no requirement needs/, "S1 Spare strap")).toBe("/s/design/bom?item=3");
+    expect(within(screen.getByRole("table")).getByRole("link", { name: "Sleeps at idle" }).getAttribute("href")).toBe("/s/design/requirements?item=1");
+  });
+
   it("says so when every requirement is covered, and when there are no requirements at all", async () => {
     db = [item(1, "design/requirements", "R", { data: { tests: ["t1"], parts: ["p1"] } }), item(2, "prototype/tests", "T", { data: { key: "t1" } }), item(3, "design/bom", "P", { data: { key: "p1" } })];
     renderWith(<TraceabilityView />);
