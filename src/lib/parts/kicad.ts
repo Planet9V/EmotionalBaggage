@@ -37,6 +37,13 @@ export type KicadMeta = {
   positions?: Record<string, { x: number; y: number }>;
 };
 
+/**
+ * A pin whose kind nobody has stated is written as passive: KiCad counts a passive pin as able to drive a net,
+ * so an input fed only by such a pin is not reported as undriven, which it may not be. The app's own checks
+ * still treat the kind as unknown.
+ */
+const UNSTATED = "passive";
+
 const ELECTRICAL: Record<PinKind, string> = {
   power_in: "power_in",
   power_out: "power_out",
@@ -81,8 +88,9 @@ const FLAG_PIN = "pwr";
 
 /**
  * Nets that get a power flag: a net with supply or ground pins and no power_out pin of its own, that is
- * nevertheless driven: its supply group (nets joined through switches) holds a power_out pin, or it is the
- * ground return of a part that gives power (a battery's minus).
+ * nevertheless driven: its supply group (nets joined through switches) holds a power_out pin, it is the
+ * ground return of a part that gives power (a battery's minus), or its wires are classed power or ground
+ * (the supply comes from a pin whose kind is not stated, such as a board with no library entry).
  */
 export function powerFlagNets(c: Circuit): Net[] {
   const groups = supplyGroups(c);
@@ -94,7 +102,9 @@ export function powerFlagNets(c: Circuit): Net[] {
     if (!k.some((x) => x === "power_in" || x === "ground") || k.includes("power_out")) return false;
     const fed = (groups.get(n.id) ?? [n.id]).some((id) => kinds(byId.get(id)!).includes("power_out"));
     const sourceReturn = k.includes("ground") && n.members.some((m) => m.def?.kind === "ground" && sources.has(m.ref));
-    return fed || sourceReturn;
+    // the wires say this net carries the supply (class power or ground), from a pin whose kind nobody has stated yet
+    const declared = n.netClass === "power" || n.netClass === "ground";
+    return fed || sourceReturn || declared;
   });
 }
 
@@ -154,7 +164,7 @@ function libSymbol(pl: Placed): SNode {
   const angle = { right: "0", left: "180", down: "270", up: "90" } as const;
   const pins: SNode[] = layout.pins.map((p, i) => [
     "pin",
-    p.pin.kind ? ELECTRICAL[p.pin.kind] : "unspecified",
+    p.pin.kind ? ELECTRICAL[p.pin.kind] : UNSTATED,
     "line",
     ["at", fmt(p.x), fmt(-p.y), angle[p.toward]],
     ["length", fmt(p.length)],
