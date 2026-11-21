@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, TriangleAlert, UserRound } from "lucide-react";
-import { api } from "@/lib/http";
+import { api, sessionIsEnding } from "@/lib/http";
 import { meQuery } from "./me";
 
 /**
@@ -18,6 +18,7 @@ export function SessionControls({ linkClass }: { linkClass: string }) {
 
   const signOut = async () => {
     setLeaving(true);
+    sessionIsEnding();
     try {
       await api("/api/auth/sign-out", { method: "POST" });
     } catch {
