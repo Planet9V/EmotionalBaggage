@@ -1,5 +1,6 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -282,7 +283,7 @@ function ChannelForm({ currency, onAdd }: { currency: string; onAdd: (name: stri
     <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
       <Field label="Channel" className="w-52"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Amazon, direct" /></Field>
       <Field label="Fee, percent" className="w-28"><Input inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="15" /></Field>
-      <Field label="Fixed fee per unit" className="w-36"><Input inputMode="decimal" value={fixed} onChange={(e) => setFixed(e.target.value)} placeholder="0.00" /></Field>
+      <Field label="Fixed fee per unit" className="w-36"><MoneyInput currency={currency} value={fixed} onChange={(e) => setFixed(e.target.value)} placeholder="0.00" /></Field>
       <Button type="submit" variant="outline"><Plus className="h-4 w-4" aria-hidden /> Add channel</Button>
       {err && <p role="alert" className="w-full text-sm text-danger">{err}</p>}
     </form>
@@ -301,7 +302,7 @@ function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: numbe
   };
   return (
     <form id="add-price" className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
-      <Field label={`A price to consider (${currency})`} className="w-56"><Input inputMode="decimal" value={v} onChange={(e) => setV(e.target.value)} placeholder="24.95" /></Field>
+      <Field label={`A price to consider (${currency})`} className="w-56"><MoneyInput currency={currency} value={v} onChange={(e) => setV(e.target.value)} placeholder="24.95" /></Field>
       <Button type="submit"><Plus className="h-4 w-4" aria-hidden /> Add price</Button>
       {err && <p role="alert" className="w-full text-sm text-danger">{err}</p>}
     </form>

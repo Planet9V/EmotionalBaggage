@@ -1,13 +1,13 @@
 import { sumLine, type Part } from "@/lib/domain";
+import { readMoney } from "@/lib/moneyText";
 import { toCsvText } from "@/lib/csv";
 
 export const money = (n: number) => n.toFixed(2);
 
 /** Parse a money or quantity string. Returns null when it is not a number or is negative. */
 export function parseAmount(s: string): number | null {
-  const t = s.trim().replace(/^\$/, "").replace(/,/g, "");
-  if (t === "") return 0;
-  const n = Number(t);
+  const n = readMoney(s);
+  if (n === null) return 0;
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 

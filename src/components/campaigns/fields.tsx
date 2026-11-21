@@ -1,5 +1,7 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
+import { readMoney } from "@/lib/moneyText";
 import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
@@ -8,7 +10,7 @@ import { Field } from "@/components/ui/field";
 export function MoneyField({ label, value, onChange, currency, hint, className }: { label: string; value: string; onChange: (v: string) => void; currency: string; hint?: string; className?: string }) {
   return (
     <Field label={`${label} (${currency})`} hint={hint} className={className}>
-      <Input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} />
+      <MoneyInput currency={currency} value={value} onChange={(e) => onChange(e.target.value)} />
     </Field>
   );
 }
@@ -24,10 +26,7 @@ export function NumberField({ label, value, onChange, hint, className, suffix }:
 
 /** Text to a number: null when empty, NaN when it is not a number. */
 export function readNumber(text: string): number | null {
-  const t = text.trim().replace(/,/g, "");
-  if (t === "") return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : Number.NaN;
+  return readMoney(text);
 }
 
 export function Section({ title, children, aside, id }: { title: string; children: ReactNode; aside?: ReactNode; id?: string }) {

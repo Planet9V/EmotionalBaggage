@@ -1,5 +1,6 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm, useWatch, type FieldErrors, type Resolver, type UseFormRegister } from "react-hook-form";
@@ -284,7 +285,7 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
                   <Input aria-label={`Part ${i + 1} search term`} placeholder="Search term" {...register(`parts.${i}.search`)} />
                 </div>
                 <div className="col-span-5 sm:col-span-4 flex gap-2">
-                  <Input aria-label={`Part ${i + 1} estimated line cost`} placeholder="Line cost" inputMode="decimal" className="font-mono" aria-invalid={!!errors.parts?.[i]?.line} {...register(`parts.${i}.line`)} />
+                  <MoneyInput aria-label={`Part ${i + 1} estimated line cost`} placeholder="Line cost" aria-invalid={!!errors.parts?.[i]?.line} {...register(`parts.${i}.line`)} />
                   <Button type="button" variant="ghost" size="icon" aria-label={`Remove part ${i + 1}`} disabled={parts.fields.length === 1} onClick={() => parts.remove(i)}>
                     <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
@@ -307,7 +308,7 @@ function StepProof({ register, errors }: { register: Reg; errors: Errs }) {
   return (
     <div className="space-y-5">
       <Field id="w-test" label="The cheapest test" hint="What would show this is worth building, before you build it."><Textarea id="w-test" rows={3} {...register("test")} /></Field>
-      <Field id="w-cost" label="What the test costs" error={errors.testCost?.message}><Input id="w-cost" inputMode="decimal" className="font-mono" aria-invalid={!!errors.testCost} {...register("testCost")} /></Field>
+      <Field id="w-cost" label="What the test costs" error={errors.testCost?.message}><MoneyInput id="w-cost" aria-invalid={!!errors.testCost} {...register("testCost")} /></Field>
       <Field id="w-gate" label="Go/no-go gate" hint="The result that means go, and the result that means stop."><Textarea id="w-gate" rows={3} {...register("gate")} /></Field>
     </div>
   );
@@ -320,7 +321,7 @@ function StepSelling({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="w-channel" label="Primary channel"><Input id="w-channel" {...register("channel")} /></Field>
-        <Field id="w-price" label="Target price" error={errors.price?.message}><Input id="w-price" inputMode="decimal" className="font-mono" aria-invalid={!!errors.price} {...register("price")} /></Field>
+        <Field id="w-price" label="Target price" error={errors.price?.message}><MoneyInput id="w-price" aria-invalid={!!errors.price} {...register("price")} /></Field>
       </div>
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-primary">Working names and taglines</legend>

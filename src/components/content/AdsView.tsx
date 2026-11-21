@@ -1,5 +1,6 @@
 "use client";
 
+import { readMoney } from "@/lib/moneyText";
 import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
@@ -25,7 +26,7 @@ import { Card } from "@/components/ui/Card";
 
 const STATUSES = ["draft", "approved", "running", "paused", "killed"];
 // Money is in the concept's one currency (projects.currency, set on Unit economics), in its own minor unit.
-const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : majorToMinor(Number(s), cur));
+const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : majorToMinor(readMoney(s) ?? Number.NaN, cur));
 const fromMinor = (n: unknown, cur: string) => (typeof n === "number" ? toMajor(n, cur).toFixed(minorDigits(cur)) : "");
 
 export function AdsView({ project, store }: ViewProps) {

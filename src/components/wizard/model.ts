@@ -1,6 +1,7 @@
 // Wizard answers, the zod schema of each step (what keeps a step from moving on) and the one function that
 // turns the answers into items. Nothing is added that the person did not type, except open questions for
 // decisions they left blank.
+import { moneyOrNull } from "@/lib/moneyText";
 import { z } from "zod";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS, type ProductType } from "@/lib/productTypes";
 
@@ -55,6 +56,8 @@ const num = (s: string) => {
   const n = Number(t(s));
   return t(s) !== "" && Number.isFinite(n) ? n : null;
 };
+/** A money answer: "$150", "1,200" and "150 USD" are read as amounts (U22). */
+const cash = (s: string) => moneyOrNull(s);
 
 export const namedParts = (a: Answers) => a.parts.filter((p) => t(p.name));
 
@@ -92,17 +95,17 @@ export const STEP_SCHEMAS = {
         if (!t(p.name)) return;
         const q = num(p.qty);
         if (q === null || q < 1 || !Number.isInteger(q)) ctx.addIssue({ code: "custom", path: ["parts", i, "qty"], message: `Part "${t(p.name)}" needs a whole-number quantity.` });
-        if (t(p.line) && (num(p.line) === null || (num(p.line) ?? 0) < 0)) ctx.addIssue({ code: "custom", path: ["parts", i, "line"], message: `Part "${t(p.name)}" has a cost that is not a number.` });
+        if (t(p.line) && (cash(p.line) === null || (cash(p.line) ?? 0) < 0)) ctx.addIssue({ code: "custom", path: ["parts", i, "line"], message: `Part "${t(p.name)}" has a cost that is not a number.` });
       });
     }),
   proof: z.object({
     test: text,
-    testCost: text.refine((v) => !t(v) || num(v) !== null, "The test cost must be a number."),
+    testCost: text.refine((v) => !t(v) || cash(v) !== null, "The test cost must be an amount, such as 150."),
     gate: text,
   }),
   selling: z.object({
     channel: text,
-    price: text.refine((v) => !t(v) || num(v) !== null, "The target price must be a number."),
+    price: text.refine((v) => !t(v) || cash(v) !== null, "The target price must be an amount, such as 24.95."),
     names: z.array(z.object({ key: z.number(), kind: z.enum(["Name", "Tagline"]), text })),
   }),
   review: z.object({}),
@@ -170,7 +173,7 @@ export function buildGroups(a: Answers): Group[] {
     ref += 1;
     const own = p.source === "Own printer";
     const data: Record<string, unknown> = { ref: `P${ref}`, qty: num(p.qty) ?? 1, source: p.source, search: t(p.search), asin: "" };
-    const line = num(p.line);
+    const line = cash(p.line);
     if (line !== null) data.line = line;
     parts.push({ section: "design/bom", title: t(p.name), data, status: own ? "to print" : "to buy" });
   }
@@ -191,7 +194,7 @@ export function buildGroups(a: Answers): Group[] {
   if (parts.length) groups.push({ label: "Design · Bill of materials", step: 3, section: "design/bom", items: parts });
 
   if (t(a.channel)) {
-    const price = num(a.price);
+    const price = cash(a.price);
     groups.push({
       label: "Sales · Channels and pricing",
       step: 5,

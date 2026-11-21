@@ -1,5 +1,6 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,7 +72,7 @@ export function AddPartDialog({ open, onOpenChange, statuses, onCreate }: { open
             <Input value={f.source} onChange={set("source")} list="bom-sources" />
             <datalist id="bom-sources">{SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
           </Field>
-          <Field label="Line cost"><Input value={f.line} onChange={set("line")} inputMode="decimal" className="font-mono" placeholder="0.00" /></Field>
+          <Field label="Line cost"><MoneyInput value={f.line} onChange={set("line")} placeholder="0.00" /></Field>
         </div>
         <Field label="Search term" hint="Used to build the buy link on the Sourcing page."><Input value={f.search} onChange={set("search")} /></Field>
         {statuses.length > 0 && (
