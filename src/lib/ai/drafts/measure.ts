@@ -70,9 +70,12 @@ export function measureCount(bom: Item[]): CountMeasure {
 
 /**
  * The print time a row holds, in minutes, as [low, high], or null when it holds none.
- * `printMinutes` (a number) wins; otherwise the `estimate` text is read: "45 min", "5 h", "4-5 h", "1 h 30 min".
+ * The slicer's `slice.seconds` wins, then `printMinutes` (a number); otherwise the `estimate` text is read: "45 min", "5 h", "4-5 h", "1 h 30 min".
  */
 export function printMinutes(i: Item): [number, number] | null {
+  // The slicer's own figure wins (written only by the slice route).
+  const sliced = (i.data.slice as { seconds?: unknown } | undefined)?.seconds;
+  if (typeof sliced === "number" && Number.isFinite(sliced) && sliced >= 0) return [sliced / 60, sliced / 60];
   const m = i.data.printMinutes;
   if (typeof m === "number" && Number.isFinite(m) && m >= 0) return [m, m];
   const text = typeof i.data.estimate === "string" ? i.data.estimate : "";

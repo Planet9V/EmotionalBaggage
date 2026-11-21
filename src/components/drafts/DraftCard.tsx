@@ -31,6 +31,15 @@ export function changes(before: Item, d: Draft): { field: string; was: string; n
   if (before.body !== d.body) out.push({ field: "Details", was: before.body || "(empty)", now: d.body || "(empty)" });
   const keys = new Set([...Object.keys(before.data ?? {}), ...Object.keys(d.data ?? {})]);
   for (const k of keys) {
+    // A print job's slice reads as its time, not as the slicer's whole record.
+    if (k === "slice") {
+      const secs = (v: unknown) => (v && typeof (v as { seconds?: unknown }).seconds === "number" ? (v as { seconds: number }).seconds : null);
+      const fmt = (x: number | null) => (x === null ? "not sliced yet" : `sliced: ${Math.floor(x / 3600) ? `${Math.floor(x / 3600)} h ` : ""}${Math.round((x % 3600) / 60)} min`);
+      const a = fmt(secs(before.data?.slice));
+      const b = fmt(secs(d.data?.slice));
+      if (a !== b) out.push({ field: "print time", was: a, now: `${b} (slice again at the new settings to measure it)` });
+      continue;
+    }
     const a = show(before.data?.[k]);
     const b = show(d.data?.[k]);
     if (a !== b) out.push({ field: k, was: a, now: b });

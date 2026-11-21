@@ -223,11 +223,16 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
   } else if (op.op === "replace") {
     // The reviewer's attack record stays with the row: a revision that answers it is not attacked again.
     const kept = before && before.data.attack !== undefined ? { ...fields.data, attack: before.data.attack } : fields.data;
-    const r = await c.query<ItemRow>(`UPDATE items SET title=$2, body=$3, data=$4, updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [
+    // A print job whose slicer settings change goes back to queued: its slice no longer describes it.
+    const PRINT_SETTINGS = ["fileId", "printerId", "material", "layerHeight", "infill", "supports"];
+    const resliced = d.target_store === "prototype/printing" && before && PRINT_SETTINGS.some((k) => JSON.stringify(before!.data[k]) !== JSON.stringify(kept[k]));
+    if (resliced && ["slicing", "sent", "printing"].includes(before!.status)) throw new HttpError(409, `"${before!.title}" is ${before!.status}; change its settings after it finishes.`);
+    const r = await c.query<ItemRow>(`UPDATE items SET title=$2, body=$3, data=$4, status=COALESCE($5, status), updated_at=now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [
       d.item_id,
       fields.title,
       fields.body,
       JSON.stringify(kept),
+      resliced ? "queued" : null,
     ]);
     item = toItem(r.rows[0]);
   } else {
