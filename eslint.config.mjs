@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Library code copied in by the shadcn CLI and kept as its makers wrote it, so updates stay a re-run.
+    "src/components/ai-elements/**",
+    "src/components/ui/carousel.tsx",
   ]),
 ]);
 

@@ -21,7 +21,7 @@ The workbench, the people who use it, and the outside systems it touches. This i
 
 | System | What it provides | Status |
 |---|---|---|
-| AI model host | Pushes back on the concept. Planned: drafts each stage from the one before. | Connected for one provider, not yet exercised. Ollama, LM Studio and OpenRouter planned. |
+| AI model host | Pushes back on the concept and embeds rows for search by meaning. Planned: drafts each stage from the one before. | Built for Ollama, LM Studio and OpenRouter, chosen in Admin; tested against a stand-in, not yet against a real host. |
 | Perplexity | Answers research questions with sources. | Connected, not yet exercised. |
 | 3D printer | Prints the enclosure. | Status only, for OctoPrint and Moonraker. Sending a print is planned for seven printer families. |
 | Slicer (OrcaSlicer) | Turns a 3D file into printer instructions. | Planned. |

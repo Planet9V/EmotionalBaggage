@@ -60,11 +60,11 @@ describe("third-party notices", () => {
     }
   });
 
-  it("end the code-use page with a draft attestation that has blanks for name and date", () => {
+  it("end the code-use page with the attestation, its wording approved by the owner", () => {
     const page = codeUse();
     const attestation = page.slice(page.indexOf("## Attestation"));
-    expect(attestation).toContain("Draft, awaiting approval");
-    expect(attestation).toMatch(/Name: _+/);
-    expect(attestation).toMatch(/Date: _+/);
+    expect(attestation).toContain("I attest that:");
+    expect(attestation).toContain("Wording approved: Jim McKenney, 20 November 2026");
+    expect(attestation).not.toMatch(/draft/i);
   });
 });

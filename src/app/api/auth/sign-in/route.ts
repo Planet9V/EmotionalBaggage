@@ -1,3 +1,4 @@
+import { audit } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { body, HttpError, route } from "@/lib/api/route";
@@ -20,12 +21,14 @@ export const POST = route.open(async (req: Request) => {
         `Too many failed sign-in attempts for this username. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`
       );
     }
+    await audit({ action: "session.refused", summary: "A sign-in attempt was refused", actor: "" });
     // The same answer whether the name or the password was wrong.
     throw new HttpError(401, "The username or password is not right.");
   }
   // A browser that signs in again does not leave its previous session behind.
   await signOut(tokenFromRequest(req));
   const { username: name, usingDefaultPassword } = result.session;
+  await audit({ action: "session.started", summary: `${name} signed in`, actor: name });
   return NextResponse.json(
     { user: { username: name, usingDefaultPassword } },
     { headers: { "set-cookie": sessionCookie(result.token, req), "cache-control": "no-store" } }

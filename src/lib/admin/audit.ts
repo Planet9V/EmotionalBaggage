@@ -1,6 +1,6 @@
 // The credentials audit: the most recent 200 saves, removals and connection tests, newest first.
 // Kept in the settings row "audit.credentials" (there is no install-wide event table). Never holds a value.
-import { q } from "@/lib/db";
+import { audit as auditLine, q } from "@/lib/db";
 
 export const AUDIT_KEY = "audit.credentials";
 export const AUDIT_LIMIT = 200;
@@ -19,6 +19,15 @@ export type AuditEntry = {
 export async function audit(entries: Omit<AuditEntry, "at">[]) {
   if (!entries.length) return;
   const at = new Date().toISOString();
+  // The install-wide audit log gets the same lines; this short list is what the Credentials screen shows.
+  for (const e of entries) {
+    const what = e.field ? `${e.provider} ${e.field}` : e.provider;
+    await auditLine({
+      action: `credential.${e.action}`,
+      summary: e.action === "tested" ? `Connection to ${what} tested: ${e.result?.ok ? "it works" : "it failed"}` : `Credential ${what} ${e.action}`,
+      detail: { provider: e.provider, field: e.field, ...(e.result ? { result: e.result } : {}) },
+    });
+  }
   // newest first: the last entry of a batch goes on top
   const rows = entries.map((e) => ({ at, ...e })).reverse();
   await q(

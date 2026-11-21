@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logEventIn, tx } from "@/lib/db";
+import { auditIn, logEventIn, tx } from "@/lib/db";
 import { body, HttpError, route } from "@/lib/api/route";
 import { conceptPatch, loadConcept, loadConceptIn, lockConcept, OWNED_TABLES } from "@/lib/api/concepts";
 
@@ -65,6 +65,14 @@ export const DELETE = route(async (req: Request, { params }: Ctx) => {
       counts[t] = r.rows[0].n;
     }
     await c.query("DELETE FROM projects WHERE id=$1", [id]);
+    // The concept's own activity list goes with it; this line does not.
+    await auditIn(c, {
+      action: "project.deleted",
+      summary: `Concept "${was.name}" deleted with everything in it`,
+      detail: { counts },
+      projectId: id,
+      projectName: was.name,
+    });
     return { concept: id, name: was.name, ...counts };
   });
   return NextResponse.json({ deleted });

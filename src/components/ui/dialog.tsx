@@ -38,9 +38,11 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  // showCloseButton is accepted because shadcn/ui components pass it; this dialog draws no close button of its own.
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showCloseButton?: boolean }
+>(({ className, children, showCloseButton, ...props }, ref) => (
   <DialogPrimitive.Content
+    data-close-button={showCloseButton ? "" : undefined}
     ref={ref}
     className={cn(
       "z-50 flex flex-col overflow-hidden border border-hairline bg-surface shadow-2xl",
@@ -69,8 +71,13 @@ const DialogDescription = React.forwardRef<
 ));
 DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn("flex flex-col gap-1", className)} {...props} />;
+}
+
 export {
   Dialog,
+  DialogHeader,
   DialogTrigger,
   DialogPortal,
   DialogClose,

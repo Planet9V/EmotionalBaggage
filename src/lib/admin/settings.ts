@@ -1,5 +1,6 @@
 // The install-wide settings Admin may read and write: the two models, the planner address, the default concept.
 // Only these four keys are writable here; seed.example and audit.* are not.
+import { auditIn } from "@/lib/db";
 import { q, tx } from "@/lib/db";
 import { DEFAULT_BASE_URL, getSetting, SETTING, type ModelChoice } from "@/lib/settings";
 import { plannerAddress, type PlannerAddress } from "./planner";
@@ -60,6 +61,8 @@ export async function writeAdminSettings(change: AdminSettingsChange) {
           [KEY[name], JSON.stringify(value)]
         );
       }
+      // Settings hold model names and addresses, never keys, so the new value is recorded.
+      await auditIn(c, { action: value === null ? "setting.cleared" : "setting.changed", summary: `Setting ${KEY[name]} ${value === null ? "cleared" : "changed"}`, detail: { key: KEY[name], value } });
     }
   });
 }

@@ -7,7 +7,9 @@
       "license": "MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences",
       "licenseEvidence": "Node.js LICENSE (https://github.com/nodejs/node/blob/main/LICENSE, and the same file in a Node 22 install) opens 'Node.js is licensed for use as follows:' followed by the MIT text and a list of externally maintained libraries; nodejs/docker-node LICENSE is MIT, 'Copyright (c) 2015 Joyent, Inc.'",
       "use": "container image",
-      "referencedIn": ["Dockerfile"],
+      "referencedIn": [
+        "Dockerfile"
+      ],
       "source": "https://github.com/nodejs/docker-node",
       "notes": "Build and run stages of the web app image."
     },
@@ -17,7 +19,9 @@
       "license": "PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences",
       "licenseEvidence": "Python's LICENSE.txt (in a Python 3.13 install) contains 'PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2'; the image's Docker Hub page points to that licence information for Python 3 and states the image contains other software under other licences. The licence of the docker-library/python build files could not be read (GitHub rate limit) and is unverified.",
       "use": "container image",
-      "referencedIn": ["planner/Dockerfile"],
+      "referencedIn": [
+        "planner/Dockerfile"
+      ],
       "source": "https://hub.docker.com/_/python",
       "notes": "Base image of the planner service."
     },
@@ -27,7 +31,9 @@
       "license": "PostgreSQL",
       "licenseEvidence": "pgvector LICENSE (https://github.com/pgvector/pgvector/blob/master/LICENSE): 'Portions Copyright (c) 1996-2026, PostgreSQL Global Development Group ... Permission to use, copy, modify, and distribute this software and its documentation for any purpose, without fee, and without a written agreement is hereby granted', the PostgreSQL Licence text. pgvector's Dockerfile builds FROM postgres:$PG_MAJOR-$DEBIAN_CODENAME, so the image also contains the PostgreSQL entry below and Debian trixie packages under their own licences.",
       "use": "container image",
-      "referencedIn": ["docker-compose.yml"],
+      "referencedIn": [
+        "docker-compose.yml"
+      ],
       "source": "https://github.com/pgvector/pgvector",
       "notes": "The db service. The extension is loaded by the database server; the web app talks to it over the network."
     },
@@ -37,7 +43,9 @@
       "license": "PostgreSQL",
       "licenseEvidence": "https://www.postgresql.org/about/license: 'PostgreSQL is released under the PostgreSQL License, a liberal Open Source license, similar to the BSD or MIT licenses.' The licence of the official postgres image's build files (docker-library/postgres) was not read.",
       "use": "separate process",
-      "referencedIn": ["docker-compose.yml"],
+      "referencedIn": [
+        "docker-compose.yml"
+      ],
       "source": "https://www.postgresql.org",
       "notes": "Runs as its own container; the web app connects to it over the network through the pg client library."
     },
@@ -47,7 +55,9 @@
       "license": "PostgreSQL",
       "licenseEvidence": "Same project and licence file as the pgvector entry above.",
       "use": "container image",
-      "referencedIn": [".github/workflows/ci.yml"],
+      "referencedIn": [
+        ".github/workflows/ci.yml"
+      ],
       "source": "https://github.com/pgvector/pgvector",
       "notes": "Database service for the test job in GitHub Actions; not part of what is shipped."
     },
@@ -57,7 +67,9 @@
       "license": "OFL-1.1",
       "licenseEvidence": "node_modules/@fontsource-variable/inter/LICENSE: 'Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) ... This Font Software is licensed under the SIL Open Font License, Version 1.1.'; metadata.json license.type OFL-1.1.",
       "use": "font files",
-      "referencedIn": ["src/app/globals.css"],
+      "referencedIn": [
+        "src/app/globals.css"
+      ],
       "source": "https://github.com/rsms/inter",
       "notes": "The font files are copied unmodified into the built CSS assets and served to the browser."
     },
@@ -67,21 +79,80 @@
       "license": "OFL-1.1",
       "licenseEvidence": "node_modules/@fontsource-variable/jetbrains-mono/LICENSE: 'Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) ... This Font Software is licensed under the SIL Open Font License, Version 1.1.'; metadata.json license.type OFL-1.1.",
       "use": "font files",
-      "referencedIn": ["src/app/globals.css"],
+      "referencedIn": [
+        "src/app/globals.css"
+      ],
       "source": "https://github.com/JetBrains/JetBrainsMono",
       "notes": "The font files are copied unmodified into the built CSS assets and served to the browser."
     },
     {
       "name": "UI components (Button, Dialog, Input, Table, Card, StatusBadge)",
       "version": "as committed in eb362b6 (2026-11-20)",
-      "license": "not established (see notes)",
-      "licenseEvidence": "None in the repository. button.tsx, dialog.tsx, input.tsx and table.tsx describe themselves as 'shadcn/ui ... themed to Eigenia's design tokens'; Card.tsx and StatusBadge.tsx carry no origin note. README.md says the UI kit comes from Planet9V/eigenia. git log --follow shows one commit, eb362b6, for each file. shadcn/ui itself is published under the MIT License ('Copyright (c) 2023 shadcn', https://github.com/shadcn-ui/ui/blob/main/LICENSE.md); whether any shadcn/ui source text is in these files has not been established.",
+      "license": "owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT)",
+      "licenseEvidence": "The owner stated on 20 November 2026 that all six components come from Eigenia, his own project (Planet9V/eigenia). button.tsx, dialog.tsx, input.tsx and table.tsx describe themselves as 'shadcn/ui ... themed to Eigenia's design tokens'; shadcn/ui is published under the MIT License ('Copyright (c) 2023 shadcn', https://github.com/shadcn-ui/ui/blob/main/LICENSE.md). Card.tsx and StatusBadge.tsx carry no third-party note.",
       "use": "copied source",
-      "origin": "owner's own project (Planet9V/eigenia, per README.md); pattern follows shadcn/ui; third-party origin not established",
-      "referencedIn": ["src/components/ui/button.tsx", "src/components/ui/dialog.tsx", "src/components/ui/input.tsx", "src/components/ui/table.tsx", "src/components/ui/Card.tsx", "src/components/ui/StatusBadge.tsx"],
+      "origin": "Planet9V/eigenia, the owner's own project (owner's statement, 20 November 2026)",
+      "referencedIn": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/table.tsx",
+        "src/components/ui/Card.tsx",
+        "src/components/ui/StatusBadge.tsx"
+      ],
       "source": "https://github.com/shadcn-ui/ui",
-      "changes": "Re-themed to Eigenia design tokens (per the file headers). No list of changes against an upstream file exists in the repository.",
-      "notes": "Question for the owner: confirm the origin, and whether shadcn/ui source was copied, so the licence can be recorded."
+      "changes": "Re-themed to Eigenia design tokens (per the file headers). On 20 November 2026 button.tsx gained the variant and size names shadcn/ui components pass, and dialog.tsx gained DialogHeader."
+    },
+    {
+      "name": "shadcn/ui components added by its CLI",
+      "version": "as fetched by `npx shadcn@latest add` on 2026-11-20",
+      "license": "MIT",
+      "licenseEvidence": "https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md, read 20 November 2026: 'MIT License. Copyright (c) 2023 shadcn'.",
+      "use": "copied source",
+      "origin": "https://ui.shadcn.com registry, written into this repository by the shadcn CLI",
+      "referencedIn": [
+        "src/components/ui/alert.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/button-group.tsx",
+        "src/components/ui/carousel.tsx",
+        "src/components/ui/collapsible.tsx",
+        "src/components/ui/command.tsx",
+        "src/components/ui/dropdown-menu.tsx",
+        "src/components/ui/hover-card.tsx",
+        "src/components/ui/input-group.tsx",
+        "src/components/ui/label.tsx",
+        "src/components/ui/scroll-area.tsx",
+        "src/components/ui/select.tsx",
+        "src/components/ui/separator.tsx",
+        "src/components/ui/skeleton.tsx",
+        "src/components/ui/sonner.tsx",
+        "src/components/ui/spinner.tsx",
+        "src/components/ui/switch.tsx",
+        "src/components/ui/tabs.tsx",
+        "src/components/ui/textarea.tsx",
+        "src/components/ui/tooltip.tsx"
+      ],
+      "source": "https://github.com/shadcn-ui/ui",
+      "changes": "None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css."
+    },
+    {
+      "name": "AI Elements components",
+      "version": "as fetched from https://elements.ai-sdk.dev/api/registry on 2026-11-20",
+      "license": "Apache-2.0",
+      "licenseEvidence": "https://raw.githubusercontent.com/vercel/ai-elements/main/LICENSE, read 20 November 2026: 'Copyright 2023 Vercel, Inc. Licensed under the Apache License, Version 2.0'.",
+      "use": "copied source",
+      "origin": "Vercel's AI Elements registry, written into this repository by the shadcn CLI",
+      "referencedIn": [
+        "src/components/ai-elements/conversation.tsx",
+        "src/components/ai-elements/inline-citation.tsx",
+        "src/components/ai-elements/message.tsx",
+        "src/components/ai-elements/prompt-input.tsx",
+        "src/components/ai-elements/shimmer.tsx",
+        "src/components/ai-elements/sources.tsx",
+        "src/components/ai-elements/suggestion.tsx"
+      ],
+      "source": "https://github.com/vercel/ai-elements",
+      "changes": "None. The files are as the CLI wrote them."
     }
   ],
   "useOverrides": {

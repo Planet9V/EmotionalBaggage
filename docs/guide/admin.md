@@ -57,6 +57,12 @@ docker compose restart web
 - Anyone who can reach the app can lock the account for 15 minutes by sending 5 wrong passwords, and can do it again. There is no limit per network address.
 - There is one account and no roles: whoever signs in can read and change everything, including saved keys (which the app never shows in full, but which sit readable in the database).
 
+## The audit log
+
+Every change is recorded with the time, the signed-in user, the concept and what changed: rows added, edited and removed, files, research, decisions, keys set or removed (never their values), settings, printers, sign-ins and password changes. Deleting a concept deletes its rows and files but not its lines in the audit log, and the deletion is itself a line. Nothing in the app edits or removes a line.
+
+Until the Admin screen for it is built, read it at `/api/admin/audit` and download it as a file (one JSON object per line) at `/api/admin/audit/export` while signed in. Taking a copy is recorded too. The log is in the database, so the backup below includes it; an existing install starts with what was already in each concept's activity list.
+
 ## Settings (`.env`)
 
 Every setting is optional except the database password. A feature without its setting is switched off and says so on screen.
@@ -116,4 +122,4 @@ Database changes are applied at start-up, in order, and each is recorded so it r
 
 ## Third-party code
 
-The **Code use** page under Documentation lists every third-party library, image and font, its licence and how it is used. It is generated from what is installed. Its attestation at the end is a draft until the person who gave the legal sign-off approves the wording.
+The **Code use** page under Documentation lists every third-party library, image and font, its licence and how it is used. It is generated from what is installed. The owner approved the wording of its attestation on 20 November 2026.

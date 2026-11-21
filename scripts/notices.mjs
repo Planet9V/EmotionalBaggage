@@ -370,9 +370,7 @@ export async function buildNotices(root = ROOT) {
     "",
   );
   C.push("## Attestation", "");
-  C.push("The statement below is a draft, to be approved by the person who gave the legal sign-off before it is relied on.", "");
-  C.push("> **Draft, awaiting approval.**");
-  C.push(">");
+  C.push("The owner, Jim McKenney, approved the wording of this statement on 20 November 2026. The lists it refers to are regenerated on every change, and a test fails when they are out of date.", "");
   C.push("> I attest that:");
   C.push(">");
   C.push("> 1. The lists of npm and Python packages on this page and in `THIRD_PARTY_NOTICES.md` were generated from the dependencies installed for the commit stated at the top of this page.");
@@ -382,7 +380,7 @@ export async function buildNotices(root = ROOT) {
   C.push("> 5. Source copied or forked into this repository is listed above with its origin and the changes made to it.");
   C.push("> 6. This repository's own code is licensed as stated in its `LICENSE` file (Apache License, Version 2.0).");
   C.push(">");
-  C.push("> Name: ______________________  Date: ______________");
+  C.push("> Wording approved: Jim McKenney, 20 November 2026");
   C.push("");
   C.push("## Full list", "");
   C.push("`THIRD_PARTY_NOTICES.md` at the root of the repository lists every package of the production tree, direct and transitive, with its version, licence and repository, the text of each licence once, and the evidence for each entry listed by hand.", "");

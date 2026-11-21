@@ -90,6 +90,24 @@ Passwords are hashed with scrypt from `node:crypto` (N = 2^17, r = 8, p = 1; the
 
 Tests: `tests/auth/session.setup.ts` creates a real session for `demo` before each test file. `json(method, payload?, url?)` in `tests/api/helpers.ts` sends it; `anonymous(...)` sends none; `form(...)` is for uploads. Never call a handler with no argument. Tests must not change the `demo` password; create a `zz-...` user.
 
+## The audit log
+
+`audit_log` (migration `0005`) is the install-wide record of all work. It has no link to the concepts table on purpose, so deleting a concept does not delete its lines; the concept's id and name are kept as text. Nothing in the app updates or deletes a line.
+
+- `logEvent` and `logEventIn` in `src/lib/db.ts` write a change to a concept both to that concept's activity list and to the audit log, in one transaction.
+- `audit` and `auditIn` write work that belongs to no concept: keys, settings, printers, sign-in, a password change, and the deletion of a concept.
+- The name recorded is the signed-in user's. `route()` sets it for the whole request (`src/lib/actor.ts`, Node's AsyncLocalStorage), so nothing passes a user name around.
+- Never put a key, password or token in `detail`. A refused sign-in records no user name, because people type passwords into that box by mistake.
+- Reading: `GET /api/admin/audit` (newest first; `project`, `action`, `q`, `before`, `limit`) and `GET /api/admin/audit/export` (a file, one JSON object per line, oldest first).
+
+## Styling
+
+Tailwind 4. There is no `tailwind.config`; the theme is in `src/app/globals.css`. The Eigenia tokens are set per theme in the `:root` and `.dark` blocks and given Tailwind names in `@theme`.
+
+`text-primary`, `text-secondary` and `text-muted` are ink colours here. shadcn/ui uses those three names as fills, so as backgrounds they take shadcn's meaning (`bg-primary` is the orange action colour, `bg-secondary` and `bg-muted` the subtle fill); Tailwind 4 allows a name to differ by utility (`--background-color-*`). The other shadcn names (`background`, `foreground`, `card`, `popover`, `accent`, `border`, `input`, `ring`, `destructive`, `muted-foreground`) map onto the same tokens, so a component added with `npx shadcn@latest add <name>` arrives themed.
+
+`src/components/ui` holds the UI kit (the six Eigenia components plus shadcn/ui ones). `src/components/ai-elements` holds Vercel's AI Elements chat components, added with `npx shadcn@latest add https://elements.ai-sdk.dev/api/registry/<name>.json`. When the CLI asks to overwrite `button.tsx`, `dialog.tsx` or `input.tsx`, answer no: those are Eigenia's. Copied library code is not linted and is listed on the Code use page.
+
 ## Concepts and product types
 
 `/api/projects` lists concepts: active ones by default, `?archived=1` for archived only, `?archived=all` for both. Each comes with its product type, stage, timestamps, the time of its latest event and row counts by stage, from one query (`CONCEPT_SELECT` in `src/lib/api/concepts.ts`).

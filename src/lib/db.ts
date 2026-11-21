@@ -1,3 +1,4 @@
+import { currentActor } from "./actor";
 import { join } from "node:path";
 import { runner } from "node-pg-migrate";
 import { Pool, type PoolClient } from "pg";
@@ -179,18 +180,40 @@ export async function tx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
 
 const EVENT_SQL = "INSERT INTO events (project_id, kind, summary, data) VALUES ($1,$2,$3,$4)";
 
-/** Same as logEvent, inside a transaction. */
-export function logEventIn(c: PoolClient, projectId: string, kind: string, summary: string, data: unknown = {}) {
-  return c.query(EVENT_SQL, [projectId, kind, summary, JSON.stringify(data)]);
+// The install-wide record (migrations/0005_audit_log.sql). It keeps the concept's id and name as text and
+// has no link to the concept, so it outlives the concept.
+const AUDIT_SQL = `INSERT INTO audit_log (actor, project_id, project_name, action, summary, detail)
+  VALUES ($1, $2, COALESCE(NULLIF($3, ''), (SELECT name FROM projects WHERE id = $2), ''), $4, $5, $6)`;
+
+const detailOf = (data: unknown) =>
+  JSON.stringify(data && typeof data === "object" && !Array.isArray(data) ? data : data === undefined ? {} : { value: data });
+
+type AuditEntry = { action: string; summary: string; detail?: unknown; projectId?: string; projectName?: string; actor?: string };
+const auditArgs = (e: AuditEntry) => [e.actor ?? currentActor(), e.projectId ?? "", e.projectName ?? "", e.action, e.summary, detailOf(e.detail)];
+
+/**
+ * Writes one line to the install-wide audit log. Use it directly for work that belongs to no concept
+ * (keys, settings, printers, sign-in) and for deleting a concept; everything recorded with logEvent
+ * is written here as well. Never put a key, password or token in `detail`.
+ */
+export function audit(e: AuditEntry) {
+  return q(AUDIT_SQL, auditArgs(e));
 }
 
+/** Same as audit, inside a transaction: the line is kept only if the work is. */
+export function auditIn(c: PoolClient, e: AuditEntry) {
+  return c.query(AUDIT_SQL, auditArgs(e));
+}
+
+/** Records a change to a concept, inside a transaction: in the concept's activity list and in the audit log. */
+export async function logEventIn(c: PoolClient, projectId: string, kind: string, summary: string, data: unknown = {}) {
+  await c.query(EVENT_SQL, [projectId, kind, summary, JSON.stringify(data)]);
+  await auditIn(c, { action: kind, summary, detail: data, projectId });
+}
+
+/** Records a change to a concept: in the concept's activity list and in the audit log, together or not at all. */
 export function logEvent(projectId: string, kind: string, summary: string, data: unknown = {}) {
-  return q("INSERT INTO events (project_id, kind, summary, data) VALUES ($1,$2,$3,$4)", [
-    projectId,
-    kind,
-    summary,
-    JSON.stringify(data),
-  ]);
+  return tx((c) => logEventIn(c, projectId, kind, summary, data));
 }
 
 export type ItemRow = {

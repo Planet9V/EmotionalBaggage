@@ -4,6 +4,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Streamdown renders model answers (AI Elements Message); its classes live in node_modules. */
+@source "../../node_modules/streamdown/dist/*.js";
+
 /* Tailwind 4: the theme lives here, not in a config file. Dark mode is the `dark` class on <html>. */
 @custom-variant dark (&:is(.dark *));
 @custom-variant light (html.light &);

@@ -1,3 +1,4 @@
+import { asActor } from "@/lib/actor";
 import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { q } from "@/lib/db";
@@ -138,6 +139,8 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
         const session = await sessionFromRequest(req);
         if (!session) throw new HttpError(401, SIGN_IN_REQUIRED);
         sessions.set(req, session);
+        // Everything this request changes is recorded in the audit log against this name.
+        return await asActor(session.username, () => handler(...(args as unknown as A)));
       }
       return await handler(...(args as unknown as A));
     } catch (e) {

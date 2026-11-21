@@ -1,3 +1,4 @@
+import { audit } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { q } from "@/lib/db";
 import { body, route } from "@/lib/api/route";
@@ -17,5 +18,6 @@ export const POST = route(async (req: Request) => {
     `INSERT INTO printers (name, family, model, address, access, enabled) VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${PRINTER_COLS}`,
     [b.name, fam.id, b.model ?? "", address, JSON.stringify(access), b.enabled ?? true]
   );
+  await audit({ action: "printer.added", summary: `Printer "${rows[0].name}" added`, detail: { printerId: Number(rows[0].id), family: fam.id } });
   return NextResponse.json({ printer: toPrinterView(rows[0]) }, { status: 201 });
 });
