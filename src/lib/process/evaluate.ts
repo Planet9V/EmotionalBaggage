@@ -138,6 +138,10 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const bad = badRows.length;
       const want = listOr(check.params.statuses);
       const label = sectionLabel(check.params.section);
+      // True of zero rows is not proof: an empty section fails unless the definition allows it.
+      if (xs.length === 0 && !check.params.allowEmpty) {
+        return { ...base, met: false, detail: `No rows in ${label} yet, so nothing shows this is ${want}.`, action: check.todo ?? `Add rows to ${label}` };
+      }
       return {
         ...base,
         href: badRows[0] ? fixHref(check.params.section, { row: badRows[0] }) : base.href,
@@ -149,9 +153,13 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
     case "no-open": {
       const statuses = check.params.statuses ?? OPEN_STATUSES;
       const set = new Set(statuses);
-      const open = rowsOf(rows, check.params.section).filter((r) => set.has(r.status));
+      const all = rowsOf(rows, check.params.section);
+      const open = all.filter((r) => set.has(r.status));
       const n = open.length;
       const label = sectionLabel(check.params.section);
+      if (all.length === 0 && !check.params.allowEmpty) {
+        return { ...base, met: false, detail: `No rows in ${label} yet, so nothing shows none is ${listOr(statuses)}.`, action: check.todo ?? `Add rows to ${label}` };
+      }
       return {
         ...base,
         href: open[0] ? fixHref(check.params.section, { row: open[0] }) : base.href,
