@@ -3,7 +3,8 @@
 import { Fragment, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { Box, Download, Plus, Trash2, Upload } from "lucide-react";
+import { Box, CircuitBoard, Download, Plus, Trash2, Upload } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -15,6 +16,13 @@ import { sumLine, toPart, type Part } from "@/lib/domain";
 import { mapImport, money, parseAmount, parseCsv, toCsv, groupParts, type ImportRow } from "@/components/parts/bom";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { statusTone } from "@/lib/statusTones";
+import { conceptQueries } from "@/lib/conceptsClient";
+import { sectionVisible } from "@/lib/productTypes";
+import { usePins } from "@/lib/parts/client";
+import { partKind } from "@/lib/parts/kinds";
+import { libraryEntryById } from "@/lib/parts/library";
+import { partPins, pinsByItem } from "@/lib/parts/pins";
+import { PartElectricalDialog } from "@/components/parts/PartElectricalDialog";
 import type { ViewProps } from "./types";
 
 type GroupBy = "none" | "source" | "status";
@@ -30,6 +38,13 @@ export function BomView({ project, section, store }: ViewProps) {
   const [actionError, setActionError] = useState("");
 
   const parts = useMemo(() => items.map(toPart), [items]);
+  // Kind and pins (plan 5.1) only for a product type that has a schematic: a non-electronic product shows none of it.
+  const concept = useQuery(conceptQueries.one(project.id));
+  const electrical = !!concept.data && sectionVisible(concept.data.productType, "design", "schematic");
+  const pinsApi = usePins(electrical ? project.id : undefined);
+  const ownPins = useMemo(() => pinsByItem(pinsApi.pins), [pinsApi.pins]);
+  const [editingPins, setEditingPins] = useState<number | null>(null);
+  const pinsPart = editingPins === null ? null : (items.find((i) => i.id === editingPins) ?? null);
   const total = sumLine(parts);
   const groups = useMemo(() => groupParts(parts, groupBy), [parts, groupBy]);
   const statuses = section.statuses ?? [];
@@ -95,6 +110,7 @@ export function BomView({ project, section, store }: ViewProps) {
                 <TableHead className="w-36">Source</TableHead>
                 <TableHead className="w-28 text-right">Line cost</TableHead>
                 <TableHead className="w-36">Status</TableHead>
+                {electrical && <TableHead className="w-40">Kind and pins</TableHead>}
                 <TableHead className="w-14">3D</TableHead>
                 <TableHead className="w-10">
                   <span className="sr-only">Delete</span>
@@ -110,7 +126,7 @@ export function BomView({ project, section, store }: ViewProps) {
                         {g.key} <span className="font-mono text-muted">· {g.parts.length} {g.parts.length === 1 ? "part" : "parts"}</span>
                       </TableCell>
                       <TableCell className="py-1.5 text-right font-mono text-xs text-primary">{money(g.total)}</TableCell>
-                      <TableCell colSpan={3} className="py-1.5 text-xs text-muted">Subtotal</TableCell>
+                      <TableCell colSpan={electrical ? 4 : 3} className="py-1.5 text-xs text-muted">Subtotal</TableCell>
                     </TableRow>
                   )}
                   {g.parts.map((p) => (
@@ -145,6 +161,31 @@ export function BomView({ project, section, store }: ViewProps) {
                           ))}
                         </Select>
                       </TableCell>
+                      {electrical && (
+                        <TableCell>
+                          {(() => {
+                            const r = partPins(p.item, ownPins.get(p.item.id) ?? []);
+                            const kind = partKind(r.kindId);
+                            const lib = libraryEntryById(r.libraryId);
+                            const label = lib ? lib.name : kind ? kind.label : "Set kind";
+                            const count = r.source === "wires" ? "" : `${r.pins.length} ${r.pins.length === 1 ? "pin" : "pins"}${r.source === "own" ? ", own" : ""}`;
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => setEditingPins(p.item.id)}
+                                className="group flex max-w-[11rem] flex-col items-start rounded-md px-1.5 py-1 text-left text-xs transition-colors duration-150 hover:bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+                                aria-label={`Kind and pins of ${p.item.title}: ${label}${count ? `, ${count}` : ""}`}
+                              >
+                                <span className={`flex items-center gap-1 truncate ${kind || lib ? "text-primary" : "text-link"}`}>
+                                  <CircuitBoard className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
+                                  <span className="truncate">{label}</span>
+                                </span>
+                                {count && <span className="font-mono text-[10px] text-muted">{count}</span>}
+                              </button>
+                            );
+                          })()}
+                        </TableCell>
+                      )}
                       <TableCell>
                         {p.geometry ? (
                           <Link href="/s/design/model" className="inline-flex items-center gap-1 text-link hover:underline" title="Has 3D geometry. Open the model.">
@@ -174,7 +215,7 @@ export function BomView({ project, section, store }: ViewProps) {
                   Total <span className="font-mono text-xs text-muted">· {parts.length} {parts.length === 1 ? "part" : "parts"}</span>
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm font-medium text-primary" data-testid="bom-total">{money(total)}</TableCell>
-                <TableCell colSpan={3} />
+                <TableCell colSpan={electrical ? 4 : 3} />
               </TableRow>
             </tfoot>
           </Table>
@@ -233,6 +274,16 @@ export function BomView({ project, section, store }: ViewProps) {
           </Button>
         </div>
       </Modal>
+      {electrical && (
+        <PartElectricalDialog
+          part={pinsPart}
+          ownPins={pinsPart ? (ownPins.get(pinsPart.id) ?? []) : []}
+          onClose={() => setEditingPins(null)}
+          onType={(change) => patch(pinsPart!.id, { data: change })}
+          onPins={(pins) => pinsApi.setPins(pinsPart!.id, pins).then(() => undefined)}
+        />
+      )}
+      {pinsApi.writeError ? <ErrorLine>{pinsApi.writeError}</ErrorLine> : null}
       <StatusLegend statuses={statuses} />
     </motion.div>
   );

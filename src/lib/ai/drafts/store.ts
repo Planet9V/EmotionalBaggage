@@ -2,6 +2,21 @@
 // row it names) in one transaction, checked again against the section's schema, and records
 // `draft.approved` with the sources. Rejecting records `draft.rejected`.
 import type { PoolClient } from "pg";
+import { pinList } from "@/lib/parts/schema";
+import { replacePins } from "@/lib/parts/server";
+import type { PinKind } from "@/lib/parts/kinds";
+
+/** The drafting generator's words for a pin's role, as the pin kinds the parts library uses. */
+const PIN_KIND_OF_ROLE: Record<string, PinKind | undefined> = {
+  "power in": "power_in",
+  "power out": "power_out",
+  ground: "ground",
+  input: "input",
+  output: "output",
+  bidirectional: "bidirectional",
+  passive: "passive",
+  "not connected": "no_connect",
+};
 import { currentActor } from "@/lib/actor";
 import { HttpError, notFound } from "@/lib/api/route";
 import { defaultStatus, STORE_STATUSES } from "@/lib/api/schemas";
@@ -183,6 +198,13 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
       [d.project_id, d.target_store, fields.title, fields.body, JSON.stringify(fields.data), defaultStatus(d.target_store)]
     );
     item = toItem(r.rows[0]);
+  }
+
+  // A drafted part's pins become pin rows, the one place the schematic and the electrical checks read them.
+  if (item && d.target_store === "design/bom" && Array.isArray(fields.data.pins) && fields.data.pins.length) {
+    const roles = (fields.data.pinRoles ?? {}) as Record<string, string>;
+    const defs = pinList.safeParse((fields.data.pins as unknown[]).filter((n): n is string => typeof n === "string" && n.trim() !== "").map((name) => ({ name, kind: PIN_KIND_OF_ROLE[roles[name]] })));
+    if (defs.success) await replacePins(c, d.project_id, item.id, defs.data);
   }
 
   const u = await c.query<DraftDbRow>(`UPDATE drafts SET status='approved', decided_at=now(), decided_by=$2, item_id=$3 WHERE id=$1 RETURNING ${DRAFT_COLS}`, [

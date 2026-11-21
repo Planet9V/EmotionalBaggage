@@ -36,9 +36,9 @@ describe("toPart", () => {
 });
 
 describe("wires", () => {
-  it("reads the 18 seeded wires in soldering order and finds a part's pins", () => {
+  it("reads the 20 seeded wires in soldering order and finds a part's pins", () => {
     const wires = readWires(seeded.filter((i) => i.section === "design/wiring"));
-    expect(wires.length).toBe(18);
+    expect(wires.length).toBe(20);
     expect(wires.map((w) => w.order)).toEqual([...wires.map((w) => w.order)].sort((a, b) => a - b));
     expect(pinsOf("U1", wires).length).toBeGreaterThan(3);
   });

@@ -4,10 +4,22 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ReactFlowProvider } from "@xyflow/react";
-import { Cable, LayoutGrid, PanelRightClose, PanelRightOpen, Plus, Save, Wand2 } from "lucide-react";
+import { Cable, LayoutGrid, PanelRightClose, PanelRightOpen, Plus, Printer, Save, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
 import { readXY, STORE, type NetClass, type Wire } from "@/lib/domain";
+import { buildCircuit, pinKey as circuitPinKey } from "@/lib/parts/circuit";
+import { checkCircuit, type Finding } from "@/lib/parts/erc";
+import { kicadSchematic } from "@/lib/parts/kicad";
+import { usePins } from "@/lib/parts/client";
+import { pinToDef } from "@/lib/parts/pins";
+import { SymbolCanvas } from "@/components/schematic/SymbolCanvas";
+import { buildSymbolGraph, symbolNodeSize, readSymbolPos, SCALE, type SymNode } from "@/components/schematic/symbolGraph";
+import { ErcPanel } from "@/components/schematic/ErcPanel";
+import { TitleBlock } from "@/components/schematic/TitleBlock";
+import { elkLayout, type LayoutNode } from "@/components/schematic/elk";
+import { symbolLayout } from "@/lib/parts/symbols";
+import "@/components/schematic/print.css";
 import {
   buildGraph,
   computeChecks,
@@ -15,6 +27,10 @@ import {
   netlistKicad,
   netlistText,
   nodeId,
+  nodeHeight,
+  NODE_W,
+  HEADER_H,
+  ROW_H,
   pinsFor,
   refParts,
   readWires,
@@ -44,26 +60,78 @@ type DialogState =
 
 const same = (a: XY | null, b: XY) => !!a && Math.round(a.x) === Math.round(b.x) && Math.round(a.y) === Math.round(b.y);
 
+type ViewMode = "symbols" | "pins";
+const VIEW_KEY = "c2r.schematic.view";
+const today = () => {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+/** `?select=wire:12`, `?select=pin:U1.GND` or `?select=part:U1`, as the electrical checks link to. */
+function selectionFromUrl(): Selection {
+  if (typeof window === "undefined") return null;
+  const v = new URLSearchParams(window.location.search).get("select") ?? "";
+  const [kind, rest = ""] = [v.slice(0, v.indexOf(":")), v.slice(v.indexOf(":") + 1)];
+  if (kind === "wire" && /^\d+$/.test(rest)) return { kind: "wire", id: Number(rest) };
+  if (kind === "part" && rest) return { kind: "part", ref: rest };
+  if (kind === "pin" && rest.includes(".")) return { kind: "pin", ref: rest.slice(0, rest.indexOf(".")), pin: rest.slice(rest.indexOf(".") + 1) };
+  return null;
+}
+
 export function SchematicView({ project, section, store }: ViewProps) {
   const reduce = useReducedMotion();
   const partsApi = useItems(project.id, STORE.parts);
   const wiresApi = useItems(project.id, store);
+  const buildsApi = useItems(project.id, STORE.builds);
+  const pinsApi = usePins(project.id);
 
+  const [view, setViewState] = useState<ViewMode>("symbols");
   const [overlay, setOverlay] = useState<Record<string, XY>>({});
+  const [symOverlay, setSymOverlay] = useState<Record<string, XY>>({});
   const [sel, setSel] = useState<Selection>(null);
   const [hidden, setHidden] = useState<Set<NetClass>>(new Set());
   const [hoverNet, setHoverNet] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [layoutMsg, setLayoutMsg] = useState("");
+  const [pinsLayout, setPinsLayout] = useState<Record<string, XY>>({});
+  const [symLayout, setSymLayout] = useState<Record<string, XY>>({});
+  const [revisionPick, setRevisionPick] = useState("");
+  const [date] = useState(today);
 
-  const parts = useMemo(() => refParts(partsApi.items), [partsApi.items]);
+  useEffect(() => {
+    // a link from a check selects its row; the view choice is remembered in this browser
+    const fromUrl = selectionFromUrl();
+    const saved = window.localStorage.getItem(VIEW_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from the address and local storage after mount
+    if (fromUrl) setSel(fromUrl);
+    if (saved === "pins" || saved === "symbols") setViewState(saved);
+  }, []);
+  const setView = (v: ViewMode) => {
+    setViewState(v);
+    window.localStorage.setItem(VIEW_KEY, v);
+  };
+
+  const circuit = useMemo(() => buildCircuit(partsApi.items, wiresApi.items, pinsApi.pins), [partsApi.items, wiresApi.items, pinsApi.pins]);
+  const findings = useMemo(() => checkCircuit(circuit, { projectId: project.id }), [circuit, project.id]);
+
+  // the pins-and-wires view lists every pin a part has: its own, its library entry's or its kind's
+  const parts = useMemo(
+    () =>
+      refParts(partsApi.items).map((p) => {
+        const cp = circuit.byRef.get(p.ref);
+        return cp && cp.item.id === p.item.id ? { ...p, pins: cp.pins.map((x) => x.name) } : p;
+      }),
+    [partsApi.items, circuit]
+  );
   const wires = useMemo(() => readWires(wiresApi.items), [wiresApi.items]);
-  const graph = useMemo(() => buildGraph(parts, wires, overlay), [parts, wires, overlay]);
-  const checks = useMemo(() => computeChecks(parts, wires), [parts, wires]);
+  const graph = useMemo(() => buildGraph(parts, wires, overlay, false, pinsLayout), [parts, wires, overlay, pinsLayout]);
+  const checks = useMemo(() => computeChecks(parts, wires).filter((c) => !c.id.startsWith("loose:")), [parts, wires]);
   const nets = useMemo(() => computeNets(wires), [wires]);
   const nextOrder = useMemo(() => wires.reduce((m, w) => Math.max(m, w.order), 0) + 1, [wires]);
   const statuses = section.statuses ?? [];
+  const symGraph = useMemo(() => buildSymbolGraph(circuit, symLayout, symOverlay), [circuit, symLayout, symOverlay]);
 
   const pinsByRef = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -72,35 +140,99 @@ export function SchematicView({ project, section, store }: ViewProps) {
   }, [parts, wires]);
 
   const palette = useMemo(() => {
-    const vias = new Set(wires.map((w) => w.via).filter(Boolean));
     const seen = new Set<string>();
     return parts.filter((p) => {
       if (seen.has(p.ref)) return false;
       seen.add(p.ref);
-      return !graph.byId.has(nodeId(p.ref)) && !vias.has(p.ref);
+      return !graph.byId.has(nodeId(p.ref));
     });
-  }, [parts, wires, graph]);
+  }, [parts, graph]);
+
+  // ───────── what the selection lights up, in both views
+  const { litPins, litWires } = useMemo(() => {
+    const pins = new Set<string>();
+    const ws = new Set<number>();
+    if (sel?.kind === "wire") {
+      const w = wires.find((x) => x.item.id === sel.id);
+      if (w) {
+        ws.add(w.item.id);
+        pins.add(`${w.from}.${w.fromPin}`);
+        pins.add(`${w.to}.${w.toPin}`);
+      }
+    }
+    if (sel?.kind === "pin") {
+      pins.add(`${sel.ref}.${sel.pin}`);
+      for (const w of wires) if ((w.from === sel.ref && w.fromPin === sel.pin) || (w.to === sel.ref && w.toPin === sel.pin)) ws.add(w.item.id);
+    }
+    return { litPins: pins, litWires: ws };
+  }, [sel, wires]);
 
   const highlight = useMemo(() => {
     const n = hoverNet ? nets.find((x) => x.name === hoverNet) : null;
-    return new Set(n ? n.members : []);
-  }, [hoverNet, nets]);
+    return new Set([...(n ? n.members : []), ...litPins]);
+  }, [hoverNet, nets, litPins]);
+
+  // ───────── automatic layouts with elkjs, for parts without a saved position
+  const pinsLayoutKey = useMemo(() => graph.nodes.filter((n) => n.kind === "part").map((n) => `${n.id}:${n.kind === "part" ? n.pins.map((x) => x.name + x.side).join(",") : ""}`).join("|") + `#${wires.map((w) => w.item.id).join(",")}`, [graph, wires]);
+  useEffect(() => {
+    let live = true;
+    const nodes: LayoutNode[] = graph.nodes
+      .filter((n) => n.kind === "part")
+      .map((n) => ({
+        id: n.ref,
+        width: NODE_W,
+        height: nodeHeight(n.kind === "part" ? n.pins.length : 1),
+        ports: n.kind === "part" ? n.pins.map((p, i) => ({ id: `${n.ref}\u0000${p.name}`, side: p.side === "left" ? "WEST" : "EAST", x: p.side === "left" ? 0 : NODE_W, y: HEADER_H + ROW_H * (i + 0.5) })) : [],
+      }));
+    const edges = wires.map((w) => ({ id: String(w.item.id), source: w.from, sourcePort: `${w.from}\u0000${w.fromPin || "?"}`, target: w.to, targetPort: `${w.to}\u0000${w.toPin || "?"}` }));
+    elkLayout(nodes, edges)
+      .then((pos) => live && setPinsLayout(pos))
+      .catch(() => undefined); // the hand-written arrangement stays
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the parts, pins or wires change, not on every drag
+  }, [pinsLayoutKey]);
+
+  const symLayoutKey = useMemo(() => circuit.parts.map((p) => `${p.ref}:${p.symbol}:${p.pins.map((x) => x.name + x.side).join(",")}`).join("|") + `#${circuit.wires.map((w) => w.item.id).join(",")}`, [circuit]);
+  useEffect(() => {
+    let live = true;
+    const SIDE = { left: "WEST", right: "EAST", top: "NORTH", bottom: "SOUTH" } as const;
+    const nodes: LayoutNode[] = circuit.parts
+      .filter((p) => p.pins.length)
+      .map((p) => {
+        const layout = symbolLayout(p.symbol, p.pins);
+        const { width, height, origin } = symbolNodeSize(layout);
+        return { id: p.ref, width, height, ports: layout.pins.map((sp) => ({ id: `${p.ref}\u0000${sp.name}`, side: SIDE[sp.side], x: origin.x + sp.x * SCALE, y: origin.y + sp.y * SCALE })) };
+      });
+    const edges = circuit.wires
+      .filter((w) => {
+        const net = circuit.netOf.get(circuitPinKey(w.from, w.fromPin));
+        return net && net.netClass !== "power" && net.netClass !== "ground";
+      })
+      .map((w) => ({ id: String(w.item.id), source: w.from, sourcePort: `${w.from}\u0000${w.fromPin}`, target: w.to, targetPort: `${w.to}\u0000${w.toPin}` }));
+    elkLayout(nodes, edges, { node: 90, layer: 150 })
+      .then((pos) => live && setSymLayout(pos))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the parts, pins or wires change, not on every drag
+  }, [symLayoutKey]);
 
   // positions not yet stored (automatic, tidied or dragged and waiting for the debounce)
-  const unsaved = useMemo(
-    () =>
-      graph.nodes.filter((n) => {
-        if (n.kind === "part") return !!n.part && !same(n.part.schematic, n.pos);
-        return !same(readXY(n.wire.item.data.schematic), n.pos);
-      }),
-    [graph]
-  );
-  const anySaved = graph.nodes.some((n) => n.saved);
+  const unsaved = useMemo(() => {
+    if (view === "symbols") return symGraph.nodes.filter((n): n is Extract<SymNode, { type: "symbol" }> => n.type === "symbol" && !same(readSymbolPos(n.part.item.data.symbolPos), n.position)).map((n) => ({ itemId: n.part.item.id, pos: n.position, store: "parts" as const }));
+    return graph.nodes
+      .filter((n) => (n.kind === "part" ? !!n.part && !same(n.part.schematic, n.pos) : !same(readXY(n.wire.item.data.schematic), n.pos)))
+      .map((n) => (n.kind === "part" ? { itemId: n.part!.item.id, pos: n.pos, store: "parts" as const } : { itemId: n.wire.item.id, pos: n.pos, store: "wires" as const }));
+  }, [graph, symGraph, view]);
+  const anySaved = view === "symbols" ? symGraph.nodes.some((n) => n.type === "symbol" && n.saved) : graph.nodes.some((n) => n.saved);
 
   // ───────── debounced position saves after a drag
-  const latest = useRef({ graph, patchPart: partsApi.patch, patchWire: wiresApi.patch });
+  const latest = useRef({ graph, symGraph, patchPart: partsApi.patch, patchWire: wiresApi.patch });
   useEffect(() => {
-    latest.current = { graph, patchPart: partsApi.patch, patchWire: wiresApi.patch };
+    latest.current = { graph, symGraph, patchPart: partsApi.patch, patchWire: wiresApi.patch };
   });
   const pending = useRef<Set<string>>(new Set());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,8 +240,13 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const flush = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
-    const { graph: g, patchPart, patchWire } = latest.current;
+    const { graph: g, symGraph: sg, patchPart, patchWire } = latest.current;
     for (const id of pending.current) {
+      if (id.startsWith("s:")) {
+        const n = sg.nodes.find((x) => x.id === id);
+        if (n && n.type === "symbol" && !same(readSymbolPos(n.part.item.data.symbolPos), n.position)) void patchPart(n.part.item.id, { data: { symbolPos: n.position } });
+        continue;
+      }
       const n = g.byId.get(id);
       if (!n) continue;
       if (n.kind === "part" && n.part && !same(n.part.schematic, n.pos)) void patchPart(n.part.item.id, { data: { schematic: n.pos } });
@@ -129,14 +266,12 @@ export function SchematicView({ project, section, store }: ViewProps) {
     [flush]
   );
   const onMove = useCallback((moves: Record<string, XY>) => setOverlay((o) => ({ ...o, ...moves })), []);
+  const onSymMove = useCallback((moves: Record<string, XY>) => setSymOverlay((o) => ({ ...o, ...moves })), []);
 
   const saveLayout = async () => {
     setLayoutMsg("");
-    const jobs: Promise<void>[] = [];
-    for (const n of unsaved) {
-      if (n.kind === "part" && n.part) jobs.push(partsApi.patch(n.part.item.id, { data: { schematic: n.pos } }));
-      if (n.kind === "via") jobs.push(wiresApi.patch(n.wire.item.id, { data: { schematic: n.pos } }));
-    }
+    const key = view === "symbols" ? "symbolPos" : "schematic";
+    const jobs = unsaved.map((u) => (u.store === "parts" ? partsApi.patch(u.itemId, { data: { [key]: u.pos } }) : wiresApi.patch(u.itemId, { data: { schematic: u.pos } })));
     try {
       await Promise.all(jobs);
       setLayoutMsg(`Saved ${jobs.length} ${jobs.length === 1 ? "position" : "positions"}.`);
@@ -146,14 +281,19 @@ export function SchematicView({ project, section, store }: ViewProps) {
   };
 
   const tidy = () => {
-    const fresh = buildGraph(parts, wires, {}, true);
-    setOverlay(Object.fromEntries(fresh.nodes.map((n) => [n.id, n.pos])));
+    if (view === "symbols") {
+      const fresh = buildSymbolGraph(circuit, symLayout, {}, true);
+      setSymOverlay(Object.fromEntries(fresh.nodes.filter((n) => n.type === "symbol").map((n) => [n.id, n.position])));
+    } else {
+      const fresh = buildGraph(parts, wires, {}, true, pinsLayout);
+      setOverlay(Object.fromEntries(fresh.nodes.map((n) => [n.id, n.pos])));
+    }
     setLayoutMsg("Tidied. Press Save layout to keep it.");
   };
 
   // ───────── writes
   const saveWire = async (d: WireDraft, editing: Wire | null) => {
-    const data = { order: d.order, net: d.net, netClass: d.netClass, from: d.from, fromPin: d.fromPin, to: d.to, toPin: d.toPin, via: d.via };
+    const data = { order: d.order, net: d.net, netClass: d.netClass, from: d.from, fromPin: d.fromPin, to: d.to, toPin: d.toPin };
     if (editing) {
       await wiresApi.patch(editing.item.id, { title: d.name, body: d.note, status: d.status, data });
       return;
@@ -167,18 +307,24 @@ export function SchematicView({ project, section, store }: ViewProps) {
     setSel(null);
   };
 
+  /** A part's pins as definitions, to change and store as its own. */
+  const ownPins = (part: Part) => (circuit.byRef.get(part.ref)?.pins ?? []).map(pinToDef);
+
   const addPin = async (part: Part, pin: string) => {
-    await partsApi.patch(part.item.id, { data: { pins: [...part.pins, pin] } });
+    await pinsApi.setPins(part.item.id, [...ownPins(part), { name: pin, kind: null }]);
   };
 
   const placePart = async (part: Part, at: XY | null, pin: string) => {
-    await partsApi.patch(part.item.id, { data: at ? { pins: [...part.pins, pin], schematic: at } : { pins: [...part.pins, pin] } });
-    if (at) setOverlay((o) => ({ ...o, [nodeId(part.ref)]: at }));
+    if (pin) await pinsApi.setPins(part.item.id, [...ownPins(part), { name: pin, kind: null }]);
+    if (at) {
+      await partsApi.patch(part.item.id, { data: { schematic: at } });
+      setOverlay((o) => ({ ...o, [nodeId(part.ref)]: at }));
+    }
     setSel({ kind: "part", ref: part.ref });
   };
 
   const removePin = (part: Part, pin: string) => {
-    void partsApi.patch(part.item.id, { data: { pins: part.pins.filter((x) => x !== pin) } });
+    void pinsApi.setPins(part.item.id, ownPins(part).filter((x) => x.name !== pin)).catch(() => undefined);
   };
 
   const onConnect = useCallback((c: ConnectRequest) => setDialog({ kind: "wire", mode: { kind: "new", ...c } }), []);
@@ -194,21 +340,49 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const onPlace = useCallback(
     (ref: string, at: XY | null) => {
       const part = parts.find((p) => p.ref === ref);
-      if (part) setDialog({ kind: "place", part, at });
+      if (!part) return;
+      // a part whose pins are known is placed at once; one with none needs its first pin named
+      if (part.pins.length) void placePart(part, at, "");
+      else setDialog({ kind: "place", part, at });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- placePart reads the latest parts through closure
     [parts]
   );
+  const onPickPin = useCallback((ref: string, pin: string) => setSel({ kind: "pin", ref, pin }), []);
 
   const pickCheck = (c: Check) => {
     if (c.wireIds.length) setSel({ kind: "wire", id: c.wireIds[0] });
     else if (c.refs.length === 1 && graph.byId.has(nodeId(c.refs[0]))) setSel({ kind: "part", ref: c.refs[0] });
   };
+  const pickFinding = (f: Finding) => {
+    if (f.wireIds.length) setSel({ kind: "wire", id: f.wireIds[0] });
+    else if (f.pins.length) {
+      const k = f.pins[0];
+      setSel({ kind: "pin", ref: k.slice(0, k.indexOf(".")), pin: k.slice(k.indexOf(".") + 1) });
+    } else if (f.refs.length) setSel({ kind: "part", ref: f.refs[0] });
+  };
+
+  // ───────── title block: the revision is a named build of this concept
+  const revisions = useMemo(() => [...buildsApi.items].sort((a, b) => b.sort - a.sort || b.id - a.id).map((b) => b.title), [buildsApi.items]);
+  const revision = revisionPick && revisions.includes(revisionPick) ? revisionPick : (revisions[0] ?? "Draft: no named build yet");
 
   const fileSpecs = useMemo(() => {
     const base = slug(project.name);
     const meta = () => ({ concept: project.name, generatedAt: new Date() });
     const n = wires.length;
+    const drawn = circuit.parts.filter((p) => p.pins.length).length;
     return [
+      {
+        key: "kicad",
+        label: "KiCad schematic (.kicad_sch)",
+        detail: `${drawn} ${drawn === 1 ? "symbol" : "symbols"} and ${circuit.nets.length} ${circuit.nets.length === 1 ? "net" : "nets"}, in KiCad 10's file format, with the title block. Opens in KiCad's schematic editor.`,
+        note: "Each pin's net is carried by a label on a short wire, so the sheet is tidy to connect but not drawn as a finished schematic. Symbols are this workbench's own drawings, embedded in the file. Symbols keep their places from the symbol view.",
+        make: (): GeneratedFile[] => {
+          const positions: Record<string, { x: number; y: number }> = {};
+          for (const nd of symGraph.nodes) if (nd.type === "symbol") positions[nd.data.ref] = { x: (nd.position.x + nd.data.origin.x) / SCALE, y: (nd.position.y + nd.data.origin.y) / SCALE };
+          return [{ name: `${base}.kicad_sch`, mime: "text/plain;charset=utf-8", text: kicadSchematic(circuit, { title: project.name, revision, date, positions }), format: "kicad-schematic" }];
+        },
+      },
       {
         key: "csv",
         label: "Wiring list (CSV)",
@@ -219,7 +393,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
         key: "netlist",
         label: "Netlist (text and KiCad-style)",
         detail: `${nets.length} named ${nets.length === 1 ? "net" : "nets"} as plain text, plus an S-expression netlist (.net) where pins wired together share one net.`,
-        note: "The .net file is a simple netlist for reference, not a validated KiCad project. A part in series on a wire is given pin 1 on the from side and pin 2 on the to side.",
+        note: "The .net file is a simple netlist for reference, not a validated KiCad project.",
         make: (): GeneratedFile[] => {
           const m = meta();
           return [
@@ -230,16 +404,16 @@ export function SchematicView({ project, section, store }: ViewProps) {
       },
       {
         key: "svg",
-        label: "Schematic (SVG)",
-        detail: `Drawn from the positions on the canvas now (${graph.nodes.length} ${graph.nodes.length === 1 ? "node" : "nodes"}, every net class), with a title block.`,
+        label: "Pins and wires (SVG)",
+        detail: `Drawn from the positions in the pins and wires view now (${graph.nodes.length} ${graph.nodes.length === 1 ? "node" : "nodes"}, every net class), with a title block.`,
         make: (): GeneratedFile[] => [{ name: `${base}-schematic.svg`, mime: "image/svg+xml", text: schematicSvg(graph, meta()), format: "schematic-svg" }],
       },
     ];
-  }, [project.name, wires, parts, nets, graph]);
+  }, [project.name, wires, parts, nets, graph, circuit, symGraph, revision, date]);
 
   // ───────── render
   if (partsApi.loading || wiresApi.loading) return <p className="text-sm text-secondary">Loading the schematic.</p>;
-  const loadError = partsApi.error || wiresApi.error || partsApi.writeError || wiresApi.writeError;
+  const loadError = partsApi.error || wiresApi.error || partsApi.writeError || wiresApi.writeError || pinsApi.writeError;
 
   const enter = { initial: reduce ? false : { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4, ease: "easeOut" as const } };
 
@@ -251,7 +425,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
           <Cable className="mx-auto h-6 w-6 text-muted" aria-hidden />
           <p className="mt-3 text-sm font-medium text-primary">No parts to connect yet</p>
           <p className="mx-auto mt-1 max-w-lg text-sm text-secondary">
-            The schematic draws the parts in the bill of materials and the wires between their pins. Add the parts first, each with a ref such as U1 or R2.
+            The schematic draws the parts in the bill of materials and the wires between their pins. Add the parts first, each with a ref such as U1 or R2, and choose each one&apos;s kind or library entry so it gets its pins and symbol.
           </p>
           <Button asChild className="mt-4">
             <Link href="/s/design/bom">Open the bill of materials</Link>
@@ -280,7 +454,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
       {dialog?.kind === "pin" && (
         <PinDialog
           title={`Add a pin to ${dialog.part.ref}`}
-          description={`${dialog.part.title}. The pin shows on the part straight away; drag from it to wire it.`}
+          description={`${dialog.part.title}. The pin shows on the part straight away; drag from it to wire it. Its kind can be set in the bill of materials.`}
           existing={pinsByRef.get(dialog.part.ref) ?? []}
           submitLabel="Add pin"
           onClose={() => setDialog(null)}
@@ -290,7 +464,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
       {dialog?.kind === "place" && (
         <PinDialog
           title={`Place ${dialog.part.ref}`}
-          description={`${dialog.part.title}. A part shows on the schematic once it has a pin. Name the first one.`}
+          description={`${dialog.part.title}. It has no kind or library entry, so it has no pins yet. Name the first one, or choose its kind in the bill of materials.`}
           existing={pinsByRef.get(dialog.part.ref) ?? []}
           submitLabel="Place part"
           onClose={() => setDialog(null)}
@@ -306,7 +480,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   );
 
   // parts exist but nothing has a pin or a wire yet: no canvas to drag on
-  if (!graph.nodes.length) {
+  if (!graph.nodes.length && !symGraph.nodes.length) {
     return (
       <motion.div {...enter} className="space-y-4">
         {loadError && <ErrorLine>{loadError}</ErrorLine>}
@@ -315,7 +489,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
             <p className={EYEBROW}>Start the schematic</p>
             <h3 className="mt-1 text-lg font-semibold tracking-tight text-primary">No wires yet</h3>
             <p className="mt-2 text-sm text-secondary">
-              A part appears on the canvas once it has a pin. Then drag from one pin to another to add a wire. To begin, type the first connection here, or place a part and name its first pin.
+              A part appears on the canvas once it has a pin: choose its kind or library entry in the bill of materials, or place it here and name its first pin. Then drag from one pin to another to add a wire.
             </p>
             <ul className="mt-4 flex flex-wrap gap-1.5">
               {palette.map((p) => (
@@ -346,20 +520,43 @@ export function SchematicView({ project, section, store }: ViewProps) {
   }
 
   const canvasParts = graph.nodes.filter((n) => n.kind === "part" && n.part).map((n) => n.ref);
+  const wiredParts = circuit.parts.filter((p) => circuit.wires.some((w) => w.from === p.ref || w.to === p.ref));
+  const described = wiredParts.filter((p) => p.source !== "wires").length;
+  const titleBlock = <TitleBlock concept={project.name} revision={revision} revisions={revisions} onRevision={setRevisionPick} date={date} view={view === "symbols" ? "Schematic, symbol view" : "Schematic, pins and wires"} />;
 
   return (
     <motion.div {...enter} className="space-y-4">
       {loadError && <ErrorLine>{loadError}</ErrorLine>}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted" aria-live="polite">
-          {layoutMsg ||
-            (unsaved.length
-              ? anySaved
-                ? `${unsaved.length} ${unsaved.length === 1 ? "position is" : "positions are"} not saved yet.`
-                : "The layout is automatic until you move a part or press Save layout."
-              : "Layout saved. Moving a part saves its new position.")}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <div role="group" aria-label="Schematic view" className="inline-flex rounded-md border border-hairline bg-surface p-0.5 shadow-xs">
+            {(
+              [
+                ["symbols", "Symbols"],
+                ["pins", "Pins and wires"],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={view === k}
+                onClick={() => setView(k)}
+                className={`rounded px-3 py-1 text-xs font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${view === k ? "bg-dutchOrange/10 text-primary" : "text-secondary hover:bg-subtle"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted" aria-live="polite">
+            {layoutMsg ||
+              (unsaved.length
+                ? anySaved
+                  ? `${unsaved.length} ${unsaved.length === 1 ? "position is" : "positions are"} not saved yet.`
+                  : "The layout is automatic until you move a part or press Save layout."
+                : "Layout saved. Moving a part saves its new position.")}
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
@@ -374,6 +571,9 @@ export function SchematicView({ project, section, store }: ViewProps) {
           <Button size="sm" onClick={saveLayout} disabled={!unsaved.length}>
             <Save className="h-3.5 w-3.5" aria-hidden /> Save layout
           </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()} title="Print the sheet, or save it as a PDF from the print dialog">
+            <Printer className="h-3.5 w-3.5" aria-hidden /> Print or PDF
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setPanelOpen((o) => !o)} aria-expanded={panelOpen} aria-controls="schematic-panel">
             {panelOpen ? <PanelRightClose className="h-4 w-4" aria-hidden /> : <PanelRightOpen className="h-4 w-4" aria-hidden />}
             {panelOpen ? "Hide panel" : "Show panel"}
@@ -382,47 +582,65 @@ export function SchematicView({ project, section, store }: ViewProps) {
       </div>
 
       <div className={`grid gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_340px]" : "grid-cols-1"}`}>
-        <div className="min-w-0">
-          <ReactFlowProvider>
-            <SchematicCanvas
-              graph={graph}
-              wires={wires}
-              sel={sel}
-              hidden={hidden}
-              onToggleClass={(c) =>
-                setHidden((h) => {
-                  const next = new Set(h);
-                  if (next.has(c)) next.delete(c);
-                  else next.add(c);
-                  return next;
-                })
-              }
-              hoverNet={hoverNet}
-              highlight={highlight}
-              onMove={onMove}
-              onDragStop={onDragStop}
-              onSelect={setSel}
-              onConnect={onConnect}
-              onEditWire={onEditWire}
-              onAddPin={onAddPinRequest}
-              palette={palette}
-              onPlace={onPlace}
-              banner={
-                !wires.length ? (
-                  <div className="max-w-md rounded-xl border border-hairline bg-surface px-4 py-3 text-center shadow-plate">
-                    <p className="text-sm font-medium text-primary">No wires yet</p>
-                    <p className="mt-0.5 text-xs text-secondary">Drag from one pin to another to connect them, or type the pins in.</p>
-                    <Button size="sm" className="mt-2" onClick={() => setDialog({ kind: "first" })}>
-                      <Plus className="h-3.5 w-3.5" aria-hidden /> Add first connection
-                    </Button>
-                  </div>
-                ) : undefined
-              }
-            />
+        <div className="schematic-print-area min-w-0">
+          <ReactFlowProvider key={view}>
+            {view === "symbols" ? (
+              <SymbolCanvas
+                nodes={symGraph.nodes}
+                edges={symGraph.edges}
+                sel={sel}
+                litPins={litPins}
+                litWires={litWires}
+                onMove={onSymMove}
+                onDragStop={onDragStop}
+                onSelect={setSel}
+                onConnect={onConnect}
+                titleBlock={titleBlock}
+              />
+            ) : (
+              <SchematicCanvas
+                graph={graph}
+                wires={wires}
+                sel={sel}
+                hidden={hidden}
+                onToggleClass={(c) =>
+                  setHidden((h) => {
+                    const next = new Set(h);
+                    if (next.has(c)) next.delete(c);
+                    else next.add(c);
+                    return next;
+                  })
+                }
+                hoverNet={hoverNet}
+                highlight={highlight}
+                litWires={litWires}
+                onPickPin={onPickPin}
+                onMove={onMove}
+                onDragStop={onDragStop}
+                onSelect={setSel}
+                onConnect={onConnect}
+                onEditWire={onEditWire}
+                onAddPin={onAddPinRequest}
+                palette={palette}
+                onPlace={onPlace}
+                banner={
+                  !wires.length ? (
+                    <div className="max-w-md rounded-xl border border-hairline bg-surface px-4 py-3 text-center shadow-plate">
+                      <p className="text-sm font-medium text-primary">No wires yet</p>
+                      <p className="mt-0.5 text-xs text-secondary">Drag from one pin to another to connect them, or type the pins in.</p>
+                      <Button size="sm" className="mt-2" onClick={() => setDialog({ kind: "first" })}>
+                        <Plus className="h-3.5 w-3.5" aria-hidden /> Add first connection
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
+              />
+            )}
           </ReactFlowProvider>
+          {view === "pins" && <div className="mt-2 flex justify-end">{titleBlock}</div>}
         </div>
         {panelOpen && (
-          <aside id="schematic-panel" aria-label="Selection details" className="max-h-[clamp(620px,72vh,900px)] overflow-y-auto rounded-xl border border-hairline bg-surface p-4 xl:sticky xl:top-4">
+          <aside id="schematic-panel" aria-label="Selection details" className="schematic-noprint max-h-[clamp(620px,72vh,900px)] overflow-y-auto rounded-xl border border-hairline bg-surface p-4 xl:sticky xl:top-4">
             <SidePanel
               sel={sel}
               graph={graph}
@@ -441,15 +659,17 @@ export function SchematicView({ project, section, store }: ViewProps) {
                 })
               }
               onRemovePin={removePin}
+              circuit={circuit}
             />
           </aside>
         )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <ErcPanel findings={findings} loading={pinsApi.loading} error={pinsApi.error ? `The pins could not be read: ${pinsApi.error}` : ""} onRetry={() => void pinsApi.reload()} onPick={pickFinding} described={described} partCount={wiredParts.length} />
         <ChecksPanel checks={checks} wireCount={wires.length} partCount={parts.length} onPick={pickCheck} />
-        <FilesPanel projectId={project.id} specs={fileSpecs} disabled={!wires.length} />
       </div>
+      <FilesPanel projectId={project.id} specs={fileSpecs} disabled={!wires.length} />
 
       <p className="flex items-center gap-1.5 text-xs text-muted">
         <LayoutGrid className="h-3.5 w-3.5" aria-hidden /> The same wires drive the{" "}

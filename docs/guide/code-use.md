@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit a3ca05a by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 269c886 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,7 +16,7 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 602 packages (43 direct, 559 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 602 packages (44 direct, 558 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
@@ -82,6 +82,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | clsx | 2.1.1 | MIT | linked library | yes |
 | cmdk | 1.1.1 | MIT | linked library | yes |
 | cn | 0.5.2 | MIT | linked library | yes |
+| elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | linked library | yes |
 | embla-carousel-react | 8.6.0 | MIT | linked library | yes |
 | framer-motion | 14.14.0 | MIT | linked library | yes |
 | lucide-react | 1.77.0 | ISC | linked library | yes |
@@ -130,6 +131,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | Graphviz (apt package graphviz) | as installed by apt in the planner image (Debian) | EPL-1.0 (Graphviz; the Debian package also contains libraries under their own licences) | separate process | https://graphviz.org/ |
 | Inter (typeface) | Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0 | OFL-1.1 | font files | https://github.com/rsms/inter |
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
+| KiCad command-line tool (kicad-cli), CI only | 10.0 (Ubuntu package from ppa:kicad/kicad-10.0-releases) | GPL-3.0-or-later (KiCad); its libraries are not installed or used | separate process | https://gitlab.com/kicad/code/kicad |
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
 | occt-import-js (OpenCascade STEP reader, WebAssembly) | as copied from the npm package occt-import-js | LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it) | copied source | https://github.com/kovacsv/occt-import-js |
 | OpenSCAD (Debian package openscad) | 2021.01 in the Debian package the planner image installs | GPL-2.0-or-later with the CGAL exception (as the Debian package states it) | separate process | https://openscad.org |
@@ -137,6 +139,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | pgvector (Docker image pgvector/pgvector, CI only) | pg17 | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | PostgreSQL | 19 (inside pgvector/pgvector:0.8.7-pg19-trixie) | PostgreSQL | separate process | https://www.postgresql.org |
 | Python (official Docker image python) | 3.13-slim | PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences | container image | https://hub.docker.com/_/python |
+| schematic-symbols drawings | 0.0.251 | MIT | copied source | https://github.com/tscircuit/schematic-symbols |
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | UI components (Button, Dialog, Input, Table, Card, StatusBadge) | as committed in eb362b6 (2026-11-20) | owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT) | copied source | https://github.com/shadcn-ui/ui |
 | WireViz (Python package, run as a command) | 0.4.1 | GPL-3.0 | separate process | https://github.com/wireviz/WireViz |
@@ -149,6 +152,8 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 **occt-import-js (OpenCascade STEP reader, WebAssembly)**: origin npm package occt-import-js, copied into public/vendor/occt so the browser can load it from the same origin. None. The files are as the package ships them (about 7.6 MB of wasm).
 
 **OpenSCAD (Debian package openscad)**: origin Installed by apt in planner/Dockerfile; the planner runs it as a command line program and reads the STL it writes.
+
+**schematic-symbols drawings**: origin the symbol drawings (lines, circles and pin points only) of resistor_right, capacitor_polarized_right, diode_right, led_right, spst_switch_right, push_button_normally_open_momentary_horz, battery_horz, speaker_right, ground_down and vcc_up, copied by scripts/extract-symbols.mjs from schematic-symbols 0.0.251 (https://github.com/tscircuit/schematic-symbols). Each one's history was read in the repository on 21 November 2026: resistor added in 419e439 (#272, Inkscape SVG); capacitor_polarized in d89e83a (#212) and refined in #384; diode and led split in 8c4f2af from the combined Inkscape symbols.svg first committed in 85f3d35 by the package's author; spst_switch in 9962748 (#254); push_button_normally_open_momentary in 495c76e; battery in 4a4c906 (#174); speaker in 8c4e6fc (#444, hand-written SVG by the package's author); ground in e130627; vcc reworked in 7a0855e. None of these commits or files names KiCad or another symbol set as a source; most SVGs carry an Inkscape mark. That is evidence they were drawn by contributors, not proof. Not used: the package's capacitor and boxresistor, whose dimensions were matched to KiCad's Device:C and Device:R in 993737d (#434) and 2592db4 (#435); the capacitor and motor symbols are this project's own drawings instead.. Coordinates rounded to four decimals; text placeholders dropped; orientation fixed to the listed variant. Scaled and placed on a 2.54 mm grid at run time by src/lib/parts/symbols.ts.
 
 **shadcn/ui components added by its CLI**: origin https://ui.shadcn.com registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css.
 
@@ -183,6 +188,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | jsdom | 31.0.1 | MIT |
 | license-checker-rseidelsohn | 4.4.2 | BSD-3-Clause |
 | postcss | 8.5.33 | MIT |
+| schematic-symbols | 0.0.251 | MIT (from its licence file; package.json declares none) |
 | tailwindcss | 4.3.5 | MIT |
 | tw-animate-css | 1.4.0 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |

@@ -4,6 +4,8 @@
 import { z } from "zod";
 import { economicsSchemas, partPricingFields } from "@/lib/economics/schemas";
 import { MARKET_SCHEMAS } from "@/lib/market/schemas";
+import { PART_KIND_IDS } from "@/lib/parts/kinds";
+import { libraryEntryById } from "@/lib/parts/library";
 
 export const STORE = {
   parts: "design/bom",
@@ -117,8 +119,14 @@ export const partData = z.looseObject({
   geometry: geometry.nullable().optional(),
   /** where the part sits on the schematic */
   schematic: xy.nullable().optional(),
-  /** pins the part has, wired or not */
+  /** pins the part has, wired or not. Legacy: pins are rows of `pins` since migrations/0014_pins.sql, which moved these. */
   pins: z.array(text(60)).max(400).optional(),
+  /** what kind of part it is (src/lib/parts/kinds.ts); "" clears it */
+  kind: z.union([z.literal(""), z.enum(PART_KIND_IDS, { error: "not a part kind this app knows" })]).optional(),
+  /** the part-library entry it is (src/lib/parts/library); "" clears it */
+  library: z.union([z.literal(""), z.string().refine((id) => !!libraryEntryById(id), "not an entry of the part library")]).optional(),
+  /** where the part sits in the symbol view of the schematic (the pins-and-wires view uses `schematic`) */
+  symbolPos: xy.nullable().optional(),
   /** unit price, supplier key and quantity price breaks (plan 3.6, 7.2) */
   ...partPricingFields(),
 });
@@ -135,8 +143,9 @@ export const wireData = z.looseObject({
   fromPin: text(60).optional(),
   to: text(40).optional(),
   toPin: text(60).optional(),
-  via: text(40).optional(),
-  /** where a series part on this wire sits on the schematic */
+  /** gone since migrations/0014_pins.sql: a part in series is an ordinary part with a wire to each pin */
+  via: z.literal("", { error: "a part in series is its own part now: wire to each of its pins" }).optional(),
+  /** where a series part on this wire sat on the schematic (legacy) */
   schematic: xy.nullable().optional(),
   /** routed length of the path through the enclosure, mm, from the planner (plan 5.12) */
   routedLengthMm: numeric.refine((n) => n >= 0, "cannot be negative").optional(),

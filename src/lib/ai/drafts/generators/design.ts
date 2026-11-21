@@ -1,5 +1,6 @@
 // Brief to requirements (4.3), requirements to a candidate parts list (4.4), parts to wiring (4.5).
 import { z } from "zod";
+import { PART_KIND_IDS } from "@/lib/parts/kinds";
 import { sectionVisible } from "@/lib/productTypes";
 import { partsByRef, readWires } from "@/lib/domain";
 import type { Item } from "@/lib/types";
@@ -77,12 +78,8 @@ export const requirements: Generator<z.infer<typeof reqRow>> = {
 // ---------------------------------------------------------------------------------------------
 // Parts
 
-/** Part kinds from docs/design/wiring.md, plus the mechanical kinds a product without electronics needs. */
-export const PART_KINDS = [
-  "resistor", "capacitor", "diode", "led", "switch", "push button", "battery", "speaker", "connector",
-  "sensor", "module", "regulator", "motor", "generic",
-  "enclosure", "printed part", "fastener", "mechanical", "material",
-] as const;
+/** Part kinds: the one list in src/lib/parts/kinds.ts, which the schematic, the checks and the parts list share. */
+export const PART_KINDS = PART_KIND_IDS;
 
 /** Pin kinds from docs/design/wiring.md. */
 export const PIN_ROLES = ["power in", "power out", "ground", "input", "output", "bidirectional", "passive", "not connected"] as const;

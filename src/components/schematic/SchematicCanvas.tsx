@@ -43,6 +43,9 @@ type Props = {
   palette: Part[];
   onPlace: (ref: string, at: XY) => void;
   banner?: React.ReactNode;
+  /** wires to emphasise: the selected wire, or every wire on a selected pin */
+  litWires?: Set<number>;
+  onPickPin?: (ref: string, pin: string) => void;
 };
 
 const refOf = (nodeId: string) => nodeId.slice(2);
@@ -101,11 +104,11 @@ export function SchematicCanvas(p: Props) {
         targetHandle: s.targetHandle,
         selected,
         zIndex: selected ? 10 : 0,
-        data: { wire: s.wire, label: s.label, dim: !!hoverNet && s.wire.net !== hoverNet, emph: !!hoverNet && s.wire.net === hoverNet },
+        data: { wire: s.wire, label: s.label, dim: !!hoverNet && s.wire.net !== hoverNet, emph: (!!hoverNet && s.wire.net === hoverNet) || !!p.litWires?.has(s.wire.item.id) },
       });
     }
     return out;
-  }, [graph, hidden, sel, hoverNet]);
+  }, [graph, hidden, sel, hoverNet, p.litWires]);
 
   const onNodesChange = useCallback(
     (changes: NodeChangeset<PartNodeType | ViaNodeType>) => {
@@ -151,7 +154,7 @@ export function SchematicCanvas(p: Props) {
   };
 
   return (
-    <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight }}>
+    <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight, onPickPin: p.onPickPin }}>
       {p.palette.length > 0 && (
         <div className="mb-3 rounded-xl border border-hairline bg-surface px-3 py-2.5">
           <p className="text-xs text-secondary">
@@ -188,7 +191,8 @@ export function SchematicCanvas(p: Props) {
       )}
       <div
         ref={wrap}
-        className={`relative h-[clamp(620px,72vh,900px)] w-full overflow-hidden rounded-xl border bg-canvas transition-colors duration-150 ${dropping ? "border-dutchOrange" : "border-hairline"}`}
+        data-testid="pins-canvas"
+        className={`schematic-canvas relative h-[clamp(620px,72vh,900px)] w-full overflow-hidden rounded-xl border bg-canvas transition-colors duration-150 ${dropping ? "border-dutchOrange" : "border-hairline"}`}
         onDragOver={(e) => {
           if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
           e.preventDefault();
