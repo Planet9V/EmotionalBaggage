@@ -254,7 +254,7 @@ describe("concepts API", () => {
       expect(doc.research.length).toBe(db.research);
       expect(doc.gates.length).toBe(db.gates);
       expect(doc.files.length).toBe(db.files);
-      expect(doc.counts).toEqual({ items: 5, events: db.events, research: 1, messages: 1, gates: 1, files: 1 });
+      expect(doc.counts).toEqual({ items: 5, events: db.events, research: 1, messages: 1, gates: 1, files: 1, pins: 0, trackedLinks: 0 });
       const f = doc.files[0];
       expect(f).toMatchObject({ id: p.fileId, name: "test-part.stl", size: p.bytes.length, sha256: sha(p.bytes), meta: { n: 1 } });
       const decoded = Buffer.from(f.bytesBase64, "base64");
@@ -363,7 +363,8 @@ describe("concepts API", () => {
       const rows = (id: string) => q<It>("SELECT id, section, title, body, data, status, sort FROM items WHERE project_id=$1 ORDER BY sort, id", [id]);
       const ia = await rows(src.id);
       const ib = await rows(copy.id);
-      const strip = (x: It) => ({ section: x.section, title: x.title, body: x.body, status: x.status, sort: x.sort, data: { ...x.data, fileId: undefined } });
+      // A print job arrives queued (integration item 7); everything else keeps its status.
+      const strip = (x: It) => ({ section: x.section, title: x.title, body: x.body, status: x.section === "prototype/printing" ? "queued" : x.status, sort: x.sort, data: { ...x.data, fileId: undefined } });
       expect(ib.map(strip)).toEqual(ia.map(strip));
       expect(new Set([...ia, ...ib].map((x) => x.id)).size).toBe(ia.length + ib.length);
       // Keys and part references copy unchanged.
