@@ -6,7 +6,7 @@
  * unlocks, and its options. Deleting is confirmed inside the dialog and refused while
  * the decision still has children.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,17 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
   const chosenGone = !!editing?.chosen && !draft.options.some((o) => o.id === editing.chosen);
 
   const setOption = (i: number, change: Partial<DecisionOption>) => set("options", draft.options.map((o, j) => (j === i ? { ...o, ...change } : o)));
-  const addOption = () => set("options", [...draft.options, { id: "", label: "", outcome: "" }]);
+  // The new option's label takes focus, so what is typed next lands in it (U10).
+  const focusOption = useRef<number | null>(null);
+  const addOption = () => {
+    focusOption.current = draft.options.length;
+    set("options", [...draft.options, { id: "", label: "", outcome: "" }]);
+  };
+  useEffect(() => {
+    if (focusOption.current === null) return;
+    document.getElementById(`decision-option-${focusOption.current}-label`)?.focus();
+    focusOption.current = null;
+  }, [draft.options.length]);
   const removeOption = (i: number) => set("options", draft.options.filter((_, j) => j !== i));
 
   const submit = async (e: React.FormEvent) => {
@@ -136,6 +146,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
     if (!question) return setError("Write the question this decision answers.");
     const named = draft.options.filter((o) => o.label.trim());
     if (draft.options.some((o) => !o.label.trim() && o.outcome.trim())) return setError("Every option with an outcome needs a label.");
+    if (draft.options.length > 0 && named.length === 0) return setError("Every option is blank. Type a label for at least one option, or remove the blank ones.");
     // give new options a unique id from their label; existing options keep theirs so a choice stays attached
     const ids = new Set(named.filter((o) => o.id).map((o) => o.id));
     const options = named.map((o) => {
@@ -282,7 +293,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
           {draft.options.length === 0 && <p className="text-xs text-muted">No options yet. A decision needs at least one before it can be chosen.</p>}
           {draft.options.map((o, i) => (
             <div key={i} className="grid gap-2 rounded-lg border border-hairline p-2.5 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto]">
-              <Input value={o.label} onChange={(e) => setOption(i, { label: e.target.value })} placeholder="Label" aria-label={`Option ${i + 1} label`} />
+              <Input id={`decision-option-${i}-label`} value={o.label} onChange={(e) => setOption(i, { label: e.target.value })} placeholder="Label" aria-label={`Option ${i + 1} label`} />
               <Input value={o.outcome} onChange={(e) => setOption(i, { outcome: e.target.value })} placeholder="What choosing it leads to" aria-label={`Option ${i + 1} outcome`} />
               <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(i)} aria-label={`Remove option ${o.label || i + 1}`}>
                 <Trash2 className="h-4 w-4" aria-hidden />
