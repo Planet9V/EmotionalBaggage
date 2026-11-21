@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { economicsSchemas, partPricingFields } from "@/lib/economics/schemas";
 import { MARKET_SCHEMAS } from "@/lib/market/schemas";
+import { CHANNEL_SCHEMAS } from "@/lib/channels/schemas";
 
 export const STORE = {
   parts: "design/bom",
@@ -205,6 +206,7 @@ const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   // production, sales channels and compliance rows (plan 3.6, 3.8, 7.1, 7.2)
   ...economicsSchemas(step),
   ...MARKET_SCHEMAS,
+  ...CHANNEL_SCHEMAS,
 };
 
 /** The schema a section's `data` must satisfy. */

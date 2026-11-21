@@ -46,7 +46,7 @@ const DEFS: Record<Provider, Omit<ProviderDef, "id">> = {
   },
   "amazon-sp": {
     label: "Amazon Selling Partner API",
-    purpose: "Sales monitor: orders and revenue from Seller Central.",
+    purpose: "Sales monitor: orders and daily totals read from Seller Central, read only. Needs a Professional selling account and a private SP-API app.",
     fields: [
       { name: "refreshToken", label: "Refresh token", secret: true, required: true },
       { name: "clientId", label: "Client ID", secret: true, required: true },
@@ -55,15 +55,23 @@ const DEFS: Record<Provider, Omit<ProviderDef, "id">> = {
   },
   x: {
     label: "X",
-    purpose: "Marketing: post approved drafts and read replies.",
-    fields: [{ name: "accessToken", label: "Access token", secret: true, required: true }],
+    purpose: "Marketing: send approved posts and replies one at a time, and read mentions. The tokens are filled in by Connect X account.",
+    // OAuth 2.0 with PKCE (src/lib/channels/x.ts): the client ID (and secret, for a confidential "Web App"
+    // client) come from the X Developer Console; the access and refresh tokens are saved by the callback.
+    fields: [
+      { name: "clientId", label: "OAuth 2.0 client ID", secret: false, required: true },
+      { name: "clientSecret", label: "OAuth 2.0 client secret (Web App clients only)", secret: true, required: false },
+      { name: "callbackUrl", label: "Callback address (only if this app is reached at another address)", secret: false, required: false },
+      { name: "accessToken", label: "Access token", secret: true, required: true },
+      { name: "refreshToken", label: "Refresh token", secret: true, required: false },
+    ],
   },
   instagram: {
     label: "Instagram",
-    purpose: "Marketing: post approved drafts and read comments.",
+    purpose: "Marketing: publish approved posts one at a time and read comments, through the Instagram API with Instagram Login.",
     fields: [
-      { name: "accessToken", label: "Access token", secret: true, required: true },
-      { name: "accountId", label: "Account ID", secret: false, required: true },
+      { name: "accessToken", label: "Instagram user access token (long-lived)", secret: true, required: true },
+      { name: "accountId", label: "Instagram account ID", secret: false, required: true },
     ],
   },
 };

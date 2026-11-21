@@ -5,8 +5,9 @@ import { parts, requirements, wiring } from "./generators/design";
 import { assembly, tests } from "./generators/prototype";
 import { optimiseCost, optimiseParts, optimisePrint } from "./generators/optimise";
 import type { OptimiseAction } from "./measure";
+import { CHANNEL_GENERATORS } from "@/lib/channels/generators";
 
-export const GENERATORS: Generator<never>[] = [pressRelease, faq, requirements, parts, wiring, assembly, tests, optimiseCost, optimiseParts, optimisePrint] as unknown as Generator<never>[];
+export const GENERATORS: Generator<never>[] = [pressRelease, faq, requirements, parts, wiring, assembly, tests, optimiseCost, optimiseParts, optimisePrint, ...CHANNEL_GENERATORS] as unknown as Generator<never>[];
 
 export const OPTIMISE_GENERATOR: Record<OptimiseAction, string> = { cost: optimiseCost.id, parts: optimiseParts.id, print: optimisePrint.id };
 
