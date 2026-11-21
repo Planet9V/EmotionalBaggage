@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { logEventIn, q, tx } from "@/lib/db";
 import { body, HttpError, requireProject, route } from "@/lib/api/route";
-import { buildUtmUrl, makeCode, MEDIA, slugify, UTM_CONVENTION } from "@/lib/campaigns/links";
+import { buildUtmUrl, hostAllowed, makeCode, MEDIA, NOT_ON_LIST, slugify, UTM_CONVENTION } from "@/lib/campaigns/links";
+import { linkHostsOf } from "@/lib/campaigns/server";
+import { checkAddress } from "@/lib/net/outbound";
 import { LINK_SELECT as SELECT, toLink, type LinkDb } from "@/lib/campaigns/linkRows";
 import { requireCampaign, requireCreative } from "@/lib/campaigns/server";
 import { currentActor } from "@/lib/actor";
@@ -52,6 +54,12 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     term: b.utmTerm || undefined,
   });
   if (!built.ok) throw new HttpError(400, built.reason);
+  // The host must be on the concept's allow-list and pass the outbound address rule (robustness review S5).
+  const host = new URL(built.link.url).hostname;
+  const allowed = await linkHostsOf(id);
+  if (!hostAllowed(host, allowed)) throw new HttpError(400, NOT_ON_LIST, { host, allowed });
+  const refused = await checkAddress(built.link.url);
+  if (refused) throw new HttpError(400, `That address cannot be used: ${refused}.`);
   const p = built.link.params;
   const saved = await tx(async (c) => {
     for (let attempt = 0; attempt < 6; attempt++) {

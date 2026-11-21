@@ -2,6 +2,9 @@
 // for the optional short address (/l/<code>) the app serves. Pure apart from `makeCode`, which uses
 // the system's random number source.
 import { randomBytes } from "node:crypto";
+import { HOST_RE, hostAllowed, parseHosts } from "./hosts";
+
+export { HOST_RE, hostAllowed, parseHosts };
 
 /**
  * The convention, shown beside every link so a report can be read later:
@@ -36,8 +39,15 @@ export function slugify(text: string, max = 60): string {
 
 export type DestinationCheck = { ok: true; url: URL } | { ok: false; reason: string };
 
-/** A destination must be a public web address: http or https, a host, no login in it, no spaces. */
-export function checkDestination(raw: string): DestinationCheck {
+const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * A destination must be an https address with a host and no login in it (robustness review S5). Plain http
+ * is accepted only for localhost while the app runs in development. The host must also be on the concept's
+ * allow-list (`hostAllowed`) and pass the outbound address rule (`checkAddress`); the route checks both.
+ */
+export function checkDestination(raw: string, opts: { dev?: boolean } = {}): DestinationCheck {
+  const dev = opts.dev ?? process.env.NODE_ENV === "development";
   const text = raw.trim();
   if (!text) return { ok: false, reason: "Enter the page the link should open." };
   if (text.length > 2000) return { ok: false, reason: "The address is longer than 2,000 characters." };
@@ -48,11 +58,15 @@ export function checkDestination(raw: string): DestinationCheck {
   } catch {
     return { ok: false, reason: "That is not a web address. Start it with https://." };
   }
-  if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false, reason: "Only http and https addresses can be used." };
   if (!url.hostname) return { ok: false, reason: "The address has no host." };
   if (url.username || url.password) return { ok: false, reason: "An address with a user name or password in it cannot be used." };
+  if (url.protocol === "http:" && dev && LOCAL.has(url.hostname)) return { ok: true, url };
+  if (url.protocol !== "https:") return { ok: false, reason: "Only https addresses can be used." };
   return { ok: true, url };
 }
+
+export const NOT_ON_LIST =
+  "That host is not on this concept's list of link destinations. Add it under Marketing budget and rules (Hosts tracked links may open), for example the landing page's host and your sales channels.";
 
 export type Utm = { source: string; medium: string; campaign: string; content?: string; term?: string };
 

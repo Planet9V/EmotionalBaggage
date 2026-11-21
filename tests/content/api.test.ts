@@ -151,6 +151,17 @@ describe("landing page", () => {
     expect(pv.body.html.indexOf("Is it waterproof?")).toBeLessThan(pv.body.html.indexOf("<h1"));
   });
 
+  it("inlines the hero image as a data: address in the preview, which has no session to load /api/files with", async () => {
+    const png = Buffer.from("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8ffff3f0005fe02fea7d6a4c10000000049454e44ae426082", "hex");
+    const [f] = await q<{ id: string }>("INSERT INTO files (project_id, name, mime, size, sha256, bytes) VALUES ($1,'hero.png','image/png',$2,'x',$3) RETURNING id", [P, png.length, png]);
+    const hero = await add("marketing/landing", "Hero image", { kind: "hero", order: 20, message, content: { headline: "Pictured", imageFileId: Number(f.id), imageAlt: "The bag", ctaHref: "https://example.com" } });
+    const pv = await read<{ html: string }>(await get(landingPreview, "/api/content/landing/preview"));
+    expect(pv.body.html).toContain(`src="data:image/png;base64,${png.toString("base64")}"`);
+    expect(pv.body.html).not.toContain("/api/files/");
+    await q("DELETE FROM items WHERE id=$1", [hero.body.item.id]);
+    await q("DELETE FROM files WHERE id=$1", [f.id]);
+  });
+
   it("a section with a number and no proof cannot be approved", async () => {
     const r = await add("marketing/landing", "Problem", { kind: "problem", order: 9, message, content: { heading: "Fees cost 50 dollars", points: ["a"] } });
     expect(r.body.item.data.noProof).toBe(true);

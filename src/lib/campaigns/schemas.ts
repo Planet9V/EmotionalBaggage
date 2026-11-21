@@ -5,6 +5,9 @@
 import { z } from "zod";
 import { DAY_RE } from "./days";
 
+/** A host as a tracked link's allow-list keeps it: lower case, no scheme, port or path. */
+export const HOST_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
+
 export const CAMPAIGN_STORE = "marketing/campaigns";
 export const LAUNCH_STORE = "marketing/launch";
 /** Sections that only show tables of results and links; no item is ever written to these stores. */
@@ -109,6 +112,8 @@ export const campaignData = z.looseObject({
   /** below this many clicks AND this many orders a result is called too small to judge */
   minClicks: z.number().int().min(0).max(10_000_000).optional(),
   minOrders: z.number().int().min(0).max(10_000_000).optional(),
+  /** the hosts a tracked link may send a visitor to: the landing page's host, the sales channels */
+  linkHosts: z.array(z.string().regex(HOST_RE, "must be a host name such as shop.example")).max(50).optional(),
 });
 export type CampaignData = z.infer<typeof campaignData>;
 

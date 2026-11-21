@@ -34,8 +34,8 @@ export function LandingView({ project, store }: ViewProps) {
     enabled: !loading,
     placeholderData: (p) => p,
   });
-  // The preview frame uses sandbox="allow-scripts" without allow-same-origin: the page has no script of its own (a test checks), but
-  // test tools inject one into every frame and a fully locked frame logs an error for it. The frame still cannot reach this app.
+  // The preview frame is fully sandboxed (sandbox="", no scripts, opaque origin): the page has no script of its own (a test checks),
+  // and its images arrive inlined as data: addresses. A test tool that injects a script into every frame is handled in the test helper.
   const drafts = sections.filter((s) => s.status !== "approved").length;
   const run = async (fn: () => Promise<unknown>) => {
     setErr("");
@@ -118,7 +118,7 @@ export function LandingView({ project, store }: ViewProps) {
             <ul className="mb-2 list-disc space-y-0.5 pl-4 text-xs text-warning">{preview.data.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
           ) : null}
           {preview.data?.html ? (
-            <iframe title="Landing page preview" sandbox="allow-scripts" srcDoc={preview.data.html} className="h-[640px] w-full rounded-md border border-hairline bg-white" />
+            <iframe title="Landing page preview" sandbox="" srcDoc={preview.data.html} className="h-[640px] w-full rounded-md border border-hairline bg-white" />
           ) : (
             <p className="text-sm text-secondary" role="status">{preview.isPending && !loading ? "Drawing the preview." : "Nothing to show yet."}</p>
           )}

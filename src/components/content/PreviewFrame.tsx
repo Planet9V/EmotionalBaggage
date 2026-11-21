@@ -44,7 +44,7 @@ export function PreviewFrame({ id }: { id: string }) {
         ) : q.data.sections === 0 ? (
           <p className="p-6 text-sm text-secondary">This concept has no landing page sections yet. Draft them in the Landing page section.</p>
         ) : (
-          <iframe title="Landing page" sandbox="allow-scripts" srcDoc={q.data.html} className="w-full flex-1 border-0 bg-white" style={{ minHeight: "calc(100vh - 56px)" }} />
+          <iframe title="Landing page" sandbox="" srcDoc={q.data.html} className="w-full flex-1 border-0 bg-white" style={{ minHeight: "calc(100vh - 56px)" }} />
         )}
       </main>
     </div>

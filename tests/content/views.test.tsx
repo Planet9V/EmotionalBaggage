@@ -2,6 +2,8 @@
 // The ad and listing screens against a stand-in API: a live count, red over a limit from the platform
 // and amber over a guide, the source link beside a limit, and the empty state. The routes are tested in
 // api.test.ts.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -78,5 +80,14 @@ describe("landing screen", () => {
     expect((screen.getByRole("button", { name: "Move Hero down" }) as HTMLButtonElement).disabled).toBe(false);
     // the zip needs every section approved
     expect(screen.queryByRole("link", { name: /Export zip/i })).toBeNull();
+  });
+
+  it("every landing preview frame runs no script and has an opaque origin (robustness review S5)", () => {
+    for (const file of ["src/components/content/PreviewFrame.tsx", "src/components/content/LandingView.tsx"]) {
+      const src = readFileSync(join(process.cwd(), file), "utf8");
+      const frames = src.match(/<iframe[^>]*>/g) ?? [];
+      expect(frames.length, file).toBeGreaterThan(0);
+      for (const f of frames) expect(f, file).toMatch(/sandbox=""/);
+    }
   });
 });
