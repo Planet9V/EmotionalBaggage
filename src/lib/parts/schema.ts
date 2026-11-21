@@ -80,6 +80,10 @@ export const libraryEntry = z
     sources: z.array(source).max(8),
     /** which source each electrical figure comes from, in a sentence */
     figures: z.string().max(600).default(""),
+    /** with no source: what makers do differently, so a check can say "check your board" */
+    note: z.string().max(400).optional(),
+    /** boards sold under this name differ in whether they carry their own I2C pull-ups */
+    pullUpsVary: z.boolean().optional(),
   })
   .superRefine((e, ctx) => {
     const hasFigure = e.pins.some((p) => p.voltage || p.current);

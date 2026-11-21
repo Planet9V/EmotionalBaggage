@@ -42,3 +42,12 @@ describe("pins of a large board go to both sides", () => {
     expect(out.filter((p) => p.side === "right").length).toBeGreaterThan(3);
   });
 });
+
+describe("library entries with no maker's document (D18)", () => {
+  it("every entry without a source says so in a note, and the GY-521 is marked as varying in pull-ups", async () => {
+    const { LIBRARY } = await import("@/lib/parts/library");
+    for (const e of LIBRARY) if (!e.sources.length) expect(e.note, `${e.id} has no source and no note`).toBeTruthy();
+    expect(LIBRARY.find((e) => e.id === "gy-521-mpu6050")?.pullUpsVary).toBe(true);
+    expect(LIBRARY.find((e) => e.id === "jst-ph-2")?.sources[0]?.url).toMatch(/jst-mfg\.com/);
+  });
+});

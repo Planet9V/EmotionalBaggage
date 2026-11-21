@@ -4,6 +4,7 @@
 // claim a circuit is correct.
 import type { Item } from "@/lib/types";
 import { BUSES, partKind } from "./kinds";
+import { libraryEntryById } from "./library";
 import { buildCircuit, pinKey, pinLabel, supplyGroups, type Circuit, type CircuitPart, type Net } from "./circuit";
 import type { Pin, PinRow } from "./pins";
 
@@ -172,11 +173,14 @@ export function checkCircuit(c: Circuit, opts: ErcOptions = {}): Finding[] {
           return !!otherNet && otherNet.id !== n.id && groupPins(otherNet).some((x) => x.def?.kind === "power_out");
         });
       if (!pulled) {
+        // boards sold under one name that differ in whether they carry pull-ups: the warning says to look
+        const varies = [...new Set(busPins.map((m) => c.byRef.get(m.ref)).filter((p) => p && libraryEntryById(p.libraryId)?.pullUpsVary).map((p) => `${p!.ref} (${libraryEntryById(p!.libraryId)!.name})`))];
+        const check = varies.length ? ` ${varies.join(" and ")} may carry ${varies.length === 1 ? "its" : "their"} own pull-ups: many such boards do and some do not, so check your board.` : "";
         add({
           id: `pull-up:${n.id}`,
           rule: "pull-up",
           severity: "warning",
-          text: `${BUSES[bus.type].label} line ${bus.line} (net ${n.name}) has no pull-up resistor to a supply. This bus only idles high through a pull-up, so it will not work without one, unless a board on it has its own: then mark that pin as pulled up.`,
+          text: `${BUSES[bus.type].label} line ${bus.line} (net ${n.name}) has no pull-up resistor to a supply. This bus only idles high through a pull-up, so it will not work without one, unless a board on it has its own: then mark that pin as pulled up.${check}`,
           refs: [...new Set(busPins.map((m) => m.ref))],
           pins: busPins.map((m) => pinLabel(m.ref, m.pin)),
           wireIds: ids,
