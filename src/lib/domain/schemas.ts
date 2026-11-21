@@ -2,6 +2,7 @@
 // The API validates writes with these; the readers in this folder parse with them;
 // the TypeScript types are inferred from them. Nothing else describes these shapes.
 import { z } from "zod";
+import { economicsSchemas, partPricingFields } from "@/lib/economics/schemas";
 
 export const STORE = {
   parts: "design/bom",
@@ -93,6 +94,8 @@ export const partData = z.looseObject({
   schematic: xy.nullable().optional(),
   /** pins the part has, wired or not */
   pins: z.array(text(60)).max(400).optional(),
+  /** unit price, supplier key and quantity price breaks (plan 3.6, 7.2) */
+  ...partPricingFields(),
 });
 
 export const NET_CLASSES = ["power", "ground", "signal", "audio"] as const;
@@ -149,6 +152,8 @@ const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   [STORE.parts]: partData,
   [STORE.wiring]: wireData,
   [STORE.decisions]: decisionData,
+  // production, sales channels and compliance rows (plan 3.6, 3.8, 7.1, 7.2)
+  ...economicsSchemas(step),
 };
 
 /** The schema a section's `data` must satisfy. */

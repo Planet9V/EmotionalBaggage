@@ -45,6 +45,12 @@ Chat needs a reasoning model chosen in Admin, Models. If the screen says search 
 
 Not verified: chat has been run against a stand-in model only, so nothing here says how good a real model's answers are.
 
+## History, activity and traceability
+
+- **History.** In a row's editor, History lists that row's changes newest first, with who and when. Each field shows before and after; "Restore this value" puts one old value back as a new, recorded change.
+- **Activity** (in the sidebar) lists every change in the concept, filtered by section and kind.
+- **Traceability.** In a requirement's editor, pick the tests that check it and the parts it needs; a pick saves at once. Requirements then show "2 tests, 1 part" or "No test covers this". The Traceability page shows the requirement-by-test matrix with each test's status, and three lists of gaps: requirements with no test, tests that check no requirement, and parts no requirement needs. Deleting a test or part asks first and removes it from every requirement and build that named it.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.
@@ -101,6 +107,7 @@ Parts are drawn as boxes and cylinders from the sizes you enter. Schematic parts
 | Wiring and soldering | A build sheet made from the schematic: the order to solder in, which pins each wire joins, a cut list, and a tick box per wire. |
 | Assembly | The assembly steps. Give a step a key, what it waits on and how long it takes, and it joins the order of operations. |
 | Acceptance tests | The tests the prototype must pass, each marked not run, pass or fail. |
+| Builds | Named builds (works-like, looks-like, EVT, DVT, PVT), each with exit criteria, the tests it must pass and dates. "Mark passed" is refused while a criterion is unmet or a linked test has not passed, and says why. |
 
 Wire lengths on the cut list are estimates from the distance between parts, not routed lengths.
 
@@ -108,8 +115,12 @@ Wire lengths on the cut list are estimates from the distance between parts, not 
 
 | Section | What you do there |
 |---|---|
-| Unit economics | Record cost, price and margin at each volume. You type the figures; the app does not work them out from the parts list. |
-| Batch plan | Plan each batch: units and the gate that must be passed to start it. |
+| Unit economics | Add cost lines (packaging, labour, print material, print time, shipping in, scrap, tooling, certification, setup). The unit cost, the margin per channel, break-even and the chart of unit cost against batch size are worked out from the parts and these lines. A part with no price is listed as not priced, never counted as zero. "How this is worked out" shows the arithmetic. |
+| Batch plan | Plan each batch: size, date and the build it belongs to. Each shows its worked-out unit cost, the cash it needs and what is not priced. The readiness panel lists four checks: tests, compliance, parts priced and sourced, economics complete. |
+| Suppliers | Who supplies what: lead time, minimum order, location and a public website address. No personal contact details. |
+| Part prices | A unit price, quantity price breaks and a supplier for each part. |
+| Manufacturing methods | How each custom part or assembly step is made, with its tooling cost and extra cost per unit. |
+| Compliance | A checklist of what may apply to this product in the regions you choose. The reasoning model can draft it from the brief and parts; you confirm row by row. This list is a prompt for your own checking. It is not legal or regulatory advice. |
 
 ### 6 Marketing
 

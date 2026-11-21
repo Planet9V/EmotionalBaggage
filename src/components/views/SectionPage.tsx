@@ -17,6 +17,10 @@ import { PrintingView } from "./PrintingView";
 import { ResearchView } from "./ResearchView";
 import { SocialView } from "./SocialView";
 import { SourcingView } from "./SourcingView";
+import { BatchesView } from "@/components/production/BatchesView";
+import { PartPricesView } from "@/components/production/PartPricesView";
+import { ComplianceView } from "@/components/compliance/ComplianceView";
+import { EconomicsView } from "@/components/economics/EconomicsView";
 import type { ViewProps } from "./types";
 
 const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
@@ -34,6 +38,10 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   layout: LayoutView,
   buildsheet: BuildSheetView,
   builds: BuildsView,
+  economics: EconomicsView,
+  batches: BatchesView,
+  partprices: PartPricesView,
+  compliance: ComplianceView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

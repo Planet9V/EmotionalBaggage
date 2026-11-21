@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 17a8e61 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 116da8f by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 542 packages (39 direct, 503 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 557 packages (40 direct, 517 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 416 |
+| MIT | 430 |
 | ISC | 47 |
 | Apache-2.0 | 43 |
 | LGPL-3.0-or-later | 10 |
@@ -35,6 +35,7 @@ Web app, npm production tree: 542 packages (39 direct, 503 transitive, of which 
 | BSD-2-Clause | 1 |
 | CC-BY-4.0 | 1 |
 | EPL-2.0 OR GPL-3.0-or-later | 1 |
+| MIT AND ISC AND BSD-3-Clause | 1 |
 | Unlicense | 1 |
 
 [//]: # (python:start)
@@ -89,6 +90,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | react | 19.3.0 | MIT | linked library | yes |
 | react-dom | 19.3.0 | MIT | linked library | no |
 | react-markdown | 10.1.0 | MIT | linked library | yes |
+| recharts | 3.8.0 | MIT | linked library | yes |
 | remark-gfm | 4.0.1 | MIT | linked library | yes |
 | sonner | 2.0.8 | MIT | linked library | yes |
 | streamdown | 2.8.0 | Apache-2.0 | linked library | yes |
