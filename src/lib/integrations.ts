@@ -86,7 +86,7 @@ export async function listIntegrations(): Promise<Integration[]> {
       env: [],
       configured: embedding.configured,
       built: "partial",
-      note: `${embedding.note} Rows are embedded by POST /api/index and searched with mode=meaning; research answers are not embedded yet, and there is no button for either. Needs pgvector in the database. Not yet run against a real model host.`,
+      note: `${embedding.note} Rows are embedded with "Index the current concept" in Admin, Models, after saving the model, and searched with mode=meaning; research answers are not embedded yet. Needs pgvector in the database. Not yet run against a real model host.`,
       source: embedding.source,
       admin: "settings",
     },

@@ -511,6 +511,12 @@ describe("first-run status", () => {
     }
   });
 
+  it("says whether the published default password is still in use", async () => {
+    const r = await read<{ defaultPassword: boolean }>(await status(json("GET")));
+    const [{ n }] = await q<{ n: number }>("SELECT count(*)::int AS n FROM users WHERE password_changed_at IS NULL");
+    expect(r.body.defaultPassword).toBe(n > 0);
+  });
+
   it("is complete once everything is set and the planner answers", async () => {
     await putSettings(json("PUT", {
       reasoningModel: { provider: "ollama", baseUrl: "http://localhost:11434/v1", model: "qwen3" },

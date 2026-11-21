@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit ebbdb17 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit de6b694 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -83,7 +83,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | motion | 14.14.0 | MIT | linked library | yes |
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
-| next-themes | 0.4.6 | MIT | linked library | yes |
+| next-themes | 0.4.6 | MIT | linked library | no |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |

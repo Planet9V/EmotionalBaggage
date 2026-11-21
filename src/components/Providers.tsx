@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner";
 
 /** Defaults for every query: a short fresh window so moving between views reuses what is cached, one retry, no refetch on window focus. */
 export function makeQueryClient() {
@@ -23,5 +24,11 @@ function getQueryClient() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={getQueryClient()}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={getQueryClient()}>
+      {children}
+      {/* One toaster for the whole app; it follows the theme class on <html>. Error toasts are announced. */}
+      <Toaster position="bottom-right" richColors closeButton />
+    </QueryClientProvider>
+  );
 }

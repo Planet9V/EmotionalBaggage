@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { PageHeader } from "@/components/PageHeader";
@@ -8,6 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ErrorLine } from "@/components/parts/controls";
 import { messageOf, queries, type Integration } from "@/lib/queries";
 
+
+const ADMIN_TAB = { credentials: "credentials", settings: "models", printers: "printers" } as const;
+const ADMIN_LABEL = { credentials: "Credentials", settings: "Models", printers: "Printers" } as const;
 
 const BUILT: Record<Integration["built"], { label: string; tone: "success" | "warning" | "neutral" }> = {
   yes: { label: "Built", tone: "success" },
@@ -25,7 +29,7 @@ export function IntegrationsView() {
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Integrations" blurb="What is connected, what is built, and which values each one needs." />
+      <PageHeader eyebrow="Settings" title="Integrations" blurb="What is connected, what is built, and where in Admin each one is set." />
       <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8 px-8 py-6">
         {error ? <ErrorLine>{error}</ErrorLine> : null}
         {!data && !error ? <p className="text-sm text-secondary">Reading the integrations.</p> : null}
@@ -43,7 +47,9 @@ export function IntegrationsView() {
                   <div className="flex gap-2"><dt className="w-24 text-muted">pgvector</dt><dd className="text-primary">{data.database.vector ? "Available" : "Not available"}</dd></div>
                 </dl>
                 <p className="mt-3 text-sm text-secondary">
-                  Semantic search needs pgvector plus an embedding provider. It currently falls back to text search.
+                  {data.database.vector
+                    ? "Search by meaning also needs an embedding model, chosen in Admin, Models. Without one, search matches words."
+                    : "Search by meaning needs pgvector in the database, which this one does not have. Search matches words."}
                 </p>
               </div>
               <div className="rounded-xl border border-hairline bg-surface p-5">
@@ -69,7 +75,7 @@ export function IntegrationsView() {
                       <TableHead className="min-w-48">Integration</TableHead>
                       <TableHead>Connected</TableHead>
                       <TableHead>Built</TableHead>
-                      <TableHead className="min-w-48">Environment variables</TableHead>
+                      <TableHead className="min-w-48">Where to set it</TableHead>
                       <TableHead className="min-w-[18rem]">Note</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -82,8 +88,19 @@ export function IntegrationsView() {
                         </TableCell>
                         <TableCell className="align-top"><StatusBadge tone={i.configured ? "success" : "neutral"}>{i.configured ? "Connected" : "Not connected"}</StatusBadge></TableCell>
                         <TableCell className="align-top"><StatusBadge tone={BUILT[i.built].tone}>{BUILT[i.built].label}</StatusBadge></TableCell>
-                        <TableCell className="align-top font-mono text-xs text-primary">
-                          {i.env.length ? i.env.map((e) => <div key={e}>{e}</div>) : <span className="font-sans text-muted">None needed</span>}
+                        <TableCell className="align-top text-xs">
+                          {i.admin ? (
+                            <Link href={`/admin?tab=${ADMIN_TAB[i.admin]}`} className="text-link underline-offset-4 hover:underline">
+                              Admin, {ADMIN_LABEL[i.admin]}
+                            </Link>
+                          ) : (
+                            <span className="text-muted">Nothing to set</span>
+                          )}
+                          {i.env.length ? (
+                            <p className="mt-1 text-muted">
+                              Fallback: <span className="font-mono text-primary">{i.env.join(", ")}</span>
+                            </p>
+                          ) : null}
                         </TableCell>
                         <TableCell className="align-top text-xs">{i.note}</TableCell>
                       </TableRow>
@@ -95,12 +112,13 @@ export function IntegrationsView() {
 
             <section aria-labelledby="how-h" className="max-w-3xl rounded-xl border border-hairline bg-subtle p-5">
               <h2 id="how-h" className="text-base font-semibold tracking-tight text-primary">How to connect</h2>
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-secondary">
-                <li>Open the <span className="font-mono text-xs text-primary">.env</span> file next to <span className="font-mono text-xs text-primary">docker-compose.yml</span>.</li>
-                <li>Add the values the integration needs, one <span className="font-mono text-xs text-primary">NAME=value</span> per line.</li>
-                <li>Restart the stack so the app reads the new values.</li>
-              </ol>
-              <p className="mt-2 text-sm text-secondary">An integration shows as connected only when all of its values are set. That does not mean it works: check the Built column.</p>
+              <p className="mt-2 text-sm text-secondary">
+                Configure everything in <Link href="/admin" className="text-link underline-offset-4 hover:underline">Admin</Link>: models in Models, keys in Credentials, printers in Printers. Each has a Test button, and what you save is kept in this install&apos;s database. No restart is needed.
+              </p>
+              <p className="mt-2 text-sm text-secondary">
+                The environment variables listed above are fallbacks only. They apply when Admin has nothing saved for the same value, so an install set up through <span className="font-mono text-xs text-primary">.env</span> keeps working.
+              </p>
+              <p className="mt-2 text-sm text-secondary">An integration shows as connected only when all of its values are set. That does not mean it works: check the Built column, or use Test in Admin.</p>
             </section>
           </>
         )}
