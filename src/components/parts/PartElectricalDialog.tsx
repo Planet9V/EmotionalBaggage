@@ -187,6 +187,7 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
               {lib.pins.length} pins. Size {lib.size.w} by {lib.size.d} mm ({lib.basis === "doc" ? "from a drawing" : "typical"}).
             </p>
             {lib.figures && <p className="mt-1">{lib.figures}</p>}
+            {lib.note && <p className="mt-1">{lib.note}</p>}
             {lib.sources.length > 0 ? (
               <ul className="mt-1 space-y-0.5">
                 {lib.sources.map((s) => (
