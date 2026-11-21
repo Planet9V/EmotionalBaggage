@@ -18,8 +18,8 @@ const SENSITIVE_NAME = "(?:api[_-]?key|apikey|access[_-]?token|refresh[_-]?token
 const SHAPES: readonly [RegExp, string][] = [
   // Authorization: Bearer abc.def / Basic abc==
   [/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi, `$1 ${HIDDEN}`],
-  // Provider keys: sk-..., or-..., lm-..., also the project and test forms (sk-proj-..., sk_live_...)
-  [/\b(?:sk|or|lm|pk|rk)[-_][A-Za-z0-9_\-*]{8,}/g, HIDDEN],
+  // Provider keys: sk-..., or-..., lm-..., pplx-..., also the project and test forms (sk-proj-..., sk_live_...)
+  [/\b(?:sk|or|lm|pk|rk|pplx)[-_][A-Za-z0-9_\-*]{8,}/g, HIDDEN],
   // https://user:pass@host or https://token@host
   [/(\b[a-z][a-z0-9+.-]*:\/\/)[^/\s:@]*(?::[^/\s@]*)?@/gi, `$1${HIDDEN}@`],
   // ?api_key=...&x=1 or &token=...  (the value stops at & ; whitespace or a quote)

@@ -6,6 +6,7 @@
 import { getSetting } from "@/lib/settings";
 import { getSecretFor, PERPLEXITY_DEFAULT_BASE_URL, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { safeFetch } from "@/lib/net/outbound";
+import { scrub } from "@/lib/secrets/scrub";
 
 export const AGENT_PATH = "/v1/agent";
 /** Setting that holds the effort level (Perplexity's pre-configured model and search setup). */
@@ -71,11 +72,7 @@ export const baseUrl = perplexityBaseUrl;
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
-function redact(text: string, key: string) {
-  let out = text;
-  if (key) out = out.split(key).join("[key removed]");
-  return out.replace(/\b(pplx-[A-Za-z0-9]{6,})\b/g, "[key removed]").slice(0, 300);
-}
+const redact = (text: string, key: string) => scrub(text, key).slice(0, 300);
 
 /** Reads answer text and sources from a parsed Agent API response, or explains why it cannot. */
 export function readResponse(body: unknown): { answer: string; sources: Source[]; model?: string; effort?: string; costUsd?: number; status?: string; error?: string } | { malformed: string } {

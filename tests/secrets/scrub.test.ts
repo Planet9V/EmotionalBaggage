@@ -55,4 +55,8 @@ describe("scrub", () => {
   it("does not hide ordinary words that only resemble a name", () => {
     expect(scrub("the monkey said no; keyboard layout; author: Ada")).toBe("the monkey said no; keyboard layout; author: Ada");
   });
+  it("hides a Perplexity key by its shape and by its value", () => {
+    expect(scrub("bad key pplx-abcdef123456 sent")).not.toContain("abcdef123456");
+    expect(scrub("rejected abc", "abc")).toBe("rejected [hidden]");
+  });
 });
