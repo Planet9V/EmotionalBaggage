@@ -40,3 +40,16 @@ export function fmtMinutes(m: number): string {
 
 /** "1 part", "12 parts": a count with its noun. */
 export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+
+/**
+ * A number for a person to read, rounded to `digits` decimals. Never "Infinity" or "NaN": a value that is
+ * not a finite number reads as `missing` (U23). Every figure shown with a unit goes through here or fmtMm.
+ */
+export function fmtNum(n: number | null | undefined, digits = 2, missing = "not measured"): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return missing;
+  const f = 10 ** digits;
+  return String(Math.round(n * f) / f);
+}
+
+/** "12.5 mm", or "not measured" for a value that is not a finite number. */
+export const fmtMm = (n: number | null | undefined, digits = 2) => (typeof n === "number" && Number.isFinite(n) ? `${fmtNum(n, digits)} mm` : "not measured");

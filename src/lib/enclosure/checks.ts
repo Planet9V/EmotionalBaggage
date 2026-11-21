@@ -3,6 +3,7 @@
 //  - fit: each part sits inside the cavity measured from the result, with the stated clearance, and touches no printed material.
 //  - openings: the hole found in the wall is where the part is, and the size that was asked for.
 //  - lid: base and lid have the same footprint, meet without a gap and make the stated height.
+import { fmtMm } from "@/lib/format";
 import type { Manifold } from "manifold-3d";
 import { fromManifold, getKernel, toManifold } from "./kernel";
 import { FACE_AXES, type Box, type CheckResult, type EnclosureSpec, type GeneratorOutput, type Opening, type Vec3 } from "./types";
@@ -102,7 +103,13 @@ export async function measureOpening(solid: Manifold, spec: EnclosureSpec, o: Op
   return { center: [(bb.min[a] + bb.max[a]) / 2, (bb.min[b] + bb.max[b]) / 2], size: [bb.max[a] - bb.min[a], bb.max[b] - bb.min[b]] };
 }
 
-const mm = (n: number) => `${Math.round(n * 100) / 100} mm`;
+const mm = (n: number) => fmtMm(n);
+
+/** "66 mm by 66 mm by 40 mm high", or "66 mm by 66 mm, open at the top" when no lid closes the height. */
+function cavitySize(c: { min: number[]; max: number[] }) {
+  const h = c.max[1] - c.min[1];
+  return `${mm(c.max[0] - c.min[0])} by ${mm(c.max[2] - c.min[2])}${Number.isFinite(h) ? ` by ${mm(h)} high` : ", open at the top"}`;
+}
 
 export async function computeChecks(spec: EnclosureSpec, out: GeneratorOutput): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
@@ -168,7 +175,7 @@ export async function computeChecks(spec: EnclosureSpec, out: GeneratorOutput): 
     key: "parts-fit",
     label: "Every part fits inside with the clearance",
     ok: fitFails.length === 0,
-    detail: fitFails.length ? fitFails.join("; ") + "." : `${worst.length} parts checked against the cavity measured from the result (${mm(cavity.max[0] - cavity.min[0])} by ${mm(cavity.max[2] - cavity.min[2])} by ${mm(cavity.max[1] - cavity.min[1])} high); the tightest is ${worst[0]?.ref ?? "none"} at ${mm(worst[0]?.gap ?? 0)} against ${mm(spec.params.clearance)} required.`,
+    detail: fitFails.length ? fitFails.join("; ") + "." : `${worst.length} parts checked against the cavity measured from the result (${cavitySize(cavity)}); the tightest is ${worst[0]?.ref ?? "none"} at ${mm(worst[0]?.gap ?? 0)} against ${mm(spec.params.clearance)} required.`,
   });
 
   // Openings line up.

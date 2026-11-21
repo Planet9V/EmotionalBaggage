@@ -25,11 +25,14 @@ export function toMajor(minor: number, currency: string): number {
 
 /** "$12.50" or "12,50 €" as the browser's English formatting writes the currency. Negative amounts keep their minus sign. */
 export function formatMoney(minor: number, currency: string): string {
+  // Never "$NaN" or "$∞" on a screen (U23): an amount that is not a finite number is not worked out.
+  if (!Number.isFinite(minor)) return "not worked out";
   const digits = minorDigits(currency);
   return new Intl.NumberFormat("en", { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(toMajor(minor, currency));
 }
 
 /** A percentage with at most one decimal: 38.5%, 40%. */
 export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return "not worked out";
   return `${Number(value.toFixed(1))}%`;
 }
