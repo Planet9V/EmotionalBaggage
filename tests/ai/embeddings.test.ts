@@ -28,7 +28,6 @@ import {
   nearestSql,
   NO_PGVECTOR,
   searchByMeaning,
-  sha256,
   UPSERT_SQL,
   vectorLiteral,
   vectorAvailable,
@@ -37,6 +36,7 @@ import { POST as reindex } from "@/app/api/index/route";
 import { GET as search } from "@/app/api/search/route";
 import { json, read, SEEDED } from "../api/helpers";
 import { chooseEmbedding, clearModelRows } from "./setup";
+import { sha256 } from "@/lib/hash";
 
 let hasVector = false;
 

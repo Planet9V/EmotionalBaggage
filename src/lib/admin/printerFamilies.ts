@@ -23,9 +23,9 @@
 //
 // The field named "address" is stored in the printers.address column; every other field is kept in printers.access.
 
-export type PrinterFieldKind = "url" | "host" | "text";
+type PrinterFieldKind = "url" | "host" | "text";
 
-export type PrinterField = {
+type PrinterField = {
   name: string;
   label: string;
   secret: boolean;
@@ -54,7 +54,7 @@ export type PrinterFamily = {
 };
 
 /** Names ending in .local (mDNS, such as octopi.local) do not resolve inside the app's container, so the form asks for the IP address. */
-export const MDNS_HINT = "Use the printer's IP address: names ending in .local do not resolve inside the app's container.";
+const MDNS_HINT = "Use the printer's IP address: names ending in .local do not resolve inside the app's container.";
 
 const address = (hint: string): PrinterField => ({ name: "address", label: "Address", secret: false, required: true, kind: "url", hint: `${hint}. ${MDNS_HINT}` });
 

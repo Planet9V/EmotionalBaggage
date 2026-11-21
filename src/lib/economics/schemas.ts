@@ -50,11 +50,9 @@ export const REGIONS = ["us", "eu", "uk", "canada", "australia", "other"] as con
 export type Region = (typeof REGIONS)[number];
 export const REGION_LABEL: Record<Region, string> = { us: "United States", eu: "European Union", uk: "United Kingdom", canada: "Canada", australia: "Australia", other: "Other" };
 
-export const COMPLIANCE_STATUSES = ["to check", "applies", "does not apply", "done", "draft"] as const;
 /** The statuses a person may give a row when confirming a draft. */
 export const CONFIRM_STATUSES = ["to check", "applies", "does not apply", "done"] as const;
 
-export const SUPPLIER_STATUSES = ["candidate", "quoted", "approved", "in use", "dropped"];
 export const METHOD_STATUSES = ["estimate", "quoted", "actual"];
 
 /** A public web address only: no mail links, no phone numbers, no scripts. */
@@ -68,7 +66,7 @@ export function isPublicUrl(s: string): boolean {
 }
 
 /** A number typed the way people type money: "12.5", "$12.50", "1,200". Anything else is not a number. */
-export function looseNumber(v: unknown): unknown {
+function looseNumber(v: unknown): unknown {
   if (typeof v !== "string") return v;
   const t = v.trim().replace(/^[$€£]/, "").replace(/,/g, "");
   return t !== "" && Number.isFinite(Number(t)) ? Number(t) : v;

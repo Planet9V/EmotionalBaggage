@@ -13,9 +13,9 @@
 import { daysInMonth, inclusiveDays, monthKey, monthsBetween } from "./days";
 import type { Campaign } from "./read";
 
-export type MonthShare = { campaignId: number; title: string; amount: number };
-export type MonthRow = { month: string; planned: number; limit: number | null; over: number; shares: MonthShare[] };
-export type LeftOut = { campaignId: number; title: string; reason: string };
+type MonthShare = { campaignId: number; title: string; amount: number };
+type MonthRow = { month: string; planned: number; limit: number | null; over: number; shares: MonthShare[] };
+type LeftOut = { campaignId: number; title: string; reason: string };
 export type BudgetRollup = {
   months: MonthRow[];
   plannedTotal: number;

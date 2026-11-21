@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
-import { formatMoney, parseMinor } from "@/lib/market/pricing";
+import { formatMoney, parseMinor, toInputText } from "@/lib/economics/money";
 import { competitorData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
@@ -283,7 +283,7 @@ function CompetitorDialog({ item, onClose, onSave }: { item: Item | null; onClos
   const [name, setName] = useState(r?.name ?? "");
   const [kind, setKind] = useState<string>(r?.kind ?? "product");
   const [what, setWhat] = useState(r?.what ?? "");
-  const [price, setPrice] = useState(r?.priceMinor !== null && r?.priceMinor !== undefined ? String(r.priceMinor / 100) : "");
+  const [price, setPrice] = useState(r?.priceMinor !== null && r?.priceMinor !== undefined ? toInputText(r.priceMinor, r.currency || "USD") : "");
   const [priceText, setPriceText] = useState(r?.priceMinor === null ? (r?.priceText ?? "") : "");
   const [currency, setCurrency] = useState(r?.currency || "USD");
   const [claim, setClaim] = useState(r?.claim ?? "");
@@ -294,7 +294,7 @@ function CompetitorDialog({ item, onClose, onSave }: { item: Item | null; onClos
 
   const save = async () => {
     if (!name.trim()) return setErr("Give it a name.");
-    const minor = price.trim() ? parseMinor(price) : null;
+    const minor = price.trim() ? parseMinor(price, currency) : null;
     if (price.trim() && minor === null) return setErr("The price must be a number, such as 29.99.");
     if (url.trim()) {
       try { const u = new URL(url.trim()); if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("x"); } catch { return setErr("The source must be a web address starting with http or https."); }

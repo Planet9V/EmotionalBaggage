@@ -10,12 +10,6 @@ export const HOST_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(\.[
 
 export const CAMPAIGN_STORE = "marketing/campaigns";
 export const LAUNCH_STORE = "marketing/launch";
-/** Sections that only show tables of results and links; no item is ever written to these stores. */
-export const RESULTS_STORE = "marketing/results";
-export const LINKS_STORE = "marketing/links";
-
-export const CAMPAIGN_STATUSES = ["planned", "ready", "running", "paused", "done", "killed"] as const;
-export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
 export const OBJECTIVES = ["awareness", "consideration", "conversion", "retention"] as const;
 export type Objective = (typeof OBJECTIVES)[number];
@@ -50,10 +44,10 @@ const minor = z.number().int().min(0).max(1_000_000_000_000);
 const day = z.union([z.literal(""), z.string().regex(DAY_RE, "must be a date like 2026-12-31")]);
 
 /** A row of another section, linked by its id (and its key when it has one, so a copy of the concept can find it again). */
-export const rowRef = z.object({ section: text(60), itemId: z.number().int().positive(), key: text(120).optional(), title: text(300).optional() });
+const rowRef = z.object({ section: text(60), itemId: z.number().int().positive(), key: text(120).optional(), title: text(300).optional() });
 export type RowRef = z.infer<typeof rowRef>;
 
-export const target = z.object({ metric: z.enum(TARGET_METRICS), value: z.number().finite().min(0) });
+const target = z.object({ metric: z.enum(TARGET_METRICS), value: z.number().finite().min(0) });
 export type Target = z.infer<typeof target>;
 
 /**
@@ -63,15 +57,13 @@ export type Target = z.infer<typeof target>;
  *    once `afterSpendMinor` has been spent.
  * Any part may be left out; a rule with neither threshold judges nothing.
  */
-export const stopScaleRule = z.object({
+const stopScaleRule = z.object({
   stopAboveMinor: minor.optional(),
   afterSpendMinor: minor.optional(),
   scaleBelowMinor: minor.optional(),
   scaleByPercent: z.number().min(0).max(1000).optional(),
 });
 export type StopScaleRule = z.infer<typeof stopScaleRule>;
-
-export const arithmeticLine = z.object({ label: text(200), how: text(600) });
 
 export const campaignData = z.looseObject({
   /** "plan" is the one concept-level row holding the marketing budget and the settings below */
@@ -115,12 +107,11 @@ export const campaignData = z.looseObject({
   /** the hosts a tracked link may send a visitor to: the landing page's host, the sales channels */
   linkHosts: z.array(z.string().regex(HOST_RE, "must be a host name such as shop.example")).max(50).optional(),
 });
-export type CampaignData = z.infer<typeof campaignData>;
 
 // Launch plan -------------------------------------------------------------------------------------
 
 /** What a step cannot be done before: a stage's gate being passed, or a named build passing. */
-export const stepRequirement = z.object({
+const stepRequirement = z.object({
   kind: z.enum(["gate", "build"]),
   /** gate: the stage key ("prototype"). build: the build row's id as text. */
   ref: text(120),
@@ -160,7 +151,6 @@ export const launchData = z.looseObject({
   check: z.boolean().optional(),
   templateStep: text(80).optional(),
 });
-export type LaunchData = z.infer<typeof launchData>;
 
 export const CAMPAIGN_SCHEMAS: Record<string, z.ZodType<Record<string, unknown>>> = {
   [CAMPAIGN_STORE]: campaignData,

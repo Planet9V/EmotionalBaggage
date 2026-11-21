@@ -11,15 +11,15 @@ import { useQueries } from "@tanstack/react-query";
 import type { Geometry } from "@/lib/domain";
 import { fileToScene } from "./shapes";
 import { parseShape } from "./meshFile";
+import { fetchFileBytes } from "@/lib/http";
 
 export type ShapeStatus = { state: "loading" | "ready" | "error"; message: string };
 
 type Loaded = { positions: Float32Array; triangles: number };
 
 async function load(file: NonNullable<Geometry["file"]>): Promise<Loaded> {
-  const res = await fetch(`/api/files/${file.id}`);
-  if (!res.ok) throw new Error(`The file ${file.name} could not be fetched (${res.status}).`);
-  const parsed = await parseShape(file.name, await res.arrayBuffer());
+  const bytes = await fetchFileBytes(file.id, (status) => `The file ${file.name} could not be fetched (${status}).`);
+  const parsed = await parseShape(file.name, bytes);
   return { positions: fileToScene(parsed.soup, file.scale).positions, triangles: parsed.triangles };
 }
 

@@ -46,6 +46,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      # Knip: fails on a new unused file, export, type or dependency (knip.jsonc says what is held back and why).
+      - run: npm run deadcode
       - run: npm test
       - run: npm run build
 

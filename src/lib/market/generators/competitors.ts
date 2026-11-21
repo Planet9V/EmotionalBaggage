@@ -3,6 +3,7 @@
 // came from; a row with none is saved as "unsourced" and shown as "unsourced: check this".
 import { z } from "zod";
 import { squash, stampOf, GROUNDING, type Entry, type Generator, type ToRows } from "./types";
+import { toMinor } from "@/lib/economics/money";
 
 const schema = z.object({
   rows: z
@@ -33,12 +34,12 @@ export function readPrice(text: string): { minor: number; currency: string } | n
   const m = found[0];
   const major = Number(`${m[2].replace(/,/g, "")}${m[3] ?? ""}`);
   if (!Number.isFinite(major)) return null;
-  return { minor: Math.round(major * 100), currency: SYMBOL[m[1]] };
+  return { minor: toMinor(major, SYMBOL[m[1]]), currency: SYMBOL[m[1]] };
 }
 
 const norm = (u: string) => u.trim().replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
 
-export const generator: Generator<typeof schema> = {
+const generator: Generator<typeof schema> = {
   id: "competitors",
   label: "Extract competitors from a research answer",
   from: ["research"],
@@ -60,7 +61,7 @@ export const generator: Generator<typeof schema> = {
   schema,
 };
 
-export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
+const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const r = c.research.find((x) => x.id === c.params.researchId)!;
   const answer = squash(r.answer);

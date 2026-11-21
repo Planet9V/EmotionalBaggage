@@ -2,14 +2,15 @@
 // link, the brand voice, and the step that turns one model row into a draft with its no-proof flags.
 import { z } from "zod";
 import type { Item } from "@/lib/types";
-import type { GenContext, Proposed } from "@/lib/ai/drafts/types";
-import { RULES, conceptHeader, block } from "@/lib/ai/drafts/prompt";
+import type { GenContext } from "@/lib/ai/drafts/types";
+import { RULES, conceptHeader } from "@/lib/ai/drafts/prompt";
 import { brandText, findKit } from "@/lib/market/brandKit";
 import { checkProof, type ProofRow as MarketProofRow } from "@/lib/market/proof";
 import type { PositioningMessage, ProofRef } from "@/lib/market/schemas";
 import { evaluate, proofStateOf, type Flag, type ProofRow } from "../claims";
 import type { CopyField } from "../claims";
 import { claimFields, type MessageRef } from "../schemas";
+import { toInputText } from "@/lib/economics/money";
 
 /** Stores every content generator reads. */
 export const BASE_FROM = ["marketing/positioning", "marketing/brand", "research/claims", "prototype/tests", "design/requirements", "marketing/pricing", "marketing/personas", "concept/brief"];
@@ -17,7 +18,7 @@ export const BASE_FROM = ["marketing/positioning", "marketing/brand", "research/
 export type Message = MessageRef & { id: string; proof: ProofRef[] };
 
 /** The messages of positioning rows that are approved. A message is "positioningId:index". */
-export function approvedMessages(ctx: GenContext): Message[] {
+function approvedMessages(ctx: GenContext): Message[] {
   const out: Message[] = [];
   for (const p of ctx.rows["marketing/positioning"] ?? []) {
     if (p.status !== "approved") continue;
@@ -29,7 +30,7 @@ export function approvedMessages(ctx: GenContext): Message[] {
   return out;
 }
 
-export const NO_MESSAGE = "Approve a positioning with at least one message first (Marketing, Positioning). Everything written here is tied to one approved message.";
+const NO_MESSAGE = "Approve a positioning with at least one message first (Marketing, Positioning). Everything written here is tied to one approved message.";
 
 export const blockedNoMessage = (ctx: GenContext) => (approvedMessages(ctx).length ? "" : NO_MESSAGE);
 
@@ -63,7 +64,7 @@ export function proofBlock(ctx: GenContext): string {
   if (!rows.length) return "Proof rows you may link: none. So the copy must not contain any number or superlative (best, fastest, only, most, first, never, always, guaranteed, 100%).";
   return (
     "Proof rows you may link in \"proofIds\" (verified claims, passing tests, requirements, approved prices). A number or a superlative in your copy is allowed only if you link a row that holds that same number or shows that claim; otherwise leave it out:\n" +
-    rows.map((r) => `- #${r.id} ${proofStateOf(r)}: ${r.title}${r.body ? `: ${r.body.slice(0, 300)}` : ""}${typeof r.data.priceMinor === "number" ? ` (price ${(r.data.priceMinor / 100).toFixed(2)} ${String(r.data.currency ?? "")})` : ""}`).join("\n")
+    rows.map((r) => `- #${r.id} ${proofStateOf(r)}: ${r.title}${r.body ? `: ${r.body.slice(0, 300)}` : ""}${typeof r.data.priceMinor === "number" ? ` (price ${toInputText(r.data.priceMinor, String(r.data.currency || "USD"))} ${String(r.data.currency ?? "")})` : ""}`).join("\n")
   );
 }
 
@@ -110,6 +111,3 @@ export function withProof(ctx: GenContext, section: string, title: string, body:
 }
 
 export const header = (ctx: GenContext) => conceptHeader(ctx);
-export { block };
-
-export type DraftOut = { ok: true; drafts: Proposed[]; notes?: string[] } | { ok: false; reason: string };

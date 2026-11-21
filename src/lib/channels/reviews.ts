@@ -5,8 +5,8 @@
 // The Customer Feedback API (https://developer-docs.amazon.com/sp-api/docs/customer-feedback-api, read
 // 21 Nov 2026) gives weekly, English-only review *topics* per ASIN or browse node in seven stores, not the
 // reviews themselves. Reviews are typed, pasted or imported here from a CSV the user exported.
-import { createHash } from "node:crypto";
-import Papa from "papaparse";
+import { sha256 } from "@/lib/hash";
+import { parseCsvRecords } from "@/lib/csv";
 import { HttpError } from "@/lib/api/route";
 import { currentActor } from "@/lib/actor";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
@@ -50,9 +50,9 @@ export function parseReviews(input: string, defaults: { source?: string; kind?: 
   const rows: ImportRow[] = [];
   const base = (text: string): ImportRow => ({ kind: defaults.kind ?? (/\?\s*$/.test(text.trim()) ? "question" : "review"), title: "", text, rating: null, date: "", source: defaults.source ?? "", productVersion: "", sentiment: "", topic: "" });
   if (looksCsv) {
-    const parsed = Papa.parse<Record<string, string>>(input.trim(), { header: true, skipEmptyLines: "greedy", transformHeader: (h) => h.trim() });
-    for (const e of parsed.errors.slice(0, 5)) problems.push(`Line ${(e.row ?? 0) + 2}: ${e.message}`);
-    const headers = parsed.meta.fields ?? [];
+    const parsed = parseCsvRecords(input.trim());
+    for (const e of parsed.errors.slice(0, 5)) problems.push(`Line ${e.row + 2}: ${e.message}`);
+    const headers = parsed.headers;
     for (const [field, names] of Object.entries(COLUMNS)) {
       const h = headers.find((x) => names.includes(norm(x)));
       if (h) columns[field] = h;
@@ -61,7 +61,7 @@ export function parseReviews(input: string, defaults: { source?: string; kind?: 
       problems.push(`No column holds the review text. Name one of the columns "text", "review", "body" or "question". Columns found: ${headers.join(", ") || "none"}.`);
       return { rows: [], problems, columns };
     }
-    parsed.data.forEach((r, i) => {
+    parsed.records.forEach((r, i) => {
       const text = String(r[columns.text] ?? "").trim();
       if (!text) return;
       const row = base(text);
@@ -95,7 +95,7 @@ export function parseReviews(input: string, defaults: { source?: string; kind?: 
   return { rows, problems, columns };
 }
 
-const externalIdOf = (r: ImportRow) => `review:${createHash("sha256").update(`${r.source.toLowerCase()}\n${r.date}\n${r.text.trim()}`).digest("hex").slice(0, 32)}`;
+const externalIdOf = (r: ImportRow) => `review:${sha256(`${r.source.toLowerCase()}\n${r.date}\n${r.text.trim()}`).slice(0, 32)}`;
 
 export async function importReviews(projectId: string, input: string, defaults: { source?: string; kind?: "review" | "question" } = {}) {
   const { rows, problems, columns } = parseReviews(input, defaults);
@@ -135,7 +135,7 @@ export type Group = { label: string; count: number; reviewIds: number[]; questio
 export type Grouping = { method: "meaning" | "tags"; note: string; groups: Group[]; untagged: number; total: number };
 
 /** Groups by the user's own topic tags. Rows without a tag are counted, not guessed. */
-export function groupByTag(items: Item[]): Grouping {
+function groupByTag(items: Item[]): Grouping {
   const map = new Map<string, Item[]>();
   let untagged = 0;
   for (const i of items) {
@@ -177,7 +177,7 @@ const cosine = (a: number[], b: number[]) => {
   return na && nb ? dot / Math.sqrt(na * nb) : 0;
 };
 
-export const SIMILARITY = 0.8;
+const SIMILARITY = 0.8;
 
 /**
  * Greedy grouping by meaning: each row joins the first group whose first row is at least SIMILARITY
@@ -203,7 +203,7 @@ export function groupVectors(items: Item[], vectors: number[][], threshold = SIM
   return groups.sort((a, b) => b.count - a.count);
 }
 
-export async function reviewRows(projectId: string): Promise<Item[]> {
+async function reviewRows(projectId: string): Promise<Item[]> {
   return (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, CHANNEL.reviews])).map(toItem);
 }
 

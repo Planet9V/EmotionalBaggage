@@ -7,7 +7,7 @@ import { ENCLOSURE_STORE, type EnclosureChecked } from "@/lib/process/computed";
 import { body, HttpError, requireProject, route } from "@/lib/api/route";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { paramsSchema } from "@/lib/enclosure/validate";
-import { runGenerator } from "@/lib/enclosure/run";
+import { runEnclosureGenerator } from "@/lib/enclosure/run";
 import { GENERATOR_KEYS } from "@/lib/enclosure/types";
 import type { Item } from "@/lib/types";
 
@@ -32,7 +32,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const spec = buildSpec({ items, params: b.params });
   const errors = validateSpec(spec).filter((i) => i.severity === "error");
   if (errors.length) throw new HttpError(409, `The enclosure cannot be generated yet: ${errors.map((e) => e.message).join(" ")}`);
-  const results = await Promise.all(b.generators.map((g) => runGenerator(g, spec)));
+  const results = await Promise.all(b.generators.map((g) => runEnclosureGenerator(g, spec)));
   // The checks are kept on the saved choice (design/enclosure) with a fingerprint of what they were
   // measured on, so the Design gate can tell they still describe today's parts and settings.
   const fingerprint = specFingerprint(spec);

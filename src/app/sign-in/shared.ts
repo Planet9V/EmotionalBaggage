@@ -6,7 +6,7 @@
 /** The cookie that carries the session token. */
 export const SESSION_COOKIE = "c2r_session";
 
-export const SIGN_IN_PATH = "/sign-in";
+const SIGN_IN_PATH = "/sign-in";
 
 /**
  * Where to go after signing in, from the `next` parameter. Only a path on this site is accepted:

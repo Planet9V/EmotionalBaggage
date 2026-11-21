@@ -19,13 +19,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
 import { Kanban } from "@/components/items/Kanban";
+import { statusesFor } from "@/lib/menuLookup";
 
 const NO_INTEGRATIONS: Integration[] = [];
 const socialOnly = (r: IntegrationsReport) => r.integrations.filter((i) => i.key === "x" || i.key === "instagram");
 
 const CHANNELS = [...SOCIAL_CHANNELS.map((c) => c.label), "other"];
 const X_LIMIT = 280;
-const FALLBACK = ["draft", "approved", "posted"];
 const len = (s: string) => Array.from(s).length;
 const channelOf = (it: Item) => (typeof it.data.channel === "string" && it.data.channel ? it.data.channel : "other");
 const firstLine = (t: string) => {
@@ -35,7 +35,7 @@ const firstLine = (t: string) => {
 
 export function SocialView({ project, section, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
-  const columns = section.statuses?.length ? section.statuses : FALLBACK;
+  const columns = statusesFor(store);
   const integQuery = useQuery({ ...queries.integrations(), select: socialOnly });
   const integ = integQuery.data ?? NO_INTEGRATIONS;
   const integError = messageOf(integQuery.error);

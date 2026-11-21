@@ -84,7 +84,7 @@ export type GeneratorsReply = {
 };
 
 /** Plain names of stores, singular and plural, for "from 9 requirements". */
-export const STORE_NOUN: Record<string, [string, string]> = {
+const STORE_NOUN: Record<string, [string, string]> = {
   "concept/brief": ["brief line", "brief lines"],
   "concept/press": ["press release", "press releases"],
   "concept/faq": ["FAQ entry", "FAQ entries"],
@@ -105,7 +105,7 @@ export const STORE_NOUN: Record<string, [string, string]> = {
   "marketing/brand": ["brand note", "brand notes"],
 };
 
-export const noun = (store: string, n: number) => {
+const noun = (store: string, n: number) => {
   const pair = STORE_NOUN[store] ?? ["row", "rows"];
   return `${n} ${n === 1 ? pair[0] : pair[1]}`;
 };
@@ -119,14 +119,6 @@ export function readsText(counts: Record<string, number>): string {
   if (parts.length === 1) return parts[0];
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
-
-/** Where a store's rows are shown, for links. */
-export const STORE_HREF: Record<string, string> = {
-  "design/bom": "/s/design/bom",
-  "design/wiring": "/s/design/schematic",
-};
-
-export const storeHref = (store: string) => STORE_HREF[store] ?? `/s/${store}`;
 
 /** The words the reviewer is asked with when an approved press release or FAQ entry is attacked (once, by the server). */
 export const ATTACK_MESSAGE: Record<string, string> = {

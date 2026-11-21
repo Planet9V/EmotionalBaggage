@@ -5,7 +5,7 @@ import { retail } from "./retail";
 import { softLaunch } from "./soft";
 import type { LaunchTemplate } from "./types";
 
-export type { LaunchTemplate, TemplateStep } from "./types";
+export type { LaunchTemplate } from "./types";
 export { CHECK_PROMPT } from "./types";
 
 export const TEMPLATES: LaunchTemplate[] = [kickstarter, amazon, ownSite, retail, softLaunch];

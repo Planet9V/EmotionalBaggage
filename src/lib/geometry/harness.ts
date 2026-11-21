@@ -5,7 +5,7 @@
 import { signalNetsOf, suggestedColour, sequence } from "@/components/buildsheet/derive";
 import type { Part, Wire } from "@/lib/domain";
 
-export type HarnessWire = {
+type HarnessWire = {
   id: string;
   from: string;
   fromPin: string;

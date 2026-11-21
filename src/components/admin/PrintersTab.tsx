@@ -36,7 +36,7 @@ import { EmptyState, LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } f
 import { Panel } from "@/components/ui/panel";
 
 /** What this app can do with a family today, in words. Shown on every family, honestly. */
-export function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields"> & { experimental?: boolean }): { label: string; tone: StatusTone; detail: string } {
+function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields"> & { experimental?: boolean }): { label: string; tone: StatusTone; detail: string } {
   if (f.id === "file-only") return { label: "No connection needed", tone: "success", detail: "You download the file and print it yourself." };
   if (f.status === "supported" && f.experimental) {
     return { label: "Experimental", tone: "warning", detail: "A connection test and print status exist, built to documentation that may not match your model. Check it with Test before you rely on it." };

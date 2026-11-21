@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useItems } from "@/lib/client";
 import { analyze } from "@/lib/campaigns/analyze";
-import { formatDay, isDay, todayUtc } from "@/lib/campaigns/days";
+import { formatDay, isDay } from "@/lib/campaigns/days";
 import { derive, percent, type ResultRow } from "@/lib/campaigns/metrics";
 import { campaignsOf, planOf } from "@/lib/campaigns/read";
 import { CAMPAIGN_STORE } from "@/lib/campaigns/schemas";
@@ -22,6 +22,7 @@ import { ResultsChart } from "./ResultsChart";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
+import { todayUtc } from "@/lib/format";
 
 const TONE = { stop: "danger", scale: "success", hold: "info", not_enough_data: "warning", no_rule: "neutral" } as const;
 const WORD = { stop: "Stop", scale: "Scale", hold: "Hold", not_enough_data: "Not enough data", no_rule: "No rule" } as const;

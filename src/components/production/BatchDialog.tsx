@@ -11,8 +11,9 @@ import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
+import { statusesFor } from "@/lib/menuLookup";
 
-const STATUSES = ["planned", "funded", "building", "shipped"];
+const STATUSES = statusesFor("production/batches");
 export type BatchDraft = { title: string; status: string; data: { units: number; targetDate: string; build: string } };
 
 export function BatchDialog({ open, onOpenChange, initial, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; initial?: Item | null; onSave: (v: BatchDraft) => Promise<void> }) {

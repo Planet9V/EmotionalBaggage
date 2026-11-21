@@ -20,7 +20,7 @@ import { BlockList, isIP, type LookupFunction } from "node:net";
 import { Readable } from "node:stream";
 
 /** The code on the error a refused address raises (inside a fetch-style TypeError's cause). */
-export const BLOCKED_CODE = "EADDRBLOCKED";
+const BLOCKED_CODE = "EADDRBLOCKED";
 
 const blocked = new BlockList();
 blocked.addSubnet("169.254.0.0", 16, "ipv4"); // link-local, cloud metadata (169.254.169.254)
@@ -67,11 +67,6 @@ export function blockedIn(e: unknown): BlockedAddress | null {
   return null;
 }
 
-/** True when an error (or anything in its chain of causes) is a refused address. */
-export function isBlocked(e: unknown): boolean {
-  return blockedIn(e) !== null;
-}
-
 /** Resolves a host name and refuses it if ANY address it resolves to is forbidden. */
 function checkedAddresses(host: string, family: number, cb: (err: Error | null, list: LookupAddress[]) => void) {
   const bare = host.replace(/^\[|\]$/g, "");
@@ -91,7 +86,7 @@ function checkedAddresses(host: string, family: number, cb: (err: Error | null, 
 }
 
 /** A `lookup` for node:net, node:http and node:https that only ever yields allowed addresses. */
-export const checkedLookup: LookupFunction = (hostname, options, callback) => {
+const checkedLookup: LookupFunction = (hostname, options, callback) => {
   const opts = (typeof options === "object" && options ? options : {}) as { all?: boolean; family?: number | string };
   const fam = typeof opts.family === "number" ? opts.family : opts.family === "IPv6" ? 6 : opts.family === "IPv4" ? 4 : 0;
   checkedAddresses(hostname, fam, (err, list) => {

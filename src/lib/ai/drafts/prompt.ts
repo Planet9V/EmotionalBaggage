@@ -16,7 +16,7 @@ const fieldText = (data: Record<string, unknown>, skip: string[] = []) =>
     .join("; ");
 
 /** One row as a prompt line: "#12 [open] Title: body (field=value; ...)". */
-export function line(i: Item, opts: { skip?: string[]; bodyMax?: number } = {}) {
+function line(i: Item, opts: { skip?: string[]; bodyMax?: number } = {}) {
   const body = i.body ? `: ${i.body.length > (opts.bodyMax ?? 1200) ? `${i.body.slice(0, opts.bodyMax ?? 1200)}...` : i.body}` : "";
   const f = fieldText(i.data, opts.skip ?? ["geometry", "schematic"]);
   return `#${i.id} [${i.status}] ${i.title}${body}${f ? ` (${f})` : ""}`;

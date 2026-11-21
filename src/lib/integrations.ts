@@ -5,7 +5,7 @@ import { q } from "@/lib/db";
 import { credentialSource, embeddingModel, reasoningModel, type ModelChoice, type Provider } from "@/lib/settings";
 import { printerFamily } from "@/lib/admin/printerFamilies";
 
-export type Source = "admin" | "environment" | "mixed" | null;
+type Source = "admin" | "environment" | "mixed" | null;
 
 export type Integration = {
   key: string;

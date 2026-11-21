@@ -6,7 +6,7 @@ import { HttpError } from "@/lib/api/route";
 import { logEventIn } from "@/lib/db";
 
 /** The change lines a late reason may attach to. */
-export const REASONABLE = ["item.status", "item.edited"] as const;
+const REASONABLE = ["item.status", "item.edited"] as const;
 
 type Runner = Pick<PoolClient, "query">;
 

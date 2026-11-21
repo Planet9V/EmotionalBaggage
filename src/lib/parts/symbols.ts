@@ -15,7 +15,7 @@ const HALF = GRID / 2;
 
 export type Stroke = { points: [number, number][]; fill?: boolean; closed?: boolean };
 export type Circle = { x: number; y: number; r: number; fill?: boolean };
-export type SymText = { x: number; y: number; text: string; size: number };
+type SymText = { x: number; y: number; text: string; size: number };
 export type SymPin = {
   name: string;
   number: string;

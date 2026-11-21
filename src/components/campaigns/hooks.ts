@@ -7,7 +7,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/r
 import { processKey } from "@/lib/process/client";
 import { api } from "@/lib/http";
 import { messageOf } from "@/lib/queries";
-import { formatMoney, minorDigits, toMajor, toMinor } from "@/lib/economics/money";
+import { formatMoney, parseMinor, toInputText } from "@/lib/economics/money";
 import type { LinkClickRow } from "@/lib/campaigns/analyze";
 import type { ChannelMargin } from "@/lib/campaigns/margin";
 import type { ResultRow } from "@/lib/campaigns/metrics";
@@ -18,7 +18,7 @@ import type { toLink } from "@/lib/campaigns/linkRows";
 const enc = encodeURIComponent;
 const base = (p: string) => `/api/projects/${enc(p)}/campaigns`;
 
-export const campaignKeys = {
+const campaignKeys = {
   all: (p: string) => ["campaigns", p] as const,
   summary: (p: string) => ["campaigns", p, "summary"] as const,
   results: (p: string) => ["campaigns", p, "results"] as const,
@@ -31,9 +31,9 @@ export type ResultsPayload = { rows: ResultRow[]; linkClicks: LinkClickRow[] };
 export type LinkView = ReturnType<typeof toLink>;
 export type LinksPayload = { links: LinkView[]; convention: string[] };
 
-export const summaryQuery = (p: string) => queryOptions({ queryKey: campaignKeys.summary(p), queryFn: ({ signal }) => api<Summary>(`${base(p)}/summary`, { signal }) });
-export const resultsQuery = (p: string) => queryOptions({ queryKey: campaignKeys.results(p), queryFn: ({ signal }) => api<ResultsPayload>(`${base(p)}/results`, { signal }) });
-export const linksQuery = (p: string) => queryOptions({ queryKey: campaignKeys.links(p), queryFn: ({ signal }) => api<LinksPayload>(`${base(p)}/links`, { signal }) });
+const summaryQuery = (p: string) => queryOptions({ queryKey: campaignKeys.summary(p), queryFn: ({ signal }) => api<Summary>(`${base(p)}/summary`, { signal }) });
+const resultsQuery = (p: string) => queryOptions({ queryKey: campaignKeys.results(p), queryFn: ({ signal }) => api<ResultsPayload>(`${base(p)}/results`, { signal }) });
+const linksQuery = (p: string) => queryOptions({ queryKey: campaignKeys.links(p), queryFn: ({ signal }) => api<LinksPayload>(`${base(p)}/links`, { signal }) });
 
 export function useSummary(projectId: string) {
   const q = useQuery(summaryQuery(projectId));
@@ -142,13 +142,11 @@ export function useMoney(currency: string | undefined) {
       currency: c,
       format: (minor: number) => formatMoney(minor, c),
       /** a minor amount as the text of an input, "12.50" */
-      toInput: (minor: number | null | undefined) => (minor === null || minor === undefined ? "" : toMajor(minor, c).toFixed(minorDigits(c))),
+      toInput: (minor: number | null | undefined) => (minor === null || minor === undefined ? "" : toInputText(minor, c)),
       /** typed text as a minor amount, null when empty, NaN when it is not a number */
       fromInput: (text: string): number | null => {
-        const t = text.trim().replace(/,/g, "");
-        if (t === "") return null;
-        const n = Number(t);
-        return Number.isFinite(n) && n >= 0 ? toMinor(n, c) : Number.NaN;
+        if (text.trim() === "") return null;
+        return parseMinor(text, c) ?? Number.NaN;
       },
     };
   }, [currency]);

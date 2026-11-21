@@ -16,9 +16,10 @@ import { pinKey, type Circuit, type CircuitPart } from "./circuit";
 import type { PinKind } from "./kinds";
 import { qs, write, type SNode } from "./sexpr";
 import { GRID, symbolLayout, type SymbolLayout } from "./symbols";
+import { slugify } from "@/lib/format";
 
 export const KICAD_SCH_VERSION = "20260306";
-export const KICAD_GENERATOR = "concept_to_realization";
+const KICAD_GENERATOR = "concept_to_realization";
 
 export type KicadMeta = {
   title: string;
@@ -54,7 +55,7 @@ const stroke = (width = 0.254): SNode => ["stroke", ["width", fmt(width)], ["typ
 const fill = (type: "none" | "outline" | "background"): SNode => ["fill", ["type", type]];
 
 /** Deterministic UUIDs (version 4 layout) from a seed string, so the same circuit writes the same file. */
-export function uuidFrom(seed: string): string {
+function uuidFrom(seed: string): string {
   const h = (salt: number) => {
     let x = 0x811c9dc5 ^ salt;
     for (let i = 0; i < seed.length; i++) {
@@ -155,7 +156,7 @@ function libSymbol(pl: Placed): SNode {
 }
 
 /** Where each pin's connection point lands on the sheet (schematic coordinates are y down, like ours). */
-export function pinPoint(pl: { at: { x: number; y: number } }, p: { x: number; y: number }) {
+function pinPoint(pl: { at: { x: number; y: number } }, p: { x: number; y: number }) {
   return { x: Math.round((pl.at.x + p.x) * 10000) / 10000, y: Math.round((pl.at.y + p.y) * 10000) / 10000 };
 }
 
@@ -217,7 +218,7 @@ const byUuid = (xs: SNode[]) => [...xs].sort((a, b) => (uuidOf(a) < uuidOf(b) ? 
 
 /** The .kicad_sch text for a circuit. */
 export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
-  const project = meta.project ?? (meta.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "concept");
+  const project = meta.project ?? slugify(meta.title, { max: Infinity, fallback: "concept" });
   const root = uuidFrom(`root:${project}`);
   const placed = place(c, meta);
   // KiCad 10 saves sheet items grouped by type (no_connect, then wires, then labels, then symbols:

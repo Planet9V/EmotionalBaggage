@@ -18,7 +18,7 @@ import type { ConceptInfo, GenContext, Generator, Proposed, RunState } from "./t
 import { knownIds } from "./prompt";
 
 /** Lists of rows sent to the model and answered by it can be long; two minutes, not the usual one. */
-export const DRAFT_TIMEOUT_MS = 120_000;
+const DRAFT_TIMEOUT_MS = 120_000;
 /** Sources recorded per draft when the model names none: the rows it was given, up to this many. */
 const MAX_SOURCES = 40;
 
@@ -29,7 +29,7 @@ export async function readConcept(projectId: string): Promise<ConceptInfo> {
 }
 
 /** Rows of these stores, in their saved order. */
-export async function readStores(projectId: string, stores: string[]): Promise<Record<string, Item[]>> {
+async function readStores(projectId: string, stores: string[]): Promise<Record<string, Item[]>> {
   const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [projectId, stores])).map(toItem);
   const out: Record<string, Item[]> = Object.fromEntries(stores.map((s) => [s, [] as Item[]]));
   for (const r of rows) out[r.section]?.push(r);
@@ -67,7 +67,7 @@ export async function buildContext(g: Generator<Record<string, unknown>>, concep
 /** The output the model is asked for: { rows: [...] }, each row described by the generator's schema. */
 const envelope = z.object({ rows: z.array(z.record(z.string(), z.unknown())).max(200) });
 
-export function rowInstruction(g: Generator<Record<string, unknown>>) {
+function rowInstruction(g: Generator<Record<string, unknown>>) {
   return `Answer with a JSON object {"rows": [...]}. Each row must match this JSON Schema:\n${JSON.stringify(z.toJSONSchema(g.schema))}`;
 }
 
@@ -82,13 +82,13 @@ const issueText = (e: z.ZodError) => {
   return `${i?.path.join(".") || "(row)"}: ${i?.message ?? "invalid"}`;
 };
 
-export type Checked = { proposed: Proposed; data: Record<string, unknown>; sources: DraftSource[] };
+type Checked = { proposed: Proposed; data: Record<string, unknown>; sources: DraftSource[] };
 
 /**
  * Turns the model's raw rows into drafts ready to save, and the rows dropped with their reasons.
  * Pure apart from what the generator does; exported for tests.
  */
-export function checkRows(g: Generator<Record<string, unknown>>, ctx: GenContext, raws: Record<string, unknown>[]) {
+function checkRows(g: Generator<Record<string, unknown>>, ctx: GenContext, raws: Record<string, unknown>[]) {
   const kept: Checked[] = [];
   const dropped: DroppedRow[] = [];
   const notes: string[] = [];

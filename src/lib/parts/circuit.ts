@@ -8,7 +8,7 @@ import { partPins, pinsByItem, type PartPins, type Pin, type PinRow } from "./pi
 
 export type CircuitPart = { ref: string; item: Item; title: string } & PartPins;
 
-export type NetMember = { ref: string; pin: string; def: Pin | null };
+type NetMember = { ref: string; pin: string; def: Pin | null };
 
 export type Net = {
   /** stable within one build of the circuit */

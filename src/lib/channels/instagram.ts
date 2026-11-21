@@ -24,7 +24,7 @@ import { getSecretFor } from "@/lib/secretOrigin";
 import { ChannelError, channelFetch, igGraphBase, readJson, upstreamError } from "./http";
 import { channelClock } from "./rateLimit";
 
-export const IG_PUBLISH_LIMIT_24H = 100;
+const IG_PUBLISH_LIMIT_24H = 100;
 
 export async function igCredentials() {
   const [token, accountId] = await Promise.all([getSecretFor("instagram", "accessToken", igGraphBase()), getCredential("instagram", "accountId")]);
@@ -91,7 +91,7 @@ export function publicImageProblem(raw: string): string | null {
   return null;
 }
 
-export async function igPublishingUsage(): Promise<{ used: number; limit: number } | null> {
+async function igPublishingUsage(): Promise<{ used: number; limit: number } | null> {
   const c = await need();
   const j = await igCall<{ data?: { quota_usage?: unknown; config?: { quota_total?: unknown } }[] }>("GET", `/${encodeURIComponent(c.accountId)}/content_publishing_limit?fields=quota_usage,config`);
   const row = j.data?.[0];

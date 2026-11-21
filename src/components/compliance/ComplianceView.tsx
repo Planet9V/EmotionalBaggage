@@ -16,6 +16,7 @@ import { ComplianceDialog } from "./ComplianceDialog";
 import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { NativeSelect } from "@/components/ui/native-select";
 import { statusOptions } from "@/lib/statusOptions";
+import { fmtDate } from "@/lib/format";
 
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 const tone = (s: string) => (s === "done" ? "success" : s === "applies" ? "info" : s === "does not apply" ? "neutral" : "warning");
@@ -174,7 +175,7 @@ export function ComplianceView({ project }: ViewProps) {
                   {g.model ? (
                     <p className="mt-2 text-[11px] text-muted">
                       Drafted by {g.model}
-                      {g.at ? ` on ${new Date(g.at).toLocaleDateString(undefined, { dateStyle: "medium" })}` : ""} from {g.sources?.length ?? 0} {g.sources?.length === 1 ? "row" : "rows"} of this concept
+                      {g.at ? ` on ${fmtDate(g.at)}` : ""} from {g.sources?.length ?? 0} {g.sources?.length === 1 ? "row" : "rows"} of this concept
                       {g.trigger ? `, triggered by ${g.trigger}` : ""}.
                     </p>
                   ) : null}

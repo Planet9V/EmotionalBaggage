@@ -2,6 +2,8 @@
 // src/lib/ai/drafts/registry.ts. Every reply and every suggested tag is a draft until a person approves
 // it; an approved reply is still sent only by its own "Send" button (src/lib/channels/send.ts).
 // The brand voice comes from the brand kit (the same text brandContext gives other generators).
+import { channelName } from "./registry";
+import { channelOf } from "./channelName";
 import { z } from "zod";
 import { brandText, findKit } from "@/lib/market/brandKit";
 import type { Item } from "@/lib/types";
@@ -11,8 +13,8 @@ import { CHANNEL, SENTIMENTS } from "./schemas";
 
 const always = () => true;
 /** X counts most characters as one; this is a plain code-point count, so a reply X would count longer is refused by X, not sent short. */
-export const X_REPLY_MAX = 280;
-export const IG_REPLY_MAX = 2200;
+const X_REPLY_MAX = 280;
+const IG_REPLY_MAX = 2200;
 
 const voice = (ctx: GenContext) => {
   const t = brandText(findKit(ctx.rows[CHANNEL.brand] ?? []));
@@ -45,7 +47,7 @@ const toAnswer = (ctx: GenContext) => [...unanswered(ctx, CHANNEL.inbox), ...una
  * One generator for every reply, so the Draft with AI button means the same on Replies and comments,
  * Reviews and questions, and Replies to send. The channel of each reply comes from the row it answers.
  */
-export const replies: Generator<z.infer<typeof replyRow>> = {
+const replies: Generator<z.infer<typeof replyRow>> = {
   id: "replies",
   label: "Replies",
   action: "Draft replies",
@@ -80,7 +82,7 @@ export const replies: Generator<z.infer<typeof replyRow>> = {
     const text = row.text.trim();
     const why = row.reasoning ? { reasoning: row.reasoning.trim() } : {};
     if (src.section === CHANNEL.inbox) {
-      const channel = src.data.channel === "Instagram" ? "Instagram" : "X";
+      const channel = channelName(channelOf(src.data.channel) === "instagram" ? "instagram" : "x");
       const len = Array.from(text).length;
       if (channel === "X" && len > X_REPLY_MAX) return { ok: false, reason: `the reply is ${len} characters; X allows ${X_REPLY_MAX}` };
       const who = typeof src.data.author === "string" && src.data.author ? ` @${src.data.author}` : "";
@@ -114,7 +116,7 @@ const tagRow = z.object({
 
 const untagged = (ctx: GenContext): Item[] => ctx.existing.filter((i) => !(typeof i.data.topic === "string" && i.data.topic.trim()) || !i.data.sentiment);
 
-export const reviewTags: Generator<z.infer<typeof tagRow>> = {
+const reviewTags: Generator<z.infer<typeof tagRow>> = {
   id: "review-tags",
   label: "Topic and sentiment for reviews",
   action: "Suggest topics and sentiment",

@@ -18,7 +18,7 @@
 //     ORDER BY embedding <=> '[1,-2,3]' LIMIT 5;
 // Qwen3 Embedding 8B gives 4,096 numbers per text, so it takes this path. Above 64,000 a width is
 // searched exactly, without an index.
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import { ITEM_COLS, q, ready, toItem, tx, type ItemRow } from "@/lib/db";
 import { STAGES, storeKey } from "@/lib/menu";
 import { embed, getEmbedding, ModelError, type EmbeddingInfo, type NotConfigured, type ReadyEmbedding } from "./models";
@@ -47,9 +47,9 @@ export const EXACT_SEARCH_MAX_ROWS = 2000;
 /** Above EXACT_SEARCH_MAX_ROWS and at or below this, the stored one-bit copies are compared, then the best re-ranked. */
 export const BIT_SCAN_MAX_ROWS = 100_000;
 /** pgvector's largest hnsw.ef_search. */
-export const MAX_EF_SEARCH = 1000;
+const MAX_EF_SEARCH = 1000;
 /** maintenance_work_mem for building a per-width index (when the server's is lower). */
-export const INDEX_BUILD_MEMORY = "1GB";
+const INDEX_BUILD_MEMORY = "1GB";
 
 /**
  * Candidates the binary index hands to the re-ranking step: ten per answer wanted, at least 100, at
@@ -64,7 +64,7 @@ export const candidateLimit = (limit: number) => Math.min(Math.max(limit * 10, 1
  * re-ranking ("binary").
  */
 export type SearchKind = "hnsw" | "binary" | "exact" | "bits";
-export const DEFAULT_BATCH_SIZE = 32;
+const DEFAULT_BATCH_SIZE = 32;
 
 export type Unavailable = { ok: false; missing: "pgvector" | "unindexed" | NotConfigured["missing"]; reason: string };
 
@@ -91,7 +91,6 @@ export function itemText(row: { title: string; body?: string | null; data?: unkn
   return parts.join("\n");
 }
 
-export const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
 export function batches<T>(list: T[], size: number): T[][] {
   if (!Number.isInteger(size) || size < 1) throw new RangeError("batch size must be a positive whole number");
@@ -268,7 +267,7 @@ const g = globalThis as unknown as { __c2rWidthIndex?: Map<number, SearchKind> }
  * Makes the approximate index for a width the first time it is used. Returns "hnsw" up to 2,000,
  * "binary" above that up to 64,000, and "exact" above 64,000 or when the index could not be made.
  */
-export async function ensureWidthIndex(dims: number): Promise<SearchKind> {
+async function ensureWidthIndex(dims: number): Promise<SearchKind> {
   const kind = plannedSearch(dims);
   const sql = kind === "hnsw" ? hnswIndexSql(dims) : kind === "binary" ? binaryIndexSql(dims) : null;
   if (!sql) return "exact";
@@ -309,7 +308,7 @@ async function prerequisites(): Promise<Ready | Unavailable> {
   return { ok: true, emb };
 }
 
-export type Counts = { indexed: number; skipped: number; failed: number };
+type Counts = { indexed: number; skipped: number; failed: number };
 
 export type IndexCounts = {
   ok: true;
@@ -524,7 +523,7 @@ export async function searchByMeaning(
   return { ok: true, items, model: emb.info.model, dims: emb.info.dims, search };
 }
 
-export type ResearchHit = { id: number; projectId: string; query: string; answer: string; createdAt: string };
+type ResearchHit = { id: number; projectId: string; query: string; answer: string; createdAt: string };
 
 /** A source found for a question: a row of the concept or a saved research answer, with its score. */
 export type SourceHit =

@@ -4,8 +4,8 @@
 import { z } from "zod";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS, type ProductType } from "@/lib/productTypes";
 
-export type PartRow = { key: number; name: string; qty: string; source: string; search: string; line: string };
-export type NameRow = { key: number; kind: "Name" | "Tagline"; text: string };
+type PartRow = { key: number; name: string; qty: string; source: string; search: string; line: string };
+type NameRow = { key: number; kind: "Name" | "Tagline"; text: string };
 
 export type Answers = {
   productType: ProductType;
@@ -28,7 +28,6 @@ export type Answers = {
   names: NameRow[];
 };
 
-export const SOURCES = ["Amazon", "Micro Center", "Own printer", "Other"] as const;
 
 let keySeed = 1;
 export const nextKey = () => keySeed++;
@@ -53,9 +52,9 @@ const num = (s: string) => {
   return t(s) !== "" && Number.isFinite(n) ? n : null;
 };
 
-export const namedParts = (a: Answers) => a.parts.filter((p) => t(p.name));
+const namedParts = (a: Answers) => a.parts.filter((p) => t(p.name));
 
-export function envelope(a: Answers): [number, number, number] | null {
+function envelope(a: Answers): [number, number, number] | null {
   const w = num(a.w), h = num(a.h), d = num(a.d);
   return w !== null && h !== null && d !== null && w > 0 && h > 0 && d > 0 ? [w, h, d] : null;
 }

@@ -1,7 +1,7 @@
 // The degraded state: the planner is not there, has no OpenSCAD, or is too slow. The screen is told why, in words.
 import { createServer, type Server } from "node:http";
 import { afterAll, describe, expect, it } from "vitest";
-import { runGenerator } from "@/lib/enclosure/run";
+import { runEnclosureGenerator } from "@/lib/enclosure/run";
 import { buildSpec } from "@/lib/enclosure/spec";
 import { generateYapp, GeneratorUnavailable } from "@/lib/enclosure/yapp";
 import { exampleParts } from "./helpers";
@@ -26,20 +26,20 @@ describe("YAPP_Box when the planner cannot do it", () => {
     await expect(generateYapp(spec, { url: null })).rejects.toMatchObject({ code: "not-configured", message: expect.stringMatching(/Admin|PLANNER_URL/) });
   });
   it("planner not reachable", async () => {
-    const r = await runGenerator("yapp", spec, { plannerUrl: "http://127.0.0.1:1" });
+    const r = await runEnclosureGenerator("yapp", spec, { plannerUrl: "http://127.0.0.1:1" });
     expect(r).toMatchObject({ ok: false, code: "unreachable" });
     if (!r.ok) expect(r.error).toMatch(/not reachable/);
   });
   it("planner without OpenSCAD (503)", async () => {
-    const r = await runGenerator("yapp", spec, { plannerUrl: await stub(503, "OpenSCAD is not installed in the planner container.") });
+    const r = await runEnclosureGenerator("yapp", spec, { plannerUrl: await stub(503, "OpenSCAD is not installed in the planner container.") });
     expect(r).toMatchObject({ ok: false, code: "no-openscad" });
   });
   it("OpenSCAD out of time (504)", async () => {
-    const r = await runGenerator("yapp", spec, { plannerUrl: await stub(504, "OpenSCAD did not finish within 10 seconds.") });
+    const r = await runEnclosureGenerator("yapp", spec, { plannerUrl: await stub(504, "OpenSCAD did not finish within 10 seconds.") });
     expect(r).toMatchObject({ ok: false, code: "timeout" });
   });
   it("planner refuses the file (422)", async () => {
-    const r = await runGenerator("yapp", spec, { plannerUrl: await stub(422, "OpenSCAD refused the file: x") });
+    const r = await runEnclosureGenerator("yapp", spec, { plannerUrl: await stub(422, "OpenSCAD refused the file: x") });
     expect(r).toMatchObject({ ok: false, code: "refused" });
   });
   it("the error type is exported for callers", () => {

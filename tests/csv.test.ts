@@ -1,9 +1,11 @@
+// @vitest-environment jsdom
 // Robustness review S7: the parts list and the wiring list only quoted CSV cells; a cell starting with
 // = + - @ (or a tab or carriage return) reached the spreadsheet as a formula. There is now one CSV writer.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { toCsvText } from "@/lib/csv";
+import { describe, expect, it, vi } from "vitest";
+import { parseCsvRecords, parseCsvText, toCsvText } from "@/lib/csv";
+import { downloadDataUrl } from "@/lib/download";
 import { toCsv } from "@/components/parts/bom";
 import { wiringCsv } from "@/components/schematic/model";
 import type { Part, Wire } from "@/lib/domain";
@@ -51,5 +53,56 @@ describe("the exports use it", () => {
     };
     walk(join(process.cwd(), "src"));
     expect(hits).toEqual([]);
+  });
+});
+
+describe("parseCsvText, the one reader", () => {
+  it("reads quotes, doubled quotes and a line break inside a quoted cell", () => {
+    expect(parseCsvText('a,"b, c","say ""hi""","x\ny"\r\n1,2,3,4').rows).toEqual([["a", "b, c", 'say "hi"', "x\ny"], ["1", "2", "3", "4"]]);
+  });
+  it("takes tab when the first line has a tab, drops a byte-order mark and skips blank rows", () => {
+    expect(parseCsvText("\uFEFFref\ttitle\nR1\tCap, 10uF\n\n   \t \nR2\tLED").rows).toEqual([["ref", "title"], ["R1", "Cap, 10uF"], ["R2", "LED"]]);
+  });
+  it("reads a file written by toCsvText back to what was written", () => {
+    const rows = [["ref", "title"], ["R1", 'Cap, "big"'], ["R2", "plain"]];
+    expect(parseCsvText(toCsvText(rows)).rows).toEqual(rows);
+  });
+  it("chooses among the delimiters it is given", () => {
+    expect(parseCsvText("a;b;c\n1;2;3", { delimiters: [",", ";"] }).rows).toEqual([["a", "b", "c"], ["1", "2", "3"]]);
+  });
+  it("reads records by header", () => {
+    const r = parseCsvRecords(" text , rating \nGood,5\n\nBad,1");
+    expect(r.headers).toEqual(["text", "rating"]);
+    expect(r.records).toEqual([{ text: "Good", rating: "5" }, { text: "Bad", rating: "1" }]);
+  });
+  it("is the only reader in src: no other file calls Papa.parse", () => {
+    const hits: string[] = [];
+    const walk = (dir: string) => {
+      for (const n of readdirSync(dir)) {
+        const f = join(dir, n);
+        if (statSync(f).isDirectory()) walk(f);
+        else if (/\.(ts|tsx)$/.test(n) && !f.endsWith(join("lib", "csv.ts")) && /Papa\.parse/.test(readFileSync(f, "utf8"))) hits.push(f);
+      }
+    };
+    walk(join(process.cwd(), "src"));
+    expect(hits).toEqual([]);
+  });
+});
+
+describe("downloadDataUrl", () => {
+  it("saves a data address through the one download helper", async () => {
+    const made: Blob[] = [];
+    const create = vi.fn((b: Blob) => (made.push(b), "blob:x"));
+    Object.assign(URL, { createObjectURL: create, revokeObjectURL: vi.fn() });
+    const clicked: string[] = [];
+    const orig = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) { clicked.push(this.download); };
+    try {
+      await downloadDataUrl("qr.png", "data:image/png;base64,iVBORw0KGgo=");
+    } finally {
+      HTMLAnchorElement.prototype.click = orig;
+    }
+    expect(clicked).toEqual(["qr.png"]);
+    expect(made[0].type).toBe("image/png");
   });
 });

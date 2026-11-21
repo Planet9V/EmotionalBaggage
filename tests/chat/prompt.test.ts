@@ -2,7 +2,8 @@
 // citations in the answer and the suggested questions. No database, no model.
 import { describe, expect, it } from "vitest";
 import { buildSystemPrompt, numberSources, stored } from "@/lib/chat/server";
-import { clip, cut, linkCitations, sectionHref, sectionLabel, suggestedQuestions } from "@/lib/chat/shared";
+import { clip, cut, linkCitations, suggestedQuestions } from "@/lib/chat/shared";
+import { sectionLabel, storeHref as sectionHref } from "@/lib/menuLookup";
 import type { SourceHit } from "@/lib/ai/embeddings";
 
 const item = (id: number, section: string, title: string, body = "", data: Record<string, unknown> = {}) =>

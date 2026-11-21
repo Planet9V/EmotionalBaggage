@@ -10,7 +10,7 @@ import type { GeneratedFrom } from "../schemas";
 export type SourceRef = { kind: string; id: number; title: string };
 
 /** A saved research answer, as a generator reads it. */
-export type ResearchAnswer = {
+type ResearchAnswer = {
   id: number;
   query: string;
   answer: string;
@@ -37,11 +37,11 @@ export type MarketContext = {
   params: Record<string, unknown>;
 };
 
-export type Prompt = { system: string; prompt: string; maxOutputTokens?: number };
+type Prompt = { system: string; prompt: string; maxOutputTokens?: number };
 
-export type Applies = { ok: true } | { ok: false; reason: string };
+type Applies = { ok: true } | { ok: false; reason: string };
 
-export type RowDraft = {
+type RowDraft = {
   section: string;
   title: string;
   body: string;

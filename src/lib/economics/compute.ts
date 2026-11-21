@@ -234,7 +234,7 @@ export function unitCost(inputs: EconomicsInputs, batchSize: number): UnitCost {
  * that has a size, or 1 when none is planned. Pricing, campaigns, content and the report all use it,
  * so the same concept never shows two unit costs.
  */
-export function referenceBatchSize(inputs: EconomicsInputs): number {
+function referenceBatchSize(inputs: EconomicsInputs): number {
   return wholeBatch(inputs.batches.find((b) => b.units !== null)?.units ?? 1);
 }
 
@@ -268,7 +268,7 @@ export function fixedCosts(inputs: EconomicsInputs): FixedCosts {
   return { lines, total: lines.reduce((a, l) => a + l.amount, 0), missing };
 }
 
-export type BreakEven = { units: number | null; reason: string };
+type BreakEven = { units: number | null; reason: string };
 
 export type ChannelResult = {
   id: number;
@@ -290,6 +290,30 @@ export type ChannelResult = {
   how: string[];
 };
 
+/** The fee columns of a sales channel row: the one definition of what a channel takes. */
+export type ChannelFees = Pick<ChannelRow, "platformPercent" | "platformFixed" | "paymentPercent" | "paymentFixed">;
+
+/** A channel that takes nothing (the margin with no channel chosen). */
+export const NO_FEES: ChannelFees = { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0 };
+
+const feePart = (percent: number | null, fixed: number | null, price: number | null, currency: string) =>
+  (percent === null || price === null ? 0 : roundHalfUp((price * percent) / 100)) + (fixed === null ? 0 : toMinor(fixed, currency));
+
+/** What a channel takes from one sale at `priceMinor`: the platform's fee and the payment fee, in minor units. */
+export function channelFeeMinor(c: ChannelFees, priceMinor: number | null, currency: string): { platform: number; payment: number; total: number } {
+  const platform = feePart(c.platformPercent, c.platformFixed, priceMinor, currency);
+  const payment = feePart(c.paymentPercent, c.paymentFixed, priceMinor, currency);
+  return { platform, payment, total: platform + payment };
+}
+
+/** The channel's fees as a share of the price and a fixed amount per unit (minor), for pricing from a target margin. */
+export function channelFeeRates(c: ChannelFees, currency: string): { percent: number; fixedMinor: number } {
+  return {
+    percent: (c.platformPercent ?? 0) + (c.paymentPercent ?? 0),
+    fixedMinor: channelFeeMinor({ ...NO_FEES, platformFixed: c.platformFixed, paymentFixed: c.paymentFixed }, 0, currency).total,
+  };
+}
+
 /** Margin per unit and break-even for each sales channel, at one unit cost and one set of fixed costs. */
 export function channelResults(channels: ChannelRow[], unit: UnitCost, fixed: FixedCosts): ChannelResult[] {
   const currency = unit.currency;
@@ -304,8 +328,7 @@ export function channelResults(channels: ChannelRow[], unit: UnitCost, fixed: Fi
 
     const pct = (p: number | null, of: number | null) => (p === null || of === null ? 0 : roundHalfUp((of * p) / 100));
     const fix = (v: number | null) => (v === null ? 0 : toMinor(v, currency));
-    const platformFee = pct(c.platformPercent, price) + fix(c.platformFixed);
-    const paymentFee = pct(c.paymentPercent, price) + fix(c.paymentFixed);
+    const { platform: platformFee, payment: paymentFee } = channelFeeMinor(c, price, currency);
     const fulfilment = fix(c.fulfilment);
     const returns = pct(c.returnsPercent, price);
     const adCost = fix(c.adCost);

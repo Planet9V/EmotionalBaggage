@@ -1,6 +1,6 @@
 // Brief to requirements (4.3), requirements to a candidate parts list (4.4), parts to wiring (4.5).
 import { z } from "zod";
-import { PART_KIND_IDS } from "@/lib/parts/kinds";
+import { PART_KIND_IDS, PIN_KIND_LABEL, PIN_KINDS } from "@/lib/parts/kinds";
 import { sectionVisible } from "@/lib/productTypes";
 import { partsByRef, readWires } from "@/lib/domain";
 import type { Item } from "@/lib/types";
@@ -9,7 +9,7 @@ import { RULES, basedOn, block, clip, conceptHeader, critiqueBlock, nextKey, rep
 
 const always = () => true;
 /** Wiring exists for product types that show the schematic. */
-export const hasElectronics = (productType: string) => sectionVisible(productType, "design", "schematic");
+const hasElectronics = (productType: string) => sectionVisible(productType, "design", "schematic");
 
 // ---------------------------------------------------------------------------------------------
 // Requirements
@@ -78,17 +78,14 @@ export const requirements: Generator<z.infer<typeof reqRow>> = {
 // ---------------------------------------------------------------------------------------------
 // Parts
 
-/** Part kinds: the one list in src/lib/parts/kinds.ts, which the schematic, the checks and the parts list share. */
-export const PART_KINDS = PART_KIND_IDS;
-
-/** Pin kinds from docs/design/wiring.md. */
-export const PIN_ROLES = ["power in", "power out", "ground", "input", "output", "bidirectional", "passive", "not connected"] as const;
+/** Pin kinds from docs/design/wiring.md, written the way a model is asked for them: the labels of PIN_KINDS in lower case ("power in"). */
+export const PIN_ROLES = PIN_KINDS.map((k) => PIN_KIND_LABEL[k].toLowerCase()) as [string, ...string[]];
 
 const partRow = z.object({
   ref: z.string().min(1).max(40).describe("reference designator, e.g. U1, R2, SW1, ENC1, HW1"),
   title: z.string().min(1).max(300),
   spec: z.string().max(2000).describe("what the part is and the properties that matter (no price)"),
-  kind: z.enum(PART_KINDS),
+  kind: z.enum(PART_KIND_IDS),
   qty: z.number().positive().max(100_000),
   pins: z
     .array(z.object({ name: z.string().min(1).max(60), role: z.enum(PIN_ROLES) }))
@@ -120,7 +117,7 @@ export const parts: Generator<z.infer<typeof partRow>> = {
     return {
       system: [
         "You propose a candidate parts list that would meet the requirements. It is a starting point for an engineer, not a purchase order.",
-        `Each part has a reference designator unique in the list, a kind (one of: ${PART_KINDS.join(", ")}), a quantity, a typical size in millimetres, and the keys of the requirements it serves.`,
+        `Each part has a reference designator unique in the list, a kind (one of: ${PART_KIND_IDS.join(", ")}), a quantity, a typical size in millimetres, and the keys of the requirements it serves.`,
         electronics
           ? `For every electrical part list its pins by the names printed on a typical part, each with a role (one of: ${PIN_ROLES.join(", ")}). A resistor or capacitor has two passive pins named 1 and 2.`
           : "This product has no electronics: give no pins, and choose mechanical, printed and fastener kinds.",
@@ -197,7 +194,7 @@ const wireRow = z.object({
 });
 
 /** "U1.GPIO8" to ["U1", "GPIO8"]. The pin is everything after the first dot, so "U1.5V/VIN" works. */
-export function splitEnd(end: string): [string, string] | null {
+function splitEnd(end: string): [string, string] | null {
   const s = end.trim();
   const dot = s.indexOf(".");
   if (dot <= 0 || dot === s.length - 1) return null;

@@ -5,7 +5,7 @@
 // 873-890, 1998). It builds on the Wilson score interval of each rate, so it behaves at small counts
 // and at rates near 0% or 100%, where the plain "Wald" interval does not.
 
-export const Z95 = 1.959963984540054;
+const Z95 = 1.959963984540054;
 
 export type Interval = { low: number; high: number };
 

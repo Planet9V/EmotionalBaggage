@@ -2,45 +2,8 @@
 
 export { isStep, stepKeys } from "@/lib/domain";
 
-import { DEFAULT_STATUSES, STAGES, storeKey, type Section, type Stage } from "@/lib/menu";
-
-/** Every distinct store key in menu order, with the stage and section that owns it first. */
-export type StoreRef = { store: string; stage: Stage; section: Section };
-
-export const STORE_REFS: StoreRef[] = (() => {
-  const seen = new Set<string>();
-  const out: StoreRef[] = [];
-  for (const stage of STAGES) {
-    for (const section of stage.sections) {
-      const store = storeKey(stage, section);
-      if (seen.has(store)) continue;
-      seen.add(store);
-      out.push({ store, stage, section });
-    }
-  }
-  return out;
-})();
-
-const BY_STORE = new Map(STORE_REFS.map((r) => [r.store, r]));
-
-export const storeRef = (store: string) => BY_STORE.get(store) ?? null;
-
-/** "prototype/assembly" -> "Prototype / Assembly"; unknown stores are shown as stored. */
-export function storeLabel(store: string) {
-  const r = BY_STORE.get(store);
-  return r ? `${r.stage.label} / ${r.section.label}` : store;
-}
-
-export function storeHref(store: string) {
-  const r = BY_STORE.get(store);
-  return r ? `/s/${r.stage.key}/${r.section.key}` : null;
-}
-
-/** The statuses a row in this store can take; the current one is always included. */
-export function statusesFor(store: string, current?: string) {
-  const list = BY_STORE.get(store)?.section.statuses ?? DEFAULT_STATUSES;
-  return current && !list.includes(current) ? [...list, current] : list;
-}
+// The store lookups moved to src/lib/menuLookup.ts (one definition; the drafts and chat code use the same).
+export { STORE_REFS, statusesFor, storeHref, storeLabel, storeRef, type StoreRef } from "@/lib/menuLookup";
 
 /** A short slug from the title, made unique against the keys already in use. */
 export function uniqueKey(title: string, used: Set<string>) {

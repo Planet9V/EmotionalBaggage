@@ -19,7 +19,7 @@ const schema = z.object({
     .max(3),
 });
 
-export const generator: Generator<typeof schema> = {
+const generator: Generator<typeof schema> = {
   id: "positioning",
   label: "Draft the positioning",
   from: ["marketing/personas", "marketing/competitors", "research/claims", "prototype/tests", "design/requirements"],
@@ -45,7 +45,7 @@ export const generator: Generator<typeof schema> = {
   schema,
 };
 
-export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
+const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const proofById = new Map<number, { item: (typeof c.claims)[number]; ok: boolean }>();
   for (const i of c.claims) proofById.set(i.id, { item: i, ok: i.status === "verified" });

@@ -6,7 +6,7 @@
 // Ads, by the column names each shows. Where a layout is not verified against a real export file it
 // says so (`verified: false`), and in any case the mapping screen shows what was recognised and lets
 // the user correct it: a recognised layout is a suggestion, never a silent decision.
-import Papa from "papaparse";
+import { parseCsvText } from "@/lib/csv";
 import { dayFromNumber, dayNumber, isDay } from "./days";
 import { toMinor } from "@/lib/economics/money";
 
@@ -22,17 +22,17 @@ export const FIELD_LABEL: Record<Field, string> = {
   orders: "Orders",
   revenue: "Sales (revenue)",
 };
-/** A file can be imported with a date and at least one of these. */
-export const REQUIRED: Field[] = ["day"];
-export const MEASURES = ["spend", "impressions", "clicks", "orders", "revenue"] as const satisfies readonly Field[];
+const MEASURES = ["spend", "impressions", "clicks", "orders", "revenue"] as const satisfies readonly Field[];
 
 export type Mapping = Partial<Record<Field, string>>;
 
 export type Layout = {
   id: string;
   label: string;
-  /** the channel the mapping is remembered under */
+  /** the id in lib/channels/registry.ts; that channel must support "import" */
   channel: string;
+  /** the key a remembered column mapping is stored under (kept as first saved, so saved mappings still match) */
+  memoryKey: string;
   synonyms: Record<Field, string[]>;
   /** where the column names were read from */
   source: string;
@@ -45,7 +45,8 @@ export const LAYOUTS: Layout[] = [
   {
     id: "amazon-ads",
     label: "Amazon Ads report",
-    channel: "amazon-ads",
+    channel: "amazon",
+    memoryKey: "amazon-ads",
     synonyms: {
       day: ["Date", "Start Date"],
       campaign: ["Campaign Name"],
@@ -64,6 +65,7 @@ export const LAYOUTS: Layout[] = [
     id: "meta-ads",
     label: "Meta Ads Manager export (Facebook and Instagram)",
     channel: "meta",
+    memoryKey: "meta",
     synonyms: {
       day: ["Day", "Reporting starts"],
       campaign: ["Campaign name"],
@@ -82,6 +84,7 @@ export const LAYOUTS: Layout[] = [
     id: "google-ads",
     label: "Google Ads report",
     channel: "google",
+    memoryKey: "google",
     synonyms: {
       day: ["Day", "Date"],
       campaign: ["Campaign"],
@@ -100,6 +103,7 @@ export const LAYOUTS: Layout[] = [
     id: "generic",
     label: "Any other file",
     channel: "other",
+    memoryKey: "other",
     synonyms: {
       day: ["Date", "Day"],
       campaign: ["Campaign"],
@@ -133,10 +137,9 @@ const ALL_SYNONYMS = new Set(LAYOUTS.flatMap((l) => FIELDS.flatMap((f) => l.syno
 
 /** Reads CSV or tab-separated text. The header is the first of the first ten lines with at least three known column names. */
 export function parseReport(text: string): ParsedFile {
-  const clean = text.replace(/^﻿/, "");
-  const res = Papa.parse<string[]>(clean, { skipEmptyLines: "greedy", delimitersToGuess: [",", "\t", ";", "|"] });
-  const all = res.data.filter((r) => Array.isArray(r));
-  const errors = res.errors.map((e) => `Line ${(e.row ?? 0) + 1}: ${e.message}`);
+  const res = parseCsvText(text, { delimiters: [",", "\t", ";", "|"] });
+  const all = res.rows;
+  const errors = res.errors.map((e) => `Line ${e.row + 1}: ${e.message}`);
   let at = all.slice(0, 10).findIndex((r) => r.filter((c) => ALL_SYNONYMS.has(norm(c))).length >= 3);
   if (at < 0) at = 0;
   const headers = (all[at] ?? []).map((h) => h.trim());
@@ -261,7 +264,7 @@ export type ImportRecord = {
   revenue: number;
 };
 
-export type ImportProblem = { line: number; problem: string };
+type ImportProblem = { line: number; problem: string };
 
 export type ImportOptions = {
   currency: string;
@@ -350,9 +353,6 @@ export function applyMapping(headers: string[], rows: string[][], mapping: Mappi
   });
   return { records: [...out.values()].sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : a.creativeName.localeCompare(b.creativeName))), problems, rowsRead: rows.length, skipped, rowsUsed: used, campaigns: [...campaigns] };
 }
-
-/** Pasted lines are read as one more file: a header line and rows, tab or comma separated. */
-export const parsePaste = parseReport;
 
 /** Whole days covered by the records, first to last. */
 export function dateSpan(records: ImportRecord[]): { from: string; to: string; days: number } | null {

@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import { dayNumber, formatDay, inclusiveDays, todayUtc } from "@/lib/campaigns/days";
+import { dayNumber, formatDay, inclusiveDays } from "@/lib/campaigns/days";
 import { dueDate, type LaunchRow, type StepRow } from "@/lib/campaigns/launch";
 import type { Campaign } from "@/lib/campaigns/read";
 import { Card } from "@/components/ui/Card";
+import { todayUtc } from "@/lib/format";
 
 const local = (day: string) => {
   const [y, m, d] = day.split("-").map(Number);

@@ -40,7 +40,7 @@ const FIELDS: Record<CostKind, FieldSpec[]> = {
 /** Print kinds make no sense for a product with nothing printed. */
 const HIDDEN_FOR: Record<string, CostKind[]> = { physical: ["print-material", "print-time"] };
 
-export function kindsFor(productType: string): CostKind[] {
+function kindsFor(productType: string): CostKind[] {
   const hide = HIDDEN_FOR[productType] ?? [];
   return COST_KINDS.filter((k) => !hide.includes(k));
 }

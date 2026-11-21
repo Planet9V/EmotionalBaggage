@@ -11,12 +11,13 @@ import { statusTone } from "@/lib/statusTones";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
 import type { Item } from "@/lib/types";
-import { NotConnected, stamp } from "@/components/wizard/shared";
+import { NotConnected } from "@/components/wizard/shared";
 import type { ViewProps } from "./types";
-import { storeHref } from "@/lib/ai/drafts/shared";
+import { storeLink } from "@/lib/menuLookup";
 import { Textarea } from "@/components/ui/textarea";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { LoadingBlocks } from "@/components/ui/states";
+import { fmtStamp } from "@/lib/format";
 
 type Msg = { id: number | string; role: string; content: string; createdAt?: string; itemId?: number | null; item?: { section: string; title: string } };
 type Resp = { configured: boolean; model: string; messages: Msg[] };
@@ -127,9 +128,9 @@ export function ChallengeView({ project }: ViewProps) {
                     {m.content}
                   </div>
                   <div className="mt-1 flex items-center gap-3">
-                    <span className="font-mono text-[10px] text-muted">{mine ? "You" : "Reviewer"} {stamp(m.createdAt)}</span>
+                    <span className="font-mono text-[10px] text-muted">{mine ? "You" : "Reviewer"} {fmtStamp(m.createdAt)}</span>
                     {mine && m.item && typeof m.itemId === "number" && (
-                      <Link href={`${storeHref(m.item.section)}?item=${m.itemId}`} className="max-w-64 truncate text-xs text-link hover:underline">About: {m.item.title}</Link>
+                      <Link href={`${storeLink(m.item.section)}?item=${m.itemId}`} className="max-w-64 truncate text-xs text-link hover:underline">About: {m.item.title}</Link>
                     )}
                     {!mine && typeof m.id === "number" && (
                       saved.has(m.id) ? (

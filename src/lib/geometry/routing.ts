@@ -28,7 +28,7 @@ export type RouteWire = {
   toPin: string;
 };
 
-export type PinSource = "pin" | "face";
+type PinSource = "pin" | "face";
 export type PinPoint = { pos: V3; source: PinSource };
 
 type PinObject = { name?: unknown; position?: unknown; pos?: unknown };
@@ -100,9 +100,9 @@ export function routingSpace(parts: RoutePart[], wallMm = SHELL_DEFAULTS.wallMm)
   return { box: { min: lo.map((v) => v - pad) as V3, max: hi.map((v) => v + pad) as V3 }, source: "parts", shellId: null };
 }
 
-export type Skipped = { wireId: number; name: string; reason: string };
+type Skipped = { wireId: number; name: string; reason: string };
 
-export type PlannerRequest = {
+type PlannerRequest = {
   space: { min: V3; max: V3 };
   obstacles: { id: string; min: V3; max: V3 }[];
   nets: { id: string; terminals: { id: string; pos: V3 }[] }[];

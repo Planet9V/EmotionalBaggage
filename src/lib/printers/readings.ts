@@ -6,9 +6,10 @@
 import { q } from "@/lib/db";
 import { printerFamily } from "@/lib/admin/printerFamilies";
 import { PRINTER_COLS, type PrinterRow } from "@/lib/admin/printers";
-import { PrinterError, scrub, type Capabilities, type PrinterStatus } from "./adapter";
+import { PrinterError, type Capabilities, type PrinterStatus } from "./adapter";
 import { adapterForRow } from "./factory";
 import { findModelFor } from "./modelLookup";
+import { scrub } from "@/lib/secrets/scrub";
 
 export type PrinterReading = {
   printerId: number;

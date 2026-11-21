@@ -11,7 +11,7 @@ import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
 /** Statuses that need no check: the row is not being released to anything. */
 const FREE = new Set(["draft", "planned", "killed", "paused", "rejected"]);
 
-export async function linkedRows(projectId: string, data: Record<string, unknown>): Promise<ProofRow[]> {
+async function linkedRows(projectId: string, data: Record<string, unknown>): Promise<ProofRow[]> {
   const ids = (Array.isArray(data.proof) ? data.proof : []).map((p) => Number((p as { itemId?: unknown })?.itemId)).filter((n) => Number.isInteger(n) && n > 0);
   if (!ids.length) return [];
   const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND id = ANY($2)`, [projectId, ids])).map(toItem);
@@ -19,7 +19,7 @@ export async function linkedRows(projectId: string, data: Record<string, unknown
 }
 
 /** The flags for one row as it reads now. */
-export async function flagsFor(projectId: string, section: string, title: string, body: string, data: Record<string, unknown>): Promise<Flag[]> {
+async function flagsFor(projectId: string, section: string, title: string, body: string, data: Record<string, unknown>): Promise<Flag[]> {
   const fields = claimFields(section, title, body, data);
   if (!fields.length) return [];
   const links = await linkedRows(projectId, data);

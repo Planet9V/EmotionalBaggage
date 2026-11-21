@@ -20,7 +20,7 @@ export type Wire = {
 };
 
 /** What the planner's router left on a wire row. The length is the run itself, with no strip or slack allowance. */
-export type RoutedWire = {
+type RoutedWire = {
   lengthMm: number;
   cellMm: number | null;
   at: string;

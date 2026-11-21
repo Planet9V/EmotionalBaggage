@@ -21,6 +21,7 @@ import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
+import { fmtDate } from "@/lib/format";
 
 const STATE_TONE: Record<ProofState, "success" | "info" | "warning" | "danger"> = {
   "verified claim": "success",
@@ -200,7 +201,7 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
             {critique ? (
               <>
                 <p className="whitespace-pre-wrap text-sm text-primary">{critique.text}</p>
-                <p className="text-[11px] text-muted">By {critique.model}, {new Date(critique.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.</p>
+                <p className="text-[11px] text-muted">By {critique.model}, {fmtDate(critique.at, "short")}.</p>
                 {stale && <p role="status" className="text-xs text-warning">The words changed after this review. Ask again before approving.</p>}
               </>
             ) : (

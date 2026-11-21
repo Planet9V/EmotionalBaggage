@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { api, useFilesChanged } from "@/lib/client";
+import { fetchFileBytes } from "@/lib/http";
 import { messageOf, queries } from "@/lib/queries";
 import type { FileMeta } from "@/lib/types";
 import type { Part } from "@/lib/domain";
@@ -217,9 +218,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
     setBusy(`view:${f.id}`);
     setNotice(null);
     try {
-      const res = await fetch(`/api/files/${f.id}`);
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const parsed = parseStl(await res.arrayBuffer());
+      const parsed = parseStl(await fetchFileBytes(f.id));
       setLoaded({ key: `saved:${f.id}`, mesh: parsed.soup, name: f.name, format: parsed.encoding ?? "binary", triangles: parsed.triangles, extent: parsed.extent, bytes: null, savedId: f.id, show: true });
     } catch (e) {
       setNotice({ tone: "bad", text: `Could not open ${f.name}: ${(e as Error).message}` });

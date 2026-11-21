@@ -6,12 +6,11 @@ import { Input } from "@/components/ui/input";
 import { newId, offerSchema, type Offer } from "@/lib/sourcing/schemas";
 import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
-
-const today = () => new Date().toISOString().slice(0, 10);
+import { todayUtc } from "@/lib/format";
 
 /** Adds one offer the user typed. A price the user typed is theirs; one from research arrives as a draft instead. */
 export function OfferForm({ label, onAdd }: { label: string; onAdd: (o: Offer) => Promise<unknown> }) {
-  const [v, setV] = useState({ supplier: "", partNumber: "", url: "", price: "", packSize: "1", stock: "", leadTimeDays: "", checkedAt: today() });
+  const [v, setV] = useState({ supplier: "", partNumber: "", url: "", price: "", packSize: "1", stock: "", leadTimeDays: "", checkedAt: todayUtc() });
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV((x) => ({ ...x, [k]: e.target.value }));

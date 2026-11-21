@@ -377,7 +377,8 @@ describe("other sections' data shapes", () => {
     const put = (section: string, data: unknown) => addItem(json("POST", { section, title: "x", data }), ctx(P));
     expect((await put("marketing/pricing", { kind: "price", priceMinor: 2495, currency: "USD" })).status).toBe(201);
     expect((await put("marketing/pricing", { kind: "price", priceMinor: -5 })).status).toBe(400);
-    expect((await put("marketing/pricing", { kind: "channel", feePercent: 150 })).status).toBe(400);
+    // Pricing keeps no channel rows of its own any more (sales/channels holds the fees)
+    expect((await put("marketing/pricing", { kind: "channel", feePercent: 15 })).status).toBe(400);
     expect((await put("marketing/imagery", { shotKey: "hero-white", usedIn: ["a"], fileId: null })).status).toBe(201);
     expect((await put("marketing/imagery", { usedIn: "not a list" })).status).toBe(400);
     expect((await put("marketing/competitors", { kind: "product", basis: "made up" })).status).toBe(400);

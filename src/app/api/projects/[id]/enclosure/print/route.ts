@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
+import { meshToZUp } from "@/lib/geometry/zup";
 import { NextResponse } from "next/server";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { HttpError, requireProject, route } from "@/lib/api/route";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { withDefaults } from "@/lib/enclosure/validate";
-import { runGenerator } from "@/lib/enclosure/run";
+import { runEnclosureGenerator } from "@/lib/enclosure/run";
 import { parseStl, writeBinaryStl } from "@/lib/enclosure/stl";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { GENERATOR_KEYS, GENERATORS, type GeneratedMesh, type GeneratorKey } from "@/lib/enclosure/types";
@@ -14,17 +15,6 @@ import type { EnclosureChecked } from "@/lib/process/computed";
 import { changedDetail, itemDiff } from "@/lib/trace/changes";
 
 type Ctx = { params: Promise<{ id: string }> };
-
-/** The concept frame is Y up; a slicer reads STL as Z up (file x, y, z = scene x, minus z, y). */
-function toZUp(m: GeneratedMesh): GeneratedMesh {
-  const p = new Float32Array(m.positions.length);
-  for (let i = 0; i < p.length; i += 3) {
-    p[i] = m.positions[i];
-    p[i + 1] = -m.positions[i + 2];
-    p[i + 2] = m.positions[i + 1];
-  }
-  return { positions: p, indices: m.indices };
-}
 
 /**
  * "Send to printing" on the Enclosure page: runs the saved generator on the saved settings and today's
@@ -45,19 +35,19 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
   const errors = validateSpec(spec).filter((i) => i.severity === "error");
   if (errors.length) throw new HttpError(409, `The enclosure cannot be generated yet: ${errors.map((e) => e.message).join(" ")}`);
 
-  const r = await runGenerator(gen, spec);
+  const r = await runEnclosureGenerator(gen, spec);
   if (!r.ok) throw new HttpError(r.code === "failed" ? 502 : 503, `${GENERATORS[gen].label} could not build the enclosure: ${r.error}`);
   const failed = r.checks.filter((c) => !c.ok);
   const fingerprint = specFingerprint(spec);
   const pieces: { piece: "base" | "lid"; mesh: GeneratedMesh }[] = [
-    { piece: "base", mesh: toZUp(parseStl(Buffer.from(r.baseStl, "base64"))) },
-    { piece: "lid", mesh: toZUp(parseStl(Buffer.from(r.lidPrintStl, "base64"))) },
+    { piece: "base", mesh: meshToZUp(parseStl(Buffer.from(r.baseStl, "base64"))) },
+    { piece: "lid", mesh: meshToZUp(parseStl(Buffer.from(r.lidPrintStl, "base64"))) },
   ];
   const files = await tx(async (c) => {
     const out: { id: number; name: string; size: number }[] = [];
     for (const p of pieces) {
       const bytes = Buffer.from(writeBinaryStl(p.mesh, `enclosure ${p.piece}`));
-      const sha = createHash("sha256").update(bytes).digest("hex");
+      const sha = sha256(bytes);
       const name = `enclosure-${gen}-${p.piece}.stl`;
       const meta = { enclosure: true, piece: p.piece, generator: gen, fingerprint, zUp: true, checksFailed: failed.map((x) => x.label) };
       const res = await c.query<{ id: string }>(

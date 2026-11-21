@@ -7,7 +7,8 @@ import { analyze } from "@/lib/campaigns/analyze";
 import { channelMargins } from "@/lib/campaigns/margin";
 import { planOf, toCampaign } from "@/lib/campaigns/read";
 import { CAMPAIGN_STORE } from "@/lib/campaigns/schemas";
-import { currencyOf, economicsRowsOf, loadLinkClicks, loadResults, requireCampaign } from "@/lib/campaigns/server";
+import { economicsRowsOf, loadLinkClicks, loadResults, requireCampaign } from "@/lib/campaigns/server";
+import { currencyOf } from "@/lib/economics/currency";
 import { formatMoney } from "@/lib/economics/money";
 
 type Ctx = { params: Promise<{ id: string }> };

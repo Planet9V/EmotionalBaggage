@@ -23,10 +23,31 @@ export function toMajor(minor: number, currency: string): number {
   return minor / 10 ** minorDigits(currency);
 }
 
-/** "$12.50" or "12,50 €" as the browser's English formatting writes the currency. Negative amounts keep their minus sign. */
+/** "$12.50" or "12,50 €" as the browser's English formatting writes the currency. Negative amounts keep their minus sign. A code the runtime does not know is written after the number. */
 export function formatMoney(minor: number, currency: string): string {
   const digits = minorDigits(currency);
-  return new Intl.NumberFormat("en", { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(toMajor(minor, currency));
+  try {
+    return new Intl.NumberFormat("en", { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(toMajor(minor, currency));
+  } catch {
+    return `${toMajor(minor, currency).toFixed(digits)} ${currency}`;
+  }
+}
+
+/** An amount held in major units (a part's line cost, an offer's price) as fixed text with the currency's own decimals: "12.50", "1250" for yen, "1.234" for dinar. */
+export function majorText(major: number, currency: string): string {
+  return major.toFixed(minorDigits(currency));
+}
+
+/** A minor amount as the text of an input or a file column, "12.50". */
+export function toInputText(minor: number, currency: string): string {
+  return majorText(toMajor(minor, currency), currency);
+}
+
+/** Reads what a person types ("24.95", "$24.95", "1,200", "12 USD") as minor units of the currency, or null when it is empty, not a number, or negative. */
+export function parseMinor(input: string, currency = DEFAULT_CURRENCY): number | null {
+  const t = input.trim().replace(/[\s,]/g, "").replace(/^[^\d.\-]+|[^\d.]+$/g, "");
+  if (!/^\d*\.?\d*$/.test(t) || !/\d/.test(t)) return null;
+  return toMinor(Number(t), currency);
 }
 
 /** A percentage with at most one decimal: 38.5%, 40%. */

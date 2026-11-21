@@ -1,27 +1,25 @@
-// STL in and out. Binary STL is written; binary and ASCII are read (OpenSCAD writes ASCII). No dependencies.
+// STL in and out for the enclosure generators, which work on indexed meshes (Manifold and the checks
+// need shared vertices). The reading and writing are three's own STLLoader and STLExporter, which run
+// under Node without a DOM; what is written here is only the welding of vertices into an index, and
+// the 80-byte header name.
+import { BufferAttribute, BufferGeometry, Mesh } from "three";
+import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import type { GeneratedMesh } from "./types";
 
 /** Vertices are welded on exact position (rounded to 1e-4 mm) so the mesh is indexed, which Manifold and the checks need. */
 export function parseStl(data: ArrayBuffer | Uint8Array | string): GeneratedMesh {
-  const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data instanceof Uint8Array ? data : new Uint8Array(data);
-  const tri: number[] = [];
-  const head = new TextDecoder().decode(bytes.subarray(0, 5));
-  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const binary = bytes.byteLength >= 84 && 84 + dv.getUint32(80, true) * 50 === bytes.byteLength;
-  if (binary || head !== "solid") {
-    const n = dv.getUint32(80, true);
-    if (84 + n * 50 !== bytes.byteLength) throw new Error("The file is not a valid STL.");
-    for (let i = 0; i < n; i++) {
-      const o = 84 + i * 50 + 12;
-      for (let v = 0; v < 9; v++) tri.push(dv.getFloat32(o + v * 4, true));
-    }
-  } else {
-    const text = new TextDecoder().decode(bytes);
-    const re = /vertex\s+(\S+)\s+(\S+)\s+(\S+)/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(text))) tri.push(Number(m[1]), Number(m[2]), Number(m[3]));
-    if (tri.length % 9 !== 0) throw new Error("The ASCII STL has a facet without three vertices.");
+  let tri: ArrayLike<number>;
+  try {
+    const input = typeof data === "string" ? data : data instanceof Uint8Array ? (data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer) : data;
+    const geo = new STLLoader().parse(input);
+    const pos = geo.getAttribute("position");
+    tri = pos ? (pos.array as ArrayLike<number>) : [];
+    geo.dispose();
+  } catch {
+    throw new Error("The file is not a valid STL.");
   }
+  if (tri.length < 9 || tri.length % 9 !== 0) throw new Error("The file is not a valid STL.");
   const index = new Map<string, number>();
   const positions: number[] = [];
   const indices: number[] = [];
@@ -45,23 +43,15 @@ export function parseStl(data: ArrayBuffer | Uint8Array | string): GeneratedMesh
 }
 
 export function writeBinaryStl(m: GeneratedMesh, name = "enclosure"): Uint8Array {
-  const n = m.indices.length / 3;
-  const out = new Uint8Array(84 + n * 50);
-  const dv = new DataView(out.buffer);
+  const geo = new BufferGeometry();
+  geo.setAttribute("position", new BufferAttribute(m.positions, 3));
+  geo.setIndex(new BufferAttribute(m.indices, 1));
+  const view = new STLExporter().parse(new Mesh(geo), { binary: true }) as unknown as DataView;
+  geo.dispose();
+  const out = new Uint8Array(view.byteLength);
+  out.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+  out.fill(0, 0, 80);
   out.set(new TextEncoder().encode(name.slice(0, 79)), 0);
-  dv.setUint32(80, n, true);
-  for (let t = 0; t < n; t++) {
-    const p = [0, 1, 2].map((k) => m.indices[t * 3 + k] * 3);
-    const a = [0, 1, 2].map((k) => m.positions[p[0] + k]);
-    const b = [0, 1, 2].map((k) => m.positions[p[1] + k]);
-    const c = [0, 1, 2].map((k) => m.positions[p[2] + k]);
-    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-    const v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    const nx = u[1] * v[2] - u[2] * v[1], ny = u[2] * v[0] - u[0] * v[2], nz = u[0] * v[1] - u[1] * v[0];
-    const len = Math.hypot(nx, ny, nz) || 1;
-    const o = 84 + t * 50;
-    [nx / len, ny / len, nz / len, ...a, ...b, ...c].forEach((x, i) => dv.setFloat32(o + i * 4, x, true));
-  }
   return out;
 }
 

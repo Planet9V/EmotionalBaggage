@@ -26,7 +26,7 @@ const keyed = (rows: Item[] | undefined) => (rows ?? []).filter((i) => keyOf(i.d
 const allRows = (ctx: { rows: Record<string, Item[]> }) => Object.values(ctx.rows).flat();
 
 /** What Traceability lists as gaps, among the rows that can be linked by key. */
-export function linkGaps(rows: Item[]) {
+function linkGaps(rows: Item[]) {
   const t = traceOf(rows);
   return {
     untested: t.untested.filter((r) => keyOf(r.data)),

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireProject, route } from "@/lib/api/route";
 import { channelMargins } from "@/lib/campaigns/margin";
-import { currencyOf, economicsRowsOf } from "@/lib/campaigns/server";
+import { economicsRowsOf } from "@/lib/campaigns/server";
+import { currencyOf } from "@/lib/economics/currency";
 
 type Ctx = { params: Promise<{ id: string }> };
 

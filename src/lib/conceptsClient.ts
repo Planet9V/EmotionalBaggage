@@ -36,7 +36,7 @@ export type DeletedConcept = { concept: string; name: string; items: number; fil
 
 const enc = encodeURIComponent;
 
-export const conceptKeys = {
+const conceptKeys = {
   all: () => [...keys.concepts(), "all"] as const,
   one: (id: string) => [...keys.concepts(), "one", id] as const,
 };

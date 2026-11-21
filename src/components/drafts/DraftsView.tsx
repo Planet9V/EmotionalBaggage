@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useItems, useProject } from "@/lib/client";
-import { storeHref, type Draft } from "@/lib/ai/drafts/shared";
+import { type Draft } from "@/lib/ai/drafts/shared";
+import { storeLink } from "@/lib/menuLookup";
 import { messageOf } from "@/lib/queries";
 import type { Project } from "@/lib/types";
 import { draftQueries } from "./api";
@@ -73,7 +74,7 @@ function DraftsBody({ project }: { project: Project }) {
           group(drafts).map(([store, list]) => (
             <section key={store} aria-labelledby={`dr-${store}`} className="space-y-3">
               <h2 id={`dr-${store}`} className="text-base font-semibold tracking-tight text-primary">
-                <Link href={storeHref(store)} className="hover:text-link hover:underline">{storeLabelClient(store)}</Link>
+                <Link href={storeLink(store)} className="hover:text-link hover:underline">{storeLabelClient(store)}</Link>
                 <span className="ml-2 font-mono text-xs text-muted">{list.length}</span>
               </h2>
               {tab === "draft" ? <WaitingDrafts projectId={project.id} store={store} drafts={list} /> : <Decided projectId={project.id} store={store} drafts={list} />}

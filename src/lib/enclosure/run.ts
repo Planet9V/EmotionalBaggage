@@ -36,7 +36,7 @@ export function lidForPrinting(m: GeneratedMesh): GeneratedMesh {
   return { positions: p, indices: m.indices };
 }
 
-export async function runGenerator(key: GeneratorKey, spec: EnclosureSpec, opts: { timeoutSeconds?: number; plannerUrl?: string | null } = {}): Promise<GeneratorResult> {
+export async function runEnclosureGenerator(key: GeneratorKey, spec: EnclosureSpec, opts: { timeoutSeconds?: number; plannerUrl?: string | null } = {}): Promise<GeneratorResult> {
   try {
     const out = key === "casemaker" ? await generateCaseMaker(spec) : await generateYapp(spec, { timeoutSeconds: opts.timeoutSeconds, url: opts.plannerUrl });
     const checks = await computeChecks(spec, out);

@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 
 /** Defaults for every query: a short fresh window so moving between views reuses what is cached, one retry, no refetch on window focus. */
-export function makeQueryClient() {
+function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: { staleTime: 10_000, retry: 1, refetchOnWindowFocus: false },

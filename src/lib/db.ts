@@ -102,6 +102,7 @@ export function ready() {
       await seedOnce();
       await seedAdditions();
       await seedLinks();
+      await (await import("./economics/movePricingChannels")).movePricingChannels(pool());
       return vector;
     })().catch((e) => {
       g.__c2rReady = undefined;
@@ -331,12 +332,3 @@ export function toItem(r: ItemRow) {
 
 export const ITEM_COLS = "id, project_id, section, title, body, data, status, sort";
 
-export function slugify(s: string) {
-  return (
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 48) || "concept"
-  );
-}
