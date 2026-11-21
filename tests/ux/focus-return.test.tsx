@@ -18,7 +18,8 @@ function Opener({ named }: { named?: boolean }) {
       <button type="button" onClick={() => setOpen(true)}>Add row</button>
       <ul>{rows.map((r) => <li key={r}><button type="button" data-row-id={r}>{r}</button></li>)}</ul>
       <Modal open={open} onOpenChange={setOpen} title="New row" returnFocus={named ? () => document.querySelector<HTMLElement>('[data-row-id="r1"]') : undefined}>
-        <input aria-label="Title" />
+        {/* autoFocus takes focus before Radix's open event: the opener must still be known */}
+        <input aria-label="Title" autoFocus />
         <button type="button" onClick={() => { setRows(["r1"]); setOpen(false); }}>Save</button>
       </Modal>
     </>

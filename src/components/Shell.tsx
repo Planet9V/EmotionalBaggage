@@ -75,6 +75,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
         {/* The first thing a Tab reaches: past the sidebar, straight to the page (U8). */}
         <a
           href="#main"
+          // Focus the page directly: following the hash would also wake the deep-link focus, which can move focus again.
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById("main")?.focus();
+          }}
           className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-link focus:shadow-lg focus:ring-2 focus:ring-dutchOrange"
         >
           Skip to content

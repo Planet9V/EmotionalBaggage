@@ -36,6 +36,21 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * The last element that had focus outside every dialog. A field with autoFocus inside a dialog takes focus
+ * before Radix's open event, so `document.activeElement` at that moment is already inside; this is not.
+ */
+let lastOutside: HTMLElement | null = null;
+if (typeof document !== "undefined") {
+  const note = (e: Event) => {
+    const t = e.target;
+    if (t instanceof HTMLElement && t !== document.body && !t.closest('[role="dialog"], [role="alertdialog"], [role="menu"]')) lastOutside = t;
+  };
+  // "focus" in the capture phase as well as "focusin": some environments send only one of them.
+  document.addEventListener("focusin", note, true);
+  document.addEventListener("focus", note, true);
+}
+
 /** The element focused when a dialog opened, if it is still on the page and can take focus. */
 function usable(el: HTMLElement | null | undefined) {
   return el && el.isConnected && el !== document.body && !el.closest("[inert]") ? el : null;
@@ -63,19 +78,25 @@ const DialogContent = React.forwardRef<
       )}
       onOpenAutoFocus={(e) => {
         const a = document.activeElement;
-        opener.current = a instanceof HTMLElement && a !== document.body ? a : null;
+        // Inside this dialog already (a field with autoFocus): the opener is the last element outside every dialog.
+        // Inside another dialog (a confirm opened from a dialog): that element is the opener.
+        const box = e.target instanceof HTMLElement ? e.target : null;
+        const inside = a instanceof HTMLElement && !!box?.contains(a);
+        opener.current = a instanceof HTMLElement && a !== document.body && !inside ? a : lastOutside;
         onOpenAutoFocus?.(e);
       }}
       onCloseAutoFocus={(e) => {
         onCloseAutoFocus?.(e);
         if (e.defaultPrevented) return;
         const named = usable(returnFocus?.());
-        const back = named ?? usable(opener.current);
+        // Radix sends no open event when a field inside took focus first (autoFocus): then the last element
+        // focused outside every dialog is the opener.
+        const back = named ?? usable(opener.current) ?? usable(lastOutside);
         if (!back) return; // Radix's own handling: a DialogTrigger, if there is one
         e.preventDefault();
         back.focus();
         requestAnimationFrame(() => {
-          const later = usable(returnFocus?.()) ?? (document.activeElement === document.body ? usable(opener.current) : null);
+          const later = usable(returnFocus?.()) ?? (document.activeElement === document.body ? (usable(opener.current) ?? usable(lastOutside)) : null);
           if (later && later !== document.activeElement) later.focus();
         });
       }}

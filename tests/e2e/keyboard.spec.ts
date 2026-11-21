@@ -229,6 +229,7 @@ test.describe("skip link and theme", () => {
     expect(await focused(page)).toBe("Skip to content");
     await page.keyboard.press("Enter");
     await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
+    await page.waitForTimeout(300);
     // the next Tab is inside the page, not in the sidebar
     await page.keyboard.press("Tab");
     expect(await page.evaluate(() => !!document.activeElement?.closest("main"))).toBe(true);
