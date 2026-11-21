@@ -159,7 +159,7 @@ export function SchematicCanvas(p: Props) {
                   title={part.spec}
                 >
                   <GripVertical className="h-3.5 w-3.5 text-muted" aria-hidden />
-                  <span className="font-mono font-semibold text-dutchOrange">{part.ref}</span>
+                  <span className="font-mono font-semibold text-link">{part.ref}</span>
                   <span className="max-w-[160px] truncate text-secondary">{part.title}</span>
                   <button
                     type="button"

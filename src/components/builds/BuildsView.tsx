@@ -16,6 +16,7 @@ import type { Item } from "@/lib/types";
 import { BuildPanel } from "./BuildPanel";
 import { CriteriaChecklist } from "./CriteriaChecklist";
 import { Card } from "@/components/ui/Card";
+import { LoadingShape } from "@/components/ui/states";
 
 const day = (v: unknown) => (typeof v === "string" && v ? v : "");
 
@@ -50,11 +51,11 @@ export function BuildsView({ project, section, store }: ViewProps) {
 
   if (loading) {
     return (
-      <div className="grid gap-4 lg:grid-cols-2" role="status" aria-busy="true" aria-label="Loading builds">
+      <LoadingShape className="grid gap-4 lg:grid-cols-2" label="Loading builds">
         {[0, 1].map((i) => (
           <div key={i} className="h-56 animate-pulse rounded-xl bg-subtle" />
         ))}
-      </div>
+      </LoadingShape>
     );
   }
   if (error && !builds.length) {

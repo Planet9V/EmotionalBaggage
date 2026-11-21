@@ -18,6 +18,7 @@ import { ArchiveConceptDialog, DuplicateConceptDialog } from "./SmallDialogs";
 import { groupConcepts, sortConcepts, type SortKey } from "./model";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Card } from "@/components/ui/Card";
+import { LoadingShape } from "@/components/ui/states";
 
 /** The concept is kept as it was when the dialog opened, so a dialog whose concept has just gone can still close properly. */
 type Action = { kind: "edit" | "delete" | "duplicate" | "archive"; id: string; concept: Concept };
@@ -273,7 +274,7 @@ export function ConceptsView() {
 
 function LoadingRows() {
   return (
-    <div className="divide-y divide-hairline" aria-busy="true" aria-label="Loading concepts">
+    <LoadingShape className="divide-y divide-hairline" label="Loading concepts">
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex items-center gap-4 px-4 py-3">
           <div className="flex-1 space-y-1.5">
@@ -285,6 +286,6 @@ function LoadingRows() {
           <Skeleton className="h-8 w-16" />
         </div>
       ))}
-    </div>
+    </LoadingShape>
   );
 }

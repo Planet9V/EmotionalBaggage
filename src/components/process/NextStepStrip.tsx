@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useProject } from "@/lib/client";
 import { useProcess } from "@/lib/process/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingShape } from "@/components/ui/states";
 
 /** The compact next step under every page title, for the concept that is open. Nothing when no concept is open. */
 export function NextStepStrip() {
@@ -19,10 +20,10 @@ function Strip({ projectId }: { projectId: string }) {
 
   if (loading) {
     return (
-      <div className={frame} role="status" aria-busy="true" aria-label="Working out the next step">
+      <LoadingShape className={frame} label="Working out the next step">
         <Skeleton className="h-3.5 w-20" />
         <Skeleton className="h-3.5 w-72 max-w-full" />
-      </div>
+      </LoadingShape>
     );
   }
   if (error || !view) {

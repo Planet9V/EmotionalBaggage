@@ -106,9 +106,9 @@ function DecisionCard({ data }: NodeProps<CardNode>) {
           className={`absolute -right-3 top-1/2 flex h-6 min-w-6 -translate-y-1/2 items-center justify-center rounded-full border px-1.5 font-mono text-[10.5px] ${
             open ? "border-hairline bg-surface text-muted" : "border-dutchOrange/40 bg-surface text-link"
           }`}
-          aria-label={open ? "Expanded" : `${more} more`}
         >
-          {open ? "–" : `+${more}`}
+          <span aria-hidden>{open ? "–" : `+${more}`}</span>
+          <span className="sr-only">{open ? "Expanded" : `${more} more`}</span>
         </span>
       )}
       <Handle type="source" position={Position.Right} className={hidden} />

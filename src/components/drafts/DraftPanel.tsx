@@ -7,6 +7,7 @@ import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoadError, LoadingBlocks } from "@/components/ui/states";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
@@ -182,12 +183,9 @@ export function DraftPanel({
             <section aria-label="Waiting for review" className="space-y-3">
               <h2 className="text-base font-semibold tracking-tight text-primary">Waiting for review</h2>
               {waiting.isPending ? (
-                <div role="status" aria-label="Loading drafts" className="space-y-2"><Skeleton className="h-24 w-full bg-subtle" /><Skeleton className="h-24 w-full bg-subtle" /></div>
+                <LoadingBlocks rows={2} label="Loading drafts" />
               ) : waiting.error ? (
-                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-                  <span>{messageOf(waiting.error)}</span>
-                  <Button variant="outline" size="sm" onClick={() => void waiting.refetch()}>Try again</Button>
-                </div>
+                <LoadError what="The drafts" message={messageOf(waiting.error)} onRetry={() => void waiting.refetch()} />
               ) : drafts.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-hairline px-4 py-5 text-sm text-secondary">No drafts are waiting. Drafts from a run appear here for you to approve, edit or reject.</p>
               ) : (

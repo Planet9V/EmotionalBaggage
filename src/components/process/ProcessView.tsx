@@ -10,6 +10,7 @@ import { productType } from "@/lib/productTypes";
 import { NextStepCard } from "./NextStepCard";
 import { ProcessStepper } from "./ProcessStepper";
 import { fmtDateTime } from "@/lib/format";
+import { LoadError, LoadingShape } from "@/components/ui/states";
 
 /** The Process page: the stages, their gates, override and advance, and the history of gate and stage changes. */
 export function ProcessPage() {
@@ -52,14 +53,11 @@ function Body({ projectId, name }: { projectId: string; name: string }) {
         <div className="min-w-0 space-y-8">
           <NextStepCard projectId={projectId} showGate={false} />
           {loading ? (
-            <div className="space-y-4" aria-busy="true" aria-label="Loading the stages">
+            <LoadingShape className="space-y-4" label="Loading the stages">
               {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-            </div>
+            </LoadingShape>
           ) : error || !view ? (
-            <div className="rounded-xl border border-hairline bg-danger-soft p-4 text-sm text-danger" role="alert">
-              <p>The stages could not be loaded: {error || "no answer"}</p>
-              <button type="button" onClick={retry} className="mt-2 font-medium underline">Try again</button>
-            </div>
+            <LoadError what="The stages" message={error || "no answer"} onRetry={retry} />
           ) : (
             <ProcessStepper projectId={projectId} view={view} />
           )}

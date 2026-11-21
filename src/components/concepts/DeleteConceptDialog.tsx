@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingShape } from "@/components/ui/states";
 import { messageOf, queries } from "@/lib/queries";
 import { exportHref, useDeleteConcept, type Concept, type DeletedConcept } from "@/lib/conceptsClient";
 import { ConceptDialog, FormError, fieldLabel } from "./ConceptDialog";
@@ -52,7 +53,7 @@ export function DeleteConceptDialog({
 
   const count = (q: { isPending: boolean; error: unknown }, n: number | undefined, one: string, many?: string) =>
     q.isPending ? (
-      <Skeleton className="inline-block h-3.5 w-20 align-middle" aria-label={`Counting ${many ?? `${one}s`}`} />
+      <LoadingShape inline label={`Counting ${many ?? `${one}s`}`}><Skeleton className="inline-block h-3.5 w-20 align-middle" /></LoadingShape>
     ) : q.error ? (
       <span>{many ?? `${one}s`}: could not be counted ({messageOf(q.error)})</span>
     ) : (

@@ -24,7 +24,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
             aria-current={d.slug === doc.slug ? "page" : undefined}
             className={
               d.slug === doc.slug
-                ? "rounded-full border border-dutchOrange/40 bg-dutchOrange/10 px-3 py-1 font-medium text-dutchOrange"
+                ? "rounded-full border border-link bg-[var(--accent-orange-subtle)] px-3 py-1 font-medium text-link"
                 : "rounded-full border border-hairline px-3 py-1 text-secondary hover:text-primary"
             }
           >

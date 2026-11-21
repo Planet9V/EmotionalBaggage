@@ -13,7 +13,7 @@ import { traceOf } from "@/lib/trace/coverage";
 import { keyOf, listOf } from "@/lib/trace/spec";
 import type { Item, Project } from "@/lib/types";
 import { Coverage } from "./Coverage";
-import { NoConcept } from "@/components/ui/states";
+import { NoConcept, LoadingShape } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
 export function TraceabilityView() {
@@ -63,10 +63,10 @@ function TraceBody({ project }: { project: Project }) {
 
   if (loading) {
     return (
-      <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading traceability">
+      <LoadingShape className="space-y-3" label="Loading traceability">
         <div className="h-48 animate-pulse rounded-xl bg-subtle" />
         <div className="h-24 animate-pulse rounded-xl bg-subtle" />
-      </div>
+      </LoadingShape>
     );
   }
   if (error && !items.length) {

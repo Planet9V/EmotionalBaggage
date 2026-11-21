@@ -67,7 +67,7 @@ export function ReviewsView({ project, section, store }: ViewProps) {
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="flex flex-wrap items-center gap-2">
                     <StatusBadge tone="neutral">{r.data.kind === "question" ? "question" : "review"}</StatusBadge>
-                    {typeof r.data.rating === "number" ? <span className="font-mono text-primary" aria-label={`${r.data.rating} of 5 stars`}>{r.data.rating}/5</span> : null}
+                    {typeof r.data.rating === "number" ? <span className="font-mono text-primary"><span aria-hidden>{r.data.rating}/5</span><span className="sr-only">{`${r.data.rating} of 5 stars`}</span></span> : null}
                     {r.data.source ? <span className="text-secondary">{String(r.data.source)}</span> : null}
                     {r.data.date ? <span className="font-mono text-muted">{String(r.data.date)}</span> : null}
                     {r.data.productVersion ? <span className="text-muted">version {String(r.data.productVersion)}</span> : null}

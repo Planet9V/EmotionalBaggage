@@ -10,7 +10,7 @@ import { useActivity } from "@/lib/trace/client";
 import type { Project } from "@/lib/types";
 import { HistoryEntryView } from "./HistoryEntryView";
 import { NativeSelect } from "@/components/ui/native-select";
-import { NoConcept } from "@/components/ui/states";
+import { NoConcept, LoadingShape } from "@/components/ui/states";
 
 const KINDS = [
   ["item", "Rows added, edited or removed"],
@@ -82,11 +82,11 @@ function ActivityBody({ project }: { project: Project }) {
       </div>
 
       {a.loading ? (
-        <div className="space-y-2" role="status" aria-busy="true" aria-label="Loading activity">
+        <LoadingShape className="space-y-2" label="Loading activity">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl bg-subtle" />
           ))}
-        </div>
+        </LoadingShape>
       ) : a.error && !a.entries.length ? (
         <div role="alert" className="rounded-xl border border-hairline bg-danger-soft p-4">
           <p className="text-sm font-medium text-danger">The activity could not be loaded.</p>

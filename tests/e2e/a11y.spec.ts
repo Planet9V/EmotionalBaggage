@@ -37,22 +37,29 @@ test.describe("signed out", () => {
   });
 });
 
+// Each theme's pages are audited in CHUNKS tests, page k going to test k % CHUNKS, so every page is audited
+// once per theme and no single test runs long enough to hit its timeout on a slow machine.
+const CHUNKS = 6;
+
 for (const theme of ["light", "dark"] as const) {
-  test(`every page has no critical or serious accessibility violations in the ${theme} theme`, async ({ page }, info) => {
-    test.setTimeout(600_000);
-    const { routes } = await collectRoutes(page);
-    expect(routes.length, "the page list is not empty").toBeGreaterThan(30);
-    if (theme === "dark") {
-      await page.goto("/");
-      await page.locator("aside").getByRole("button", { name: "Dark theme" }).click();
-      await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
-    }
-    const problems: string[] = [];
-    for (const path of routes) {
-      const f = await test.step(`${theme} ${path}`, () => audit(page, path, info));
-      problems.push(...f.critical, ...f.serious);
-    }
-    info.annotations.push({ type: "pages", description: `${routes.length} pages audited in the ${theme} theme` });
-    expect(problems, `${problems.length} accessibility violation(s) in the ${theme} theme:\n  ${problems.join("\n  ")}\n`).toEqual([]);
-  });
+  for (let chunk = 0; chunk < CHUNKS; chunk++) {
+    test(`every page has no critical or serious accessibility violations in the ${theme} theme (part ${chunk + 1} of ${CHUNKS})`, async ({ page }, info) => {
+      test.setTimeout(300_000);
+      const { routes } = await collectRoutes(page);
+      expect(routes.length, "the page list is not empty").toBeGreaterThan(30);
+      const mine = routes.filter((_, k) => k % CHUNKS === chunk);
+      if (theme === "dark") {
+        await page.goto("/");
+        await page.locator("aside").getByRole("button", { name: "Dark theme" }).click();
+        await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
+      }
+      const problems: string[] = [];
+      for (const path of mine) {
+        const f = await test.step(`${theme} ${path}`, () => audit(page, path, info));
+        problems.push(...f.critical, ...f.serious);
+      }
+      info.annotations.push({ type: "pages", description: `${mine.length} of ${routes.length} pages audited in the ${theme} theme` });
+      expect(problems, `${problems.length} accessibility violation(s) in the ${theme} theme:\n  ${problems.join("\n  ")}\n`).toEqual([]);
+    });
+  }
 }

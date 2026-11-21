@@ -107,7 +107,7 @@ export function PricingView({ project, store }: ViewProps) {
             </>
           )}
           <p className="text-xs text-muted">From <Link className="text-link underline" href="/s/production/economics">Unit economics</Link>: parts with their price breaks, plus labour, packaging, print and other cost lines, at the first planned batch size (1 when none is planned). Every amount is in {currency}, the concept&apos;s currency, which is set on Unit economics.</p>
-          {econ.error && <p role="alert" className="text-sm text-danger">The unit cost could not be loaded: {econ.error}</p>}
+          {econ.error && <ErrorLine>The unit cost could not be loaded: {econ.error}</ErrorLine>}
         </Card>
       </section>
 

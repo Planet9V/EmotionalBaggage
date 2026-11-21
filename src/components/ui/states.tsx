@@ -10,10 +10,24 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Loading in a shape of its own (a board, a chat, a list of rows): the caller's grey blocks inside the one
+ * announced region. The only way to label a loading placeholder: a plain div or span may not carry an
+ * aria-label (axe aria-prohibited-attr), and Skeleton refuses one.
+ */
+export function LoadingShape({ label, className, inline = false, children }: { label: string; className?: string; inline?: boolean; children: ReactNode }) {
+  const Tag = inline ? "span" : "div";
+  return (
+    <Tag role="status" aria-busy="true" aria-label={label} className={className}>
+      {children}
+    </Tag>
+  );
+}
+
 /** Loading: grey blocks in the shape of what is coming. */
 export function LoadingBlocks({ rows = 3, label }: { rows?: number; label: string }) {
   return (
-    <div role="status" aria-label={label} className="space-y-3">
+    <LoadingShape label={label} className="space-y-3">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="rounded-2xl border border-hairline bg-surface p-5">
           <Skeleton className="h-4 w-48 bg-subtle" />
@@ -21,7 +35,7 @@ export function LoadingBlocks({ rows = 3, label }: { rows?: number; label: strin
           <Skeleton className="mt-4 h-9 w-full max-w-md bg-subtle" />
         </div>
       ))}
-    </div>
+    </LoadingShape>
   );
 }
 

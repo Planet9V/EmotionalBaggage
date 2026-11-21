@@ -295,13 +295,12 @@ function FieldEditor({ spec, value, onChange, id }: { spec: FieldSpec; value: st
   const text = typeof value === "string" ? value : "";
   const long = (spec.max ?? 0) > 120;
   return (
-    <div className={long ? "md:col-span-2" : undefined}>
-      <label htmlFor={id} className="mb-1 block text-xs font-medium text-secondary">{label}</label>
+    <Field id={id} label={label} className={long ? "md:col-span-2" : undefined}>
       {long ? <Textarea id={id} rows={3} value={text} onChange={(e) => onChange(e.target.value)} /> : <Input id={id} value={text} onChange={(e) => onChange(e.target.value)} />}
       <div className="mt-0.5 flex justify-between gap-2">
         <span className="text-[11px] text-muted">{spec.note ?? ""}</span>
         {spec.kind !== "url" && <Count n={measure(text, spec.xWeight)} max={spec.max} enforce={spec.enforce} shown={spec.shown} />}
       </div>
-    </div>
+    </Field>
   );
 }

@@ -169,7 +169,7 @@ function PlanBody({ project }: { project: Project }) {
                       const n = byKey.get(id);
                       return (
                         <li key={id} className="flex items-baseline gap-2 text-sm">
-                          <span className="w-5 shrink-0 font-mono text-[10px] text-dutchOrange">{i + 1}</span>
+                          <span className="w-5 shrink-0 font-mono text-[10px] text-link">{i + 1}</span>
                           <button type="button" onClick={() => setSelected(id)} className="min-w-0 text-left text-secondary hover:text-link">
                             {n?.title ?? id}
                           </button>

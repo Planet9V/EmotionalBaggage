@@ -9,6 +9,7 @@ import { api } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
+import { LoadError, LoadingBlocks } from "@/components/ui/states";
 
 export function BuildPrintJobs({ projectId, buildKey }: { projectId: string; buildKey: string }) {
   const q = useQuery({
@@ -22,9 +23,9 @@ export function BuildPrintJobs({ projectId, buildKey }: { projectId: string; bui
       {!buildKey ? (
         <p className="text-xs text-muted">The build has no key yet, so no print job can name it.</p>
       ) : q.isPending ? (
-        <p className="text-xs text-muted" role="status">Loading the print jobs.</p>
+        <LoadingBlocks rows={1} label="Loading the print jobs" />
       ) : q.error ? (
-        <p role="alert" className="text-xs text-danger">The print jobs could not be loaded: {messageOf(q.error)} <button type="button" className="underline" onClick={() => void q.refetch()}>Try again</button></p>
+        <LoadError what="The print jobs" message={messageOf(q.error)} onRetry={() => void q.refetch()} />
       ) : !q.data.length ? (
         <p className="text-xs text-muted">None yet. Choose this build when you make a job on <Link className="text-link underline" href="/s/prototype/printing">3D printing</Link>.</p>
       ) : (

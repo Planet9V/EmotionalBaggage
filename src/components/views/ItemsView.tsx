@@ -19,6 +19,7 @@ import { CLAIMS_SECTION } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
+import { LoadingShape } from "@/components/ui/states";
 
 type Layout = "board" | "table";
 const layoutListeners = new Set<() => void>();
@@ -100,7 +101,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
 
   if (loading) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label={`Loading ${section.label}`}>
+      <LoadingShape className="space-y-4" label={`Loading ${section.label}`}>
         <div className="flex gap-2">
           <div className="h-9 w-64 animate-pulse rounded-md bg-subtle" />
           <div className="h-9 w-24 animate-pulse rounded-md bg-subtle" />
@@ -115,7 +116,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
             </div>
           ))}
         </div>
-      </div>
+      </LoadingShape>
     );
   }
 

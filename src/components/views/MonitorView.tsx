@@ -23,6 +23,7 @@ import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
+import { fmtDateTime } from "@/lib/format";
 
 const today = () => {
   const d = new Date();
@@ -78,7 +79,7 @@ function AmazonPanel({ projectId }: { projectId: string }) {
               <RefreshCw className={`h-4 w-4 ${sync.isPending ? "motion-safe:animate-spin" : ""}`} aria-hidden /> {sync.isPending ? "Syncing" : "Sync now"}
             </Button>
             <p className="text-xs text-muted">
-              {a.lastSyncAt ? `Last synced ${new Date(a.lastSyncAt).toLocaleString()}.` : "Never synced."}
+              {a.lastSyncAt ? `Last synced ${fmtDateTime(a.lastSyncAt)}.` : "Never synced."}
               {stale ? " That is more than a day ago." : ""} There is no automatic sync.
             </p>
           </div>

@@ -69,7 +69,7 @@ export function StartSchematic({
                   className="inline-flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2 py-1 text-xs transition-colors duration-150 hover:border-dutchOrange/40"
                   title={`Place ${p.ref} and name its first pin`}
                 >
-                  <span className="font-mono font-semibold text-dutchOrange">{p.ref}</span>
+                  <span className="font-mono font-semibold text-link">{p.ref}</span>
                   <span className="max-w-[160px] truncate text-secondary">{p.title}</span>
                 </button>
               </li>

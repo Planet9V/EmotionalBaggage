@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { UIMessage } from "ai";
 import { ArrowDownIcon, DownloadIcon } from "lucide-react";
 import type { ComponentProps } from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
@@ -26,13 +26,27 @@ export type ConversationContentProps = ComponentProps<
 
 export const ConversationContent = ({
   className,
+  scrollLabel = "Messages",
   ...props
-}: ConversationContentProps) => (
-  <StickToBottom.Content
-    className={cn("flex flex-col gap-8 p-4", className)}
-    {...props}
-  />
-);
+}: ConversationContentProps & { scrollLabel?: string }) => {
+  // The scroller is the library's own div, so it is made reachable by keyboard here: a region with a
+  // label that takes focus, so the arrow keys and Page Down scroll it (axe scrollable-region-focusable).
+  const { scrollRef } = useStickToBottomContext();
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.tabIndex = 0;
+    el.setAttribute("role", "region");
+    el.setAttribute("aria-label", scrollLabel);
+    el.classList.add("focus-visible:outline-hidden", "focus-visible:ring-2", "focus-visible:ring-inset", "focus-visible:ring-dutchOrange");
+  }, [scrollRef, scrollLabel]);
+  return (
+    <StickToBottom.Content
+      className={cn("flex flex-col gap-8 p-4", className)}
+      {...props}
+    />
+  );
+};
 
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;

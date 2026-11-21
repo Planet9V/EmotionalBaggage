@@ -17,6 +17,7 @@ import { ChatList } from "./ChatList";
 import { SetupNotice } from "./SetupNotice";
 import { EmptyThread, QuestionBox } from "./parts";
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
+import { LoadingShape } from "@/components/ui/states";
 
 const BLURB = "Ask about this concept. Answers come only from its rows and saved research, with numbered sources.";
 
@@ -208,20 +209,32 @@ function DraftThread({ project, suggestions, disabled, onAsk }: { project: Proje
 
 function ScreenSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1" aria-busy="true" aria-label="Loading the chats">
+    <LoadingShape className="flex min-h-0 flex-1" label="Loading the chats">
       <div className="hidden w-64 shrink-0 space-y-2 border-r border-hairline p-4 xl:block">
         {[0, 1, 2, 3].map((k) => (
           <Skeleton key={k} className="h-10 w-full" />
         ))}
       </div>
-      <ThreadSkeleton />
-    </div>
+      <div className={THREAD}>
+        <ThreadBlocks />
+      </div>
+    </LoadingShape>
   );
 }
 
+const THREAD = "mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-6";
+
 function ThreadSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-6" aria-busy="true" aria-label="Loading the conversation">
+    <LoadingShape className={THREAD} label="Loading the conversation">
+      <ThreadBlocks />
+    </LoadingShape>
+  );
+}
+
+function ThreadBlocks() {
+  return (
+    <>
       <Skeleton className="ml-auto h-10 w-2/3" />
       <div className="space-y-2">
         <Skeleton className="h-4 w-full" />
@@ -233,6 +246,6 @@ function ThreadSkeleton() {
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
       </div>
-    </div>
+    </>
   );
 }

@@ -115,7 +115,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                     {grip} {ch}
                   </span>
                   {ch === "X" && (
-                    <span className={cn("font-mono text-[11px]", n > X_LIMIT ? "text-danger" : "text-muted")} aria-label={`${n} of ${X_LIMIT} characters`}>{n}/{X_LIMIT}</span>
+                    <span className={cn("font-mono text-[11px]", n > X_LIMIT ? "text-danger" : "text-muted")} ><span aria-hidden>{n}/{X_LIMIT}</span><span className="sr-only">{`${n} of ${X_LIMIT} characters`}</span></span>
                   )}
                 </div>
                 <p className="whitespace-pre-wrap wrap-break-word text-sm text-primary">{p.body || p.title}</p>

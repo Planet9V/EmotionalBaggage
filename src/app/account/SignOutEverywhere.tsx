@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/http";
+import { Panel } from "@/components/ui/panel";
+import { ErrorLine } from "@/components/ui/states";
 
 /**
  * Ends every session of this account, in every browser, this one included (robustness review S9). For a
@@ -24,20 +26,16 @@ export function SignOutEverywhere() {
     }
   };
   return (
-    <section aria-labelledby="everywhere-h" className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
-      <h2 id="everywhere-h" className="text-base font-semibold tracking-tight text-primary">Sign out everywhere</h2>
-      <p className="text-sm text-secondary">
-        Ends every session of this account, in every browser, this one included. A session also ends 30 days after it was last used, and
-        90 days after signing in however often it is used.
-      </p>
-      {error ? (
-        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
-      <Button type="button" variant="outline" onClick={() => void go()} disabled={busy}>
-        {busy ? "Signing out…" : "Sign out everywhere"}
-      </Button>
-    </section>
+    <Panel
+      title="Sign out everywhere"
+      description="Ends every session of this account, in every browser, this one included. A session also ends 30 days after it was last used, and 90 days after signing in however often it is used."
+    >
+      <div className="space-y-3">
+        {error ? <ErrorLine>{error}</ErrorLine> : null}
+        <Button type="button" variant="outline" onClick={() => void go()} disabled={busy}>
+          {busy ? "Signing out…" : "Sign out everywhere"}
+        </Button>
+      </div>
+    </Panel>
   );
 }

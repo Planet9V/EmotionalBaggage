@@ -8,6 +8,9 @@ import { api } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { ReportSection } from "@/lib/report/sections";
 import type { Block } from "./report";
+import { LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export function useReportSections(projectId: string) {
   return useQuery({
@@ -36,8 +39,8 @@ export function sectionsToBlocks(sections: ReportSection[] | undefined, error = 
 /** The overview's list: each section's title, its sentences and its tables. */
 export function ComputedSections({ projectId }: { projectId: string }) {
   const q = useReportSections(projectId);
-  if (q.isPending) return <p className="text-sm text-muted" role="status">Working out the economics, checks and verdicts.</p>;
-  if (q.error) return <p role="alert" className="text-sm text-danger">The computed sections could not be loaded: {messageOf(q.error)} <button type="button" className="underline" onClick={() => void q.refetch()}>Try again</button></p>;
+  if (q.isPending) return <LoadingBlocks rows={2} label="Working out the economics, checks and verdicts" />;
+  if (q.error) return <LoadError what="The computed sections" message={messageOf(q.error)} onRetry={() => void q.refetch()} />;
   if (!q.data.length) return null;
   return (
     <section aria-labelledby="computed-h" className="space-y-5">
@@ -49,18 +52,18 @@ export function ComputedSections({ projectId }: { projectId: string }) {
             b.t === "p" ? (
               <p key={i} className={`max-w-4xl text-sm ${b.muted ? "text-muted" : "text-secondary"}`}>{b.text}</p>
             ) : (
-              <div key={i} className="overflow-x-auto rounded-xl border border-hairline">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b border-hairline text-left text-xs text-secondary">{b.head.map((h, j) => <th key={j} scope="col" className="px-3 py-2 font-medium">{h}</th>)}</tr></thead>
-                  <tbody>
+              <Card key={i} variant="flat" className="overflow-hidden">
+                <Table aria-label={`${s.title}, scrolls sideways`}>
+                  <TableHeader><TableRow className="hover:bg-transparent">{b.head.map((h, j) => <TableHead key={j} scope="col">{h}</TableHead>)}</TableRow></TableHeader>
+                  <TableBody>
                     {b.rows.slice(0, 12).map((r, ri) => (
-                      <tr key={ri} className="border-b border-hairline last:border-0">{r.map((c, ci) => <td key={ci} className={`px-3 py-1.5 align-top ${(b.mono ?? []).includes(ci) ? "font-mono text-xs" : ""} ${ci === 0 ? "text-primary" : "text-secondary"}`}>{c}</td>)}</tr>
+                      <TableRow key={ri}>{r.map((c, ci) => <TableCell key={ci} className={`py-1.5 align-top ${(b.mono ?? []).includes(ci) ? "font-mono text-xs" : ""} ${ci === 0 ? "text-primary" : ""}`}>{c}</TableCell>)}</TableRow>
                     ))}
-                    {b.foot && <tr className="font-semibold text-primary">{b.foot.map((c, ci) => <td key={ci} className="px-3 py-1.5">{c}</td>)}</tr>}
-                  </tbody>
-                </table>
-                {b.rows.length > 12 && <p className="px-3 py-1.5 text-xs text-muted">{b.rows.length - 12} more rows in the report.</p>}
-              </div>
+                    {b.foot && <TableRow className="font-semibold hover:bg-transparent">{b.foot.map((c, ci) => <TableCell key={ci} className="py-1.5 text-primary">{c}</TableCell>)}</TableRow>}
+                  </TableBody>
+                </Table>
+                {b.rows.length > 12 && <p className="border-t border-hairline px-3 py-1.5 text-xs text-muted">{b.rows.length - 12} more rows in the report.</p>}
+              </Card>
             )
           )}
         </div>

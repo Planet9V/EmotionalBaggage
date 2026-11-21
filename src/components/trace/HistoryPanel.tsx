@@ -6,6 +6,7 @@ import { useItemHistory, historyKeys } from "@/lib/trace/client";
 import { restoreBody, type HistoryChange } from "@/lib/trace/history";
 import type { Item } from "@/lib/types";
 import { HistoryEntryView } from "./HistoryEntryView";
+import { LoadingShape } from "@/components/ui/states";
 
 /**
  * The History tab of the row editor: this row's changes, newest first. "Restore this value" is an
@@ -22,11 +23,11 @@ export function HistoryPanel({ item, onRestore }: { item: Item; onRestore: (id: 
 
   if (h.loading) {
     return (
-      <div className="space-y-2 px-5 py-4" role="status" aria-busy="true" aria-label="Loading history">
+      <LoadingShape className="space-y-2 px-5 py-4" label="Loading history">
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-16 animate-pulse rounded-xl bg-subtle" />
         ))}
-      </div>
+      </LoadingShape>
     );
   }
   if (h.error && !h.entries.length) {

@@ -24,8 +24,9 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
  data-step={step.n}>
       <div className="flex items-start gap-4">
         <span aria-hidden className="hidden h-4 w-4 shrink-0 border border-black print:mt-1 print:inline-block" />
-        <span className="w-8 shrink-0 pt-0.5 font-mono text-sm text-link" aria-label={`Step ${step.n}`}>
-          {String(step.n).padStart(2, "0")}
+        <span className="w-8 shrink-0 pt-0.5 font-mono text-sm text-link">
+          <span aria-hidden>{String(step.n).padStart(2, "0")}</span>
+          <span className="sr-only">Step {step.n}</span>
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -43,7 +44,7 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
           </div>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-secondary">
             <End refId={w.from} pin={w.fromPin} parts={parts} />
-            <span aria-label="to" className="text-muted">→</span>
+            <span aria-hidden className="text-muted">→</span><span className="sr-only">to</span>
             <End refId={w.to} pin={w.toPin} parts={parts} />
           </p>
           {w.note && <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-primary">{w.note}</p>}

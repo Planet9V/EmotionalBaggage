@@ -51,7 +51,7 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
   return (
     <div className={`rounded-xl border bg-surface text-left shadow-xs transition-[border-color,box-shadow] duration-150 ${ring}`} style={{ width: NODE_W }}>
       <div className="flex flex-col justify-center border-b border-hairline px-3" style={{ height: HEADER_H }}>
-        <span className="font-mono text-[11px] font-semibold leading-tight text-dutchOrange">{data.ref}</span>
+        <span className="font-mono text-[11px] font-semibold leading-tight text-link">{data.ref}</span>
         <span className={`truncate text-[12px] leading-snug ${data.ghost ? "text-danger" : "text-primary"}`} title={data.title}>
           {data.title}
         </span>

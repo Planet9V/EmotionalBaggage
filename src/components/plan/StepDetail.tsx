@@ -55,7 +55,7 @@ export function StepDetail({
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">
             Step {step.id}
-            {step.critical && <span className="ml-2 text-dutchOrange">critical path</span>}
+            {step.critical && <span className="ml-2 text-link">critical path</span>}
           </p>
           <h2 className="mt-1 text-base font-semibold tracking-tight text-primary">{step.title}</h2>
         </div>

@@ -18,7 +18,7 @@ import { boxMesh, bounds, cylinderMesh, lidMesh, shellDims, trayMesh, type Mesh,
 import { parseStl } from "@/lib/geometry/meshFile";
 import { bodies3mf, soupToStl, type PrintBody } from "@/lib/geometry/export";
 import { downloadFile } from "@/lib/download";
-import { fileSlug, fmtBytes } from "@/lib/format";
+import { fileSlug, fmtBytes, fmtDateTime } from "@/lib/format";
 import { LoadingBlocks } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
@@ -436,7 +436,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
                       </a>
                       <p className="font-mono text-[11px] text-muted">
                         {desc ? `${desc} · ` : ""}
-                        {fmtBytes(f.size)} · {new Date(f.createdAt).toLocaleString()}
+                        {fmtBytes(f.size)} · {fmtDateTime(f.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
