@@ -11,6 +11,9 @@ import { ItemDrawer } from "@/components/items/ItemDrawer";
 import { ItemsTable } from "@/components/items/ItemsTable";
 import { Kanban } from "@/components/items/Kanban";
 import { matches, statusList } from "@/components/items/shared";
+import { ClaimEvidence } from "@/components/research/ClaimEvidence";
+import { CLAIMS_SECTION } from "@/lib/research/schemas";
+import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
 type Layout = "board" | "table";
@@ -22,6 +25,10 @@ export function ItemsView({ project, section, store }: ViewProps) {
   const columns = section.columns ?? [];
   const addLabel = section.addLabel ?? "Add";
   const lsKey = `ctr:items-layout:${store}`;
+  // Claims show their evidence and the reason for their status on each card and in the editor.
+  const isClaims = store === CLAIMS_SECTION;
+  const cardExtra = isClaims ? (it: Item) => <ClaimEvidence item={it} projectId={project.id} compact /> : undefined;
+  const drawerExtra = isClaims ? { legend: "Evidence", render: (it: Item) => <ClaimEvidence item={it} projectId={project.id} /> } : undefined;
 
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -133,6 +140,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
         statuses={statuses}
         onSave={(id, c) => patch(id, c)}
         onDelete={(id) => remove(id)}
+        extra={drawerExtra}
       />
     </>
   );
@@ -211,7 +219,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
           </Button>
         </div>
       ) : layout === "board" ? (
-        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={move} />
+        <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={move} cardExtra={cardExtra} />
       ) : (
         <ItemsTable items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onStatus={move} />
       )}

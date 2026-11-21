@@ -14,9 +14,9 @@ import { statusTone } from "@/lib/statusTones";
 import { selectClass } from "@/components/wizard/fields";
 import { TEXTAREA_CLS } from "@/components/items/shared";
 import { hostname, stamp } from "@/components/wizard/shared";
-import { VERDICT_LABEL, evidenceOf, useEvidence } from "@/lib/research/client";
+import { ClaimEvidence } from "@/components/research/ClaimEvidence";
+import { VERDICT_LABEL, useEvidence } from "@/lib/research/client";
 import { VERDICTS, type Verdict } from "@/lib/research/schemas";
-import { isDisputed } from "@/lib/research/status";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 
@@ -307,56 +307,23 @@ function EvidenceForm({ claims, source, researchId, projectId, onCancel, onDone 
 }
 
 function ClaimsEvidence({ claims, projectId }: { claims: Claims; projectId: string }) {
-  const { remove } = useEvidence(projectId);
-  const [err, setErr] = useState("");
   if (!claims.items.length) return null;
-
-  const drop = async (claimId: number, url: string) => {
-    setErr("");
-    try {
-      await remove.mutateAsync({ claimId, url });
-    } catch (e) {
-      setErr((e as Error).message);
-    }
-  };
-
   return (
     <section aria-labelledby="claims-evidence" className="space-y-3">
       <h2 id="claims-evidence" className="text-base font-semibold tracking-tight text-primary">Claims and their evidence</h2>
       <p className="text-xs text-muted">A claim is verified when at least one source supports it and none contradicts it, and wrong when a source contradicts it and none supports it.</p>
-      {err && <p role="alert" className="text-xs text-danger">{err}</p>}
       <ul className="space-y-3">
-        {claims.items.map((c) => {
-          const ev = evidenceOf(c);
-          const disputed = isDisputed(ev);
-          return (
-            <li key={c.id} data-claim={c.id}>
-              <Card hoverEffect={false} innerClassName="p-[16px]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-primary">{c.title}</span>
-                  <StatusBadge tone={statusTone(c.status)}>{c.status}</StatusBadge>
-                  {disputed && <StatusBadge tone="warning">Disputed: sources disagree</StatusBadge>}
-                </div>
-                {ev.length === 0 ? (
-                  <p className="mt-2 text-xs text-muted">No evidence yet.</p>
-                ) : (
-                  <ul className="mt-2 space-y-2">
-                    {ev.map((x) => (
-                      <li key={x.url} className="text-xs">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-primary">{VERDICT_LABEL[x.verdict] ?? x.verdict}:</span>
-                          <a href={x.url} target="_blank" rel="noopener noreferrer" className="break-all text-link hover:underline">{x.title ?? hostname(x.url)}</a>
-                          <Button size="chip" variant="ghost" disabled={remove.isPending} onClick={() => void drop(c.id, x.url)}>Remove</Button>
-                        </div>
-                        {x.quote && <blockquote className="mt-1 border-l border-hairline pl-2 text-secondary">{x.quote}</blockquote>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            </li>
-          );
-        })}
+        {claims.items.map((c) => (
+          <li key={c.id} data-claim={c.id}>
+            <Card hoverEffect={false} innerClassName="p-[16px]">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="text-sm text-primary">{c.title}</span>
+                <StatusBadge tone={statusTone(c.status)}>{c.status}</StatusBadge>
+              </div>
+              <ClaimEvidence item={c} projectId={projectId} />
+            </Card>
+          </li>
+        ))}
       </ul>
     </section>
   );
