@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { PoolClient } from "pg";
-import { q, slugify } from "@/lib/db";
+import { q } from "@/lib/db";
+import { slugify } from "@/lib/format";
 import { HttpError, notFound } from "@/lib/api/route";
 import { STAGES } from "@/lib/menu";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS } from "@/lib/productTypes";
@@ -84,7 +85,7 @@ export async function insertConcept(
   c: PoolClient,
   v: { name: string; oneLiner: string; productType?: string; stage?: string }
 ): Promise<string> {
-  const base = slugify(v.name);
+  const base = slugify(v.name, { max: 48, fallback: "concept" });
   for (let n = 1; n <= 200; n++) {
     const candidate = n === 1 ? base : `${base}-${n}`;
     const res = await c.query<{ id: string }>(

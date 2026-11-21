@@ -3,6 +3,7 @@
 // the system's random number source.
 import { randomBytes } from "node:crypto";
 import { HOST_RE, hostAllowed, parseHosts } from "./hosts";
+import { slugify } from "@/lib/format";
 
 export { HOST_RE, hostAllowed, parseHosts };
 
@@ -25,17 +26,6 @@ export const UTM_CONVENTION = [
 ] as const;
 
 export const MEDIA = ["cpc", "paid-social", "social", "email", "referral", "qr", "print", "affiliate", "other"] as const;
-
-/** Lower case ASCII with single hyphens: "Meta Feed #2!" becomes "meta-feed-2". Empty when nothing is left. */
-export function slugify(text: string, max = 60): string {
-  const s = text
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return s.slice(0, max).replace(/-+$/g, "");
-}
 
 export type DestinationCheck = { ok: true; url: URL } | { ok: false; reason: string };
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildUtmUrl, checkDestination, CODE_ALPHABET, CODE_RE, hostAllowed, makeCode, parseHosts, slugify } from "@/lib/campaigns/links";
+import { buildUtmUrl, checkDestination, CODE_ALPHABET, CODE_RE, hostAllowed, makeCode, parseHosts } from "@/lib/campaigns/links";
+import { slugify } from "@/lib/format";
 import { RateLimiter } from "@/lib/campaigns/rateLimit";
 
 describe("the UTM convention", () => {

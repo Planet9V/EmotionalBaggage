@@ -16,6 +16,7 @@ import { pinKey, type Circuit, type CircuitPart } from "./circuit";
 import type { PinKind } from "./kinds";
 import { qs, write, type SNode } from "./sexpr";
 import { GRID, symbolLayout, type SymbolLayout } from "./symbols";
+import { slugify } from "@/lib/format";
 
 export const KICAD_SCH_VERSION = "20260306";
 export const KICAD_GENERATOR = "concept_to_realization";
@@ -217,7 +218,7 @@ const byUuid = (xs: SNode[]) => [...xs].sort((a, b) => (uuidOf(a) < uuidOf(b) ? 
 
 /** The .kicad_sch text for a circuit. */
 export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
-  const project = meta.project ?? (meta.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "concept");
+  const project = meta.project ?? slugify(meta.title, { max: Infinity, fallback: "concept" });
   const root = uuidFrom(`root:${project}`);
   const placed = place(c, meta);
   // KiCad 10 saves sheet items grouped by type (no_connect, then wires, then labels, then symbols:

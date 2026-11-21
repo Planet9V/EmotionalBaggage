@@ -3,6 +3,7 @@
 import type { Item } from "@/lib/types";
 import { STORE } from "@/lib/domain/schemas";
 import { keyOf, LINK_FIELDS, listOf, MIRRORED, TEST_DONE } from "./spec";
+import { slugify } from "@/lib/format";
 
 export type Coverage = { tests: number; parts: number };
 
@@ -99,7 +100,7 @@ export function linkedFrom(items: Item[], row: Pick<Item, "section" | "data">): 
 export function freshKey(items: Item[], row: Pick<Item, "title" | "section" | "data">): string {
   const prefix = row.section === STORE.tests ? "test" : row.section === STORE.parts ? "part" : "row";
   const ref = typeof row.data.ref === "string" ? row.data.ref : "";
-  const slug = (ref || row.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || prefix;
+  const slug = slugify(ref || row.title, { max: 40, fallback: prefix });
   const used = new Set(items.map((i) => keyOf(i.data)));
   const base = ref ? slug : `${prefix}-${slug}`;
   let key = base;

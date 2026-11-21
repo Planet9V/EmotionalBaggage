@@ -4,7 +4,7 @@
 // sentence and two numbers (data.stopRule, costPerOrderCeilingMinor, minSpendBeforeJudgingMinor).
 // Pure: the content rules, the ads screen and the ads export all read it.
 import type { Item } from "@/lib/types";
-import { slugify } from "./links";
+import { slugify } from "@/lib/format";
 
 export type AdRule = {
   source: "campaign" | "ad" | "none";
