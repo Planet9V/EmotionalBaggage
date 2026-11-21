@@ -37,7 +37,10 @@ export const igGraphBase = () => env("INSTAGRAM_GRAPH_BASE_URL") ?? "https://gra
 
 export const CALL_LIMIT_MS = 30_000;
 
-export class ChannelError extends HttpError {}
+export class ChannelError extends HttpError {
+  /** true when the call may have reached the service before it failed (a time-out, a dropped connection) */
+  unknownOutcome = false;
+}
 
 /** A fetch with a time limit; network failures become a 502 or 504 with a cleaned sentence. */
 export async function channelFetch(service: string, url: string, init: RequestInit, secrets: (string | null | undefined)[], ms = CALL_LIMIT_MS): Promise<Response> {
@@ -45,9 +48,17 @@ export async function channelFetch(service: string, url: string, init: RequestIn
     return await fetch(url, { ...init, redirect: "manual", signal: init.signal ?? AbortSignal.timeout(ms) });
   } catch (e) {
     const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
-    if (err?.name === "TimeoutError" || err?.name === "AbortError") throw new ChannelError(504, `${service} did not answer within ${Math.round(ms / 1000)} seconds.`);
-    const why = scrub(err?.cause?.code ?? err?.cause?.message ?? err?.message ?? String(e), secrets).slice(0, 200);
-    throw new ChannelError(502, `${service} could not be reached (${why}).`);
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      const t = new ChannelError(504, `${service} did not answer within ${Math.round(ms / 1000)} seconds.`);
+      t.unknownOutcome = true; // the request may have been received and acted on
+      throw t;
+    }
+    const code = err?.cause?.code;
+    const why = scrub(code ?? err?.cause?.message ?? err?.message ?? String(e), secrets).slice(0, 200);
+    const f = new ChannelError(502, `${service} could not be reached (${why}).`);
+    // refused or not found: nothing was sent; anything else (a reset mid-request) may have been received
+    f.unknownOutcome = !(code === "ECONNREFUSED" || code === "ENOTFOUND" || code === "EAI_AGAIN");
+    throw f;
   }
 }
 

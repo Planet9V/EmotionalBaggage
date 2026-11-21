@@ -9,6 +9,7 @@ import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
 import { keyOf } from "@/lib/trace/spec";
 import { assertMarketChange } from "@/lib/market/rules";
 import { assertPrintChange } from "@/lib/slicing/rules";
+import { assertSendChange } from "@/lib/channels/rules";
 import { assertContentAllowed, withFlags } from "@/lib/content/rules";
 import { CONTENT_STORES } from "@/lib/content/schemas";
 
@@ -29,6 +30,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     assertMarketChange(was, b);
     // Print jobs: slicing, sending and starting only through their own routes.
     assertPrintChange(was, b);
+    // Posts and replies: the send markers are written only by sending (robustness review S9).
+    assertSendChange(was, b);
     let data = parseData(was.section, b.data);
     // Content rows: the no-proof flags are worked out again on the words as they will be, and a row past
     // draft may not carry a flagged line or break a platform limit.

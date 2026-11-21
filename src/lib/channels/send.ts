@@ -21,6 +21,7 @@ import { igPublishImage, igReply, publicImageProblem } from "./instagram";
 import { postCost, X_COST_STATEMENT } from "./xCost";
 import { xCreatePost, xUploadImage, X_MAX_IMAGES } from "./x";
 import { xCostAck, xAccount } from "./state";
+import { ChannelError } from "./http";
 
 export type { SendChannel };
 export type SendKind = "post" | "reply";
@@ -63,6 +64,8 @@ export type Preview = {
   imageProblem: string | null;
   media: { shotKey: string; fileId: number | null; ok: boolean; problem: string }[];
   replyTo: string | null;
+  /** an earlier send may have reached the service: the user must check the channel and record what they found */
+  outcomeUnknown?: boolean;
 };
 
 async function rowOf(projectId: string, kind: SendKind, itemId: number, c?: PoolClient): Promise<Item> {
@@ -95,6 +98,16 @@ const sendingFresh = (data: Record<string, unknown>) => {
   return !!s?.at && Date.now() - new Date(s.at).getTime() < SENDING_STALE_MS;
 };
 
+/**
+ * True when an earlier send may or may not have reached the service (robustness review S9): it timed out or
+ * the connection dropped mid-request (sendUnknown), or a `sending` marker is older than five minutes (the app
+ * stopped mid-send). Such a row is never sent again until the user records, by a separate action, what the
+ * channel shows (resolveUnknown).
+ */
+export const outcomeUnknown = (data: Record<string, unknown>) => !!data.sendUnknown || (!!data.sending && !sendingFresh(data));
+
+export const UNKNOWN_OUTCOME = "Outcome unknown: check the channel. The last send may have reached it. Look at the account, then record whether it was posted before sending again.";
+
 /** What would be sent, with its hash and every reason it could not be sent now. */
 export async function preview(projectId: string, kind: SendKind, itemId: number): Promise<Preview> {
   const item = await rowOf(projectId, kind, itemId);
@@ -105,6 +118,7 @@ export async function preview(projectId: string, kind: SendKind, itemId: number)
   if (!SENDABLE[kind].has(item.status)) reasons.push(`Only an approved ${kind} can be sent; this one is "${item.status}".`);
   if (item.data.sent) reasons.push("It was already sent.");
   if (sendingFresh(item.data)) reasons.push("It is being sent right now.");
+  if (outcomeUnknown(item.data)) reasons.push(UNKNOWN_OUTCOME);
   if (!text.trim()) reasons.push("It has no text.");
   let cost: Preview["cost"] = null;
   let account: string | null = null;
@@ -138,6 +152,7 @@ export async function preview(projectId: string, kind: SendKind, itemId: number)
     imageProblem,
     media,
     replyTo,
+    outcomeUnknown: outcomeUnknown(item.data),
   };
 }
 
@@ -157,6 +172,7 @@ export async function send(b: SendBody): Promise<SendResult> {
     if (!SENDABLE[kind].has(item.status)) throw new HttpError(409, `Only an approved ${kind} can be sent; this one is "${item.status}". Nothing was sent.`);
     if (item.data.sent) throw new HttpError(409, "This was already sent. Nothing was sent again.");
     if (sendingFresh(item.data)) throw new HttpError(409, "This is being sent right now. Wait for it to finish.");
+    if (outcomeUnknown(item.data)) throw new HttpError(409, `${UNKNOWN_OUTCOME} Nothing was sent.`, { outcomeUnknown: true });
     if (!item.body.trim()) throw new HttpError(400, "There is no text to send.");
     if (sha256(item.body) !== confirm.textSha256) throw new HttpError(409, "The text changed after you confirmed. Open it again and confirm the text as it is now.");
     let imageUrl: string | null = null;
@@ -210,10 +226,20 @@ export async function send(b: SendBody): Promise<SendResult> {
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
+    const where = channel === "x" ? "X" : "Instagram";
+    // A time-out or a connection dropped mid-request may still have posted: record that the outcome is unknown,
+    // which blocks a re-send until the user checks the channel. A refusal the service answered is a plain failure.
+    const unknown = e instanceof ChannelError && e.unknownOutcome;
     await tx(async (c) => {
-      await c.query("UPDATE items SET data = (data - 'sending') || $2::jsonb, updated_at = now() WHERE id=$1", [itemId, JSON.stringify({ sendError: { at: new Date().toISOString(), message } })]);
-      await logEventIn(c, projectId, `channel.${kind}.failed`, `Sending the ${kind} "${item.title}" to ${channel === "x" ? "X" : "Instagram"} failed: ${message}`, { channel, kind, itemId, textSha256: confirm.textSha256 });
+      if (unknown) {
+        await c.query("UPDATE items SET data = (data - 'sending') || $2::jsonb, updated_at = now() WHERE id=$1", [itemId, JSON.stringify({ sendUnknown: { at: new Date().toISOString(), message } })]);
+        await logEventIn(c, projectId, `channel.${kind}.unknown`, `Sending the ${kind} "${item.title}" to ${where}: outcome unknown (${message})`, { channel, kind, itemId, textSha256: confirm.textSha256 });
+      } else {
+        await c.query("UPDATE items SET data = (data - 'sending') || $2::jsonb, updated_at = now() WHERE id=$1", [itemId, JSON.stringify({ sendError: { at: new Date().toISOString(), message } })]);
+        await logEventIn(c, projectId, `channel.${kind}.failed`, `Sending the ${kind} "${item.title}" to ${where} failed: ${message}`, { channel, kind, itemId, textSha256: confirm.textSha256 });
+      }
     });
+    if (unknown) throw new HttpError(504, `${message} ${UNKNOWN_OUTCOME}`, { outcomeUnknown: true });
     throw e;
   }
 
@@ -221,7 +247,7 @@ export async function send(b: SendBody): Promise<SendResult> {
   const sent = { id: result.id, at: new Date().toISOString(), ...(result.url ? { url: result.url } : {}), by: actor };
   const updated = await tx(async (c) => {
     const r = await c.query<ItemRow>(
-      `UPDATE items SET status=$2, data = ((data - 'sending') - 'sendError') || $3::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
+      `UPDATE items SET status=$2, data = (((data - 'sending') - 'sendError') - 'sendUnknown') || $3::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
       [itemId, DONE_STATUS[kind], JSON.stringify({ sent })]
     );
     if (kind === "reply" && typeof item.data.answers === "number") {
@@ -238,4 +264,46 @@ export async function send(b: SendBody): Promise<SendResult> {
     return toItem(r.rows[0]);
   });
   return { ok: true, id: result.id, url: result.url, item: updated };
+}
+
+export const resolveBody = z
+  .object({
+    projectId: z.string().min(1).max(80),
+    kind: z.enum(["post", "reply"]),
+    itemId: z.number().int().positive(),
+    /** what the user found on the channel */
+    outcome: z.enum(["not-posted", "posted"]),
+    /** posted: the service's id or address of the post, when the user has it */
+    externalId: z.string().trim().max(120).optional(),
+    url: z.string().trim().max(2000).optional(),
+  })
+  .strict();
+export type ResolveBody = z.infer<typeof resolveBody>;
+
+/**
+ * The separate, recorded action that settles an unknown outcome (robustness review S9). "not-posted" clears the
+ * marker, so the row may be sent again after a new confirmation; "posted" records it as sent (with the id or
+ * address when given) and moves it to posted or sent. Either way the activity and the audit log name who checked.
+ */
+export async function resolveUnknown(b: ResolveBody): Promise<Item> {
+  const actor = currentActor() || "unknown";
+  return tx(async (c) => {
+    const item = await rowOf(b.projectId, b.kind, b.itemId, c);
+    if (item.data.sent) throw new HttpError(409, "This was already recorded as sent.");
+    if (!outcomeUnknown(item.data)) throw new HttpError(409, "Nothing to settle: the last send's outcome is known.");
+    const where = channelOf(item.data.channel) === "x" ? "X" : "Instagram";
+    let r;
+    if (b.outcome === "not-posted") {
+      r = await c.query<ItemRow>(`UPDATE items SET data = (data - 'sending') - 'sendUnknown', updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [b.itemId]);
+      await logEventIn(c, b.projectId, `channel.${b.kind}.resolved`, `${actor} checked ${where}: the ${b.kind} "${item.title}" was not posted`, { itemId: b.itemId, outcome: b.outcome });
+    } else {
+      const sent = { id: b.externalId ?? "", at: new Date().toISOString(), ...(b.url ? { url: b.url } : {}), by: actor, recordedByHand: true };
+      r = await c.query<ItemRow>(
+        `UPDATE items SET status=$2, data = ((data - 'sending') - 'sendUnknown') || $3::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`,
+        [b.itemId, DONE_STATUS[b.kind], JSON.stringify({ sent })]
+      );
+      await logEventIn(c, b.projectId, `channel.${b.kind}.resolved`, `${actor} checked ${where}: the ${b.kind} "${item.title}" was posted`, { itemId: b.itemId, outcome: b.outcome, externalId: b.externalId ?? null, url: b.url ?? null });
+    }
+    return toItem(r.rows[0]);
+  });
 }
