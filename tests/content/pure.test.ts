@@ -3,7 +3,10 @@
 import { describe, expect, it } from "vitest";
 import { AD_CHANNELS, SOCIAL_CHANNELS, LISTING_CATEGORIES, checkChannel, checkListing, checkSocial, listingCategory, measure, refusals, socialChannel } from "@/lib/content/channels";
 import { evaluate, numbersIn, proofStateOf, type ProofRow } from "@/lib/content/claims";
-import { adsCsv, cell, launchHtml, launchText, listingFlatFile, listingText } from "@/lib/content/exports";
+import { adsCsv, launchHtml, launchText, listingFlatFile, listingText } from "@/lib/content/exports";
+import { toCsvText } from "@/lib/csv";
+
+const cell = (v: unknown) => toCsvText([[v]], { trailingNewline: false });
 import { contrastReport, esc, renderPage, type LandingSection, type RenderEnv } from "@/lib/content/landing";
 import type { Item } from "@/lib/types";
 

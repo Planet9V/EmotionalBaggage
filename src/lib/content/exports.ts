@@ -2,14 +2,10 @@
 // HTML and text. Pure functions of rows; nothing here sends, posts or uploads.
 import type { Item } from "@/lib/types";
 import { listingCategory, type ChannelSpec, type FieldSpec } from "./channels";
+import { toCsvText } from "@/lib/csv";
 
-/** One CSV cell. A cell that starts with = + - @ is prefixed with an apostrophe so a spreadsheet does not run it. */
-export function cell(v: unknown): string {
-  let s = v === null || v === undefined ? "" : String(v);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-export const csv = (rows: unknown[][]) => rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
+/** Rows as CSV through the one CSV writer (src/lib/csv.ts), which neutralises formula-looking cells. */
+export const csv = (rows: unknown[][]) => toCsvText(rows);
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : typeof v === "string" && v ? [v] : []);
 const money = (minor: unknown) => (typeof minor === "number" ? (minor / 100).toFixed(2) : "");
