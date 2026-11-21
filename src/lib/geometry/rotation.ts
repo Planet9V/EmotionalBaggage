@@ -10,7 +10,7 @@
 export type V3 = [number, number, number];
 export type Mat3 = [number, number, number, number, number, number, number, number, number];
 
-export const ZERO_ROTATION: V3 = [0, 0, 0];
+const ZERO_ROTATION: V3 = [0, 0, 0];
 const RAD = Math.PI / 180;
 
 export const degToRad = (d: number) => d * RAD;

@@ -8,7 +8,7 @@ import { PUT as putCredentials } from "@/app/api/admin/credentials/[provider]/ro
 import { POST as addPrinter } from "@/app/api/admin/printers/route";
 import { PUT as putSettings } from "@/app/api/admin/settings/route";
 import { readAudit } from "@/lib/admin/audit";
-import { PERPLEXITY_TEST_INPUT, scrub, setConnectionTestLimit } from "@/lib/admin/connection";
+import { PERPLEXITY_TEST_INPUT, setConnectionTestLimit } from "@/lib/admin/connection";
 import * as openai from "../standins/openai";
 import * as octoprint from "../standins/octoprint";
 import * as moonraker from "../standins/moonraker";
@@ -119,7 +119,6 @@ describe("kind: model", () => {
     // the model test shows only the status and its own sentence: no remote text at all (robustness review S3)
     expect(r.body.detail).toEqual({ status: 401 });
     expect(JSON.stringify(r.body)).not.toContain(KEY);
-    expect(scrub("a KEY1 b KEY1", ["KEY1", null, "ab"])).toBe("a [hidden] b [hidden]");
   });
 
   it("validates its input", async () => {

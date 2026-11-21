@@ -32,7 +32,7 @@ import { Panel } from "@/components/ui/panel";
 type Field = ProviderView["fields"][number];
 
 /** What the field holds, in words. Never the value of a secret. */
-export function fieldState(f: Field): string {
+function fieldState(f: Field): string {
   if (!f.set) return "Not set.";
   const where = f.source === "environment" ? " It comes from an environment variable, used only because nothing is saved here." : "";
   const bound = f.secret && f.boundTo ? ` It is only ever sent to ${f.boundTo}, the address it was saved for; moving a model to another host needs the key typed again.` : "";

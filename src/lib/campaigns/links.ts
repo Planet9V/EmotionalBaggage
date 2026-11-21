@@ -2,9 +2,10 @@
 // for the optional short address (/l/<code>) the app serves. Pure apart from `makeCode`, which uses
 // the system's random number source.
 import { randomBytes } from "node:crypto";
-import { HOST_RE, hostAllowed, parseHosts } from "./hosts";
+import { hostAllowed, parseHosts } from "./hosts";
+import { slugify } from "@/lib/format";
 
-export { HOST_RE, hostAllowed, parseHosts };
+export { hostAllowed, parseHosts };
 
 /**
  * The convention, shown beside every link so a report can be read later:
@@ -25,17 +26,6 @@ export const UTM_CONVENTION = [
 ] as const;
 
 export const MEDIA = ["cpc", "paid-social", "social", "email", "referral", "qr", "print", "affiliate", "other"] as const;
-
-/** Lower case ASCII with single hyphens: "Meta Feed #2!" becomes "meta-feed-2". Empty when nothing is left. */
-export function slugify(text: string, max = 60): string {
-  const s = text
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return s.slice(0, max).replace(/-+$/g, "");
-}
 
 export type DestinationCheck = { ok: true; url: URL } | { ok: false; reason: string };
 
@@ -103,7 +93,7 @@ export function buildUtmUrl(base: string, utm: Utm): { ok: true; link: BuiltLink
 
 /** Letters and digits without the look-alikes (no 0 o 1 l i), so a code can be read out or typed from print. */
 export const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
-export const CODE_LENGTH = 8;
+const CODE_LENGTH = 8;
 export const CODE_RE = /^[a-z0-9]{6,12}$/;
 
 /** A random code. 31 symbols over 8 places is about 8.5 x 10^11 codes, which cannot be guessed by trying. */

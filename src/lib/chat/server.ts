@@ -4,7 +4,8 @@ import { plainMessage } from "@/lib/net/plain";
 import { itemText, meaningReady, fuseRanked, searchSourcesByMeaning, searchSourcesByText, type SourceHit } from "@/lib/ai/embeddings";
 import { q } from "@/lib/db";
 import { notFound } from "@/lib/api/route";
-import { clip, cut, RESEARCH_SECTION, sectionLabel, SOURCE_CHARS, TOP_SOURCES, type ChatSource, type Retrieval } from "./shared";
+import { clip, cut, RESEARCH_SECTION, SOURCE_CHARS, TOP_SOURCES, type ChatSource, type Retrieval } from "./shared";
+import { sectionLabel } from "@/lib/menuLookup";
 
 /** A source with the text given to the model. */
 export type NumberedSource = ChatSource & { text: string };
@@ -111,7 +112,7 @@ export const toChat = (r: ChatRow) => ({
   updatedAt: r.updated_at,
   ...(r.messages !== undefined ? { messages: Number(r.messages) } : {}),
 });
-export const toMessage = (r: MessageRow) => ({
+const toMessage = (r: MessageRow) => ({
   id: Number(r.id),
   role: r.role,
   content: r.content,

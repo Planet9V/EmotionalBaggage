@@ -3,6 +3,7 @@
 // Every schema is loose and every field optional, like the market schemas: a row typed by hand, an
 // imported row and an approved draft all pass.
 import { z } from "zod";
+import { namesWith } from "./registry";
 
 const text = (max = 2000) => z.string().max(max);
 const day = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date like 2026-12-31")]);
@@ -24,7 +25,7 @@ export const CHANNEL = {
 } as const;
 
 /** What a send recorded on the row: the id the service gave back, when, and a link. Written only by src/lib/channels/send.ts. */
-export const sentRecord = z.object({
+const sentRecord = z.object({
   id: text(200),
   at: text(40),
   url: text(500).optional(),
@@ -36,8 +37,8 @@ export const sentRecord = z.object({
  * Amazon add the order id (also in externalId, which a unique index keeps to one row per order), the
  * marketplace, the currency and the items (ASIN, SKU, quantity, amount). Nothing about the buyer.
  */
-export const saleItem = z.object({ asin: text(20).optional(), sku: text(200).optional(), quantity: z.number().int().min(0), amount: z.number().finite() });
-export const saleData = z.looseObject({
+const saleItem = z.object({ asin: text(20).optional(), sku: text(200).optional(), quantity: z.number().int().min(0), amount: z.number().finite() });
+const saleData = z.looseObject({
   date: day.optional(),
   channel: text(80).optional(),
   units: num.optional(),
@@ -67,7 +68,7 @@ export const reviewData = z.looseObject({
   requirements: z.array(text(120)).max(50).optional(),
 });
 
-export const INBOX_CHANNELS = ["X", "Instagram"] as const;
+export const INBOX_CHANNELS = namesWith("inbox");
 
 /** A mention, reply or comment read from X or Instagram. Only what a reply needs: no follower data. */
 export const inboxData = z.looseObject({
@@ -82,7 +83,7 @@ export const inboxData = z.looseObject({
   parent: text(60).optional(),
 });
 
-export const REPLY_CHANNELS = ["X", "Instagram", "Amazon", "Other"] as const;
+export const REPLY_CHANNELS = namesWith("replies");
 
 /** A reply waiting to be sent, or sent. The text is the row body. */
 export const replyData = z.looseObject({
@@ -100,6 +101,3 @@ export const CHANNEL_SCHEMAS: Record<string, z.ZodType<Record<string, unknown>>>
   [CHANNEL.inbox]: inboxData,
   [CHANNEL.replies]: replyData,
 };
-
-export type SaleData = z.infer<typeof saleData>;
-export type ReviewData = z.infer<typeof reviewData>;

@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { mapImport, money, parseAmount, parseCsv, type ImportRow } from "@/components/parts/bom";
+import { mapImport, money, parseAmount, type ImportRow } from "@/components/parts/bom";
+import { parseCsvText } from "@/lib/csv";
 import { statusTone } from "@/lib/statusTones";
 import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
+import { PURCHASE_SOURCES } from "@/lib/channels/registry";
 
-const SOURCES = ["Amazon", "Micro Center", "Own printer"];
 
 export function StatusLegend({ statuses }: { statuses: string[] }) {
   if (!statuses.length) return null;
@@ -70,7 +71,7 @@ export function AddPartDialog({ open, onOpenChange, statuses, onCreate }: { open
           <Field label="Qty"><Input value={f.qty} onChange={set("qty")} inputMode="decimal" className="font-mono" /></Field>
           <Field label="Source">
             <Input value={f.source} onChange={set("source")} list="bom-sources" />
-            <datalist id="bom-sources">{SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
+            <datalist id="bom-sources">{PURCHASE_SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
           </Field>
           <Field label="Line cost"><MoneyInput value={f.line} onChange={set("line")} placeholder="0.00" /></Field>
         </div>
@@ -96,7 +97,7 @@ export function ImportDialog({ open, onOpenChange, defaultStatus, onCreate }: { 
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const mapped = useMemo(() => (text.trim() ? mapImport(parseCsv(text)) : null), [text]);
+  const mapped = useMemo(() => (text.trim() ? mapImport(parseCsvText(text).rows) : null), [text]);
   const good = mapped?.rows.filter((r) => !r.problem) ?? [];
   const bad = (mapped?.rows.length ?? 0) - good.length;
 

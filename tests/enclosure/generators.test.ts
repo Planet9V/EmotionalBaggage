@@ -3,7 +3,7 @@
 // with the reason, where the planner or OpenSCAD is missing.
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import { buildSpec } from "@/lib/enclosure/spec";
-import { runGenerator, type GeneratorResult } from "@/lib/enclosure/run";
+import { runEnclosureGenerator, type GeneratorResult } from "@/lib/enclosure/run";
 import { type LidType } from "@/lib/enclosure/types";
 import { exampleParts } from "./helpers";
 
@@ -20,7 +20,7 @@ describe("CaseMaker on the example", () => {
   it.each(LIDS)("%s lid: watertight, parts fit, openings line up, lid closes", async (lidType) => {
     const spec = buildSpec({ items: exampleParts(), params: { lidType } });
     expect(spec.openings.length).toBe(3);
-    const r = await runGenerator("casemaker", spec);
+    const r = await runEnclosureGenerator("casemaker", spec);
     expectAllMet(r);
     if (r.ok) {
       expect(r.source.filename).toMatch(/casemaker\.json$/);
@@ -41,7 +41,7 @@ describe.skipIf(!haveOpenscad)("YAPP_Box on the example (needs OpenSCAD in the p
     // Two renders at a time; each takes about a minute with OpenSCAD 2021.01.
     await Promise.all(
       (["snap", "screw"] as LidType[]).map(async (lidType) => {
-        out[lidType] = await runGenerator("yapp", buildSpec({ items: exampleParts(), params: { lidType } }), { plannerUrl, timeoutSeconds: 240 });
+        out[lidType] = await runEnclosureGenerator("yapp", buildSpec({ items: exampleParts(), params: { lidType } }), { plannerUrl, timeoutSeconds: 240 });
       })
     );
   }, 300_000);
@@ -56,7 +56,7 @@ describe.skipIf(!haveOpenscad)("YAPP_Box on the example (needs OpenSCAD in the p
 
 describe.skipIf(haveOpenscad)("YAPP_Box without OpenSCAD", () => {
   it("is reported as not available, not as a failure of the request", async () => {
-    const r = await runGenerator("yapp", buildSpec({ items: exampleParts() }), { plannerUrl });
+    const r = await runEnclosureGenerator("yapp", buildSpec({ items: exampleParts() }), { plannerUrl });
     expect(r).toMatchObject({ ok: false, code: "no-openscad" });
   });
 });

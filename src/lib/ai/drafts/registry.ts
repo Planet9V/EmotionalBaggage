@@ -25,9 +25,6 @@ export function generatorsFor(store: string, productType: string) {
   return GENERATORS.filter((g) => g.kind === "section" && g.to === store && g.applies(productType)) as Generator<Record<string, unknown>>[];
 }
 
-/** Generators whose drafts the reviewer attacks once they are approved. */
-export const ATTACKED = new Set([pressRelease.id, faq.id]);
-
 for (const g of GENERATORS) {
   if (GENERATORS.filter((x) => x.id === g.id).length > 1) throw new Error(`Two generators are called "${g.id}".`);
 }

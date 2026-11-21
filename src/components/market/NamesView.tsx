@@ -17,8 +17,9 @@ import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
+import { statusesFor } from "@/lib/menuLookup";
 
-const STATUSES = ["draft", "candidate", "shortlist", "chosen", "rejected"];
+const STATUSES = statusesFor("concept/names");
 
 export function NamesView({ project }: ViewProps) {
   const store = "concept/names";

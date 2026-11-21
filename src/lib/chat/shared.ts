@@ -2,7 +2,7 @@
 // so the browser can import it.
 import type { UIMessage } from "ai";
 import { z } from "zod";
-import { STAGES, storeKey } from "@/lib/menu";
+import { sectionLabel } from "@/lib/menuLookup";
 
 /** How many sources each question is answered from. */
 export const TOP_SOURCES = 8;
@@ -14,16 +14,15 @@ export const MAX_QUESTION = 4000;
 export const SOURCE_CHARS = 1500;
 
 /** One numbered source as stored on an assistant message and sent to the browser. */
-export const chatSource = z.object({
-  n: z.number().int().positive(),
-  kind: z.enum(["item", "research"]),
-  id: z.number().int().positive(),
+export type ChatSource = {
+  n: number;
+  kind: "item" | "research";
+  id: number;
   /** the row's store key (`design/bom`), or `research/ask` for a research answer */
-  section: z.string(),
-  title: z.string(),
-  score: z.number(),
-});
-export type ChatSource = z.infer<typeof chatSource>;
+  section: string;
+  title: string;
+  score: number;
+};
 
 /** "both": found by meaning and by matching words, with the two rankings joined. */
 export type Retrieval = "meaning" | "text" | "both";
@@ -51,39 +50,6 @@ export const RESEARCH_SECTION = "research/ask";
 
 /** Body of POST /api/chats/[id]/messages. */
 export const chatAsk = z.object({ message: z.string().trim().min(1, "Type a question.").max(MAX_QUESTION) });
-
-/**
- * The page that shows a source: `/s/<stage>/<section>`. A store key used by several sections
- * (the parts list is shown by the parts, layout and sourcing pages) goes to the section whose own
- * path is that key, or else to the first section that shows it. Null when no section shows it.
- */
-export function sectionHref(store: string): string | null {
-  let first: string | null = null;
-  for (const stage of STAGES) {
-    for (const section of stage.sections) {
-      if (storeKey(stage, section) !== store) continue;
-      const href = `/s/${stage.key}/${section.key}`;
-      if (`${stage.key}/${section.key}` === store) return href;
-      first ??= href;
-    }
-  }
-  return first;
-}
-
-/** The label a person sees for a store key ("Parts list"), or the key itself. */
-export function sectionLabel(store: string): string {
-  for (const stage of STAGES) {
-    for (const section of stage.sections) {
-      if (`${stage.key}/${section.key}` === store) return section.label;
-    }
-  }
-  for (const stage of STAGES) {
-    for (const section of stage.sections) {
-      if (storeKey(stage, section) === store) return section.label;
-    }
-  }
-  return store;
-}
 
 /** Shortens text to at most `max` characters, at a word boundary where one is near, with an ellipsis. */
 export function cut(text: string, max: number): string {

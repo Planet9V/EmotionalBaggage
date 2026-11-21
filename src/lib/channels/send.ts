@@ -9,7 +9,7 @@
 // The confirmation, the send and any failure are recorded in the concept's activity and the audit log,
 // with the channel, the row, the text's hash and the id the service gave back. Never a token.
 import { plainMessage } from "@/lib/net/plain";
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import { currentActor } from "@/lib/actor";
@@ -18,24 +18,22 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import type { Item } from "@/lib/types";
 import { CHANNEL } from "./schemas";
 import { channelOf, type SendChannel } from "./channelName";
+import { channelName } from "./registry";
 import { igPublishImage, igReply, publicImageProblem } from "./instagram";
 import { postCost, X_COST_STATEMENT } from "./xCost";
 import { xCreatePost, xUploadImage, X_MAX_IMAGES } from "./x";
 import { xCostAck, xAccount } from "./state";
 import { ChannelError } from "./http";
 
-export type { SendChannel };
 export type SendKind = "post" | "reply";
 
-export const sha256 = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
-export { channelOf };
 
 const SECTION: Record<SendKind, string> = { post: CHANNEL.social, reply: CHANNEL.replies };
 const SENDABLE: Record<SendKind, Set<string>> = { post: new Set(["approved", "scheduled"]), reply: new Set(["approved"]) };
 const DONE_STATUS: Record<SendKind, string> = { post: "posted", reply: "sent" };
 const SENDING_STALE_MS = 5 * 60_000;
 
-export const confirmSchema = z
+const confirmSchema = z
   .object({
     channel: z.enum(["x", "instagram"]),
     itemId: z.number().int().positive(),
@@ -105,9 +103,9 @@ const sendingFresh = (data: Record<string, unknown>) => {
  * stopped mid-send). Such a row is never sent again until the user records, by a separate action, what the
  * channel shows (resolveUnknown).
  */
-export const outcomeUnknown = (data: Record<string, unknown>) => !!data.sendUnknown || (!!data.sending && !sendingFresh(data));
+const outcomeUnknown = (data: Record<string, unknown>) => !!data.sendUnknown || (!!data.sending && !sendingFresh(data));
 
-export const UNKNOWN_OUTCOME = "Outcome unknown: check the channel. The last send may have reached it. Look at the account, then record whether it was posted before sending again.";
+const UNKNOWN_OUTCOME = "Outcome unknown: check the channel. The last send may have reached it. Look at the account, then record whether it was posted before sending again.";
 
 /** What would be sent, with its hash and every reason it could not be sent now. */
 export async function preview(projectId: string, kind: SendKind, itemId: number): Promise<Preview> {
@@ -169,7 +167,7 @@ export async function send(b: SendBody): Promise<SendResult> {
     const item = await rowOf(projectId, kind, itemId, c);
     const channel = channelOf(item.data.channel);
     if (!channel) throw new HttpError(400, "Only X and Instagram can be sent from this app.");
-    if (channel !== confirm.channel) throw new HttpError(409, `The confirmation was for ${confirm.channel === "x" ? "X" : "Instagram"}, but this row is for ${channel === "x" ? "X" : "Instagram"}.`);
+    if (channel !== confirm.channel) throw new HttpError(409, `The confirmation was for ${channelName(confirm.channel)}, but this row is for ${channelName(channel)}.`);
     if (!SENDABLE[kind].has(item.status)) throw new HttpError(409, `Only an approved ${kind} can be sent; this one is "${item.status}". Nothing was sent.`);
     if (item.data.sent) throw new HttpError(409, "This was already sent. Nothing was sent again.");
     if (sendingFresh(item.data)) throw new HttpError(409, "This is being sent right now. Wait for it to finish.");
@@ -189,7 +187,7 @@ export async function send(b: SendBody): Promise<SendResult> {
     }
     if (kind === "reply" && !(typeof item.data.replyTo === "string" && item.data.replyTo)) throw new HttpError(400, "This reply does not say which mention or comment it answers.");
     await c.query("UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1", [itemId, JSON.stringify({ sending: { at: new Date().toISOString(), by: actor } })]);
-    const where = channel === "x" ? "X" : "Instagram";
+    const where = channelName(channel);
     await logEventIn(c, projectId, `channel.${kind}.confirmed`, `${actor} confirmed sending the ${kind} "${item.title}" to ${where}`, {
       channel,
       kind,
@@ -227,7 +225,7 @@ export async function send(b: SendBody): Promise<SendResult> {
     }
   } catch (e) {
     const message = plainMessage(e);
-    const where = channel === "x" ? "X" : "Instagram";
+    const where = channelName(channel);
     // A time-out or a connection dropped mid-request may still have posted: record that the outcome is unknown,
     // which blocks a re-send until the user checks the channel. A refusal the service answered is a plain failure.
     const unknown = e instanceof ChannelError && e.unknownOutcome;
@@ -254,7 +252,7 @@ export async function send(b: SendBody): Promise<SendResult> {
     if (kind === "reply" && typeof item.data.answers === "number") {
       await c.query("UPDATE items SET status='answered', updated_at=now() WHERE id=$1 AND project_id=$2 AND section=$3", [item.data.answers, projectId, CHANNEL.inbox]);
     }
-    await logEventIn(c, projectId, `channel.${kind}.sent`, `Sent the ${kind} "${item.title}" to ${channel === "x" ? "X" : "Instagram"} (id ${result.id})`, {
+    await logEventIn(c, projectId, `channel.${kind}.sent`, `Sent the ${kind} "${item.title}" to ${channelName(channel)} (id ${result.id})`, {
       channel,
       kind,
       itemId,
@@ -292,7 +290,7 @@ export async function resolveUnknown(b: ResolveBody): Promise<Item> {
     const item = await rowOf(b.projectId, b.kind, b.itemId, c);
     if (item.data.sent) throw new HttpError(409, "This was already recorded as sent.");
     if (!outcomeUnknown(item.data)) throw new HttpError(409, "Nothing to settle: the last send's outcome is known.");
-    const where = channelOf(item.data.channel) === "x" ? "X" : "Instagram";
+    const where = channelName(channelOf(item.data.channel) ?? "instagram");
     let r;
     if (b.outcome === "not-posted") {
       r = await c.query<ItemRow>(`UPDATE items SET data = (data - 'sending') - 'sendUnknown', updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [b.itemId]);

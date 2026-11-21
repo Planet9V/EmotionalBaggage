@@ -12,11 +12,11 @@ import { bundleRadius, buildRouteRequest, routeState } from "@/lib/geometry/rout
 import { routePartsOf } from "@/lib/geometry/pins3d";
 import type { PinRow } from "@/lib/parts/pins";
 
-export const CLASS_ORDER: NetClass[] = ["power", "ground", "signal", "audio"];
+const CLASS_ORDER: NetClass[] = ["power", "ground", "signal", "audio"];
 const FADED = 0.12;
 const NEIGHBOUR = 0.6;
 
-export const pin = (ref: string, p: string) => (p ? `${ref}.${p}` : ref);
+const pin = (ref: string, p: string) => (p ? `${ref}.${p}` : ref);
 
 export function useSceneModel({
   parts,

@@ -10,7 +10,7 @@ import { BASE_FROM, CONTENT_RULES, blockedNoMessage, clean, cleanBlock, commonRo
 const row = z.object({ ...commonRow, text: z.string().min(1).max(4000), postTitle: z.string().max(300).optional(), mediaShotKeys: z.array(z.string().max(60)).max(4).default([]) });
 type Row = z.infer<typeof row>;
 
-export function socialGenerator(spec: SocialSpec): Generator<Row> {
+function socialGenerator(spec: SocialSpec): Generator<Row> {
   return {
     id: `social-${spec.id}`,
     label: spec.label,

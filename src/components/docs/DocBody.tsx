@@ -1,9 +1,10 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Mermaid } from "./Mermaid";
+import { slugify } from "@/lib/format";
 
-const slug = (children: React.ReactNode) =>
-  String(children).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+/** A heading's anchor: the shared slug with no length limit. */
+const slug = (children: React.ReactNode) => slugify(String(children), { max: Infinity });
 
 const components: Components = {
   h1: ({ children }) => <h1 className="text-3xl font-semibold tracking-tight text-primary">{children}</h1>,

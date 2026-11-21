@@ -1,30 +1,30 @@
 // The one definition of a pin and of a part-library entry. The pins API validates writes with
 // `pinInput`; the library is checked against `libraryEntry` by tests/parts/library.test.ts.
 import { z } from "zod";
-import { BUS_TYPES, BUSES, CATEGORIES, PART_KIND_IDS, PIN_KINDS, SIDES, SYMBOL_IDS } from "./kinds";
+import { BUS_TYPES, BUSES, PART_KIND_IDS, PIN_KINDS, SIDES, SYMBOL_IDS } from "./kinds";
 
 const finite = z.number().finite();
 
 /** Volts. A pin that takes power states the range it accepts (min, max); a pin that gives power states what it gives (nominal, or a range). */
-export const voltage = z
+const voltage = z
   .object({ min: finite.optional(), max: finite.optional(), nominal: finite.optional() })
   .refine((v) => v.min === undefined || v.max === undefined || v.min <= v.max, { message: "the lowest voltage must not be above the highest" })
   .refine((v) => v.min !== undefined || v.max !== undefined || v.nominal !== undefined, { message: "give at least one voltage, or leave it out" });
 export type Voltage = z.infer<typeof voltage>;
 
 /** Milliamps. On a power-out pin: the most it can supply. On a power-in pin: the most it draws. */
-export const current = z.object({ max: finite.nonnegative() });
+const current = z.object({ max: finite.nonnegative() });
 
 /** Millimetres, in the part's own coordinates: origin at the part's centre, x right, y away from the viewer when the part lies flat. */
-export const position = z.object({ x: finite, y: finite });
+const position = z.object({ x: finite, y: finite });
 export type PinPosition = z.infer<typeof position>;
 
-export const bus = z
+const bus = z
   .object({ type: z.enum(BUS_TYPES), line: z.string().min(1).max(20) })
   .refine((b) => (BUSES[b.type].lines as readonly string[]).includes(b.line), { message: "that line is not one of the bus's lines" });
 export type BusRef = z.infer<typeof bus>;
 
-export const pinName = z.string().trim().min(1, "a pin needs a name").max(60);
+const pinName = z.string().trim().min(1, "a pin needs a name").max(60);
 
 /** A pin as stored (a row of `pins`) and as a library entry lists it. */
 export const pinInput = z.object({
@@ -94,5 +94,4 @@ export const libraryEntry = z
     });
   });
 export type LibraryEntry = z.output<typeof libraryEntry>;
-export const CATEGORY_LIST = CATEGORIES;
 export type LibraryEntryInput = z.input<typeof libraryEntry>;

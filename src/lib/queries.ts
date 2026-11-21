@@ -38,7 +38,7 @@ export type PrinterStatus = { configured: boolean; kind?: string; state?: string
 export type SearchResult = { mode: string; items: Item[] };
 
 /** The store key for "every row of the concept". Real store keys always contain a slash, so this cannot collide. */
-export const ALL_ITEMS = "all";
+const ALL_ITEMS = "all";
 
 export const keys = {
   concepts: () => ["projects"] as const,
@@ -61,7 +61,7 @@ export const itemWriteKey = (projectId: string) => ["items-write", projectId] as
 const enc = encodeURIComponent;
 type Ctx = { signal?: AbortSignal };
 
-export const fetchers = {
+const fetchers = {
   concepts: ({ signal }: Ctx = {}) => api<{ projects: Project[] }>("/api/projects", { signal }).then((r) => r.projects),
   items: (projectId: string, store: string | null, { signal }: Ctx = {}) =>
     api<{ items: Item[] }>(`/api/projects/${enc(projectId)}/items${store ? `?section=${enc(store)}` : ""}`, { signal }).then((r) => r.items),

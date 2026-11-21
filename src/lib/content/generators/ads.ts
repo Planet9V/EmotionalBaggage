@@ -7,7 +7,7 @@ import type { Generator } from "@/lib/ai/drafts/types";
 import { clip } from "@/lib/ai/drafts/prompt";
 import { AD_CHANNELS, checkChannel, refusals, type ChannelSpec, type FieldValues } from "../channels";
 import { CONTENT } from "../schemas";
-import { BASE_FROM, CONTENT_RULES, approvedMessages, blockedNoMessage, clean, commonRow, header, messagesBlock, proofBlock, resolve, voiceBlock, withProof } from "./shared";
+import { BASE_FROM, CONTENT_RULES, blockedNoMessage, clean, commonRow, header, messagesBlock, proofBlock, resolve, voiceBlock, withProof } from "./shared";
 
 const row = z.object({ ...commonRow, fields: z.record(z.string(), z.union([z.string(), z.array(z.string())])), stopRule: z.string().max(1000).optional() });
 type Row = z.infer<typeof row>;
@@ -23,7 +23,7 @@ function fieldGuide(spec: ChannelSpec) {
     .join("\n");
 }
 
-export function adGenerator(spec: ChannelSpec): Generator<Row> {
+function adGenerator(spec: ChannelSpec): Generator<Row> {
   return {
     id: `ads-${spec.id}`,
     label: spec.label,
@@ -74,4 +74,3 @@ export function adGenerator(spec: ChannelSpec): Generator<Row> {
 }
 
 export const adGenerators = AD_CHANNELS.map(adGenerator);
-export { approvedMessages };

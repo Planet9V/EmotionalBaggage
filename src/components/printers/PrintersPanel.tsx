@@ -21,12 +21,9 @@ import { minutesText, STATE_LABEL, STATE_TONE, tempText } from "./format";
 import { ErrorLine } from "@/components/ui/states";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Card } from "@/components/ui/Card";
+import { fmtTime } from "@/lib/format";
 
 const POLL_MS = 10_000;
-const timeOf = (iso: string) => {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-};
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -146,7 +143,7 @@ function PrinterCard({ r }: { r: PrinterReading }) {
               <Radio className="h-3 w-3" aria-hidden /> Status is pushed by the printer
             </span>
           ) : null}
-          <span className="ml-auto text-xs text-muted">{timeOf(r.checkedAt) ? `Read at ${timeOf(r.checkedAt)}` : ""}</span>
+          <span className="ml-auto text-xs text-muted">{fmtTime(r.checkedAt) ? `Read at ${fmtTime(r.checkedAt)}` : ""}</span>
         </div>
       ) : null}
 

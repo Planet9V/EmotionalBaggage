@@ -36,7 +36,7 @@ export const hostName = z
   .max(255)
   .regex(/^[A-Za-z0-9.\-:[\]]+$/, "must be a host name or IP address, with no http:// or path");
 
-export const modelProvider = z.enum(["ollama", "lmstudio", "openrouter"]);
+const modelProvider = z.enum(["ollama", "lmstudio", "openrouter"]);
 
 const modelName = z.string().trim().min(1, "is required").max(300);
 
@@ -73,7 +73,7 @@ export const credentialsPut = z
   .strict();
 
 /** Values for a printer's access fields. Blank leaves a saved value unchanged; null removes an optional one. */
-export const accessValues = z.record(z.string().max(80), z.string().max(MAX_VALUE, "is too long").nullable());
+const accessValues = z.record(z.string().max(80), z.string().max(MAX_VALUE, "is too long").nullable());
 
 const printerName = z.string().trim().min(1, "is required").max(120);
 

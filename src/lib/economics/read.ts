@@ -53,7 +53,7 @@ export type CostRow = {
   percent: number | null;
 };
 
-export function readCostRow(item: Item): CostRow {
+function readCostRow(item: Item): CostRow {
   const d = item.data ?? {};
   const kind = (COST_KINDS as readonly string[]).includes(str(d.kind)) ? (str(d.kind) as CostKind) : null;
   return {
@@ -111,7 +111,7 @@ export type MethodRow = {
   unitCost: number | null;
 };
 
-export function readMethod(item: Item): MethodRow {
+function readMethod(item: Item): MethodRow {
   const d = item.data ?? {};
   return {
     id: item.id,

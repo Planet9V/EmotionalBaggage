@@ -38,7 +38,7 @@ function bodyObjects(p: ExportPart): THREE.Mesh[] {
 }
 
 /** One part as it sits in the model: rotated and placed at its position. Shells become a tray and a lid. */
-export function partObject(p: ExportPart, shell: ShellParams): THREE.Group {
+function partObject(p: ExportPart, shell: ShellParams): THREE.Group {
   const g = p.geometry;
   const group = new THREE.Group();
   group.name = p.ref || p.title;
@@ -66,15 +66,15 @@ export function partObject(p: ExportPart, shell: ShellParams): THREE.Group {
 }
 
 /** The assembled model, or one part, in scene coordinates (Y up). */
-export function assemblyGroup(parts: ExportPart[], shell: ShellParams, onlyId?: number): THREE.Group {
+function assemblyGroup(parts: ExportPart[], shell: ShellParams, onlyId?: number): THREE.Group {
   const root = new THREE.Group();
   for (const p of parts) if (onlyId === undefined || p.id === onlyId) root.add(partObject(p, shell));
   root.updateMatrixWorld(true);
   return root;
 }
 
-/** The scene is Y up; STL and slicers are Z up. */
-function toZUp(root: THREE.Object3D) {
+/** The scene is Y up; STL and slicers are Z up. The same quarter turn as meshToZUp (zup.ts), as a three.js group. */
+export function groupToZUp(root: THREE.Object3D) {
   const wrap = new THREE.Group();
   wrap.rotation.x = Math.PI / 2;
   wrap.add(root);
@@ -88,7 +88,7 @@ function dataViewBytes(dv: DataView): ArrayBuffer {
 
 /** Binary STL of the assembly or one part, with three's STLExporter. */
 export function assemblyStl(parts: ExportPart[], shell: ShellParams, onlyId?: number): ArrayBuffer {
-  const wrap = toZUp(assemblyGroup(parts, shell, onlyId));
+  const wrap = groupToZUp(assemblyGroup(parts, shell, onlyId));
   return dataViewBytes(new STLExporter().parse(wrap, { binary: true }) as DataView);
 }
 
@@ -105,7 +105,7 @@ export type PrintBody = { name: string; mesh: Mesh };
  * Printed bodies side by side on one bed, 10 mm apart along x, each already in print orientation.
  * Used for 3MF: every body is its own object so a slicer can move them.
  */
-export function bedGroup(bodies: PrintBody[], gap = 10): THREE.Group {
+function bedGroup(bodies: PrintBody[], gap = 10): THREE.Group {
   const root = new THREE.Group();
   let x = 0;
   for (const b of bodies) {
@@ -130,7 +130,7 @@ export async function bodies3mf(bodies: PrintBody[], title = "concept-to-realiza
 
 /** 3MF of the assembly or one part where it sits, Z up. */
 export async function assembly3mf(parts: ExportPart[], shell: ShellParams, onlyId?: number): Promise<ArrayBuffer> {
-  const wrap = toZUp(assemblyGroup(parts, shell, onlyId));
+  const wrap = groupToZUp(assemblyGroup(parts, shell, onlyId));
   const blob = await exportTo3MF(wrap, { metadata: { Application: "concept-to-realization" } });
   return blob.arrayBuffer();
 }

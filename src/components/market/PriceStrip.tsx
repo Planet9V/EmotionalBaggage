@@ -4,7 +4,7 @@
 // prices as diamonds below it, and the unit cost as a dashed vertical line. Shapes and labels carry
 // the meaning, not colour alone. A table of the same numbers is one toggle away.
 import { useId, useState } from "react";
-import { formatMoney } from "@/lib/market/pricing";
+import { formatMoney } from "@/lib/economics/money";
 
 export type StripPoint = { id: string; label: string; minor: number; kind: "competitor" | "unsourced" | "candidate" };
 

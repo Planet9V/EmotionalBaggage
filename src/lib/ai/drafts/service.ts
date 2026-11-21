@@ -3,7 +3,6 @@ import { plannerUrl } from "@/lib/admin/planner";
 import { HttpError } from "@/lib/api/route";
 import { getReasoning } from "@/lib/ai/models";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
-import { STAGES, storeKey } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { BUILD_SHEET, impactGraph, type ImpactGroup, type ImpactReply, type PlannerImpact } from "./impact";
 import { applyDrafts, describe, measure, MEASURE_STORE, OPTIMISE_ACTIONS, type Measure, type OptimiseAction } from "./measure";
@@ -12,6 +11,8 @@ import { buildContext, readConcept, runGenerator } from "./run";
 import { listDrafts } from "./store";
 import { readsText, type Draft, type GeneratorInfo, type GeneratorsReply, type RunResult } from "./shared";
 import { safeFetch } from "@/lib/net/outbound";
+import { currencyOf } from "@/lib/economics/currency";
+import { sectionLabel } from "@/lib/menuLookup";
 
 /** The generators for a concept (optionally only those writing one store), with what each would read. */
 export async function generatorsInfo(projectId: string, opts: { store?: string; kind?: "section" | "optimise" | "links" } = {}): Promise<GeneratorsReply> {
@@ -42,15 +43,6 @@ export async function generatorsInfo(projectId: string, opts: { store?: string; 
     });
   }
   return { configured: reasoning.ok, reason: reasoning.ok ? "" : reasoning.reason, model: reasoning.ok ? reasoning.info.model : "", generators };
-}
-
-/** The menu label of the section that shows a store. */
-export function storeLabel(store: string) {
-  if (store === BUILD_SHEET) return "Wiring and soldering";
-  // The section that owns the store by its own path first (design/bom is "Bill of materials", not "Physical layout").
-  for (const st of STAGES) for (const s of st.sections) if (`${st.key}/${s.key}` === store) return s.label;
-  for (const st of STAGES) for (const s of st.sections) if (storeKey(st, s) === store) return s.label;
-  return store;
 }
 
 const PLANNER_DOWN = "The planner is not reachable, so what this change affects cannot be worked out. Start the planner service, or set its address in Admin.";
@@ -93,7 +85,7 @@ export async function impactFor(projectId: string, itemId: number, timeoutMs = 4
     const store = n.section;
     const g = groups.get(store) ?? {
       section: store,
-      label: storeLabel(store),
+      label: store === BUILD_SHEET ? "Wiring and soldering" : sectionLabel(store),
       rows: [],
       // The build sheet is the wires seen in another section: the wiring generator revises them.
       generator: generatorsFor(store === BUILD_SHEET ? "design/wiring" : store, concept.productType)[0]?.id ?? null,
@@ -141,6 +133,7 @@ export type OptimiseState = {
 
 export async function optimiseState(projectId: string): Promise<OptimiseState[]> {
   await readConcept(projectId);
+  const currency = await currencyOf(projectId);
   const out: OptimiseState[] = [];
   for (const id of OPTIMISE_ACTIONS) {
     const g = findGenerator(OPTIMISE_GENERATOR[id])!;
@@ -159,8 +152,8 @@ export async function optimiseState(projectId: string): Promise<OptimiseState[]>
       last = {
         runId: ev[0].data.runId,
         at: ev[0].created_at instanceof Date ? ev[0].created_at.toISOString() : String(ev[0].created_at),
-        before: { measure: before, text: describe(id, before) },
-        ifApproved: { measure: projected, text: describe(id, projected) },
+        before: { measure: before, text: describe(id, before, currency) },
+        ifApproved: { measure: projected, text: describe(id, projected, currency) },
         drafts: {
           waiting: drafts.filter((d) => d.status === "draft").length,
           approved: drafts.filter((d) => d.status === "approved").length,
@@ -168,7 +161,7 @@ export async function optimiseState(projectId: string): Promise<OptimiseState[]>
         },
       };
     }
-    out.push({ id, generator: g.id, label: g.label, action: g.action, store, now: { measure: m, text: describe(id, m) }, last });
+    out.push({ id, generator: g.id, label: g.label, action: g.action, store, now: { measure: m, text: describe(id, m, currency) }, last });
   }
   return out;
 }
@@ -179,6 +172,7 @@ export async function runOptimise(projectId: string, id: OptimiseAction, superse
   const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, store])).map(toItem);
   if (!rows.length) throw new HttpError(400, store === "prototype/printing" ? "There are no print jobs yet." : "The parts list is empty.");
   const before = measure(id, rows);
+  const currency = await currencyOf(projectId);
   return runGenerator({
     projectId,
     generatorId: g.id,
@@ -186,6 +180,6 @@ export async function runOptimise(projectId: string, id: OptimiseAction, superse
     why: "Propose only changes that serve the goal stated above.",
     supersede,
     signal,
-    record: { optimise: { action: id, before, beforeText: describe(id, before) } },
+    record: { optimise: { action: id, before, beforeText: describe(id, before, currency) } },
   });
 }

@@ -72,8 +72,6 @@ export function parse(text: string): SNode {
   return root;
 }
 
-/** Helpers for reading parsed trees. */
-export const head = (n: SNode) => (Array.isArray(n) && typeof n[0] === "string" ? n[0] : null);
 export const children = (n: SNode, name: string): SNode[][] => (Array.isArray(n) ? (n.filter((x) => Array.isArray(x) && x[0] === name) as SNode[][]) : []);
 export const child = (n: SNode, name: string): SNode[] | null => children(n, name)[0] ?? null;
 export const text = (n: SNode | undefined): string => (n === undefined ? "" : typeof n === "string" ? n : Array.isArray(n) ? "" : n.q);

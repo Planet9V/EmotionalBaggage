@@ -23,7 +23,8 @@ import { queries } from "@/lib/queries";
 import { processQuery, processView } from "@/lib/process/client";
 import { PRODUCT_TYPES, productType } from "@/lib/productTypes";
 import { STAGES } from "@/lib/menu";
-import { SOURCES, STEP_SCHEMAS, buildGroups, buildItems, emptyAnswers, nextKey, type Answers, type StepId } from "@/components/wizard/model";
+import { PURCHASE_SOURCES } from "@/lib/channels/registry";
+import { STEP_SCHEMAS, buildGroups, buildItems, emptyAnswers, nextKey, type Answers, type StepId } from "@/components/wizard/model";
 
 // The steps are a Stepperize flow; each step's schema is what lets it move on (components/wizard/model.ts).
 const wizard = defineStepper([
@@ -284,7 +285,7 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
                 <div className="col-span-8 sm:col-span-4">
                   <NativeSelect aria-label={`Part ${i + 1} source`} {...register(`parts.${i}.source`)}>
                     <option value="">Source</option>
-                    {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    {PURCHASE_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </NativeSelect>
                 </div>
                 <div className="col-span-7 sm:col-span-8">

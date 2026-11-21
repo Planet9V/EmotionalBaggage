@@ -11,7 +11,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Card } from "@/components/ui/Card";
 
 /** A PNG data address drawn onto a white background (or left as it is), as a Blob. */
-export async function renderBlob(dataUrl: string, background: "white" | "transparent"): Promise<Blob> {
+async function renderBlob(dataUrl: string, background: "white" | "transparent"): Promise<Blob> {
   const img = new Image();
   img.src = dataUrl;
   await img.decode();

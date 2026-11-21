@@ -7,8 +7,8 @@
 export type Extent = readonly [number, number, number];
 
 /** Sizes a product part can plausibly have, in mm: a 0.5 mm SMD pad up to a 600 mm enclosure. */
-export const PLAUSIBLE_MIN_MM = 0.5;
-export const PLAUSIBLE_MAX_MM = 600;
+const PLAUSIBLE_MIN_MM = 0.5;
+const PLAUSIBLE_MAX_MM = 600;
 
 export type UnitFactor = { label: string; factor: number };
 

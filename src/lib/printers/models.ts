@@ -17,9 +17,9 @@ export type Fact<T> = { value: T; source: string };
 export type AdapterKind = "bambu" | "prusalink" | "moonraker" | "octoprint" | "duet" | "file-only";
 
 /** The families saved in Admin, Printers. creality and elegoo use the Moonraker adapter and carry the experimental label. */
-export type FamilyId = "octoprint" | "moonraker" | "prusalink" | "duet" | "bambu" | "creality" | "elegoo" | "file-only";
+type FamilyId = "octoprint" | "moonraker" | "prusalink" | "duet" | "bambu" | "creality" | "elegoo" | "file-only";
 
-export type Volume = { x: number; y: number; z: number; note?: string };
+type Volume = { x: number; y: number; z: number; note?: string };
 
 export type PrinterModel = {
   id: string;

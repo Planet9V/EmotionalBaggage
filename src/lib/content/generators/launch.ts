@@ -8,7 +8,7 @@ import { BASE_FROM, CONTENT_RULES, blockedNoMessage, clean, cleanBlock, commonRo
 
 const FROM = [...BASE_FROM, "concept/press"];
 
-export const approvedPress = (ctx: GenContext) => (ctx.rows["concept/press"] ?? []).filter((p) => p.status === "reviewed" || p.status === "final");
+const approvedPress = (ctx: GenContext) => (ctx.rows["concept/press"] ?? []).filter((p) => p.status === "reviewed" || p.status === "final");
 
 const blocked = (ctx: GenContext) => blockedNoMessage(ctx) || (approvedPress(ctx).length ? "" : "Mark a press release reviewed or final first (Concept, Press release). The launch pieces are written from it.");
 
@@ -18,7 +18,7 @@ const emailRow = z.object({ ...commonRow, subjects: z.array(z.string().min(1).ma
 const noteRow = z.object({ ...commonRow, subjects: z.array(z.string().min(1).max(200)).min(1).max(3), body: z.string().min(1).max(3000) });
 const seqRow = z.object({ ...commonRow, step: z.number().int().min(1).max(3), sendOffsetDays: z.number().int().min(-30).max(60), goal: z.string().min(1).max(400), subjects: z.array(z.string().min(1).max(200)).min(1).max(3), previewText: z.string().max(300).default(""), body: z.string().min(1).max(3000) });
 
-export const launchEmail: Generator<z.infer<typeof emailRow>> = {
+const launchEmail: Generator<z.infer<typeof emailRow>> = {
   id: "launch-email",
   label: "Launch email",
   action: "Draft the launch email",
@@ -49,7 +49,7 @@ export const launchEmail: Generator<z.infer<typeof emailRow>> = {
   },
 };
 
-export const pressNote: Generator<z.infer<typeof noteRow>> = {
+const pressNote: Generator<z.infer<typeof noteRow>> = {
   id: "press-note",
   label: "Press note",
   action: "Draft the press note",
@@ -79,7 +79,7 @@ export const pressNote: Generator<z.infer<typeof noteRow>> = {
   },
 };
 
-export const launchSequence: Generator<z.infer<typeof seqRow>> = {
+const launchSequence: Generator<z.infer<typeof seqRow>> = {
   id: "launch-sequence",
   label: "Launch sequence",
   action: "Draft the three-email launch sequence",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Papa from "papaparse";
-import { cents, needOf, pieceUnitPrice, shoppingCsv, shoppingList, type ListPart } from "@/lib/sourcing/list";
+import { toMinor } from "@/lib/economics/money";
+import { needOf, pieceUnitPrice, shoppingCsv, shoppingList, type ListPart } from "@/lib/sourcing/list";
 import { isCited, parseAnswer, questionFor } from "@/lib/sourcing/research";
 import { DISTRIBUTORS, searchLinks, searchTerm } from "@/lib/sourcing/links";
 import { alternateSchema, offerSchema, orderSchema, readSourcing, sourcingData } from "@/lib/sourcing/schemas";
@@ -8,12 +9,23 @@ import { alternateSchema, offerSchema, orderSchema, readSourcing, sourcingData }
 const offer = (o: Record<string, unknown> = {}) => ({ id: "o1", supplier: "Mouser", price: 1.5, packSize: 1, checkedAt: "2026-11-21", source: "entered", ...o });
 const part = (id: number, qty: number | null, sourcing: unknown, status = "to buy", ref = `R${id}`): ListPart => ({ id, ref, title: `Part ${id}`, qty, status, data: sourcing === undefined ? {} : { sourcing } });
 
-describe("money is added in cents", () => {
+describe("money is added in minor units", () => {
   it("does not drift on 0.1 + 0.2 style sums", () => {
-    expect(cents(0.1) + cents(0.2)).toBe(30);
-    expect(cents(19.99)).toBe(1999);
+    expect(toMinor(0.1, "USD") + toMinor(0.2, "USD")).toBe(30);
+    expect(toMinor(19.99, "USD")).toBe(1999);
     const list = shoppingList([part(1, 3, { offers: [offer({ price: 0.1 })], chosen: "o1" }), part(2, 3, { offers: [offer({ id: "o2", price: 0.2 })], chosen: "o2" })]);
-    expect(list.totalCents).toBe(90);
+    expect(list.totalMinor).toBe(90);
+  });
+
+  it("uses the currency's own minor unit: yen has none, dinar has three", () => {
+    const one = (price: number, currency: string) => shoppingList([part(1, 3, { offers: [offer({ price })], chosen: "o1" })], currency);
+    // 3 pieces at 1,500 yen: the total is 4,500 and is written "4500", not "4500.00"
+    expect(one(1500, "JPY").totalMinor).toBe(4500);
+    expect(shoppingCsv(one(1500, "JPY"), "JPY").split("\n").at(-1)).toContain("4500");
+    // 1.234 dinar a piece keeps its third decimal (it was rounded to 123 cents before)
+    expect(one(1.234, "KWD").groups[0].lines[0].priceMinor).toBe(1234);
+    expect(one(1.234, "KWD").totalMinor).toBe(3702);
+    expect(Papa.parse<string[]>(shoppingCsv(one(1.234, "KWD"), "KWD")).data.at(-1)?.[9]).toBe("3.702");
   });
 
   it("works out the price of one piece from a pack", () => {
@@ -26,8 +38,8 @@ describe("the shopping list", () => {
   it("buys whole packs and counts the spares", () => {
     const l = shoppingList([part(1, 25, { offers: [offer({ price: 4, packSize: 10 })], chosen: "o1" })]);
     const line = l.groups[0].lines[0];
-    expect(line).toMatchObject({ need: 25, packs: 3, spare: 5, priceCents: 400, totalCents: 1200 });
-    expect(l.totalCents).toBe(1200);
+    expect(line).toMatchObject({ need: 25, packs: 3, spare: 5, priceMinor: 400, totalMinor: 1200 });
+    expect(l.totalMinor).toBe(1200);
   });
 
   it("groups by supplier, sorted, with a subtotal each", () => {
@@ -36,15 +48,15 @@ describe("the shopping list", () => {
       part(2, 1, { offers: [offer({ id: "o2", supplier: "Adafruit", price: 5 })], chosen: "o2" }),
       part(3, 4, { offers: [offer({ id: "o3", supplier: "Mouser", price: 0.5 })], chosen: "o3" }),
     ]);
-    expect(l.groups.map((g) => [g.supplier, g.totalCents])).toEqual([["Adafruit", 500], ["Mouser", 400]]);
-    expect(l.totalCents).toBe(900);
+    expect(l.groups.map((g) => [g.supplier, g.totalMinor])).toEqual([["Adafruit", 500], ["Mouser", 400]]);
+    expect(l.totalMinor).toBe(900);
   });
 
   it("lists a part with offers but no choice apart, and adds nothing for it", () => {
     const l = shoppingList([part(1, 2, { offers: [offer()] })]);
     expect(l.groups).toEqual([]);
     expect(l.unchosen).toEqual([{ partId: 1, ref: "R1", title: "Part 1", need: 2, offers: 1 }]);
-    expect(l.totalCents).toBe(0);
+    expect(l.totalMinor).toBe(0);
   });
 
   it("leaves out printed, in-hand and already-ordered parts, and says why", () => {
@@ -67,7 +79,7 @@ describe("the shopping list", () => {
   });
 
   it("is empty for no parts", () => {
-    expect(shoppingList([])).toEqual({ groups: [], unchosen: [], excluded: [], totalCents: 0 });
+    expect(shoppingList([])).toEqual({ groups: [], unchosen: [], excluded: [], totalMinor: 0 });
   });
 });
 

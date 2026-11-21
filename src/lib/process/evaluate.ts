@@ -5,6 +5,8 @@ import { STORE_NOUN } from "@/lib/ai/drafts/shared";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
 import { buildPassedCheck, campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
+import { plural } from "@/lib/format";
+import { sectionLabel, stageLabel } from "@/lib/menuLookup";
 
 export type { GateFacts } from "./computed";
 
@@ -41,17 +43,11 @@ export type ProcessState = { stage: string; gates: GateRecord[] };
 
 export type NextStep = { label: string; reason: string; href: string };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const listOr = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} or ${xs[xs.length - 1]}`);
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
-/** The menu label of a section path ("design/bom" gives "Bill of materials"). */
-export function sectionLabel(path: string): string {
-  const [stageKey, sectionKey] = path.split("/");
-  return STAGES.find((s) => s.key === stageKey)?.sections.find((s) => s.key === sectionKey)?.label ?? path;
-}
-
-export const stageLabel = (key: string) => STAGES.find((s) => s.key === key)?.label ?? key;
+// The label lookups are shared (src/lib/menuLookup.ts); re-exported because the gate and stage routes import them from here.
+export { sectionLabel, stageLabel } from "@/lib/menuLookup";
 
 /** Rows of the store a section path shows (Sourcing shows the parts list, so its rows are design/bom). */
 function rowsOf(rows: Item[], path: string): Item[] {

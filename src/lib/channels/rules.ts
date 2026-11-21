@@ -5,8 +5,8 @@
 import { HttpError } from "@/lib/api/route";
 import { CHANNEL } from "./schemas";
 
-export const SEND_SECTIONS = new Set<string>([CHANNEL.social, CHANNEL.replies]);
-export const SEND_SERVER_ONLY = ["sent", "sending", "sendError", "sendUnknown"] as const;
+const SEND_SECTIONS = new Set<string>([CHANNEL.social, CHANNEL.replies]);
+const SEND_SERVER_ONLY = ["sent", "sending", "sendError", "sendUnknown"] as const;
 
 function refuseServerKeys(data: Record<string, unknown> | undefined) {
   if (!data) return;

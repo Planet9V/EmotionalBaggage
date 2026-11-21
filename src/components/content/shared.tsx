@@ -77,6 +77,6 @@ export function MessageLine({ message, href = "/s/marketing/positioning" }: { me
 
 export const asFlags = (v: unknown): Flag[] => (Array.isArray(v) ? (v as Flag[]) : []);
 
-export const tone = (status: string) => (status === "approved" || status === "ready" || status === "scheduled" ? "success" : status === "draft" ? "warning" : status === "killed" ? "danger" : "neutral") as "success" | "warning" | "danger" | "neutral";
+const tone = (status: string) => (status === "approved" || status === "ready" || status === "scheduled" ? "success" : status === "draft" ? "warning" : status === "killed" ? "danger" : "neutral") as "success" | "warning" | "danger" | "neutral";
 
 export const StatusPill = ({ status }: { status: string }) => <StatusBadge tone={tone(status)}>{status}</StatusBadge>;

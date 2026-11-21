@@ -5,8 +5,8 @@ import { moneyOrNull } from "@/lib/moneyText";
 import { z } from "zod";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS, type ProductType } from "@/lib/productTypes";
 
-export type PartRow = { key: number; name: string; qty: string; source: string; search: string; line: string };
-export type NameRow = { key: number; kind: "Name" | "Tagline"; text: string };
+type PartRow = { key: number; name: string; qty: string; source: string; search: string; line: string };
+type NameRow = { key: number; kind: "Name" | "Tagline"; text: string };
 
 export type Answers = {
   productType: ProductType;
@@ -30,9 +30,8 @@ export type Answers = {
 };
 
 /** The key the Concept gate reads for the go or stop decision (GO_DECISION in src/lib/process/definitions.ts). */
-export const GO_KEY = "go";
+const GO_KEY = "go";
 
-export const SOURCES = ["Amazon", "Micro Center", "Own printer", "Other"] as const;
 
 let keySeed = 1;
 export const nextKey = () => keySeed++;
@@ -59,9 +58,9 @@ const num = (s: string) => {
 /** A money answer: "$150", "1,200" and "150 USD" are read as amounts (U22). */
 const cash = (s: string) => moneyOrNull(s);
 
-export const namedParts = (a: Answers) => a.parts.filter((p) => t(p.name));
+const namedParts = (a: Answers) => a.parts.filter((p) => t(p.name));
 
-export function envelope(a: Answers): [number, number, number] | null {
+function envelope(a: Answers): [number, number, number] | null {
   const w = num(a.w), h = num(a.h), d = num(a.d);
   return w !== null && h !== null && d !== null && w > 0 && h > 0 && d > 0 ? [w, h, d] : null;
 }

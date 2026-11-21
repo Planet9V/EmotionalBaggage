@@ -5,6 +5,7 @@ import type { Item } from "@/lib/types";
 import { channelResults, fixedCosts, HREF, unitCost } from "./compute";
 import { DEFAULT_CURRENCY } from "./money";
 import { readBatch, readEconomics, readSupplier, type EconomicsRows } from "./read";
+import { plural } from "@/lib/format";
 
 export type ReadinessRows = EconomicsRows & {
   /** acceptance tests (prototype/tests) */
@@ -43,7 +44,6 @@ export type ReadinessOptions = {
   currency?: string;
 };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const BLOCKING_COMPLIANCE = new Set(["to check", "draft"]);
 
 export function readiness(rows: ReadinessRows, options: ReadinessOptions = {}): Check[] {

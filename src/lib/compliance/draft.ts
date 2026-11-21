@@ -3,13 +3,12 @@
 // as a DRAFT with what it was generated from; nothing is a row until the user confirms it. The page
 // says, and the prompt says, that this is a prompt for the user's own checking and not advice.
 import { z } from "zod";
-import { completeJson } from "@/lib/ai/models";
 import { productType } from "@/lib/productTypes";
 import { toPart } from "@/lib/domain/part";
 import { REGION_LABEL, type Region } from "@/lib/economics/schemas";
 import type { Item } from "@/lib/types";
 
-export const draftSchema = z.object({
+const draftSchema = z.object({
   rows: z
     .array(
       z.object({
@@ -25,7 +24,6 @@ export const draftSchema = z.object({
     )
     .max(25),
 });
-export type DraftRows = z.infer<typeof draftSchema>;
 
 const SYSTEM = `You help someone prepare to check which product rules may apply to something they want to make and sell.
 You are not a lawyer and you do not give advice. You produce a checklist of topics for the person to look into themselves.
@@ -38,7 +36,7 @@ Rules:
 - Skip a topic when nothing in the brief or the parts could trigger it. Fewer, well-grounded rows beat many guesses.
 - Do not repeat a topic already on the list.`;
 
-export type DraftContext = {
+type DraftContext = {
   conceptName: string;
   oneLiner: string;
   productType: string;
@@ -50,7 +48,7 @@ export type DraftContext = {
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}...` : s);
 
-export function promptFor(c: DraftContext): string {
+function promptFor(c: DraftContext): string {
   const parts = c.parts.map(toPart).map((p) => `- ${p.ref || "(no ref)"} ${p.title}${p.spec ? `: ${clip(p.spec, 200)}` : ""}${p.qty ? ` (x${p.qty})` : ""}`);
   const brief = c.brief.map((b) => `- ${b.title}${b.body ? `: ${clip(b.body, 400)}` : ""}`);
   return [
@@ -63,18 +61,7 @@ export function promptFor(c: DraftContext): string {
   ].join("\n\n");
 }
 
-export const normalTopic = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-/** Asks the reasoning model. Throws the model layer's ModelError (503 when no model is chosen). */
-export async function askForDraft(c: DraftContext, signal?: AbortSignal) {
-  return completeJson({
-    system: SYSTEM,
-    messages: [{ role: "user", content: promptFor(c) }],
-    schema: draftSchema,
-    maxOutputTokens: 4000,
-    signal,
-  });
-}
+const normalTopic = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 // ------------------------------------------------------------------------------------------------
 // On the shared drafting engine (src/lib/ai/drafts): the same prompt and rules, rows reviewed as

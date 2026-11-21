@@ -8,6 +8,7 @@ import { ITEM_COLS, logEventIn, type ItemRow } from "@/lib/db";
 import { STORE } from "@/lib/domain/schemas";
 import { changedDetail } from "./changes";
 import { keyOf, listOf, MIRRORED } from "./spec";
+import { slugify } from "@/lib/format";
 
 type Row = Pick<ItemRow, "id" | "project_id" | "section" | "title" | "data">;
 
@@ -17,7 +18,7 @@ const diff = (was: string[], now: string[]) => ({ added: now.filter((k) => !was.
 async function freeKey(c: PoolClient, projectId: string, row: Row): Promise<string> {
   const prefix = row.section === STORE.tests ? "test" : row.section === STORE.parts ? "part" : "req";
   const ref = typeof row.data.ref === "string" ? row.data.ref : "";
-  const slug = (ref || row.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || prefix;
+  const slug = slugify(ref || row.title, { max: 40, fallback: prefix });
   const base = ref ? slug : `${prefix}-${slug}`;
   const used = new Set((await c.query<{ key: string }>("SELECT data->>'key' AS key FROM items WHERE project_id=$1 AND data ? 'key'", [projectId])).rows.map((r) => r.key));
   let key = base;

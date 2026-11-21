@@ -86,9 +86,14 @@ export const NUMERIC_RULES: ParamRule[] = [
 ];
 
 /** Parts that need an opening when they sit against a wall, from what they are. */
-export const OPENING_KINDS = ["speaker", "display", "button", "switch", "led", "connector", "sensor", "microphone"] as const;
-export const PART_KINDS = [...OPENING_KINDS, "pcb", "battery", "module", "shell", "other"] as const;
-export type PartKind = (typeof PART_KINDS)[number];
+export const OPENING_ROLES = ["speaker", "display", "button", "switch", "led", "connector", "sensor", "microphone"] as const;
+/**
+ * What a part is to the enclosure: the role it plays there (needs an opening, is the board, is the battery, is the shell).
+ * Not the part kind, whose one vocabulary is PART_KINDS in src/lib/parts/kinds.ts; the shared kind is turned into a role
+ * by ENCLOSURE_ROLE_OF_KIND in spec.ts.
+ */
+export const ENCLOSURE_ROLES = [...OPENING_ROLES, "pcb", "battery", "module", "shell", "other"] as const;
+export type EnclosureRole = (typeof ENCLOSURE_ROLES)[number];
 
 export type OpeningShape = "rect" | "circle";
 
@@ -111,7 +116,8 @@ export type SpecPart = {
   id: number;
   ref: string;
   title: string;
-  kind: PartKind;
+  /** the part's role for the enclosure (an EnclosureRole), from the row's shared kind or from its words */
+  kind: EnclosureRole;
   /** Where the kind came from, so the screen can say so. */
   kindFrom: "row" | "inferred";
   /** Concept frame, all bodies of a counted part included. */

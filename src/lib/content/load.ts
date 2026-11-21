@@ -6,14 +6,15 @@ import { brandVariables } from "@/lib/market/brand";
 import type { Item } from "@/lib/types";
 import { formatMoney } from "@/lib/economics/money";
 import { proofStateOf } from "./claims";
-import { isSourced, renderPage, type Competitor, type LandingSection, type RenderEnv } from "./landing";
+import { renderPage, type Competitor, type LandingSection, type RenderEnv } from "./landing";
 import { CONTENT, LANDING_KINDS } from "./schemas";
+import { currencyOf } from "@/lib/economics/currency";
 
 export async function rowsOf(projectId: string, section: string): Promise<Item[]> {
   return (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, section])).map(toItem);
 }
 
-export function toSections(rows: Item[]): LandingSection[] {
+function toSections(rows: Item[]): LandingSection[] {
   return rows
     .filter((r) => LANDING_KINDS.includes(r.data.kind as never))
     .map((r) => ({ id: r.id, kind: r.data.kind as LandingSection["kind"], content: (r.data.content ?? {}) as Record<string, unknown>, status: r.status, order: typeof r.data.order === "number" ? r.data.order : 0 }));
@@ -35,12 +36,12 @@ const priceText = (r: Item, currency: string) => {
   }
 };
 
-export async function landingEnv(projectId: string, name: string, sections: LandingSection[], mode: "preview" | "export", scheme: "light" | "dark" | "auto") {
+async function landingEnv(projectId: string, name: string, sections: LandingSection[], mode: "preview" | "export", scheme: "light" | "dark" | "auto") {
   const kit = readKit(findKit(await rowsOf(projectId, "marketing/brand")));
   const primary = kit?.colours?.find((c) => c.role === "primary")?.hex ?? null;
   const comps = (await rowsOf(projectId, "marketing/competitors")).map((r): Competitor => ({ id: r.id, title: r.title, ...(r.data as object) }) as Competitor);
   const pricing = await rowsOf(projectId, "marketing/pricing");
-  const currency = (await q<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]))[0]?.currency || "USD";
+  const currency = await currencyOf(projectId);
   const prices = new Map(pricing.filter((p) => p.data.kind === "price" && p.status === "approved").map((p) => [p.id, priceText(p, currency)]));
   const proofIds = new Set<number>();
   const imageIds = new Set<number>();
@@ -88,4 +89,3 @@ export async function renderLanding(projectId: string, name: string, mode: "prev
   return { ...out, sections, files, env };
 }
 
-export { isSourced };

@@ -4,6 +4,8 @@
 import type { Item } from "@/lib/types";
 import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type NetClass, type Part, type Wire, type XY } from "@/lib/domain";
 import { toCsvText } from "@/lib/csv";
+import { esc } from "@/lib/html";
+import { fmtFileStamp } from "@/lib/format";
 
 export { CLASS_LABEL, readWires };
 export type { Part, XY };
@@ -285,11 +287,6 @@ function byPinKey(a: string, b: string) {
 
 export type FileMeta = { concept: string; generatedAt: Date };
 
-export function fmtDate(d: Date) {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "note", "status"];
 
 /** (a) Wiring list, one row per wire in soldering order. */
@@ -304,7 +301,7 @@ export function wiringCsv(wires: Wire[]): string {
 export function netlistText(wires: Wire[], meta: FileMeta): string {
   const lines = [
     `Netlist: ${meta.concept}`,
-    `Generated ${fmtDate(meta.generatedAt)}`,
+    `Generated ${fmtFileStamp(meta.generatedAt)}`,
     "Grouped by the net name on each wire.",
     "",
   ];
@@ -383,7 +380,7 @@ export function netlistKicad(parts: Part[], wires: Wire[], meta: FileMeta): stri
   out.push('(export (version "E")');
   out.push("  (design");
   out.push(`    (source ${q(meta.concept)})`);
-  out.push(`    (date ${q(fmtDate(meta.generatedAt))})`);
+  out.push(`    (date ${q(fmtFileStamp(meta.generatedAt))})`);
   out.push(`    (tool ${q("Concept to realization: simple netlist for reference, not a validated KiCad project")}))`);
   out.push("  (components");
   for (const r of refs) {
@@ -404,7 +401,6 @@ export function netlistKicad(parts: Part[], wires: Wire[], meta: FileMeta): stri
 
 // ───────── SVG drawn from the node positions (not a screenshot)
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 type Anchor = { x: number; y: number; dir: -1 | 1 };
@@ -515,7 +511,7 @@ export function schematicSvg(g: Graph, meta: FileMeta): string {
   parts.push(`<line x1="${bx}" y1="${fy + 62}" x2="${bx + blockW}" y2="${fy + 62}" stroke="${INK}" stroke-width="0.6"/>`);
   parts.push(`<text x="${bx + 12}" y="${fy + 22}" font-size="14" font-weight="600" fill="${INK}">${esc(clip(meta.concept, 36))}</text>`);
   parts.push(`<text x="${bx + 12}" y="${fy + 52}" font-size="12" fill="${INK}">Connection schematic</text>`);
-  parts.push(`<text x="${bx + 12}" y="${fy + 80}" font-family="${esc(MONO)}" font-size="10" fill="${MUTED}">Generated ${esc(fmtDate(meta.generatedAt))}</text>`);
+  parts.push(`<text x="${bx + 12}" y="${fy + 80}" font-family="${esc(MONO)}" font-size="10" fill="${MUTED}">Generated ${esc(fmtFileStamp(meta.generatedAt))}</text>`);
   parts.push(`</g>`);
   parts.push(`</svg>`);
   return parts.join("\n") + "\n";

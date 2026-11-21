@@ -14,8 +14,8 @@ import { keys, toDecision, toWire } from "@/lib/domain";
 import { UNLOCK_STORES } from "@/lib/plan";
 import type { Item } from "@/lib/types";
 
-export type ImpactNode = { id: string; itemId: number; section: string; title: string };
-export type ImpactEdge = { from: string; to: string; why: string };
+type ImpactNode = { id: string; itemId: number; section: string; title: string };
+type ImpactEdge = { from: string; to: string; why: string };
 export type ImpactGraph = { nodes: ImpactNode[]; edges: ImpactEdge[] };
 
 /** Sections whose rows, when changed, prompt a realignment check. */
@@ -105,7 +105,7 @@ export function impactGraph(items: Item[]): ImpactGraph {
   return { nodes, edges };
 }
 
-export type ImpactRow = { itemId: number; nodeId: string; section: string; title: string; why: string; path: string[] };
+type ImpactRow = { itemId: number; nodeId: string; section: string; title: string; why: string; path: string[] };
 export type ImpactGroup = { section: string; label: string; rows: ImpactRow[]; generator: string | null };
 
 export type ImpactReply =

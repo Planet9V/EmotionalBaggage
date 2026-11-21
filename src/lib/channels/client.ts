@@ -14,7 +14,7 @@ import type { CheckItem } from "./igChecklist";
 
 const enc = encodeURIComponent;
 
-export const channelKeys = {
+const channelKeys = {
   status: (projectId: string) => ["channels", projectId, "status"] as const,
   preview: (projectId: string, kind: SendKind, itemId: number) => ["channels", projectId, "preview", kind, itemId] as const,
   groups: (projectId: string, mode: string) => ["channels", projectId, "groups", mode] as const,

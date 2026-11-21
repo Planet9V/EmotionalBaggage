@@ -22,7 +22,7 @@ const schema = z.object({
     .max(6),
 });
 
-export const generator: Generator<typeof schema> = {
+const generator: Generator<typeof schema> = {
   id: "personas",
   label: "Draft personas",
   from: ["concept/brief", "research/claims", "research"],
@@ -41,7 +41,7 @@ export const generator: Generator<typeof schema> = {
   schema,
 };
 
-export const toRows: ToRows<typeof schema> = (out, c, stamp) => {
+const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const briefById = new Map(c.brief.map((i) => [i.id, i]));
   const claimById = new Map(c.claims.map((i) => [i.id, i]));

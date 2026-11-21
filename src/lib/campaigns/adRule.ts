@@ -4,7 +4,7 @@
 // sentence and two numbers (data.stopRule, costPerOrderCeilingMinor, minSpendBeforeJudgingMinor).
 // Pure: the content rules, the ads screen and the ads export all read it.
 import type { Item } from "@/lib/types";
-import { slugify } from "./links";
+import { slugify } from "@/lib/format";
 
 export type AdRule = {
   source: "campaign" | "ad" | "none";
@@ -24,7 +24,7 @@ export type AdRule = {
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 /** Campaign rows (kind "campaign") that list this ad among their creatives, in their saved order. */
-export function campaignsRunning(adId: number, campaigns: Item[]): Item[] {
+function campaignsRunning(adId: number, campaigns: Item[]): Item[] {
   return campaigns.filter((c) => c.data.kind !== "plan" && Array.isArray(c.data.creative) && (c.data.creative as { itemId?: unknown }[]).some((r) => r?.itemId === adId));
 }
 

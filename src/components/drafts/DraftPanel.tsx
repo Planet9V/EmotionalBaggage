@@ -11,25 +11,27 @@ import { ErrorPanel, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
-import { ApiError, draftQueries, useDraftActions } from "./api";
+import { draftQueries, useDraftActions } from "./api";
+import { ApiError } from "@/lib/http";
 import { DraftCard } from "./DraftCard";
 import { PrerequisiteLink } from "./PrerequisiteLink";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Card } from "@/components/ui/Card";
+import { fmtDateTime, fmtStamp } from "@/lib/format";
 
 export const MODELS_HREF = "/admin?tab=models";
 
 type Phase = { kind: "idle" } | { kind: "running"; started: number } | { kind: "confirm"; pending: number } | { kind: "error"; message: string; status?: number } | { kind: "done"; result: RunResult };
 
 /** The drafts waiting in one store, grouped by run, newest run first. */
-export function byRun(drafts: Draft[]) {
+function byRun(drafts: Draft[]) {
   const runs = new Map<string, Draft[]>();
   for (const d of drafts) runs.set(d.runId, [...(runs.get(d.runId) ?? []), d]);
   return [...runs.entries()].map(([runId, list]) => ({ runId, drafts: list.sort((a, b) => a.id - b.id), at: list[0]?.createdAt ?? "" })).sort((a, b) => b.at.localeCompare(a.at));
 }
 
 /** Approve every waiting draft of a run, after a confirm. */
-export function ApproveRunButton({ projectId, runId, count }: { projectId: string; runId: string; count: number }) {
+function ApproveRunButton({ projectId, runId, count }: { projectId: string; runId: string; count: number }) {
   const { approveRun } = useDraftActions(projectId);
   const [error, setError] = useState("");
   return (
@@ -56,10 +58,10 @@ export function WaitingDrafts({ projectId, store, drafts }: { projectId: string;
   return (
     <div className="space-y-5">
       {byRun(drafts).map((r) => (
-        <section key={r.runId} aria-label={`Run of ${new Date(r.at).toLocaleString()}`} className="space-y-3">
+        <section key={r.runId} aria-label={`Run of ${fmtDateTime(r.at)}`} className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-              Run of {new Date(r.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · {r.drafts.length} waiting
+              Run of {fmtStamp(r.at)} · {r.drafts.length} waiting
             </p>
             {r.drafts.length > 1 && <ApproveRunButton projectId={projectId} runId={r.runId} count={r.drafts.length} />}
           </div>

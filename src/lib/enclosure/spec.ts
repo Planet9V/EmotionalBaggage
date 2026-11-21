@@ -6,8 +6,8 @@ import {
   DEFAULT_PARAMS,
   FACES,
   FACE_AXES,
-  OPENING_KINDS,
-  PART_KINDS,
+  ENCLOSURE_ROLES,
+  OPENING_ROLES,
   SCREWS,
   type Box,
   type EnclosureParams,
@@ -17,7 +17,7 @@ import {
   type Issue,
   type Opening,
   type OpeningOverride,
-  type PartKind,
+  type EnclosureRole,
   type SpecPart,
   type Vec3,
 } from "./types";
@@ -30,14 +30,14 @@ export const NEAR_WALL = 2;
 export const DEFAULT_HOLE_INSET = 3.5;
 export const DEFAULT_HOLE_DIAMETER = 2.2;
 
-const isKind = (v: unknown): v is PartKind => typeof v === "string" && (PART_KINDS as readonly string[]).includes(v);
+const isRole = (v: unknown): v is EnclosureRole => typeof v === "string" && (ENCLOSURE_ROLES as readonly string[]).includes(v);
 
 /**
  * What the enclosure does with a part of each shared kind (src/lib/parts/kinds.ts, the list `data.kind`
  * is checked against). A kind not listed here (mechanical, generic, printed part, fastener and the
  * like) says nothing the enclosure can use, so the part's role is worked out from its words instead.
  */
-export const ENCLOSURE_ROLE_OF_KIND: Readonly<Record<string, PartKind>> = {
+export const ENCLOSURE_ROLE_OF_KIND: Readonly<Record<string, EnclosureRole>> = {
   speaker: "speaker",
   display: "display",
   button: "button",
@@ -58,13 +58,13 @@ export const ENCLOSURE_ROLE_OF_KIND: Readonly<Record<string, PartKind>> = {
   motor: "other",
 };
 
-/** The kind a row states in `data.kind` (a shared kind, read through ENCLOSURE_ROLE_OF_KIND), else one worked out from its reference and words. Sensors are never guessed: an IMU needs no window. */
-export function partKind(item: Item, shape: string): { kind: PartKind; from: "row" | "inferred" } {
+/** The role of a part for the enclosure: from the shared kind a row states in `data.kind` (read through ENCLOSURE_ROLE_OF_KIND), else worked out from its reference and words. Sensors are never guessed: an IMU needs no window. */
+export function enclosureRoleOf(item: Item, shape: string): { kind: EnclosureRole; from: "row" | "inferred" } {
   const stated = typeof item.data?.kind === "string" ? item.data.kind.trim().toLowerCase() : "";
   const role = ENCLOSURE_ROLE_OF_KIND[stated];
   if (role) return { kind: role, from: "row" };
   // A row saved before kinds were shared may hold one of the enclosure's own words ("pcb", "shell").
-  if (isKind(stated) && stated !== "other") return { kind: stated, from: "row" };
+  if (isRole(stated) && stated !== "other") return { kind: stated, from: "row" };
   if (shape === "shell") return { kind: "shell", from: "inferred" };
   const p = toPart(item);
   const words = `${p.title} ${p.spec}`.toLowerCase();
@@ -182,7 +182,7 @@ export function buildSpec({ items, params: given }: BuildInput): EnclosureSpec {
     const ext = totalExtent(g) as Vec3;
     const pos = g.pos as Vec3;
     const box: Box = { min: [0, 1, 2].map((k) => pos[k] - ext[k] / 2) as Vec3, max: [0, 1, 2].map((k) => pos[k] + ext[k] / 2) as Vec3 };
-    const { kind, from } = partKind(item, g.shape);
+    const { kind, from } = enclosureRoleOf(item, g.shape);
     parts.push({ id: item.id, ref: p.ref, title: p.title, kind, kindFrom: from, box, shape: g.shape, role: "inside" });
   }
 
@@ -236,7 +236,7 @@ export function buildSpec({ items, params: given }: BuildInput): EnclosureSpec {
     const ov = readOverride(item);
     if (ov?.off) continue;
     const near = nearestFace(p.box, innerBox);
-    const wantsKind = (OPENING_KINDS as readonly string[]).includes(p.kind);
+    const wantsKind = (OPENING_ROLES as readonly string[]).includes(p.kind);
     if (ov && (ov.face || ov.width || ov.height || ov.shape || ov.shift)) {
       const face = ov.face ?? near.face;
       openings.push(makeOpening(p, face, outer, t, "row", `Set on the part in the parts list.`, ov));

@@ -10,7 +10,7 @@ import { draftQueries } from "./api";
 import { DraftPanel, MODELS_HREF } from "./DraftPanel";
 
 /** "N drafts waiting for review", the shared plural. */
-export function waitingText(n: number) {
+function waitingText(n: number) {
   return `${n} ${n === 1 ? "draft" : "drafts"} waiting for review`;
 }
 
@@ -19,7 +19,7 @@ export function waitingText(n: number) {
  * drafts" when some wait) with a reasoning model chosen, else "Set a model in Admin" as a link. Nothing
  * where no generator writes the section.
  */
-export function EmptyDraftAction({ projectId, store, sectionLabel }: { projectId: string; store: string; sectionLabel: string }) {
+function EmptyDraftAction({ projectId, store, sectionLabel }: { projectId: string; store: string; sectionLabel: string }) {
   const [open, setOpen] = useState(false);
   const gens = useQuery(draftQueries.generators(projectId, store));
   const list = gens.data?.generators ?? [];
@@ -55,7 +55,7 @@ export function EmptyDraftAction({ projectId, store, sectionLabel }: { projectId
 }
 
 /** The count of drafts waiting in a store, for an empty state's sentence ("2 drafts waiting for review"). */
-export function useWaitingDrafts(projectId: string, store: string) {
+function useWaitingDrafts(projectId: string, store: string) {
   const gens = useQuery(draftQueries.generators(projectId, store));
   return (gens.data?.generators ?? []).reduce((a, g) => a + g.pending, 0);
 }

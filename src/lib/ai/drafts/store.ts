@@ -32,7 +32,7 @@ const APPROVED_AS: Record<string, string> = {
   "marketing/competitors": "approved",
   "concept/names": "candidate",
 };
-export const approvedStatus = (store: string) => APPROVED_AS[store] ?? defaultStatus(store);
+const approvedStatus = (store: string) => APPROVED_AS[store] ?? defaultStatus(store);
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { dataSchemaFor, STORE } from "@/lib/domain/schemas";
 import type { Item } from "@/lib/types";
@@ -71,7 +71,7 @@ export type DraftDbRow = {
 const iso = (v: Date | string | null) => (v === null ? null : v instanceof Date ? v.toISOString() : String(v));
 
 /** The operation kept in data._draft, read defensively. */
-export function readOp(data: Record<string, unknown>): DraftOp {
+function readOp(data: Record<string, unknown>): DraftOp {
   const raw = data?._draft as { op?: unknown; reason?: unknown; field?: unknown } | undefined;
   const op = raw?.op === "replace" || raw?.op === "remove" || raw?.op === "append" ? raw.op : "add";
   return {
@@ -82,10 +82,10 @@ export function readOp(data: Record<string, unknown>): DraftOp {
 }
 
 /** Lists a draft may append to, as dotted paths inside a row's data. Anything else is refused. */
-export const APPEND_FIELDS = new Set(["sourcing.offers", "sourcing.alternates"]);
+const APPEND_FIELDS = new Set(["sourcing.offers", "sourcing.alternates"]);
 
 /** The row's data with `value` added to the list at the dotted `field`, creating objects on the way. Pure. */
-export function appendAt(data: Record<string, unknown>, field: string, value: unknown): Record<string, unknown> {
+function appendAt(data: Record<string, unknown>, field: string, value: unknown): Record<string, unknown> {
   const keys = field.split(".");
   const out: Record<string, unknown> = structuredClone(data ?? {});
   let at: Record<string, unknown> = out;
@@ -100,7 +100,7 @@ export function appendAt(data: Record<string, unknown>, field: string, value: un
 }
 
 /** The row's data as it would be saved: everything except the `_draft` note. */
-export function rowData(data: Record<string, unknown>) {
+function rowData(data: Record<string, unknown>) {
   const { _draft: _ignored, ...rest } = data ?? {};
   void _ignored;
   return rest;
@@ -165,7 +165,7 @@ const decidedAlready = (d: DraftDbRow) =>
   new HttpError(409, `This draft was already ${d.status}${d.reason ? ` (${d.reason})` : ""}${d.decided_by ? ` by ${d.decided_by}` : ""}.`);
 
 /** Checks a draft's fields against its section, the same way a new row is checked. */
-export function checkFields(store: string, title: string, body: string, data: Record<string, unknown>, op: DraftOp) {
+function checkFields(store: string, title: string, body: string, data: Record<string, unknown>, op: DraftOp) {
   if (!(store in STORE_STATUSES)) throw new HttpError(400, `There is no section "${store}".`);
   const t = title.trim();
   if (!t) throw new HttpError(400, "The title cannot be empty.");

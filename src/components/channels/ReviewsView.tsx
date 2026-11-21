@@ -28,8 +28,7 @@ import type { Group } from "@/lib/channels/reviews";
 import { messageOf } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
-
-const today = () => new Date().toISOString().slice(0, 10);
+import { todayUtc } from "@/lib/format";
 
 export function ReviewsView({ project, section, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, reload } = useItems(project.id, store);
@@ -185,7 +184,7 @@ function AskedMost({ projectId, count, onTurn }: { projectId: string; count: num
 }
 
 function AddReview({ onClose, onCreate }: { onClose: () => void; onCreate: (v: { title: string; body: string; data: Record<string, unknown> }) => Promise<void> }) {
-  const [f, setF] = useState({ kind: "review", text: "", rating: "", source: "", date: today(), productVersion: "", topic: "", sentiment: "" });
+  const [f, setF] = useState({ kind: "review", text: "", rating: "", source: "", date: todayUtc(), productVersion: "", topic: "", sentiment: "" });
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {

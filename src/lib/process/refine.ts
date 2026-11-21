@@ -17,7 +17,7 @@ export type PageCheck = { met: boolean; action: string; href: string; label: str
 const pathOf = (href: string) => href.split(/[?#]/)[0];
 
 /** The store a section page's drafts are saved in ("/s/prototype/sourcing" drafts parts into design/bom). */
-export function storeOfPath(path: string): string | null {
+function storeOfPath(path: string): string | null {
   const m = /^\/s\/([^/]+\/[^/]+)$/.exec(path);
   if (!m) return null;
   return UNLOCK_STORES.get(m[1]) ?? m[1];

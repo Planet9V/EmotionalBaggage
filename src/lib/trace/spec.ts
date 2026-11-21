@@ -1,5 +1,6 @@
 // Which rows link to which, by key. One definition for the server's checks and the screens.
 import { STORE } from "@/lib/domain/schemas";
+import { keys } from "@/lib/domain/step";
 
 export type LinkField = {
   /** the section the keys must name */
@@ -43,7 +44,5 @@ export const TEST_DONE = "pass";
 
 export const keyOf = (data: Record<string, unknown> | undefined): string => (typeof data?.key === "string" ? data.key.trim() : "");
 
-export function listOf(data: Record<string, unknown> | undefined, field: string): string[] {
-  const v = data?.[field];
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
-}
+/** A list of keys stored in a row's data (the one reader is `keys` in lib/domain/step.ts). */
+export const listOf = (data: Record<string, unknown> | undefined, field: string): string[] => keys(data?.[field]);

@@ -7,12 +7,7 @@ import { fieldValue, sameValue, valueText, type HistoryChange, type HistoryEntry
 import type { Item } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { WhyField } from "./WhyField";
-
-/** Written the way people read a date: the time in their own zone, with the full stamp in the tooltip. */
-export function when(at: string) {
-  const d = new Date(at);
-  return Number.isNaN(d.getTime()) ? at : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
+import { fmtDateTime } from "@/lib/format";
 
 const isLong = (...v: unknown[]) => v.some((x) => {
   const t = valueText(x);
@@ -83,13 +78,13 @@ function ChangeView({ change, current, onRestore }: { change: HistoryChange; cur
 }
 
 /** Why the change was made, when the record has a reason (given with it, or added afterwards). */
-export function ReasonLine({ entry }: { entry: Pick<HistoryEntry, "reason" | "reasonLater" | "summary"> }) {
+function ReasonLine({ entry }: { entry: Pick<HistoryEntry, "reason" | "reasonLater" | "summary"> }) {
   // A gate override and an automatic move back already say their reason in the summary.
   if (!entry.reason || entry.summary.includes(entry.reason)) return null;
   return (
     <p className="mt-1.5 text-xs text-secondary wrap-anywhere">
       <span className="font-medium text-primary">Why:</span> {entry.reason}
-      {entry.reasonLater && <span className="text-muted"> (added later by {entry.reasonLater.by || "the app"}, {when(entry.reasonLater.at)})</span>}
+      {entry.reasonLater && <span className="text-muted"> (added later by {entry.reasonLater.by || "the app"}, {fmtDateTime(entry.reasonLater.at)})</span>}
     </p>
   );
 }
@@ -167,7 +162,7 @@ export function HistoryEntryView({
           <span className="font-normal text-secondary">{entry.summary}</span>
         </p>
         <p className="shrink-0 text-xs text-muted">
-          <span className="text-secondary">{entry.actor || "The app"}</span> · <time dateTime={entry.at} title={entry.at}>{when(entry.at)}</time>
+          <span className="text-secondary">{entry.actor || "The app"}</span> · <time dateTime={entry.at} title={entry.at}>{fmtDateTime(entry.at)}</time>
         </p>
       </div>
       <ReasonLine entry={entry} />

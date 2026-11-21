@@ -8,7 +8,8 @@ import { MessageResponse } from "@/components/ai-elements/message";
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources";
 import { SafeImage } from "./safeImage";
 import { HoverCardTrigger } from "@/components/ui/hover-card";
-import { linkCitations, sectionHref, sectionLabel, type ChatMetadata, type ChatSource } from "@/lib/chat/shared";
+import { linkCitations, type ChatMetadata, type ChatSource } from "@/lib/chat/shared";
+import { sectionLabel, storeHref } from "@/lib/menuLookup";
 
 const SEARCH_LABEL: Record<string, string> = {
   hnsw: "HNSW index",
@@ -18,7 +19,7 @@ const SEARCH_LABEL: Record<string, string> = {
 };
 
 function hrefOf(s: ChatSource) {
-  return sectionHref(s.section) ?? "/";
+  return storeHref(s.section) ?? "/";
 }
 
 function whereOf(s: ChatSource) {

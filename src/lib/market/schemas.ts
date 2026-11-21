@@ -7,7 +7,7 @@ import { z } from "zod";
 const text = (max = 2000) => z.string().max(max);
 
 /** Where a generated row came from. Written by the generator runner, never by the model. */
-export const generatedFrom = z.object({
+const generatedFrom = z.object({
   sources: z.array(z.object({ kind: text(40), id: z.number().int().optional(), title: text(300) })).max(80),
   model: text(200),
   at: text(40),
@@ -26,7 +26,7 @@ export const MARKET = {
 
 // 8.1 -------------------------------------------------------------------------------------------
 
-export const personaQuote = z.object({
+const personaQuote = z.object({
   quote: text(600),
   /** the saved research answer the words were found in */
   researchId: z.number().int().optional(),
@@ -44,9 +44,9 @@ export const personaData = z.looseObject({
 
 // 8.2 -------------------------------------------------------------------------------------------
 
-export const COMPETITOR_KINDS = ["product", "alternative"] as const;
+const COMPETITOR_KINDS = ["product", "alternative"] as const;
 /** research: read from a cited answer. typed: entered by the user. unsourced: generated with no citation. */
-export const COMPETITOR_BASIS = ["research", "typed", "unsourced"] as const;
+const COMPETITOR_BASIS = ["research", "typed", "unsourced"] as const;
 
 export const competitorData = z.looseObject({
   kind: z.enum(COMPETITOR_KINDS).optional(),
@@ -74,13 +74,13 @@ export const proofRef = z.object({
 });
 export type ProofRef = z.infer<typeof proofRef>;
 
-export const positioningMessage = z.object({
+const positioningMessage = z.object({
   text: text(600),
   proof: z.array(proofRef).max(20).default([]),
 });
 export type PositioningMessage = z.infer<typeof positioningMessage>;
 
-export const critique = z.object({ text: text(8000), at: text(40), model: text(200), /** what the reviewer was shown, see positioningFingerprint */ fingerprint: text(20_000).optional() });
+const critique = z.object({ text: text(8000), at: text(40), model: text(200), /** what the reviewer was shown, see positioningFingerprint */ fingerprint: text(20_000).optional() });
 
 export const positioningData = z.looseObject({
   kind: z.enum(["statement"]).optional(),
@@ -98,15 +98,13 @@ export const positioningData = z.looseObject({
 // 8.4 -------------------------------------------------------------------------------------------
 
 export const pricingData = z.looseObject({
-  kind: z.enum(["price", "channel", "assumptions"]).optional(),
+  kind: z.enum(["price", "assumptions"]).optional(),
   priceMinor: z.number().int().min(0).max(1_000_000_000).optional(),
-  /** the currency a price or channel fee was saved in: the concept's (projects.currency) at the time.
+  /** the currency a price was saved in: the concept's (projects.currency) at the time.
    * Pricing has no currency setting of its own; an older "assumptions" row's currency is ignored. */
   currency: text(3).optional(),
   /** which of the three approaches suggested it, or "own" when typed */
   approach: z.enum(["cost-plus", "competitor", "value", "own"]).optional(),
-  feePercent: z.number().min(0).max(100).optional(),
-  fixedFeeMinor: z.number().int().min(0).max(1_000_000_000).optional(),
   targetMarginPercent: z.number().min(0).max(99).optional(),
   valueMinor: z.number().int().min(0).max(1_000_000_000).optional(),
   valueNote: text().optional(),
@@ -138,7 +136,7 @@ export type BrandColour = z.infer<typeof brandColour>;
 export const voiceRule = z.object({ rule: text(400), doExample: text(400).default(""), dontExample: text(400).default("") });
 export type VoiceRule = z.infer<typeof voiceRule>;
 
-export const voiceSuggestion = z.object({ before: text(1000), after: text(1000), why: text(500) });
+const voiceSuggestion = z.object({ before: text(1000), after: text(1000), why: text(500) });
 
 export const brandData = z.looseObject({
   kind: z.enum(["kit", "voicecheck"]).optional(),

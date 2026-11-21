@@ -20,7 +20,7 @@ import { lwaTokenUrl, igGraphBase, xApiBase } from "@/lib/channels/http";
 import { DEFAULT_BASE_URL, embeddingModel, getCredential, reasoningModel, type ModelChoice, type Provider } from "@/lib/settings";
 
 /** Address of the Perplexity API; tests point it at the stand-in with PERPLEXITY_BASE_URL. */
-export const PERPLEXITY_DEFAULT_BASE_URL = "https://api.perplexity.ai";
+const PERPLEXITY_DEFAULT_BASE_URL = "https://api.perplexity.ai";
 export const perplexityBaseUrl = () => (process.env.PERPLEXITY_BASE_URL?.trim() || PERPLEXITY_DEFAULT_BASE_URL).replace(/\/+$/, "");
 
 /** scheme://host[:port] of an address, lower case, default ports left out; null when it is not a URL. */
@@ -40,7 +40,7 @@ type ModelProvider = (typeof MODEL_PROVIDERS)[number];
 export const isModelProvider = (p: string): p is ModelProvider => (MODEL_PROVIDERS as readonly string[]).includes(p);
 
 /** The built-in address a provider's secrets go to when nothing else says so. */
-export function builtInOrigin(provider: Provider): string | null {
+function builtInOrigin(provider: Provider): string | null {
   if (isModelProvider(provider)) return originOf(DEFAULT_BASE_URL[provider]);
   if (provider === "perplexity") return originOf(perplexityBaseUrl());
   if (provider === "amazon-sp") return originOf(lwaTokenUrl());

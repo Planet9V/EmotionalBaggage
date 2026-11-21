@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { useItems } from "@/lib/client";
 import { keys } from "@/lib/queries";
 import { useProcess } from "@/lib/process/client";
-import { isDay, formatDay, todayUtc } from "@/lib/campaigns/days";
+import { isDay, formatDay } from "@/lib/campaigns/days";
 import { byPhase, isLaunchRow, isStepRow, progress, schedule, toLaunch, toStep, type LaunchRow, type Scheduled } from "@/lib/campaigns/launch";
 import { LAUNCH_STORE } from "@/lib/campaigns/schemas";
 import { CHECK_PROMPT, TEMPLATES } from "@/lib/campaigns/templates";
@@ -21,6 +21,7 @@ import { startLaunch } from "./hooks";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
+import { todayUtc } from "@/lib/format";
 
 export function LaunchView({ project, section }: ViewProps) {
   const { items, loading, error, reload, patch, remove } = useItems(project.id, LAUNCH_STORE);

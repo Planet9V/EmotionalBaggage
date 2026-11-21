@@ -14,7 +14,7 @@ import { fmtDateTime } from "@/lib/format";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
 import { useChannelStatus } from "@/lib/channels/client";
-import { channelOf } from "@/lib/channels/channelName";
+import { channelOf, sendName } from "@/lib/channels/channelName";
 import { messageOf } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import { CostStatement, NotConnected, NotRealNote, SendDialog } from "./shared";
@@ -30,7 +30,7 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
     <Card as="li" variant="flat" className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{ch === "x" ? "X" : "Instagram"}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{sendName(ch)}</span>
           <StatusBadge tone={sent ? "success" : "info"}>{sent ? "sent" : item.status}</StatusBadge>
           {when && !sent ? <span className="font-mono text-xs text-muted">planned for {when}</span> : null}
         </span>
@@ -45,8 +45,8 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
             ) : null}
           </span>
         ) : (
-          <Button size="sm" onClick={onSend} aria-label={`Send the post "${item.title}" to ${ch === "x" ? "X" : "Instagram"}`}>
-            <Send className="h-4 w-4" aria-hidden /> Send to {ch === "x" ? "X" : "Instagram"}
+          <Button size="sm" onClick={onSend} aria-label={`Send the post "${item.title}" to ${sendName(ch)}`}>
+            <Send className="h-4 w-4" aria-hidden /> Send to {sendName(ch)}
           </Button>
         )}
       </div>

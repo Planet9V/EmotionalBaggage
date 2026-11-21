@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Item } from "@/lib/types";
-import { decisionReady, partsByRef, pinsOf, readWires, stepsFromItems, sumLine, toDecision, toPart } from "@/lib/domain";
+import { decisionReady, partsByRef, pinsOf, readWires, sumLine, toDecision, toPart } from "@/lib/domain";
 import { SEED_ADDITIONS, SEED_ITEMS } from "@/lib/seed";
 import { planGraph } from "@/lib/plan";
 
@@ -65,10 +65,6 @@ describe("decisions", () => {
 });
 
 describe("steps and the plan", () => {
-  it("drops links to steps that do not exist and to itself", () => {
-    const steps = stepsFromItems([item("x/y", { key: "a", after: ["a", "ghost"] }), item("x/y", { key: "b", after: "a" })]);
-    expect(steps.map((s) => s.after)).toEqual([[], ["a"]]);
-  });
   it("keeps decisions out of the steps of the seeded assembly; the plan graph reads them as milestones", () => {
     const g = planGraph(seeded);
     expect(g.nodes.filter((x) => x.section === "prototype/assembly").map((x) => x.id)).toEqual(["p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]);

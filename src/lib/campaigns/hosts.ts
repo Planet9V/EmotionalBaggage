@@ -1,8 +1,6 @@
 // The hosts a concept's tracked links may open (robustness review S5). Pure, so the browser can use it.
 import { HOST_RE } from "./schemas";
 
-export { HOST_RE };
-
 /** Reads "shop.example, www.amazon.com" (commas, spaces or new lines) into host names; bad entries are returned apart. */
 export function parseHosts(text: string): { hosts: string[]; bad: string[] } {
   const hosts: string[] = [];

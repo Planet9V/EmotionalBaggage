@@ -37,7 +37,7 @@ export function TraceabilityView() {
 }
 
 /** The link to one row: its section with ?item=<id>, which opens that row's editor (the parts list marks the row). */
-export const rowHref = (href: string, row: Pick<Item, "id">) => `${href}?item=${row.id}`;
+const rowHref = (href: string, row: Pick<Item, "id">) => `${href}?item=${row.id}`;
 
 function Gap({ title, empty, rows, href, label }: { title: string; empty: string; rows: Item[]; href: string; label: (i: Item) => string }) {
   return (

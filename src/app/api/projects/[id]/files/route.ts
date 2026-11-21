@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createHash } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import { logEventIn, q, tx } from "@/lib/db";
 import { HttpError, requireProject, route } from "@/lib/api/route";
 import { dataObject } from "@/lib/api/schemas";
@@ -29,7 +29,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   if (!(file instanceof File)) return NextResponse.json({ error: "file is required" }, { status: 400 });
   if (file.size > MAX) return NextResponse.json({ error: "Files are limited to 25 MB." }, { status: 413 });
   const bytes = Buffer.from(await file.arrayBuffer());
-  const sha = createHash("sha256").update(bytes).digest("hex");
+  const sha = sha256(bytes);
   const kind = String(form.get("kind") ?? "upload").slice(0, 40) || "upload";
   let parsed: unknown;
   try {

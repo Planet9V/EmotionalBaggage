@@ -37,7 +37,7 @@ const PG: Record<string, [number, string]> = {
 export const NUL_REFUSED = "A value in the request contains a NUL character (\\u0000), which cannot be stored. Remove it and try again.";
 
 /** True when any string (or object key) inside a parsed JSON value contains U+0000. */
-export function hasNul(v: unknown, depth = 0): boolean {
+function hasNul(v: unknown, depth = 0): boolean {
   if (typeof v === "string") return v.includes("\u0000");
   if (depth > 200 || v === null || typeof v !== "object") return false;
   if (Array.isArray(v)) return v.some((x) => hasNul(x, depth + 1));
@@ -199,7 +199,7 @@ function requestOf(args: unknown[]): Request | null {
  * tricked into sending someone's cookie. GET and HEAD never change anything here, so they are not
  * checked. Host comes from the request; a reverse proxy in front must pass the original Host.
  */
-export function sameOrigin(req: Request): boolean {
+function sameOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
   if (origin === null) return true;
   let originHost: string;
@@ -299,6 +299,3 @@ export async function requireProject(id: string) {
   if (!rows.length) throw notFound("That concept");
   return rows[0];
 }
-
-/** Outbound calls never hang a request: 60 s unless the caller says otherwise. */
-export const outbound = (ms = 60_000) => AbortSignal.timeout(ms);

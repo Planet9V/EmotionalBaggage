@@ -221,6 +221,23 @@ Use the kit in `src/components/ui` (field, NativeSelect, textarea, modal, states
 
 A gate check may carry `anchor`, `todo` and `needs`, which the next step turns into a sentence and a deep link; `DeepLinkFocus` scrolls to and focuses the control. Requirement links are read from either end by `linksOf` (`src/lib/trace/coverage.ts`) and kept the same at both ends by `mirrorLinks`. `POST /api/research` accepts `itemId` to attach the answer to a row.
 
+## Shared building blocks
+
+One place per job. Use these rather than writing another.
+
+- `lib/secrets/scrub.ts` `scrub(text, secrets)` for any text that may carry a key.
+- `lib/html.ts` `esc`.
+- `lib/format.ts`: `slugify`, `fileSlug`, `plural`, `fmtDate`, `fmtDateTime`, `fmtStamp`, `fmtTime`, `todayUtc`, `todayLocal`.
+- `lib/economics/money.ts`: `formatMoney`, `parseMinor`, `toInputText`, `majorText`. Never divide by 100: currencies have 0 to 3 minor digits. `lib/economics/currency.ts` `currencyOf(projectId)`.
+- `lib/csv.ts`: `parseCsvText`, `parseCsvRecords`, `toCsvText`. `lib/download.ts` for browser downloads.
+- `lib/hash.ts` `sha256`, `lib/math.ts` `clamp`, `lib/useDark.ts`.
+- `lib/http.ts`: `api`, `ApiError`, `fetchFileBytes`. The one way the browser calls the API.
+- `lib/menuLookup.ts`: `storeLabel`, `storeHref`, `stageLabel`, `sectionLabel`, `statusesFor`. Statuses are never typed in a view.
+- `lib/channels/registry.ts` for any list of channels. Add a channel there with what it supports; ad specs, social limits, inbox and reply lists, import layouts and purchase sources all read it.
+- Channel fees come from `lib/economics/compute.ts` `channelFeeMinor`.
+
+**Dead code.** `npm run deadcode` (Knip) runs in CI. An import from a test does not count as use. Fix an unused export by un-exporting or deleting it. `knip.jsonc` still holds a list of files whose unused exports are waiting to be removed; a new unused export in one of those files will not fail CI until the list is pruned.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

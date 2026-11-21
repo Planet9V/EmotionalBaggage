@@ -11,6 +11,8 @@ import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { ask, type Source } from "@/lib/research/perplexity";
 import { toStoredSource } from "@/lib/research/schemas";
 import { newId, offerSchema, alternateSchema, type Draft } from "./schemas";
+import { currencyOf } from "@/lib/economics/currency";
+import { todayUtc } from "@/lib/format";
 
 export type Kind = "prices" | "alternates";
 
@@ -73,7 +75,7 @@ export function parseAnswer(kind: Kind, answer: string, sources: Source[], curre
 export type ResearchOutcome = { researchId: number; drafts: EngineDraft[]; dropped: string[]; costUsd: number | null; sources: number };
 
 /** The engine generator ids, one per kind. */
-export const SOURCING_GENERATOR: Record<Kind, string> = { prices: "sourcing.prices", alternates: "sourcing.alternates" };
+const SOURCING_GENERATOR: Record<Kind, string> = { prices: "sourcing.prices", alternates: "sourcing.alternates" };
 
 /** Asks, stores the answer as a research row, and saves the drafts on the part. `confirm` must be true: the call is billed. */
 export async function researchPart(projectId: string, partId: number, kind: Kind, confirm: boolean, signal?: AbortSignal): Promise<ResearchOutcome> {
@@ -83,12 +85,12 @@ export async function researchPart(projectId: string, partId: number, kind: Kind
   if (!part) throw notFound("That part");
   const key = await getSecretFor("perplexity", "apiKey", perplexityBaseUrl());
   if (!key) throw new HttpError(503, "Perplexity is not connected. Add a key in Admin, Credentials.");
-  const cur = (await q<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]))[0]?.currency ?? "USD";
+  const cur = await currencyOf(projectId);
   const p: Part = { title: part.title, body: part.body, ref: String(part.data.ref ?? ""), partNumber: String((part.data as { partNumber?: string }).partNumber ?? ""), search: String(part.data.search ?? "") };
   const question = questionFor(kind, p, cur);
   const r = await ask({ question, apiKey: key, signal });
   if (!r.ok) throw new HttpError(r.kind === "timeout" ? 504 : r.kind === "rate_limited" ? 429 : r.kind === "not_configured" ? 503 : 502, r.message);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayUtc();
   const parsed = parseAnswer(kind, r.answer, r.sources, cur, today);
   return tx(async (c) => {
     const res = await c.query<{ id: string }>(

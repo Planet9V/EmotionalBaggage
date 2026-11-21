@@ -16,7 +16,7 @@ export type ProofState =
 
 const PROOF: ReadonlySet<ProofState> = new Set(["verified claim", "passing test", "requirement"]);
 
-export function proofState(ref: ProofRef, rows: Map<number, ProofRow>): ProofState {
+function proofState(ref: ProofRef, rows: Map<number, ProofRow>): ProofState {
   const row = rows.get(ref.itemId);
   if (!row) return "missing";
   if (row.section === "research/claims") return row.status === "verified" ? "verified claim" : "unverified claim";

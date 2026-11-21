@@ -5,9 +5,10 @@ import { listingCategory, type ChannelSpec, type FieldSpec } from "./channels";
 import { effectiveAdRule } from "@/lib/campaigns/adRule";
 import { minorDigits, toMajor } from "@/lib/economics/money";
 import { toCsvText } from "@/lib/csv";
+import { esc } from "@/lib/html";
 
 /** Rows as CSV through the one CSV writer (src/lib/csv.ts), which neutralises formula-looking cells. */
-export const csv = (rows: unknown[][]) => toCsvText(rows);
+const csv = (rows: unknown[][]) => toCsvText(rows);
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : typeof v === "string" && v ? [v] : []);
 const moneyIn = (currency: string) => (minor: unknown) => (typeof minor === "number" ? toMajor(minor, currency).toFixed(minorDigits(currency)) : "");
@@ -54,7 +55,6 @@ export function listingFlatFile(l: ListingFile, opts: { sku?: string; brand?: st
   return `${head.join("\t")}\n${row.map(tab).join("\t")}\n`;
 }
 
-const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const paragraphs = (body: string) => body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 
 export function launchText(r: Item): string {

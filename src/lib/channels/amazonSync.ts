@@ -16,7 +16,7 @@ import { CHANNEL } from "./schemas";
 import { RateLimited, channelClock } from "./rateLimit";
 import { amazonState, saveAmazonState } from "./state";
 
-export const FIRST_SYNC_DAYS = 30;
+const FIRST_SYNC_DAYS = 30;
 /** Overlap with the previous sync, so an order updated while it ran is read again. */
 const OVERLAP_MS = 10 * 60_000;
 /** At most this many pages in one press of the button. */
@@ -24,7 +24,7 @@ const MAX_PAGES = 25;
 const CANCELLED = new Set(["CANCELLED", "CANCELED"]);
 
 /** The sales monitor row for one order: what the monitor and campaign results read, nothing about the buyer. */
-export function orderRow(o: CleanOrder) {
+function orderRow(o: CleanOrder) {
   const cancelled = CANCELLED.has(o.status.toUpperCase());
   const units = cancelled ? 0 : o.items.reduce((a, i) => a + i.quantity, 0);
   const revenue = cancelled ? 0 : Math.round(o.items.reduce((a, i) => a + i.amount, 0) * 100) / 100;
@@ -63,7 +63,7 @@ export type SyncResult = {
 };
 
 /** Writes the orders as rows. Exported for tests. */
-export async function upsertOrders(projectId: string, orders: CleanOrder[]) {
+async function upsertOrders(projectId: string, orders: CleanOrder[]) {
   let added = 0;
   let updated = 0;
   await tx(async (c) => {

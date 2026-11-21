@@ -13,10 +13,9 @@ import { libraryEntryById } from "@/lib/parts/library";
 import { partPins, pinsByItem, type PinRow } from "@/lib/parts/pins";
 import type { V3 } from "./rotation";
 import type { RoutePart } from "./routing";
+import { clamp } from "@/lib/math";
 
 export type PinPoint3 = { name: string; pos: V3 };
-
-const clamp = (v: number, half: number) => Math.max(-half, Math.min(half, v));
 
 /** The pins of one part that have a position, in the part's own frame (before its rotation and position). */
 export function pinPoints(item: Item, own: PinRow[], geometry: Geometry): PinPoint3[] {
@@ -28,7 +27,7 @@ export function pinPoints(item: Item, own: PinRow[], geometry: Geometry): PinPoi
   const out: PinPoint3[] = [];
   for (const p of pp.pins) {
     if (!p.position || !p.name) continue;
-    out.push({ name: p.name, pos: [clamp(p.position.x * sx, e[0] / 2), e[1] / 2, clamp(p.position.y * sz, e[2] / 2)] });
+    out.push({ name: p.name, pos: [clamp(p.position.x * sx, -e[0] / 2, e[0] / 2), e[1] / 2, clamp(p.position.y * sz, -e[2] / 2, e[2] / 2)] });
   }
   return out;
 }

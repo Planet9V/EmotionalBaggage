@@ -5,17 +5,16 @@
 // (POST /v1/sonar) is not used: its support ended on 27 Sep 2026.
 import { plainNetworkReason } from "@/lib/net/plain";
 import { getSetting } from "@/lib/settings";
-import { getSecretFor, PERPLEXITY_DEFAULT_BASE_URL, perplexityBaseUrl } from "@/lib/secretOrigin";
+import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { safeFetch } from "@/lib/net/outbound";
+import { scrub } from "@/lib/secrets/scrub";
 
-/** Address of the Perplexity API; tests point it at the stand-in. */
-export const DEFAULT_BASE_URL = PERPLEXITY_DEFAULT_BASE_URL;
 export const AGENT_PATH = "/v1/agent";
 /** Setting that holds the effort level (Perplexity's pre-configured model and search setup). */
-export const MODEL_SETTING = "research.model";
+const MODEL_SETTING = "research.model";
 /** `fast` is Perplexity's documented replacement for `sonar-pro`, which this app used before. */
 export const DEFAULT_EFFORT = "fast";
-export const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 60_000;
 
 /**
  * The migration guide's instructions for numbered inline citations ("Inline citations" on
@@ -27,7 +26,7 @@ export const INSTRUCTIONS =
 
 export type Source = { url: string; title?: string; snippet?: string; date?: string; id?: number };
 
-export type AskSuccess = {
+type AskSuccess = {
   ok: true;
   answer: string;
   sources: Source[];
@@ -40,7 +39,7 @@ export type AskSuccess = {
   raw: unknown;
 };
 
-export type AskFailure = {
+type AskFailure = {
   ok: false;
   kind: "not_configured" | "http" | "rate_limited" | "timeout" | "network" | "malformed" | "failed" | "aborted";
   /** HTTP status of Perplexity's answer, when there was one */
@@ -74,11 +73,7 @@ export const baseUrl = perplexityBaseUrl;
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
-function redact(text: string, key: string) {
-  let out = text;
-  if (key) out = out.split(key).join("[key removed]");
-  return out.replace(/\b(pplx-[A-Za-z0-9]{6,})\b/g, "[key removed]").slice(0, 300);
-}
+const redact = (text: string, key: string) => scrub(text, key).slice(0, 300);
 
 /** Reads answer text and sources from a parsed Agent API response, or explains why it cannot. */
 export function readResponse(body: unknown): { answer: string; sources: Source[]; model?: string; effort?: string; costUsd?: number; status?: string; error?: string } | { malformed: string } {

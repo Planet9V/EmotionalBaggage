@@ -4,6 +4,7 @@
  * inside scaled groups, so every part is to scale.
  */
 import { bodiesInView, boxRect, fmtMm, footprint, innerBox, niceStep, VIEW_DEFS, type Box, type LayoutPart, type ViewDef } from "./geom";
+import { esc } from "@/lib/html";
 
 export type Palette = {
   canvas: string; surface: string; subtle: string; primary: string; secondary: string; muted: string; hairline: string; danger: string; link: string; accent: string;
@@ -30,7 +31,6 @@ export function readPalette(): Palette {
   };
 }
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const n2 = (n: number) => Number(n.toFixed(3));
 
 type Range = { x0: number; y0: number; x1: number; y1: number };

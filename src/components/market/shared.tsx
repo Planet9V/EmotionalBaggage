@@ -14,6 +14,7 @@ import { statusTone } from "@/lib/statusTones";
 import type { GeneratorId } from "@/lib/market/generators";
 import type { GeneratedFrom } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
+import { fmtDate } from "@/lib/format";
 
 export type GenerateBody = {
   generator: GeneratorId;
@@ -68,12 +69,12 @@ export function ModelGate({ what }: { what: string }) {
 export function GeneratedLine({ from }: { from: unknown }) {
   const g = from as Partial<GeneratedFrom> | undefined;
   if (!g || typeof g !== "object" || !g.model) return null;
-  const when = g.at ? new Date(g.at) : null;
+  const when = fmtDate(g.at, "short");
   const sources = Array.isArray(g.sources) ? g.sources : [];
   return (
     <p className="text-[11px] leading-snug text-muted">
       Draft by {g.model}
-      {when && !Number.isNaN(when.getTime()) ? `, ${when.toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+      {when ? `, ${when}` : ""}
       {sources.length ? `, from: ${sources.slice(0, 6).map((s) => `${s.kind} "${s.title.length > 40 ? `${s.title.slice(0, 40)}...` : s.title}"`).join("; ")}${sources.length > 6 ? ` and ${sources.length - 6} more` : ""}` : ""}.
     </p>
   );

@@ -12,10 +12,10 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { ATTACK_MESSAGE, type AttackRecord } from "./shared";
 
 /** Stores whose approved rows the reviewer attacks. */
-export const ATTACK_STORES = new Set(Object.keys(ATTACK_MESSAGE));
+const ATTACK_STORES = new Set(Object.keys(ATTACK_MESSAGE));
 
 /** The attack record on a row, read defensively. */
-export function attackOf(data: Record<string, unknown> | undefined): AttackRecord | null {
+function attackOf(data: Record<string, unknown> | undefined): AttackRecord | null {
   const a = data?.attack as AttackRecord | undefined;
   return a && typeof a === "object" && (a.state === "running" || a.state === "done" || a.state === "failed") ? a : null;
 }

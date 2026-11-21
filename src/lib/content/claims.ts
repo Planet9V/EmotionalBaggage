@@ -4,12 +4,12 @@
 // claim or a passing test: a requirement says what is intended, not what is shown.
 // The check is a pure function of the copy and the linked rows; the server runs it again on every
 // edit and approval, so a stored flag is never trusted.
-import type { ProofRef } from "@/lib/market/schemas";
+import { toInputText } from "@/lib/economics/money";
 
 export type ProofRow = { id: number; section: string; title: string; body: string; status: string; data: Record<string, unknown> };
 export type Flag = { field: string; text: string; kind: "number" | "superlative"; reason: string };
 
-export const SUPERLATIVES = [
+const SUPERLATIVES = [
   "best", "fastest", "cheapest", "lowest", "greatest", "biggest", "strongest", "safest", "smartest", "lightest", "quietest", "most", "only", "first", "perfect", "ultimate",
   "unbeatable", "guaranteed", "never", "always", "number one", "world's", "world-class", "leading", "revolutionary", "unmatched", "flawless", "zero", "100%", "#1",
 ];
@@ -29,7 +29,7 @@ export function proofStateOf(r: ProofRow): ProofState {
 const rowText = (r: ProofRow) =>
   `${r.title} ${r.body} ${Object.values(r.data ?? {})
     .filter((v) => typeof v === "string" || typeof v === "number")
-    .join(" ")} ${typeof r.data?.priceMinor === "number" ? (r.data.priceMinor / 100).toFixed(2) : ""}`;
+    .join(" ")} ${typeof r.data?.priceMinor === "number" ? toInputText(r.data.priceMinor, String(r.data.currency || "USD")) : ""}`;
 
 const normNum = (s: string) => s.replace(/,/g, "").replace(/\.0+$/, "");
 
@@ -40,7 +40,7 @@ export function numbersIn(text: string): string[] {
 }
 
 /** Removes words that may hold digits but are not claims: the product's own name and brand, and web addresses. */
-export function scrub(text: string, names: string[]): string {
+function stripNonClaims(text: string, names: string[]): string {
   let t = text.replace(/https?:\/\/\S+/g, " ").replace(/\b[\w.-]+\.(?:com|nl|org|net|io|co|app)\b\S*/gi, " ");
   for (const n of names.filter((x) => x && x.trim().length > 1)) t = t.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
   return t;
@@ -55,7 +55,7 @@ export function evaluate(fields: CopyField[], links: ProofRow[], names: string[]
   const strong = states.some((x) => x.s === "verified claim" || x.s === "passing test");
   const out: Flag[] = [];
   for (const f of fields) {
-    const clean = scrub(f.text, names);
+    const clean = stripNonClaims(f.text, names);
     for (const n of new Set(numbersIn(clean))) {
       if (!states.length) {
         out.push({ field: f.field, text: n, kind: "number", reason: `"${n}" is a number with no proof row linked.` });
@@ -70,11 +70,6 @@ export function evaluate(fields: CopyField[], links: ProofRow[], names: string[]
   }
   return out;
 }
-
-export const noProof = (flags: Flag[]) => flags.length > 0;
-
-/** Links as the rows store them. */
-export type Links = ProofRef[];
 
 export function flagSummary(flags: Flag[]): string {
   if (!flags.length) return "";

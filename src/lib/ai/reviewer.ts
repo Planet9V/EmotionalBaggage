@@ -13,12 +13,12 @@ export const REVIEWER_SYSTEM = `You review product concepts before money is spen
 - Never invent market figures, regulations or prices. If a fact is needed, say it must be researched.`;
 
 /** Sections the reviewer always reads. */
-export const REVIEWER_CONTEXT_SECTIONS = ["concept/brief", "concept/questions", "research/claims"] as const;
+const REVIEWER_CONTEXT_SECTIONS = ["concept/brief", "concept/questions", "research/claims"] as const;
 
-export const contextLine = (i: Pick<Item, "section" | "status" | "title" | "body">) => `[${i.section} | ${i.status}] ${i.title}${i.body ? `: ${i.body}` : ""}`;
+const contextLine = (i: Pick<Item, "section" | "status" | "title" | "body">) => `[${i.section} | ${i.status}] ${i.title}${i.body ? `: ${i.body}` : ""}`;
 
 /** The row a "Challenge this" or an attack is about, with its fields. */
-export function focusBlock(row: Item) {
+function focusBlock(row: Item) {
   const fields = Object.entries(row.data ?? {})
     .filter(([, v]) => v !== null && v !== "" && (typeof v !== "object" || Array.isArray(v)))
     .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)

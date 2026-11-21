@@ -1,8 +1,10 @@
 import { sumLine, type Part } from "@/lib/domain";
 import { readMoney } from "@/lib/moneyText";
 import { toCsvText } from "@/lib/csv";
+import { DEFAULT_CURRENCY, majorText } from "@/lib/economics/money";
 
-export const money = (n: number) => n.toFixed(2);
+/** A cost held in major units as fixed text with the currency's own decimals (src/lib/economics/money.ts); two decimals when no currency is given. */
+export const money = (n: number, currency?: string) => majorText(n, currency || DEFAULT_CURRENCY);
 
 /** Parse a money or quantity string. Returns null when it is not a number or is negative. */
 export function parseAmount(s: string): number | null {
@@ -43,51 +45,14 @@ export function groupParts(parts: Part[], by: "none" | "source" | "status"): Gro
 
 /* CSV */
 
-export const CSV_COLUMNS = ["ref", "title", "spec", "qty", "source", "search", "line"] as const;
-export type CsvColumn = (typeof CSV_COLUMNS)[number];
+const CSV_COLUMNS = ["ref", "title", "spec", "qty", "source", "search", "line"] as const;
+type CsvColumn = (typeof CSV_COLUMNS)[number];
 
 /** The parts list as CSV, through the one CSV writer (src/lib/csv.ts), which neutralises formula-looking cells. */
 export function toCsv(parts: Part[]): string {
   const rows: unknown[][] = [[...CSV_COLUMNS]];
   for (const p of parts) rows.push([p.ref, p.item.title, p.item.body, p.qty === null ? "" : p.qty, p.source, p.search, p.line === null ? "" : money(p.line)]);
   return toCsvText(rows);
-}
-
-/** RFC 4180 style parser. The delimiter is tab when the first line has a tab, else comma. */
-export function parseCsv(text: string): string[][] {
-  const clean = text.replace(/^﻿/, "");
-  const firstLine = clean.split(/\r?\n/, 1)[0] ?? "";
-  const delim = firstLine.includes("\t") ? "\t" : ",";
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-  for (let i = 0; i < clean.length; i++) {
-    const c = clean[i];
-    if (quoted) {
-      if (c === '"') {
-        if (clean[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else quoted = false;
-      } else cell += c;
-    } else if (c === '"') quoted = true;
-    else if (c === delim) {
-      row.push(cell);
-      cell = "";
-    } else if (c === "\n" || c === "\r") {
-      if (c === "\r" && clean[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += c;
-  }
-  if (cell !== "" || row.length) {
-    row.push(cell);
-    rows.push(row);
-  }
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
 const ALIASES: Record<CsvColumn, string[]> = {

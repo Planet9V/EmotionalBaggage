@@ -1,10 +1,12 @@
 // Safe for the browser: which of the two sendable channels a row's `channel` names.
-export type SendChannel = "x" | "instagram";
+import { findChannel, channelName, type SendChannel } from "./registry";
+export type { SendChannel };
 
-/** "X", "x", "Instagram", "instagram" and "ig" name the two channels this app can send to. */
+/** "X", "x", "twitter", "Instagram" and "ig" name the two channels this app can send to. */
 export function channelOf(raw: unknown): SendChannel | null {
-  const v = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (v === "x" || v === "twitter") return "x";
-  if (v === "instagram" || v === "ig") return "instagram";
-  return null;
+  const c = findChannel(raw);
+  return c && c.supports.includes("send") ? (c.id as SendChannel) : null;
 }
+
+/** The name shown for a sendable channel. */
+export const sendName = (ch: SendChannel | null) => (ch ? channelName(ch) : "");

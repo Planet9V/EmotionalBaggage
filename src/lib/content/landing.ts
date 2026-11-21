@@ -7,7 +7,7 @@ import { z } from "zod";
 import { contrastRatio, parseHex } from "@/lib/market/contrast";
 import { onColour } from "@/lib/market/brandKit";
 import type { LandingKind } from "./schemas";
-import { LANDING_KINDS } from "./schemas";
+import { esc } from "@/lib/html";
 
 const s = (n = 600) => z.string().max(n);
 const href = z.string().max(500).optional();
@@ -53,8 +53,6 @@ export type RenderEnv = {
 
 export type Rendered = { html: string; images: { fileId: number; file: string }[]; problems: string[] };
 
-export const esc = (v: unknown) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-
 const safeHref = (h: unknown) => {
   const v = String(h ?? "").trim();
   return /^(https?:\/\/[^\s"'<>]+|#[\w-]*|mailto:[^\s"'<>]+)$/i.test(v) ? v : "#";
@@ -65,7 +63,7 @@ const safeHref = (h: unknown) => {
 const hex = (rgb: [number, number, number]) => `#${rgb.map((c) => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, "0")).join("").toUpperCase()}`;
 
 /** Moves a colour towards black (on a light ground) or white (on a dark one) until it reads at 4.5 to 1. */
-export function readable(colour: string, ground: string, min = 4.5): string {
+function readable(colour: string, ground: string, min = 4.5): string {
   const rgb = parseHex(colour);
   if (!rgb) return colour;
   const target: [number, number, number] = (contrastRatio("#000000", ground) ?? 0) > (contrastRatio("#FFFFFF", ground) ?? 0) ? [0, 0, 0] : [255, 255, 255];
@@ -79,7 +77,7 @@ export function readable(colour: string, ground: string, min = 4.5): string {
 
 export type Palette = { primary: string; onPrimary: string; ink: string; paper: string; subtle: string; muted: string; rule: string; accentLight: string; accentDark: string; dInk: string; dPaper: string; dSubtle: string; dMuted: string; dRule: string; dPrimaryOn: string };
 
-export function palette(primary: string | null): Palette {
+function palette(primary: string | null): Palette {
   const p = primary && parseHex(primary) ? primary.toUpperCase() : "#1F5FBF";
   return {
     primary: p,
@@ -266,5 +264,3 @@ ${foot}
 </html>`;
   return { html, images: k.images, problems: k.problems, unapproved: ordered.filter((s) => s.status !== "approved").map((s) => s.id) };
 }
-
-export const orderedKinds = LANDING_KINDS;

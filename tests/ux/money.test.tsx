@@ -5,7 +5,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { moneyOrNull, readMoney } from "@/lib/moneyText";
 import { MoneyInput } from "@/components/ui/money-input";
 import { STEP_SCHEMAS, buildItems, emptyAnswers } from "@/components/wizard/model";
-import { parseMinor } from "@/lib/market/pricing";
+import { parseMinor } from "@/lib/economics/money";
 import { parseAmount } from "@/components/parts/bom";
 import { num } from "@/lib/economics/read";
 

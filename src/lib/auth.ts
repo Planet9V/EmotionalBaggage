@@ -16,7 +16,8 @@
  *
  * Every function that depends on the time takes an optional `now`, so tests can move the clock.
  */
-import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { sha256 } from "@/lib/hash";
 import type { Pool, PoolClient } from "pg";
 import { q, tx } from "@/lib/db";
 import { SESSION_COOKIE } from "@/app/sign-in/shared";
@@ -188,7 +189,6 @@ export type Session = {
 };
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
-const sha256 = (token: string) => createHash("sha256").update(token).digest("hex");
 
 /** Starts a session for a user and returns the token for the cookie. Only its hash is stored. */
 export async function createSession(userId: number, userAgent: string, opts: { now?: Date } = {}): Promise<string> {

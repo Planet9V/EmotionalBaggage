@@ -10,9 +10,9 @@ import { CLOSED } from "@/lib/menu";
 import { addDays, daysBetween, isDay } from "./days";
 import { LAUNCH_STORE, launchData, type StepRequirement } from "./schemas";
 import { CHECK_PROMPT, type LaunchTemplate } from "./templates";
-import { slugify } from "./links";
+import { slugify } from "@/lib/format";
 
-export type NewStepRow = { title: string; body: string; data: Record<string, unknown>; status: string };
+type NewStepRow = { title: string; body: string; data: Record<string, unknown>; status: string };
 
 export const isLaunchRow = (i: Item) => i.section === LAUNCH_STORE && i.data?.kind === "launch";
 export const isStepRow = (i: Item) => i.section === LAUNCH_STORE && i.data?.kind === "step";
@@ -127,7 +127,7 @@ export type Context = {
   today: string;
 };
 
-export type Blocker = { requirement: StepRequirement; text: string };
+type Blocker = { requirement: StepRequirement; text: string };
 
 export type Scheduled = StepRow & {
   due: string | null;

@@ -112,6 +112,10 @@ Every piece of marketing content is tied to one approved Positioning message and
 - **Social:** Board or Calendar; give a post a date or drag it; an approved post with a date becomes scheduled.
 - **Launch email and press note:** from the approved press release: subject options, preview text and body, a press note and a three-email sequence outline; export HTML or text.
 
+### Pricing and channel fees
+
+Pricing no longer keeps its own list of channels. The channels and their fees are the ones on Sales channels: for each, the platform fee and the payment fee, each a percent of the price plus a fixed amount per unit. Change a fee there and every margin and cost-plus price on Pricing follows. A channel with no fee entered shows "not entered" and counts as no fee. Channels typed on Pricing before were moved to Sales channels the first time the app started after this change; where a Sales channel of the same name already had a platform fee, that fee was kept and the other value is in Activity.
+
 ## Campaigns, launch plan, results and tracked links
 
 - **Campaigns:** set the marketing budget and the share of the margin an order may cost in "Marketing budget and rules", then add campaigns or use **Draft a campaign plan**. Allowable cost per order is the margin per unit before ads times your share; the screen shows the sum. Targets and stop and scale rules are numbers you enter. The board shows campaigns by status, the calendar by date, and the monthly roll-up against your budget.
