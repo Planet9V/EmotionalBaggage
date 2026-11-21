@@ -332,7 +332,7 @@ describe("Moonraker stand-in", () => {
       const { GET } = await import("@/app/api/printer/route");
       const body = await (await GET(json("GET", undefined, "http://test.local/api/printer"))).json();
       expect(body).toMatchObject({ configured: true, kind: "moonraker", state: "printing", file: "route.gcode", progress: 0 });
-      expect(s.requests.at(-1)?.query).toEqual({ print_stats: "", display_status: "" });
+      expect(Object.keys(s.requests.at(-1)?.query ?? {})).toEqual(expect.arrayContaining(["print_stats", "display_status"]));
     } finally {
       delete process.env.PRINTER_KIND;
       delete process.env.PRINTER_URL;

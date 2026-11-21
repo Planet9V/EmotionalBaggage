@@ -24,7 +24,11 @@
 //                modified, size, permissions}, print_started, print_queued, action "create_file". 201 and a Location
 //                header with the full path of the uploaded file.
 //
+//   [MR-PRINT]   printer.html "Print Job Management": POST /printer/print/start?filename=, /pause, /resume, /cancel; the response is "ok" (wrapped in result).
+//   [MR-TEMPS]   printer_objects.html: extruder and heater_bed report temperature and target; virtual_sdcard reports progress.
+//
 // Unverified (chosen by the stand-in):
+//   - the 400 answer when a print action is not allowed in the current state (Klipper refuses; the HTTP status is not shown in the docs)
 //   - the HTTP error body shape (the docs say a code and a message wrapped in a JSON object; the exact HTTP shape was
 //     not shown, {"error":{"code","message"}} is used) and the 400 status for an upload without a file
 //   - print_queued stays false; a print=true upload while printing does not start or queue the print
@@ -77,6 +81,9 @@ export function start(options?: Partial<MoonrakerOptions>) {
       const objects: Record<string, Record<string, unknown>> = {
         print_stats: { ...stats, info: { total_layer: null, current_layer: null } }, // [MR-OBJECTS]
         display_status: { message: "", progress }, // [MR-OBJECTS]
+        virtual_sdcard: { progress, file_position: 0 }, // [MR-TEMPS]
+        extruder: { temperature: stats.state === "printing" ? 214.9 : 24.1, target: stats.state === "printing" ? 215 : 0 }, // [MR-TEMPS]
+        heater_bed: { temperature: stats.state === "printing" ? 59.5 : 23.4, target: stats.state === "printing" ? 60 : 0 }, // [MR-TEMPS]
       };
       const status: Record<string, Record<string, unknown>> = {};
       for (const [name, attrs] of Object.entries(req.query)) {
@@ -86,6 +93,29 @@ export function start(options?: Partial<MoonrakerOptions>) {
         status[name] = wanted.length ? Object.fromEntries(wanted.filter((a) => a in obj).map((a) => [a, obj[a]])) : obj; // [MR-PRINTER]
       }
       return json(200, { result: { eventtime: process.uptime(), status } }); // [MR-INTRO] wrapper, [MR-PRINTER] fields
+    }
+
+    const printAction = /^POST \/printer\/print\/(start|pause|resume|cancel)$/.exec(route);
+    if (printAction) {
+      const act = printAction[1];
+      const active = stats.state === "printing" || stats.state === "paused";
+      if (act === "start") {
+        const filename = req.query.filename;
+        if (!filename) return err(400, "Missing filename"); // unverified
+        if (active) return err(400, "Print job already running"); // status unverified
+        Object.assign(stats, { filename, state: "printing", total_duration: 0, print_duration: 120 });
+        progress = 0.25;
+      } else if (act === "pause") {
+        if (stats.state !== "printing") return err(400, "Cannot pause: not printing"); // status unverified
+        stats.state = "paused";
+      } else if (act === "resume") {
+        if (stats.state !== "paused") return err(400, "Cannot resume: not paused"); // status unverified
+        stats.state = "printing";
+      } else {
+        if (!active) return err(400, "Cannot cancel: no print job"); // status unverified
+        stats.state = "cancelled";
+      }
+      return json(200, { result: "ok" }); // [MR-PRINT]
     }
 
     if (route === "POST /server/files/upload") {

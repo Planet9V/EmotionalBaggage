@@ -20,6 +20,11 @@
 //                {resource, download}}, done, effectiveSelect, effectivePrint}. 400 without file or foldername, 404 for
 //                an unknown storage, 409 when overwriting the file being printed, 415 if not gcode or stl.
 //
+//   [OP-PRINTER] https://docs.octoprint.org/en/main/api/printer.html  GET /api/printer: temperature {tool0 {actual, target, offset}, bed {...}};
+//                409 "if the printer is not operational".
+//   [OP-FILECMD] files.html "Issue a file command": POST /api/files/{location}/{path} {"command":"select","print":false}: 204; 409 if a job is active.
+//   [OP-PAUSE]   job.html: {"command":"pause","action":"pause"|"resume"|"toggle"}; 409 if no job is active (printing or paused).
+//
 // Unverified (chosen by the stand-in, not read in the docs):
 //   - the idle state string "Operational" and the job/progress values when no file is selected (null fields)
 //   - the 400 answer for an unknown job command, and the error bodies of every non-2xx answer
@@ -45,6 +50,7 @@ type FileInfo = { name: string; origin: string; size: number; date: number };
 export function start(options?: Partial<OctoPrintOptions>) {
   let selected: FileInfo | null = null;
   let printing = false;
+  let paused = false;
   const files = new Map<string, FileInfo>();
 
   return startStandIn<OctoPrintOptions>(DEFAULTS, (req, o, base) => {
@@ -68,26 +74,58 @@ export function start(options?: Partial<OctoPrintOptions>) {
           filament: selected ? { tool0: { length: 810, volume: 5.36 } } : null, // [OP-JOB] (value from the example)
           user: selected ? "stand-in" : null, // [OP-JOB]
         },
-        progress: printing
+        progress: printing || paused
           ? { completion: 0.2298468264184775, filepos: 337942, printTime: 276, printTimeLeft: 912, printTimeLeftOrigin: "linear" } // [OP-JOB] fields; values from the example
           : { completion: null, filepos: null, printTime: null, printTimeLeft: null, printTimeLeftOrigin: null }, // unverified (idle)
-        state: printing ? "Printing" : "Operational", // "Printing" [OP-JOB]; "Operational" unverified
+        state: paused ? "Paused" : printing ? "Printing" : "Operational", // "Printing" [OP-JOB]; "Operational" and "Paused" unverified
+      });
+    }
+
+    if (route === "GET /api/printer") {
+      if (!o.operational) return json(409, { error: "Printer is not operational (stand-in)" }); // 409 [OP-PRINTER]
+      return json(200, {
+        temperature: {
+          tool0: { actual: printing ? 214.9 : 24.1, target: printing ? 215 : 0, offset: 0 }, // [OP-PRINTER] shape; values invented
+          bed: { actual: printing ? 59.5 : 23.4, target: printing ? 60 : 0, offset: 0 },
+        },
       });
     }
 
     if (route === "POST /api/job") {
-      const command = (req.body as { command?: string } | null)?.command;
+      const body = req.body as { command?: string; action?: string } | null;
+      const command = body?.command;
       if (command === "start") {
-        if (printing || !selected || !o.operational) return json(409, { error: "Printer is not operational or already printing (stand-in)" }); // 409 [OP-JOB]; body unverified
+        if (printing || paused || !selected || !o.operational) return json(409, { error: "Printer is not operational or already printing (stand-in)" }); // 409 [OP-JOB]; body unverified
         printing = true;
         return { status: 204 }; // [OP-JOB]
       }
       if (command === "cancel") {
-        if (!printing) return json(409, { error: "No job is active (stand-in)" }); // 409 [OP-JOB]; body unverified
+        if (!printing && !paused) return json(409, { error: "No job is active (stand-in)" }); // 409 [OP-JOB]; body unverified
         printing = false;
+        paused = false;
         return { status: 204 }; // [OP-JOB]
       }
+      if (command === "pause") {
+        if (!printing && !paused) return json(409, { error: "No job is active (stand-in)" }); // 409 [OP-PAUSE]
+        const action = body?.action ?? "toggle"; // [OP-PAUSE]
+        const wantPause = action === "pause" ? true : action === "resume" ? false : printing; // toggle flips
+        printing = !wantPause;
+        paused = wantPause;
+        return { status: 204 }; // [OP-PAUSE]
+      }
       return json(400, { error: `Unknown command ${String(command)} (stand-in)` }); // unverified
+    }
+
+    const fileCmd = /^\/api\/files\/([^/]+)\/(.+)$/.exec(req.path);
+    if (req.method === "POST" && fileCmd) {
+      const command = (req.body as { command?: string; print?: boolean } | null)?.command;
+      const path = decodeURIComponent(fileCmd[2]);
+      const found = files.get(`${fileCmd[1]}/${path}`);
+      if (!found) return json(404, { error: "No such file (stand-in)" }); // unverified
+      if (command !== "select") return json(400, { error: `Unknown file command ${String(command)} (stand-in)` }); // unverified
+      if (printing || paused) return json(409, { error: "A job is active (stand-in)" }); // 409 [OP-FILECMD]
+      selected = found;
+      return { status: 204 }; // [OP-FILECMD]
     }
 
     const upload = /^\/api\/files\/([^/]+)$/.exec(req.path);
@@ -100,7 +138,7 @@ export function start(options?: Partial<OctoPrintOptions>) {
       if (!/\.(gcode|gco|g|stl)$/i.test(file.filename)) return json(415, { error: "Not a gcode or stl file (stand-in)" }); // 415 [OP-FILES]; extension list unverified
       const folder = (body?.fields.path ?? "").replace(/^\/+|\/+$/g, "");
       const path = folder ? `${folder}/${file.filename}` : file.filename;
-      if (printing && selected?.name === path) return json(409, { error: "File is being printed (stand-in)" }); // 409 [OP-FILES]
+      if ((printing || paused) && selected?.name === path) return json(409, { error: "File is being printed (stand-in)" }); // 409 [OP-FILES]
       const info: FileInfo = { name: path, origin: storage, size: file.size, date: Math.floor(Date.now() / 1000) };
       files.set(`${storage}/${path}`, info);
       const wantPrint = body?.fields.print === "true";

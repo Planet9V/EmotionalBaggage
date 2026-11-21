@@ -7,6 +7,7 @@ import { AGENT_PATH, baseUrl as perplexityBase, DEFAULT_EFFORT, readResponse } f
 import { audit } from "./audit";
 import { plannerUrl } from "./planner";
 import { getPrinterRow, requireFamily, resolveAccess, valuesOf } from "./printers";
+import { createAdapter } from "@/lib/printers/factory";
 import type { ConnectionTest } from "./schemas";
 
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
@@ -196,26 +197,13 @@ async function testPrinter(t: Extract<ConnectionTest, { kind: "printer" }>): Pro
   if (fam.id === "file-only") return { family: fam.id, result: { ok: true, message: "File-only printers need no connection: you download the file and print it yourself." } };
   if (fam.status !== "supported") return { family: fam.id, result: { ok: false, message: `A connection test for ${fam.label} is not built yet.` } };
 
-  const address = values.address;
-  const key = values.apiKey ?? null;
-  const headers: Record<string, string> = key ? { "x-api-key": key } : {};
-  if (fam.id === "octoprint") {
-    const c = await call(`${address}/api/version`, { headers }, [key]);
-    if ("fail" in c) return { family: fam.id, result: c.fail };
-    if (c.res.status !== 200) return { family: fam.id, result: await httpFailure(c.res, "OctoPrint", [key]) };
-    const j = (await readJson(c.res)) as { server?: string; text?: string; api?: string } | undefined;
-    return { family: fam.id, result: { ok: true, message: `OctoPrint answered: ${j?.text ?? `server ${j?.server ?? "unknown"}`}.`, detail: { server: j?.server ?? null, api: j?.api ?? null } } };
+  // Every family's own adapter makes its one cheap, read-only call (src/lib/printers). The time limit is the one set above.
+  const adapter = createAdapter(fam.id, values, { timeoutMs: limitMs });
+  try {
+    return { family: fam.id, result: await adapter.test() };
+  } finally {
+    await adapter.close().catch(() => undefined);
   }
-  // moonraker
-  const c = await call(`${address}/printer/info`, { headers }, [key]);
-  if ("fail" in c) return { family: fam.id, result: c.fail };
-  if (c.res.status !== 200) return { family: fam.id, result: await httpFailure(c.res, "Moonraker", [key]) };
-  const j = (await readJson(c.res)) as { result?: { state?: string; software_version?: string; hostname?: string } } | undefined;
-  const state = j?.result?.state ?? "unknown";
-  return {
-    family: fam.id,
-    result: { ok: true, message: `Moonraker answered; Klipper is ${state}.`, detail: { state, softwareVersion: j?.result?.software_version ?? null, hostname: j?.result?.hostname ?? null } },
-  };
 }
 
 async function testPlanner(t: Extract<ConnectionTest, { kind: "planner" }>): Promise<TestResult> {

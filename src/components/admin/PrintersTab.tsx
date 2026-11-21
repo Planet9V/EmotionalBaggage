@@ -3,6 +3,7 @@
 // Printers: the form is built from the family definitions the API returns (fields, which are secret, which
 // required, and whether the family can be tested today). Saved secrets show at most their last four.
 import { useId, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,12 +24,19 @@ import {
   type PrinterFamily,
   type PrinterView,
 } from "@/lib/admin/client";
+import { ModelFacts } from "@/components/printers/ModelFacts";
+import { ModelPicker } from "@/components/printers/ModelPicker";
+import { findModel, type PrinterModel } from "@/lib/printers/models";
+import { findModelFor } from "@/lib/printers/modelLookup";
 import { ConfirmButton, describe, Empty, FormField, LoadError, LoadingBlocks, Panel, SaveError, SavedNote, TestOutcome, useFlag } from "./shared";
 
 /** What this app can do with a family today, in words. Shown on every family, honestly. */
-export function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields">): { label: string; tone: StatusTone; detail: string } {
+export function familyStatus(f: Pick<PrinterFamily, "id" | "status" | "fields"> & { experimental?: boolean }): { label: string; tone: StatusTone; detail: string } {
   if (f.id === "file-only") return { label: "No connection needed", tone: "success", detail: "You download the file and print it yourself." };
-  if (f.status === "supported") return { label: "Testable today", tone: "success", detail: "A connection test exists and print status is read." };
+  if (f.status === "supported" && f.experimental) {
+    return { label: "Experimental", tone: "warning", detail: "A connection test and print status exist, built to documentation that may not match your model. Check it with Test before you rely on it." };
+  }
+  if (f.status === "supported") return { label: "Testable today", tone: "success", detail: "A connection test exists, print status is read, and files can be sent and started with a confirmation." };
   if (f.fields.length) return { label: "Saved but not driven", tone: "warning", detail: "It can be saved, but there is no connection test and nothing is sent to it yet." };
   return { label: "No documented fields", tone: "neutral", detail: "No connection documentation from the maker was found. Use File only for now." };
 }
@@ -41,6 +49,7 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
   const [name, setName] = useState(editing?.name ?? "");
   const [familyId, setFamilyId] = useState(editing?.family ?? "");
   const [model, setModel] = useState(editing?.model ?? "");
+  const [modelId, setModelId] = useState(() => findModelFor(editing?.model ?? "")?.id ?? "");
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(Object.entries(editing?.access ?? {}).map(([k, v]) => [k, v.secret ? "" : (v.value ?? "")]))
   );
@@ -54,6 +63,19 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
   const busy = add.isPending || update.isPending;
   const id = (f: string) => `${uid}-${f}`;
   const sameFamily = editing && editing.family === familyId;
+  const picked = modelId ? findModel(modelId) : undefined;
+
+  /** Choosing a model from the supported list sets the family and the model text; the fields below follow the family. */
+  const pickModel = (m: PrinterModel | null) => {
+    setModelId(m?.id ?? "__other");
+    if (!m) return;
+    if (m.family !== familyId) {
+      setFamilyId(m.family);
+      setErrors({});
+      test.reset();
+    }
+    setModel(m.kind === "generic" ? "" : `${m.maker} ${m.model}`);
+  };
 
   /** The access object to send: changed or new values, null for a value to remove. Blank secrets keep the saved one. */
   const access = (): Record<string, string | null> => {
@@ -121,6 +143,9 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
         <FormField id={id("name")} label="Name" required error={errors.name}>
           <Input id={id("name")} value={name} onChange={(e) => setName(e.target.value)} {...describe(id("name"), { error: errors.name })} />
         </FormField>
+        <FormField id={id("pick")} label="Model from the supported list" hint="Choosing one sets the family and shows what to switch on at the printer. Not on the list? Choose the family below.">
+          <ModelPicker id={id("pick")} value={modelId} onPick={pickModel} />
+        </FormField>
         <FormField id={id("family")} label="Family" required error={errors.family}>
           <Select
             value={familyId || undefined}
@@ -154,9 +179,15 @@ function PrinterForm({ families, mode, onDone }: { families: PrinterFamily[]; mo
               <StatusBadge tone={st.tone}>{st.label}</StatusBadge>
               <span className="text-secondary">{st.detail}</span>
             </p>
+            {fam.notice ? <p className="mt-1 text-xs text-secondary" data-testid="family-notice">{fam.notice}</p> : null}
             <p className="mt-1 text-xs text-muted">At the printer: {fam.atPrinter}</p>
             <p className="mt-0.5 break-all text-xs text-muted">Field list from: {fam.source}</p>
           </div>
+          {picked ? (
+            <div className="rounded-md border border-hairline bg-surface px-3 py-3">
+              <ModelFacts model={picked} />
+            </div>
+          ) : null}
           {fam.fields.length === 0 ? <p className="text-sm text-secondary">This family takes no connection fields.</p> : null}
           <div className="grid gap-4 lg:grid-cols-2">
             {fam.fields.map((f) => {
@@ -326,7 +357,12 @@ export function PrintersTab() {
     <div className="space-y-4">
       <Panel
         title="Printers"
-        description="Print status in Prototype, 3D printing shows the first printer that is switched on. Sending files to a printer is not built yet."
+        description={
+          <>
+            Prototype, 3D printing shows every printer that is switched on, with its status, and Pause and Cancel for a running print.{" "}
+            <Link href="/printers" className="text-link underline underline-offset-2">Supported printers</Link>
+          </>
+        }
         actions={
           !adding ? (
             <Button size="sm" onClick={() => setAdding(true)}>
