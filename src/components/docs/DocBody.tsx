@@ -35,6 +35,18 @@ const components: Components = {
   },
 };
 
+/**
+ * The same Markdown renderer with some elements styled for another page (the concept story reads at a larger
+ * size). One renderer for the whole app: react-markdown with GitHub tables, lists and links.
+ */
+export function Markdown({ markdown, overrides }: { markdown: string; overrides?: Components }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={overrides ? { ...components, ...overrides } : components}>
+      {markdown}
+    </ReactMarkdown>
+  );
+}
+
 export function DocBody({ markdown }: { markdown: string }) {
   return (
     <article className="max-w-3xl">

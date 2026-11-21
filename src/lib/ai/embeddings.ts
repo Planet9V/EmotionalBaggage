@@ -209,26 +209,26 @@ export function nearestSourcesSql(dims: number, scan: Scan = "plain") {
   const n = width(dims);
   if (scan === "exact") {
     return (
-      `SELECT c.item_id, c.research_id, 1 - c.dist AS score FROM (` +
-      `SELECT e.item_id, e.research_id, e.embedding::vector(${n}) <=> $3::vector(${n}) AS dist FROM embeddings e WHERE ${where(n, "all")} OFFSET 0` +
+      `SELECT c.item_id, c.research_id, c.chunk_id, 1 - c.dist AS score FROM (` +
+      `SELECT e.item_id, e.research_id, e.chunk_id, e.embedding::vector(${n}) <=> $3::vector(${n}) AS dist FROM embeddings e WHERE ${where(n, "all")} OFFSET 0` +
       `) c ORDER BY c.dist LIMIT $4`
     );
   }
   if (scan === "bits") {
     const dist = `c.embedding::vector(${n}) <=> $3::vector(${n})`;
-    return `SELECT c.item_id, c.research_id, 1 - (${dist}) AS score FROM (${bitsInner(n, "x.item_id, x.research_id", "all")}) c ORDER BY ${dist} LIMIT $4`;
+    return `SELECT c.item_id, c.research_id, c.chunk_id, 1 - (${dist}) AS score FROM (${bitsInner(n, "x.item_id, x.research_id, x.chunk_id", "all")}) c ORDER BY ${dist} LIMIT $4`;
   }
   if (scan === "binary") {
     const dist = `c.embedding::vector(${n}) <=> $3::vector(${n})`;
     return (
-      `SELECT c.item_id, c.research_id, 1 - (${dist}) AS score FROM (` +
-      `SELECT e.item_id, e.research_id, e.embedding FROM embeddings e WHERE ${where(n, "all")} ` +
+      `SELECT c.item_id, c.research_id, c.chunk_id, 1 - (${dist}) AS score FROM (` +
+      `SELECT e.item_id, e.research_id, e.chunk_id, e.embedding FROM embeddings e WHERE ${where(n, "all")} ` +
       `ORDER BY ${bqOrder(n, "e.embedding")} LIMIT least(greatest($4 * 10, 100), 1000)` +
       `) c ORDER BY ${dist} LIMIT $4`
     );
   }
   const dist = `e.embedding::vector(${n}) <=> $3::vector(${n})`;
-  return `SELECT e.item_id, e.research_id, 1 - (${dist}) AS score FROM embeddings e WHERE ${where(n, "all")} ORDER BY ${dist} LIMIT $4`;
+  return `SELECT e.item_id, e.research_id, e.chunk_id, 1 - (${dist}) AS score FROM embeddings e WHERE ${where(n, "all")} ORDER BY ${dist} LIMIT $4`;
 }
 
 /** How many vectors a concept has for this model and width (decides between the binary scan and an exact one). */
@@ -244,6 +244,12 @@ export function researchText(r: { query: string; answer: string }) {
 export const UPSERT_SQL =
   "INSERT INTO embeddings (project_id, item_id, model, dims, content_sha256, embedding) VALUES ($1, $2, $3, $4, $5, $6::vector) " +
   "ON CONFLICT (item_id, model) WHERE item_id IS NOT NULL DO UPDATE SET project_id = EXCLUDED.project_id, dims = EXCLUDED.dims, " +
+  "content_sha256 = EXCLUDED.content_sha256, embedding = EXCLUDED.embedding, created_at = now()";
+
+/** A passage of a source (source_chunks, migration 0029). */
+const UPSERT_CHUNK_SQL =
+  "INSERT INTO embeddings (project_id, chunk_id, model, dims, content_sha256, embedding) VALUES ($1, $2, $3, $4, $5, $6::vector) " +
+  "ON CONFLICT (chunk_id, model) WHERE chunk_id IS NOT NULL DO UPDATE SET project_id = EXCLUDED.project_id, dims = EXCLUDED.dims, " +
   "content_sha256 = EXCLUDED.content_sha256, embedding = EXCLUDED.embedding, created_at = now()";
 
 export const UPSERT_RESEARCH_SQL =
@@ -332,8 +338,8 @@ export type IndexCounts = {
 
 export type IndexOptions = { batchSize?: number; signal?: AbortSignal; timeoutMs?: number; maxRetries?: number };
 
-/** One thing to embed: a row of the concept or a saved research answer. */
-type Target = { kind: "item" | "research"; id: string; projectId: string; text: string };
+/** One thing to embed: a row of the concept, a saved research answer, or a passage of a source. */
+type Target = { kind: "item" | "research" | "chunk"; id: string; projectId: string; text: string };
 
 /** What a search of this concept would run now (see nearest()). */
 async function searchFor(projectId: string | null, info: EmbeddingInfo, index: SearchKind): Promise<SearchKind> {
@@ -360,6 +366,7 @@ async function embedTargets(targets: Target[], emb: ReadyEmbedding, o: IndexOpti
 
   const itemIds = targets.filter((t) => t.kind === "item").map((t) => t.id);
   const researchIds = targets.filter((t) => t.kind === "research").map((t) => t.id);
+  const chunkIds = targets.filter((t) => t.kind === "chunk").map((t) => t.id);
   const known = new Map<string, { content_sha256: string; dims: number }>();
   if (itemIds.length) {
     for (const r of await q<{ item_id: string; content_sha256: string; dims: number }>(
@@ -374,6 +381,14 @@ async function embedTargets(targets: Target[], emb: ReadyEmbedding, o: IndexOpti
       [info.model, researchIds]
     ))
       known.set(`research:${r.research_id}`, r);
+  }
+
+  if (chunkIds.length) {
+    for (const r of await q<{ chunk_id: string; content_sha256: string; dims: number }>(
+      "SELECT chunk_id, content_sha256, dims FROM embeddings WHERE model = $1 AND chunk_id = ANY($2::bigint[])",
+      [info.model, chunkIds]
+    ))
+      known.set(`chunk:${r.chunk_id}`, r);
   }
 
   const todo: { t: Target; hash: string }[] = [];
@@ -400,7 +415,7 @@ async function embedTargets(targets: Target[], emb: ReadyEmbedding, o: IndexOpti
     for (let k = 0; k < group.length; k++) {
       const { t, hash } = group[k];
       try {
-        await q(t.kind === "item" ? UPSERT_SQL : UPSERT_RESEARCH_SQL, [t.projectId, t.id, info.model, info.dims, hash, vectorLiteral(vectors[k])]);
+        await q(t.kind === "item" ? UPSERT_SQL : t.kind === "chunk" ? UPSERT_CHUNK_SQL : UPSERT_RESEARCH_SQL, [t.projectId, t.id, info.model, info.dims, hash, vectorLiteral(vectors[k])]);
         bump(t, "indexed");
       } catch (e) {
         bump(t, "failed");
@@ -423,18 +438,31 @@ export async function indexItem(itemId: number, o: IndexOptions = {}): Promise<I
 
 type ResearchRow = { id: string; project_id: string; query: string; answer: string; created_at?: string };
 
-/** Embeds every row and every saved research answer of a concept whose text changed for the current model. */
+type ChunkRow = { id: string; project_id: string; text: string };
+const chunkTarget = (r: ChunkRow): Target => ({ kind: "chunk", id: String(r.id), projectId: r.project_id, text: r.text });
+
+/** Embeds every row, every saved research answer and every passage of the concept's sources whose text changed for the current model. */
 export async function indexProject(projectId: string, o: IndexOptions = {}): Promise<IndexCounts | Unavailable> {
   const p = await prerequisites();
   if (!p.ok) return p;
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id = $1 ORDER BY sort, id`, [projectId]);
   const research = await q<ResearchRow>("SELECT id, project_id, query, answer FROM research WHERE project_id = $1 ORDER BY id", [projectId]);
+  const chunks = await q<ChunkRow>("SELECT id, project_id, text FROM source_chunks WHERE project_id = $1 ORDER BY item_id, n", [projectId]);
   return indexTargets(
     projectId,
-    [...rows.map(itemTarget), ...research.map((r): Target => ({ kind: "research", id: String(r.id), projectId: r.project_id, text: researchText(r) }))],
+    [...rows.map(itemTarget), ...research.map((r): Target => ({ kind: "research", id: String(r.id), projectId: r.project_id, text: researchText(r) })), ...chunks.map(chunkTarget)],
     p.emb,
     o
   );
+}
+
+/** Embeds one source: its row and the passages of its text (when their text changed for the current model). */
+export async function indexSource(itemId: number, o: IndexOptions = {}): Promise<IndexCounts | Unavailable> {
+  const p = await prerequisites();
+  if (!p.ok) return p;
+  const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id = $1`, [itemId]);
+  const chunks = await q<ChunkRow>("SELECT id, project_id, text FROM source_chunks WHERE item_id = $1 ORDER BY n", [itemId]);
+  return indexTargets(rows[0]?.project_id ?? null, [...rows.map(itemTarget), ...chunks.map(chunkTarget)], p.emb, o);
 }
 
 /** Whether a concept has rows embedded with the current model (for search mode "auto"). */
@@ -526,16 +554,29 @@ export async function searchByMeaning(
 
 type ResearchHit = { id: number; projectId: string; query: string; answer: string; createdAt: string };
 
-/** A source found for a question: a row of the concept or a saved research answer, with its score. */
+/** A passage of a source's text: its place in the source and the words. */
+type ChunkHit = { id: number; n: number; text: string };
+
+/** A source found for a question: a row of the concept, a saved research answer or a passage of one of the concept's sources, with its score. */
 export type SourceHit =
   | { kind: "item"; score: number; item: ReturnType<typeof toItem> }
-  | { kind: "research"; score: number; research: ResearchHit };
+  | { kind: "research"; score: number; research: ResearchHit }
+  | { kind: "source"; score: number; item: ReturnType<typeof toItem>; chunk: ChunkHit };
 
 const toResearch = (r: ResearchRow): ResearchHit => ({ id: Number(r.id), projectId: r.project_id, query: r.query, answer: r.answer, createdAt: String(r.created_at ?? "") });
 
-/** Rows and research answers by id, in the order of the hits given. */
-async function loadHits(projectId: string, hits: { item_id: string | null; research_id: string | null; score: number }[]): Promise<SourceHit[]> {
-  const itemIds = hits.filter((h) => h.item_id !== null).map((h) => h.item_id);
+type HitRow = { item_id: string | null; research_id: string | null; chunk_id?: string | null; score: number };
+
+/** Rows, research answers and source passages by id, in the order of the hits given. */
+async function loadHits(projectId: string, hits: HitRow[]): Promise<SourceHit[]> {
+  const chunkIds = hits.filter((h) => h.chunk_id !== null && h.chunk_id !== undefined).map((h) => h.chunk_id);
+  const chunks = new Map(
+    (chunkIds.length
+      ? await q<{ id: string; item_id: string; n: number; text: string }>("SELECT id, item_id, n, text FROM source_chunks WHERE project_id = $1 AND id = ANY($2::bigint[])", [projectId, chunkIds])
+      : []
+    ).map((r) => [String(r.id), r])
+  );
+  const itemIds = [...hits.filter((h) => h.item_id !== null).map((h) => h.item_id), ...[...chunks.values()].map((c) => c.item_id)];
   const researchIds = hits.filter((h) => h.research_id !== null).map((h) => h.research_id);
   const items = new Map(
     (itemIds.length ? await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id = $1 AND id = ANY($2::bigint[])`, [projectId, itemIds]) : []).map((r) => [String(r.id), r])
@@ -549,7 +590,11 @@ async function loadHits(projectId: string, hits: { item_id: string | null; resea
   const out: SourceHit[] = [];
   for (const h of hits) {
     const score = Number(h.score);
-    if (h.item_id !== null) {
+    if (h.chunk_id !== null && h.chunk_id !== undefined) {
+      const c = chunks.get(String(h.chunk_id));
+      const r = c ? items.get(String(c.item_id)) : undefined;
+      if (c && r) out.push({ kind: "source", score, item: toItem(r), chunk: { id: Number(c.id), n: Number(c.n), text: c.text } });
+    } else if (h.item_id !== null) {
       const r = items.get(String(h.item_id));
       if (r) out.push({ kind: "item", score, item: toItem(r) });
     } else if (h.research_id !== null) {
@@ -569,7 +614,7 @@ export async function searchSourcesByMeaning(
 ): Promise<{ hits: SourceHit[]; search: SearchKind; model: string; dims: number }> {
   const n = Math.max(1, Math.min(100, Math.floor(limit)));
   const vector = await embedQuery(query, o.use, o);
-  const { rows, search } = await nearest<{ item_id: string | null; research_id: string | null; score: number }>(projectId, o.use, vector, n, "all", nearestSourcesSql, o.exactThreshold, o.bitThreshold);
+  const { rows, search } = await nearest<HitRow>(projectId, o.use, vector, n, "all", nearestSourcesSql, o.exactThreshold, o.bitThreshold);
   rows.sort((a, b) => Number(b.score) - Number(a.score));
   return { hits: await loadHits(projectId, rows), search, model: o.use.info.model, dims: o.use.info.dims };
 }
@@ -603,14 +648,18 @@ const STOP_WORDS = new Set(
  * rows match too and rank higher. Score = rank / (1 + rank), between 0 and 1.
  */
 export const TEXT_SOURCES_SQL =
-  "SELECT item_id, research_id, rank / (1 + rank) AS hits FROM (" +
-  "SELECT i.id::text AS item_id, NULL::text AS research_id, " +
+  "SELECT item_id, research_id, chunk_id, rank / (1 + rank) AS hits FROM (" +
+  "SELECT i.id::text AS item_id, NULL::text AS research_id, NULL::text AS chunk_id, " +
   "(ts_rank_cd(i.search, t.query) + CASE WHEN i.section = ANY($4::text[]) THEN 1 ELSE 0 END)::float8 AS rank, i.sort AS sort " +
   "FROM items i, to_tsquery('english', $2) AS t(query) WHERE i.project_id = $1 AND (i.search @@ t.query OR i.section = ANY($4::text[])) " +
   "UNION ALL " +
-  "SELECT NULL::text, r.id::text, ts_rank_cd(r.search, t.query)::float8, 100000 " +
+  "SELECT NULL::text, r.id::text, NULL::text, ts_rank_cd(r.search, t.query)::float8, 100000 " +
   "FROM research r, to_tsquery('english', $2) AS t(query) WHERE r.project_id = $1 AND r.search @@ t.query" +
-  ") s ORDER BY rank DESC, sort, item_id NULLS LAST, research_id LIMIT $3";
+  // passages of the concept's sources (migration 0029)
+  " UNION ALL " +
+  "SELECT NULL::text, NULL::text, c.id::text, ts_rank_cd(c.search, t.query)::float8, 200000 + c.n " +
+  "FROM source_chunks c, to_tsquery('english', $2) AS t(query) WHERE c.project_id = $1 AND c.search @@ t.query" +
+  ") s ORDER BY rank DESC, sort, item_id NULLS LAST, research_id NULLS LAST, chunk_id LIMIT $3";
 
 /** The stores (as kept on rows, e.g. "design/bom") whose section name appears in the question. */
 export function sectionsNamed(question: string): string[] {
@@ -629,10 +678,10 @@ export async function searchSourcesByText(projectId: string, question: string, l
   const words = questionWords(question);
   const sections = sectionsNamed(question);
   if (!words.length && !sections.length) return [];
-  const rows = await q<{ item_id: string | null; research_id: string | null; hits: number }>(TEXT_SOURCES_SQL, [projectId, words.join(" | "), limit, sections]);
+  const rows = await q<{ item_id: string | null; research_id: string | null; chunk_id: string | null; hits: number }>(TEXT_SOURCES_SQL, [projectId, words.join(" | "), limit, sections]);
   return loadHits(
     projectId,
-    rows.map((r) => ({ item_id: r.item_id, research_id: r.research_id, score: Number(r.hits) }))
+    rows.map((r) => ({ item_id: r.item_id, research_id: r.research_id, chunk_id: r.chunk_id, score: Number(r.hits) }))
   );
 }
 
@@ -642,7 +691,7 @@ export async function searchSourcesByText(projectId: string, question: string, l
  * still gets in. 60 is the constant from the method's paper and pgvector's hybrid-search example.
  */
 export function fuseRanked(lists: SourceHit[][], limit: number): SourceHit[] {
-  const keyOf = (h: SourceHit) => (h.kind === "item" ? `i${h.item.id}` : `r${h.research.id}`);
+  const keyOf = (h: SourceHit) => (h.kind === "item" ? `i${h.item.id}` : h.kind === "source" ? `c${h.chunk.id}` : `r${h.research.id}`);
   const seen = new Map<string, { hit: SourceHit; score: number }>();
   for (const list of lists) {
     list.forEach((hit, place) => {

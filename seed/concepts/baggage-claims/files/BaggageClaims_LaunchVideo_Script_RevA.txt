@@ -1,0 +1,84 @@
+BAGGAGE CLAIMS MK1 — KICKSTARTER LAUNCH VIDEO
+Master hero cut: 2:15 | 4 x 15s verticals | Doc Rev A — 19 Nov 2026
+Talent: HOST (traveler, 30s, deadpan), BAG (VO, sassy, high comic energy), HANDLER (non-speaking)
+Locations: home; airport curb; check-in counter; baggage hall; carousel; living room
+Props: hero suitcase w/ device visible; oversized tag reading "FRAGILE — and emotionally unstable"
+VO note: BAG is pre-recorded voice-pack audio (see audio cue sheet in camera lines).
+
+────────────────────────────────────────────────────────────────
+COLD OPEN (0:00–0:08)
+0:00  BLACK. Sound of a suitcase hitting a conveyor belt — hard.
+0:02  BAG (VO): "OW!! — I felt that in my flip-flops!"
+0:05  CUT IN: tight on suitcase being yeeted onto a belt. Freeze frame.
+0:06  TITLE SMASH: BAGGAGE CLAIMS. Sub: "Your luggage finally talks back."
+0:08  HOST (VO): "Every year, 2.8 billion bags take a trip their owners never see."
+
+ACT 1 — THE SETUP (0:08–0:35)
+0:09  HOST at home, packing. Ducks taped to the handle: our device. Close-up of it.
+      HOST: "So I built this. A tiny audio gadget that straps to any suitcase..."
+0:14  Quick inserts: strap cinching, power switch click, batteries (AA).
+      HOST: "...and has opinions about air travel."
+0:18  Split screen montage of three airport indignities: scale, handler toss, carousel.
+      HOST (VO): "It knows when it's being weighed. When it's being thrown. When it's
+                  been upside down in the dark for four hours."
+0:27  HOST looks into lens, deadpan:
+      HOST: "And it is NOT happy about it."
+0:31  TITLE: "MEET: BAGGAGE CLAIMS MK1" — over shot of device rotating on turntable.
+
+ACT 2 — THE MOMENTS (0:35–1:35)  [each beat = its own 15s vertical cut]
+0:36  CURB: HOST grabs handle. Beat. BAG (VO): "Are you gonna buy me dinner first?"
+      HOST pauses, glances down. A bystander snorts. Supers: "HANDLE_GRAB"
+0:45  CHECK-IN: Agent lifts bag onto scale. Perfect stillness. Suspenseful music sting.
+      Scale display: 62 lbs. BAG (VO): "Are you... calling me FAT?"
+      Agent (improvised, straight face): "Sir, the bag is over the limit."
+      HOST: "Take it up with her."  Supers: "WEIGH_IN"
+0:58  HANDLER BEAT (wide shot, filmed at distance): bag arcs from cart to belt.
+      Mid-air freeze: BAG (VO) Wilhelm scream. THUD. BAG (VO): "OW! Ow. Ow. Owww."
+      HANDLER turns toward sound, genuinely confused, looks around.  Supers: "FREEFALL + IMPACT"
+1:10  HOLD SEQUENCE: bag on black luggage cart, slow push-in. Nothing moves.
+      BAG (VO, sleepy): "Hello?... Anyone? ...Cool, cool. I'll just be here. (beat) In the dark."
+      Snoring. Supers: "DARK_IDLE — 2 hrs"
+1:20  CAROUSEL: wide on carousel. Bag rounds the bend, device visible.
+      BAG (VO, delighted): "Wheeee! Again! Again!"  Host films it, laughing.
+      Stranger at carousel: "Where did you GET that?"  Supers: "CAROUSEL"
+
+ACT 3 — THE PAYOFF (1:35–2:15)
+1:36  HOST, living room, suitcase open on floor, device in hand:
+      HOST: "Three double-A batteries. No app. No pairing. One button.
+             It just knows."
+1:42  Fast feature montage with lower thirds:
+      - "8 REAL TRAVEL MOMENTS — detected, not scripted"
+      - "3 VOICE PACKS — Family / Salty / New Yorker"
+      - "AA POWER — checked-bag legal. No lithium, no drama."
+      - "6 GAGS/HOUR MAX — funny, not annoying"
+1:52  Rapid gag reel: inverted bag: "I'm inverted. Somebody call Goose."
+      Belt rumble: "Oh sure, I'LL take the scenic route."
+1:58  HOST: "Baggage Claims. Because somebody at the airport should
+             be honest about what's happening to your stuff."
+2:06  TAG CARD: BAGGAGE CLAIMS MK1. Kickstarter. "Pledge. Pack. Let the bag complain."
+2:10  POST-TAG BUTTON: back at the scale. BAG (VO): "Sixty-two pounds? That's mostly
+      SOUVENIRS."  HOST nods: "...She's not wrong."  END.
+────────────────────────────────────────────────────────────────
+
+VERTICAL CUTS (15s each, for TikTok/Reels/Shorts — these are the Phase 1 gate assets)
+V1 "FAT": curb grab + weigh-in beats (0:36–0:51). Text hook: "POV: your suitcase
+    gets body-shamed at check-in"
+V2 "OW": handler toss + Wilhelm + thud + OW (0:58–1:09). Hook: "the suitcase screamed
+    and the baggage handler LOST IT"
+V3 "DARK": dark-hold beat (1:10–1:18). Hook: "my luggage after 4 hours in the cargo hold"
+V4 "WHEE": carousel beat + stranger reaction (1:20–1:34). Hook: "why is this bag having
+    more fun than me"
+
+AUDIO CUE SHEET (microSD /01 files referenced)
+0001/0002 impact, 0003 weigh, 0004 carry, 0005 freefall, 0006 carousel,
+0007 conveyor, 0008 inverted, 0009 idle. Hero VO = final contracted talent, NOT scratch.
+
+SHOT LIST NOTES
+- Film the handler beat with a real handler's written consent; the confused-look-around
+  is the clip's money shot — capture 3 takes.
+- Scale display gag: use a 62-lb dumbbell if the bag reads light; never fake the AUDIO.
+- Keep the device VISIBLE in frame in at least 4 shots — backers fund what they can see.
+
+LEGAL / COMPLIANCE FOOTERS (end card, small print):
+"Prototype shown. Alkaline AA only. Switch OFF before checking per airline policy.
+ No celebrity voices were harmed in this production."

@@ -12,7 +12,7 @@ import { STORE } from "@/lib/domain/schemas";
 
 /** Keys inside a row's data whose number (or list of numbers) is the id of another row of the concept. */
 const ROW_ID_KEYS = new Set(["itemId", "positioningId", "priceItemId", "proofItemId"]);
-const ROW_ID_LIST_KEYS = new Set(["competitorIds"]);
+const ROW_ID_LIST_KEYS = new Set(["competitorIds", "sourceIds"]);
 
 /** Keys whose number (or list) is the id of a stored file of the concept (an image, a logo, a shape file). */
 const FILE_ID_KEYS = new Set(["fileId", "imageFileId"]);

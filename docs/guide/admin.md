@@ -189,6 +189,10 @@ Admin, Printers has the slicer address at the top: the saved address is used fir
 
 The **Railway** page under Documentation walks through running the three services (database, web, planner) on Railway, with the settings that were used on the first deployment.
 
+## Loading files into a concept
+
+The example concept loads its story and its 21 documents once per database at start-up, also on an install seeded earlier. To load a folder of files into any concept: `node scripts/import-files.mjs <folder> --concept <id> --url <address>`. It asks for a sign-in, or takes `--cookie`, and sub-folders become folders.
+
 ## Backups
 
 Everything lives in the database, including uploaded and generated files. To back up:

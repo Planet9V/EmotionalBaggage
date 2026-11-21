@@ -81,6 +81,7 @@ async function vectorSupport(): Promise<VectorState> {
     await db.query("ALTER TABLE embeddings ADD COLUMN IF NOT EXISTS bq bit varying GENERATED ALWAYS AS (binary_quantize(embedding)::bit varying) STORED");
     // Every search is for one concept, one model and one width.
     await db.query("CREATE INDEX IF NOT EXISTS embeddings_scope ON embeddings (project_id, model, dims)");
+    await sourceChunkVectors(db);
     return { vector: true, vectorProblem: null };
   } catch (e) {
     // pgvector is there but its table could not be made: a real fault, logged and shown in Admin, Setup.
@@ -90,6 +91,27 @@ async function vectorSupport(): Promise<VectorState> {
     console.error("[db] the embeddings table could not be set up, so search by meaning is off:", message);
     return { vector: false, vectorProblem: `The embeddings table could not be set up: ${message.slice(0, 300)}` };
   }
+}
+
+/**
+ * A passage of a source (`source_chunks`, migration 0029) is embedded like a row: the embeddings table gets a
+ * third target column, and its one-target rule counts it. Safe to run on every start.
+ */
+async function sourceChunkVectors(db: Pool) {
+  await db.query("ALTER TABLE embeddings ADD COLUMN IF NOT EXISTS chunk_id bigint REFERENCES source_chunks(id) ON DELETE CASCADE");
+  // The one-target rule made with the table names two columns; it is replaced by one that names three.
+  await db.query(`DO $$
+    DECLARE c record;
+    BEGIN
+      FOR c IN SELECT conname FROM pg_constraint WHERE conrelid = 'embeddings'::regclass AND contype = 'c'
+                 AND pg_get_constraintdef(oid) LIKE '%num_nonnulls%' AND pg_get_constraintdef(oid) NOT LIKE '%chunk_id%' LOOP
+        EXECUTE format('ALTER TABLE embeddings DROP CONSTRAINT %I', c.conname);
+      END LOOP;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'embeddings'::regclass AND conname = 'embeddings_one_target') THEN
+        ALTER TABLE embeddings ADD CONSTRAINT embeddings_one_target CHECK (num_nonnulls(item_id, research_id, chunk_id) = 1);
+      END IF;
+    END $$`);
+  await db.query("CREATE UNIQUE INDEX IF NOT EXISTS embeddings_chunk_model ON embeddings (chunk_id, model) WHERE chunk_id IS NOT NULL");
 }
 
 /** Brings the database up to date, turns on pgvector when the server has it, and loads the example concept once. */
@@ -102,6 +124,8 @@ export function ready() {
       await seedOnce();
       await seedAdditions();
       await seedLinks();
+      await (await import("./story/seed")).seedStory(pool());
+      await (await import("./story/seedFiles")).seedFiles(pool());
       await (await import("./economics/movePricingChannels")).movePricingChannels(pool());
       return vector;
     })().catch((e) => {

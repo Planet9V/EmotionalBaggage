@@ -104,6 +104,9 @@ export const GO_DECISION = "go";
 // Checks shared by every type, stage by stage.
 const conceptGate: Check[] = [
   { id: "concept.one-liner", label: "The concept has a one-line description", kind: "field-set", params: { field: "oneLiner" } },
+  // The story and its sources come first: everything later is written from them.
+  { id: "concept.story", label: "The concept story has its pitch", kind: "min-rows", anchor: "story-pitch", todo: "Write the pitch in the concept story, or draft the story with AI", params: { section: "concept/story", min: 1 } },
+  { id: "concept.files", label: "At least one file is in Files", kind: "min-rows", anchor: "add-file", todo: "Add a file: a document, note or chat the concept came from", params: { section: "concept/files", min: 1 } },
   { id: "concept.brief", label: "The brief has at least three lines", kind: "min-rows", anchor: "add-row", params: { section: "concept/brief", min: 3 } },
   { id: "concept.go", label: "The go/no-go decision is decided", kind: "decision-made", params: { key: GO_DECISION, fallback: "root" } },
   // Zero open questions is the good answer here, so an empty section is allowed.

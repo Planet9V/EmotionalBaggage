@@ -12,6 +12,7 @@ import { CONTENT_SCHEMAS } from "@/lib/content/schemas";
 import { CAMPAIGN_SCHEMAS } from "@/lib/campaigns/schemas";
 import { CHANNEL_SCHEMAS } from "@/lib/channels/schemas";
 import { keys } from "./step";
+import { STORY_SCHEMAS } from "@/lib/story/parts";
 
 export const STORE = {
   parts: "design/bom",
@@ -231,6 +232,8 @@ const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   // campaigns and the launch plan (plan 8.13, 8.14)
   ...CAMPAIGN_SCHEMAS,
   ...CHANNEL_SCHEMAS,
+  // the concept story and its sources
+  ...STORY_SCHEMAS,
 };
 
 /** The schema a section's `data` must satisfy. */

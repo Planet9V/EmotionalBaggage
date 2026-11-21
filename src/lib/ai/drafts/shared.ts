@@ -85,6 +85,8 @@ export type GeneratorsReply = {
 
 /** Plain names of stores, singular and plural, for "from 9 requirements". */
 export const STORE_NOUN: Record<string, [string, string]> = {
+  "concept/story": ["story part", "story parts"],
+  "concept/files": ["file", "files"],
   "concept/brief": ["brief line", "brief lines"],
   "concept/press": ["press release", "press releases"],
   "concept/faq": ["FAQ entry", "FAQ entries"],

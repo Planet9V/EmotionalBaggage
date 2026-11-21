@@ -1,0 +1,209 @@
+# BAGGAGE CLAIMS — WEBSITE & PLATFORM PLAN (Rev A, 19 Nov 2026)
+# Scope: public front end (brand + funnel) and backend management for the
+# full lifecycle: pre-launch capture -> Kickstarter -> DTC store -> DLC flywheel.
+# Feeds: Marketing Playbook Rev A campaigns 1-10; PRD channel economics.
+
+══════════════════════════════════════════════════════════════
+1. STRATEGY — ONE PLATFORM, FOUR PERSONALITIES
+══════════════════════════════════════════════════════════════
+The site is not a brochure; it is the fourth character in the brand
+(host, agent, bag, WEBSITE). Design principle: every page masquerades as
+a piece of airport infrastructure — departure board, scale readout,
+complaint form, frequent-flyer portal — while every masquerade ends in
+exactly one conversion action.
+
+Funnel mapping (playbook -> site surface):
+ - Four Gates / character account  -> Landing w/ email capture ("Gate")
+ - Lost Baggage Hotline            -> Interactive complaint generator
+ - Departure Board referral        -> Referral status board
+ - Kickstarter                     -> Bridge page + post-KS migration
+ - Shame ads retargeting           -> Product page w/ social proof wall
+ - Platinum Status DLC             -> Customer portal (registration, packs)
+ - Wholesale Trojan                -> Retail/wholesale lead form
+
+══════════════════════════════════════════════════════════════
+2. TECH STACK (phased, priced Nov 2026)
+══════════════════════════════════════════════════════════════
+CORE DECISION: Shopify from day one as the system of record — it runs the
+pre-launch landing + later store without replatforming.
+ - Shopify Basic $39/mo (or $29/mo annual; new stores: 3 days free then
+   $1/mo for 3 months) + Shopify Payments 2.9%+30c online.
+ - Theme: free Dawn, heavily customized Liquid sections; no paid theme.
+ - Email/SMS: Klaviyo — free tier 250 profiles/500 sends, then $20/mo
+   (500 profiles) -> ~$100/mo at 5k. Watch: bills on ACTIVE profiles.
+ - Referral engine: Viral Loops Start-up $49/mo (1,000 participants) for
+   the pre-launch window ONLY; cancel after Kickstarter; native
+   Shopify Flow + custom codes thereafter.
+ - Landing micro-apps (Hotline, Departure Board): Next.js + Vercel free
+   tier, serverless functions, Supabase free tier (Postgres) for
+   tickets/referrals pre-Shopify; embed as Shopify pages via iframe/
+   section. Cost ~$0 until traffic >100k hits/mo.
+ - Reviews/UGC: Judge.me free tier. Chat: Shopify Inbox free.
+ - Analytics: GA4 + Shopify analytics + Meta/TikTok pixels. Heatmaps:
+   Microsoft Clarity (free).
+ - Domains: brand .com + sasscase.com redirect (~$25/yr both).
+STACK COST: Phase 1 ~ $90/mo | Post-KS ~ $140/mo | Scale (5k list) ~ $240/mo
+
+══════════════════════════════════════════════════════════════
+3. SITEMAP / INFORMATION ARCHITECTURE
+══════════════════════════════════════════════════════════════
+/                       Gate (hero, email capture, countdown)
+/how-it-works           "Safety Card" — 6-panel airline-style diagram
+/moments                The 8 trigger moments as animated vignettes
+/hotline                Lost Baggage Hotline (interactive, shareable)
+/board                  Departure Board (referral rank, live)
+/product                Product page ("Spec Sheet" + complaint reviews)
+/cart /checkout         Shopify native
+/claim                  Platinum Status: unit registration (QR landing)
+/packs                  Voice-pack store (DLC, instant microSD fulfillment)
+/faq                    "Complaint Department" FAQ (in character)
+/stories                UGC wall (contest entries, handler reactions)
+/wholesale              Retail buyers (line sheet, display program)
+/legal/*                Privacy, terms, compliance card, voice-release
+/press                  Press kit (logos, hero video, founder photo)
+
+══════════════════════════════════════════════════════════════
+4. FRONT-END PAGE DESIGN (the clever layer)
+══════════════════════════════════════════════════════════════
+4.1 GATE (homepage)
+ - Full-viewport departure board (split-flap animation, CSS/JS) cycling:
+   "AUS → FAT JOKES — ON TIME", "DFW → YOUR BAG — DELAYED (AGAIN)",
+   "BAG → COMPLAINTS — NOW BOARDING".
+ - The hero video muted-autoplays in a CRT "security monitor" frame.
+ - Single CTA styled as a check-in kiosk button: "CHECK MY BAG IN"
+   (email field). Below fold: 3-panel moments strip, press logos,
+   compliance badge strip ("AA-powered. No lithium. Airline-legit.").
+ - Easter egg: idle 20s and the page itself complains (audio opt-in).
+
+4.2 SAFETY CARD (/how-it-works)
+ - Airline safety-card illustration language: 6 frames from strap-on to
+   carousel gag; zero paragraphs; ends in CTA. Doubles as packaging art
+   (one asset, two uses).
+
+4.3 LOST BAGGAGE HOTLINE (/hotline)  [the viral engine]
+ - Step 1: "Where did your bag suffer?" (visual airport map picker)
+ - Step 2: "What did they do to it?" (checkboxes with absurd options)
+ - Step 3: "Rate the trauma" (slider: 'shook' -> 'scarred')
+ - Output: personalized 10s audio complaint in the bag's voice (TTS
+   pre-rendered fragments stitched server-side) + "CLAIM TICKET" image
+   (faux legal doc with claim number). Download/share unlocks with email.
+ - Leaderboard: "Complaint of the Week" — monthly winner gets free unit.
+ - Rate limit + captcha; moderation queue before anything appears publicly.
+
+4.4 DEPARTURE BOARD (/board)
+ - User's referral rank rendered as a boarding group with live split-flap
+   updates; milestone toasts ("You've been upgraded to GROUP B").
+ - Share cards auto-generated with the user's claim number and rank.
+ - Fraud: 1 referral per verified email; IP+device heuristics via
+   Viral Loops built-in fraud flags, manual review at reward issuance.
+
+4.5 PRODUCT PAGE (/product)
+ - Styled as an airline SPEC SHEET placard; price shown as a scale
+   readout ("$24.95 — UNDER THE LIMIT").
+ - Reviews rendered as 5-star complaint tickets (matches Shame Ads).
+ - Bundle builder: 1/2/4-pack ("Overhead Bin" / "Whole Cargo Hold") with
+   per-unit savings; voice-pack add-on selector in-cart ($7.99).
+ - Compliance card PDF download + "OFF before checking" safety video.
+
+4.6 PLATINUM STATUS (/claim)
+ - QR on the in-box frequent-flyer card lands here: enter unit serial
+   (printed on compliance card) -> free DLC voice pack + registration.
+ - Registration captures: email, purchase channel, unit serial, travel
+   frequency — this is your post-purchase segmentation goldmine.
+
+4.7 COMPLAINT DEPARTMENT (/faq)
+ - All support in character ("Our agents are currently on a tarmac
+   delay"); real answers underneath every joke. Self-serve order lookup
+   (Shopify native), returns per policy, safety/compliance links.
+
+══════════════════════════════════════════════════════════════
+5. BACKEND MANAGEMENT (admin surfaces & responsibilities)
+══════════════════════════════════════════════════════════════
+5.1 MODULES
+ - ORDERS: Shopify admin (native) — KS pledge import via CSV mapping
+   tier->SKU; tags: ks_checked, ks_firstclass, gate_agent_special.
+ - DLC FULFILLMENT: voice packs = Shopify digital products w/ physical
+   microSD option; serial-keyed download (Sky Pilot app ~$5-15/mo or
+   custom S3-signed links via Supabase function).
+ - REGISTRATION DB (Supabase): units(serial, batch, mfg_date),
+   registrations(serial->email, channel, travel_freq, ts). Powers
+   warranty, DLC entitlement, and recall/safety comms (compliance-grade).
+ - REFERRALS: Viral Loops (pre-KS) -> export -> Shopify customer tags
+   + discount codes post-KS (single migration runbook).
+ - EMAIL/SEGMENTS: Klaviyo lists: gate_signup, hotline_user, backer,
+   buyer, registered, dlc_buyer, wholesale_lead. Flows: welcome (3-email
+   in-character sequence), abandon-cart, post-purchase (day-10: register
+   unit; day-30: review ask; day-45: DLC upsell), winback (90d).
+ - AFFILIATES: creator codes as Shopify discount codes w/ 10% payout
+   tracked via monthly report export (defer affiliate SaaS until >$20k/mo).
+ - UGC MODERATION: Hotline submissions + contest entries queue; approve/
+   feature toggle feeds /stories wall. Voice-release checkbox at submit.
+ - SUPPORT: Shopify Inbox + macros for top-5 issues (see build guide
+   troubleshooting sheet — same root causes).
+ - WHOLESALE CRM: leads in Klaviyo (wholesale_lead list) + downloadable
+   line sheet behind form; follow-up sequence = 3 emails + sample offer.
+
+5.2 DATA MODEL (core entities)
+ customer(id, email, source, ks_tier, tags[])
+ unit(serial, batch, sku, mfg_date)
+ registration(unit_id, customer_id, channel, travel_freq, created_at)
+ referral(referrer_customer, referee_email, milestone, status, ts)
+ claim_ticket(id, email, location, insult, trauma, audio_url, moderated)
+ voice_pack(sku, name, folder_map, price, active)
+ entitlement(customer_id, voice_pack_sku, source, ts)
+ wholesale_lead(company, channel_type, est_doors, contact, stage)
+
+5.3 KEY FLOWS (automation)
+ - KS import: backer CSV -> create orders (pre-paid flag) -> tag by tier
+   -> Klaviyo backer list -> fulfillment batch by region.
+ - Register unit: serial validated against units table -> entitlement
+   free_pack granted -> Klaviyo 'registered' + DLC cross-sell in 14 days.
+ - Hotline submit -> moderation -> on approve: public wall + Klaviyo
+   'hotline_user' + weekly digest entry.
+ - Shame-ad click -> /product w/ UTM -> view-content pixel event ->
+   7-day retargeting audience; conversion breaks loop.
+
+══════════════════════════════════════════════════════════════
+6. COMPLIANCE & OPS (non-negotiables)
+══════════════════════════════════════════════════════════════
+ - Privacy: GDPR + CCPA. Cookie consent banner (geo-aware), DSAR delete
+   via Shopify native tools + Supabase row wipe runbook. NL/EU audience
+   = strict GDPR defaults; do NOT gate the Hotline behind consent walls,
+   just collect less.
+ - Email: CAN-SPAM/GDPR double opt-in for EU IPs; one-click unsub.
+ - UGC: submission checkbox grants reuse license; celebrity-voice ban
+   enforced in moderation; minors' content auto-rejected (age attest).
+ - Payments: Shopify Payments (PCI handled). No card data touches
+   Supabase ever.
+ - Safety/compliance page hosts the FAA PackSafe rationale + "switch OFF
+   before checking" card (same PDF as in-box).
+ - Accessibility: WCAG 2.2 AA on core flows (contrast, keyboard, alt) —
+   gag site is no excuse; lawsuits target novelty brands too.
+ - Uptime/scale: all static/CDN; Supabase free->Pro $25/mo at >500MB;
+   Vercel free->Pro $20/mo at high traffic. Failure budget: Hotline down
+   = email capture still works (static fallback form on /).
+
+══════════════════════════════════════════════════════════════
+7. ANALYTICS DASHBOARD (weekly one-pager)
+══════════════════════════════════════════════════════════════
+ North star pre-launch: emails/week. Post-launch: contribution $/visitor.
+ Funnel: sessions -> gate conv% -> board shares -> KS pledges -> AOV ->
+ register rate -> DLC attach 12mo. CAC by channel (UTM discipline).
+ Kill thresholds mirror playbook: gate conv <8% = rewrite hero; Hotline
+ share rate <3% = retire mechanic; DLC attach <10% = repricing test.
+
+══════════════════════════════════════════════════════════════
+8. PHASED BUILD & COST
+══════════════════════════════════════════════════════════════
+PHASE W0 (week 1, ~$100): domain, Shopify trial ($1/mo x3), Gate page
+ on Dawn, Klaviyo free, GA4/pixels, /legal stubs. Solo-buildable.
+PHASE W1 (weeks 2-3, ~$50/mo): Hotline + Board micro-apps (Next.js/
+ Supabase), Viral Loops Start-up $49/mo, UTM + ManyChat hookup.
+ Gate: 500+ emails before further spend.
+PHASE KS (launch month): bridge page, backer import runbook, press kit,
+ Compliance/safety pages. Referral app cancelled post-launch.
+PHASE DTC (post-fulfillment, ~$140/mo): full /product + bundles, Judge.me,
+ Platinum Status + DLC store, wholesale form, support macros.
+PHASE SCALE: Klaviyo tiers as list grows; affiliate SaaS only >$20k/mo;
+ Supabase/Vercel Pro as needed. Total run-rate at 5k list: ~$240/mo,
+ <1.5% of a single 1,000-unit batch gross margin.

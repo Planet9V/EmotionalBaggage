@@ -32,7 +32,7 @@ type List = { projects: Concept[] };
 type SettingsBody = { settings: { defaultConcept: string | null } };
 type Err = { error: string; issues?: { field: string; problem: string }[] };
 
-const OWNED = ["items", "files", "events", "messages", "research", "gates"] as const;
+const OWNED = ["items", "files", "events", "messages", "research", "gates", "source_chunks"] as const;
 const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 
 async function create(name: string, extra: Record<string, unknown> = {}) {
@@ -254,7 +254,7 @@ describe("concepts API", () => {
       expect(doc.research.length).toBe(db.research);
       expect(doc.gates.length).toBe(db.gates);
       expect(doc.files.length).toBe(db.files);
-      expect(doc.counts).toEqual({ items: 5, events: db.events, research: 1, messages: 1, gates: 1, files: 1, pins: 0, trackedLinks: 0 });
+      expect(doc.counts).toEqual({ items: 5, events: db.events, research: 1, messages: 1, gates: 1, files: 1, pins: 0, trackedLinks: 0, sourceChunks: 0 });
       const f = doc.files[0];
       expect(f).toMatchObject({ id: p.fileId, name: "test-part.stl", size: p.bytes.length, sha256: sha(p.bytes), meta: { n: 1 } });
       const decoded = Buffer.from(f.bytesBase64, "base64");
@@ -302,7 +302,7 @@ describe("concepts API", () => {
       expect(r.status).toBe(200);
       expect(r.body.deleted).toEqual({ concept: p.id, name: "ZZ Test Delete", ...before, defaultCleared: false });
       expect(before).toMatchObject({ items: 5, files: 1, messages: 1, research: 1, gates: 1 });
-      expect(await counts(p.id)).toEqual({ items: 0, files: 0, events: 0, messages: 0, research: 0, gates: 0 });
+      expect(await counts(p.id)).toEqual({ items: 0, files: 0, events: 0, messages: 0, research: 0, gates: 0, source_chunks: 0 });
       expect((await get(p.id)).status).toBe(404);
     });
 

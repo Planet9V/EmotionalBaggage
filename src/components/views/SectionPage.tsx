@@ -51,6 +51,7 @@ import { PostingView } from "@/components/channels/PostingView";
 import { InboxView } from "@/components/channels/InboxView";
 import { RepliesView } from "@/components/channels/RepliesView";
 import { ReviewsView } from "@/components/channels/ReviewsView";
+import { OwnPage } from "@/components/story/OwnPage";
 const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   items: ItemsView,
   challenge: ChallengeView,
@@ -90,6 +91,8 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   inbox: InboxView,
   replies: RepliesView,
   reviews: ReviewsView,
+  story: OwnPage,
+  files: OwnPage,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

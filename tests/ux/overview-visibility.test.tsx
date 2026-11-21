@@ -5,6 +5,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 
 const project = { id: "c1", name: "Cable comb", oneLiner: "", productType: "physical" };
 vi.mock("@/lib/client", () => ({ useProject: () => ({ project, loading: false }) }));
+vi.mock("@/components/story/StoryIntro", () => ({ StoryIntro: () => null }));
 vi.mock("@/components/plan/useConcept", () => ({
   useConcept: () => ({ data: { items: [{ id: 1, projectId: "c1", section: "concept/brief", title: "x", body: "", data: {}, status: "open", sort: 1 }], events: [] }, errors: [], loading: false }),
 }));

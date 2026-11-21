@@ -83,6 +83,7 @@ export function DraftPanel({
   reason,
   model,
   only,
+  params,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -95,6 +96,8 @@ export function DraftPanel({
   model: string;
   /** show only the waiting drafts of this generator (Traceability shares the requirements store with Draft requirements) */
   only?: string;
+  /** what this run asks the generator for (the concept story: one part) */
+  params?: Record<string, unknown>;
 }) {
   const [picked, setPicked] = useState(generators[0]?.id ?? "");
   const g = generators.find((x) => x.id === picked) ?? generators[0];
@@ -109,7 +112,7 @@ export function DraftPanel({
     abort.current = new AbortController();
     setPhase({ kind: "running", started: Date.now() });
     try {
-      const result = await run.mutateAsync({ generator: g.id, supersede, signal: abort.current.signal });
+      const result = await run.mutateAsync({ generator: g.id, supersede, ...(params ? { params } : {}), signal: abort.current.signal });
       setPhase({ kind: "done", result });
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && e.detail?.pending) setPhase({ kind: "confirm", pending: e.detail.pending });

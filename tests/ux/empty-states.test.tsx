@@ -90,7 +90,7 @@ function files(dir: string): string[] {
 describe("no empty-state pattern of a view's own", () => {
   it("has no dashed centred panel, 'Nothing here yet' or 'This section holds' outside the kit", () => {
     // Two dashed centred boxes are not empty states: a drop zone for a file and an empty board column.
-    const allowed = ["src/components/ui/states.tsx", "src/components/three/PrintPanel.tsx", "src/components/items/Kanban.tsx", "src/components/ui/chart.tsx"];
+    const allowed = ["src/components/ui/states.tsx", "src/components/three/PrintPanel.tsx", "src/components/items/Kanban.tsx", "src/components/ui/chart.tsx", "src/components/story/FilesView.tsx"];
     const offenders: string[] = [];
     for (const f of files("src/components")) {
       if (allowed.some((a) => f.endsWith(a.replace("src/components/", "")))) continue;

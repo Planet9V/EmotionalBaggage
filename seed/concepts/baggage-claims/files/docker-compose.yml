@@ -1,0 +1,61 @@
+# BAGGAGE CLAIMS MK1 - docker-compose.yml (Rev A)
+# Prod: docker compose --profile prod up -d   | Dev: ... --profile dev up
+name: baggage-claims
+services:
+  web:
+    build: { context: ., target: app, args: { APP_MODE: web } }
+    image: bagclaims/web:rev-a
+    command: ["node", "server.js"]              # Next.js standalone
+    env_file: .env
+    environment: [ "REDIS_URL=redis://redis:6379", "DATABASE_URL=postgresql://bc:${PGPASSWORD}@db:5432/bagclaims" ]
+    depends_on: { db: {condition: service_healthy}, redis: {condition: service_started} }
+    networks: [bagnet]
+    healthcheck: { test: ["CMD","wget","-qO-","http://localhost:3000/api/health"], interval: 15s, retries: 5 }
+    restart: unless-stopped
+    profiles: [dev, prod]
+
+  worker:
+    build: { context: ., target: app, args: { APP_MODE: worker } }
+    image: bagclaims/worker:rev-a               # same repo/image, different entry
+    command: ["node", "dist/worker.js"]         # BullMQ: audio-stitch, ticket-render, email, ks-import
+    env_file: .env
+    depends_on: [web, db, redis]
+    networks: [bagnet]
+    restart: unless-stopped
+    profiles: [dev, prod]
+
+  db:
+    image: postgres:16-alpine
+    environment: [ "POSTGRES_DB=bagclaims", "POSTGRES_USER=bc", "POSTGRES_PASSWORD=${PGPASSWORD}" ]
+    volumes: ["pgdata:/var/lib/postgresql/data", "./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro"]
+    networks: [bagnet]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U bc -d bagclaims"], interval: 5s, retries: 10 }
+    restart: unless-stopped
+    profiles: [dev, prod]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server","--maxmemory","256mb","--maxmemory-policy","allkeys-lru"]
+    networks: [bagnet]
+    restart: unless-stopped
+    profiles: [dev, prod]
+
+  minio:                                        # local S3; swap to AWS S3 in prod env
+    image: minio/minio
+    command: ["server","/data","--console-address",":9001"]
+    volumes: ["miniodata:/data"]
+    environment: [ "MINIO_ROOT_USER=bc","MINIO_ROOT_PASSWORD=${MINIO_PASSWORD}" ]
+    networks: [bagnet]
+    profiles: [dev]                             # prod uses managed S3
+
+  caddy:                                        # edge TLS, gzip, static cache, rate-limit
+    image: caddy:2-alpine
+    ports: ["443:443","80:80"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro","caddydata:/data"]
+    depends_on: [web]
+    networks: [bagnet]
+    restart: unless-stopped
+    profiles: [prod]
+
+networks: { bagnet: { driver: bridge } }
+volumes:  { pgdata: {}, miniodata: {}, caddydata: {} }

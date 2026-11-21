@@ -28,6 +28,12 @@ export type GenContext = {
   extra?: Record<string, unknown>;
   /** the model that answered; set by the engine before rows are checked */
   model?: string;
+  /**
+   * The passages of the concept's sources most relevant to this run (bounded in number and length; never the
+   * whole library), read by the engine just before the model is asked. A generator may cite a passage's source
+   * by its id in basedOn, like a row.
+   */
+  passages?: { sourceId: number; title: string; n: number; text: string }[];
 };
 
 /** What one output row becomes: a new row, a replacement of an existing one, or a removal. */
@@ -69,6 +75,10 @@ export type Generator<Row = Record<string, unknown>> = {
   toDraft(row: Row, ctx: GenContext, run: RunState): ToDraft;
   /** whether it can be asked to revise existing rows of its target store */
   revises: boolean;
+  /** what to look for in the concept's sources for this run; the default is the generator's label and the concept's one-liner */
+  passageQuery?(ctx: GenContext): string;
+  /** true when buildPrompt places ctx.passages itself; otherwise the engine adds them at the end of the request */
+  ownsPassages?: boolean;
 };
 
 /** Scratch space for one run. */

@@ -15,6 +15,7 @@ import { downloadFile } from "@/lib/download";
 import { fileSlug, fmtBytes } from "@/lib/format";
 import { NoConcept } from "@/components/ui/states";
 import { ReportProcess } from "@/components/process/ReportProcess";
+import { StoryProse } from "@/components/story/prose";
 
 const PARTS: ConceptPart[] = ["items", "files", "plan", "research", "challenge", "events"];
 
@@ -171,6 +172,12 @@ function renderBlock(b: Block) {
       return <p className={`mt-2 max-w-4xl text-sm ${b.muted ? "text-muted" : "text-secondary"}`}>{b.text}</p>;
     case "empty":
       return <p className="mt-2 text-sm italic text-muted">Nothing recorded</p>;
+    case "md":
+      return (
+        <div className="max-w-[68ch]">
+          <StoryProse markdown={b.text} />
+        </div>
+      );
     case "quote":
       return (
         <blockquote className="mt-3 border-l-2 border-hairline pl-4">

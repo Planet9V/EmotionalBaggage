@@ -56,6 +56,14 @@ The Concepts page lists every concept with its name, one line, product type, sta
 - **Delete** lists what will go and offers a JSON download first. It needs the concept's exact name typed. The deletion is recorded in the audit log, which is kept. If the deleted concept was open, the app opens another. If it was Admin's default concept, that setting is cleared.
 - **Linking to a concept:** add `?concept=<id>` to any address, for example `/report?concept=baggage-claims`, to open that concept there.
 
+## Concept story and Files
+
+**Concept story** (first under Whole concept) tells the whole idea in nine parts: the pitch, where it came from, what it is and how it works, why it should work (each claim marked Sourced, Measured or Assumption to test), who it is for, positioning, voice and humour, what is decided and still open, and what it costs to find out. Write or edit any part, see its history, or use Draft with AI for one part or all of them; drafts wait for your approval. The story opens the Report and the concept's home page.
+
+**Files** is the concept's file store. Upload several files at once or drop them on the page, paste text as a file, put files in folders, rename, replace with a new version (the old one is kept), download or delete. Markdown, text, CSV, code, PDF and images open in a preview. Search finds files by name and by what they say; Chat and Draft with AI read the text of every file and cite it by name. Files are up to 25 MB; Word files must be saved as PDF first.
+
+The example concept comes with its story and its 21 source documents already in Files. They were copied from the owner's Drive as text, so Markdown files have lost their marks, the two PDFs are held as their text, and the schematic is a screen capture; uploading an original of the same name replaces the copy and keeps the copy as an earlier version.
+
 ## Chat
 
 Chat (in the sidebar) answers questions about the open concept using only what is recorded for it: its rows and its saved research answers. Each answer cites its sources as small numbers. Point at one to see what it is, and select it to open the section that holds it; the full numbered list is under the answer. If nothing recorded covers your question, the answer says so. Under each answer you can see which model answered and how the sources were found: by meaning, by matching words, or both joined. Matching words folds word forms, so "wires" finds "wire", and a question that names a section, such as "What is still open in Bill of materials?", brings in that section's rows. Chats are kept per concept. Start a new one with New chat, and delete one with the bin beside it.

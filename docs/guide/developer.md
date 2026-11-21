@@ -246,6 +246,10 @@ One place per job. Use these rather than writing another.
 
 The page is a server component in `src/app/welcome/`; its words live in `src/components/welcome/content.ts`, shared with `/welcome/overview`. A signed-out visit to `/` goes to `/welcome`; `/welcome` and `/welcome/*` are public, and `POST /api/access-requests` is an open route. Screenshots are regenerated with `node scripts/landing-shots.mjs <base URL>` against a fresh database with the planner running; the files go to `public/landing/`. Access requests: table `access_requests` (migration 0028), code in `src/lib/accessRequests/` (`shared.ts` holds the one zod schema for browser and server), Admin routes under `/api/admin/access-requests`, refused while the session uses the default password. `throttleOpenForm(bucket, client, free)` in `src/lib/auth.ts` gives any other open form the sign-in throttle.
 
+## Concept story and Files
+
+A file is a `concept/files` row; its bytes are in `files`, its passages in `source_chunks` (migration 0029), and an embedding may target `chunk_id`. Read and write them through `src/lib/sources/store.ts`. `relevantPassages` is the only way drafting reads files, and it is bounded (8 passages, 12,000 characters). The story is `concept/story` with `data.part`, one row per part. Menu sections with `href` live under Whole concept, not in their stage. The example's files are in `seed/concepts/baggage-claims/` with a `manifest.json` (title, origin, how the copy was made, sha256); `seedStory` and `seedFiles` run once per database in `ready()`.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

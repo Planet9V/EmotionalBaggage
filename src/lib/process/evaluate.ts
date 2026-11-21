@@ -89,6 +89,9 @@ function opensItem(path: string): boolean {
  * rows from the address, otherwise the control named by the check's anchor (`#<anchor>`), otherwise the page.
  */
 export function fixHref(path: string, opts: { row?: Item; anchor?: string } = {}): string {
+  // A section with a page of its own (the concept story, the sources) is fixed there.
+  const own = findSection(...(path.split("/") as [string, string]))?.section.href;
+  if (own) return opts.anchor && !opts.row ? `${own}#${opts.anchor}` : own;
   if (opts.row && opensItem(path)) return `/s/${path}?item=${opts.row.id}`;
   if (!opts.row && opts.anchor) return `/s/${path}#${opts.anchor}`;
   return `/s/${path}`;

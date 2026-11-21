@@ -7,7 +7,7 @@ type Ctx = { params: Promise<{ id: string }> };
 /**
  * One JSON document with everything the concept owns, sent as a download: the concept with its
  * product type, currency and sales regions, items (print jobs included), files, pins, tracked links
- * (their set-up, not their clicks), events, research, messages and gates.
+ * (their set-up, not their clicks), the passages of each source, events, research, messages and gates.
  * Not in it: AI drafts, campaign results and link clicks, audit lines and credentials.
  * Read in one REPEATABLE READ transaction, so the parts agree with each other.
  */
@@ -48,13 +48,17 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
               utm_source AS "utmSource", utm_medium AS "utmMedium", utm_campaign AS "utmCampaign", utm_content AS "utmContent", utm_term AS "utmTerm", code, disabled
          FROM tracked_links WHERE project_id=$1 ORDER BY id`
     );
+    // The text of each source, cut into passages (migration 0029); `itemId` is the source's id in `items` above.
+    const sourceChunks = await all<Record<string, unknown>>(
+      `SELECT id::int AS id, item_id::int AS "itemId", n, text FROM source_chunks WHERE project_id=$1 ORDER BY item_id, n`
+    );
     // PostgreSQL's base64 breaks lines every 76 characters; the document carries it unbroken.
     for (const f of files) f.bytesBase64 = String(f.bytesBase64).replace(/\n/g, "");
     return {
       format: EXPORT_FORMAT,
       exportedAt: new Date().toISOString(),
       concept: { ...concept, currency: settings.currency, salesRegions: settings.sales_regions },
-      counts: { items: items.length, events: events.length, research: research.length, messages: messages.length, gates: gates.length, files: files.length, pins: pins.length, trackedLinks: trackedLinks.length },
+      counts: { items: items.length, events: events.length, research: research.length, messages: messages.length, gates: gates.length, files: files.length, pins: pins.length, trackedLinks: trackedLinks.length, sourceChunks: sourceChunks.length },
       items,
       events,
       research,
@@ -63,6 +67,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
       files,
       pins,
       trackedLinks,
+      sourceChunks,
     };
   });
   return new Response(JSON.stringify(doc, null, 2), {

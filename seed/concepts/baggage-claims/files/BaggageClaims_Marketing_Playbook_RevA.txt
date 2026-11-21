@@ -1,0 +1,138 @@
+# BAGGAGE CLAIMS MK1 — MARKETING CAMPAIGN PLAYBOOK (Rev A, 19 Nov 2026)
+# Goal hierarchy: (1) Phase-1 gate: 50k organic views or 500 signups on $0-500.
+# (2) Kickstarter: 2,000 backers, CAC < $8, conv > 2.5%. (3) Post-campaign
+# sell-through + 20% DLC voice-pack attach. Budget aligns to PRD: $3k creator
+# seeding + $2k amplification (only on proven organic clips).
+# Brand voice rules: the BAG speaks first person, never the company. Deadpan
+# host, chaotic bag. Every asset ends with ONE action. No celebrity voices.
+
+══════════════════════════════════════════════════════════════════
+FUNNEL STAGE 1 — ATTENTION (spend: $0–500, creator seeding only)
+══════════════════════════════════════════════════════════════════
+
+CAMPAIGN 1: "THE FOUR GATES" — unbranded proof-of-funny drops
+Format: the 4 verticals from the launch script (FAT / OW / DARK / WHEE),
+posted raw, no logo, no link, morning commuter slots (6–8am local).
+Hooks (on-screen text):
+ - "POV: your suitcase gets body-shamed at check-in"   (weigh-in)
+ - "the suitcase screamed and the baggage handler LOST IT" (toss)
+ - "my luggage after 4 hours in the cargo hold"             (dark)
+ - "why is this bag having more fun than me"                (carousel)
+Comment trap: pinned reply "comment FAT for where to get one" — keyword
+auto-DM via ManyChat to a one-field email capture. This is the entire
+Phase-1 gate. Kill/scale rule: any clip >50k views in 72h gets the $2k
+amplification split 70/30 to that platform.
+
+CAMPAIGN 2: "@TheBagComplains" — the character account
+The bag runs its own TikTok/X/IG. It replies IN CHARACTER to viral travel
+complaint posts ("crew rested me on the WET tarmac?? sir I am luggage").
+Daypart: replies to airline meltdown posts within 30 min of virality.
+Bio is the only link out: email capture. Budget: $0; cost is wit + speed.
+KPI: 3 reply screenshots reposted by travel accounts >100k followers.
+
+CAMPAIGN 3: "100 BAGS, 100 REACTIONS" — creator seeding
+Ship 20 evaluation units to mid-size travel comedians (50k–500k followers,
+NOT mega-influencers — mid-tier has 3x the engagement rate for props).
+Deal structure: free unit + affiliate code worth 10% of pledged value,
+zero creative brief except "film the first genuine reaction."
+Stack the feed: all 20 post within the launch week so the algorithm reads
+"travel bag screaming" as a trend, not an ad. Budget: 20 units ≈ $1.3k COGS.
+
+══════════════════════════════════════════════════════════════════
+FUNNEL STAGE 2 — INTEREST → CAPTURE (spend: ~$500 tooling)
+══════════════════════════════════════════════════════════════════
+
+CAMPAIGN 4: "THE LOST BAGGAGE HOTLINE" — interactive microsite
+URL: BaggageClaims.com (or SassCase.com — pending name decision).
+Fake customer-service flow: "File a complaint on behalf of your bag."
+User answers 3 questions (where did your bag suffer? what did they put you
+through? rate the trauma), site generates a personalized audio complaint
+IN THE BAG'S VOICE + a shareable "CLAIM TICKET" image (joke legal doc:
+"Claimant alleges being called FAT at Terminal C...").
+Trade: ticket is free; downloading/Sharing unlocks with email. Monthly
+best complaint wins a free unit — submissions become Phase-2 content.
+KPI: email capture rate >35% of visitors; 1,000 tickets pre-launch.
+
+CAMPAIGN 5: "THE DEPARTURE BOARD" — pre-launch referral program
+Email capture page styled as an airport departure board; your position on
+the board IS your referral rank. Mechanics:
+ - 1 signup = "BOARDING GROUP D"
+ - 3 referrals = free voice pack at launch ("upgrade to Group B")
+ - 10 referrals = Early Bird $19 price LOCKED ("Group A")
+ - 25 referrals = collector Gold Voice tier ("FIRST CLASS")
+Airport metaphors carry the mechanics; every share message is pre-written
+as a complaint from the user's bag. KPI: 3,000 emails before Kickstarter
+launch (industry rule: 1–3% of list converts; 3,000 × 2% × $24 ≈ $1.4k
+day-one velocity, which triggers Kickstarter's trending algorithm).
+
+══════════════════════════════════════════════════════════════════
+FUNNEL STAGE 3 — CONVERSION (spend: Kickstarter page + $1k assets)
+══════════════════════════════════════════════════════════════════
+
+CAMPAIGN 6: "THE COMPLAINT DESK" — live stunt (Austin home-field)
+Pop-up mock airline complaint desk at a high-foot-traffic Austin venue
+(time against SXSW or a travel expo; the PRD already assumes local shoots).
+A "claims agent" in uniform takes REAL travelers' baggage horror stories;
+the bag unit on the counter reacts to each with a live gag; claimant gets
+a printed claim ticket with a QR code = Kickstarter secret reward tier
+(desk-only $18 "Gate Agent Special", 200 units, artificial scarcity).
+Film everything — this generates the launch-week content reservoir.
+Budget: ~$300 (banner, tickets, blazer). KPI: 500 QR scans, 2 local
+news hits ("a suitcase filed a complaint at the airport today").
+
+CAMPAIGN 7: KICKSTARTER PAGE — comedy-native conversion architecture
+Video: the 2:15 hero cut (already scripted). Page structure:
+ - Headline: "It knows when it's being weighed. And it is NOT happy."
+ - Tier ladder as cabin classes: CHECKED $19 (early bird, 300 cap) /
+   CARRY-ON $24 / OVERHEAD BIN $34 (2-pack) / FIRST CLASS $49 collector
+   (Gold Voice, signed, 100 cap) / THE WHOLE CARGO HOLD $99 (4-pack —
+   the groomsmen/secret-santa bundle; 4-packs are where margin lives).
+ - Stretch goals as voice packs, not hardware: $25k unlocks International
+   pack (multilingual complaints), $40k unlocks Holiday Heckler pack.
+   Stretch goals that cost $0.50/unit to fulfill = pure margin retention.
+ - The 10%-of-backers rule: the $49 tier exists to capture the whale 10%
+   who bring 60% of funds. Never cap it below demand signal.
+ - Add-on engine: $7.99 DLC voice packs at checkout (microSD, 50c BOM).
+FAQ written in-character: "Q: Will TSA confiscate it? A: Alkaline AA.
+No lithium. We checked. The bag insists you switch it OFF before checking."
+
+CAMPAIGN 8: RETARGETING — "THE SHAME ADS"
+Ads to video-viewers who didn't convert, written as 5-star complaint reviews:
+ - "My bag embarrassed me in front of the entire carousel. Five stars."
+ - "TSA agent laughed so hard she forgot to swab my laptop. Five stars."
+ - "Ruined my marriage. She took his side. The bag's side. Five stars."
+Static image + one gag audio autoplay-off. $500 test, kill if CAC > $10.
+
+══════════════════════════════════════════════════════════════════
+FUNNEL STAGE 4 — RETENTION / FLYWHEEL (post-fulfillment)
+══════════════════════════════════════════════════════════════════
+
+CAMPAIGN 9: "PLATINUM STATUS" — the DLC flywheel
+Every unit ships with a "frequent flyer card" (QR): register unit = free
+first DLC voice pack; seasonal packs drop quarterly (Holiday Heckler,
+Summer Breakdown, Bachelor Party Layover) at $7.99. Anniversary event:
+"WORST FLIGHT STORY" contest — winner's true story is recorded by the
+voice talent as a limited voice pack; every entrant produces UGC; winner
+produces press. Target: 20% of buyers attach ≥1 DLC in 12 months, and
+every contest cycle re-feeds Stage-1 content for free.
+
+CAMPAIGN 10: WHOLESALE TROJAN — the counter display
+Airport gift retail (post-campaign): counter display with a big red button
+— press it, the display unit plays one random gag. It demos itself at the
+point of maximum despair (the airport). Wholesale $14.50 vs $29.95 MSRP
+gives retailers 2x markup; the button converts the browser so the
+retailer never has to sell. Pitch line to buyers: "the only product in
+your store that demos itself to people who are already mad about bags."
+
+══════════════════════════════════════════════════════════════════
+BUDGET ROLLUP (matches PRD constraints)
+Phase 1 (attention):   $0–500    (units + postage)
+Creator seeding:       $1,300    (20 EV units)
+Microsite + tools:     $500      (Hotline + Departure Board + ManyChat)
+Live stunt:            $300
+KS assets/paid test:   $1,500    ($500 shame-ads test + $1k prop/photo)
+Contingency:           $400
+TOTAL:                 ~$4,500   (before any Kickstarter revenue)
+KILL CRITERIA: Four Gates <50k views & <500 emails in 30 days → stop,
+pivot creative, do NOT fund production. Scale criteria: >2,000 emails
+before launch → green-light 1,000-unit run.
