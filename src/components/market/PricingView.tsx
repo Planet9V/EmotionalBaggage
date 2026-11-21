@@ -1,5 +1,7 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -215,6 +217,7 @@ export function PricingView({ project, store }: ViewProps) {
                     <TableCell className="whitespace-nowrap">
                       <InlineEdit label="Price" mono value={toInputText(p.priceMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null || m === 0 ? "Enter a price above zero." : saveOrMessage(patch(p.item.id, { title: `${formatMoney(m, currency)}${p.note ? ` (${p.note})` : ""}`, data: { priceMinor: m } })); }} />
                       <span className="block text-[11px] text-muted">{p.approach === "own" ? "your own" : p.approach.replace("-", " ")}</span>
+                      <RowActions item={p.item} label={`the price ${formatMoney(p.priceMinor, currency)}`} />
                     </TableCell>
                     {cols.map((c) => {
                       const m = margin(p.priceMinor, unit, c);
@@ -269,7 +272,7 @@ function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: numbe
   };
   return (
     <form id="add-price" className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
-      <Field label={`A price to consider (${currency})`} className="w-56"><Input inputMode="decimal" value={v} onChange={(e) => setV(e.target.value)} placeholder="24.95" /></Field>
+      <Field label={`A price to consider (${currency})`} className="w-56"><MoneyInput currency={currency} value={v} onChange={(e) => setV(e.target.value)} placeholder="24.95" /></Field>
       <Button type="submit"><Plus className="h-4 w-4" aria-hidden /> Add price</Button>
       {err && <p role="alert" className="w-full text-sm text-danger">{err}</p>}
     </form>

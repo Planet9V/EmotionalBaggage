@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, Plus, Trash2 } from "lucide-react";
@@ -13,7 +15,7 @@ import { AD_CHANNELS, checkChannel, measure, type ChannelSpec, type FieldSpec, t
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { asFlags, Count, FlagList, MessageLine, Problems, SourceLink, StatusPill } from "./shared";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,7 +108,7 @@ export function AdsView({ project, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading the ads" />
       ) : ads.length === 0 ? (
-        <EmptyState title={`No ${spec.label} ads yet`}>Draft variants with AI, each tied to one approved message, or add one by hand.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/ads" sectionLabel="Ads" title={`No ${spec.label} ads yet`}>Each ad is tied to one approved message and carries the rule that says when to stop or scale it.</SectionEmpty>
       ) : (
         <ul className="space-y-4">
           {ads.map((a) => (
@@ -214,6 +216,7 @@ function AdCard({ ad, spec, cur, governing, onSave, onDelete }: { ad: Item; spec
           <StatusPill status={ad.status} />
           {ad.data.noProof === true && <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">No proof</span>}
         </div>
+        <RowActions item={ad} />
         <Button size="icon" variant="ghost" aria-label={`Delete ${ad.title}`} onClick={() => void run(onDelete)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
       </div>
       <div className="mt-2"><MessageLine message={ad.data.message as { text?: string } | undefined} /></div>

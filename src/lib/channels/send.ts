@@ -8,6 +8,7 @@
 //   - a row already sent, or being sent, is refused, so a double click cannot post twice.
 // The confirmation, the send and any failure are recorded in the concept's activity and the audit log,
 // with the channel, the row, the text's hash and the id the service gave back. Never a token.
+import { plainMessage } from "@/lib/net/plain";
 import { sha256 } from "@/lib/hash";
 import type { PoolClient } from "pg";
 import { z } from "zod";
@@ -223,7 +224,7 @@ export async function send(b: SendBody): Promise<SendResult> {
       result = await igReply(String(item.data.replyTo), item.body);
     }
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
+    const message = plainMessage(e);
     const where = channelName(channel);
     // A time-out or a connection dropped mid-request may still have posted: record that the outcome is unknown,
     // which blocks a re-send until the user checks the channel. A refusal the service answered is a plain failure.

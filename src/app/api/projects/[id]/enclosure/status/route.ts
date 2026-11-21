@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { plainNetworkReason } from "@/lib/net/plain";
 import { plannerAddress } from "@/lib/admin/planner";
 import { requireProject, route } from "@/lib/api/route";
 import { safeFetch } from "@/lib/net/outbound";
@@ -19,7 +20,7 @@ export const GET = route(async (_req: Request, { params }: Ctx) => {
       else if (!j.openscad) yapp = { available: false, code: "no-openscad", reason: "The planner is running but OpenSCAD is not installed in it." };
       else yapp = { available: true, openscad: j.openscad };
     } catch (e) {
-      yapp = { available: false, code: "unreachable", reason: `The planner service is not reachable (${(e as Error).name === "TimeoutError" ? "no answer in 2.5 seconds" : (e as Error).message}).` };
+      yapp = { available: false, code: "unreachable", reason: `The planner service is not reachable: ${(e as Error).name === "TimeoutError" ? "no answer in 2.5 seconds" : plainNetworkReason(e)}.` };
     }
   }
   return NextResponse.json({ casemaker: { available: true }, yapp });

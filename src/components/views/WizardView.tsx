@@ -1,5 +1,6 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm, useWatch, type FieldErrors, type Resolver, type UseFormRegister } from "react-hook-form";
@@ -77,7 +78,8 @@ export function WizardView() {
       // A mutation: it puts the new concept into every cached concept list, so the sidebar has it at once.
       const made = await createConcept.mutateAsync({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), productType: a.productType, items: buildItems(a) });
       select(made.id);
-      router.push(await firstStepHref(made.id));
+      // replace, not push: Back from the first step must not land on an empty wizard for a concept that now exists (U20)
+      router.replace(await firstStepHref(made.id));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -89,6 +91,17 @@ export function WizardView() {
   const currentId = stepper.current.id as StepId;
   useEffect(() => {
     idRef.current = currentId;
+  }, [currentId]);
+  // A new step moves focus to its heading, so a keyboard or screen reader user starts at the top of it
+  // instead of on the page body or on Continue (U7). Not on the first render: the page's own order applies.
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    heading.current?.focus();
   }, [currentId]);
   const index = stepper.index + 1;
   const last = stepper.isLast;
@@ -143,7 +156,7 @@ export function WizardView() {
         <div className="min-w-0 max-w-3xl">
           <Card hoverEffect={false} innerClassName="p-[26px]">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step {String(index).padStart(2, "0")} of {String(stepper.steps.length).padStart(2, "0")}</p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-primary">{stepper.current.title}</h2>
+            <h2 ref={heading} tabIndex={-1} className="mt-1.5 text-xl font-semibold tracking-tight text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange rounded-sm">{stepper.current.title}</h2>
             <p className="mt-1 text-sm text-secondary">{stepper.current.blurb}</p>
 
             <form className="mt-6" noValidate onSubmit={(e) => void submit(e)}>
@@ -224,6 +237,7 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
   const { register, control, formState: { errors } } = form;
   const parts = useFieldArray({ control, name: "parts" });
   const printed = useWatch({ control, name: "printed" });
+  const type = useWatch({ control, name: "productType" });
   return (
     <div className="space-y-6">
       <Field id="w-how" label="How it works"><Textarea id="w-how" rows={4} {...register("how")} /></Field>
@@ -248,7 +262,12 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
           ))}
         </div>
         {errors.w?.message && <p role="alert" className="text-xs text-danger">{errors.w.message}</p>}
-        <p className="text-xs text-muted">Optional overall envelope. With a printed part and all three sizes, an Enclosure part is added to the bill of materials.</p>
+        <p className="text-xs text-muted">
+          Optional overall size. With a printed part and all three sizes,{" "}
+          {type === "electronics"
+            ? "an Enclosure part is added to the parts list: the box printed around the electronics."
+            : "a printed body part is added to the parts list: the product itself, to shape in Design, 3D model and print."}
+        </p>
       </fieldset>
 
       <fieldset className="space-y-3">
@@ -273,7 +292,7 @@ function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
                   <Input aria-label={`Part ${i + 1} search term`} placeholder="Search term" {...register(`parts.${i}.search`)} />
                 </div>
                 <div className="col-span-5 sm:col-span-4 flex gap-2">
-                  <Input aria-label={`Part ${i + 1} estimated line cost`} placeholder="Line cost" inputMode="decimal" className="font-mono" aria-invalid={!!errors.parts?.[i]?.line} {...register(`parts.${i}.line`)} />
+                  <MoneyInput aria-label={`Part ${i + 1} estimated line cost`} placeholder="Line cost" aria-invalid={!!errors.parts?.[i]?.line} {...register(`parts.${i}.line`)} />
                   <Button type="button" variant="ghost" size="icon" aria-label={`Remove part ${i + 1}`} disabled={parts.fields.length === 1} onClick={() => parts.remove(i)}>
                     <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
@@ -296,7 +315,7 @@ function StepProof({ register, errors }: { register: Reg; errors: Errs }) {
   return (
     <div className="space-y-5">
       <Field id="w-test" label="The cheapest test" hint="What would show this is worth building, before you build it."><Textarea id="w-test" rows={3} {...register("test")} /></Field>
-      <Field id="w-cost" label="What the test costs" error={errors.testCost?.message}><Input id="w-cost" inputMode="decimal" className="font-mono" aria-invalid={!!errors.testCost} {...register("testCost")} /></Field>
+      <Field id="w-cost" label="What the test costs" error={errors.testCost?.message}><MoneyInput id="w-cost" aria-invalid={!!errors.testCost} {...register("testCost")} /></Field>
       <Field id="w-gate" label="Go/no-go gate" hint="The result that means go, and the result that means stop."><Textarea id="w-gate" rows={3} {...register("gate")} /></Field>
     </div>
   );
@@ -309,7 +328,7 @@ function StepSelling({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="w-channel" label="Primary channel"><Input id="w-channel" {...register("channel")} /></Field>
-        <Field id="w-price" label="Target price" error={errors.price?.message}><Input id="w-price" inputMode="decimal" className="font-mono" aria-invalid={!!errors.price} {...register("price")} /></Field>
+        <Field id="w-price" label="Target price" error={errors.price?.message}><MoneyInput id="w-price" aria-invalid={!!errors.price} {...register("price")} /></Field>
       </div>
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-primary">Working names and taglines</legend>

@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -11,7 +13,7 @@ import { personaData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ApproveButton, FieldRow, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,7 +88,7 @@ export function PersonasView({ project, store }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!items.length ? (
-        <EmptyState title="No personas yet">Draft a first set from the brief, or add one by hand. Drafts stay drafts until you approve them.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/personas" sectionLabel="Personas" title="No personas yet">Positioning, ads and the listing are written for a persona, so they come first in Marketing. Drafts stay drafts until you approve them.</SectionEmpty>
       ) : (
         <ul className="grid gap-4 xl:grid-cols-2" aria-label="Personas">
           {sorted.map((it) => {
@@ -97,7 +99,7 @@ export function PersonasView({ project, store }: ViewProps) {
                 <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="text-base font-semibold tracking-tight text-primary">{it.title}</h3>
-                    <Status status={it.status} />
+                    <div className="flex items-center gap-1"><Status status={it.status} /><RowActions item={it} /></div>
                   </div>
                   <dl className="space-y-2.5">
                     {FIELDS.map(([k, label]) => <FieldRow key={k} label={label}>{String(data[k] ?? "")}</FieldRow>)}

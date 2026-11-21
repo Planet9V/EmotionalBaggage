@@ -1,3 +1,4 @@
+import { moneyOrNull } from "@/lib/moneyText";
 // Money is held as integer minor units (cents) so sums never drift. A concept has one currency and
 // nothing here converts between currencies.
 
@@ -25,6 +26,8 @@ export function toMajor(minor: number, currency: string): number {
 
 /** "$12.50" or "12,50 €" as the browser's English formatting writes the currency. Negative amounts keep their minus sign. A code the runtime does not know is written after the number. */
 export function formatMoney(minor: number, currency: string): string {
+  // Never "$NaN" or "$∞" on a screen (U23): an amount that is not a finite number is not worked out.
+  if (!Number.isFinite(minor)) return "not worked out";
   const digits = minorDigits(currency);
   try {
     return new Intl.NumberFormat("en", { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(toMajor(minor, currency));
@@ -45,12 +48,14 @@ export function toInputText(minor: number, currency: string): string {
 
 /** Reads what a person types ("24.95", "$24.95", "1,200", "12 USD") as minor units of the currency, or null when it is empty, not a number, or negative. */
 export function parseMinor(input: string, currency = DEFAULT_CURRENCY): number | null {
-  const t = input.trim().replace(/[\s,]/g, "").replace(/^[^\d.\-]+|[^\d.]+$/g, "");
-  if (!/^\d*\.?\d*$/.test(t) || !/\d/.test(t)) return null;
-  return toMinor(Number(t), currency);
+  // The one money reader (src/lib/moneyText.ts): "$150", "150 USD", "1,200.50" and "1.200,50" all read (U22).
+  const n = moneyOrNull(input);
+  if (n === null || n < 0) return null;
+  return toMinor(n, currency);
 }
 
 /** A percentage with at most one decimal: 38.5%, 40%. */
 export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return "not worked out";
   return `${Number(value.toFixed(1))}%`;
 }

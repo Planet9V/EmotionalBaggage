@@ -1,5 +1,6 @@
 "use client";
 
+import { prefersDark } from "@/lib/theme";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
 
   // This page has no app shell, so it applies the stored theme itself (the shell does it elsewhere).
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", window.localStorage.getItem("c2r.theme") === "dark");
+    document.documentElement.classList.toggle("dark", prefersDark());
   }, []);
 
   // Screen-reader and keyboard users land on the error as soon as it appears.

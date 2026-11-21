@@ -1,5 +1,6 @@
 // The server side of chat with a concept: find the sources for a question, build the instructions
 // for the reasoning model, and read and write chats. Model calls go through src/lib/ai/models.ts.
+import { plainMessage } from "@/lib/net/plain";
 import { itemText, meaningReady, fuseRanked, searchSourcesByMeaning, searchSourcesByText, type SourceHit } from "@/lib/ai/embeddings";
 import { q } from "@/lib/db";
 import { notFound } from "@/lib/api/route";
@@ -88,7 +89,7 @@ export async function retrieve(projectId: string, question: string, o: { signal?
       return { sources: numberSources(hits), retrieval: byText.length ? "both" : "meaning", search: byMeaning.search };
     } catch (e) {
       if (o.signal?.aborted) throw e;
-      note = `Search by meaning failed, so sources were found by text: ${e instanceof Error ? e.message : String(e)}`;
+      note = `Search by meaning failed, so sources were found by text: ${plainMessage(e)}`;
     }
   } else {
     note = ready.reason;

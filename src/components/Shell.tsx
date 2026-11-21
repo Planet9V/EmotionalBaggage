@@ -1,5 +1,6 @@
 "use client";
 
+import { prefersDark } from "@/lib/theme";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -82,7 +83,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the stored concept and theme on mount
     setChosen(window.localStorage.getItem(KEY) ?? "");
-    const d = window.localStorage.getItem("c2r.theme") === "dark";
+    // With nothing saved, follow the system's light or dark setting (U26).
+    const d = prefersDark();
     setDark(d);
     document.documentElement.classList.toggle("dark", d);
     setNav(readNav());
@@ -135,6 +137,18 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const project = useMemo(() => projects.find((p) => p.id === chosen) ?? projects[0] ?? null, [projects, chosen]);
   const current = project?.id ?? "";
   const ctx = useMemo(() => ({ projects, project, loading, error, select, reload }), [projects, project, loading, error, select, reload]);
+
+  // The open section's link scrolls into view in the sidebar, so a long menu never hides where you are (U19).
+  useEffect(() => {
+    // Scroll the sidebar's own list, not scrollIntoView: Chrome then moves where the next Tab starts, which would put
+    // the first Tab on the link after this one instead of on "Skip to content".
+    document.querySelectorAll<HTMLElement>('aside a[aria-current="page"]').forEach((a) => {
+      const box = a.closest<HTMLElement>(".overflow-y-auto");
+      if (!box) return;
+      const top = a.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+      if (top < box.scrollTop || top + a.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = Math.max(0, top - box.clientHeight / 2);
+    });
+  }, [pathname]);
 
   const link = (href: string, active: boolean) =>
     `flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors duration-150 [@media(max-height:800px)]:py-1 ${
@@ -202,7 +216,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                     {st.sections.map((s) => {
                       const href = `/s/${st.key}/${s.key}`;
                       return (
-                        <Link key={s.key} href={href} className={link(href, pathname === href)}>
+                        <Link key={s.key} href={href} aria-current={pathname === href ? "page" : undefined} className={link(href, pathname === href)}>
                           {s.label}
                         </Link>
                       );
@@ -234,12 +248,29 @@ function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ProjectContext.Provider value={ctx}>
       <div className="flex min-h-dvh bg-canvas text-primary">
+        {/* The first thing a Tab reaches: past the sidebar, straight to the page (U8). */}
+        <a
+          href="#main"
+          // Focus the page directly: following the hash would also wake the deep-link focus, which can move focus again.
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById("main")?.focus();
+          }}
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-link focus:shadow-lg focus:ring-2 focus:ring-dutchOrange"
+        >
+          Skip to content
+        </a>
         <aside className="no-print sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-hairline bg-surface lg:flex">{sidebar("concept")}</aside>
         <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 lg:hidden" />
             <Dialog.Content
               aria-describedby={undefined}
+              // The menu button opens the drawer from outside Dialog.Root, so Radix cannot return focus to it: do it here (U19).
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                document.getElementById("open-menu")?.focus();
+              }}
               className="no-print fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-hairline bg-surface shadow-plate focus:outline-hidden lg:hidden"
               // a link followed from the drawer closes it
               onClick={(e) => {
@@ -255,9 +286,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </Dialog.Portal>
         </Dialog.Root>
 
-        <main className="min-w-0 flex-1">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 focus:outline-hidden">
           <div className="no-print sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-surface px-4 py-2 lg:hidden">
             <button
+              id="open-menu"
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-expanded={menuOpen}

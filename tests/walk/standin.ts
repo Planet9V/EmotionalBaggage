@@ -1,13 +1,16 @@
 // Scratch: the stand-ins for the browser walk, on fixed ports (forwarders), so the app can be restarted.
 import { createServer, request } from "node:http";
 import { createRequire } from "node:module";
-import { writeFileSync, appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { start as openai } from "../standins/openai";
 import { start as pplx } from "../standins/perplexity";
 import { startAmazon, startX, startInstagram } from "../standins/channels";
 import { start as octo } from "../standins/octoprint";
 
 const DIR = process.env.WALK_DIR ?? process.cwd();
+/** The first of nine ports (WALK_PORT_BASE, default 3410), so two walks on one machine do not collide. */
+const BASE = Number(process.env.WALK_PORT_BASE ?? 3410);
+const P = (n: number) => BASE + n;
 const req = createRequire(import.meta.url);
 const J = (o: unknown) => JSON.stringify(o);
 function fresh() { const p = DIR + "/answer.cjs"; delete req.cache[req.resolve(p)]; return req(p); }
@@ -46,9 +49,23 @@ createServer((rq, rs) => {
   back.searchParams.set("state", u.searchParams.get("state") ?? "");
   rs.writeHead(302, { location: back.toString() });
   rs.end();
-}).listen(3418, "127.0.0.1");
+}).listen(P(8), "127.0.0.1");
 
-// A fake slicer: the time depends on the layer height sent (0.2 mm: 2 h 10 min; 0.28 mm: 1 h 25 min; other: 1 h 40 min).
+// A fake slicer with the real wrapper's interface (slicer/app/main.py): GET /health, GET /profiles (the catalogue built
+// from slicer/profiles.json as profiles.catalogue() builds it), POST /slice (refuses a file that is not .stl or .3mf
+// and a printer with no profile, as the wrapper does), GET /jobs/<id>/gcode and DELETE /jobs/<id>.
+// The time depends on the layer height sent (0.2 mm: 2 h 10 min; 0.28 mm: 1 h 25 min; other: 1 h 40 min).
+type ProfileEntry = { profile?: unknown; orcaMachine?: string; reason?: string; note?: string; process?: Record<string, string>; filament?: Record<string, string> };
+const TABLE = JSON.parse(readFileSync(new URL("../../slicer/profiles.json", import.meta.url), "utf8")) as { orca: { version: string; tag: string; commit: string }; materials: string[]; printers: Record<string, Record<string, ProfileEntry>> };
+const hasProfile = (e: ProfileEntry) => !!e.profile;
+const CATALOGUE = Object.entries(TABLE.printers).flatMap(([maker, models]) =>
+  Object.entries(models).map(([model, e]) => ({
+    maker, model, available: hasProfile(e), reason: e.reason ?? "",
+    materials: hasProfile(e) ? Object.keys(e.filament ?? {}).sort() : [],
+    layerHeights: hasProfile(e) ? Object.keys(e.process ?? {}).map(Number).sort((x, y) => x - y) : [],
+    note: e.note ?? "",
+  })),
+);
 const JOB = "c".repeat(32);
 createServer((rq, rs) => {
   const chunks: Buffer[] = [];
@@ -56,18 +73,25 @@ createServer((rq, rs) => {
   rq.on("end", () => {
     const done = (st: number, body: string | Buffer, type = "application/json") => { rs.writeHead(st, { "content-type": type }); rs.end(body); };
     const url = rq.url ?? "";
-    if (rq.method === "GET" && url === "/health") return done(200, J({ ok: true, orca: "2.5.0 (fake)" }));
+    if (rq.method === "GET" && url === "/health") return done(200, J({ ok: true, slicerInstalled: true, orcaVersion: TABLE.orca.version, profiles: TABLE.orca, profileRootPresent: true }));
+    if (rq.method === "GET" && url === "/profiles") return done(200, J({ orca: TABLE.orca, materials: TABLE.materials, printers: CATALOGUE }));
     if (rq.method === "POST" && url === "/slice") {
       const form = Buffer.concat(chunks).toString("latin1");
-      const layer = /name="layer_height"\r\n\r\n([^\r]+)/.exec(form)?.[1] ?? "0.2";
-      const seconds = layer === "0.2" ? 7800 : layer === "0.28" ? 5100 : 6000;
-      return done(200, J({ id: JOB, orca: { version: "2.5.0", profileCommit: "fake" }, profile: { machine: "Bambu Lab A1 0.4 nozzle", process: `${layer}mm`, filament: "Generic PLA", note: "fake slicer for the walk" }, settings: { layerHeight: Number(layer), infill: 15, supports: false, material: "PLA" }, result: { seconds, filamentMm: 3000, filamentG: 40, filamentCm3: 30, supportG: null, layers: 200, readFrom: "statistics.json" }, warnings: [], files: { gcode: { name: "job.gcode", url: `/jobs/${JOB}/gcode` }, project: null, statistics: null } }));
+      const field = (n: string) => new RegExp(`name="${n}"\\r\\n\\r\\n([^\\r]*)`).exec(form)?.[1];
+      const file = /name="file"; filename="([^"]*)"/.exec(form)?.[1] ?? "";
+      if (!/\.(stl|3mf)$/i.test(file)) return done(422, J({ detail: "Send an .stl or .3mf file." }));
+      const maker = field("maker") ?? "", model = field("model") ?? "";
+      const entry = TABLE.printers[maker]?.[model];
+      if (!entry || !hasProfile(entry)) return done(422, J({ detail: `There is no OrcaSlicer profile for ${maker} ${model}.` }));
+      const layer = field("layer_height") ?? "0.2";
+      const seconds = Number(layer) === 0.2 ? 7800 : Number(layer) === 0.28 ? 5100 : 6000;
+      return done(200, J({ id: JOB, orca: { version: TABLE.orca.version, profileCommit: TABLE.orca.commit }, profile: { machine: entry.orcaMachine ?? `${maker} ${model}`, process: `${layer}mm`, filament: `Generic ${field("material") ?? "PLA"}`, note: "fake slicer for the walk" }, settings: { layerHeight: Number(layer), infill: Number(field("infill") ?? 15), supports: field("supports") === "true", material: (field("material") ?? "PLA").toUpperCase() }, result: { seconds, filamentMm: 3000, filamentG: 40, filamentCm3: 30, supportG: null, layers: 200, readFrom: "statistics.json" }, warnings: [], files: { gcode: { name: "job.gcode", url: `/jobs/${JOB}/gcode` }, project: null, statistics: null }, expiresInSeconds: 3600 }));
     }
     if (rq.method === "GET" && url === `/jobs/${JOB}/gcode`) return done(200, "; fake\nG28\n", "text/plain");
-    if (rq.method === "DELETE") return done(200, "{}");
-    return done(404, "{}");
+    if (rq.method === "DELETE" && url.startsWith("/jobs/")) return done(200, "{}");
+    return done(404, J({ detail: "Not Found" }));
   });
-}).listen(3416, "127.0.0.1");
+}).listen(P(6), "127.0.0.1");
 
 function fwd(from: number, to: string) {
   const u = new URL(to);
@@ -77,8 +101,8 @@ function fwd(from: number, to: string) {
     rq.pipe(p);
   }).listen(from, "127.0.0.1");
 }
-fwd(3410, oa.url); fwd(3411, pp.url); fwd(3412, amz.url); fwd(3413, x.url); fwd(3414, ig.url); fwd(3415, printer.url);
-writeFileSync(`${DIR}/standin.json`, J({ openai: "http://127.0.0.1:3410", pplx: "http://127.0.0.1:3411", amazon: "http://127.0.0.1:3412", x: "http://127.0.0.1:3413", ig: "http://127.0.0.1:3414", printer: "http://127.0.0.1:3415", slicer: "http://127.0.0.1:3416", xauth: "http://127.0.0.1:3418/authorize" }));
+fwd(P(0), oa.url); fwd(P(1), pp.url); fwd(P(2), amz.url); fwd(P(3), x.url); fwd(P(4), ig.url); fwd(P(5), printer.url);
+writeFileSync(`${DIR}/standin.json`, J({ openai: `http://127.0.0.1:${P(0)}`, pplx: `http://127.0.0.1:${P(1)}`, amazon: `http://127.0.0.1:${P(2)}`, x: `http://127.0.0.1:${P(3)}`, ig: `http://127.0.0.1:${P(4)}`, printer: `http://127.0.0.1:${P(5)}`, slicer: `http://127.0.0.1:${P(6)}`, xauth: `http://127.0.0.1:${P(8)}/authorize` }));
 console.log("standins up");
 setInterval(() => {
   writeFileSync(`${DIR}/requests.json`, J({ x: x.requests.map((r) => ({ m: r.method, p: r.path, b: r.body })), ig: ig.requests.map((r) => ({ m: r.method, p: r.path })), amazon: amz.requests.map((r) => ({ m: r.method, p: r.path })), printer: printer.requests.map((r) => ({ m: r.method, p: r.path })) }));

@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorPanel } from "@/components/ui/states";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -28,7 +29,7 @@ export function OptimiseView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Optimisation" title="Optimise" />
+        <PageHeader eyebrow="Whole concept" title="Optimise" />
         <NoConcept loading={loading} />
       </>
     );
@@ -42,7 +43,7 @@ function OptimiseBody({ project }: { project: Project }) {
   return (
     <>
       <PageHeader
-        eyebrow={`Optimisation · ${project.name}`}
+        eyebrow={`Whole concept · ${project.name}`}
         title="Optimise"
         blurb="Three actions, each measured before and after from the concept's rows. The model proposes changes as drafts; it never supplies the figures."
       />
@@ -124,10 +125,7 @@ function Action({ projectId, a, configured }: { projectId: string; a: OptimiseSt
         </div>
       )}
       {error && (
-        <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-          <span className="wrap-anywhere">{error}</span>
-          <Button variant="outline" size="sm" onClick={() => go(false)}>Retry</Button>
-        </div>
+        <div className="mt-3"><ErrorPanel title="The proposal did not run" message={error} todo="Nothing was saved. Fix what the message names, then try again." onRetry={() => go(false)} /></div>
       )}
       {result && <div className="mt-3"><RunSummary result={result} /></div>}
       {mine.length > 0 && (

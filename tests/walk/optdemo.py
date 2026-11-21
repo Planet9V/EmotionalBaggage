@@ -37,7 +37,7 @@ with sync_playwright() as p:
             pg.screenshot(path=f"{SH}-2-price-warning.png"); c.click()
         pg.wait_for_timeout(1500)
     print("job status after approval:", a.get(f"/api/projects/{EX}/items?section=prototype/printing")[1]["items"][1]["status"])
-    rq.post("http://127.0.0.1:3415/api/job", json={"command":"cancel"})
+    rq.post(f"http://127.0.0.1:{PORT_BASE + 5}/api/job", json={"command":"cancel"})
     print("slice after:", a.post("/api/print-jobs/60/slice", {})[0])
     pg.reload(); pg.wait_for_timeout(2500)
     pg.screenshot(path=f"{SH}-3-after.png", full_page=True)

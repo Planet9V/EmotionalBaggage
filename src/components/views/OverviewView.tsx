@@ -2,19 +2,20 @@
 
 import { ComputedSections } from "@/components/plan/computedSections";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Lightbulb } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { NextStepCard } from "@/components/process/NextStepCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { storeHref, storeLabel } from "@/components/plan/format";
 import { useConcept, type ConceptData, type ConceptPart } from "@/components/plan/useConcept";
-import { CLOSED, STAGES, storeKey, type Section } from "@/lib/menu";
+import { CLOSED, storeKey, type Section } from "@/lib/menu";
 import { statusTone } from "@/lib/statusTones";
 import { useProject } from "@/lib/client";
 import type { Item, Project } from "@/lib/types";
 import { fmtDateTime } from "@/lib/format";
-import { LoadingBlocks } from "@/components/ui/states";
-import { Card } from "@/components/ui/Card";
+import { EmptyState, LoadingBlocks } from "@/components/ui/states";
+import { Button } from "@/components/ui/button";
+import { sectionsFor } from "@/lib/productTypes";
 
 const PARTS: ConceptPart[] = ["items", "events", "research", "challenge"];
 const TROUBLE = new Set(["blocked", "wrong", "fail", "failed"]);
@@ -24,7 +25,7 @@ export function OverviewView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Overview" title="No concept open" />
+        <PageHeader eyebrow="Whole concept" title="No concept open" />
         <div className="p-8 text-sm text-secondary">
           {loading ? (
             <LoadingBlocks rows={2} label="Loading the concept" />
@@ -63,6 +64,8 @@ function sectionState(section: Section, rows: Item[], data: ConceptData) {
 
 function OverviewBody({ project }: { project: Project }) {
   const { data, errors, loading } = useConcept(project.id, PARTS);
+  // The same sections the sidebar shows: a section the product type hides is not listed here either (U14).
+  const stages = sectionsFor((project as { productType?: string }).productType ?? "");
   const byStore = new Map<string, Item[]>();
   for (const it of data.items) byStore.set(it.section, [...(byStore.get(it.section) ?? []), it]);
   const trouble = data.items.filter((i) => TROUBLE.has(i.status));
@@ -71,7 +74,7 @@ function OverviewBody({ project }: { project: Project }) {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title={project.name} blurb={project.oneLiner} nextStep={false} />
+      <PageHeader eyebrow="Whole concept · Overview" title={project.name} blurb={project.oneLiner} nextStep={false} />
 
       <div className="space-y-8 px-8 py-6">
         <NextStepCard projectId={project.id} />
@@ -120,34 +123,30 @@ function OverviewBody({ project }: { project: Project }) {
         )}
 
         {empty && (
-          <Card variant="flat" as="section" className="p-6">
-            <h2 className="text-base font-semibold tracking-tight text-primary">Nothing recorded yet</h2>
-            <p className="mt-1 max-w-2xl text-sm text-secondary">
-              Start by writing the proposition down: what it is, who it is for, and why now. Every later stage builds on it.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm">
-              <Link
-                href="/s/concept/brief"
-                className="inline-flex items-center gap-1.5 rounded-md bg-action px-3 py-2 font-medium text-white transition hover:bg-action-hover"
-              >
-                Concept / Brief <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-              <Link
-                href="/new"
-                className="inline-flex items-center gap-1.5 rounded-md border border-hairline px-3 py-2 text-secondary transition-colors duration-150 hover:border-dutchOrange hover:text-link"
-              >
-                Or use the wizard
-              </Link>
-            </div>
-          </Card>
+          <EmptyState
+            icon={Lightbulb}
+            title="Nothing recorded yet"
+            action={
+              <>
+                <Button asChild size="sm">
+                  <Link href="/s/concept/brief">Write the brief <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/new">Or use the wizard</Link>
+                </Button>
+              </>
+            }
+          >
+            Every later stage builds on the proposition: what it is, who it is for, and why now. Write it down first.
+          </EmptyState>
         )}
 
         {loading && !data.items.length ? (
           <LoadingBlocks rows={2} label="Loading the concept" />
         ) : (
           <ol aria-label="Stages" className="relative">
-            {STAGES.map((stage, si) => {
-              const last = si === STAGES.length - 1;
+            {stages.map((stage, si) => {
+              const last = si === stages.length - 1;
               return (
                 <li className="animate-enter relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 pb-8" style={{ animationDelay: `${(si * 0.04) * 1000}ms` }} key={stage.key}>
                   {!last && <span aria-hidden className="absolute bottom-0 left-5 top-10 w-px -translate-x-1/2 bg-hairline" />}

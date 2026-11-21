@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +18,7 @@ import { competitorData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ApproveButton, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -174,7 +176,7 @@ export function CompetitorsView({ project, store }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!rows.length ? (
-        <EmptyState title="No competitors yet">Research the market, read a saved answer, or add a row by hand. Add the non-product alternatives too: doing nothing, a workaround.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/competitors" sectionLabel="Competitors" title="No competitors yet">Research the market, read a saved answer, or add a row by hand. Add the non-product alternatives too: doing nothing, a workaround.</SectionEmpty>
       ) : (
         <Card variant="outlined" hoverEffect={false} innerClassName="p-0">
           <Table aria-label="Competitors and alternatives">
@@ -209,6 +211,7 @@ export function CompetitorsView({ project, store }: ViewProps) {
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <ApproveButton item={r.item} onSet={(status) => patch(r.item.id, { status })} />
+                      <RowActions item={r.item} label={r.name} />
                       <Button size="icon-sm" variant="outline" onClick={() => setEditing(r.item)} aria-label={`Edit ${r.name}`}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
                       <Button size="icon-sm" variant="ghost" onClick={() => void guard(remove(r.item.id))} aria-label={`Delete ${r.name}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                     </div>

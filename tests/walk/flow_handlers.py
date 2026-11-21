@@ -1,4 +1,4 @@
-@on(r"^Add \d+ more rows? to Brief")
+@on(r"^Add \d+ more brief lines?")
 def brief(pg, label, href):
     n = 3 - len(items("concept/brief"))
     for i in range(n):
@@ -16,13 +16,13 @@ def decide(pg, label, href):
     a.patch(f"/api/items/{ds[0]['id']}", {"data": {"chosen": "yes"}, "status": "decided"}, ok=200)
     log("     (API) decision added and decided")
 
-@on(r"^Settle .* in Open questions")
+@on(r"^Mark .*(in Open questions|open questions?) as")
 def questions(pg, label, href):
     for q in items("concept/questions"):
         if q["status"] in ("open", "blocked"): status(q["id"], "decided")
     log("     (API) questions settled")
 
-@on(r"^Add \d+ more rows? to Claims to verify")
+@on(r"^Add \d+ more claims?")
 def claim(pg, label, href):
     pg.locator("#add-row").click(); pg.wait_for_timeout(500)
     d = pg.get_by_role("dialog")
@@ -46,17 +46,21 @@ def draft(pg, label, href):
     approve_all_dialog(pg, label)
     log("     (UI) Draft with AI, approved all")
 
-@on(r"^Settle .* in Requirements")
+@on(r"^Mark .*(in Requirements|requirements?) as")
 def reqs(pg, label, href):
     for r in items("design/requirements"):
         if r["status"] in ("open", "blocked"): status(r["id"], "done")
     log("     (API) requirements moved to done")
 
-@on(r"in Sourcing to in hand")
+@on(r"(in Sourcing|parts?) to in hand")
 def sourcing(pg, label, href):
-    for r in items("design/bom"):
-        if r["status"] not in ("in hand", "to print"): status(r["id"], "in hand")
-    log("     (API) parts marked in hand")
+    # The walk's concept is a printed product: its first part is printed on your own printer, as a person would set it
+    # (the print checks apply only when a part is to be printed, U2); the rest are bought and in hand.
+    rows = items("design/bom")
+    for n, r in enumerate(rows):
+        if n == 0: a.patch(f"/api/items/{r['id']}", {"status": "to print", "data": {"source": "Own printer"}}, ok=200)
+        elif r["status"] not in ("in hand", "to print"): status(r["id"], "in hand")
+    log("     (API) first part to print on your own printer, the rest in hand")
 
 @on(r"^Advance to ")
 def advance(pg, label, href):
@@ -82,7 +86,7 @@ def print_job(pg, label, href):
     st, j = a.post(f"/api/projects/{PID}/items", {"section": "prototype/printing", "title": "Cable clip", "status": "queued", "data": {"fileId": f["id"], "fileName": "clip.stl", "printerId": printer["id"], "printerName": printer["name"], "printerMaker": "Bambu Lab", "printerModel": "A1", "material": "PLA", "layerHeight": 0.2, "infill": 15, "supports": False}}, ok=201)
     log("     (API) print job set up, status", j["item"]["status"])
 
-@on(r'^Move "?.*"? in 3D printing to done')
+@on(r'^Move "?.*"? (in 3D printing|print jobs?) to done')
 def printed(pg, label, href):
     for job in items("prototype/printing"):
         if job["status"] == "done": continue
@@ -91,13 +95,13 @@ def printed(pg, label, href):
         st, plan = a.get(f"/api/print-jobs/{jid}/plan", ok=200)
         conf = {"printer": plan["printer"]["name"], "file": plan["send"]["name"]}
         # the printer stand-in keeps its state between walks: make it idle (as finishing the last print would)
-        requests_mod = __import__("requests"); requests_mod.post("http://127.0.0.1:3415/api/job", json={"command": "cancel"})
+        requests_mod = __import__("requests"); requests_mod.post(f"http://127.0.0.1:{PORT_BASE + 5}/api/job", json={"command": "cancel"})
         a.post(f"/api/print-jobs/{jid}/send", {"confirm": conf}, ok=200)
         a.post(f"/api/print-jobs/{jid}/start", {"confirm": conf}, ok=200)
         a.post(f"/api/print-jobs/{jid}/result", {"outcome": "good", "photoFileIds": []}, ok=200)
     log("     (API) sliced, sent, started and recorded as good:", [j["status"] for j in items("prototype/printing")])
 
-@on(r'^Move .* in Acceptance tests to pass')
+@on(r'^Move .* (in Acceptance tests|acceptance tests?) to pass')
 def tests_pass(pg, label, href):
     for t in items("prototype/tests"):
         if t["status"] != "pass": status(t["id"], "pass")

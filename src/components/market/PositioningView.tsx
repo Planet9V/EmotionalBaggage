@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +19,7 @@ import { positioningData, type PositioningMessage, type ProofRef } from "@/lib/m
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ApproveButton, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
@@ -84,7 +86,7 @@ export function PositioningView({ project, store }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!statements.length ? (
-        <EmptyState title="No positioning yet">Draft one from your personas and competitors, or write one by hand.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/positioning" sectionLabel="Positioning" title="No positioning yet">Every ad, post and landing page is tied to one of these messages, so nothing can be drafted for buyers until one is approved.</SectionEmpty>
       ) : (
         <ul className="space-y-5" aria-label="Positioning statements">
           {statements.map((it) => (
@@ -157,7 +159,7 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
           <div className="space-y-4 p-5">
             <div className="flex items-start justify-between gap-3">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Positioning line</p>
-              <Status status={item.status} />
+              <div className="flex items-center gap-1"><Status status={item.status} /><RowActions item={item} /></div>
             </div>
             <p className="text-lg font-semibold leading-snug tracking-tight text-primary">{positioningLine(d, productName)}</p>
             <div>

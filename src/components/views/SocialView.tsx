@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { sentText } from "@/lib/channels/sentText";
 
 import { useState } from "react";
@@ -139,6 +140,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                     </Button>
                   )}
                   <span className="ml-auto flex">
+                    <RowActions item={p} label={`the ${ch} post ${p.title}`} />
                     <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit post" onClick={() => setCompose({ item: p })}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
                     <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Delete post" onClick={() => setDel(p)}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                   </span>

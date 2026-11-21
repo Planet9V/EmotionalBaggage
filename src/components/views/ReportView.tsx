@@ -39,7 +39,7 @@ export function ReportView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Report" title="Report" />
+        <PageHeader eyebrow="Whole concept" title="Report" />
         <NoConcept loading={loading} />
       </>
     );
@@ -100,7 +100,7 @@ function ReportBody({ project }: { project: Project }) {
   return (
     <div className="report-doc">
       <style>{PRINT_CSS}</style>
-      <PageHeader eyebrow="Concept report" title={project.name} blurb={project.oneLiner}>
+      <PageHeader eyebrow="Whole concept · Report" title={project.name} blurb={project.oneLiner}>
         <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!ready}>
           <Printer className="h-3.5 w-3.5" aria-hidden /> Print
         </Button>

@@ -151,9 +151,8 @@ describe("model picker in Admin, Printers", () => {
     fireEvent.click((await screen.findAllByRole("button", { name: /Add printer/ }))[0]);
     const form = await screen.findByRole("form", { name: "Add a printer" });
     const trigger = within(form).getByLabelText(/Model from the supported list/);
-    await waitFor(() => expect((trigger as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(trigger);
-    fireEvent.click(await screen.findByRole("option", { name: "P2S" }));
+    await waitFor(() => expect((trigger as HTMLSelectElement).disabled).toBe(false));
+    fireEvent.change(trigger, { target: { value: within(trigger).getByRole("option", { name: "P2S" }).getAttribute("value") } });
 
     const fields = await within(form).findByTestId("family-fields");
     expect(within(fields).getByTestId("model-facts-bambu-p2s")).toBeTruthy();

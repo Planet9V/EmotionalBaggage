@@ -55,7 +55,7 @@ describe("process API", () => {
     expect(r.status).toBe(409);
     expect(r.body.error).toContain("The Concept gate is not passed");
     expect(r.body.detail?.unmet.map((c) => c.id)).toEqual(["concept.one-liner", "concept.brief", "concept.go"]);
-    expect(r.body.detail?.unmet[1]).toMatchObject({ href: "/s/concept/brief#add-row", detail: "0 rows recorded, 3 needed." });
+    expect(r.body.detail?.unmet[1]).toMatchObject({ href: "/s/concept/brief#add-row", detail: "0 brief lines recorded, 3 needed." });
     expect((await q<{ stage: string }>("SELECT stage FROM projects WHERE id=$1", [id]))[0].stage).toBe("concept");
   });
 

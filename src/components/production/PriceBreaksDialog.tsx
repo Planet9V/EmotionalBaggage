@@ -1,5 +1,6 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { useState, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,12 +29,12 @@ export function PriceBreaksDialog({
       title={part ? `Price breaks for ${part.ref ? `${part.ref} ` : ""}${part.title}` : "Price breaks"}
       description={`The price of one piece in ${currency} once the order reaches a quantity. The order is the quantity per unit times the batch size.`}
     >
-      {part ? <Form key={part.id} part={part} onClose={onClose} onSave={onSave} /> : null}
+      {part ? <Form key={part.id} part={part} currency={currency} onClose={onClose} onSave={onSave} /> : null}
     </Modal>
   );
 }
 
-function Form({ part, onClose, onSave }: { part: PartInput; onClose: () => void; onSave: (id: number, breaks: { qty: number; unit: number }[]) => Promise<void> }) {
+function Form({ part, currency, onClose, onSave }: { part: PartInput; currency: string; onClose: () => void; onSave: (id: number, breaks: { qty: number; unit: number }[]) => Promise<void> }) {
   const [rows, setRows] = useState<Row[]>(part.breaks.length ? part.breaks.map((b) => ({ qty: String(b.qty), unit: String(b.unit) })) : [{ qty: "", unit: "" }]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -73,7 +74,7 @@ function Form({ part, onClose, onSave }: { part: PartInput; onClose: () => void;
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-secondary">Price of one piece</span>
-              <Input inputMode="decimal" value={r.unit} onChange={(e) => set(i, { unit: e.target.value })} aria-label={`Row ${i + 1} price of one piece`} />
+              <MoneyInput currency={currency} value={r.unit} onChange={(e) => set(i, { unit: e.target.value })} aria-label={`Row ${i + 1} price of one piece`} />
             </label>
             <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove row ${i + 1}`} onClick={() => setRows(rows.filter((_, j) => j !== i))}>
               <Trash2 className="h-3.5 w-3.5" aria-hidden />

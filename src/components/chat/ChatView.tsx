@@ -26,7 +26,7 @@ export function ChatView() {
   if (!project) {
     return (
       <div className="flex h-dvh flex-col">
-        <PageHeader eyebrow="Chat" title="Chat with the concept" blurb={BLURB} />
+        <PageHeader eyebrow="Whole concept" title="Chat with the concept" blurb={BLURB} />
         {loading ? (
           <ScreenSkeleton />
         ) : (
@@ -101,7 +101,7 @@ function ChatBody({ project }: { project: Project }) {
 
   return (
     <div className="flex h-dvh flex-col">
-      <PageHeader eyebrow="Chat" title={`Chat with ${project.name}`} blurb={BLURB}>
+      <PageHeader eyebrow={`Whole concept · ${project.name}`} title="Chat" blurb={BLURB}>
         <Button variant="outline" size="sm" onClick={newChat} disabled={create.isPending || !!reasoningMissing}>
           <MessageSquarePlus className="h-3.5 w-3.5" aria-hidden /> New chat
         </Button>

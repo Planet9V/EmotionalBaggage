@@ -5,7 +5,8 @@
 // SaveError / ErrorLine in a form), saved (SavedNote), not configured (NotSetUp).
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { RotateCw } from "lucide-react";
+import { AlertTriangle, Inbox, RotateCw, type LucideIcon } from "lucide-react";
+import { adminLinkFor, type AdminLink } from "@/lib/adminLinks";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,25 +40,93 @@ export function LoadingBlocks({ rows = 3, label }: { rows?: number; label: strin
   );
 }
 
-/** Error on load: the message in place of the content, with a retry. */
-export function LoadError({ message, onRetry, what }: { message: string; onRetry: () => void; what?: string }) {
+/**
+ * The one error panel: a title, the plain sentence, what to do, and a link (to Admin when a service is not
+ * set up or not reachable; worked out from the sentence unless `link` is given) and a retry where one helps.
+ */
+export function ErrorPanel({
+  title,
+  message,
+  todo,
+  link,
+  onRetry,
+  status,
+}: {
+  title: string;
+  message: string;
+  todo?: string;
+  link?: AdminLink | null;
+  onRetry?: () => void;
+  status?: number;
+}) {
+  const to = link === undefined ? adminLinkFor(message, status) : link;
   return (
-    <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-      <span className="wrap-anywhere">{what ? `${what} could not be loaded. ${message}` : message}</span>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        <RotateCw className="h-3.5 w-3.5" aria-hidden /> Try again
-      </Button>
+    <div role="alert" data-error-panel="" className="rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden /> {title}
+          </p>
+          <p className="wrap-anywhere">{message}</p>
+          {todo ? <p className="text-secondary">{todo}</p> : null}
+        </div>
+        {to || onRetry ? (
+          <div className="flex flex-wrap gap-2">
+            {to ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href={to.href}>{to.label}</Link>
+              </Button>
+            ) : null}
+            {onRetry ? (
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                <RotateCw className="h-3.5 w-3.5" aria-hidden /> Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-/** Empty: one sentence saying what will appear here, and the one action that makes it appear. */
-export function EmptyState({ title, children, action }: { title?: string; children?: ReactNode; action?: ReactNode }) {
+/** Error on load: the message in place of the content, with a retry (and the Admin link when a service is the cause). */
+export function LoadError({ message, onRetry, what }: { message: string; onRetry: () => void; what?: string }) {
+  return <ErrorPanel title={what ? `${what} could not be loaded` : "This could not be loaded"} message={message} onRetry={onRetry} />;
+}
+
+/**
+ * Empty: the one empty state of the whole app. An icon, a title, one sentence saying why the rows matter,
+ * the primary action, and (through `ai`, see SectionEmpty in components/drafts) "Draft with AI" or
+ * "Set a model in Admin" where the section has a generator.
+ */
+export function EmptyState({
+  icon: Icon = Inbox,
+  title,
+  children,
+  action,
+  ai,
+  testId,
+}: {
+  icon?: LucideIcon;
+  title?: string;
+  children?: ReactNode;
+  action?: ReactNode;
+  ai?: ReactNode;
+  testId?: string;
+}) {
   return (
-    <div className="rounded-xl border border-dashed border-hairline bg-subtle px-6 py-8 text-center">
-      {title ? <p className="text-sm font-medium text-primary">{title}</p> : null}
-      {children ? <div className={`mx-auto max-w-xl text-sm text-secondary ${title ? "mt-1" : ""}`}>{children}</div> : null}
-      {action ? <div className="mt-3">{action}</div> : null}
+    <div data-empty-state="" data-testid={testId} className="rounded-xl border border-hairline bg-surface px-6 py-8 text-center">
+      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-subtle text-link">
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      {title ? <p className="mt-3 text-base font-semibold tracking-tight text-primary">{title}</p> : null}
+      {children ? <div className={`mx-auto max-w-xl text-sm text-secondary ${title ? "mt-1" : "mt-3"}`}>{children}</div> : null}
+      {action || ai ? (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {action}
+          {ai}
+        </div>
+      ) : null}
     </div>
   );
 }

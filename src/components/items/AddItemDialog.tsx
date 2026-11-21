@@ -19,6 +19,7 @@ export function AddItemDialog({
   columns,
   statuses,
   onCreate,
+  returnFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,9 +28,10 @@ export function AddItemDialog({
   columns: Column[];
   statuses: string[];
   onCreate: (d: { title: string; body: string; status: string; data: Record<string, string> }) => Promise<void>;
+  returnFocus?: () => HTMLElement | null | undefined;
 }) {
   return (
-    <ItemDialogShell open={open} onOpenChange={onOpenChange} eyebrow={sectionLabel} title={label} description="A title is required. Everything else can be filled in later.">
+    <ItemDialogShell returnFocus={returnFocus} open={open} onOpenChange={onOpenChange} eyebrow={sectionLabel} title={label} description="A title is required. Everything else can be filled in later.">
       {open && <AddForm columns={columns} statuses={statuses} onCancel={() => onOpenChange(false)} onCreate={onCreate} />}
     </ItemDialogShell>
   );

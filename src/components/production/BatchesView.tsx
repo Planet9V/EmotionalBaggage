@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -119,6 +120,7 @@ export function BatchesView({ project }: ViewProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="inline-flex gap-1">
+                        <RowActions item={{ id: r.id, projectId: project.id, section: "production/batches", title: r.title, body: "" }} />
                         <Button variant="ghost" size="icon-sm" aria-label={`Edit ${r.title}`} onClick={() => setEditing(r.id)}>
                           <Pencil className="h-3.5 w-3.5" aria-hidden />
                         </Button>

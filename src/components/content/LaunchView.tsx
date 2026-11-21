@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +10,7 @@ import { useItems } from "@/lib/client";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { asFlags, FlagList, MessageLine, StatusPill } from "./shared";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,7 +49,7 @@ export function LaunchView({ project, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading" />
       ) : ordered.length === 0 ? (
-        <EmptyState title="No launch pieces yet">Draft them with AI once the press release is approved, or add one.</EmptyState>
+        <SectionEmpty projectId={project.id} store="marketing/announce" sectionLabel="Launch email and press" title="No launch pieces yet">The launch email and press note tell your first buyers the product exists. They are written from the approved press release.</SectionEmpty>
       ) : (
         <ul className="space-y-4">
           {ordered.map((r) => (
@@ -97,6 +99,7 @@ function LaunchCard({ projectId, row, onSave, onDelete }: { projectId: string; r
           <StatusPill status={row.status} />
           {row.data.noProof === true && <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">No proof</span>}
         </div>
+        <RowActions item={row} />
         <Button size="icon" variant="ghost" aria-label={`Delete ${row.title}`} onClick={() => void run(onDelete)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
       </div>
       <div className="mt-2"><MessageLine message={row.data.message as { text?: string } | undefined} /></div>

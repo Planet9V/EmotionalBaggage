@@ -17,7 +17,7 @@ import { DecisionEditor, type DecisionDraft } from "@/components/decisions/Decis
 import { ancestry, buildTree, caption, isDecided, routeKeys, stateOf, walkOrder } from "@/components/decisions/model";
 import type { ViewProps } from "./types";
 import { useReducedMotion } from "@/lib/useReducedMotion";
-import { LoadingBlocks } from "@/components/ui/states";
+import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
 
 const STEP_MS = 4000;
@@ -217,26 +217,24 @@ export function DecisionsView({ project }: ViewProps) {
 
   if (all.length === 0) {
     return (
-      <Card variant="flat" className="rounded-2xl p-8 sm:p-10" data-testid="decisions-empty">
-        <div className="max-w-xl space-y-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-subtle text-link">
-            <GitBranch className="h-5 w-5" aria-hidden />
-          </span>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">No decisions yet</p>
-          <h2 className="text-xl font-semibold tracking-tight text-primary">Map the choices this concept rests on</h2>
-          <p className="text-sm leading-relaxed text-secondary">
-            A decision tree lists every choice this concept needs, the options for each and what each option leads to. Decisions hang under the ones they follow, and a decision
-            waits until the ones it depends on are made.
-          </p>
-          {skipped > 0 && <p className="text-xs text-warning">{skipped} item{skipped === 1 ? "" : "s"} in this store have no decision key, so they are not shown.</p>}
-          {error && <p className="text-xs text-danger">{error}</p>}
-          <Button onClick={() => openAdd("")}>
-            <Plus className="h-4 w-4" aria-hidden />
-            Add the first decision
-          </Button>
-        </div>
+      <>
+        <EmptyState
+          icon={GitBranch}
+          testId="decisions-empty"
+          title="No decisions yet"
+          action={
+            <Button size="sm" onClick={() => openAdd("")}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Add the first decision
+            </Button>
+          }
+        >
+          Later stages wait on the choices made here, and the Concept gate needs the go or stop decision. Each decision lists its options and what each leads to.
+          {skipped > 0 && <span className="mt-2 block text-xs text-warning">{skipped} item{skipped === 1 ? "" : "s"} in this store have no decision key, so they are not shown.</span>}
+          {error && <span role="alert" className="mt-2 block text-xs text-danger">{error}</span>}
+        </EmptyState>
         {editorEl}
-      </Card>
+      </>
     );
   }
 

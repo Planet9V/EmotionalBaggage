@@ -81,7 +81,7 @@ export function StepDetail({
         </dd>
         <dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Window</dt>
         <dd className="font-mono text-xs text-secondary">
-          {step.wave < 0 ? "not scheduled (in a loop)" : `starts at ${step.start} min, finishes at ${step.finish} min`}
+          {step.wave < 0 ? (step.blocked ? "not scheduled (in a loop)" : "not worked out (the planner is not answering)") : `starts at ${step.start} min, finishes at ${step.finish} min`}
         </dd>
       </dl>
 

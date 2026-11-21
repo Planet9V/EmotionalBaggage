@@ -133,8 +133,9 @@ describe("Audit log", () => {
     await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?limit=100")).toBe(true));
     expect(screen.getByText(/Sign-ins shown\./)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Hide" }));
-    fireEvent.click(screen.getByLabelText("Kind of change"));
-    fireEvent.click(await screen.findByRole("option", { name: "Sign-in" }));
+    // a native select (U27): choose by value, as the keyboard and a touch screen do
+    const kind = screen.getByLabelText("Kind of change") as HTMLSelectElement;
+    fireEvent.change(kind, { target: { value: within(kind).getByRole("option", { name: "Sign-in" }).getAttribute("value") } });
     await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?action=session.&limit=100")).toBe(true));
     expect(screen.queryByText(/Sign-ins hidden\./)).toBeNull();
   });
@@ -159,10 +160,10 @@ describe("Audit log", () => {
     expect(within(deletedRow).getByText("deleted")).toBeTruthy();
     expect(within(screen.getByTestId("audit-3")).queryByText("deleted")).toBeNull();
 
-    fireEvent.click(screen.getByLabelText("Concept"));
-    const option = await screen.findByRole("option", { name: "Old speaker (deleted)" });
-    expect(screen.getByRole("option", { name: "Desk lamp" })).toBeTruthy();
-    fireEvent.click(option);
+    const conceptSelect = screen.getByLabelText("Concept") as HTMLSelectElement;
+    const option = within(conceptSelect).getByRole("option", { name: "Old speaker (deleted)" });
+    expect(within(conceptSelect).getByRole("option", { name: "Desk lamp" })).toBeTruthy();
+    fireEvent.change(conceptSelect, { target: { value: option.getAttribute("value") } });
     await waitFor(() => expect(server.calls.some((c) => c.path === "/api/admin/audit?project=gone-1&hide=session.started&limit=100")).toBe(true));
     await waitFor(() => expect(screen.queryByTestId("audit-3")).toBeNull());
 
@@ -201,8 +202,8 @@ describe("Printers", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /Add printer/ })[0]);
     const form = await screen.findByRole("form", { name: "Add a printer" });
-    fireEvent.click(within(form).getByLabelText(/Family/));
-    fireEvent.click(await screen.findByRole("option", { name: /Test Family/ }));
+    const family = within(form).getByLabelText(/Family/) as HTMLSelectElement;
+    fireEvent.change(family, { target: { value: within(family).getByRole("option", { name: /Test Family/ }).getAttribute("value") } });
 
     const fields = await within(form).findByTestId("family-fields");
     const address = within(fields).getByLabelText(/Address/) as HTMLInputElement;

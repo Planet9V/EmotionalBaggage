@@ -1,7 +1,8 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useMemo, useState } from "react";
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, Hammer, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AddItemDialog } from "@/components/items/AddItemDialog";
@@ -16,7 +17,7 @@ import type { Item } from "@/lib/types";
 import { BuildPanel } from "./BuildPanel";
 import { CriteriaChecklist } from "./CriteriaChecklist";
 import { Card } from "@/components/ui/Card";
-import { LoadingShape } from "@/components/ui/states";
+import { EmptyState, LoadingShape } from "@/components/ui/states";
 
 const day = (v: unknown) => (typeof v === "string" && v ? v : "");
 
@@ -102,18 +103,17 @@ export function BuildsView({ project, section, store }: ViewProps) {
   if (!builds.length) {
     return (
       <>
-        <div className="max-w-xl rounded-xl border border-dashed border-hairline bg-surface p-8 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">{section.label}</p>
-          <p className="mt-2 text-lg font-semibold tracking-tight text-primary">No builds yet</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-secondary">
-            Name a build (works-like, looks-like, EVT, DVT, PVT or your own), say what it has to show, and link the tests it must pass.
-          </p>
-          <div className="mt-4 flex justify-center">
-            <Button id="add-build" onClick={() => setAdding(true)}>
+        <EmptyState
+          icon={Hammer}
+          title="No builds yet"
+          action={
+            <Button id="add-build" size="sm" onClick={() => setAdding(true)}>
               <Plus className="h-4 w-4" aria-hidden /> Add build
             </Button>
-          </div>
-        </div>
+          }
+        >
+          A build is the evidence that the prototype works: the Prototype gate needs one marked passed. Name it (works-like, looks-like, EVT, DVT, PVT or your own), say what it has to show, and link its tests.
+        </EmptyState>
         {dialogs}
       </>
     );
@@ -201,9 +201,12 @@ export function BuildsView({ project, section, store }: ViewProps) {
                 </p>
               )}
               <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-3">
-                <Button variant="outline" size="sm" onClick={() => setOpenId(b.id)} aria-label={`Open ${b.title}`}>
-                  Open
-                </Button>
+                <span className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => setOpenId(b.id)} aria-label={`Open ${b.title}`}>
+                    Open
+                  </Button>
+                  <RowActions item={b} />
+                </span>
                 {passed ? (
                   <span className={`inline-flex items-center gap-1 text-xs font-medium ${stale.length ? "text-warning" : "text-success"}`}>
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> {stale.length ? "Passed, evidence lost" : "Passed"}

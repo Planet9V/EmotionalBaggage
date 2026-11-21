@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -30,7 +31,8 @@ function targetLine(c: Campaign, money: Money): string | null {
 }
 
 /** The board: one column per status, as a labelled list in each. Status is changed with a select, so the board works from the keyboard. */
-export function CampaignBoard({ campaigns, statuses, money, onEdit, onDelete, onStatus }: {
+export function CampaignBoard({ projectId, campaigns, statuses, money, onEdit, onDelete, onStatus }: {
+  projectId: string;
   campaigns: Campaign[];
   statuses: string[];
   money: Money;
@@ -71,6 +73,7 @@ export function CampaignBoard({ campaigns, statuses, money, onEdit, onDelete, on
                       <NativeSelect id={`status-${c.id}`} value={c.status} onChange={(e) => onStatus(c, e.target.value)} className="h-8 w-28 px-2 text-xs">
                         {[...new Set([...statuses, c.status])].map((s) => <option key={s}>{s}</option>)}
                       </NativeSelect>
+                      <RowActions item={{ id: c.id, projectId, section: "marketing/campaigns", title: c.title, body: "" }} />
                       <Button size="sm" variant="outline" onClick={() => onEdit(c)} aria-label={`Edit ${c.title}`}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
                       <Button size="sm" variant="ghost" onClick={() => onDelete(c)} aria-label={`Delete ${c.title}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                     </div>

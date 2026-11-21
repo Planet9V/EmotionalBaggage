@@ -384,9 +384,9 @@ describe("activity page", () => {
   it("says when nothing matches the filters", async () => {
     activityPages = [[]];
     renderWith(<ActivityView />);
-    expect(await screen.findByText("Nothing has changed in this concept yet.")).toBeTruthy();
+    expect(await screen.findByText("Nothing has changed in this concept yet")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Kind of change"), { target: { value: "file" } });
-    expect(await screen.findByText("No changes match these filters.")).toBeTruthy();
+    expect(await screen.findByText("No changes match these filters")).toBeTruthy();
   });
 });
 

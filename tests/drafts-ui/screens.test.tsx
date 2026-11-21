@@ -149,7 +149,8 @@ describe("Draft with AI", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Draft requirements" }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("did not answer within 2 min");
-    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    expect(within(alert).getByRole("link", { name: "Open Admin, Models" }).getAttribute("href")).toBe("/admin?tab=models");
+    fireEvent.click(within(alert).getByRole("button", { name: /Try again/ }));
     expect(await screen.findByText(/0 drafts saved for review/)).toBeTruthy();
   });
 });

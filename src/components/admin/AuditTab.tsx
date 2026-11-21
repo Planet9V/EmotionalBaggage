@@ -7,7 +7,7 @@ import { ChevronDown, ChevronRight, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { messageOf } from "@/lib/queries";
@@ -106,37 +106,27 @@ export function AuditTab() {
           <label htmlFor="audit-concept" className="block font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
             Concept
           </label>
-          <Select value={project || ALL} onValueChange={(v) => setProject(v === ALL ? "" : v)}>
-            <SelectTrigger id="audit-concept" className="mt-1 w-full border-hairline bg-surface">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All concepts and install-wide</SelectItem>
-              {concepts.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {conceptLabel(c)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <NativeSelect id="audit-concept" className="mt-1" value={project || ALL} onChange={(e) => setProject(e.target.value === ALL ? "" : e.target.value)}>
+            <option value={ALL}>All concepts and install-wide</option>
+            {concepts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {conceptLabel(c)}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
         <div>
           <label htmlFor="audit-kind" className="block font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
             Kind of change
           </label>
-          <Select value={action || ALL} onValueChange={(v) => setAction(v === ALL ? "" : v)}>
-            <SelectTrigger id="audit-kind" className="mt-1 w-full border-hairline bg-surface">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Every kind</SelectItem>
-              {KINDS.map((k) => (
-                <SelectItem key={k.prefix} value={k.prefix}>
-                  {k.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <NativeSelect id="audit-kind" className="mt-1" value={action || ALL} onChange={(e) => setAction(e.target.value === ALL ? "" : e.target.value)}>
+            <option value={ALL}>Every kind</option>
+            {KINDS.map((k) => (
+              <option key={k.prefix} value={k.prefix}>
+                {k.label}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
         <div>
           <label htmlFor="audit-text" className="block font-mono text-[10px] uppercase tracking-[0.15em] text-muted">

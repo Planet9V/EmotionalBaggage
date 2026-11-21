@@ -65,7 +65,7 @@ export function SendToPrinting({ projectId, disabled, reason, beforeSend }: { pr
         <Button size="sm" variant="outline" onClick={() => void store("save")} disabled={!!busy || disabled} aria-describedby="send-to-printing-hint">
           <Save className="h-3.5 w-3.5" aria-hidden /> {busy === "save" ? "Building the base and lid" : "Save to concept"}
         </Button>
-        <Button size="sm" onClick={() => void store("send")} disabled={!!busy || disabled} aria-describedby="send-to-printing-hint">
+        <Button id="send-to-printing" size="sm" onClick={() => void store("send")} disabled={!!busy || disabled} aria-describedby="send-to-printing-hint">
           <Printer className="h-3.5 w-3.5" aria-hidden /> {busy === "send" ? "Building the base and lid" : "Send to printing"}
         </Button>
         <span id="send-to-printing-hint" className="text-xs text-muted">

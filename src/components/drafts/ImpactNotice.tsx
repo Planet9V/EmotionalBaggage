@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorPanel } from "@/components/ui/states";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -173,10 +174,7 @@ function ImpactPanel({ projectId, reply, open, onOpenChange }: { projectId: stri
                 </div>
               )}
               {error && (
-                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-                  <span className="wrap-anywhere">{error}</span>
-                  <Button variant="outline" size="sm" onClick={() => go(false)}>Retry</Button>
-                </div>
+                <ErrorPanel title="The proposal did not run" message={error} todo="Nothing was saved. Fix what the message names, then try again." onRetry={() => go(false)} />
               )}
               {runs ? (
                 <div className="space-y-2">

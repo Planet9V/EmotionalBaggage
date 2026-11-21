@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useState } from "react";
 import { ExternalLink, Search, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ export function PartCard({ part, currency, onSave, onResearch }: {
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge tone={statusTone(s.order?.status ?? part.item.status)}>{s.order?.status ?? part.item.status}</StatusBadge>
+          <RowActions item={part.item} />
           <Button size="sm" variant="outline" aria-expanded={open} onClick={() => setOpen((v) => !v)}>{open ? "Close" : "Open"}<span className="sr-only"> {part.item.title}</span></Button>
         </div>
       </div>

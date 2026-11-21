@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { draftQueries } from "./api";
 import { DraftPanel } from "./DraftPanel";
+import { PrerequisiteLink } from "./PrerequisiteLink";
 
 /**
  * "Draft with AI" in a section's header, placed once by the section page shell. It shows only where a
@@ -31,7 +32,10 @@ export function DraftButton({ projectId, store, sectionLabel }: { projectId: str
           <Sparkles className="h-4 w-4 text-link" aria-hidden /> Draft with AI
           {pending > 0 && <span className="ml-1 rounded-full bg-dutchOrange/15 px-1.5 font-mono text-[10px] text-link">{pending} waiting</span>}
         </Button>
-        <span id={`draft-hint-${store}`} className="max-w-72 text-right text-[11px] text-muted">{hint}</span>
+        <span id={`draft-hint-${store}`} className="max-w-72 text-right text-[11px] leading-snug text-muted wrap-break-word">
+          {hint}
+          {gens.data!.configured && first.blocked && <PrerequisiteLink generator={first} />}
+        </span>
       </div>
       {open && (
         <DraftPanel

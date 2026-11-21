@@ -6,8 +6,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const push = vi.fn();
+const replace = vi.fn();
 const mutateAsync = vi.fn(async () => ({ id: "c1" }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/" }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace }), usePathname: () => "/" }));
 vi.mock("@/lib/client", () => ({ useProject: () => ({ select: vi.fn() }) }));
 vi.mock("@/lib/conceptsClient", () => ({ useCreateConcept: () => ({ mutateAsync }) }));
 vi.mock("@/components/PageHeader", () => ({ PageHeader: ({ title }: { title: string }) => <h1>{title}</h1> }));
@@ -29,6 +30,7 @@ const renderIt = () =>
 afterEach(() => {
   cleanup();
   push.mockClear();
+  replace.mockClear();
   mutateAsync.mockClear();
 });
 
@@ -58,7 +60,21 @@ describe("WizardView", () => {
       await waitFor(() => expect(screen.getByText(new RegExp(`Step 0${i + 2} of 06`))).toBeTruthy());
     }
     fireEvent.click(screen.getByRole("button", { name: /Create the concept/ }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/concept/questions"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/concept/questions"));
+    expect(push).not.toHaveBeenCalled();
     expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ name: "Lamp", productType: "printed" }));
+  });
+
+  it("moves focus to the new step's heading on every step change (U7)", async () => {
+    renderIt();
+    fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: "Lamp" } });
+    fireEvent.change(screen.getByLabelText(/^One-line description/), { target: { value: "A desk lamp" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Who and why"));
+    expect(document.activeElement?.tagName).toBe("H2");
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Product"));
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Who and why"));
   });
 });

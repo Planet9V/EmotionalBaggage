@@ -5,7 +5,7 @@
  * It edits data.geometry on the BOM parts, the same data the 3D model draws.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Save } from "lucide-react";
+import { Download, LayoutGrid, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { toPart } from "@/lib/domain";
@@ -37,7 +37,8 @@ import type { ViewProps } from "./types";
 import { NativeSelect } from "@/components/ui/native-select";
 import { downloadFile } from "@/lib/download";
 import { fileSlug } from "@/lib/format";
-import { LoadingBlocks } from "@/components/ui/states";
+import { EmptyState, LoadingBlocks } from "@/components/ui/states";
+import { PlacedParts } from "@/components/layout/PlacedParts";
 import { Card } from "@/components/ui/Card";
 
 const BOM_STORE = "design/bom";
@@ -287,7 +288,7 @@ export function LayoutView({ project }: ViewProps) {
   });
 
   return (
-    <div className="flex flex-col gap-4 outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
+    <div id="layout-workspace" role="group" aria-label="Layout: arrow keys move the selected part" className="flex flex-col gap-4 outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
       {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       {notice && (
         <p role="status" className={`rounded-md px-3 py-2 text-sm ${notice.tone === "ok" ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
@@ -337,17 +338,14 @@ export function LayoutView({ project }: ViewProps) {
             onCreate={createEnclosure}
           />
           <PartsTray parts={tray} selectedId={selectedId} onPlace={(id) => startDraft(id)} onSelect={setSelectedId} />
+          <PlacedParts parts={placed} selectedId={selectedId} onSelect={setSelectedId} />
         </div>
 
         <section className="order-1 min-w-0 xl:order-2" aria-label="Layout views">
           {!hasGeometry ? (
-            <div className="flex min-h-[320px] flex-col items-start justify-center gap-2 rounded-xl border border-dashed border-hairline bg-subtle p-8">
-              <p className={eyebrow}>Nothing to lay out yet</p>
-              <h2 className="text-lg font-semibold tracking-tight text-primary">Start with the enclosure, then place parts</h2>
-              <p className="max-w-lg text-sm text-secondary">
-                Give the enclosure its outer size under Envelope. Then drag parts from the tray onto the Top view and enter their sizes. Parts you add in the bill of materials show up in the tray.
-              </p>
-            </div>
+            <EmptyState icon={LayoutGrid} title="Nothing to lay out yet">
+              Where each part sits decides the enclosure size, its openings and the wire lengths. Give the enclosure its outer size under Envelope, then drag parts from the tray onto the Top view and enter their sizes.
+            </EmptyState>
           ) : (
             // one view at a time, large enough to read its labels, at every width; the buttons above switch it
             <ThreeView key={activeView} {...viewProps(activeView, "h-[clamp(440px,64vh,760px)]")} />

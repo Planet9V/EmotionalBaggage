@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, ListOrdered, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { AddStepForm } from "@/components/plan/AddStepForm";
@@ -12,7 +12,8 @@ import { usePlan } from "@/components/plan/usePlan";
 import { useItems, useProject } from "@/lib/client";
 import type { Project } from "@/lib/types";
 import { fmtMinutes } from "@/lib/format";
-import { NoConcept } from "@/components/ui/states";
+import { EmptyState, ErrorPanel, LoadingBlocks, NoConcept } from "@/components/ui/states";
+import { ADMIN_PLANNER } from "@/lib/adminLinks";
 import { Card } from "@/components/ui/Card";
 
 export function PlanView() {
@@ -20,7 +21,7 @@ export function PlanView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Order of operations" title="Order of operations" />
+        <PageHeader eyebrow="Whole concept" title="Order of operations" />
         <NoConcept loading={loading} />
       </>
     );
@@ -64,7 +65,7 @@ function PlanBody({ project }: { project: Project }) {
   return (
     <>
       <PageHeader
-        eyebrow={project.name}
+        eyebrow={`Whole concept · ${project.name}`}
         title="Order of operations"
         blurb="Every row with a step key, in the order it can be done. Steps in the same wave can run in parallel; the critical path sets the total time."
       >
@@ -82,19 +83,20 @@ function PlanBody({ project }: { project: Project }) {
           </div>
         )}
 
-        {planLoading && !plan && <p className="text-sm text-secondary">Computing the order.</p>}
+        {planLoading && !plan && <LoadingBlocks rows={2} label="Working out the order" />}
 
-        {plan && (
-          <p className="font-mono text-[11px] text-muted">
-            {plan.engine === "networkx" ? (
-              <span className="text-link">Computed by NetworkX</span>
-            ) : (
-              <>
-                <span className="text-warning">No order worked out.</span> {plan.note ?? "The planner service did not answer."}
-              </>
-            )}
-          </p>
-        )}
+        {plan &&
+          (plan.engine === "networkx" ? (
+            <p className="font-mono text-[11px] text-link">Computed by NetworkX</p>
+          ) : (
+            <ErrorPanel
+              title="The order is not worked out"
+              message={plan.note ?? "The planner service did not answer."}
+              todo="The steps are listed without times or a total until the planner answers. Times shown without it would not be real."
+              link={{ href: ADMIN_PLANNER, label: "Set the planner address in Admin, Models" }}
+              onRetry={() => void refresh()}
+            />
+          ))}
 
         {plan && plan.cycles.length > 0 && (
           <div className="rounded-xl border border-danger bg-danger-soft p-5 text-danger" role="alert">
@@ -114,13 +116,9 @@ function PlanBody({ project }: { project: Project }) {
         )}
 
         {plan && !hasSteps && (
-          <Card variant="flat" className="p-6">
-            <h2 className="text-base font-semibold tracking-tight text-primary">No steps yet</h2>
-            <p className="mt-1 max-w-2xl text-sm text-secondary">
-              A step is any row with a key, a duration in minutes and the steps it waits on. Add one below, or turn a row you
-              already have, such as an assembly phase, into a step.
-            </p>
-          </Card>
+          <EmptyState icon={ListOrdered} title="No steps yet">
+            The order of operations shows what can run in parallel, what waits on what and how long the build takes. A step is any row with a key, minutes and the steps it waits on: add one below, or turn an assembly phase into a step.
+          </EmptyState>
         )}
 
         {plan && hasSteps && (
@@ -148,7 +146,7 @@ function PlanBody({ project }: { project: Project }) {
           </section>
         )}
 
-        {plan && hasSteps && (
+        {plan && hasSteps && plan.engine === "networkx" && (
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">

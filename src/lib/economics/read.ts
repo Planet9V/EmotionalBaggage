@@ -1,4 +1,5 @@
 // Rows read once, for the economics. A number nobody entered is null, never 0.
+import { readMoney } from "@/lib/moneyText";
 import type { Item } from "@/lib/types";
 import { partPrice, toPart } from "@/lib/domain/part";
 import { COST_KINDS, METHODS, type CostKind, type Method } from "./schemas";
@@ -8,10 +9,8 @@ const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 export function num(v: unknown): number | null {
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
   if (typeof v !== "string") return null;
-  const t = v.trim().replace(/^[$€£]/, "").replace(/,/g, "");
-  if (t === "") return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
+  const n = readMoney(v);
+  return n === null || Number.isNaN(n) ? null : n;
 }
 
 export type PartInput = {

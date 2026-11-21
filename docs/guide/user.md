@@ -29,6 +29,17 @@ The dotted lines are the links that work today: the parts list and the wiring yo
 
 The left menu folds. Each group (Whole concept, Stages, Workbench) and each stage has a heading you can click or press Enter on to open or close it. The stage you are working in is always open; the other stages show as one line each until you open them. What you open or close is remembered on this browser.
 
+### Help on every page
+
+- Every row and card has an **Ask the assistant** menu: Challenge this, Verify this.
+- An empty page says why its rows matter and offers Draft with AI, or a link to choose a model when none is set.
+- The Next strip asks you to set up a missing service first, says when drafts are waiting for review, and adds "On this page" when the stage's next step is somewhere else.
+- Money boxes accept "$150", "150 USD" and "1,200.50".
+- The new-concept wizard creates the Go or stop decision for you.
+- A printed product needs a print job only when one of its parts is to be printed.
+- "Skip to content" is the first Tab on every page. In Physical layout, choose a part from the Placed parts list and move it with the arrow keys.
+- With no theme chosen, the app follows your system's light or dark setting.
+
 ## Concepts
 
 The Concepts page lists every concept with its name, one line, product type, stage, when it last changed and how many rows it has. Search covers names and descriptions. Sort by last changed or by name.

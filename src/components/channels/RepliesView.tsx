@@ -3,11 +3,12 @@
 // Marketing, Replies to send (plan 8.18 to 8.20). Approved replies: X and Instagram replies are sent one
 // at a time by their own button and confirmation; replies to reviews (Amazon and elsewhere) are never
 // sent by this app: copy them and post them yourself, then mark them sent.
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useState } from "react";
 import { Check, Copy, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Card } from "@/components/ui/Card";
 import type { ViewProps } from "@/components/views/types";
@@ -54,9 +55,9 @@ export function RepliesView({ project, section, store }: ViewProps) {
       {loading ? (
         <LoadingBlocks rows={2} label="Loading the replies" />
       ) : shown.length === 0 ? (
-        <EmptyState title={items.length ? `No ${filter === "all" ? "" : `${filter} `}replies` : "No replies yet"}>
+        <SectionEmpty projectId={project.id} store="marketing/replies" sectionLabel="Replies" title={items.length ? `No ${filter === "all" ? "" : `${filter} `}replies` : "No replies yet"}>
           {items.length ? "Choose another filter above." : "Use Draft with AI to draft replies to mentions, comments, reviews and questions, then approve the ones you want."}
-        </EmptyState>
+        </SectionEmpty>
       ) : (
         <ul className="space-y-2">
           {shown.map((r) => {

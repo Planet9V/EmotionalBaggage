@@ -21,7 +21,7 @@ import { ResultPanel } from "./ResultPanel";
 import { SendToPrinting } from "./SendToPrinting";
 import { PartOpeningEditor } from "./PartOpeningEditor";
 import { NativeSelect } from "@/components/ui/native-select";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks, NotSetUp } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { fileSlug } from "@/lib/format";
 import { useDark } from "@/lib/useDark";
@@ -45,7 +45,10 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
 
   const row = saved.items[0];
   const first = (row?.data ?? {}) as Saved;
-  const [generator, setGenerator] = useState<GeneratorKey>(first.enclosureGenerator && GENERATOR_KEYS.includes(first.enclosureGenerator) ? first.enclosureGenerator : "casemaker");
+  // The saved choice, or none: a generator only counts as chosen once it is saved (U11). Until then the page
+  // works with CaseMaker but shows no selection and says nothing is saved.
+  const [chosen, setGenerator] = useState<GeneratorKey | null>(first.enclosureGenerator && GENERATOR_KEYS.includes(first.enclosureGenerator) ? first.enclosureGenerator : null);
+  const generator: GeneratorKey = chosen ?? "casemaker";
   const [draft, setDraft] = useState<Draft>(() => toDraft(withDefaults(first.params)));
   const [held, setHeld] = useState<Partial<Record<GeneratorKey, Held>>>({});
   const [running, setRunning] = useState<GeneratorKey[] | null>(null);
@@ -64,7 +67,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
   const inputKey = useMemo(() => JSON.stringify([usable, spec.outer, spec.inner, spec.openings.map((o) => [o.partRef, o.face, o.center, o.width, o.height])]), [usable, spec]);
 
   // Save the choice a moment after the last change.
-  const lastSaved = useRef<string>(JSON.stringify([generator, usableAtStart(first)]));
+  const lastSaved = useRef<string>(JSON.stringify([chosen, usableAtStart(first)]));
   const { add, patch } = saved;
   const persist = useCallback(
     async (g: GeneratorKey, p: EnclosureParams) => {
@@ -82,18 +85,20 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
     [row, patch, add]
   );
   useEffect(() => {
-    if (paramIssues.length) return;
-    const key = JSON.stringify([generator, usable]);
+    if (paramIssues.length || !chosen) return;
+    const key = JSON.stringify([chosen, usable]);
     if (key === lastSaved.current) return;
     const t = setTimeout(() => {
       lastSaved.current = key;
-      void persist(generator, usable);
+      void persist(chosen, usable);
     }, 700);
     return () => clearTimeout(t);
-  }, [generator, usable, paramIssues.length, row, persist]);
+  }, [chosen, usable, paramIssues.length, row, persist]);
 
   const run = async (which: GeneratorKey[]) => {
     setRunError("");
+    // Generating with one generator is choosing it: it is saved with the parameters (U11).
+    if (!chosen && which.length === 1) setGenerator(which[0]);
     setRunning(which);
     try {
       const answer: GenerateAnswer = await generate(project.id, which, usable);
@@ -132,9 +137,10 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </span>
         }
       >
+        {!chosen ? <p className="mb-2 text-sm text-secondary" data-testid="generator-not-saved">No generator is chosen: not saved yet. Choose one, or generate with one, and it is saved.</p> : null}
         <div role="radiogroup" aria-label="Enclosure generator" className="grid gap-3 md:grid-cols-2">
           {options.map((o) => {
-            const on = generator === o.key;
+            const on = chosen === o.key;
             const st = stat?.[o.key];
             return (
               <button
@@ -176,7 +182,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </p>
         ) : null}
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
-        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => persist(generator, usable)} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
+        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => { setGenerator(generator); return persist(generator, usable); }} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
       </Panel>
 
       <Panel compact title="Parameters" description="Defaults are shown under each field. The checks hold the result to the clearance you set." actions={
@@ -319,18 +325,24 @@ export function EnclosureView({ project }: ViewProps) {
   const saved = useItems(project.id, SAVE_STORE);
   if (bom.loading || saved.loading) return <LoadingBlocks label="Loading the enclosure" />;
   if (bom.error || saved.error) {
-    return (
-      <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
-        <p className="text-sm font-medium text-danger">The enclosure could not be loaded.</p>
-        <p className="mt-1 text-sm text-danger wrap-anywhere">{bom.error || saved.error}</p>
-        <Button variant="outline" size="sm" className="mt-3" onClick={() => void (bom.error ? bom.reload() : saved.reload())}>
-          Try again
-        </Button>
-      </div>
-    );
+    return <LoadError what="The enclosure" message={bom.error || saved.error} onRetry={() => void (bom.error ? bom.reload() : saved.reload())} />;
   }
+  // A product that is printed itself (not electronics) has no box to generate around it: its printed body is the
+  // product. Say so, and send the person to the 3D model and to printing (U2). The generator stays below for a
+  // product that also has parts to box.
+  const selfPrinted = (project as { productType?: string }).productType !== undefined && (project as { productType?: string }).productType !== "electronics";
+  const notice = selfPrinted ? (
+    <NotSetUp href="/s/design/model" label="Open 3D model">
+      This product is printed itself, so it needs no enclosure around it. Shape its printed body in Design, 3D model, then send the file to{" "}
+      <Link href="/s/prototype/printing#new-print-job" className="underline">3D printing</Link>. Use this page only if the product also has parts to box.
+    </NotSetUp>
+  ) : null;
+  // Nothing to box but the printed body itself: the page offers no generator, only the way to print it.
+  const onlyPrinted = bom.items.filter((i) => (i.data as { geometry?: unknown }).geometry).every((i) => (i.data as { geometry?: { print?: boolean } }).geometry?.print === true);
+  if (notice && onlyPrinted) return notice;
   if (!enclosureOffered(bom.items)) {
     const layout = sectionHref(BOM);
+    if (notice) return notice;
     return (
       <EmptyState title="No part has a box yet">
         An enclosure is built around the parts, so it needs their sizes and places.{" "}
@@ -348,6 +360,11 @@ export function EnclosureView({ project }: ViewProps) {
     );
   }
 
-  return <Editor project={project} bom={bom} saved={saved} />;
+  return (
+    <>
+      {notice ? <div className="mb-4">{notice}</div> : null}
+      <Editor project={project} bom={bom} saved={saved} />
+    </>
+  );
 }
 

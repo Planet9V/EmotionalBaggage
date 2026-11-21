@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -128,6 +129,7 @@ export function ImageryView({ project, store }: ViewProps) {
                         {canRender && <Button size="sm" variant="outline" asChild><Link href="/s/design/model"><Box className="h-3.5 w-3.5" aria-hidden /> Render from the 3D model<span className="sr-only"> for {it.title}</span></Link></Button>}
                         <ApproveButton item={it} onSet={(status) => patch(it.id, { status })} disabled={!f} reason="Add a file first." />
                         {f && <Button size="sm" variant="ghost" onClick={() => void clearFile(it)}>Detach file</Button>}
+                        <RowActions item={it} />
                         <Button size="icon-sm" variant="ghost" aria-label={`Remove ${it.title} from the list`} onClick={() => void remove(it.id).catch((e) => setErr((e as Error).message))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                       </div>
                     </TableCell>

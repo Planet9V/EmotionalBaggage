@@ -18,7 +18,7 @@ export function ProcessPage() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="Process" title="Process" nextStep={false} />
+        <PageHeader eyebrow="Whole concept" title="Process" nextStep={false} />
         <div className="p-8 text-sm text-secondary">
           {loading ? (
             <Skeleton className="h-4 w-64" />
@@ -40,7 +40,7 @@ function Body({ projectId, name }: { projectId: string; name: string }) {
   return (
     <>
       <PageHeader
-        eyebrow={`Process · ${name}`}
+        eyebrow={`Whole concept · ${name}`}
         title="Process"
         blurb={`Each stage has a gate: the checks that show it is done. Gates warn and never stop you reading or editing. ${type ? `This concept follows the process for: ${type}.` : ""}`}
         nextStep={false}

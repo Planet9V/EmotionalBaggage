@@ -141,8 +141,8 @@ describe("NextStepStrip", () => {
     ]);
     renderWithClient(<ProcessContext projectId="toy"><NextStepStrip /></ProcessContext>);
     const strip = await screen.findByTestId("next-step-strip");
-    expect(within(strip).getByRole("link", { name: "Add 2 more rows to Brief" }).getAttribute("href")).toBe("/s/concept/brief#add-row");
-    expect(strip.textContent).toContain("Why: The Concept gate needs this: the brief has at least three lines. 1 row recorded, 3 needed.");
+    expect(within(strip).getByRole("link", { name: "Add 2 more brief lines" }).getAttribute("href")).toBe("/s/concept/brief#add-row");
+    expect(strip.textContent).toContain("Why: The Concept gate needs this: the brief has at least three lines. 1 brief line recorded, 3 needed.");
   });
 
   it("says when the next step cannot be worked out, with a retry", async () => {

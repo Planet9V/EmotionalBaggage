@@ -1,5 +1,6 @@
 "use client";
 
+import { ADMIN_PLANNER } from "@/lib/adminLinks";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -28,7 +29,7 @@ export function IntegrationsView() {
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Integrations" blurb="What is connected, what is built, and where in Admin each one is set." />
+      <PageHeader eyebrow="Workbench" title="Integrations" nextStep={false} blurb="What is connected, what is built, and where in Admin each one is set." />
       <div className="animate-enter space-y-8 px-8 py-6">
         {error ? <ErrorLine>{error}</ErrorLine> : null}
         {!data && !error ? <p className="text-sm text-secondary">Reading the integrations.</p> : null}
@@ -60,7 +61,10 @@ export function IntegrationsView() {
                   <div className="flex gap-2"><dt className="w-24 text-muted">NetworkX</dt><dd className="font-mono text-xs text-primary">{data.planner.connected ? data.planner.networkx ?? "unknown" : "not reachable"}</dd></div>
                 </dl>
                 {!data.planner.connected && (
-                  <p className="mt-3 text-sm text-secondary">{plannerWhy ? plannerWhy : "The planner service did not answer. The order of operations cannot be worked out until it does; the plan page lists the steps without an order."}</p>
+                  <p className="mt-3 text-sm text-secondary">
+                    {plannerWhy ? plannerWhy : "The planner service did not answer. The order of operations cannot be worked out until it does; the plan page lists the steps without an order."}{" "}
+                    <Link href={ADMIN_PLANNER} className="text-link underline">Set the planner address in Admin, Models</Link>
+                  </p>
                 )}
               </Card>
             </section>

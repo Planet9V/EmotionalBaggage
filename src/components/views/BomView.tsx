@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Box, CircuitBoard, Download, Plus, Trash2, Upload } from "lucide-react";
@@ -18,7 +20,7 @@ import { libraryEntryById } from "@/lib/parts/library";
 import { partPins, pinsByItem } from "@/lib/parts/pins";
 import { PartElectricalDialog } from "@/components/parts/PartElectricalDialog";
 import type { ViewProps } from "./types";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { NativeSelect } from "@/components/ui/native-select";
 import { statusOptions } from "@/lib/statusOptions";
 import { Modal } from "@/components/ui/modal";
@@ -95,9 +97,9 @@ export function BomView({ project, section, store }: ViewProps) {
       {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
 
       {!parts.length ? (
-        <EmptyState title="No parts yet">
+        <SectionEmpty projectId={project.id} store="design/bom" sectionLabel="Parts list" title="No parts yet">
           Add a part, or import a CSV with the columns ref, title, spec, qty, source, search and line.
-        </EmptyState>
+        </SectionEmpty>
       ) : (
         <Card variant="flat" className="overflow-hidden">
           <Table>
@@ -227,6 +229,7 @@ export function BomView({ project, section, store }: ViewProps) {
                         )}
                       </TableCell>
                       <TableCell>
+                        <RowActions item={p.item} />
                         <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete ${p.item.title}`} onClick={() => setDeleting(p)}>
                           <Trash2 className="h-4 w-4" aria-hidden />
                         </Button>

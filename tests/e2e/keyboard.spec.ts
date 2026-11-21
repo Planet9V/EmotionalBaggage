@@ -128,6 +128,10 @@ test.describe("wizard", () => {
     await page.getByLabel(/^Name/).fill(name);
     await page.getByLabel(/^One-line description/).fill("A lamp that is typed in without a mouse");
     await page.keyboard.press("Enter"); // submits the step
+    // focus moves to the new step's heading, and one Tab reaches its first field (U7)
+    await expect.poll(() => page.evaluate(() => document.activeElement?.tagName + ":" + document.activeElement?.textContent)).toBe("H2:Who and why");
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName)).toMatch(/INPUT|TEXTAREA|SELECT/);
     for (let i = 2; i <= 5; i++) {
       await expect(page.getByText(new RegExp(`Step 0${i} of 06`))).toBeVisible();
       await page.getByRole("button", { name: /Continue/ }).focus();
@@ -147,5 +151,100 @@ test.describe("wizard", () => {
 
     // leave the database as it was
     await request.delete(`/api/projects/${id}`, { data: { confirm: name } });
+  });
+});
+
+/** The element that has focus, described for an assertion: its accessible text or label. */
+async function focused(page: Page) {
+  return page.evaluate(() => {
+    const a = document.activeElement as HTMLElement | null;
+    if (!a || a === document.body) return "body";
+    return (a.getAttribute("aria-label") || a.textContent || a.tagName).trim().slice(0, 80);
+  });
+}
+
+test.describe("focus after a dialog closes", () => {
+  test("Escape returns focus to the opener, Save to the new row, and an edit to the edited row", async ({ page }) => {
+    await page.goto("/s/concept/questions");
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Table" }).click();
+    const add = page.getByRole("button", { name: /^Add/ }).first();
+    const addName = (await add.textContent())!.trim();
+
+    // 1. the add dialog, closed with Escape
+    await add.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect.poll(() => focused(page)).toBe(addName);
+
+    // 2. the add dialog, saved: focus is on the new row
+    await add.focus();
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Title").fill("Focus check question");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect.poll(() => focused(page)).toBe("Focus check question");
+
+    // 3. the row editor, closed with Escape: back on the row
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect.poll(() => focused(page)).toBe("Focus check question");
+  });
+
+  test("the decision dialog and the row assistant return focus to their openers", async ({ page }) => {
+    await page.goto("/s/concept/decisions");
+    await page.waitForLoadState("networkidle");
+    const add = page.getByRole("button", { name: /Add decision/ }).first();
+    await add.focus();
+    const name = await focused(page);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect.poll(() => focused(page)).toBe(name);
+
+    await page.goto("/s/marketing/personas");
+    await page.waitForLoadState("networkidle");
+    const menu = page.getByRole("button", { name: /^Ask the assistant about/ }).first();
+    if (await menu.count()) {
+      await menu.focus();
+      const label = await focused(page);
+      await page.keyboard.press("Enter");
+      await page.getByRole("menuitem", { name: /Challenge this/ }).press("Enter");
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
+      await expect.poll(() => focused(page)).toBe(label);
+    }
+  });
+});
+
+test.describe("skip link and theme", () => {
+  test("the first Tab reaches Skip to content, and Enter moves focus to the page", async ({ page }) => {
+    await page.goto("/s/concept/brief");
+    await page.waitForLoadState("networkidle");
+    await page.keyboard.press("Tab");
+    expect(await focused(page)).toBe("Skip to content");
+    await page.keyboard.press("Enter");
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
+    await page.waitForTimeout(300);
+    // the next Tab is inside the page, not in the sidebar
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => !!document.activeElement?.closest("main"))).toBe(true);
+  });
+});
+
+test.describe("theme with nothing saved", () => {
+  test.use({ colorScheme: "dark" });
+  test("follows the system's dark setting", async ({ page }) => {
+    await page.goto("/s/concept/brief");
+    await page.evaluate(() => localStorage.removeItem("c2r.theme"));
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("html")).toHaveClass(/dark/);
   });
 });

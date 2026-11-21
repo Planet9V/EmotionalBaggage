@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PART_KIND_IDS, PIN_KIND_LABEL, PIN_KINDS } from "@/lib/parts/kinds";
 import { sectionVisible } from "@/lib/productTypes";
 import { partsByRef, readWires } from "@/lib/domain";
+import { partPins, pinsByItem, type PinRow } from "@/lib/parts/pins";
 import type { Item } from "@/lib/types";
 import type { Generator } from "../types";
 import { RULES, basedOn, block, clip, conceptHeader, critiqueBlock, nextKey, replaces, reviseBlock, revisionTarget } from "../prompt";
@@ -201,9 +202,32 @@ function splitEnd(end: string): [string, string] | null {
   return [s.slice(0, dot).trim(), s.slice(dot + 1).trim()];
 }
 
+/**
+ * Every part with a reference, and its pins as the schematic resolves them (U17): its own pin rows, its library
+ * entry, its kind's default pins, then the names its wires already use (partPins); a part's legacy data.pins last.
+ */
+export function resolvedPins(bom: Item[], wiring: Item[], pinRows: PinRow[]): { ref: string; title: string; item: Item; pins: string[] }[] {
+  const own = pinsByItem(pinRows);
+  const wires = readWires(wiring);
+  return [...partsByRef(bom).values()].map((p) => {
+    const named = wires.flatMap((w) => [w.from === p.ref ? w.fromPin : "", w.to === p.ref ? w.toPin : ""]).filter(Boolean);
+    const resolved = partPins(p.item, own.get(p.item.id) ?? [], named).pins.map((x) => x.name);
+    return { ref: p.ref, title: p.title, item: p.item, pins: resolved.length ? resolved : p.pins };
+  });
+}
+
+/** The sentence that blocks drafting wires: only when no part has a pin, naming the parts that lack them. */
+export function wiringBlocked(bom: Item[], wiring: Item[], pinRows: PinRow[]): string {
+  const all = resolvedPins(bom, wiring, pinRows);
+  if (!all.length) return "The parts list has no part with a reference such as U1. Add the parts first.";
+  if (all.some((p) => p.pins.length)) return "";
+  const names = all.slice(0, 6).map((p) => `${p.ref} ${p.title}`).join(", ");
+  return `No part has pins yet: ${names}${all.length > 6 ? ` and ${all.length - 6} more` : ""}. Choose each part's kind or library entry in the parts list, or enter its pins.`;
+}
+
 /** Parts with pins, as "U1 (module): VCC power in, GND ground, ...". */
-function pinTable(bom: Item[]) {
-  const lines = [...partsByRef(bom).values()]
+function pinTable(bom: Item[], wiring: Item[], pinRows: PinRow[]) {
+  const lines = resolvedPins(bom, wiring, pinRows)
     .filter((p) => p.pins.length)
     .map((p) => {
       const roles = (p.item.data.pinRoles ?? {}) as Record<string, string>;
@@ -211,6 +235,8 @@ function pinTable(bom: Item[]) {
     });
   return lines.length ? `Parts and their pins (wire only these ref.pin endpoints):\n${lines.join("\n")}` : "Parts and their pins: none have pins on record.";
 }
+
+const pinRowsOf = (ctx: { extra?: Record<string, unknown> }) => (Array.isArray(ctx.extra?.pins) ? (ctx.extra!.pins as PinRow[]) : []);
 
 export const wiring: Generator<z.infer<typeof wireRow>> = {
   id: "wiring",
@@ -221,7 +247,9 @@ export const wiring: Generator<z.infer<typeof wireRow>> = {
   kind: "section",
   applies: hasElectronics,
   revises: true,
-  blocked: (ctx) => ([...partsByRef(ctx.rows["design/bom"] ?? []).values()].some((p) => p.pins.length) ? "" : "No part in the parts list has pins yet. Draft or enter parts with pins first."),
+  // The pin rows are read on the server; the schematic resolves pins the same way (src/lib/parts/pins.ts).
+  load: async (concept) => ({ pins: await (await import("@/lib/parts/server")).pinsOfProject(concept.id) }),
+  blocked: (ctx) => wiringBlocked(ctx.rows["design/bom"] ?? [], ctx.rows["design/wiring"] ?? [], pinRowsOf(ctx)),
   buildPrompt: (ctx) => ({
     system: [
       "You propose the wires of a first prototype: which pin connects to which.",
@@ -235,7 +263,7 @@ export const wiring: Generator<z.infer<typeof wireRow>> = {
       .join("\n"),
     user: [
       conceptHeader(ctx),
-      pinTable(ctx.rows["design/bom"] ?? []),
+      pinTable(ctx.rows["design/bom"] ?? [], ctx.rows["design/wiring"] ?? [], pinRowsOf(ctx)),
       block("Requirements", ctx.rows["design/requirements"]),
       ctx.revise ? "" : block("Wires already on record", ctx.rows["design/wiring"]),
       reviseBlock(ctx),
@@ -248,7 +276,7 @@ export const wiring: Generator<z.infer<typeof wireRow>> = {
   toDraft(row, ctx, run) {
     const t = revisionTarget(ctx, row.replaces);
     if (!t.ok) return { ok: false, reason: t.reason };
-    const byRef = partsByRef(ctx.rows["design/bom"] ?? []);
+    const byRef = new Map(resolvedPins(ctx.rows["design/bom"] ?? [], ctx.rows["design/wiring"] ?? [], pinRowsOf(ctx)).map((p) => [p.ref, p]));
     const ends: [string, string][] = [];
     for (const raw of [row.from, row.to]) {
       const e = splitEnd(raw);

@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +13,7 @@ import { namesData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
-import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
@@ -68,7 +70,7 @@ export function NamesView({ project }: ViewProps) {
       {(actionError || error) && <ErrorLine>{actionError || error}</ErrorLine>}
 
       {!items.length ? (
-        <EmptyState title="No names or taglines yet">Suggest a batch from the brief, or add your own. Each one gets a checklist of searches for you to run.</EmptyState>
+        <SectionEmpty projectId={project.id} store="concept/names" sectionLabel="Names" title="No names or taglines yet">Suggest a batch from the brief, or add your own. Each one gets a checklist of searches for you to run.</SectionEmpty>
       ) : (
         <>
           <div role="group" aria-label="Show" className="inline-flex overflow-hidden rounded-md border border-hairline">
@@ -93,6 +95,7 @@ export function NamesView({ project }: ViewProps) {
                         <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{k}</p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <RowActions item={it} />
                         <Status status={it.status} />
                         <NativeSelect aria-label={`Status of ${it.title}`} value={it.status} onChange={(e) => void guard(patch(it.id, { status: e.target.value }))} className="w-32">
                           {options.map((s) => <option key={s}>{s}</option>)}

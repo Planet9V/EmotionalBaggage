@@ -2,6 +2,7 @@
 
 // Sales, Sales monitor (plan 8.17): Amazon orders read through SP-API on "Sync now", rows typed by hand,
 // and one chart of units or revenue by day and channel, with the same numbers as a table.
+import { MoneyInput } from "@/components/ui/money-input";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
@@ -264,7 +265,7 @@ function AddSale({ channels, onCreate }: { channels: string[]; onCreate: (v: { d
               <datalist id="sales-channels">{channels.map((c) => <option key={c} value={c} />)}</datalist>
             </Field>
             <Field label="Units"><Input value={f.units} onChange={(e) => setF({ ...f, units: e.target.value })} inputMode="numeric" className="font-mono" required /></Field>
-            <Field label="Revenue"><Input value={f.revenue} onChange={(e) => setF({ ...f, revenue: e.target.value })} inputMode="decimal" className="font-mono" placeholder="0.00" required /></Field>
+            <Field label="Revenue"><MoneyInput value={f.revenue} onChange={(e) => setF({ ...f, revenue: e.target.value })} placeholder="0.00" required /></Field>
           </div>
           {err ? <ErrorLine>{err}</ErrorLine> : null}
           <div className="flex justify-end gap-2 pt-1">

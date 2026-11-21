@@ -7,20 +7,21 @@ import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadError, LoadingBlocks } from "@/components/ui/states";
+import { ErrorPanel, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
 import { draftQueries, useDraftActions } from "./api";
 import { ApiError } from "@/lib/http";
 import { DraftCard } from "./DraftCard";
+import { PrerequisiteLink } from "./PrerequisiteLink";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Card } from "@/components/ui/Card";
 import { fmtDateTime, fmtStamp } from "@/lib/format";
 
 export const MODELS_HREF = "/admin?tab=models";
 
-type Phase = { kind: "idle" } | { kind: "running"; started: number } | { kind: "confirm"; pending: number } | { kind: "error"; message: string } | { kind: "done"; result: RunResult };
+type Phase = { kind: "idle" } | { kind: "running"; started: number } | { kind: "confirm"; pending: number } | { kind: "error"; message: string; status?: number } | { kind: "done"; result: RunResult };
 
 /** The drafts waiting in one store, grouped by run, newest run first. */
 function byRun(drafts: Draft[]) {
@@ -113,7 +114,7 @@ export function DraftPanel({
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && e.detail?.pending) setPhase({ kind: "confirm", pending: e.detail.pending });
       else if ((e as Error).name === "AbortError") setPhase({ kind: "idle" });
-      else setPhase({ kind: "error", message: messageOf(e) });
+      else setPhase({ kind: "error", message: messageOf(e), status: e instanceof ApiError ? e.status : undefined });
     }
   };
 
@@ -152,7 +153,7 @@ export function DraftPanel({
                   The reasoning model <span className="font-mono text-xs text-primary">{model}</span> reads {g.readsText.replace(/^from /, "")} and proposes rows for {sectionLabel}. Rows that do not fit the section are left out and listed.
                 </p>
                 {g.blocked ? (
-                  <p className="rounded-xl bg-subtle px-4 py-3 text-sm text-secondary">{g.blocked}</p>
+                  <p className="rounded-xl bg-subtle px-4 py-3 text-sm text-secondary">{g.blocked}<PrerequisiteLink generator={g} /></p>
                 ) : phase.kind === "running" ? (
                   <div role="status" aria-live="polite" className="space-y-2 rounded-xl border border-hairline p-4">
                     <p className="text-sm text-primary">Read {g.readsText.replace(/^from /, "")}. Waiting for the model to answer; this can take a minute or two.</p>
@@ -176,10 +177,14 @@ export function DraftPanel({
                   </Button>
                 )}
                 {phase.kind === "error" && (
-                  <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-                    <span className="wrap-anywhere">{phase.message}</span>
-                    <Button variant="outline" size="sm" onClick={() => void go(false)}>Retry</Button>
-                  </div>
+                  <ErrorPanel
+                    title="The draft did not run"
+                    message={phase.message}
+                    todo="Nothing was saved. Fix what the message names, then try again."
+                    // 502, 503 and 504 from the run are the model layer: not set up, unreachable or too slow.
+                    link={phase.status && phase.status >= 502 && phase.status <= 504 ? { href: MODELS_HREF, label: "Open Admin, Models" } : undefined}
+                    onRetry={() => void go(false)}
+                  />
                 )}
                 {phase.kind === "done" && <RunSummary result={phase.result} />}
               </section>

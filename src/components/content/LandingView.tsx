@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +15,7 @@ import { LANDING_KINDS, type LandingKind } from "@/lib/content/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { asFlags, FlagList, StatusPill } from "./shared";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,7 +102,7 @@ export function LandingView({ project, store }: ViewProps) {
           {loading ? (
             <LoadingBlocks rows={2} label="Loading the sections" />
           ) : sections.length === 0 ? (
-            <EmptyState title="No sections yet">Use Draft with AI above to write the page from your approved message, or add a section.</EmptyState>
+            <SectionEmpty projectId={project.id} store="marketing/landing" sectionLabel="Landing page" title="No sections yet">The landing page is where ads and posts send buyers, so it is written from one approved message in the brand kit.</SectionEmpty>
           ) : (
             sections.map((s, i) => (
               <SectionCard key={s.id} item={s} first={i === 0} last={i === sections.length - 1} onMove={(d) => void move(i, d)} onSave={(c) => patch(s.id, c)} onDelete={() => remove(s.id)} />
@@ -185,6 +187,7 @@ function SectionCard({ item, first, last, onMove, onSave, onDelete }: { item: It
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" aria-label={`Move ${KIND_LABEL[kind]} up`} disabled={first} onClick={() => onMove(-1)}><ArrowUp className="h-4 w-4" aria-hidden /></Button>
           <Button size="icon" variant="ghost" aria-label={`Move ${KIND_LABEL[kind]} down`} disabled={last} onClick={() => onMove(1)}><ArrowDown className="h-4 w-4" aria-hidden /></Button>
+          <RowActions item={item} label={`the ${KIND_LABEL[kind]} section`} />
           <Button size="icon" variant="ghost" aria-label={`Delete ${KIND_LABEL[kind]}`} onClick={() => void run(onDelete)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
         </div>
       </div>

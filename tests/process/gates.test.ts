@@ -20,8 +20,8 @@ describe("check kinds", () => {
     const c = check({ id: "a", label: "Brief", kind: "min-rows", params: { section: "concept/brief", min: 3 } });
     const two = [row("concept/brief", "open"), row("concept/brief", "done"), row("concept/names", "open")];
     const r = evaluateCheck(c, two);
-    expect(r).toMatchObject({ met: false, href: "/s/concept/brief", action: "Add 1 more row to Brief" });
-    expect(r.detail).toBe("2 rows recorded, 3 needed.");
+    expect(r).toMatchObject({ met: false, href: "/s/concept/brief", action: "Add 1 more brief line" });
+    expect(r.detail).toBe("2 brief lines recorded, 3 needed.");
     expect(evaluateCheck(c, [...two, row("concept/brief", "open")]).met).toBe(true);
   });
 
@@ -33,11 +33,11 @@ describe("check kinds", () => {
 
   it("all-status needs every row in one of the statuses; no rows fails unless the definition allows an empty section (process review 5)", () => {
     const c = check({ id: "a", label: "Tests", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"] } });
-    expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: "No rows in Acceptance tests yet, so nothing shows this is pass.", action: "Add rows to Acceptance tests" });
+    expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: "No acceptance tests yet, so nothing shows this is pass.", action: "Add acceptance tests" });
     expect(evaluateCheck({ ...c, todo: "Write the tests" }, [])).toMatchObject({ met: false, action: "Write the tests" });
-    expect(evaluateCheck(check({ id: "a", label: "Tests", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"], allowEmpty: true } }), [])).toMatchObject({ met: true, detail: "No rows yet, so nothing is left to move." });
+    expect(evaluateCheck(check({ id: "a", label: "Tests", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"], allowEmpty: true } }), [])).toMatchObject({ met: true, detail: "No acceptance tests yet, so nothing is left to move." });
     const r = evaluateCheck(c, [row("prototype/tests", "pass"), row("prototype/tests", "fail"), row("prototype/tests", "not run")]);
-    expect(r).toMatchObject({ met: false, detail: "2 of 3 rows not yet pass.", action: expect.stringMatching(/^Move 2 rows in Acceptance tests to pass, starting with "/) });
+    expect(r).toMatchObject({ met: false, detail: "2 of 3 acceptance tests not yet pass.", action: expect.stringMatching(/^Move 2 acceptance tests to pass, starting with "/) });
     // the next step opens the first row that stops it (Acceptance tests open a row from ?item=)
     expect(r.href).toMatch(/^\/s\/prototype\/tests\?item=\d+$/);
     expect(evaluateCheck(c, [row("prototype/tests", "pass")]).met).toBe(true);
@@ -45,7 +45,7 @@ describe("check kinds", () => {
 
   it("decision-made finds the decision by key and needs a chosen option", () => {
     const c = check({ id: "a", label: "Go", kind: "decision-made", params: { key: "go" } });
-    expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: 'No decision has the key "go" yet.', href: "/s/concept/decisions" });
+    expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: "This decision is not in the decision tree yet.", href: "/s/concept/decisions" });
     expect(evaluateCheck(c, [decision("go", "", [], "Build it?")])).toMatchObject({ met: false, detail: '"Build it?" is not decided yet.', action: 'Decide "Build it?"' });
     expect(evaluateCheck(c, [decision("go", "yes")])).toMatchObject({ met: true, detail: "Chosen: Yes." });
     expect(evaluateCheck(c, [decision("other", "yes")]).met).toBe(false);
@@ -58,7 +58,7 @@ describe("check kinds", () => {
     const root = decision("build-first-batch", "", [], "Build the first batch?");
     const r = evaluateCheck(c, [child, root]);
     expect(r.met).toBe(false);
-    expect(r.detail).toBe('"Build the first batch?" is not decided yet. Read from the first decision in the tree, because none has the key "go".');
+    expect(r.detail).toBe('"Build the first batch?" is not decided yet. The first decision in the tree is read as this one.');
     expect(evaluateCheck(c, [decision("build-first-batch", "yes")]).met).toBe(true);
     // A decision with the key wins over the root.
     expect(evaluateCheck(c, [decision("first", "yes"), decision("go", "")]).met).toBe(false);
@@ -66,10 +66,10 @@ describe("check kinds", () => {
 
   it("no-open counts open and blocked rows by default, or the statuses given; an empty section fails unless allowed", () => {
     const c = check({ id: "a", label: "Questions", kind: "no-open", params: { section: "concept/questions" } });
-    expect(evaluateCheck(c, [])).toMatchObject({ met: false, action: "Add rows to Open questions" });
+    expect(evaluateCheck(c, [])).toMatchObject({ met: false, action: "Add open questions" });
     expect(evaluateCheck(check({ id: "a", label: "Questions", kind: "no-open", params: { section: "concept/questions", allowEmpty: true } }), []).met).toBe(true);
     expect(evaluateCheck(c, [row("concept/questions", "decided")]).met).toBe(true);
-    expect(evaluateCheck(c, [row("concept/questions", "open"), row("concept/questions", "blocked")])).toMatchObject({ met: false, detail: "2 rows open or blocked." });
+    expect(evaluateCheck(c, [row("concept/questions", "open"), row("concept/questions", "blocked")])).toMatchObject({ met: false, detail: "2 open questions still open or blocked." });
     const wrong = check({ id: "b", label: "Wrong", kind: "no-open", params: { section: "research/claims", statuses: ["wrong"] } });
     expect(evaluateCheck(wrong, [row("research/claims", "unverified")]).met).toBe(true);
     expect(evaluateCheck(wrong, [row("research/claims", "wrong")]).met).toBe(false);
@@ -195,8 +195,13 @@ describe("nextStep", () => {
   it("differs by type in the Prototype stage", () => {
     const state: ProcessState = { stage: "prototype", gates: [] };
     // electronics: parts in hand, then the enclosure printed, then the build sheet
-    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/printing#new-print-job");
-    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("prototype/printing", "done"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    const printedShell = () => row("design/bom", "in hand", { source: "Own printer" });
+    expect(nextStep(processFor("electronics"), state, [printedShell(), row("design/wiring", "to solder")]).href).toBe("/s/prototype/printing#new-print-job");
+    expect(nextStep(processFor("electronics"), state, [printedShell(), row("prototype/printing", "done"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    // with nothing to print, the print checks do not apply (U2)
+    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    // a physical product with a printed part goes to printing too (U2)
+    expect(nextStep(processFor("physical"), state, [row("design/bom", "in hand", { source: "Own printer" }), row("prototype/assembly", "open")]).href).toBe("/s/prototype/printing#new-print-job");
     // with no parts at all, "every bought part is in hand" is not met: the first step is the parts (process review 5)
     expect(nextStep(processFor("printed"), state, [])).toMatchObject({ href: "/s/prototype/sourcing", label: "Add the parts in the Bill of materials, then source them" });
     expect(nextStep(processFor("printed"), state, [row("design/bom", "to print")]).href).toBe("/s/prototype/printing#new-print-job");
@@ -244,7 +249,9 @@ describe("no gate passes on rows that do not exist (process review 5)", () => {
   it.each(rows)("%s on an empty concept", (name, id, allowEmpty) => {
     const t = name.split("/")[0];
     const c = PROCESS_DEFINITIONS[t as keyof typeof PROCESS_DEFINITIONS].stages.flatMap((g) => g.checks).find((x) => x.id === id)!;
-    expect(evaluateCheck(c, []).met).toBe(allowEmpty);
+    // A print check applies only when a part is to be printed (U2): judge it on a concept that prints one.
+    const empty = c.onlyIf === "prints-parts" ? [row("design/bom", "to print")] : [];
+    expect(evaluateCheck(c, empty).met).toBe(allowEmpty);
   });
   it("only the open-questions check allows an empty section", () => {
     expect(new Set(rows.filter(([, , a]) => a).map(([, id]) => id))).toEqual(new Set(["concept.questions"]));
@@ -253,7 +260,8 @@ describe("no gate passes on rows that do not exist (process review 5)", () => {
     for (const [name, id, allowEmpty] of rows) {
       if (allowEmpty) continue;
       const c = PROCESS_DEFINITIONS[name.split("/")[0] as keyof typeof PROCESS_DEFINITIONS].stages.flatMap((g) => g.checks).find((x) => x.id === id)!;
-      expect(evaluateCheck(c, []).action, name).toMatch(/^(Add|Write|Set up|Draft)/);
+      const empty = c.onlyIf === "prints-parts" ? [row("design/bom", "to print")] : [];
+      expect(evaluateCheck(c, empty).action, name).toMatch(/^(Add|Write|Set up|Draft)/);
     }
   });
 });

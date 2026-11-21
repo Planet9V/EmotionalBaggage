@@ -7,6 +7,7 @@
  * keeps one cached copy and re-renders both when it changes. Every fetcher passes on the
  * `signal` TanStack Query gives it, so a request is cancelled when nothing needs it any more.
  */
+import { isBareFetchMessage } from "@/lib/net/plain";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./http";
 import type { EventRow, FileMeta, Item, Plan, Project } from "./types";
@@ -92,4 +93,9 @@ export const queries = {
 };
 
 /** The message of a query or mutation error, or "" when there is none. */
-export const messageOf = (e: unknown) => (e ? (e instanceof Error ? e.message : String(e)) : "");
+export const messageOf = (e: unknown) => {
+  if (!e) return "";
+  const m = e instanceof Error ? e.message : String(e);
+  // The browser's own words for a request that never reached the app say nothing to a user.
+  return isBareFetchMessage(m) ? "The app did not answer. Check the connection and try again." : m;
+};

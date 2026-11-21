@@ -240,6 +240,8 @@ One place per job. Use these rather than writing another.
 
 **Dead code.** `npm run deadcode` (Knip) runs in CI. An import from a test does not count as use. Fix an unused export by un-exporting or deleting it. `knip.jsonc` still holds a list of files whose unused exports are waiting to be removed; a new unused export in one of those files will not fail CI until the list is pruned.
 
+**Page furniture.** Use `EmptyState` or `SectionEmpty` for an empty page, `ErrorPanel` for an error (its Admin link is worked out by `adminLinkFor`), `MoneyInput` with `readMoney` and `parseMinor` for money, `RowActions` for the per-row menu, and `fmtNum` and `fmtMm` for numbers. `DialogContent` returns focus to its opener itself. A gate check may carry `onlyIf: "prints-parts"`. `refineStep` and `pageStep` shape the Next strip. The scripted walk's ports come from `WALK_PORT_BASE`.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

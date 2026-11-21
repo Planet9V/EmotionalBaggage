@@ -3,6 +3,7 @@
 // Built to the Agent API, POST /v1/agent, as documented on 20 Nov 2026. Every field read or sent
 // here is listed with the page it came from in docs/research/perplexity-api.md. The Sonar interface
 // (POST /v1/sonar) is not used: its support ended on 27 Sep 2026.
+import { plainNetworkReason } from "@/lib/net/plain";
 import { getSetting } from "@/lib/settings";
 import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { safeFetch } from "@/lib/net/outbound";
@@ -171,7 +172,7 @@ export async function ask(opts: AskOptions): Promise<AskResult> {
   } catch (e) {
     if (timer.aborted) return { ok: false, kind: "timeout", message: `Perplexity did not answer within ${secs} seconds.` };
     if (opts.signal?.aborted) return { ok: false, kind: "aborted", message: "The question was cancelled before Perplexity answered." };
-    return { ok: false, kind: "network", message: `Could not reach Perplexity: ${redact((e as Error).message ?? String(e), key)}.` };
+    return { ok: false, kind: "network", message: `Could not reach Perplexity: ${redact(plainNetworkReason(e), key)}.` };
   }
 
   let text: string;

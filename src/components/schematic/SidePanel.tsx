@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Box, LayoutGrid, Pencil, X } from "lucide-react";
@@ -105,6 +106,7 @@ function WirePanel({ wire: w, parts, statuses, onSelect, onEditWire, onPatchWire
   return (
     <div className="space-y-3">
       <Header eyebrow={`Wire ${w.order}`} title={w.name} onClose={() => onSelect(null)} />
+      <div className="flex justify-end"><RowActions item={w.item} label={`wire ${w.name}`} /></div>
       <dl className="divide-y divide-hairline">
         <Row label="Net">
           <span className="font-mono">{w.net || "none"}</span>

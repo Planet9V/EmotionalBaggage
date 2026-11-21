@@ -183,6 +183,10 @@ Admin, Printers has the slicer address at the top: the saved address is used fir
 - `docker compose ps` should show `db`, `planner` and `web` as running and healthy. Each checks itself every few seconds: the database by accepting connections, the planner by answering, the app by reading its data.
 - In the app, **Integrations** shows whether the database, pgvector and the planner are reachable, and which outside services have a key set. It also lists what is not built.
 
+## Railway
+
+The **Railway** page under Documentation walks through running the three services (database, web, planner) on Railway, with the settings that were used on the first deployment.
+
 ## Backups
 
 Everything lives in the database, including uploaded and generated files. To back up:

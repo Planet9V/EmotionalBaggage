@@ -24,7 +24,7 @@ export function DraftsView() {
   if (!project) {
     return (
       <>
-        <PageHeader eyebrow="AI drafts" title="Drafts" />
+        <PageHeader eyebrow="Whole concept" title="Drafts" />
         <NoConcept loading={loading} />
       </>
     );
@@ -45,7 +45,7 @@ function DraftsBody({ project }: { project: Project }) {
   const waiting = Object.values(list.data?.pending ?? {}).reduce((a, n) => a + n, 0);
   return (
     <>
-      <PageHeader eyebrow={`AI drafts · ${project.name}`} title="Drafts" blurb="Everything the assistant has drafted for this concept. A draft becomes a row only when you approve it." />
+      <PageHeader eyebrow={`Whole concept · ${project.name}`} title="Drafts" blurb="Everything the assistant has drafted for this concept. A draft becomes a row only when you approve it." />
       <div className="max-w-4xl space-y-5 px-8 py-6">
         <div role="tablist" aria-label="Which drafts" className="inline-flex overflow-hidden rounded-md border border-hairline">
           {TABS.map(([k, label]) => (

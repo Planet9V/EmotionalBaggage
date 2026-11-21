@@ -1,5 +1,6 @@
 "use client";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { useMemo, useState } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -201,8 +202,8 @@ function EntryForm({ projectId, campaignId, creatives, money, onDone }: { projec
       <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
         <Field label="Day"><Input type="date" value={v.day} onChange={set("day")} /></Field>
         <Field label="Creative"><NativeSelect value={v.creative} onChange={set("creative")}><option value="">Whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</NativeSelect></Field>
-        <Field label={`Spend (${money.currency})`}><Input inputMode="decimal" value={v.spend} onChange={set("spend")} /></Field>
-        <Field label={`Revenue (${money.currency})`}><Input inputMode="decimal" value={v.revenue} onChange={set("revenue")} /></Field>
+        <Field label={`Spend (${money.currency})`}><MoneyInput currency={money.currency} value={v.spend} onChange={set("spend")} /></Field>
+        <Field label={`Revenue (${money.currency})`}><MoneyInput currency={money.currency} value={v.revenue} onChange={set("revenue")} /></Field>
         <Field label="Impressions"><Input inputMode="numeric" value={v.impressions} onChange={set("impressions")} /></Field>
         <Field label="Clicks"><Input inputMode="numeric" value={v.clicks} onChange={set("clicks")} /></Field>
         <Field label="Orders"><Input inputMode="numeric" value={v.orders} onChange={set("orders")} /></Field>

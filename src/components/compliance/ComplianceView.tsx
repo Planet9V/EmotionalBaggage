@@ -1,5 +1,7 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useState } from "react";
 import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
@@ -13,7 +15,7 @@ import { CONFIRM_STATUSES, isPublicUrl, REGIONS, REGION_LABEL, STORE_COMPLIANCE,
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ComplianceDialog } from "./ComplianceDialog";
-import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { NativeSelect } from "@/components/ui/native-select";
 import { statusOptions } from "@/lib/statusOptions";
 import { fmtDate } from "@/lib/format";
@@ -103,7 +105,7 @@ export function ComplianceView({ project }: ViewProps) {
       {message || rows.writeError ? <ErrorLine>{message || rows.writeError}</ErrorLine> : null}
 
       {!rows.items.length ? (
-        <EmptyState title="No compliance rows yet">Choose your regions and use Draft with AI, or add a row by hand. A draft becomes a row only when you approve it; you then decide each row.</EmptyState>
+        <SectionEmpty projectId={project.id} store="production/compliance" sectionLabel="Compliance" title="No compliance rows yet">Choose your regions and use Draft with AI, or add a row by hand. A draft becomes a row only when you approve it; you then decide each row.</SectionEmpty>
       ) : (
         <>
           <p className="text-xs text-secondary" role="status">
@@ -131,6 +133,7 @@ export function ComplianceView({ project }: ViewProps) {
                           <option key={st}>{st}</option>
                         ))}
                       </NativeSelect>
+                      <RowActions item={r} />
                       <Button variant="ghost" size="icon-sm" aria-label={`Edit ${r.title}`} onClick={() => setEditing(r.id)}>
                         <Pencil className="h-3.5 w-3.5" aria-hidden />
                       </Button>

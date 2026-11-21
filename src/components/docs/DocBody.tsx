@@ -17,7 +17,7 @@ const components: Components = {
   a: ({ href, children }) => <a href={href} className="text-link underline underline-offset-2">{children}</a>,
   blockquote: ({ children }) => <blockquote className="mt-4 rounded-xl border border-dutchOrange/30 bg-dutchOrange/10 px-4 py-1 [&_p]:text-primary">{children}</blockquote>,
   table: ({ children }) => (
-    <div className="mt-4 overflow-x-auto rounded-xl border border-hairline">
+    <div tabIndex={0} role="region" aria-label="Table, scrolls sideways" className="mt-4 overflow-x-auto rounded-xl border border-hairline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
       <table className="w-full text-left text-sm">{children}</table>
     </div>
   ),
@@ -29,7 +29,7 @@ const components: Components = {
     const text = String(children).replace(/\n$/, "");
     if (className === "language-mermaid") return <Mermaid chart={text} />;
     if (className || text.includes("\n")) {
-      return <pre className="mt-3 overflow-x-auto rounded-xl border border-hairline bg-subtle p-4 font-mono text-xs leading-relaxed text-primary"><code>{text}</code></pre>;
+      return <pre tabIndex={0} className="mt-3 overflow-x-auto focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange rounded-xl border border-hairline bg-subtle p-4 font-mono text-xs leading-relaxed text-primary"><code>{text}</code></pre>;
     }
     return <code className="rounded-sm bg-subtle px-1 py-0.5 font-mono text-[0.85em] text-primary">{text}</code>;
   },

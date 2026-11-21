@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
-import { LayoutGrid, Plus, Rows3, Search, X } from "lucide-react";
+import { Suspense, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { LayoutGrid, ListPlus, Plus, Rows3, Search, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useItems } from "@/lib/client";
@@ -19,13 +19,21 @@ import { CLAIMS_SECTION } from "@/lib/research/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 import { FromUrl } from "@/components/drafts/FromUrl";
+import { SectionEmpty } from "@/components/drafts/SectionEmpty";
+import { sectionWhy } from "@/lib/sectionWhy";
+import { STORE_NOUN } from "@/lib/ai/drafts/shared";
 import { announceMove } from "@/components/trace/movedToast";
-import { LoadingShape } from "@/components/ui/states";
+import { EmptyState, LoadingShape } from "@/components/ui/states";
 
 type Layout = "board" | "table";
 const layoutListeners = new Set<() => void>();
 
-export function ItemsView({ project, section, store }: ViewProps) {
+/** A row on screen by id: its title button in the table, or its card on the board. */
+function rowElement(id: number) {
+  return document.querySelector<HTMLElement>(`[data-row-id="${id}"], [data-card-id="${id}"]`);
+}
+
+export function ItemsView({ project, stage, section, store }: ViewProps) {
   const { items, loading, error, reload, add, patch, remove } = useItems(project.id, store);
   const configured = section.statuses ?? DEFAULT_STATUSES;
   const columns = section.columns ?? [];
@@ -46,6 +54,8 @@ export function ItemsView({ project, section, store }: ViewProps) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  /** the row just created, which takes focus when the add dialog closes */
+  const created = useRef<number | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
 
@@ -145,9 +155,11 @@ export function ItemsView({ project, section, store }: ViewProps) {
         columns={columns}
         statuses={configured}
         onCreate={async (d) => {
-          await add({ section: store, title: d.title, body: d.body || undefined, data: d.data, status: d.status });
+          const made = await add({ section: store, title: d.title, body: d.body || undefined, data: d.data, status: d.status });
+          created.current = made?.id ?? null;
           setAdding(false);
         }}
+        returnFocus={() => (created.current === null ? null : rowElement(created.current))}
       />
       <ItemDrawer
         item={opened}
@@ -166,12 +178,9 @@ export function ItemsView({ project, section, store }: ViewProps) {
   if (!items.length) {
     return (
       <>
-        <div className="max-w-xl rounded-xl border border-dashed border-hairline bg-surface p-8 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">{section.label}</p>
-          <p className="mt-2 text-lg font-semibold tracking-tight text-primary">Nothing here yet</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-secondary">This section holds: {section.blurb}</p>
-          <div className="mt-4 flex justify-center">{addButton}</div>
-        </div>
+        <SectionEmpty projectId={project.id} store={store} sectionLabel={section.label} icon={ListPlus} title={`No ${(STORE_NOUN[store]?.[1] ?? `${section.label.toLowerCase()} rows`)} yet`} action={addButton}>
+          {sectionWhy(store, stage.label, stage.goal)}
+        </SectionEmpty>
         {dialogs}
       </>
     );
@@ -230,12 +239,9 @@ export function ItemsView({ project, section, store }: ViewProps) {
       )}
 
       {filtering && !shown.length ? (
-        <div className="rounded-xl border border-dashed border-hairline p-6 text-center">
-          <p className="text-sm text-secondary">Nothing matches.</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => { setQ(""); setFilter(null); }}>
-            Clear search and filter
-          </Button>
-        </div>
+        <EmptyState icon={SearchX} title="Nothing matches" action={<Button variant="outline" size="sm" onClick={() => { setQ(""); setFilter(null); }}>Clear search and filter</Button>}>
+          No row has this text or status. Clear the search to see every row.
+        </EmptyState>
       ) : layout === "board" ? (
         <Kanban items={shown} statuses={statuses} columns={columns} onOpen={setOpenId} onMove={async (id, status) => {
           await patch(id, { status });

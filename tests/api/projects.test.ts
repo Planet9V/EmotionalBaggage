@@ -156,7 +156,19 @@ describe("search, plan and the assistants", () => {
       delete process.env.PLANNER_URL;
       const r = await read<Plan>(await plan(json("GET"), ctx(SEEDED)));
       expect([r.status, r.body.engine, r.body.order]).toEqual([200, "unavailable", []]);
-      expect(r.body.note).toMatch(/No planner address is set in Admin or in PLANNER_URL/);
+      expect(r.body.note).toMatch(/No planner address is set in Admin, Models or in PLANNER_URL/);
+    });
+
+    it("says in plain words why an unreachable planner did not answer, never 'fetch failed'", async () => {
+      process.env.PLANNER_URL = "http://127.0.0.1:1";
+      try {
+        const r = await read<Plan>(await plan(json("GET"), ctx(SEEDED)));
+        expect(r.body.engine).toBe("unavailable");
+        expect(r.body.note).toMatch(/nothing is answering at that address/);
+        expect(r.body.note).not.toMatch(/fetch failed/i);
+      } finally {
+        delete process.env.PLANNER_URL;
+      }
     });
   });
 
