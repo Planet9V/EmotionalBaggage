@@ -119,7 +119,7 @@ export function SymbolCanvas(p: Props) {
           <Panel position="bottom-right" className="m-3!">
             {p.titleBlock}
           </Panel>
-          <Panel position="bottom-left" className="schematic-noprint mb-3! ml-14! pointer-events-none">
+          <Panel position="top-left" className="schematic-noprint m-3! pointer-events-none">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Press a pin or a wire to light it up in both views. Drag pin to pin to add a wire.
             </p>

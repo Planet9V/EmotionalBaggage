@@ -265,7 +265,7 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
                         <Input value={d.name} onChange={(e) => set(i, { name: e.target.value })} aria-label={`Name of pin ${i + 1}`} className="h-7 w-24 font-mono text-xs" />
                       </td>
                       <td className="px-1 py-1">
-                        <Select value={d.kind} onChange={(e) => set(i, { kind: e.target.value as PinKind | "" })} aria-label={`Kind of pin ${i + 1}`} className="h-7 w-32 text-xs">
+                        <Select value={d.kind} onChange={(e) => set(i, { kind: e.target.value as PinKind | "" })} aria-label={`Kind of pin ${i + 1}`} className="h-7 w-36 pr-6 text-xs">
                           <option value="">Not stated</option>
                           {PIN_KINDS.map((k) => (
                             <option key={k} value={k}>
@@ -275,7 +275,7 @@ function Body({ part, ownPins, onClose, onType, onPins }: Props & { part: Item }
                         </Select>
                       </td>
                       <td className="px-1 py-1">
-                        <Select value={d.side} onChange={(e) => set(i, { side: e.target.value as Side | "" })} aria-label={`Symbol side of pin ${i + 1}`} className="h-7 w-24 text-xs">
+                        <Select value={d.side} onChange={(e) => set(i, { side: e.target.value as Side | "" })} aria-label={`Symbol side of pin ${i + 1}`} className="h-7 w-28 pr-6 text-xs">
                           <option value="">From kind</option>
                           {SIDES.map((s) => (
                             <option key={s} value={s}>

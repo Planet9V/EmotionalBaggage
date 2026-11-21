@@ -166,6 +166,14 @@ function place(c: Circuit, meta: KicadMeta): Placed[] {
     x += w + GRID * 2;
     rowH = Math.max(rowH, h);
   }
+  // keep everything on the sheet: the top-left symbol starts one inch in, room left for its labels
+  if (out.length) {
+    const minX = Math.min(...out.map((p) => p.at.x + p.layout.bbox.x1));
+    const minY = Math.min(...out.map((p) => p.at.y + p.layout.bbox.y1));
+    const dx = snap(38.1 - minX);
+    const dy = snap(25.4 - minY);
+    for (const p of out) p.at = { x: p.at.x + dx, y: p.at.y + dy };
+  }
   return out;
 }
 

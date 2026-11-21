@@ -144,3 +144,19 @@ describe("KiCad schematic export", () => {
     expect(erc.status, erc.stderr).toBe(0);
   });
 });
+
+describe("KiCad export placement", () => {
+  it("keeps symbols placed from the symbol view on the sheet, even from negative positions", () => {
+    const { parts, wires } = seeded();
+    const c = buildCircuit(parts, wires, []);
+    const positions = Object.fromEntries(c.parts.map((p, i) => [p.ref, { x: -500 + i * 40, y: -300 }]));
+    const doc = parse(kicadSchematic(c, { ...META, positions })) as SNode[];
+    for (const s of children(doc, "symbol")) {
+      const at = child(s, "at")!;
+      expect(num(at[1])).toBeGreaterThan(0);
+      expect(num(at[2])).toBeGreaterThan(0);
+      expect(Math.abs(num(at[1]) / 2.54 - Math.round(num(at[1]) / 2.54))).toBeLessThan(1e-6);
+    }
+    expect(netsFromFile(kicadSchematic(c, { ...META, positions })).nets.length).toBe(c.nets.length);
+  });
+});
