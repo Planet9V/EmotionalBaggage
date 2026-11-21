@@ -17,6 +17,8 @@ export type Pin = {
   number: string;
   kind: PinKind | null;
   side: Side;
+  /** false when the side is the kind's default rather than stated for this pin */
+  sideSet?: boolean;
   position: PinPosition | null;
   voltage: Voltage | null;
   currentMax: number | null;
@@ -35,6 +37,7 @@ export function toPin(d: PinDef, i: number): Pin {
     number: d.number ?? String(i + 1),
     kind,
     side: d.side ?? defaultSide(kind),
+    sideSet: !!d.side,
     position: d.position ?? null,
     voltage: d.voltage ?? null,
     currentMax: d.current?.max ?? null,

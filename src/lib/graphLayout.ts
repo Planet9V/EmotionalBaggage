@@ -10,7 +10,15 @@ let elk: InstanceType<typeof ELK> | null = null;
 
 /** Top-left positions by node id. Rejects only if elkjs itself fails. */
 export async function elkLayout(nodes: LayoutNode[], edges: LayoutEdge[], spacing = { node: 60, layer: 120 }): Promise<Record<string, XY>> {
-  if (!nodes.length) return {};
+  return (await elkLayoutRouted(nodes, edges, spacing)).positions;
+}
+
+/**
+ * Positions and elk's own orthogonal routes: for each edge, the points from the source port through every bend to the
+ * target port, in the same coordinates as the positions. A route holds only while both of its nodes stay where elk put them.
+ */
+export async function elkLayoutRouted(nodes: LayoutNode[], edges: LayoutEdge[], spacing = { node: 60, layer: 120 }): Promise<{ positions: Record<string, XY>; routes: Record<string, XY[]> }> {
+  if (!nodes.length) return { positions: {}, routes: {} };
   elk ??= new ELK();
   const ids = new Set(nodes.map((n) => n.id));
   const ports = new Set(nodes.flatMap((n) => n.ports.map((p) => p.id)));
@@ -40,7 +48,12 @@ export async function elkLayout(nodes: LayoutNode[], edges: LayoutEdge[], spacin
   const out = await elk.layout(graph);
   const pos: Record<string, XY> = {};
   for (const c of out.children ?? []) pos[c.id] = { x: Math.round(c.x ?? 0), y: Math.round(c.y ?? 0) };
-  return pos;
+  const routes: Record<string, XY[]> = {};
+  for (const e of (out.edges ?? []) as { id: string; sections?: { startPoint: XY; endPoint: XY; bendPoints?: XY[] }[] }[]) {
+    const sec = e.sections?.[0];
+    if (sec) routes[e.id] = [sec.startPoint, ...(sec.bendPoints ?? []), sec.endPoint].map((p) => ({ x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 }));
+  }
+  return { positions: pos, routes };
 }
 
 export type FlowNode = { id: string; width: number; height: number };

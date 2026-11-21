@@ -134,7 +134,34 @@ function bboxOf(strokes: Stroke[], circles: Circle[], pins: SymPin[], rect?: Sym
 }
 
 /** A box: pins on four sides by their side, on the 2.54 mm grid, the body sized to fit their names. */
-function box(pins: Pin[]): SymbolLayout {
+/**
+ * Left and right for pins whose side is only the kind's default. A part with many such pins on one side (a
+ * development board's two headers) would draw as a tall bar with every pin on the left; instead the pins go to
+ * the side their position puts them on (each header to its own side), or, with no positions, the list is split
+ * in two in its own order.
+ */
+export function balanceSides(pins: Pin[]): Pin[] {
+  const loose = pins.filter((p) => !p.sideSet && (p.side === "left" || p.side === "right"));
+  const left = loose.filter((p) => p.side === "left").length, right = loose.length - left;
+  if (loose.length < 10 || Math.min(left, right) * 3 >= Math.max(left, right)) return pins;
+  const placed = loose.filter((p) => p.position);
+  let sideOf: (p: Pin, i: number) => Side;
+  if (placed.length === loose.length) {
+    // the axis the positions spread across most separates the headers
+    const spread = (k: "x" | "y") => Math.max(...placed.map((p) => p.position![k])) - Math.min(...placed.map((p) => p.position![k]));
+    const k = spread("y") > 0 && placed.some((p) => p.position!.y < 0) && placed.some((p) => p.position!.y > 0) ? "y" : "x";
+    const mid = (Math.max(...placed.map((p) => p.position![k])) + Math.min(...placed.map((p) => p.position![k]))) / 2;
+    if (spread(k) === 0) sideOf = (_p, i) => (i < loose.length / 2 ? "left" : "right");
+    else sideOf = (p) => (p.position![k] <= mid ? "left" : "right");
+  } else {
+    sideOf = (_p, i) => (i < Math.ceil(loose.length / 2) ? "left" : "right");
+  }
+  const to = new Map(loose.map((p, i) => [p, sideOf(p, i)]));
+  return pins.map((p) => (to.has(p) ? { ...p, side: to.get(p)! } : p));
+}
+
+function box(input: Pin[]): SymbolLayout {
+  const pins = balanceSides(input);
   const by: Record<Side, Pin[]> = { left: [], right: [], top: [], bottom: [] };
   for (const p of pins) by[p.side].push(p);
   const rows = Math.max(by.left.length, by.right.length, 1);

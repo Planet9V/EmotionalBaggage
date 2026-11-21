@@ -143,6 +143,11 @@
    ========================================================================== */
 
 :root {
+  /* net colours on the schematic canvases, 3:1 or more against --bg-canvas in each theme */
+  --net-power: #C2410C;
+  --net-ground: #6B6B73;
+  --net-signal: #1849A9;
+  --net-audio: #067647;
   /* LIGHT MODE (Warm Luxury Off-White Academic Monograph) */
   --bg-canvas: #FAF8F5;
   --bg-surface: #FFFFFF;
@@ -194,6 +199,10 @@
 
 .dark,
 html.dark {
+  --net-power: #F0793A;
+  --net-ground: #A1A1AA;
+  --net-signal: #7AA7FF;
+  --net-audio: #3DD68C;
   /* DARK MODE (Obsidian Cyber-Physical Command Center) */
   --bg-canvas: #0B0C0E;
   --bg-surface: #131519;

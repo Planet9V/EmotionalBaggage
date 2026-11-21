@@ -14,7 +14,7 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { NET_COLOR, type Wire } from "@/lib/domain";
+import { NET_STROKE, type Wire } from "@/lib/domain";
 import { FOOT_H, HEADER_H, NODE_W, ROW_H, handleId, type PinRow } from "./model";
 
 /** What nodes need from the view without carrying it in every node's data. */
@@ -59,7 +59,7 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
       {data.pins.map((p) => {
         const left = p.side === "left";
         const lit = highlight.has(`${data.ref}.${p.name}`);
-        const color = p.netClass ? NET_COLOR[p.netClass] : "var(--text-muted)";
+        const color = p.netClass ? NET_STROKE[p.netClass] : "var(--text-muted)";
         return (
           <div
             key={p.name}
@@ -111,7 +111,7 @@ function WireEdgeView(props: EdgeProps<WireEdgeType>) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, data } = props;
   const [path, labelX, labelY] = getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 6, offset: 20 });
   if (!data) return null;
-  const color = NET_COLOR[data.wire.netClass];
+  const color = NET_STROKE[data.wire.netClass];
   const width = selected ? 3.5 : data.emph ? 3 : 1.75;
   return (
     <>

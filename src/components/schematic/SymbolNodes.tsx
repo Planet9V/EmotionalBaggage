@@ -2,7 +2,7 @@
 
 import { createContext, memo, useContext } from "react";
 import { BaseEdge, EdgeLabelRenderer, Handle, Position, getSmoothStepPath, type Edge, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
-import { NET_COLOR } from "@/lib/domain";
+import { NET_STROKE } from "@/lib/domain";
 import { flagLayout, type SymPin } from "@/lib/parts/symbols";
 import { FLAG_H, FLAG_W, SCALE, symHandle, type FlagData, type SymEdgeData, type SymNodeData } from "./symbolGraph";
 
@@ -49,7 +49,7 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
           const cls = data.pinClass[p.name];
           return (
             <g key={p.name}>
-              <line x1={X(p.x)} y1={Y(p.y)} x2={X(p.x + end[0] * p.length)} y2={Y(p.y + end[1] * p.length)} stroke={lit ? "#E05A10" : cls ? NET_COLOR[cls] : INK} strokeWidth={lit ? 3 : 1.5} />
+              <line x1={X(p.x)} y1={Y(p.y)} x2={X(p.x + end[0] * p.length)} y2={Y(p.y + end[1] * p.length)} stroke={lit ? "#E05A10" : cls ? NET_STROKE[cls] : INK} strokeWidth={lit ? 3 : 1.5} />
               {box && (
                 <text
                   x={X(p.x + end[0] * (p.length + 0.6))}
@@ -95,7 +95,7 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
 function FlagNodeView({ data }: NodeProps<FlagNodeType>) {
   const { litPins, onPickPin } = useContext(SymbolContext);
   const lit = litPins.has(`${data.ref}.${data.pin}`);
-  const color = lit ? "#E05A10" : data.kind === "ground" ? NET_COLOR.ground : NET_COLOR.power;
+  const color = lit ? "#E05A10" : data.kind === "ground" ? NET_STROKE.ground : NET_STROKE.power;
   const lay = flagLayout(data.kind);
   const s = 9;
   // the port is at (0,0) of the drawing: top centre for ground, bottom centre for a supply
@@ -126,10 +126,22 @@ function FlagNodeView({ data }: NodeProps<FlagNodeType>) {
   );
 }
 
+/** An SVG path through elk's route, with its label at the middle of the longest straight run. */
+function routePath(points: { x: number; y: number }[]): [string, number, number] {
+  const d = points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join(" ");
+  let best = 0, lx = points[0].x, ly = points[0].y;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1], b = points[i];
+    const len = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    if (len > best) [best, lx, ly] = [len, (a.x + b.x) / 2, (a.y + b.y) / 2];
+  }
+  return [d, lx, ly];
+}
+
 function NetEdgeView(props: EdgeProps<SymEdgeType>) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, data } = props;
-  const [path, lx, ly] = getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 0, offset: 16 });
   if (!data) return null;
+  const [path, lx, ly] = data.route ? routePath(data.route) : getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 0, offset: 16 });
   const width = selected || data.lit ? 3 : data.flag ? 1.4 : 1.75;
   return (
     <>

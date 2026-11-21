@@ -87,9 +87,47 @@ export function pinsOf(ref: string, wires: Wire[]) {
 }
 
 /** One colour role per net class; views map these to token classes or hex for canvas use. */
+/**
+ * On screen, net colours come from theme tokens (--net-* in globals.css), each at least 3:1 against its
+ * canvas in its theme; the hex is the fallback and the colour of exported files.
+ */
+export const NET_STROKE: Record<NetClass, string> = {
+  power: "var(--net-power, #E05A10)",
+  ground: "var(--net-ground, #71717A)",
+  signal: "var(--net-signal, #1849A9)",
+  audio: "var(--net-audio, #067647)",
+};
+
 export const NET_COLOR: Record<NetClass, string> = {
   power: "#E05A10",
   ground: "#71717A",
   signal: "#1849A9",
   audio: "#067647",
 };
+
+const GROUND_NAME = /^(gnd|agnd|dgnd|pgnd|vss|0v|ground|-|bat-|v-)$/i;
+const POWER_NAME = /^(vcc|vdd|vin|vbat|vbus|vsys|3v3|3\.3v|5v|12v|bat\+|\+|v\+|vout|vcc_\w+|3v3_\w+)$/i;
+const AUDIO_NAME = /(spk|speaker|audio|dac_?[lr]|mic|lout|rout|l_out|r_out|hp_?[lr])/i;
+
+type PinKindLike = string | null | undefined;
+
+/**
+ * The class a new wire most likely is: from the kinds of the pins at its ends (a ground pin makes it ground, a power
+ * pin power), else from common pin and net names (GND, VCC, 3V3, SPK+). `why` says which, for the dialog.
+ */
+export function inferNetClass(ends: { pin: string; kind?: PinKindLike }[], net = ""): { netClass: NetClass; why: string } | null {
+  const named = ends.filter((e) => e.pin);
+  const byKind = (k: string) => named.find((e) => e.kind === k);
+  const g = byKind("ground");
+  if (g) return { netClass: "ground", why: `${g.pin} is a ground pin` };
+  const pw = byKind("power_out") ?? byKind("power_in");
+  if (pw) return { netClass: "power", why: `${pw.pin} is a power pin` };
+  const names = [...named.map((e) => e.pin), net].filter(Boolean);
+  const gn = names.find((n) => GROUND_NAME.test(n));
+  if (gn) return { netClass: "ground", why: `${gn} is a common ground name` };
+  const pn = names.find((n) => POWER_NAME.test(n));
+  if (pn) return { netClass: "power", why: `${pn} is a common supply name` };
+  const an = names.find((n) => AUDIO_NAME.test(n));
+  if (an) return { netClass: "audio", why: `${an} is a common audio name` };
+  return named.length === 2 ? { netClass: "signal", why: "neither pin is power, ground or audio" } : null;
+}

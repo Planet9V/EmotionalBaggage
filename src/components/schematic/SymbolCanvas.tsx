@@ -25,6 +25,12 @@ type Props = {
 };
 
 const refOfNode = (id: string) => id.slice(2);
+
+/**
+ * Fit: room for the hint at the top and the zoom buttons at the left, and never so far out that pin names cannot be
+ * read (0.55); a larger drawing is panned. Printing fits the whole sheet (useFitOnPrint).
+ */
+const FIT = { padding: { top: "56px", left: "56px", right: "24px", bottom: "24px" }, maxZoom: 1.2, minZoom: 0.55 } as const;
 const pinOfHandle = (h: string | null) => (h ?? "").replace(/^pin:/, "");
 
 /** The symbol view of the schematic: real symbols, power and ground flags, orthogonal wires, net labels. */
@@ -32,7 +38,7 @@ export function SymbolCanvas(p: Props) {
   const [measured, setMeasured] = useState<Record<string, { width: number; height: number }>>({});
   const { onMove, onDragStop, onSelect, onConnect } = p;
   const anyLit = p.litWires.size > 0 || p.litPins.size > 0;
-  useFitOnPrint(0.12, 1.2);
+  useFitOnPrint();
 
   const nodes = useMemo(
     () =>
@@ -108,8 +114,8 @@ export function SymbolCanvas(p: Props) {
           connectionLineStyle={{ stroke: "#E05A10", strokeWidth: 2, strokeDasharray: "5 4" }}
           deleteKeyCode={null}
           fitView
-          fitViewOptions={{ padding: 0.12, maxZoom: 1.2 }}
-          onInit={(inst) => window.setTimeout(() => void inst.fitView({ padding: 0.12, maxZoom: 1.2, duration: 300 }), 350)}
+          fitViewOptions={FIT}
+          onInit={(inst) => window.setTimeout(() => void inst.fitView({ ...FIT, duration: 300 }), 350)}
           minZoom={0.15}
           maxZoom={3}
           snapToGrid
@@ -118,9 +124,6 @@ export function SymbolCanvas(p: Props) {
         >
           <Background variant={BackgroundVariant.Dots} gap={20.32} size={1.1} color="var(--border-hairline)" />
           <Controls showInteractive={false} className="schematic-noprint rounded-md! border! border-hairline! shadow-xs!" />
-          <Panel position="bottom-right" className="m-3!">
-            {p.titleBlock}
-          </Panel>
           <Panel position="top-left" className="schematic-noprint m-3! pointer-events-none">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Press a pin or a wire to light it up in both views. Drag pin to pin to add a wire.
@@ -128,6 +131,8 @@ export function SymbolCanvas(p: Props) {
           </Panel>
         </ReactFlow>
       </div>
+      {/* the title block sits under the canvas, never over the drawing */}
+      <div className="mt-2 flex justify-end">{p.titleBlock}</div>
     </SymbolContext.Provider>
   );
 }

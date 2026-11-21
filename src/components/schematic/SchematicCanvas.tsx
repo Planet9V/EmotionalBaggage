@@ -17,7 +17,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import { GripVertical, MousePointerClick } from "lucide-react";
-import { NET_COLOR, type NetClass, type Wire } from "@/lib/domain";
+import { NET_STROKE, type NetClass, type Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, MISSING_PIN, type Graph, type Part, type XY } from "./model";
 import { SchematicContext, edgeTypes, nodeTypes, type PartNodeType, type WireEdgeType } from "./nodes";
 import type { Selection } from "./SidePanel";
@@ -51,6 +51,9 @@ type Props = {
 };
 
 const refOf = (nodeId: string) => nodeId.slice(2);
+
+/** Fit: keep clear of the zoom buttons (left), the minimap (bottom right) and the hint (bottom), and never too far out to read a pin name. */
+const FIT = { padding: { top: "24px", left: "64px", right: "232px", bottom: "64px" }, maxZoom: 1.1, minZoom: 0.5 } as const;
 const pinOf = (handle: string | null) => {
   const p = (handle ?? "").replace(/^pin:/, "");
   return p === MISSING_PIN ? "" : p;
@@ -59,7 +62,7 @@ const pinOf = (handle: string | null) => {
 /** The React Flow canvas. Must sit inside a ReactFlowProvider. */
 export function SchematicCanvas(p: Props) {
   const { screenToFlowPosition } = useReactFlow();
-  useFitOnPrint(0.15, 1.1);
+  useFitOnPrint();
   const wrap = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<Record<string, { width: number; height: number }>>({});
   const [dropping, setDropping] = useState(false);
@@ -177,6 +180,29 @@ export function SchematicCanvas(p: Props) {
           </ul>
         </Card>
       )}
+      <div className="schematic-noprint mb-2">
+            <div role="group" aria-label="Show or hide wires by net class" className="inline-flex flex-wrap items-center gap-1 rounded-md border border-hairline bg-surface p-1 shadow-xs">
+              {CLASSES.map((c) => {
+                const on = !hidden.has(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => p.onToggleClass(c)}
+                    className={`inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
+                      on ? "text-primary hover:bg-subtle" : "text-muted line-through hover:bg-subtle"
+                    }`}
+                    title={on ? `Hide ${CLASS_LABEL[c].toLowerCase()} wires` : `Show ${CLASS_LABEL[c].toLowerCase()} wires`}
+                  >
+                    <span aria-hidden className="inline-block h-[3px] w-4 rounded-full" style={{ background: NET_STROKE[c], opacity: on ? 1 : 0.35 }} />
+                    {CLASS_LABEL[c]}
+                    <span className="font-mono text-[10px] text-muted">{counts.get(c) ?? 0}</span>
+                  </button>
+                );
+              })}
+            </div>
+      </div>
       <div
         ref={wrap}
         data-testid="pins-canvas"
@@ -221,10 +247,10 @@ export function SchematicCanvas(p: Props) {
           connectionLineStyle={{ stroke: "#E05A10", strokeWidth: 2, strokeDasharray: "5 4" }}
           deleteKeyCode={null}
           fitView
-          fitViewOptions={{ padding: 0.15, maxZoom: 1.1 }}
+          fitViewOptions={FIT}
           onInit={(inst) => {
             // Node sizes arrive after the first paint; fit again once they are known.
-            window.setTimeout(() => void inst.fitView({ padding: 0.15, maxZoom: 1.1, duration: 300 }), 350);
+            window.setTimeout(() => void inst.fitView({ ...FIT, duration: 300 }), 350);
           }}
           minZoom={0.2}
           maxZoom={2.5}
@@ -244,29 +270,6 @@ export function SchematicCanvas(p: Props) {
             nodeBorderRadius={4}
             maskColor="rgba(113, 113, 122, 0.16)"
           />
-          <Panel position="top-left" className="schematic-noprint m-3!">
-            <div role="group" aria-label="Show or hide wires by net class" className="flex flex-wrap items-center gap-1 rounded-md border border-hairline bg-surface p-1 shadow-xs">
-              {CLASSES.map((c) => {
-                const on = !hidden.has(c);
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => p.onToggleClass(c)}
-                    className={`inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
-                      on ? "text-primary hover:bg-subtle" : "text-muted line-through hover:bg-subtle"
-                    }`}
-                    title={on ? `Hide ${CLASS_LABEL[c].toLowerCase()} wires` : `Show ${CLASS_LABEL[c].toLowerCase()} wires`}
-                  >
-                    <span aria-hidden className="inline-block h-[3px] w-4 rounded-full" style={{ background: NET_COLOR[c], opacity: on ? 1 : 0.35 }} />
-                    {CLASS_LABEL[c]}
-                    <span className="font-mono text-[10px] text-muted">{counts.get(c) ?? 0}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </Panel>
           <Panel position="bottom-center" className="schematic-noprint mb-3! pointer-events-none">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Drag parts to arrange. Drag from pin to pin to add a wire. Double-click a wire to edit it.

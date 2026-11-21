@@ -125,6 +125,15 @@ describe("schematic views", () => {
     await waitFor(() => expect((screen.getByLabelText(/^Pin U2\.SCL\./) as HTMLElement).style.borderColor).toMatch(/rgb\(224, 90, 16\)|#E05A10/i));
   });
 
+  it("one checks panel, with the wiring rows and the electrical checks, and the undescribed parts named (D12)", async () => {
+    serve();
+    mount(<SchematicView project={project} stage={design} section={schematicSection} store="design/wiring" />);
+    const panel = await screen.findByTestId("erc-panel");
+    expect(within(panel).getByText("Wiring rows")).toBeTruthy();
+    expect(within(panel).getByText("Electrical")).toBeTruthy();
+    expect(screen.getAllByTestId("erc-panel")).toHaveLength(1);
+  });
+
   it("shows the electrical checks and selects a finding's rows when pressed", async () => {
     serve();
     mount(<SchematicView project={project} stage={design} section={schematicSection} store="design/wiring" />);

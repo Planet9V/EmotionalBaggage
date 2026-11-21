@@ -2,7 +2,7 @@
 // One node per part (its symbol), one small flag per pin on a power or ground net (a supply or
 // ground symbol carrying the net's name), and one edge per wire on every other net.
 import type { NetClass, XY } from "@/lib/domain";
-import { NET_COLOR } from "@/lib/domain";
+import { NET_STROKE } from "@/lib/domain";
 import { pinKey, type Circuit, type CircuitPart } from "@/lib/parts/circuit";
 import { symbolLayout, type SymbolLayout, type SymPin } from "@/lib/parts/symbols";
 
@@ -31,7 +31,23 @@ export type SymNodeData = {
   pinClass: Record<string, NetClass | null>;
 };
 export type FlagData = { kind: "vcc" | "ground"; net: string; ref: string; pin: string; wireIds: number[]; toward: SymPin["toward"] };
-export type SymEdgeData = { wireIds: number[]; net: string; netClass: NetClass; label: boolean; flag: boolean; color: string };
+export type SymEdgeData = { wireIds: number[]; net: string; netClass: NetClass; label: boolean; flag: boolean; color: string; route?: XY[] };
+
+/**
+ * Gives each wire edge elk's orthogonal route (which keeps clear of the symbols) while both of its symbols sit
+ * where elk put them. A symbol moved by hand or saved elsewhere drops its wires back to the plain step path.
+ */
+export function withRoutes(edges: SymEdge[], nodes: SymNode[], laid: Record<string, XY>, routes: Record<string, XY[]>): SymEdge[] {
+  const at = new Map(nodes.filter((n) => n.type === "symbol").map((n) => [n.id, n.position]));
+  const still = (nodeId: string) => {
+    const p = at.get(nodeId), l = laid[nodeId.slice(2)];
+    return !!p && !!l && Math.round(p.x) === Math.round(l.x) && Math.round(p.y) === Math.round(l.y);
+  };
+  return edges.map((e) => {
+    const r = e.id.startsWith("w:") ? routes[e.id.slice(2)] : undefined;
+    return r && r.length >= 2 && still(e.source) && still(e.target) ? { ...e, data: { ...e.data, route: r } } : e;
+  });
+}
 
 export type SymNode =
   | { id: string; type: "symbol"; position: XY; data: SymNodeData; saved: boolean; part: CircuitPart }
@@ -90,7 +106,7 @@ export function buildSymbolGraph(c: Circuit, positions: Record<string, XY>, over
       const fx = Math.round(px - FLAG_W / 2);
       const fy = Math.round(kind === "ground" ? py : py - FLAG_H);
       flags.push({ id: flagNodeId(part.ref, sp.name), type: "flag", parentId: symbolNodeId(part.ref), position: { x: fx, y: fy }, data: { kind, net: net.name, ref: part.ref, pin: sp.name, wireIds, toward: sp.toward } });
-      edges.push({ id: `fe:${part.ref}\u0000${sp.name}`, source: symbolNodeId(part.ref), sourceHandle: symHandle(sp.name), target: flagNodeId(part.ref, sp.name), targetHandle: "f", data: { wireIds, net: net.name, netClass: net.netClass, label: false, flag: true, color: NET_COLOR[net.netClass] } });
+      edges.push({ id: `fe:${part.ref}\u0000${sp.name}`, source: symbolNodeId(part.ref), sourceHandle: symHandle(sp.name), target: flagNodeId(part.ref, sp.name), targetHandle: "f", data: { wireIds, net: net.name, netClass: net.netClass, label: false, flag: true, color: NET_STROKE[net.netClass] } });
     }
   }
 
@@ -102,7 +118,7 @@ export function buildSymbolGraph(c: Circuit, positions: Record<string, XY>, over
     if (!has.get(w.from)?.has(w.fromPin) || !has.get(w.to)?.has(w.toPin)) continue;
     const label = !labelled.has(net.id);
     labelled.add(net.id);
-    edges.push({ id: `w:${w.item.id}`, source: symbolNodeId(w.from), sourceHandle: symHandle(w.fromPin), target: symbolNodeId(w.to), targetHandle: symHandle(w.toPin), data: { wireIds: [w.item.id], net: net.name, netClass: net.netClass, label, flag: false, color: NET_COLOR[net.netClass] } });
+    edges.push({ id: `w:${w.item.id}`, source: symbolNodeId(w.from), sourceHandle: symHandle(w.fromPin), target: symbolNodeId(w.to), targetHandle: symHandle(w.toPin), data: { wireIds: [w.item.id], net: net.name, netClass: net.netClass, label, flag: false, color: NET_STROKE[net.netClass] } });
   }
   // parents before children, as React Flow needs
   return { nodes: [...nodes, ...flags], edges };
