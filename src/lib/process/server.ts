@@ -49,9 +49,16 @@ export async function historyOf(c: Runner, projectId: string): Promise<ProcessEv
  * product type that shows a schematic (they read the pins table, so they are worked out here).
  */
 export async function factsOf(c: Runner, projectId: string, productType: string): Promise<GateFacts> {
-  const r = await c.query<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]);
+  const r = await c.query<{ currency: string; links: string; results: string }>(
+    `SELECT currency,
+            (SELECT count(*) FROM tracked_links WHERE project_id=$1) AS links,
+            (SELECT count(*) FROM campaign_results WHERE project_id=$1) AS results
+       FROM projects WHERE id=$1`,
+    [projectId]
+  );
   const currency = r.rows[0]?.currency || "USD";
-  if (!sectionVisible(productType, "design", "schematic")) return { currency, erc: null };
+  const counts = { links: Number(r.rows[0]?.links ?? 0), results: Number(r.rows[0]?.results ?? 0) };
+  if (!sectionVisible(productType, "design", "schematic")) return { currency, erc: null, ...counts };
   const e = await ercForProject(projectId);
-  return { currency, erc: { ok: e.ok, errors: e.errors, warnings: e.warnings } };
+  return { currency, erc: { ok: e.ok, errors: e.errors, warnings: e.warnings }, ...counts };
 }

@@ -107,7 +107,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
             Name a build (works-like, looks-like, EVT, DVT, PVT or your own), say what it has to show, and link the tests it must pass.
           </p>
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => setAdding(true)}>
+            <Button id="add-build" onClick={() => setAdding(true)}>
               <Plus className="h-4 w-4" aria-hidden /> Add build
             </Button>
           </div>
@@ -121,7 +121,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-secondary">A build can be marked passed once every exit criterion is met and every linked test has passed.</p>
-        <Button onClick={() => setAdding(true)}>
+        <Button id="add-build" onClick={() => setAdding(true)}>
           <Plus className="h-4 w-4" aria-hidden /> Add build
         </Button>
       </div>

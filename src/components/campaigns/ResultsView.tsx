@@ -67,7 +67,7 @@ export function ResultsView({ project }: ViewProps) {
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.status})</option>)}
           </Select>
         </Field>
-        <Button variant={tab === "enter" ? "primary" : "outline"} aria-pressed={tab === "enter"} onClick={() => setTab(tab === "enter" ? null : "enter")}>Enter a day</Button>
+        <Button id="enter-results" variant={tab === "enter" ? "primary" : "outline"} aria-pressed={tab === "enter"} onClick={() => setTab(tab === "enter" ? null : "enter")}>Enter a day</Button>
         <Button variant={tab === "import" ? "primary" : "outline"} aria-pressed={tab === "import"} onClick={() => setTab(tab === "import" ? null : "import")}>Paste or import a report</Button>
       </div>
       {msg && <p role="status" className="text-sm text-success">{msg}</p>}

@@ -148,7 +148,7 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
   const unproven = proof.filter((p) => !p.hasProof).length;
 
   return (
-    <li>
+    <li id={`positioning-${item.id}`} tabIndex={-1} className="scroll-mt-24">
       <Card variant="outlined" hoverEffect={false} innerClassName="p-0">
         <div className="grid divide-hairline lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:divide-x">
           <div className="space-y-4 p-5">

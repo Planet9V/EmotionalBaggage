@@ -4,6 +4,7 @@
 // the keys, so a result saved in one screen refreshes every other screen that shows it.
 import { useMemo } from "react";
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { processKey } from "@/lib/process/client";
 import { api } from "@/lib/http";
 import { messageOf } from "@/lib/queries";
 import { formatMoney, minorDigits, toMajor, toMinor } from "@/lib/economics/money";
@@ -59,6 +60,8 @@ export function useSaveResults(projectId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: campaignKeys.results(projectId) });
       void qc.invalidateQueries({ queryKey: ["events"] });
+      // the gates count results: the next step follows
+      void qc.invalidateQueries({ queryKey: processKey(projectId) });
     },
   });
 }
@@ -67,7 +70,10 @@ export function useRemoveResults(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (b: { campaignId: number; ids: number[] }) => api<{ removed: number }>(`${base(projectId)}/results`, { method: "DELETE", body: JSON.stringify(b) }),
-    onSettled: () => void qc.invalidateQueries({ queryKey: campaignKeys.results(projectId) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: campaignKeys.results(projectId) });
+      void qc.invalidateQueries({ queryKey: processKey(projectId) });
+    },
   });
 }
 
@@ -87,7 +93,10 @@ export function useMakeLink(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (b: NewLink) => api<{ link: LinkView; notes: string[] }>(`${base(projectId)}/links`, { method: "POST", body: JSON.stringify(b) }),
-    onSettled: () => void qc.invalidateQueries({ queryKey: campaignKeys.links(projectId) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: campaignKeys.links(projectId) });
+      void qc.invalidateQueries({ queryKey: processKey(projectId) });
+    },
   });
 }
 
@@ -96,7 +105,10 @@ export function useChangeLink(projectId: string) {
   return useMutation({
     mutationFn: (b: { id: number; disabled?: boolean; remove?: boolean }) =>
       b.remove ? api(`${base(projectId)}/links/${b.id}`, { method: "DELETE" }) : api(`${base(projectId)}/links/${b.id}`, { method: "PATCH", body: JSON.stringify({ disabled: b.disabled }) }),
-    onSettled: () => void qc.invalidateQueries({ queryKey: campaignKeys.links(projectId) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: campaignKeys.links(projectId) });
+      void qc.invalidateQueries({ queryKey: processKey(projectId) });
+    },
   });
 }
 

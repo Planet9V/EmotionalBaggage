@@ -26,7 +26,7 @@ export function DraftButton({ projectId, store, sectionLabel }: { projectId: str
   return (
     <>
       <div className="flex flex-col items-end gap-0.5">
-        <Button variant="outline" size="sm" onClick={() => setOpen(true)} aria-describedby={`draft-hint-${store}`}>
+        <Button id="draft-with-ai" variant="outline" size="sm" onClick={() => setOpen(true)} aria-describedby={`draft-hint-${store}`}>
           <Sparkles className="h-4 w-4 text-link" aria-hidden /> Draft with AI
           {pending > 0 && <span className="ml-1 rounded-full bg-dutchOrange/15 px-1.5 font-mono text-[10px] text-link">{pending} waiting</span>}
         </Button>

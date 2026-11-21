@@ -93,7 +93,7 @@ export function ItemsView({ project, section, store }: ViewProps) {
   };
 
   const addButton = (
-    <Button onClick={() => setAdding(true)}>
+    <Button id="add-row" onClick={() => setAdding(true)}>
       <Plus className="h-4 w-4" aria-hidden /> {addLabel}
     </Button>
   );

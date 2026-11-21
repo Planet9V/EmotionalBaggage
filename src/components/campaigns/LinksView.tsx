@@ -71,7 +71,7 @@ export function LinksView({ project }: ViewProps) {
         {campaigns.length === 0 ? (
           <p className="text-sm text-secondary">There is no campaign yet. Add one in <Link className="text-link underline" href="/s/marketing/campaigns">Campaigns</Link>, then make its links here.</p>
         ) : (
-          <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+          <form id="new-link" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
             <Field label="Campaign"><Select value={campaign?.id ? String(campaign.id) : ""} onChange={(e) => setV((x) => ({ ...x, campaign: e.target.value, creative: "" }))}>{campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</Select></Field>
             <Field label="Creative (optional)"><Select value={v.creative} onChange={(e) => setV((x) => ({ ...x, creative: e.target.value }))}><option value="">The whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</Select></Field>
             <Field label="Page it goes to" className="sm:col-span-2" hint="A web address starting http:// or https://"><Input value={v.baseUrl} onChange={(e) => setV((x) => ({ ...x, baseUrl: e.target.value }))} placeholder="https://example.com/product" /></Field>

@@ -35,7 +35,9 @@ describe("check kinds", () => {
     const c = check({ id: "a", label: "Tests", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"] } });
     expect(evaluateCheck(c, [])).toMatchObject({ met: true, detail: "No rows yet, so nothing is left to move." });
     const r = evaluateCheck(c, [row("prototype/tests", "pass"), row("prototype/tests", "fail"), row("prototype/tests", "not run")]);
-    expect(r).toMatchObject({ met: false, detail: "2 of 3 rows not yet pass.", action: "Move 2 rows in Acceptance tests to pass" });
+    expect(r).toMatchObject({ met: false, detail: "2 of 3 rows not yet pass.", action: expect.stringMatching(/^Move 2 rows in Acceptance tests to pass, starting with "/) });
+    // the next step opens the first row that stops it (Acceptance tests open a row from ?item=)
+    expect(r.href).toMatch(/^\/s\/prototype\/tests\?item=\d+$/);
     expect(evaluateCheck(c, [row("prototype/tests", "pass")]).met).toBe(true);
   });
 
@@ -185,9 +187,11 @@ describe("nextStep", () => {
 
   it("differs by type in the Prototype stage", () => {
     const state: ProcessState = { stage: "prototype", gates: [] };
-    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
-    expect(nextStep(processFor("printed"), state, []).href).toBe("/s/prototype/printing");
-    expect(nextStep(processFor("physical"), state, [row("design/bom", "in hand"), row("prototype/assembly", "open")]).href).toBe("/s/prototype/assembly");
+    // electronics: parts in hand, then the enclosure printed, then the build sheet
+    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/printing#new-print-job");
+    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("prototype/printing", "done"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    expect(nextStep(processFor("printed"), state, []).href).toBe("/s/prototype/printing#new-print-job");
+    expect(nextStep(processFor("physical"), state, [row("design/bom", "in hand"), row("prototype/assembly", "open")]).href).toMatch(/^\/s\/prototype\/assembly\?item=\d+$/);
   });
 
   it("an overridden gate counts as passed", () => {

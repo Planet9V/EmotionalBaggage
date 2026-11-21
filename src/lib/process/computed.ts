@@ -12,6 +12,7 @@ import { withDefaults } from "@/lib/enclosure/validate";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
+import { positioningFingerprint } from "@/lib/market/critique";
 
 /** What the server works out that rows alone cannot give. */
 export type GateFacts = {
@@ -19,6 +20,9 @@ export type GateFacts = {
   currency?: string;
   /** the electrical checks' counts, from ercForProject; undefined when not worked out */
   erc?: { ok: boolean; errors: number; warnings: number } | null;
+  /** tracked links and days of campaign results (their own tables); undefined when not counted */
+  links?: number;
+  results?: number;
 };
 
 export type Computed = { met: boolean; detail: string; action: string; href: string };
@@ -113,4 +117,40 @@ export function contentProofCheck(rows: Item[], sections: string[], conceptName 
     action: `Link proof to ${plural(bad.length, "row")} or move ${bad.length === 1 ? "it" : "them"} back to draft`,
     href: bad[0] ? `/s/${bad[0].section}` : `/s/${sections[0]}`,
   };
+}
+
+/** The positioning: drafted, attacked by the reviewer on its current words, then approved (src/lib/market/rules.ts). */
+export function positioningCheck(rows: Item[]): Computed {
+  const base = "/s/marketing/positioning";
+  const xs = rows.filter((r) => r.section === "marketing/positioning");
+  if (xs.some((r) => r.status === "approved" || r.status === "done")) return { met: true, detail: "The positioning is approved after the reviewer's attack.", action: "Nothing to do", href: base };
+  if (!xs.length) return { met: false, detail: "No positioning yet.", action: "Draft the positioning with AI, from the personas and competitors", href: `${base}#draft-with-ai` };
+  const reviewed = (r: Item) => {
+    const c = r.data?.critique as { text?: unknown; fingerprint?: unknown } | undefined;
+    return !!c && typeof c.text === "string" && c.text.trim() !== "" && (typeof c.fingerprint !== "string" || c.fingerprint === positioningFingerprint(r.data ?? {}));
+  };
+  const ready = xs.find(reviewed);
+  if (ready) return { met: false, detail: "The reviewer has attacked it; it is not approved yet.", action: `Approve the positioning "${ready.title}"`, href: `${base}#positioning-${ready.id}` };
+  const first = xs[0];
+  return { met: false, detail: "The reviewer has not attacked it on its current words, so it cannot be approved yet.", action: `Ask the reviewer to attack the positioning "${first.title}"`, href: `${base}#positioning-${first.id}` };
+}
+
+/** The campaigns section's budget row: a total budget and the share of the margin a campaign may spend per order. */
+export function campaignBudgetCheck(rows: Item[]): Computed {
+  const href = "/s/marketing/campaigns#campaign-budget";
+  const plan = rows.find((r) => r.section === "marketing/campaigns" && r.data?.kind === "plan");
+  const d = (plan?.data ?? {}) as { planTotalMinor?: unknown; allowableSharePercent?: unknown };
+  const missing = [typeof d.planTotalMinor === "number" ? "" : "the total marketing budget", typeof d.allowableSharePercent === "number" ? "" : "the share of the margin a campaign may spend"].filter(Boolean);
+  return {
+    met: missing.length === 0,
+    detail: missing.length ? `Not set: ${missing.join(" and ")}.` : "The budget and the rule numbers are set.",
+    action: `Set ${missing.join(" and ") || "the budget"} in Campaigns`,
+    href,
+  };
+}
+
+/** A count the server keeps in its own table (tracked links, campaign results). */
+export function countCheck(n: number | undefined, min: number, w: { one: string; many?: string; where: string; href: string; verb: string }): Computed {
+  if (n === undefined) return { met: false, detail: `${w.where} have not been counted yet.`, action: w.verb, href: w.href };
+  return { met: n >= min, detail: `${plural(n, w.one, w.many)} recorded${n >= min ? "" : `, ${min} needed`}.`, action: w.verb, href: w.href };
 }
