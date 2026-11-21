@@ -11,6 +11,7 @@ import { sourcingData } from "@/lib/sourcing/schemas";
 import { CONTENT_SCHEMAS } from "@/lib/content/schemas";
 import { CAMPAIGN_SCHEMAS } from "@/lib/campaigns/schemas";
 import { CHANNEL_SCHEMAS } from "@/lib/channels/schemas";
+import { keys } from "./step";
 
 export const STORE = {
   parts: "design/bom",
@@ -35,7 +36,7 @@ const numeric = z.preprocess(
  * so a string is still read, and is turned into an array on the way in.
  */
 export const keyList = z.preprocess(
-  (v) => (typeof v === "string" ? v.split(",").map((s) => s.trim()).filter(Boolean) : v),
+  (v) => (typeof v === "string" ? keys(v) : v),
   z.array(text(120)).max(500)
 );
 
