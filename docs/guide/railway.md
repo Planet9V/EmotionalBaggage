@@ -1,8 +1,10 @@
 # Deploying on Railway
 
-How to run the whole stack on Railway as four services built from this repository. **This layout has not been deployed yet.** It is written from Railway's documentation and from the code, and every step below should be checked against a first real deployment before anyone relies on it. Nothing in this repository creates anything on Railway.
+How to run the whole stack on Railway from this repository. Nothing in this repository creates anything on Railway.
 
-Each Railway fact below has the page of Railway's documentation it comes from beside it. The pages were found through a web search on 21 November 2026; their text could not be opened in the session that wrote this guide, so the wording of each fact is from Railway's documentation as it was known then, and the link is where to confirm it.
+**What has been tried (21 November 2026).** Three of the four services were deployed and checked by hand: the database (`pgvector`), web and planner, as described below. The slicer has not been deployed. No public domain was generated, so the app has not been opened from outside; its health was checked from each service's Console tab. Pushing a commit did not redeploy on its own (Railway showed "Could not load branches"), so each deployment was started with "Deploy latest commit" from the command palette. Everything about the slicer below, and everything about a public domain, is from Railway's documentation and the code only: it has not been deployed yet.
+
+Each Railway fact below has the page of Railway's documentation it comes from beside it.
 
 ## The four services
 
@@ -10,7 +12,7 @@ Each Railway fact below has the page of Railway's documentation it comes from be
 |---|---|---|---|
 | web | the root `Dockerfile` | public domain | yes |
 | planner | `planner/Dockerfile` (root directory `planner`) | private only | yes (without it the order of operations, wire routing, the harness drawing and the YAPP enclosure generator are off) |
-| db | the image `pgvector/pgvector:0.8.7-pg19-trixie`, with a volume | private only | yes |
+| db (named `pgvector` in the deployment that was tried) | the image `pgvector/pgvector:0.8.7-pg19-trixie`, with a volume | private only | yes |
 | slicer | `slicer/Dockerfile` (root directory `slicer`) | private only | no (without it print jobs are sliced by hand, as the 3D printing page says) |
 
 Railway can read a `docker-compose.yml` dropped onto a project canvas and turn its services into Railway services ([Docker Compose guide](https://docs.railway.com/guides/docker-compose)). The compose file here builds from local folders, uses a profile for the slicer and sets `shm_size`, which do not carry over, so creating the four services by hand as below is the clearer route. Use the compose file as the reference for what each service needs.
@@ -24,8 +26,9 @@ Railway can read a `docker-compose.yml` dropped onto a project canvas and turn i
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `postgresql://c2r:<password>@<db service>.railway.internal:5432/c2r` (the password is the db service's `POSTGRES_PASSWORD`; a reference variable such as `${{db.POSTGRES_PASSWORD}}` keeps them the same) |
-| `PLANNER_URL` | `http://<planner service>.railway.internal:8000` |
+| `DATABASE_URL` | `postgresql://c2r:${{pgvector.POSTGRES_PASSWORD}}@pgvector.railway.internal:5432/c2r` with the database service named `pgvector` (the reference variable keeps the password the same as the database's; this is the form that was deployed) |
+| `PLANNER_URL` | `http://planner.railway.internal:8000` with the planner service named `planner` (deployed) |
+| `PORT` | `3000` (deployed; the image listens there) |
 | `SLICER_URL` | `http://<slicer service>.railway.internal:8000`, or leave it out with no slicer |
 | `TRUST_PROXY` | `1`. Railway's edge sits in front of the app and adds `X-Forwarded-For`; with this set, sign-in throttling counts attempts per visitor instead of per proxy |
 | `PERPLEXITY_API_KEY`, channel keys | optional; Admin, Credentials is the usual place for them |
@@ -34,9 +37,9 @@ The planner and slicer addresses can also be saved in Admin (Models for the plan
 
 ### planner
 
-- Source: this repository. Railway builds a Dockerfile at another path when the service variable `RAILWAY_DOCKERFILE_PATH` names it ([Dockerfiles](https://docs.railway.com/builds/dockerfiles)), but the build context stays the repository root, and `planner/Dockerfile` copies `requirements.lock`, its Python files and `vendor` from its own folder (the compose file builds it with `./planner` as the context). `RAILWAY_DOCKERFILE_PATH=planner/Dockerfile` alone would therefore fail at the first `COPY`. Set the service's **root directory** to `planner` instead: the context is then the planner folder and Railway finds its `Dockerfile` there with no path variable. (If a later change makes the planner's Dockerfile build from the repository root, `RAILWAY_DOCKERFILE_PATH=planner/Dockerfile` becomes the way.) Check this on the first build.
+- Source: this repository. Railway builds a Dockerfile at another path when the service variable `RAILWAY_DOCKERFILE_PATH` names it ([Dockerfiles](https://docs.railway.com/builds/dockerfiles)), but the build context stays the repository root, and `planner/Dockerfile` copies `requirements.lock`, its Python files and `vendor` from its own folder (the compose file builds it with `./planner` as the context). `RAILWAY_DOCKERFILE_PATH=planner/Dockerfile` alone would therefore fail at the first `COPY`. Set the service's **Root Directory** to `/planner` instead: the context is then the planner folder and Railway finds its `Dockerfile` there with no path variable. This is how the deployed planner was built. (If a later change makes the planner's Dockerfile build from the repository root, `RAILWAY_DOCKERFILE_PATH=planner/Dockerfile` becomes the way.)
 - No public domain. Other services reach it at `<service name>.railway.internal` ([private networking](https://docs.railway.com/private-networking)).
-- Variables: `HOST=::` and `PORT=8000`. The image reads both (`planner/Dockerfile`). Railway's private network has been IPv6 only in environments created before Railway added IPv4 to it, and a service listening on `0.0.0.0` alone cannot be reached there ([private networking, how it works](https://docs.railway.com/networking/private-networking/how-it-works)); `::` listens on IPv6 and, on Linux, on IPv4 too. Setting `PORT` yourself keeps the address in `PLANNER_URL` fixed.
+- Variables: `HOST=::` and `PORT=8000` (deployed). The image reads both (`planner/Dockerfile`). Railway's private network has been IPv6 only in environments created before Railway added IPv4 to it, and a service listening on `0.0.0.0` alone cannot be reached there ([private networking, how it works](https://docs.railway.com/networking/private-networking/how-it-works)); `::` listens on IPv6 and, on Linux, on IPv4 too. Setting `PORT` yourself keeps the address in `PLANNER_URL` fixed.
 - Health check path: `/health`.
 - Size: the image adds Graphviz and OpenSCAD to `python:3.13-slim`. Its size has not been measured (no Docker daemon was available when this was written); OpenSCAD and its libraries are the bulk of it. Check the built size against your Railway plan's image limit.
 

@@ -20,10 +20,11 @@ describe("images for a hosted install", () => {
     expect(s).toMatch(/PORT=3000 HOSTNAME=0\.0\.0\.0/);
     expect(s).toMatch(/node", "-r", "\.\/client-address\.cjs", "server\.js"/);
   });
-  it("the Railway guide is listed under Documentation and says it has not been deployed", () => {
+  it("the Railway guide is listed under Documentation and says what was deployed and what was not", () => {
     expect(DOC_PAGES.map((d) => d.slug)).toContain("railway");
     const g = readDoc("railway" as never);
-    expect(g).toMatch(/has not been deployed/);
+    expect(g).toMatch(/slicer has not been deployed/);
+    expect(g).toMatch(/Deploy latest commit/);
     for (const v of ["RAILWAY_DOCKERFILE_PATH", "RAILWAY_SHM_SIZE_BYTES", "PLANNER_URL", "SLICER_URL", "TRUST_PROXY", "DATABASE_URL", "railway.internal", "/api/health"]) expect(g).toContain(v);
   });
 });
