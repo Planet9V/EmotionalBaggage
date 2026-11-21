@@ -8,6 +8,8 @@ import { assertBuildMayPass, assertLinks, relinkKey } from "@/lib/trace/links";
 import { keyOf } from "@/lib/trace/spec";
 import { assertMarketChange } from "@/lib/market/rules";
 import { assertPrintChange } from "@/lib/slicing/rules";
+import { assertContentAllowed, withFlags } from "@/lib/content/rules";
+import { CONTENT_STORES } from "@/lib/content/schemas";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,7 +28,14 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     assertMarketChange(was, b);
     // Print jobs: slicing, sending and starting only through their own routes.
     assertPrintChange(was, b);
-    const data = parseData(was.section, b.data);
+    let data = parseData(was.section, b.data);
+    // Content rows: the no-proof flags are worked out again on the words as they will be, and a row past
+    // draft may not carry a flagged line or break a platform limit.
+    if (CONTENT_STORES.has(was.section)) {
+      const merged = { ...was.data, ...(data ?? {}) };
+      data = await withFlags(was.project_id, was.section, b.title ?? was.title, b.body ?? was.body, merged);
+      await assertContentAllowed(was.project_id, was.section, b.status ?? was.status, b.title ?? was.title, b.body ?? was.body, data);
+    }
     await assertLinks(c, was.project_id, was.section, data);
     await assertBuildMayPass(c, was.project_id, { section: was.section, title: b.title ?? was.title, status: b.status ?? was.status, data: { ...was.data, ...(data ?? {}) } });
     const res = await c.query<ItemRow>(

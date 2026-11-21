@@ -8,6 +8,7 @@ import { PART_KIND_IDS } from "@/lib/parts/kinds";
 import { libraryEntryById } from "@/lib/parts/library";
 import { printJobData } from "@/lib/slicing/jobState";
 import { sourcingData } from "@/lib/sourcing/schemas";
+import { CONTENT_SCHEMAS } from "@/lib/content/schemas";
 
 export const STORE = {
   parts: "design/bom",
@@ -220,6 +221,7 @@ const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   // production, sales channels and compliance rows (plan 3.6, 3.8, 7.1, 7.2)
   ...economicsSchemas(step),
   ...MARKET_SCHEMAS,
+  ...CONTENT_SCHEMAS,
 };
 
 /** The schema a section's `data` must satisfy. */

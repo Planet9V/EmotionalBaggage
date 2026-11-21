@@ -193,6 +193,10 @@ Import from `@/lib/printers`: `createAdapter`, `adapterForRow`, `runPrinterActio
 
 `slicer/` is a FastAPI wrapper round the OrcaSlicer command line (`POST /slice`); time and material come from OrcaSlicer's `statistics.json`, with the G-code header as fallback. `slicer/profiles.json` is keyed by maker and model, the same strings as `src/lib/printers/models.ts` (a test keeps them in step); regenerate it with `slicer/tools/gen_profiles.py` when moving OrcaSlicer version. Boolean OrcaSlicer flags are written `--flag=1`. The print job state machine is `src/lib/slicing/jobState.ts`; the only ways to a hardware state are the action routes under `src/app/api/print-jobs/[id]/`, and `rules.ts` guards the plain row routes. The flow reaches printers through `src/lib/slicing/printerPort.ts`, which wraps `adapterForRow`; tests swap it with `setPortFactory`. Sourcing data lives on the part (`data.sourcing`, `src/lib/sourcing/schemas.ts`).
 
+## Marketing content
+
+Content generators live in `src/lib/content/generators` and are spread into the drafting registry. Channel limits are in `src/lib/content/channels.ts`; a limit is enforced only when its `source` is the platform's own URL. `src/lib/content/rules.ts` is the only place that decides whether a content row may leave draft (called from PATCH, POST and draft approval); a stored `noProof` flag is never trusted. The landing page is one pure function (`renderPage`) used by the preview and the zip export. Posting code reads `GET /api/content/social/queue`. The preview frame uses `sandbox="allow-scripts"` without allow-same-origin on purpose.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

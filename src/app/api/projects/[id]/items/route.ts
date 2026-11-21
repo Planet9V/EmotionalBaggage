@@ -7,6 +7,8 @@ import { assertNewPrintJob } from "@/lib/slicing/rules";
 import { addedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
 import { assertNewMarket } from "@/lib/market/rules";
+import { assertNewContent, withFlags } from "@/lib/content/rules";
+import { CONTENT_STORES } from "@/lib/content/schemas";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,6 +32,8 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   assertNewClaim(b);
   assertNewPrintJob(b);
   assertNewMarket(b);
+  await assertNewContent(id, b);
+  if (CONTENT_STORES.has(b.section)) b.data = await withFlags(id, b.section, b.title, b.body ?? "", b.data ?? {});
   const row = await tx(async (c) => {
     await assertLinks(c, id, b.section, b.data);
     await assertBuildMayPass(c, id, { section: b.section, title: b.title, status: b.status ?? defaultStatus(b.section), data: b.data ?? {} });

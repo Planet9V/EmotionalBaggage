@@ -13,12 +13,14 @@ import { messageOf, queries, type Integration, type IntegrationsReport } from "@
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { SOCIAL_CHANNELS, checkSocial, socialChannel } from "@/lib/content/channels";
+import { SocialCalendar } from "@/components/content/SocialCalendar";
 import type { ViewProps } from "./types";
 
 const NO_INTEGRATIONS: Integration[] = [];
 const socialOnly = (r: IntegrationsReport) => r.integrations.filter((i) => i.key === "x" || i.key === "instagram");
 
-const CHANNELS = ["X", "Instagram", "TikTok", "other"];
+const CHANNELS = [...SOCIAL_CHANNELS.map((c) => c.label), "other"];
 const X_LIMIT = 280;
 const FALLBACK = ["draft", "approved", "posted"];
 const len = (s: string) => Array.from(s).length;
@@ -41,6 +43,7 @@ export function SocialView({ project, section, store }: ViewProps) {
   const [copied, setCopied] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
   const dragged = useRef<number | null>(null);
+  const [tab, setTab] = useState<"board" | "calendar">("board");
 
   const move = (it: Item, status: string) => {
     if (it.status !== status) void patch(it.id, { status });
@@ -72,6 +75,17 @@ export function SocialView({ project, section, store }: ViewProps) {
         </p>
       </section>
 
+      <div role="group" aria-label="Social view" className="flex gap-2">
+        <Button size="sm" variant={tab === "board" ? "default" : "outline"} aria-pressed={tab === "board"} onClick={() => setTab("board")}>Board</Button>
+        <Button size="sm" variant={tab === "calendar" ? "default" : "outline"} aria-pressed={tab === "calendar"} onClick={() => setTab("calendar")}>Calendar</Button>
+      </div>
+      {tab === "calendar" ? (
+        <>
+          {error ? <ErrorLine>{error}</ErrorLine> : null}
+          {writeError ? <ErrorLine>{writeError}</ErrorLine> : null}
+          {loading ? <p className="text-sm text-secondary">Loading the posts.</p> : <SocialCalendar items={items} onPatch={(id, c) => patch(id, c)} />}
+        </>
+      ) : (<>
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted">Drag a post to another column, or use the buttons on the post.</p>
         <Button onClick={() => setCompose({ item: null })}><Plus className="h-4 w-4" aria-hidden /> {section.addLabel ?? "Add draft post"}</Button>
@@ -159,6 +173,7 @@ export function SocialView({ project, section, store }: ViewProps) {
       {!loading && items.some((i) => !columns.includes(i.status)) && (
         <p className="text-xs text-warning">Some posts have a status that is not a column here, so they are not shown.</p>
       )}
+      </>)}
 
       {compose && (
         <ComposeDialog
@@ -219,6 +234,12 @@ function ComposeDialog({ item, onClose, onSave }: { item: Item | null; onClose: 
           <p className={cn("font-mono text-xs", n > X_LIMIT ? "text-danger" : "text-muted")} aria-live="polite">
             {n}/{X_LIMIT} characters{n > X_LIMIT ? `, ${n - X_LIMIT} over the limit` : ""}
           </p>
+        )}
+        {channel !== "X" && socialChannel(channel) && (
+          <ul className="space-y-0.5 text-xs" aria-live="polite">
+            <li className="font-mono text-muted">{n} characters</li>
+            {checkSocial(socialChannel(channel)!, text).map((p, i) => <li key={i} className={p.level === "refuse" ? "text-danger" : "text-warning"}>{p.message}</li>)}
+          </ul>
         )}
         {err ? <ErrorLine>{err}</ErrorLine> : null}
         <div className="flex justify-end gap-2 pt-1">

@@ -98,6 +98,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
           <div className="flex flex-wrap items-center gap-2">
             {op !== "add" && <StatusBadge tone={op === "remove" ? "danger" : "info"}>{op === "remove" ? "Removes a row" : "Changes a row"}</StatusBadge>}
             {draft.status !== "draft" && <StatusBadge tone={draft.status === "approved" ? "success" : "neutral"}>{draft.status}{draft.reason ? `: ${draft.reason}` : ""}</StatusBadge>}
+            {draft.data.noProof === true && draft.status === "draft" && <StatusBadge tone="warning">No proof: cannot be approved yet</StatusBadge>}
             <span className="font-mono text-[10px] text-muted">{draft.model}</span>
           </div>
           {editing ? (

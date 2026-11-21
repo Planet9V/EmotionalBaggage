@@ -32,6 +32,10 @@ import { NamesView } from "@/components/market/NamesView";
 import { PersonasView } from "@/components/market/PersonasView";
 import { PositioningView } from "@/components/market/PositioningView";
 import { PricingView } from "@/components/market/PricingView";
+import { AdsView } from "@/components/content/AdsView";
+import { LandingView } from "@/components/content/LandingView";
+import { LaunchView } from "@/components/content/LaunchView";
+import { ListingView } from "@/components/content/ListingView";
 import type { ViewProps } from "./types";
 import { DraftButton } from "@/components/drafts/DraftButton";
 import { SectionAssist } from "@/components/drafts/SectionAssist";
@@ -63,6 +67,10 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   names: NamesView,
   brand: BrandView,
   imagery: ImageryView,
+  ads: AdsView,
+  landing: LandingView,
+  listing: ListingView,
+  launch: LaunchView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

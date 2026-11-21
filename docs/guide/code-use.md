@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 61992e7 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 180b750 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 637 packages (47 direct, 590 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 643 packages (53 direct, 590 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 503 |
+| MIT | 509 |
 | ISC | 49 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
@@ -67,6 +67,11 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @ai-sdk/react | 4.0.183 | Apache-2.0 | linked library | yes |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | font files | yes |
 | @fontsource-variable/jetbrains-mono | 5.3.0 | OFL-1.1 | font files | yes |
+| @fullcalendar/core | 6.1.22 | MIT | linked library | yes |
+| @fullcalendar/daygrid | 6.1.22 | MIT | linked library | yes |
+| @fullcalendar/interaction | 6.1.22 | MIT | linked library | yes |
+| @fullcalendar/react | 6.1.22 | MIT | linked library | yes |
+| @fullcalendar/timegrid | 6.1.22 | MIT | linked library | yes |
 | @radix-ui/react-dialog | 1.3.1 | MIT | linked library | yes |
 | @radix-ui/react-slot | 1.5.0 | MIT | linked library | yes |
 | @react-three/drei | 10.7.9 | MIT | linked library | yes |
@@ -85,6 +90,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | cn | 0.5.2 | MIT | linked library | yes |
 | elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | linked library | yes |
 | embla-carousel-react | 8.6.0 | MIT | linked library | yes |
+| fflate | 0.8.3 | MIT | linked library | yes |
 | framer-motion | 14.14.0 | MIT | linked library | yes |
 | lucide-react | 1.77.0 | ISC | linked library | yes |
 | manifold-3d | 3.5.5 | Apache-2.0 | linked library | yes |

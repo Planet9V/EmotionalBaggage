@@ -23,6 +23,7 @@ import { defaultStatus, STORE_STATUSES } from "@/lib/api/schemas";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { dataSchemaFor } from "@/lib/domain/schemas";
 import type { Item } from "@/lib/types";
+import { assertDraftAllowed, withFlags } from "@/lib/content/rules";
 import type { Draft, DraftOp, DraftSource, DraftStatus } from "./shared";
 
 export const DRAFT_COLS =
@@ -146,6 +147,8 @@ export async function editDraft(id: number, e: Edit): Promise<Draft> {
     if (d.status !== "draft") throw decidedAlready(d);
     const op = readOp(d.data);
     const next = checkFields(d.target_store, e.title ?? d.title, e.body ?? d.body, e.data ? { ...e.data } : rowData(d.data), op);
+    // Content drafts: the no-proof flags are worked out again on the words as edited.
+    if (op.op !== "remove") next.data = await withFlags(d.project_id, d.target_store, next.title, next.body, next.data);
     const r = await c.query<DraftDbRow>(`UPDATE drafts SET title=$2, body=$3, data=$4 WHERE id=$1 RETURNING ${DRAFT_COLS}`, [
       id,
       next.title,
@@ -168,6 +171,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow): Promise<Approved> {
   if (d.status !== "draft") throw decidedAlready(d);
   const op = readOp(d.data);
   const fields = checkFields(d.target_store, d.title, d.body, rowData(d.data), op);
+  if (op.op !== "remove") await assertDraftAllowed(d.project_id, d.target_store, fields.title, fields.body, fields.data);
   const actor = currentActor() || null;
   let before: Item | null = null;
   let item: Item | null = null;

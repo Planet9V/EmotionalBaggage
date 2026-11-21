@@ -17,7 +17,9 @@ const NO_PROJECTS: Project[] = [];
 
 // The sign-in page renders bare: no sidebar, and none of the shell's API calls (they would answer 401).
 export function Shell({ children }: { children: React.ReactNode }) {
-  return usePathname() === "/sign-in" ? <>{children}</> : <AppShell>{children}</AppShell>;
+  const path = usePathname();
+  // The landing page preview (/p/<concept id>) is the page as a visitor would see it, so it gets no sidebar.
+  return path === "/sign-in" || path.startsWith("/p/") ? <>{children}</> : <AppShell>{children}</AppShell>;
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {

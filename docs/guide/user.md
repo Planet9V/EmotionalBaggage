@@ -93,6 +93,16 @@ Open a part to see search links for Digi-Key, Mouser, LCSC, Adafruit, SparkFun, 
 
 Wire length uses the routed length plus the service allowance when the 3D model has routed the wire, otherwise an estimate, and says which. Wire gauge is chosen from the current the part draws using a named table; with no current set it says "not set" and does not guess. Strip lengths are starting values from general bench practice, not from a data sheet: change them to match your connector's data sheet.
 
+## Marketing content
+
+Every piece of marketing content is tied to one approved Positioning message and follows the brand kit's voice. Any line with a number or a superlative (best, only, 100%) needs a linked proof row (a verified claim, a passing test, a requirement or an approved price whose text holds the number); without one it is flagged **No proof** and cannot be approved. Nothing is posted, sent or published by the app.
+
+- **Ads:** choose a channel (Amazon Sponsored Products and Sponsored Brands, Meta feed, Instagram feed, Stories, X, Google responsive search, TikTok, Reddit, Pinterest). Each shows what it accepts and where each limit comes from. A limit taken from the platform's own page cannot be exceeded; limits the platform's page could not be read for only warn and say "Not verified". Write the stop and scale rule and set two numbers yourself: the highest cost per order you accept and the least you will spend before judging. Export CSV per channel after approving.
+- **Landing page:** sections you edit in place and reorder; Preview shows the page in your brand kit; `/p/<concept id>` opens it only while signed in, marked "Public preview, not published". Images need alt text. The comparison shows only competitors that have a source. Approve every section, then Export zip (index.html plus images).
+- **Amazon listing** (Sales): title, five bullets, description and search terms per category; Amazon's claim rules show as warnings with a source link; tick the image checklist from Imagery; export text or a flat-file row once the listing is ready.
+- **Social:** Board or Calendar; give a post a date or drag it; an approved post with a date becomes scheduled.
+- **Launch email and press note:** from the approved press release: subject options, preview text and body, a press note and a three-email sequence outline; export HTML or text.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.
