@@ -39,6 +39,8 @@ function Calendar({
         className
       )}
       captionLayout={captionLayout}
+      // the day number first, so the name of the button contains the number it shows
+      labels={{ labelDayButton: (date) => date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", weekday: "long" }) }}
       formatters={{
         formatMonthDropdown: (date) =>
           date.toLocaleString("default", { month: "short" }),

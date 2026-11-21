@@ -4,10 +4,10 @@
 // nothing else reads chats.
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "@/lib/http";
-import type { ChatSource } from "@/lib/chat/shared";
+import type { ChatSource, Retrieval } from "@/lib/chat/shared";
 
 export type ChatSummary = { id: number; projectId: string; title: string; createdAt: string; updatedAt: string; messages?: number };
-export type SavedMessage = { id: number; role: "user" | "assistant"; content: string; sources: ChatSource[]; model: string; createdAt: string };
+export type SavedMessage = { id: number; role: "user" | "assistant"; content: string; sources: ChatSource[]; model: string; retrieval: Retrieval | ""; note?: string; search?: string; createdAt: string };
 
 export type ChatSetup = {
   reasoning: { ok: true; model: string; provider: string } | { ok: false; missing: string; reason: string };

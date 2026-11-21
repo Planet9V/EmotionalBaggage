@@ -128,7 +128,7 @@ function PlanBody({ project }: { project: Project }) {
             <div className="min-w-0 space-y-3">
               <PlanGraph plan={plan} selectedId={selected} onSelect={setSelected} />
               <p className="font-mono text-[10px] text-muted">
-                Click a step to edit it. <span className="text-dutchOrange">Orange</span> marks the critical path.
+                Click a step to edit it. <span className="text-link">Orange</span> marks the critical path.
               </p>
             </div>
             {step ? (

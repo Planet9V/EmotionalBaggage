@@ -128,7 +128,7 @@ export function WizardView() {
                       active ? "bg-dutchOrange/10 text-primary" : "text-secondary hover:bg-subtle hover:text-primary"
                     }`}
                   >
-                    <span className={`font-mono text-xs ${active ? "text-dutchOrange" : "text-muted"}`}>
+                    <span className={`font-mono text-xs ${active ? "text-link" : "text-muted"}`}>
                       {done && !active ? <Check className="h-3.5 w-3.5" aria-label="Visited" /> : String(n).padStart(2, "0")}
                     </span>
                     <span className={active ? "font-medium" : ""}>{s.title}</span>

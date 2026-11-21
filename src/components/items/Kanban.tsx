@@ -14,6 +14,7 @@ import {
   useSensor,
   useSensors,
   type CollisionDetection,
+  type KeyboardCoordinateGetter,
   type DragEndEvent,
   type DragStartEvent,
   type Announcements,
@@ -50,6 +51,24 @@ const collide: CollisionDetection = (args) => {
 };
 
 /**
+ * A lifted card moves a whole column at a time: Right and Left go to the neighbouring column, other keys do
+ * nothing. (The default moves 25 px a press, which never gets a card from one column to the next.)
+ */
+const columnJump: KeyboardCoordinateGetter = (event, { context: { active, collisionRect, droppableRects, droppableContainers } }) => {
+  if (!active || !collisionRect || (event.code !== "ArrowRight" && event.code !== "ArrowLeft")) return undefined;
+  const centre = collisionRect.left + collisionRect.width / 2;
+  const columns = droppableContainers
+    .getEnabled()
+    .filter((c) => String(c.id).startsWith("col:"))
+    .map((c) => droppableRects.get(c.id))
+    .filter((r): r is NonNullable<typeof r> => !!r)
+    .sort((a, b) => a.left - b.left);
+  const here = columns.findIndex((r) => centre >= r.left && centre <= r.left + r.width);
+  const to = columns[(here < 0 ? 0 : here) + (event.code === "ArrowRight" ? 1 : -1)];
+  return to ? { x: to.left + 8, y: to.top + 8 } : undefined;
+};
+
+/**
  * Board layout: one column per status, on dnd-kit. Cards move by dragging the grip (mouse, touch, or the
  * keyboard: Space to lift, arrows to choose a column, Space to drop, Escape to cancel), by the Move to list
  * on the card, or by focusing a card and pressing Shift with the left or right arrow. What the screen reader
@@ -65,7 +84,7 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, re
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: columnJump }),
   );
 
   // After a keyboard move the card remounts in its new column; give it focus back.
@@ -87,7 +106,8 @@ export function Kanban({ items, statuses, columns, onOpen, onMove, cardExtra, re
     setSay(`Moving ${item.title} to ${status}.`);
     try {
       await onMove(item.id, status);
-      setSay(`${item.title} moved to ${status}. ${count(status)} in ${status}.`);
+      // `items` is the list from before the move, so the card is not counted yet
+      setSay(`${item.title} moved to ${status}. The ${status} column now has ${count(status) + 1}.`);
     } catch (e) {
       const reason = (e as Error).message || "The server refused the change.";
       refocus.current = viaKeyboard ? item.id : null;

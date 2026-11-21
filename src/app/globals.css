@@ -151,7 +151,7 @@
 
   --text-primary: #18181B;
   --text-secondary: #52525B;
-  --text-muted: #71717A;
+  --text-muted: #666670;
 
   --border-hairline: #E8E3DA;
   --border-subtle: #F0ECE4;
@@ -219,7 +219,7 @@ html.dark {
 
   --action-bg: #C64405;
   --action-bg-hover: #9C3204;
-  --link: #E05A10;
+  --link: #EC6A20;
   --focus-ring: #E05A10;
 
   --danger: #FDA29B;
@@ -231,6 +231,15 @@ html.dark {
   --warning-soft: #2A2010;
   --info: #A4BCFD;
   --info-soft: #131C33;
+}
+
+/* A link inside a sentence is underlined, so it does not rely on colour alone (WCAG 1.4.1). Base layer:
+   a link that sets its own decoration wins. */
+@layer base {
+  p a {
+    text-decoration-line: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 /* One keyboard focus ring for the whole site (polish A3). Base layer, so a component that sets its
@@ -330,6 +339,15 @@ html.light main {
     transform: none;
   }
 }
+/* A scrolling region that shows, with a soft shadow at the edge, that there is more above or below it. */
+@utility scroll-shadow {
+  background:
+    linear-gradient(var(--bg-surface) 30%, transparent) top / 100% 24px no-repeat local,
+    linear-gradient(transparent, var(--bg-surface) 70%) bottom / 100% 24px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 0.16), transparent) top / 100% 8px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 0.16), transparent) bottom / 100% 8px no-repeat scroll;
+}
+
 @utility animate-enter {
   animation: enter 350ms ease-out both;
   @media (prefers-reduced-motion: reduce) {

@@ -178,6 +178,8 @@ export function BomView({ project, section, store }: ViewProps) {
                                   <CircuitBoard className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
                                   <span className="truncate">{label}</span>
                                 </span>
+                                {/* a space between the two lines, so the button's visible text reads as one phrase */}
+                                {count && " "}
                                 {count && <span className="font-mono text-[10px] text-muted">{count}</span>}
                               </button>
                             );

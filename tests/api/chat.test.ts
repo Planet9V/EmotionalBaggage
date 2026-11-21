@@ -221,6 +221,39 @@ describe("asking a question", () => {
     expect(ev[0].summary).toBe(`Asked: ${long.slice(0, 120)}`);
   });
 
+  it("keeps how the sources were found with the saved answer", async () => {
+    const id = await newChat();
+    const { meta } = await readAnswer(await ask(json("POST", { message: "What does the load cell weigh?" }, url(`/api/chats/${id}/messages`)), ctx(String(id))));
+    const row = await q<{ retrieval: string; retrieval_note: string }>("SELECT retrieval, retrieval_note FROM chat_messages WHERE chat_id=$1 AND role='assistant'", [id]);
+    expect(row[0].retrieval).toBe(meta.retrieval);
+    expect(row[0].retrieval_note).toBe(meta.note);
+    const saved = await read<{ messages: { role: string; retrieval: string; note?: string }[] }>(await getChat(json("GET", undefined, url(`/api/chats/${id}`)), ctx(String(id))));
+    expect(saved.body.messages[1]).toMatchObject({ retrieval: "text", note: meta.note });
+    // an answer saved before the column existed reads as not recorded, never as a guess
+    await q("UPDATE chat_messages SET retrieval='', retrieval_note='' WHERE chat_id=$1", [id]);
+    const old = await read<{ messages: { retrieval: string; note?: string }[] }>(await getChat(json("GET", undefined, url(`/api/chats/${id}`)), ctx(String(id))));
+    expect(old.body.messages[1]).toMatchObject({ retrieval: "" });
+    expect(old.body.messages[1].note).toBeUndefined();
+  });
+
+  it("answers a question whose answer never arrived without saving the question twice or sending it twice", async () => {
+    const id = await newChat();
+    const question = "What does the load cell weigh?";
+    // the state a broken stream leaves: the question saved, no answer
+    await q("INSERT INTO chat_messages (chat_id, role, content) VALUES ($1, 'user', $2)", [id, question]);
+    s.requests.length = 0;
+    const { text } = await readAnswer(await ask(json("POST", { message: question }, url(`/api/chats/${id}/messages`)), ctx(String(id))));
+    expect(text).toBe(REPLY);
+    const saved = await read<{ messages: { role: string }[] }>(await getChat(json("GET", undefined, url(`/api/chats/${id}`)), ctx(String(id))));
+    expect(saved.body.messages.map((m) => m.role)).toEqual(["user", "assistant"]);
+    const sent = s.requests.find((r) => r.path === "/v1/chat/completions")!.body as { messages: { role: string; content: string }[] };
+    expect(sent.messages.filter((m) => m.role === "user")).toHaveLength(1);
+    // the same words asked again after an answer are a new question
+    await readAnswer(await ask(json("POST", { message: question }, url(`/api/chats/${id}/messages`)), ctx(String(id))));
+    const again = await read<{ messages: { role: string }[] }>(await getChat(json("GET", undefined, url(`/api/chats/${id}`)), ctx(String(id))));
+    expect(again.body.messages.map((m) => m.role)).toEqual(["user", "assistant", "user", "assistant"]);
+  });
+
   it("tells the model there are no sources when nothing matches", async () => {
     const id = await newChat();
     const { meta } = await readAnswer(await ask(json("POST", { message: "zzqx yyvv?" }, url(`/api/chats/${id}/messages`)), ctx(String(id))));

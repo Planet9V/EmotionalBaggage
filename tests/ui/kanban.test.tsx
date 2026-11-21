@@ -32,7 +32,7 @@ describe("Kanban", () => {
     expect(live()).toContain("Moving Which name ships? to decided.");
     expect(live()).not.toContain("moved to decided");
     done();
-    await waitFor(() => expect(live()).toContain("Which name ships? moved to decided."));
+    await waitFor(() => expect(live()).toContain("Which name ships? moved to decided. The decided column now has 1."));
   });
 
   it("says a refused move was not made, with the reason and where the card stays, and shows a toast", async () => {

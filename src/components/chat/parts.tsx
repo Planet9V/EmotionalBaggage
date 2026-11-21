@@ -4,7 +4,7 @@ import type { ChatStatus } from "ai";
 import { MessageSquareText } from "lucide-react";
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools } from "@/components/ai-elements/prompt-input";
-import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
+import { Suggestion } from "@/components/ai-elements/suggestion";
 import { MAX_QUESTION } from "@/lib/chat/shared";
 
 /** The empty state: what will appear here, and three questions built from the concept's own section names. */
@@ -19,11 +19,12 @@ export function EmptyThread({ conceptName, suggestions, onPick, disabled }: { co
         </p>
       </div>
       {suggestions.length > 0 ? (
-        <Suggestions className="mt-2" aria-label="Suggested questions">
+        // wrapped, not scrolled sideways: the third question used to be cut off at the edge
+        <div role="group" aria-label="Suggested questions" className="mt-2 flex max-w-2xl flex-wrap justify-center gap-2">
           {suggestions.map((s) => (
-            <Suggestion key={s} suggestion={s} onClick={onPick} disabled={disabled} />
+            <Suggestion key={s} suggestion={s} onClick={onPick} disabled={disabled} className="h-auto whitespace-normal py-1.5 text-center" />
           ))}
-        </Suggestions>
+        </div>
       ) : (
         <p className="text-xs text-muted">This concept has no rows yet, so there is nothing to ask about. Add rows in its sections first.</p>
       )}

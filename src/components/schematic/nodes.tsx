@@ -87,6 +87,7 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
               position={left ? Position.Left : Position.Right}
               className={HANDLE}
               style={{ borderColor: color }}
+              role="button"
               aria-label={`Pin ${data.ref}.${p.name}. Drag to another pin to add a wire.`}
             />
           </div>

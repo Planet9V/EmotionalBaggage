@@ -118,8 +118,9 @@ export function PartPricesView({ project, store }: ViewProps) {
                   />
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => setBreaksFor(p.id)} aria-label={`Price breaks of ${p.title}`}>
+                  <Button variant="ghost" size="sm" onClick={() => setBreaksFor(p.id)}>
                     {p.breaks.length ? `${p.breaks.length} ${p.breaks.length === 1 ? "break" : "breaks"}` : "Add breaks"}
+                    <span className="sr-only"> of {p.title}</span>
                   </Button>
                 </TableCell>
                 <TableCell className="text-right font-mono text-secondary">{p.line === null ? <span className="text-muted">none</span> : fm(toMinor(p.line, currency))}</TableCell>
