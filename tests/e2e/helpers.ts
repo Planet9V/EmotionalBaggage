@@ -119,7 +119,9 @@ export async function checkPage(page: Page, w: ReturnType<typeof watch>, path: s
 export async function collectRoutes(page: Page) {
   await page.goto("/");
   const sidebar = page.locator("aside");
-  await expect(sidebar.getByRole("navigation", { name: "Stages" }).getByRole("link").first()).toBeVisible();
+  // the stage groups fold; their links stay in the page, hidden, so every destination is still collected below
+  await expect(sidebar.getByRole("navigation", { name: "Stages" }).getByRole("button").first()).toBeVisible();
+  await expect(sidebar.getByRole("navigation", { name: "Stages" }).locator('a[href^="/s/"]').first()).toBeAttached();
   // The account link appears once the session is read; wait for it so it is collected too.
   await expect(sidebar.locator('a[href="/account"]').first()).toBeVisible();
   const fromSidebar = await sidebar.locator('a[href^="/"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute("href")!));

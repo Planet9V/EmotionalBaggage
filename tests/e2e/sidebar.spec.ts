@@ -40,6 +40,10 @@ for (const height of [720, 900]) {
       expect(region!.bottom).toBeLessThanOrEqual(theme_.y + 1);
 
       // the last link is reachable, and when it scrolls into view it sits inside the region, above the pinned rows
+      // open every group, the longest the list can be
+      const folded = aside.locator('nav button[aria-expanded="false"]');
+      for (let i = 0; i < 20 && (await folded.count()) > 0; i++) await folded.first().click();
+      expect(await folded.count()).toBe(0);
       const last = aside.getByRole("link", { name: "Documentation" });
       await last.scrollIntoViewIfNeeded();
       const l = (await last.boundingBox())!;
@@ -70,4 +74,34 @@ test("at 820 px wide the sidebar is a drawer opened from the Menu button", async
   await drawer.getByRole("link", { name: "Schematic" }).click();
   await expect(page).toHaveURL(/\/s\/design\/schematic$/);
   await expect(page.getByRole("dialog", { name: "Menu" })).toBeHidden();
+});
+
+// The list folds by group and by stage: the stage you are in is open, the others are one line each.
+test("the sidebar folds by group and by stage, keeps the current stage open, and remembers what was folded", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/s/design/bom");
+  const aside = page.locator("aside");
+  const stages = aside.getByRole("navigation", { name: "Stages" });
+  await expect(stages.getByRole("link", { name: "Schematic" })).toBeVisible();
+  await expect(stages.getByRole("link", { name: "Wiring and soldering" })).toBeHidden();
+  await expect(aside.getByRole("link", { name: "Documentation" })).toBeHidden();
+
+  const design = stages.getByRole("button", { name: /Design/ });
+  await expect(design).toHaveAttribute("aria-expanded", "true");
+  await design.click();
+  await expect(stages.getByRole("link", { name: "Schematic" })).toBeHidden();
+
+  // a sub-group opens from the keyboard, and the choice survives a reload
+  const prototype = stages.getByRole("button", { name: /Prototype/ });
+  await prototype.focus();
+  await page.keyboard.press("Enter");
+  await expect(stages.getByRole("link", { name: "Wiring and soldering" })).toBeVisible();
+  await page.reload();
+  await expect(stages.getByRole("link", { name: "Wiring and soldering" })).toBeVisible();
+
+  // folding the whole Stages group hides every stage; going to a stage page opens it again
+  await aside.getByRole("button", { name: "Stages", exact: true }).click();
+  await expect(prototype).toBeHidden();
+  await page.goto("/s/research/claims");
+  await expect(stages.getByRole("link", { name: "Claims" }).first()).toBeVisible();
 });

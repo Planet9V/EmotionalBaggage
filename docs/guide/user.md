@@ -25,6 +25,10 @@ The dotted lines are the links that work today: the parts list and the wiring yo
 - **Admin**: keys, models, printers and the audit log. Features that need a model, key or printer say so and link to the right tab.
 - **Dark theme**: bottom of the sidebar.
 
+### Folding the menu
+
+The left menu folds. Each group (Whole concept, Stages, Workbench) and each stage has a heading you can click or press Enter on to open or close it. The stage you are working in is always open; the other stages show as one line each until you open them. What you open or close is remembered on this browser.
+
 ## Concepts
 
 The Concepts page lists every concept with its name, one line, product type, stage, when it last changed and how many rows it has. Search covers names and descriptions. Sort by last changed or by name.

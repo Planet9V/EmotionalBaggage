@@ -41,7 +41,7 @@ for (const d of DOCUMENTS) {
     await page.goto(d.path);
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
-    if (d.ready) await expect(page.getByText(d.ready, { exact: true }).first()).toBeVisible();
+    if (d.ready) await expect(page.locator("main").getByText(d.ready, { exact: true }).first()).toBeVisible();
     expectPrinted(await pdfOf(page, d.path.replace(/\W+/g, "_")), d.headings);
   });
 }
@@ -81,6 +81,8 @@ test("the schematic prints one sheet per view, with its title block and no contr
 test("a page's own print is not cut down to the schematic after the schematic has been visited", async ({ page }) => {
   await page.goto("/s/design/schematic");
   await page.waitForLoadState("networkidle");
+  // another stage's links are folded until its heading is opened
+  await page.locator("aside").getByRole("button", { name: /Prototype/ }).click();
   await page.locator("aside").getByRole("link", { name: "Wiring and soldering" }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: /Wiring and soldering/ })).toBeVisible();
   await page.waitForLoadState("networkidle");
