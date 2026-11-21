@@ -38,7 +38,17 @@ type Values = z.infer<typeof schema>;
 const ENCLOSURE = /enclosure|tray|lid|case|shell|base/i;
 export const isPrintable = (f: FileMeta) => /\.(stl|3mf)$/i.test(f.name) && !/\.gcode\.3mf$/i.test(f.name);
 
-export function NewJobDialog({ open, onOpenChange, files, parts, builds, printers, slicer, onCreate, editing }: {
+/** Enclosure files from the Enclosure page first, newest first; then other files whose names look like a case. */
+export function enclosureFirst(files: FileMeta[]) {
+  const printable = files.filter(isPrintable);
+  const at = (f: FileMeta) => (f.meta?.enclosure === true ? String(f.meta.at ?? "") : "");
+  const fromPage = printable.filter((f) => f.meta?.enclosure === true).sort((a, b) => at(b).localeCompare(at(a)) || b.id - a.id);
+  const named = printable.filter((f) => f.meta?.enclosure !== true && ENCLOSURE.test(f.name));
+  const rest = printable.filter((f) => f.meta?.enclosure !== true && !ENCLOSURE.test(f.name));
+  return { enclosure: [...fromPage, ...named], rest, printable };
+}
+
+export function NewJobDialog({ open, onOpenChange, files, parts, builds, printers, slicer, onCreate, editing, initialFileId }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   files: FileMeta[];
@@ -49,20 +59,21 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   onCreate: (j: NewJob) => Promise<void>;
   /** a queued job to change instead of a new one; the parent gives the dialog a new key per job */
   editing?: Item | null;
+  /** the file to start with, when the dialog is opened for one (Send to printing) */
+  initialFileId?: string;
 }) {
   const was = (editing?.data ?? {}) as Record<string, unknown>;
   const str = (k: string, d = "") => (was[k] == null ? d : String(was[k]));
-  const printable = useMemo(() => files.filter(isPrintable), [files]);
-  const enclosure = printable.filter((f) => ENCLOSURE.test(f.name));
-  const rest = printable.filter((f) => !ENCLOSURE.test(f.name));
+  const { enclosure, rest, printable } = useMemo(() => enclosureFirst(files), [files]);
+  const startFile = editing ? "" : files.find((f) => String(f.id) === initialFileId && isPrintable(f));
   const usable = printers.filter((p) => p.enabled);
   const profiles = (slicer?.printers ?? []).filter((p) => p.available);
 
   const { register, handleSubmit, control, setValue, getValues, setError, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: editing?.title ?? "",
-      fileId: str("fileId"),
+      title: editing?.title ?? (startFile ? startFile.name.replace(/\.(stl|3mf)$/i, "") : ""),
+      fileId: startFile ? String(startFile.id) : str("fileId"),
       part: str("part"),
       printerId: str("printerId"),
       modelKey: was.printerMaker && was.printerModel ? `${str("printerMaker")}|${str("printerModel")}` : "",
@@ -125,12 +136,12 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
         <Field id="job-file" label="File to print" hint={printable.length ? "Stored .stl and .3mf files of this concept." : undefined} error={errors.fileId?.message} className="sm:col-span-2">
           <NativeSelect id="job-file" aria-invalid={!!errors.fileId} {...register("fileId", { onChange: (e) => pickFile(e.target.value) })}>
             <option value="">Choose a file</option>
-            {enclosure.length > 0 && <optgroup label="Enclosure">{enclosure.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</optgroup>}
+            {enclosure.length > 0 && <optgroup label="Enclosure">{enclosure.map((f, i) => <option key={f.id} value={f.id}>{f.name}{i === 0 && f.meta?.enclosure === true ? " (saved last on the Enclosure page)" : ""}</option>)}</optgroup>}
             {rest.length > 0 && <optgroup label="Other files">{rest.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</optgroup>}
           </NativeSelect>
           {!printable.length && (
             <span className="mt-1 block text-xs text-secondary">
-              No .stl or .3mf file is stored yet. Generate or upload one in <Link href="/s/design/model" className="text-link underline">Design, 3D model</Link>.
+              No .stl or .3mf file is stored yet. Save the enclosure on <Link href="/s/design/enclosure" className="text-link underline">Design, Enclosure</Link>, or upload a file in <Link href="/s/design/model" className="text-link underline">Design, 3D model</Link>.
             </span>
           )}
         </Field>

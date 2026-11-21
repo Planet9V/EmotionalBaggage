@@ -3,7 +3,8 @@ import { computeChecks } from "./checks";
 import { generateCaseMaker } from "./casemaker";
 import { GeneratorUnavailable, generateYapp } from "./yapp";
 import { writeBinaryStl, toBase64 } from "./stl";
-import type { CheckResult, EnclosureSpec, GeneratedMesh, GeneratorKey } from "./types";
+import { basePrintMesh, lidPrintMesh } from "./printFiles";
+import type { CheckResult, EnclosureSpec, GeneratorKey } from "./types";
 
 export type GeneratorResult =
   | {
@@ -16,25 +17,12 @@ export type GeneratorResult =
       /** Binary STL, base64, in the concept frame with the lid in place on the base. For the preview. */
       baseStl: string;
       lidStl: string;
-      /** The lid upside down on the build plate, minimum y at 0. For printing. */
+      /** The base and the lid as they print: Z up, on z = 0, the lid turned over (printFiles.ts). For the downloads. */
+      basePrintStl: string;
       lidPrintStl: string;
       source: { filename: string; text: string; note: string };
     }
   | { key: GeneratorKey; ok: false; code: GeneratorUnavailable["code"] | "failed"; error: string };
-
-/** The lid turned over (180 degrees about x, a rotation, so winding is kept) and lowered onto y = 0. */
-export function lidForPrinting(m: GeneratedMesh): GeneratedMesh {
-  const p = new Float32Array(m.positions.length);
-  let minY = Infinity;
-  for (let i = 0; i < p.length; i += 3) {
-    p[i] = m.positions[i];
-    p[i + 1] = -m.positions[i + 1];
-    p[i + 2] = -m.positions[i + 2];
-    if (p[i + 1] < minY) minY = p[i + 1];
-  }
-  for (let i = 1; i < p.length; i += 3) p[i] -= minY;
-  return { positions: p, indices: m.indices };
-}
 
 export async function runGenerator(key: GeneratorKey, spec: EnclosureSpec, opts: { timeoutSeconds?: number; plannerUrl?: string | null } = {}): Promise<GeneratorResult> {
   try {
@@ -55,7 +43,8 @@ export async function runGenerator(key: GeneratorKey, spec: EnclosureSpec, opts:
       checks,
       baseStl: toBase64(writeBinaryStl(out.base, "base")),
       lidStl: toBase64(writeBinaryStl(out.lid, "lid")),
-      lidPrintStl: toBase64(writeBinaryStl(lidForPrinting(out.lid), "lid")),
+      basePrintStl: toBase64(writeBinaryStl(basePrintMesh(out.base), "base")),
+      lidPrintStl: toBase64(writeBinaryStl(lidPrintMesh(out.lid), "lid")),
       source: out.source,
     };
   } catch (e) {

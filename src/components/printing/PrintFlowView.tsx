@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { PrintersPanel } from "@/components/printers/PrintersPanel";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { FromUrl } from "@/components/drafts/FromUrl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ export function PrintFlowView({ project, store }: ViewProps) {
   const printers = usePrinters();
   const filesQ = useQuery(queries.files(project.id));
   const [adding, setAdding] = useState(false);
+  /** a file chosen before the dialog opens: "Send to printing" on the Enclosure page arrives with ?newJob=<file id> */
+  const [preset, setPreset] = useState("");
   const [del, setDel] = useState<Item | null>(null);
   const [editing, setEditing] = useState<Item | null>(null);
   const [actionError, setActionError] = useState("");
@@ -53,6 +56,9 @@ export function PrintFlowView({ project, store }: ViewProps) {
 
   return (
     <div className="animate-enter space-y-6">
+      <Suspense fallback={null}>
+        <FromUrl names={["newJob"]} onParams={(v) => { setPreset(v.newJob ?? ""); setAdding(true); }} />
+      </Suspense>
       <PrintersPanel />
       <Card variant="flat" as="section" aria-labelledby="slicer-h" className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -101,8 +107,10 @@ export function PrintFlowView({ project, store }: ViewProps) {
       </section>
 
       <NewJobDialog
+        key={`new-${preset}-${files.length}`}
         open={adding}
         onOpenChange={setAdding}
+        initialFileId={preset}
         files={files}
         parts={parts}
         builds={buildOpts}

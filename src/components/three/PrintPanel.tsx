@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 /**
  * 3D print files: binary STL generated in the browser from part envelopes, the concept's saved STL
  * files, and loading an existing STL into the model.
@@ -265,6 +267,10 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
         <p className="mt-1 max-w-2xl text-sm text-secondary">
           This is a simple parametric shell generated from the envelope dimensions, not a finished enclosure design. It has no hinge, grille, posts or
           strap slots. An enclosure shell gives two bodies: an open tray and a lid with a locating lip. Boxes and cylinders give one solid.
+        </p>
+        <p className="mt-2 max-w-2xl rounded-md bg-subtle px-3 py-2 text-sm text-primary" data-testid="enclosure-pointer">
+          For the real enclosure, with cut-outs, standoffs and checks on the result, use{" "}
+          <Link href="/s/design/enclosure" className="text-link underline">Design, Enclosure</Link>. It is the generator to print from; its Send to printing makes the print job.
         </p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <NumParam label="Wall, mm" step={0.1} value={params.wallMm} onChange={(v) => setParams({ ...params, wallMm: v })} />
