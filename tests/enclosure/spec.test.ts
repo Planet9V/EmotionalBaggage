@@ -87,3 +87,28 @@ describe("live validation", () => {
     expect(spec.issues.some((i) => i.code === "radius-too-large" || i.about === "cornerRadius")).toBe(true);
   });
 });
+
+describe("shared kinds and rotation (integration item 5)", () => {
+  const shell = { shape: "shell", size: [120, 60, 120], pos: [0, 30, 0] };
+  it("reads the shared part kinds: a circuit board gets standoffs, a microcontroller is a module, a generic kind leaves the role to the words", () => {
+    const board = part(2, "U9", "Main board", { shape: "box", size: [60, 1.6, 40], pos: [0, 20, 0] }, { kind: "circuit board" });
+    const spec = buildSpec({ items: [part(1, "E", "Shell", shell, { kind: "enclosure" }), board, part(3, "U1", "ESP32 dev board", { shape: "box", size: [10, 4, 10], pos: [30, 40, 30] }, { kind: "microcontroller" })] });
+    expect(spec.parts.find((p) => p.ref === "U9")).toMatchObject({ kind: "pcb", kindFrom: "row" });
+    expect(spec.parts.find((p) => p.ref === "U1")).toMatchObject({ kind: "module", kindFrom: "row" });
+    expect(spec.standoffs).not.toBeNull();
+    // the example's board is stated as a circuit board now; a "mechanical" part with a PCB reference is still found from its words
+    const legacy = buildSpec({ items: [part(1, "E", "Shell", shell), part(2, "PCB2", "Carrier", { shape: "box", size: [60, 1.6, 40], pos: [0, 20, 0] }, { kind: "mechanical" })] });
+    expect(legacy.parts.find((p) => p.ref === "PCB2")).toMatchObject({ kind: "pcb", kindFrom: "inferred" });
+    expect(buildSpec({ items: exampleParts() }).parts.find((p) => p.ref === "PCB1")).toMatchObject({ kind: "pcb", kindFrom: "row" });
+  });
+
+  it("measures a part turned by the 3D editor once, not twice", () => {
+    // a 40 x 10 x 20 box turned a quarter round the vertical axis, as ModelView writes geometry.rotation
+    const turned = part(2, "B1", "Block", { shape: "box", size: [40, 10, 20], pos: [0, 10, 0], rotation: [0, 90, 0] });
+    const spec = buildSpec({ items: [part(1, "E", "Shell", shell), turned] });
+    const b = spec.parts.find((p) => p.ref === "B1")!.box;
+    expect(Math.round(b.max[0] - b.min[0])).toBe(20);
+    expect(Math.round(b.max[2] - b.min[2])).toBe(40);
+    expect(Math.round(b.max[1] - b.min[1])).toBe(10);
+  });
+});

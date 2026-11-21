@@ -69,9 +69,9 @@ const PART_TYPE: Record<string, { kind: string; library?: string }> = {
   S2: { kind: "button", library: "tactile-button-6mm" },
   R1: { kind: "resistor", library: "resistor-axial" },
   R2: { kind: "resistor", library: "resistor-axial" },
-  PCB1: { kind: "mechanical" },
+  PCB1: { kind: "circuit board" },
   HW1: { kind: "mechanical" },
-  ENC1: { kind: "mechanical" },
+  ENC1: { kind: "enclosure" },
   STR1: { kind: "mechanical" },
 };
 

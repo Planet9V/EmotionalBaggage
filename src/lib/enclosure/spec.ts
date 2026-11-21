@@ -32,10 +32,39 @@ export const DEFAULT_HOLE_DIAMETER = 2.2;
 
 const isKind = (v: unknown): v is PartKind => typeof v === "string" && (PART_KINDS as readonly string[]).includes(v);
 
-/** The kind a row states in `data.kind`, else one worked out from its reference and words. Sensors are never guessed: an IMU needs no window. */
+/**
+ * What the enclosure does with a part of each shared kind (src/lib/parts/kinds.ts, the list `data.kind`
+ * is checked against). A kind not listed here (mechanical, generic, printed part, fastener and the
+ * like) says nothing the enclosure can use, so the part's role is worked out from its words instead.
+ */
+export const ENCLOSURE_ROLE_OF_KIND: Readonly<Record<string, PartKind>> = {
+  speaker: "speaker",
+  display: "display",
+  button: "button",
+  switch: "switch",
+  led: "led",
+  connector: "connector",
+  sensor: "sensor",
+  microphone: "microphone",
+  battery: "battery",
+  module: "module",
+  microcontroller: "module",
+  regulator: "module",
+  "circuit board": "pcb",
+  enclosure: "shell",
+  resistor: "other",
+  capacitor: "other",
+  diode: "other",
+  motor: "other",
+};
+
+/** The kind a row states in `data.kind` (a shared kind, read through ENCLOSURE_ROLE_OF_KIND), else one worked out from its reference and words. Sensors are never guessed: an IMU needs no window. */
 export function partKind(item: Item, shape: string): { kind: PartKind; from: "row" | "inferred" } {
   const stated = typeof item.data?.kind === "string" ? item.data.kind.trim().toLowerCase() : "";
-  if (isKind(stated)) return { kind: stated, from: "row" };
+  const role = ENCLOSURE_ROLE_OF_KIND[stated];
+  if (role) return { kind: role, from: "row" };
+  // A row saved before kinds were shared may hold one of the enclosure's own words ("pcb", "shell").
+  if (isKind(stated) && stated !== "other") return { kind: stated, from: "row" };
   if (shape === "shell") return { kind: "shell", from: "inferred" };
   const p = toPart(item);
   const words = `${p.title} ${p.spec}`.toLowerCase();
@@ -49,19 +78,6 @@ export function partKind(item: Item, shape: string): { kind: PartKind; from: "ro
   if (/\b(usb|jack|connector|socket|port)\b/.test(words)) return { kind: "connector", from: "inferred" };
   if (/\bbatter(y|ies)\b/.test(words)) return { kind: "battery", from: "inferred" };
   return { kind: "other", from: "inferred" };
-}
-
-function rotatedExtent(ext: Vec3, rot: unknown): Vec3 {
-  if (!Array.isArray(rot) || rot.length !== 3 || rot.some((n) => typeof n !== "number")) return ext;
-  const [rx, ry, rz] = (rot as number[]).map((d) => (d * Math.PI) / 180);
-  // Axis-aligned box of the rotated box (Euler XYZ, as three.js): |R| applied to the half extents.
-  const cx = Math.cos(rx), sx = Math.sin(rx), cy = Math.cos(ry), sy = Math.sin(ry), cz = Math.cos(rz), sz = Math.sin(rz);
-  const R = [
-    [cy * cz, -cy * sz, sy],
-    [cx * sz + sx * sy * cz, cx * cz - sx * sy * sz, -sx * cy],
-    [sx * sz - cx * sy * cz, sx * cz + cx * sy * sz, cx * cy],
-  ];
-  return R.map((row) => Math.abs(row[0]) * ext[0] + Math.abs(row[1]) * ext[1] + Math.abs(row[2]) * ext[2]) as Vec3;
 }
 
 const overlap1 = (aMin: number, aMax: number, bMin: number, bMax: number) => aMin < bMax - EPS && bMin < aMax - EPS;
@@ -161,7 +177,9 @@ export function buildSpec({ items, params: given }: BuildInput): EnclosureSpec {
     const p = toPart(item);
     const g = p.geometry;
     if (!g) continue;
-    const ext = rotatedExtent(totalExtent(g) as Vec3, (item.data?.geometry as { rotation?: unknown } | null | undefined)?.rotation);
+    // The box after rotation: totalExtent turns the part by geometry.rotation ([x, y, z] degrees, Euler
+    // XYZ, as the 3D editor writes it through src/lib/geometry/shapes.ts). It is not turned twice.
+    const ext = totalExtent(g) as Vec3;
     const pos = g.pos as Vec3;
     const box: Box = { min: [0, 1, 2].map((k) => pos[k] - ext[k] / 2) as Vec3, max: [0, 1, 2].map((k) => pos[k] + ext[k] / 2) as Vec3 };
     const { kind, from } = partKind(item, g.shape);
