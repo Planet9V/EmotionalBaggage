@@ -7,12 +7,13 @@ import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ConfirmButton } from "@/components/admin/shared";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
 import { ApiError, draftQueries, useDraftActions } from "./api";
 import { DraftCard } from "./DraftCard";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Card } from "@/components/ui/Card";
 
 export const MODELS_HREF = "/admin?tab=models";
 
@@ -202,7 +203,7 @@ export function DraftPanel({
 
 export function RunSummary({ result }: { result: RunResult }) {
   return (
-    <div role="status" className="space-y-2 rounded-xl border border-hairline bg-subtle p-4 text-sm">
+    <Card variant="well" role="status" className="space-y-2 p-4 text-sm">
       <p className="text-primary">
         {result.drafts.length} {result.drafts.length === 1 ? "draft" : "drafts"} saved for review
         {result.dropped.length ? `, ${result.dropped.length} left out` : ""}
@@ -221,6 +222,6 @@ export function RunSummary({ result }: { result: RunResult }) {
           {result.notes.map((n, i) => <li key={i}>{n}</li>)}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }

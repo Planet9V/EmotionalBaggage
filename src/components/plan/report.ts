@@ -4,8 +4,9 @@ import { readGeometry, type Geometry } from "@/lib/domain";
 import { NOT_ADVICE } from "@/lib/compliance/text";
 import { STAGES, storeKey, type Section } from "@/lib/menu";
 import type { Item, Project } from "@/lib/types";
-import { cellText, fmtBytes, fmtMinutes, fmtTime, storeLabel } from "./format";
+import { cellText, storeLabel } from "./format";
 import type { ConceptData, ConceptPart } from "./useConcept";
+import { fmtBytes, fmtDateTime, fmtMinutes } from "@/lib/format";
 
 /** One report, built once, rendered to the page and to Markdown from the same blocks. */
 export type Block =
@@ -133,14 +134,14 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
       if (section.view === "challenge") {
         if (errors.challenge) blocks.push({ t: "p", text: `Could not be loaded: ${errors.challenge}` });
         const msgs = data.challenge?.messages ?? [];
-        if (msgs.length) msgs.forEach((m) => blocks.push({ t: "quote", label: `${m.role === "assistant" ? "Reviewer" : "You"} · ${fmtTime(m.createdAt)}`, text: m.content }));
+        if (msgs.length) msgs.forEach((m) => blocks.push({ t: "quote", label: `${m.role === "assistant" ? "Reviewer" : "You"} · ${fmtDateTime(m.createdAt)}`, text: m.content }));
         else if (!errors.challenge) blocks.push({ t: "empty" });
       } else if (section.view === "research") {
         if (errors.research) blocks.push({ t: "p", text: `Could not be loaded: ${errors.research}` });
         const entries = data.research?.entries ?? [];
         if (entries.length) {
           entries.forEach((e) => {
-            blocks.push({ t: "quote", label: `${e.query} · ${e.model} · ${fmtTime(e.createdAt)}`, text: e.answer });
+            blocks.push({ t: "quote", label: `${e.query} · ${e.model} · ${fmtDateTime(e.createdAt)}`, text: e.answer });
             if (e.citations.length) blocks.push({ t: "links", items: e.citations.map((c, i) => ({ text: `[${i + 1}] ${c}`, href: c })) });
           });
         } else if (!errors.research) blocks.push({ t: "empty" });
@@ -211,7 +212,7 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
     blocks.push({
       t: "table",
       head: ["Name", "Kind", "Size", "SHA-256", "Stored"],
-      rows: data.files.map((f) => [f.name, f.kind, `${fmtBytes(f.size)} (${f.size} bytes)`, f.sha256, fmtTime(f.createdAt)]),
+      rows: data.files.map((f) => [f.name, f.kind, `${fmtBytes(f.size)} (${f.size} bytes)`, f.sha256, fmtDateTime(f.createdAt)]),
       mono: [2, 3],
     });
   } else if (!errors.files) blocks.push({ t: "empty" });
@@ -219,7 +220,7 @@ export function buildReport(project: Project, data: ConceptData, errors: Partial
   blocks.push({ t: "h2", text: "Activity log", id: "events" });
   if (errors.events) blocks.push({ t: "p", text: `Could not be loaded: ${errors.events}` });
   if (data.events.length) {
-    blocks.push({ t: "table", head: ["When", "Kind", "What happened"], rows: data.events.map((e) => [fmtTime(e.createdAt), e.kind, e.summary]), mono: [0, 1] });
+    blocks.push({ t: "table", head: ["When", "Kind", "What happened"], rows: data.events.map((e) => [fmtDateTime(e.createdAt), e.kind, e.summary]), mono: [0, 1] });
   } else if (!errors.events) blocks.push({ t: "empty" });
 
   return blocks;
@@ -260,6 +261,3 @@ export function toMarkdown(project: Project, generatedAt: string, blocks: Block[
   return out.join("\n");
 }
 
-export function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "concept";
-}

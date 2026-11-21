@@ -2,7 +2,7 @@
 // No React here, so the generators can be run and checked outside the browser.
 // Relative imports on purpose: a plain Node check can load this file without path aliases.
 import type { Item } from "@/lib/types";
-import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type NetClass, readXY, type Part, type Wire, type XY } from "@/lib/domain";
+import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type NetClass, type Part, type Wire, type XY } from "@/lib/domain";
 import { toCsvText } from "@/lib/csv";
 
 export { CLASS_LABEL, readWires };
@@ -13,8 +13,6 @@ export const NODE_W = 216;
 export const HEADER_H = 48;
 export const ROW_H = 24;
 export const FOOT_H = 30;
-export const VIA_W = 116;
-export const VIA_H = 42;
 
 export const CLASSES = NET_CLASSES;
 export const WIRE_STATUSES = ["to solder", "soldered", "tested"];
@@ -26,7 +24,6 @@ export const refParts = (items: Item[]): Part[] => readParts(items).filter((p) =
 export const pinLabel = (p: string) => p || MISSING_PIN;
 export const pinKey = (ref: string, pin: string) => `${ref}.${pinLabel(pin)}`;
 export const nodeId = (ref: string) => `p:${ref}`;
-export const viaId = (wireId: number) => `v:${wireId}`;
 export const handleId = (pin: string) => `pin:${pinLabel(pin)}`;
 export const nodeHeight = (pinCount: number) => HEADER_H + ROW_H * Math.max(pinCount, 1) + FOOT_H;
 
@@ -48,112 +45,14 @@ function pinClass(ref: string, pin: string, wires: Wire[]): NetClass | null {
 
 // ───────── automatic layout
 
-type Group = "left" | "right" | "top" | "bottom" | "loose";
-const GAP_X = 150;
-const GAP_Y = 36;
-const GAP_V = 90;
-
-/** Where a part sits around the centre, from its nets first and its ref designator second. */
-export function groupOf(ref: string, wires: Wire[]): Group {
-  const classes = new Set<NetClass>();
-  for (const w of wires) if (w.from === ref || w.to === ref) classes.add(w.netClass);
-  if (!classes.size) return "loose";
-  if ([...classes].every((c) => c === "power" || c === "ground")) return "left";
-  if (classes.has("audio")) return "right";
-  if (/^(S|SW|BTN|KEY|RV|POT)\d/i.test(ref)) return "bottom";
-  if (/^(SPK|LS|LED|D|DS|M|BZ|K|LCD|OLED)\d/i.test(ref)) return "right";
-  return "top";
-}
-
-/**
- * A tidy first arrangement: the part with the most wires in the centre, power sources to its
- * left, sensors above, outputs to the right, controls below. Parts further from the centre
- * (by wire hops) go one column or row further out. Positions are node top-left corners.
- */
-export function autoLayout(refs: string[], wires: Wire[], pinCount: (ref: string) => number): Record<string, XY> {
-  const out: Record<string, XY> = {};
-  if (!refs.length) return out;
-  const degree = (r: string) => wires.filter((w) => w.from === r || w.to === r).length;
-  const centre = refs.reduce((best, r) => (degree(r) > degree(best) ? r : best), refs[0]);
-  const hc = nodeHeight(pinCount(centre));
-  out[centre] = { x: 0, y: 0 };
-
-  // hops from the centre over wires
-  const adj = new Map<string, Set<string>>();
-  const link = (a: string, b: string) => {
-    if (a === b) return;
-    if (!adj.has(a)) adj.set(a, new Set());
-    adj.get(a)!.add(b);
-  };
-  for (const w of wires) {
-    link(w.from, w.to);
-    link(w.to, w.from);
-  }
-  const hops = new Map<string, number>([[centre, 0]]);
-  const queue = [centre];
-  while (queue.length) {
-    const r = queue.shift()!;
-    for (const n of adj.get(r) ?? []) {
-      if (!hops.has(n)) {
-        hops.set(n, hops.get(r)! + 1);
-        queue.push(n);
-      }
-    }
-  }
-
-  const groups = new Map<Group, Map<number, string[]>>();
-  for (const r of refs) {
-    if (r === centre) continue;
-    const g = groupOf(r, wires);
-    const d = Math.max(1, hops.get(r) ?? 1);
-    if (!groups.has(g)) groups.set(g, new Map());
-    const byDepth = groups.get(g)!;
-    byDepth.set(d, [...(byDepth.get(d) ?? []), r]);
-  }
-  const h = (r: string) => nodeHeight(pinCount(r));
-
-  const column = (list: string[], x: number) => {
-    const total = list.reduce((a, r) => a + h(r), 0) + GAP_Y * (list.length - 1);
-    let y = hc / 2 - total / 2;
-    for (const r of list) {
-      out[r] = { x, y: Math.round(y) };
-      y += h(r) + GAP_Y;
-    }
-  };
-  // rows sit off the centre line (top to the left, bottom to the right) so their wires leave
-  // the centre part from its sides instead of stacking on one vertical run
-  const row = (list: string[], y: number, shift: number) => {
-    const step = NODE_W + GAP_X / 2;
-    const total = list.length * NODE_W + (list.length - 1) * (GAP_X / 2);
-    list.forEach((r, i) => (out[r] = { x: Math.round(NODE_W / 2 - total / 2 + i * step + shift), y: Math.round(y) }));
-  };
-  const SHIFT = Math.round(NODE_W * 0.75);
-  const depths = (g: Group) => [...(groups.get(g)?.entries() ?? [])].sort((a, b) => a[0] - b[0]);
-
-  for (const [d, list] of depths("left")) column(list, -(NODE_W + GAP_X) * d);
-  for (const [d, list] of depths("right")) column(list, (NODE_W + GAP_X) * d);
-  let top = 0;
-  for (const [, list] of depths("top")) {
-    const tallest = Math.max(...list.map(h));
-    top -= GAP_V + tallest;
-    row(list, top, -SHIFT);
-  }
-  let bottom = hc;
-  for (const [, list] of [...depths("bottom"), ...depths("loose")]) {
-    bottom += GAP_V;
-    row(list, bottom, SHIFT);
-    bottom += Math.max(...list.map(h));
-  }
-  return out;
-}
+/** Where a part sits until elkjs has laid the schematic out (a row, in ref order), or if it cannot. */
+const placeholder = (refs: string[]): Record<string, XY> => Object.fromEntries(refs.map((r, i) => [r, { x: i * (NODE_W + 60), y: 0 }]));
 
 // ───────── the graph the canvas and the SVG both draw
 
 export type PinRow = { name: string; side: "left" | "right"; netClass: NetClass | null; extra: boolean; wired: boolean };
 
-export type SNode =
-  | { kind: "part"; id: string; ref: string; title: string; ghost: boolean; pins: PinRow[]; pos: XY; saved: boolean; part: Part | null }
-  | { kind: "via"; id: string; ref: string; title: string; ghost: boolean; wire: Wire; pos: XY; saved: boolean };
+export type SNode = { kind: "part"; id: string; ref: string; title: string; ghost: boolean; pins: PinRow[]; pos: XY; saved: boolean; part: Part | null };
 
 export type Segment = {
   id: string;
@@ -169,7 +68,7 @@ export type Segment = {
 export type Graph = { nodes: SNode[]; segments: Segment[]; byId: Map<string, SNode> };
 
 /** `ignoreSaved` lays every node out afresh (the Tidy action); the overlay still wins. */
-/** `layout`: positions by ref from the elkjs layout (./elk.ts); refs it lacks fall back to `autoLayout`. */
+/** `layout`: positions by ref from the elkjs layout (@/lib/graphLayout); refs it lacks wait in a row. */
 export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string, XY>, ignoreSaved = false, layout?: Record<string, XY>): Graph {
   const byRef = new Map<string, Part>();
   for (const p of parts) if (!byRef.has(p.ref)) byRef.set(p.ref, p);
@@ -193,14 +92,10 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
     }
   }
 
-  const auto = { ...autoLayout(refs, wires, (r) => pinList.get(r)?.length ?? 1), ...(layout ?? {}) };
+  const auto = { ...placeholder(refs), ...(layout ?? {}) };
   const pos = new Map<string, XY>();
   for (const r of refs) pos.set(r, overlay[nodeId(r)] ?? (ignoreSaved ? null : byRef.get(r)?.schematic) ?? auto[r] ?? { x: 0, y: 0 });
 
-  const pinY = (r: string, pin: string) => {
-    const i = Math.max(0, (pinList.get(r) ?? []).indexOf(pin));
-    return pos.get(r)!.y + HEADER_H + ROW_H * (i + 0.5);
-  };
   const centreX = (r: string) => pos.get(r)!.x + NODE_W / 2;
 
   // side of each pin: each wire end votes for the side facing what it connects to. When two
@@ -257,10 +152,6 @@ export function buildGraph(parts: Part[], wires: Wire[], overlay: Record<string,
   }
 
   const segments: Segment[] = [];
-  const sideOf = (r: string, pin: string) => {
-    const n = nodes.find((x) => x.kind === "part" && x.ref === r);
-    return n && n.kind === "part" ? n.pins.find((p) => p.name === pin)?.side ?? "right" : "right";
-  };
   for (const w of wires) {
     const src = nodeId(w.from);
     const dst = nodeId(w.to);
@@ -399,11 +290,6 @@ export function fmtDate(d: Date) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export function slug(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "concept";
-}
-
-
 export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "note", "status"];
 
 /** (a) Wiring list, one row per wire in soldering order. */
@@ -419,7 +305,7 @@ export function netlistText(wires: Wire[], meta: FileMeta): string {
   const lines = [
     `Netlist: ${meta.concept}`,
     `Generated ${fmtDate(meta.generatedAt)}`,
-    "Grouped by the net name on each wire. A part in series on a wire is listed under the net as \"through\".",
+    "Grouped by the net name on each wire.",
     "",
   ];
   for (const n of computeNets(wires)) {
@@ -433,9 +319,9 @@ export function netlistText(wires: Wire[], meta: FileMeta): string {
 export type ElectricalNet = { name: string; members: { ref: string; pin: string }[] };
 
 /**
- * Pins joined by wires form one electrical net. A part in series on a wire splits it:
- * its pin 1 faces the from end and its pin 2 the to end. A net takes the net names of the
- * direct wires in it; a name shared by several electrical nets gets its first pin appended.
+ * Pins joined by wires form one electrical net. A part in series is its own part with a wire to
+ * each of its pins, so it splits the net by itself. A net takes the net names of the wires in it;
+ * a name shared by several electrical nets gets its first pin appended.
  */
 export function electricalNets(wires: Wire[]): ElectricalNet[] {
   const parent = new Map<string, string>();
@@ -526,10 +412,6 @@ type Anchor = { x: number; y: number; dir: -1 | 1 };
 function anchorOf(g: Graph, nodeIdStr: string, handle: string): Anchor | null {
   const n = g.byId.get(nodeIdStr);
   if (!n) return null;
-  if (n.kind === "via") {
-    const left = handle === "l";
-    return { x: left ? n.pos.x : n.pos.x + VIA_W, y: n.pos.y + VIA_H / 2, dir: left ? -1 : 1 };
-  }
   const name = handle.replace(/^pin:/, "");
   const i = Math.max(0, n.pins.findIndex((p) => p.name === name));
   const side = n.pins[i]?.side ?? "right";
@@ -554,9 +436,7 @@ export function schematicSvg(g: Graph, meta: FileMeta): string {
   const SANS = "Inter, Helvetica, Arial, sans-serif";
   const MONO = "'JetBrains Mono', Menlo, Consolas, monospace";
 
-  const boxes = g.nodes.map((n) =>
-    n.kind === "via" ? { x: n.pos.x, y: n.pos.y, w: VIA_W, h: VIA_H } : { x: n.pos.x, y: n.pos.y, w: NODE_W, h: nodeHeight(n.pins.length) - FOOT_H }
-  );
+  const boxes = g.nodes.map((n) => ({ x: n.pos.x, y: n.pos.y, w: NODE_W, h: nodeHeight(n.pins.length) - FOOT_H }));
   const pad = 60;
   const minX = boxes.length ? Math.min(...boxes.map((b) => b.x)) - pad : 0;
   const minY = boxes.length ? Math.min(...boxes.map((b) => b.y)) - pad : 0;
@@ -596,14 +476,6 @@ export function schematicSvg(g: Graph, meta: FileMeta): string {
   }
 
   for (const n of g.nodes) {
-    if (n.kind === "via") {
-      parts.push(
-        `<g><rect x="${n.pos.x}" y="${n.pos.y}" width="${VIA_W}" height="${VIA_H}" rx="6" fill="#FFFFFF" stroke="${n.ghost ? "#B42318" : LINE}"${n.ghost ? ' stroke-dasharray="4 3"' : ""}/>` +
-          `<text x="${n.pos.x + VIA_W / 2}" y="${n.pos.y + 17}" font-family="${esc(MONO)}" font-size="11" font-weight="600" fill="${ORANGE}" text-anchor="middle">${esc(n.ref)}</text>` +
-          `<text x="${n.pos.x + VIA_W / 2}" y="${n.pos.y + 32}" font-size="10" fill="${MUTED}" text-anchor="middle">${esc(clip(n.title, 18))}</text></g>`
-      );
-      continue;
-    }
     const h = nodeHeight(n.pins.length) - FOOT_H;
     parts.push(`<g>`);
     parts.push(

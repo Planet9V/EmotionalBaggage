@@ -3,9 +3,12 @@
 import { useMemo } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/parts/controls";
 import type { Part } from "@/lib/domain";
 import { fromCents, shoppingCsv, shoppingList } from "@/lib/sourcing/list";
+import { EmptyState } from "@/components/ui/states";
+import { downloadFile } from "@/lib/download";
+import { fileSlug } from "@/lib/format";
+import { Card } from "@/components/ui/Card";
 
 const fmt = (c: number) => fromCents(c).toFixed(2);
 
@@ -14,12 +17,7 @@ export function ShoppingList({ parts, currency, projectName }: { parts: Part[]; 
   const empty = !list.groups.length && !list.unchosen.length;
 
   const download = () => {
-    const url = URL.createObjectURL(new Blob([shoppingCsv(list, currency)], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${projectName.replace(/[^\w-]+/g, "-").toLowerCase() || "project"}-shopping-list.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${fileSlug(projectName, "project")}-shopping-list.csv`, shoppingCsv(list, currency), "text/csv;charset=utf-8");
   };
 
   return (
@@ -33,7 +31,7 @@ export function ShoppingList({ parts, currency, projectName }: { parts: Part[]; 
       ) : (
         <div className="space-y-4">
           {list.groups.map((g) => (
-            <div key={g.supplier} className="overflow-x-auto rounded-xl border border-hairline bg-surface">
+            <Card variant="flat" key={g.supplier} className="overflow-x-auto">
               <table className="w-full text-sm">
                 <caption className="border-b border-hairline px-4 py-2 text-left font-semibold text-primary">{g.supplier} <span className="font-mono text-xs font-normal text-secondary">subtotal {fmt(g.totalCents)} {currency}</span></caption>
                 <thead><tr className="text-left font-mono text-[10px] uppercase tracking-[0.15em] text-muted"><th className="px-4 py-1.5">Part</th><th className="px-2 py-1.5 text-right">Need</th><th className="px-2 py-1.5 text-right">Packs</th><th className="px-2 py-1.5 text-right">Spare</th><th className="px-4 py-1.5 text-right">Total</th></tr></thead>
@@ -46,7 +44,7 @@ export function ShoppingList({ parts, currency, projectName }: { parts: Part[]; 
                   ))}
                 </tbody>
               </table>
-            </div>
+            </Card>
           ))}
           {list.unchosen.length > 0 && (
             <p className="text-sm text-secondary"><span className="font-medium text-primary">No supplier chosen:</span> {list.unchosen.map((u) => `${u.ref ? u.ref + " " : ""}${u.title} (need ${u.need})`).join(", ")}</p>

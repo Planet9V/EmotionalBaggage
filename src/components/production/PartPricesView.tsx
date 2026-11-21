@@ -5,9 +5,7 @@ import { useMemo, useState } from "react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Select } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
-import { PanelLoading } from "@/components/economics/shared";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { partLine, HREF } from "@/lib/economics/compute";
 import { useEconomicsRows, useProductionSettings } from "@/lib/economics/client";
@@ -15,6 +13,8 @@ import { formatMoney, toMinor } from "@/lib/economics/money";
 import { num, readPartInput, readSupplier } from "@/lib/economics/read";
 import type { ViewProps } from "@/components/views/types";
 import { PriceBreaksDialog } from "./PriceBreaksDialog";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /**
  * Each part's unit price, quantity price breaks and supplier. The unit cost on Unit economics is
@@ -32,7 +32,7 @@ export function PartPricesView({ project, store }: ViewProps) {
   const suppliers = useMemo(() => rows.suppliers.map(readSupplier).filter((s) => s.code), [rows.suppliers]);
   const withoutCode = rows.suppliers.length - suppliers.length;
 
-  if (parts.loading || settings.loading) return <PanelLoading label="Loading part prices" />;
+  if (parts.loading || settings.loading) return <LoadingBlocks label="Loading part prices" />;
   if (parts.error && !parts.items.length) {
     return (
       <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
@@ -118,13 +118,14 @@ export function PartPricesView({ project, store }: ViewProps) {
                   />
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => setBreaksFor(p.id)} aria-label={`Price breaks of ${p.title}`}>
+                  <Button variant="ghost" size="sm" onClick={() => setBreaksFor(p.id)}>
                     {p.breaks.length ? `${p.breaks.length} ${p.breaks.length === 1 ? "break" : "breaks"}` : "Add breaks"}
+                    <span className="sr-only"> of {p.title}</span>
                   </Button>
                 </TableCell>
                 <TableCell className="text-right font-mono text-secondary">{p.line === null ? <span className="text-muted">none</span> : fm(toMinor(p.line, currency))}</TableCell>
                 <TableCell>
-                  <Select
+                  <NativeSelect
                     aria-label={`Supplier of ${p.title}`}
                     value={p.supplier}
                     className="h-8 text-xs"
@@ -140,7 +141,7 @@ export function PartPricesView({ project, store }: ViewProps) {
                         {s.title} ({s.code})
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                 </TableCell>
                 <TableCell>{l.missing ? <StatusBadge tone="warning">Not priced</StatusBadge> : <StatusBadge tone="success">Priced</StatusBadge>}</TableCell>
               </TableRow>

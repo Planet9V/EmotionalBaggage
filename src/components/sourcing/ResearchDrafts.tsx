@@ -4,7 +4,7 @@
 // the page it came from, added to the part only when approved here (or in Draft with AI).
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ErrorLine } from "@/components/parts/controls";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { draftQueries, useDraftActions } from "@/components/drafts/api";
 import { messageOf } from "@/lib/queries";
 
@@ -13,8 +13,8 @@ export function ResearchDrafts({ projectId, partId }: { projectId: string; partI
   const { approve, reject } = useDraftActions(projectId);
   const mine = (list.data?.drafts ?? []).filter((d) => d.status === "draft" && d.itemId === partId && d.generator.startsWith("sourcing."));
   const err = messageOf(approve.error) || messageOf(reject.error);
-  if (list.isPending) return <p className="text-sm text-secondary" role="status">Loading research drafts.</p>;
-  if (list.error) return <ErrorLine>Research drafts could not be loaded: {messageOf(list.error)}</ErrorLine>;
+  if (list.isPending) return <LoadingBlocks rows={1} label="Loading research drafts" />;
+  if (list.error) return <LoadError what="Research drafts" message={messageOf(list.error)} onRetry={() => void list.refetch()} />;
   if (!mine.length) return <p className="text-sm text-secondary">No drafts waiting. A draft is a suggestion with the page it came from. It counts as nothing until you accept it.</p>;
   return (
     <ul className="space-y-2" aria-label="Research drafts waiting for review">

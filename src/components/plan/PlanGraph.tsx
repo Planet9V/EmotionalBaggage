@@ -1,16 +1,18 @@
 "use client";
 
 import "@xyflow/react/dist/style.css";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Background, BackgroundVariant, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Plan, PlanNode } from "@/lib/types";
-import { fmtMinutes } from "./format";
+import { fmtMinutes } from "@/lib/format";
+import { elkFlow } from "@/lib/graphLayout";
+import type { XY } from "@/lib/domain";
 
 const ORANGE = "#E05A10";
-const COL = 300;
-const ROW = 132;
+const NODE_W = 248;
+const NODE_H = 88;
 
 type StepData = { step: PlanNode; selected: boolean; blocked: boolean };
 type StepNodeType = Node<StepData, "step">;
@@ -45,31 +47,38 @@ function StepNodeView({ data }: NodeProps<StepNodeType>) {
 
 const nodeTypes = { step: memo(StepNodeView) };
 
-/** Steps left to right by wave, stacked inside a wave; the critical path drawn in orange. */
+/** Steps left to right in the order they can start (elkjs, layered), the critical path drawn in orange. */
 export function PlanGraph({ plan, selectedId, onSelect }: { plan: Plan; selectedId: string | null; onSelect: (id: string | null) => void }) {
+  // the arrangement depends on the steps and what they wait on, not on which one is selected
+  const shape = plan.nodes.map((n) => `${n.id}>${n.after.join(",")}`).join("|");
+  const [pos, setPos] = useState<{ shape: string; at: Record<string, XY> } | null>(null);
+  useEffect(() => {
+    let live = true;
+    elkFlow(
+      plan.nodes.map((n) => ({ id: n.id, width: NODE_W, height: NODE_H })),
+      plan.nodes.flatMap((n) => n.after.map((a) => ({ id: `${a}>${n.id}`, source: a, target: n.id }))),
+    )
+      .then((at) => live && setPos({ shape, at }))
+      .catch(() => live && setPos({ shape, at: {} }));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `shape` stands for plan.nodes
+  }, [shape]);
+  const at = pos?.shape === shape ? pos.at : null;
+
   const { nodes, edges } = useMemo(() => {
     const inLoop = new Set(plan.cycles.flat());
-    const maxWave = plan.nodes.reduce((m, n) => Math.max(m, n.wave), -1);
-    const byWave = new Map<number, PlanNode[]>();
-    const orderIdx = new Map(plan.order.map((id, i) => [id, i]));
-    for (const n of plan.nodes) {
-      const w = n.wave < 0 ? maxWave + 1 : n.wave;
-      byWave.set(w, [...(byWave.get(w) ?? []), n]);
-    }
-    const nodes: StepNodeType[] = [];
-    for (const [w, list] of byWave) {
-      list.sort((a, b) => (orderIdx.get(a.id) ?? 1e9) - (orderIdx.get(b.id) ?? 1e9));
-      list.forEach((n, i) =>
-        nodes.push({
+    const nodes: StepNodeType[] = at
+      ? plan.nodes.map((n, i) => ({
           id: n.id,
           type: "step",
-          position: { x: w * COL, y: (i - (list.length - 1) / 2) * ROW },
+          position: at[n.id] ?? { x: 0, y: i * (NODE_H + 24) },
           data: { step: n, selected: n.id === selectedId, blocked: inLoop.has(n.id) },
           draggable: false,
           connectable: false,
-        })
-      );
-    }
+        }))
+      : [];
     const critPairs = new Set<string>();
     for (let i = 1; i < plan.criticalPath.length; i++) critPairs.add(`${plan.criticalPath[i - 1]}>${plan.criticalPath[i]}`);
     const edges: Edge[] = plan.nodes.flatMap((n) =>
@@ -88,17 +97,19 @@ export function PlanGraph({ plan, selectedId, onSelect }: { plan: Plan; selected
       })
     );
     return { nodes, edges };
-  }, [plan, selectedId]);
+  }, [plan, selectedId, at]);
 
   return (
     <div className="h-[460px] w-full overflow-hidden rounded-xl border border-hairline bg-canvas">
       <ReactFlow
+        key={at ? "ready" : "waiting"}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         nodesDraggable={false}
         nodesConnectable={false}
-        defaultViewport={{ x: 32, y: 190, zoom: 0.85 }}
+        fitView
+        fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
         minZoom={0.2}
         panOnScroll
         onNodeClick={(_, n) => onSelect(n.id)}

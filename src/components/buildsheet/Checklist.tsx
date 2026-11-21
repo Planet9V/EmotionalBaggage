@@ -2,13 +2,14 @@
 
 import { Check, Minus, X } from "lucide-react";
 import type { CheckLine } from "./derive";
+import { Card } from "@/components/ui/Card";
 
 const WORD = { pass: "Pass", fail: "Fail", na: "Not applicable" } as const;
 
 export function Checklist({ lines }: { lines: CheckLine[] }) {
   const ready = lines.every((l) => l.result !== "fail");
   return (
-    <div className="rounded-xl border border-hairline bg-surface print:break-inside-avoid">
+    <Card variant="flat" className="print:break-inside-avoid">
       <ul className="divide-y divide-hairline">
         {lines.map((l) => (
           <li key={l.id} className="flex items-start gap-3 px-4 py-3">
@@ -31,6 +32,6 @@ export function Checklist({ lines }: { lines: CheckLine[] }) {
       <p className="border-t border-hairline px-4 py-2.5 text-xs text-secondary" role="status">
         {ready ? "Every line passes." : "Not ready for power. Clear the failing lines first."}
       </p>
-    </div>
+    </Card>
   );
 }

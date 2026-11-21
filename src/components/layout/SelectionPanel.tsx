@@ -9,6 +9,7 @@ import type { Item } from "@/lib/types";
 import { totalExtent, type PartGeometry } from "../three/layout";
 import { NumField } from "./NumField";
 import { BASIS_TEXT, round3, type Draft } from "./geom";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
@@ -31,9 +32,6 @@ export function BasisPicker({ value, onChange, name }: { value: "doc" | "typical
     </fieldset>
   );
 }
-
-const selectCls =
-  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 
 export function SelectionPanel({
   item, geometry, draft, floor, centre, onGeometry, onDraft, onCancelDraft, onClose,
@@ -156,17 +154,17 @@ export function SelectionPanel({
           {g.shape === "shell" ? (
             <p className="flex h-8 items-center font-mono text-xs text-primary">shell</p>
           ) : (
-            <select className={selectCls} value={g.shape} onChange={(e) => changeShape(e.target.value as "box" | "cylinder")}>
+            <NativeSelect className="h-8 text-xs" value={g.shape} onChange={(e) => changeShape(e.target.value as "box" | "cylinder")}>
               <option value="box">box</option>
               <option value="cylinder">cylinder</option>
-            </select>
+            </NativeSelect>
           )}
         </label>
         {cyl ? (
           <label className="flex flex-col gap-1">
             <span className="text-xs text-muted">Length runs along</span>
-            <select
-              className={selectCls}
+            <NativeSelect
+              className="h-8 text-xs"
               value={g.axis ?? ""}
               onChange={(e) => {
                 const next: PartGeometry = { ...g };
@@ -179,7 +177,7 @@ export function SelectionPanel({
               <option value="x">x (width)</option>
               <option value="y">y (up)</option>
               <option value="z">z (depth)</option>
-            </select>
+            </NativeSelect>
           </label>
         ) : (
           <NumField label="Count" unit="bodies" value={g.count ?? 1} integer min={1} onCommit={(n) => {

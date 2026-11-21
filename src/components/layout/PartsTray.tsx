@@ -4,6 +4,7 @@ import { GripVertical } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DRAG_MIME } from "./ThreeView";
+import { Card } from "@/components/ui/Card";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
@@ -11,7 +12,7 @@ export type TrayPart = { id: number; label: string; title: string; placing: bool
 
 export function PartsTray({ parts, selectedId, onPlace, onSelect }: { parts: TrayPart[]; selectedId: number | null; onPlace: (id: number) => void; onSelect: (id: number) => void }) {
   return (
-    <section aria-label="Parts tray" className="rounded-xl border border-hairline bg-surface p-3">
+    <Card variant="flat" as="section" aria-label="Parts tray" className="p-3">
       <div className="flex items-baseline justify-between px-1">
         <p className={eyebrow}>Parts tray</p>
         <span className="font-mono text-[10px] text-muted">{parts.length} without geometry</span>
@@ -50,6 +51,6 @@ export function PartsTray({ parts, selectedId, onPlace, onSelect }: { parts: Tra
           </ul>
         </>
       )}
-    </section>
+    </Card>
   );
 }

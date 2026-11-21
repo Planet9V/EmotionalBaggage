@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import type { Item, PlanNode } from "@/lib/types";
-import { fmtMinutes, statusesFor, storeHref, storeLabel } from "./format";
+import { statusesFor, storeHref, storeLabel } from "./format";
 import { WaitsOnPicker } from "./WaitsOnPicker";
+import { NativeSelect } from "@/components/ui/native-select";
+import { fmtMinutes } from "@/lib/format";
 
 export type ItemChange = { status?: string; data?: Record<string, unknown> };
 
@@ -87,17 +89,17 @@ export function StepDetail({
         <div>
           <label htmlFor="step-status" className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Status</label>
           <div className="mt-1 flex items-center gap-2">
-            <select
+            <NativeSelect
               id="step-status"
               value={step.status}
               disabled={!!busy}
               onChange={(e) => void run("status", { status: e.target.value })}
-              className="h-9 flex-1 rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+              className="flex-1"
             >
               {statusesFor(step.section, step.status).map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
-            </select>
+            </NativeSelect>
             <StatusBadge tone={statusTone(step.status)}>{step.status}</StatusBadge>
           </div>
         </div>

@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { messageOf, queries } from "@/lib/queries";
 import { exportHref, useDeleteConcept, type Concept, type DeletedConcept } from "@/lib/conceptsClient";
 import { ConceptDialog, FormError, fieldLabel } from "./ConceptDialog";
-import { plural } from "./model";
+import { plural } from "@/lib/format";
 
 /**
  * Says what will go, offers the JSON export first, and deletes only once the exact name is typed.

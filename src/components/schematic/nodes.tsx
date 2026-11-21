@@ -15,7 +15,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { NET_COLOR, type Wire } from "@/lib/domain";
-import { FOOT_H, HEADER_H, NODE_W, ROW_H, VIA_H, VIA_W, handleId, type PinRow } from "./model";
+import { FOOT_H, HEADER_H, NODE_W, ROW_H, handleId, type PinRow } from "./model";
 
 /** What nodes need from the view without carrying it in every node's data. */
 export type CanvasCtx = {
@@ -29,8 +29,6 @@ export const SchematicContext = createContext<CanvasCtx>({ onAddPin: () => {}, h
 
 export type PartData = { ref: string; title: string; ghost: boolean; pins: PinRow[] };
 export type PartNodeType = Node<PartData, "part">;
-export type ViaData = { ref: string; title: string; ghost: boolean; wire: Wire; dim: boolean };
-export type ViaNodeType = Node<ViaData, "via">;
 export type WireData = { wire: Wire; label: boolean; dim: boolean; emph: boolean };
 export type WireEdgeType = Edge<WireData, "wire">;
 
@@ -87,6 +85,7 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
               position={left ? Position.Left : Position.Right}
               className={HANDLE}
               style={{ borderColor: color }}
+              role="button"
               aria-label={`Pin ${data.ref}.${p.name}. Drag to another pin to add a wire.`}
             />
           </div>
@@ -104,23 +103,6 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
           <Plus className="h-3 w-3" aria-hidden /> Add pin
         </button>
       </div>
-    </div>
-  );
-}
-
-function ViaNodeView({ data, selected }: NodeProps<ViaNodeType>) {
-  const color = NET_COLOR[data.wire.netClass];
-  const ring = selected ? "border-dutchOrange" : data.ghost ? "border-dashed border-danger" : "border-hairline hover:border-dutchOrange/40";
-  return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-md border bg-surface px-2 text-center shadow-xs transition-[border-color,opacity] duration-150 ${ring}`}
-      style={{ width: VIA_W, height: VIA_H, opacity: data.dim ? 0.25 : 1 }}
-      title={`${data.ref} in series on wire ${data.wire.order}`}
-    >
-      <Handle type="source" id="l" position={Position.Left} isConnectable={false} className="h-2! w-2! min-w-0! rounded-xs! border-0!" style={{ background: color }} />
-      <span className="font-mono text-[11px] font-semibold leading-tight text-dutchOrange">{data.ref}</span>
-      <span className="w-full truncate text-[10px] leading-tight text-muted">{data.title}</span>
-      <Handle type="source" id="r" position={Position.Right} isConnectable={false} className="h-2! w-2! min-w-0! rounded-xs! border-0!" style={{ background: color }} />
     </div>
   );
 }
@@ -160,5 +142,5 @@ function WireEdgeView(props: EdgeProps<WireEdgeType>) {
   );
 }
 
-export const nodeTypes = { part: memo(PartNodeView), via: memo(ViaNodeView) };
+export const nodeTypes = { part: memo(PartNodeView) };
 export const edgeTypes = { wire: memo(WireEdgeView) };

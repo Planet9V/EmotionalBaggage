@@ -6,14 +6,19 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Download, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { api, useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import { KIND_LABEL } from "@/lib/content/landing";
 import { LANDING_KINDS, type LandingKind } from "@/lib/content/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { asFlags, FlagList, Panel, StatusPill } from "./shared";
+import { asFlags, FlagList, StatusPill } from "./shared";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Panel } from "@/components/ui/panel";
+import { Card } from "@/components/ui/Card";
 
 type Preview = { html: string; problems: string[]; unapproved: number[]; sections: number; contrast: { label: string; ratio: number }[] };
 type Content = Record<string, unknown>;
@@ -61,13 +66,13 @@ export function LandingView({ project, store }: ViewProps) {
 
   return (
     <div className="space-y-5">
-      <div role="note" className="rounded-xl border border-hairline bg-subtle p-3 text-sm text-secondary">
+      <Card variant="well" role="note" className="p-3 text-sm text-secondary">
         <p className="font-medium text-primary">Public preview, not published.</p>
         <p>
           This page is drawn from the rows below in your brand kit. Nothing here is put on the internet: the address{" "}
           <Link className="text-link hover:underline" href={`/p/${project.id}`}>/p/{project.id}</Link> works only while you are signed in. Export a zip to host it yourself.
         </p>
-      </div>
+      </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
@@ -93,7 +98,7 @@ export function LandingView({ project, store }: ViewProps) {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-3">
           {loading ? (
-            <p role="status" className="text-sm text-secondary">Loading the sections.</p>
+            <LoadingBlocks rows={2} label="Loading the sections" />
           ) : sections.length === 0 ? (
             <EmptyState title="No sections yet">Use Draft with AI above to write the page from your approved message, or add a section.</EmptyState>
           ) : (
@@ -104,8 +109,9 @@ export function LandingView({ project, store }: ViewProps) {
         </div>
 
         <Panel
+          compact
           title="Preview"
-          action={
+          actions={
             <div role="group" aria-label="Preview colours" className="flex gap-1">
               {(["light", "dark"] as const).map((m) => (
                 <Button key={m} size="sm" variant={scheme === m ? "default" : "outline"} aria-pressed={scheme === m} onClick={() => setScheme(m)}>{m === "light" ? "Light" : "Dark"}</Button>
@@ -169,7 +175,7 @@ function SectionCard({ item, first, last, onMove, onSave, onDelete }: { item: It
   const id = `s${item.id}`;
 
   return (
-    <article aria-label={KIND_LABEL[kind]} className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="article" aria-label={KIND_LABEL[kind]} className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-primary">{KIND_LABEL[kind]}</h3>
@@ -208,13 +214,13 @@ function SectionCard({ item, first, last, onMove, onSave, onDelete }: { item: It
         <Button size="sm" disabled={busy || !dirty} onClick={() => void run(() => onSave({ data: { content: c } }))}>{busy ? "Saving" : dirty ? "Save changes" : "Saved"}</Button>
         <label className="flex items-center gap-2 text-xs text-secondary" htmlFor={`${id}-status`}>
           Status
-          <Select id={`${id}-status`} className="h-8 w-32" value={item.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
+          <NativeSelect id={`${id}-status`} className="h-8 w-32" value={item.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
             <option>draft</option>
             <option>approved</option>
-          </Select>
+          </NativeSelect>
         </label>
       </div>
-    </article>
+    </Card>
   );
 }
 

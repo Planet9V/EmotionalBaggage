@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AdminView } from "@/components/admin/AdminView";
-import { LoadingBlocks } from "@/components/admin/shared";
+import { LoadingBlocks } from "@/components/ui/states";
 
 export const metadata: Metadata = { title: "Admin · Concept to Realization" };
 

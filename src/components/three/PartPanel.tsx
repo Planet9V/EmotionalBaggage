@@ -12,6 +12,7 @@ import type { Part } from "@/lib/domain";
 import type { ShapeStatus } from "@/lib/geometry/useShapes";
 import { ShapeFileSection } from "./ShapeFileSection";
 import { bodyExtent, describeSize, fmt, type PartGeometry } from "./layout";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
   doc: "Dimension stated in the source documents",
@@ -21,7 +22,7 @@ export const BASIS_TEXT: Record<PartGeometry["basis"], string> = {
 /** One wire touching the focused part. */
 export type ConnectionRow = {
   key: number;
-  /** pin on the focused part; "" for a wire that only passes through it in series */
+  /** pin on the focused part */
   pin: string;
   otherRef: string;
   otherPin: string;
@@ -30,10 +31,7 @@ export type ConnectionRow = {
   otherId: number | null;
   net: string;
   color: string;
-  via: string;
   status: string;
-  /** shown when the part is in series on the wire rather than an end of it */
-  series: string;
 };
 
 export type FocusControls = {
@@ -161,13 +159,12 @@ function Connections({ rows, hasRef, onOpenPart }: { rows: ConnectionRow[]; hasR
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
                   <span className="truncate font-mono text-[11px] text-primary">
-                    {r.series ? r.series : `${r.pin || "pin ?"} \u2192 ${r.otherRef}${r.otherPin ? `.${r.otherPin}` : ""}`}
+                    {`${r.pin || "pin ?"} \u2192 ${r.otherRef}${r.otherPin ? `.${r.otherPin}` : ""}`}
                   </span>
                 </span>
-                {!r.series && <span className="block truncate text-xs text-secondary">{r.otherTitle}</span>}
+                <span className="block truncate text-xs text-secondary">{r.otherTitle}</span>
                 <span className="block truncate font-mono text-[10px] text-muted">
                   {r.net || "no net"}
-                  {r.via ? ` \u00b7 via ${r.via}` : ""}
                   {r.status ? ` \u00b7 ${r.status}` : ""}
                 </span>
               </>
@@ -263,9 +260,6 @@ function NumField({ label, value, onChange, placeholder, disabled }: { label: st
   );
 }
 
-const selectCls =
-  "h-8 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
-
 function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; onSave: (g: PartGeometry) => Promise<void> }) {
   const [open, setOpen] = useState(geometry !== null);
   const [f, setF] = useState<Form>(() => toForm(geometry));
@@ -314,19 +308,19 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Shape</span>
-          <select className={selectCls} value={locked ? "box" : f.shape} disabled={locked} onChange={(e) => set({ shape: e.target.value as Form["shape"] })}>
+          <NativeSelect className="h-8 text-xs" value={locked ? "box" : f.shape} disabled={locked} onChange={(e) => set({ shape: e.target.value as Form["shape"] })}>
             <option value="box">Box</option>
             <option value="cylinder">Cylinder</option>
             <option value="shell">Enclosure shell</option>
-          </select>
+          </NativeSelect>
         </label>
         <label className="flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Size basis</span>
-          <select className={selectCls} value={f.basis} onChange={(e) => set({ basis: e.target.value as Form["basis"] })}>
+          <NativeSelect className="h-8 text-xs" value={f.basis} onChange={(e) => set({ basis: e.target.value as Form["basis"] })}>
             <option value="">Choose</option>
             <option value="doc">Stated in source documents</option>
             <option value="typical">Typical, not measured</option>
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -336,12 +330,12 @@ function GeometryEditor({ geometry, onSave }: { geometry: PartGeometry | null; o
         {f.shape === "cylinder" && (
           <label className="flex flex-col gap-1">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Axis</span>
-            <select className={selectCls} value={f.axis} onChange={(e) => set({ axis: e.target.value as Form["axis"] })}>
+            <NativeSelect className="h-8 text-xs" value={f.axis} onChange={(e) => set({ axis: e.target.value as Form["axis"] })}>
               <option value="">Auto</option>
               <option value="x">x</option>
               <option value="y">y (upright)</option>
               <option value="z">z</option>
-            </select>
+            </NativeSelect>
           </label>
         )}
       </div>

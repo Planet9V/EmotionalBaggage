@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, Field, Select } from "@/components/parts/controls";
-import { LoadFailed, LoadingBlock } from "@/components/market/shared";
 import { useItems } from "@/lib/client";
 import { MEDIA } from "@/lib/campaigns/links";
 import { campaignsOf } from "@/lib/campaigns/read";
@@ -16,6 +14,9 @@ import { CAMPAIGN_STORE } from "@/lib/campaigns/schemas";
 import type { ViewProps } from "@/components/views/types";
 import { useChangeLink, useLinks, useMakeLink, type LinkView } from "./hooks";
 import { QrCode } from "./QrCode";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const origin = () => (typeof window === "undefined" ? "" : window.location.origin);
 
@@ -33,8 +34,8 @@ export function LinksView({ project }: ViewProps) {
   const [qr, setQr] = useState<number | null>(null);
   const [copied, setCopied] = useState("");
 
-  if (store.loading || links.loading) return <LoadingBlock label="Loading tracked links" />;
-  if (links.error) return <LoadFailed what="Tracked links" message={links.error} retry={links.retry} />;
+  if (store.loading || links.loading) return <LoadingBlocks label="Loading tracked links" />;
+  if (links.error) return <LoadError what="Tracked links" message={links.error} onRetry={links.retry} />;
   const campaign = campaigns.find((c) => String(c.id) === v.campaign) ?? campaigns[0] ?? null;
   const ids = new Set((campaign?.creative ?? []).map((r) => r.itemId));
   const creatives = [...ads, ...posts].filter((x) => ids.has(x.id));
@@ -72,11 +73,11 @@ export function LinksView({ project }: ViewProps) {
           <p className="text-sm text-secondary">There is no campaign yet. Add one in <Link className="text-link underline" href="/s/marketing/campaigns">Campaigns</Link>, then make its links here.</p>
         ) : (
           <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
-            <Field label="Campaign"><Select value={campaign?.id ? String(campaign.id) : ""} onChange={(e) => setV((x) => ({ ...x, campaign: e.target.value, creative: "" }))}>{campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</Select></Field>
-            <Field label="Creative (optional)"><Select value={v.creative} onChange={(e) => setV((x) => ({ ...x, creative: e.target.value }))}><option value="">The whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</Select></Field>
+            <Field label="Campaign"><NativeSelect value={campaign?.id ? String(campaign.id) : ""} onChange={(e) => setV((x) => ({ ...x, campaign: e.target.value, creative: "" }))}>{campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</NativeSelect></Field>
+            <Field label="Creative (optional)"><NativeSelect value={v.creative} onChange={(e) => setV((x) => ({ ...x, creative: e.target.value }))}><option value="">The whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</NativeSelect></Field>
             <Field label="Page it goes to" className="sm:col-span-2" hint="A web address starting http:// or https://"><Input value={v.baseUrl} onChange={(e) => setV((x) => ({ ...x, baseUrl: e.target.value }))} placeholder="https://example.com/product" /></Field>
             <Field label="Source (utm_source)" hint="Where the click comes from: meta, amazon-ads, email."><Input value={v.source} onChange={(e) => setV((x) => ({ ...x, source: e.target.value }))} /></Field>
-            <Field label="Medium (utm_medium)"><Select value={v.medium} onChange={(e) => setV((x) => ({ ...x, medium: e.target.value as (typeof MEDIA)[number] }))}>{MEDIA.map((m) => <option key={m}>{m}</option>)}</Select></Field>
+            <Field label="Medium (utm_medium)"><NativeSelect value={v.medium} onChange={(e) => setV((x) => ({ ...x, medium: e.target.value as (typeof MEDIA)[number] }))}>{MEDIA.map((m) => <option key={m}>{m}</option>)}</NativeSelect></Field>
             <Field label="Term (utm_term, optional)"><Input value={v.term} onChange={(e) => setV((x) => ({ ...x, term: e.target.value }))} /></Field>
             <label className="flex items-end gap-2 pb-2 text-sm text-primary"><input type="checkbox" checked={v.short} onChange={(e) => setV((x) => ({ ...x, short: e.target.checked }))} className="h-4 w-4 accent-dutchOrange" /> Also make a short address that counts clicks</label>
             <div className="sm:col-span-2 xl:col-span-4"><Button type="submit" disabled={make.isPending}>{make.isPending ? "Making" : "Make the link"}</Button></div>

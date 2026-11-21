@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, ErrorLine, Select } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
 import { batchResults, channelResults, costBySize, fixedCosts, HREF, unitCost, wholeBatch } from "@/lib/economics/compute";
 import { useEconomicsRows, useProductionSettings } from "@/lib/economics/client";
@@ -18,7 +17,10 @@ import { ChannelTable } from "./ChannelTable";
 import { CostChart } from "./CostChart";
 import { CostLineDialog } from "./CostLineDialog";
 import { FixedCostsTable } from "./FixedCostsTable";
-import { MissingList, Panel, PanelLoading } from "./shared";
+import { MissingList } from "./shared";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Panel } from "@/components/ui/panel";
 
 /** Batch sizes the chart always shows, plus every planned batch. */
 const LADDER = [1, 10, 100, 1000, 10000];
@@ -40,7 +42,7 @@ export function EconomicsView({ project }: ViewProps) {
   const channels = useMemo(() => channelResults(inputs.channels, unit, fixed), [inputs.channels, unit, fixed]);
   const points = useMemo(() => costBySize(inputs, [...LADDER, ...batchResults(inputs).flatMap((b) => (b.units ? [b.units] : []))]), [inputs]);
 
-  if (loading || settings.loading) return <PanelLoading label="Loading the economics" />;
+  if (loading || settings.loading) return <LoadingBlocks label="Loading the economics" />;
   if (error || settings.error) {
     return (
       <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
@@ -97,7 +99,7 @@ export function EconomicsView({ project }: ViewProps) {
         </label>
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-secondary">Currency</span>
-          <Select
+          <NativeSelect
             value={currency}
             aria-label="Currency"
             onChange={(e) => {
@@ -111,7 +113,7 @@ export function EconomicsView({ project }: ViewProps) {
                 {c}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         </label>
         <p className="max-w-md pb-2 text-xs text-secondary">Every amount is in one currency. Nothing is converted. A price break or setup cost follows the batch size.</p>
         <div className="ml-auto">
@@ -122,14 +124,14 @@ export function EconomicsView({ project }: ViewProps) {
       </div>
       {message || costs.writeError ? <ErrorLine>{message || costs.writeError}</ErrorLine> : null}
 
-      <Panel id="build-up" title="Unit cost build-up" note="Every figure is worked out from the parts list and the lines below. Nothing here is typed in.">
+      <Panel compact id="build-up" title="Unit cost build-up" description="Every figure is worked out from the parts list and the lines below. Nothing here is typed in.">
         <div className="space-y-3">
           <BuildUpTable unit={unit} onEdit={setEditing} onRemove={(id) => void remove(id)} />
           <MissingList items={unit.missing} />
         </div>
       </Panel>
 
-      <Panel id="channels" title="Margin by channel" note={`At a unit cost of the batch size above. Prices and fees come from the sales channels.`}>
+      <Panel compact id="channels" title="Margin by channel" description={`At a unit cost of the batch size above. Prices and fees come from the sales channels.`}>
         {channels.length ? (
           <ChannelTable results={channels} currency={currency} />
         ) : (
@@ -143,11 +145,11 @@ export function EconomicsView({ project }: ViewProps) {
         )}
       </Panel>
 
-      <Panel id="fixed" title="Fixed costs and break-even" note="Paid once however many units are made. Break-even in the table above divides these by the margin per unit.">
+      <Panel compact id="fixed" title="Fixed costs and break-even" description="Paid once however many units are made. Break-even in the table above divides these by the margin per unit.">
         <FixedCostsTable fixed={fixed} currency={currency} />
       </Panel>
 
-      <Panel id="by-size" title="Unit cost by batch size" note="Price breaks lower the parts cost as the order grows; setup is spread over more units.">
+      <Panel compact id="by-size" title="Unit cost by batch size" description="Price breaks lower the parts cost as the order grows; setup is spread over more units.">
         <CostChart points={points} currency={currency} />
       </Panel>
 

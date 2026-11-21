@@ -24,7 +24,12 @@ import {
   type ModelChoice,
   type ConnectionTest,
 } from "@/lib/admin/client";
-import { ConfirmButton, describe, FormField, LoadError, LoadingBlocks, NotSetUp, Panel, SaveError, SavedNote, TestOutcome, useFlag } from "./shared";
+import { TestOutcome } from "./shared";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Field, describe } from "@/components/ui/field";
+import { LoadError, LoadingBlocks, NotSetUp, SaveError, SavedNote, useFlag } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
+import { Card } from "@/components/ui/Card";
 
 type ProviderId = ModelChoice["provider"];
 const PROVIDER_LABEL: Record<ProviderId, string> = { ollama: "Ollama", lmstudio: "LM Studio", openrouter: "OpenRouter" };
@@ -175,7 +180,7 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
           </p>
         ) : null}
         <div className="grid gap-4 lg:grid-cols-2">
-          <FormField id={id("provider")} label="Provider" required error={errors.provider}>
+          <Field id={id("provider")} label="Provider" required error={errors.provider}>
             <Select value={form.provider || undefined} onValueChange={(v) => choose(v as ProviderId)}>
               <SelectTrigger id={id("provider")} className="w-full border-hairline bg-surface" {...describe(id("provider"), { error: errors.provider })}>
                 <SelectValue placeholder="Choose a provider" />
@@ -188,8 +193,8 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
-          <FormField
+          </Field>
+          <Field
             id={id("baseUrl")}
             label="Address"
             required
@@ -197,12 +202,12 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
             hint="The provider's OpenAI-compatible address. Inside Docker, a server on this computer is at host.docker.internal."
           >
             <Input id={id("baseUrl")} value={form.baseUrl} spellCheck={false} onChange={(e) => set({ baseUrl: e.target.value })} {...describe(id("baseUrl"), { hint: true, error: errors.baseUrl })} />
-          </FormField>
-          <FormField id={id("model")} label="Model name" required error={errors.model}>
+          </Field>
+          <Field id={id("model")} label="Model name" required error={errors.model}>
             <Input id={id("model")} value={form.model} spellCheck={false} onChange={(e) => set({ model: e.target.value })} {...describe(id("model"), { error: errors.model })} />
-          </FormField>
+          </Field>
           {kind === "embedding" ? (
-            <FormField id={id("dims")} label="Vector width" required error={errors.dims} hint="How many numbers the model returns per text. The test checks it.">
+            <Field id={id("dims")} label="Vector width" required error={errors.dims} hint="How many numbers the model returns per text. The test checks it.">
               <Input
                 id={id("dims")}
                 inputMode="numeric"
@@ -210,7 +215,7 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
                 onChange={(e) => set({ dims: e.target.value })}
                 {...describe(id("dims"), { hint: true, error: errors.dims })}
               />
-            </FormField>
+            </Field>
           ) : null}
         </div>
         {kind === "embedding" ? (
@@ -256,7 +261,7 @@ function Reindex({ onDone }: { onDone: () => void }) {
   const { project } = useProject();
   const index = useIndexConcept();
   return (
-    <div className="space-y-2 rounded-xl border border-hairline bg-subtle p-4 text-sm">
+    <Card variant="well" className="space-y-2 p-4 text-sm">
       <p className="text-primary">
         Each concept must be indexed again for this model. Until it is, search in that concept falls back to matching words.
       </p>
@@ -283,7 +288,7 @@ function Reindex({ onDone }: { onDone: () => void }) {
           {index.data.error ? ` First failure: ${index.data.error}` : ""}
         </p>
       ) : null}
-    </div>
+    </Card>
   );
 }
 
@@ -340,9 +345,9 @@ function PlannerSection({ settings }: { settings: AdminSettings }) {
             ? `In use: ${eff.url}, ${eff.source === "admin" ? "saved here" : "from the PLANNER_URL environment variable (a fallback)"}.`
             : "No address is saved here and PLANNER_URL is not set, so the plan page lists the steps without an order."}
         </p>
-        <FormField id="planner-url" label="Address" error={error} hint="For example http://planner:8811 inside Docker Compose.">
+        <Field id="planner-url" label="Address" error={error} hint="For example http://planner:8811 inside Docker Compose.">
           <Input id="planner-url" value={url} spellCheck={false} onChange={(e) => setUrl(e.target.value)} {...describe("planner-url", { hint: true, error })} />
-        </FormField>
+        </Field>
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" size="sm" disabled={save.isPending}>

@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card } from "@/components/ui/Card";
-import { EmptyState, ErrorLine, Field, Select } from "@/components/parts/controls";
-import { LoadFailed, LoadingBlock } from "@/components/market/shared";
 import { useItems } from "@/lib/client";
 import { keys } from "@/lib/queries";
 import { useProcess } from "@/lib/process/client";
@@ -19,6 +17,9 @@ import { CHECK_PROMPT, TEMPLATES } from "@/lib/campaigns/templates";
 import { statusTone } from "@/lib/statusTones";
 import type { ViewProps } from "@/components/views/types";
 import { startLaunch } from "./hooks";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export function LaunchView({ project, section }: ViewProps) {
   const { items, loading, error, reload, patch, remove } = useItems(project.id, LAUNCH_STORE);
@@ -45,8 +46,8 @@ export function LaunchView({ project, section }: ViewProps) {
     [process.view, builds, today]
   );
 
-  if (loading) return <LoadingBlock label="Loading the launch plan" />;
-  if (error && !items.length) return <LoadFailed what="The launch plan" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading the launch plan" />;
+  if (error && !items.length) return <LoadError what="The launch plan" message={error} onRetry={() => void reload()} />;
 
   const chosen = TEMPLATES.find((t) => t.id === tpl) ?? TEMPLATES[0];
   const start = async () => {
@@ -175,9 +176,9 @@ function StepCard({ s, statuses, onStatus }: { s: Scheduled; statuses: string[];
         <div className="flex items-center gap-2">
           {s.overdue && <StatusBadge tone="danger">Overdue</StatusBadge>}
           <label className="sr-only" htmlFor={`step-${s.id}`}>Status of {s.title}</label>
-          <Select id={`step-${s.id}`} value={s.status} onChange={(e) => onStatus(e.target.value)} className="h-8 w-32 px-2 text-xs">
+          <NativeSelect id={`step-${s.id}`} value={s.status} onChange={(e) => onStatus(e.target.value)} className="h-8 w-32 px-2 text-xs">
             {[...new Set([...statuses, s.status])].map((x) => <option key={x}>{x}</option>)}
-          </Select>
+          </NativeSelect>
         </div>
       </div>
       {s.blockers.map((b, i) => (

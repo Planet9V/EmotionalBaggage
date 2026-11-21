@@ -11,7 +11,9 @@ import type { Wire } from "@/lib/domain";
 import { pinKey as circuitPinKey, type Circuit } from "@/lib/parts/circuit";
 import { PIN_KIND_LABEL } from "@/lib/parts/kinds";
 import { WIRE_STATUSES, pinKey, pinLabel, type Graph, type NetInfo, type Part } from "./model";
-import { EYEBROW, NetSwatch, Select } from "./controls";
+import { EYEBROW } from "@/components/ui/field";
+import { NetSwatch } from "@/components/schematic/NetSwatch";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export type Selection = { kind: "wire"; id: number } | { kind: "part"; ref: string } | { kind: "pin"; ref: string; pin: string } | null;
 
@@ -120,13 +122,13 @@ function WirePanel({ wire: w, parts, statuses, onSelect, onEditWire, onPatchWire
         <Row label="Note">{w.note ? <span className="text-secondary">{w.note}</span> : <span className="text-muted">None</span>}</Row>
         <Row label="Status">
           <span className="flex items-center gap-2">
-            <Select value={w.status} onChange={(e) => onPatchWire(w, { status: e.target.value })} className="h-8 w-36 text-xs" aria-label="Wire status">
+            <NativeSelect value={w.status} onChange={(e) => onPatchWire(w, { status: e.target.value })} className="h-8 w-36 text-xs" aria-label="Wire status">
               {statusList.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <StatusBadge tone={statusTone(w.status)}>{w.status || "none"}</StatusBadge>
           </span>
         </Row>

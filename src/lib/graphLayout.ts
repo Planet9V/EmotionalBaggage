@@ -42,3 +42,30 @@ export async function elkLayout(nodes: LayoutNode[], edges: LayoutEdge[], spacin
   for (const c of out.children ?? []) pos[c.id] = { x: Math.round(c.x ?? 0), y: Math.round(c.y ?? 0) };
   return pos;
 }
+
+export type FlowNode = { id: string; width: number; height: number };
+export type FlowEdge = { id: string; source: string; target: string };
+
+/** Layered left-to-right layout of a plain directed graph (no ports), top-left positions by node id. Cycles are tolerated. */
+export async function elkFlow(nodes: FlowNode[], edges: FlowEdge[], spacing = { node: 36, layer: 56 }): Promise<Record<string, XY>> {
+  if (!nodes.length) return {};
+  elk ??= new ELK();
+  const ids = new Set(nodes.map((n) => n.id));
+  const out = await elk.layout({
+    id: "root",
+    layoutOptions: {
+      "elk.algorithm": "layered",
+      "elk.direction": "RIGHT",
+      "elk.spacing.nodeNode": String(spacing.node),
+      "elk.layered.spacing.nodeNodeBetweenLayers": String(spacing.layer),
+      "elk.layered.cycleBreaking.strategy": "GREEDY",
+      "elk.separateConnectedComponents": "true",
+      "elk.spacing.componentComponent": String(spacing.node),
+    },
+    children: nodes.map((n) => ({ id: n.id, width: n.width, height: n.height })),
+    edges: edges.filter((e) => ids.has(e.source) && ids.has(e.target) && e.source !== e.target).map((e) => ({ id: e.id, sources: [e.source], targets: [e.target] })),
+  });
+  const pos: Record<string, XY> = {};
+  for (const c of out.children ?? []) pos[c.id] = { x: Math.round(c.x ?? 0), y: Math.round(c.y ?? 0) };
+  return pos;
+}

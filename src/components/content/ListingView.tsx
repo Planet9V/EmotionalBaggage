@@ -4,12 +4,17 @@ import { useMemo, useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
 import { LISTING_CATEGORIES, listingCategory, checkListing, type ListingFields } from "@/lib/content/channels";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { asFlags, Count, FlagList, MessageLine, Panel, Problems, SourceLink, StatusPill } from "./shared";
+import { asFlags, Count, FlagList, MessageLine, Problems, SourceLink, StatusPill } from "./shared";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Panel } from "@/components/ui/panel";
+import { Card } from "@/components/ui/Card";
 
 const STATUSES = ["draft", "ready", "live"];
 const bytes = (s: string) => new TextEncoder().encode(s).length;
@@ -36,7 +41,7 @@ export function ListingView({ project, store }: ViewProps) {
       {err || writeError ? <ErrorLine>{err || writeError}</ErrorLine> : null}
       {error && !items.length ? <ErrorLine>{error}</ErrorLine> : null}
       {loading ? (
-        <p role="status" className="text-sm text-secondary">Loading the listings.</p>
+        <LoadingBlocks rows={2} label="Loading the listings" />
       ) : rows.length === 0 ? (
         <EmptyState title="No listing yet">Draft one with AI or add one. It carries a title, five bullets, a description and search terms.</EmptyState>
       ) : (
@@ -81,7 +86,7 @@ function ListingCard({ projectId, row, shots, onSave, onDelete }: { projectId: s
   const forListing = shots.filter((s) => Array.isArray(s.data.usedIn) ? (s.data.usedIn as string[]).some((u) => /listing/i.test(u)) : true);
 
   return (
-    <article aria-label={row.title} className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="article" aria-label={row.title} className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <StatusPill status={row.status} />
@@ -93,9 +98,9 @@ function ListingCard({ projectId, row, shots, onSave, onDelete }: { projectId: s
 
       <div className="mt-3 grid gap-3">
         <Field label="Category" hint={category.note}>
-          <Select value={cat} onChange={(e) => setCat(e.target.value)}>
+          <NativeSelect value={cat} onChange={(e) => setCat(e.target.value)}>
             {LISTING_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <div>
           <label htmlFor={`t${row.id}`} className="mb-1 block text-xs font-medium text-secondary">Title *</label>
@@ -131,7 +136,7 @@ function ListingCard({ projectId, row, shots, onSave, onDelete }: { projectId: s
         Limits from <SourceLink url={L.title.source ?? "https://sellercentral.amazon.com"} label="Amazon&apos;s detail page guide" />. A limit marked a guide could not be read from Amazon&apos;s own page and is only a warning.
       </p>
 
-      <Panel title="Image checklist">
+      <Panel compact title="Image checklist">
         {forListing.length === 0 ? (
           <p className="text-sm text-secondary">No shots yet. Add them in Imagery; each one appears here to tick off.</p>
         ) : (
@@ -168,9 +173,9 @@ function ListingCard({ projectId, row, shots, onSave, onDelete }: { projectId: s
         <Button size="sm" disabled={busy || !dirty} onClick={() => void run(() => onSave({ title: (f.title || "New listing").slice(0, 120), data: { category: cat, fields: f } }))}>{busy ? "Saving" : dirty ? "Save changes" : "Saved"}</Button>
         <label className="flex items-center gap-2 text-xs text-secondary">
           Status
-          <Select aria-label={`Status of ${row.title}`} className="h-8 w-32" value={row.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
+          <NativeSelect aria-label={`Status of ${row.title}`} className="h-8 w-32" value={row.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
             {STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </Select>
+          </NativeSelect>
         </label>
         {exportable ? (
           <>
@@ -181,6 +186,6 @@ function ListingCard({ projectId, row, shots, onSave, onDelete }: { projectId: s
           <span className="text-xs text-muted">Mark it ready to export.</span>
         )}
       </div>
-    </article>
+    </Card>
   );
 }

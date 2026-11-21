@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FILE_ONLY_STEPS, modelsByMaker, type PrinterModel } from "@/lib/printers/models";
 import { ADAPTER_LABEL, monthText, volumeText } from "./format";
 import { ModelFacts } from "./ModelFacts";
+import { slugify } from "@/lib/format";
+import { Card } from "@/components/ui/Card";
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 function Row({ m }: { m: PrinterModel }) {
   const fileOnly = m.adapter === "file-only";
@@ -35,11 +37,15 @@ export function SupportedPrinters() {
   const groups = modelsByMaker();
   const total = groups.reduce((n, g) => n + g.models.length, 0);
   return (
-    <div className="px-8 py-8">
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Documentation</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-primary">Supported printers</h1>
-      <p className="mt-2 max-w-3xl text-sm text-secondary">
-        {total} models, from the makers&apos; own pages where they publish one. Every fact has a link to the page it came from, and a fact that could not be sourced is left out rather than guessed.
+    <>
+      <PageHeader
+        eyebrow="Documentation"
+        title="Supported printers"
+        blurb={`${total} models, from the makers' own pages where they publish one. Every fact has a link to the page it came from, and a fact that could not be sourced is left out rather than guessed.`}
+        nextStep={false}
+      />
+      <div className="px-8 py-6">
+      <p className="max-w-3xl text-sm text-secondary">
         A model with a connection says which one and what to switch on at the printer. A model whose connection could not be confirmed is file only: you download the file and carry it to the printer.
       </p>
       <p className="mt-2 max-w-3xl text-sm text-secondary">
@@ -49,7 +55,7 @@ export function SupportedPrinters() {
 
       <nav aria-label="Makers" className="mt-6 flex max-w-4xl flex-wrap gap-2">
         {groups.map((g) => (
-          <a key={g.maker} href={`#${slug(g.maker)}`} className="rounded-full border border-hairline px-3 py-1 text-xs text-secondary transition-colors hover:border-dutchOrange/40 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
+          <a key={g.maker} href={`#${slugify(g.maker)}`} className="rounded-full border border-hairline px-3 py-1 text-xs text-secondary transition-colors hover:border-dutchOrange/40 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange">
             {g.maker}
           </a>
         ))}
@@ -57,9 +63,9 @@ export function SupportedPrinters() {
 
       <div className="mt-8 max-w-5xl space-y-8">
         {groups.map((g) => (
-          <section key={g.maker} id={slug(g.maker)} aria-labelledby={`${slug(g.maker)}-h`} className="scroll-mt-6">
-            <h2 id={`${slug(g.maker)}-h`} className="text-lg font-semibold tracking-tight text-primary">{g.maker}</h2>
-            <div className="mt-3 overflow-hidden rounded-xl border border-hairline bg-surface">
+          <section key={g.maker} id={slugify(g.maker)} aria-labelledby={`${slugify(g.maker)}-h`} className="scroll-mt-6">
+            <h2 id={`${slugify(g.maker)}-h`} className="text-lg font-semibold tracking-tight text-primary">{g.maker}</h2>
+            <Card variant="flat" className="mt-3 overflow-hidden">
               <div className="hidden gap-x-4 border-b border-hairline px-4 py-2 font-mono text-[10px] uppercase tracking-[0.15em] text-muted sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_8rem_10rem]" aria-hidden>
                 <span>Model</span>
                 <span>Connection</span>
@@ -69,7 +75,7 @@ export function SupportedPrinters() {
               {g.models.map((m) => (
                 <Row key={m.id} m={m} />
               ))}
-            </div>
+            </Card>
           </section>
         ))}
 
@@ -83,6 +89,7 @@ export function SupportedPrinters() {
           </ol>
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

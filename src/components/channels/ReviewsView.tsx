@@ -9,10 +9,14 @@ import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DraftButton } from "@/components/drafts/DraftButton";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
@@ -36,7 +40,7 @@ export function ReviewsView({ project, section, store }: ViewProps) {
   const save = (it: Item, data: Record<string, unknown>) => void patch(it.id, { data: { ...it.data, ...data } }).catch((e) => setActionError((e as Error).message));
 
   return (
-    <div className="space-y-8">
+    <div className="animate-enter space-y-8">
       <section aria-labelledby="log-h" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -50,16 +54,16 @@ export function ReviewsView({ project, section, store }: ViewProps) {
             <Button onClick={() => setAdding(true)}><Plus className="h-4 w-4" aria-hidden /> {section.addLabel ?? "Add"}</Button>
           </div>
         </div>
-        {error ? <div className="flex items-center gap-2"><ErrorLine>{error}</ErrorLine><Button size="sm" variant="outline" onClick={() => reload()}>Try again</Button></div> : null}
+        {error ? <LoadError what="The log" message={error} onRetry={() => reload()} /> : null}
         {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
         {loading ? (
-          <div className="space-y-2" aria-label="Loading the log"><Skeleton className="h-16 w-full bg-subtle" /><Skeleton className="h-16 w-full bg-subtle" /></div>
+          <LoadingBlocks rows={2} label="Loading the log" />
         ) : sorted.length === 0 ? (
           <EmptyState title="No reviews or questions yet">Add one by hand, or paste a few, or import a CSV with a column for the text.</EmptyState>
         ) : (
           <ul className="space-y-2">
             {sorted.map((r) => (
-              <li key={r.id} className="rounded-xl border border-hairline bg-surface p-4">
+              <Card as="li" variant="flat" key={r.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="flex flex-wrap items-center gap-2">
                     <StatusBadge tone="neutral">{r.data.kind === "question" ? "question" : "review"}</StatusBadge>
@@ -73,25 +77,25 @@ export function ReviewsView({ project, section, store }: ViewProps) {
                     <label className="sr-only" htmlFor={`topic-${r.id}`}>Topic</label>
                     <Input id={`topic-${r.id}`} defaultValue={String(r.data.topic ?? "")} placeholder="Topic" className="h-8 w-36 text-xs" onBlur={(e) => e.target.value.trim() !== String(r.data.topic ?? "") && save(r, { topic: e.target.value.trim().slice(0, 80) })} />
                     <label className="sr-only" htmlFor={`sent-${r.id}`}>Sentiment</label>
-                    <Select id={`sent-${r.id}`} value={String(r.data.sentiment ?? "")} className="h-8 w-32 text-xs" onChange={(e) => save(r, { sentiment: e.target.value })}>
+                    <NativeSelect id={`sent-${r.id}`} value={String(r.data.sentiment ?? "")} className="h-8 w-32 text-xs" onChange={(e) => save(r, { sentiment: e.target.value })}>
                       <option value="">sentiment</option>
                       {SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </Select>
+                    </NativeSelect>
                     <label className="sr-only" htmlFor={`st-${r.id}`}>Status</label>
-                    <Select id={`st-${r.id}`} value={r.status} className="h-8 w-36 text-xs" onChange={(e) => void patch(r.id, { status: e.target.value }).catch((x) => setActionError((x as Error).message))}>
+                    <NativeSelect id={`st-${r.id}`} value={r.status} className="h-8 w-36 text-xs" onChange={(e) => void patch(r.id, { status: e.target.value }).catch((x) => setActionError((x as Error).message))}>
                       {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </Select>
+                    </NativeSelect>
                   </span>
                 </div>
                 {r.title && r.title !== r.body.split("\n")[0].slice(0, 120) ? <p className="mt-2 text-sm font-medium text-primary">{r.title}</p> : null}
                 <p className="mt-1 whitespace-pre-wrap text-sm text-primary wrap-anywhere">{r.body}</p>
-              </li>
+              </Card>
             ))}
           </ul>
         )}
       </section>
 
-      <section aria-labelledby="reply-h" className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-hairline bg-surface p-5">
+      <Card variant="flat" as="section" aria-labelledby="reply-h" className="flex flex-wrap items-start justify-between gap-3 p-5">
         <div>
           <h2 id="reply-h" className="text-base font-semibold tracking-tight text-primary">Replies</h2>
           <p className="max-w-2xl text-sm text-secondary">
@@ -99,7 +103,7 @@ export function ReviewsView({ project, section, store }: ViewProps) {
           </p>
         </div>
         <DraftButton projectId={project.id} store={CHANNEL.replies} sectionLabel="Replies to send" />
-      </section>
+      </Card>
 
       <AskedMost projectId={project.id} count={items.length} onTurn={setToReq} />
 
@@ -123,53 +127,53 @@ function AskedMost({ projectId, count, onTurn }: { projectId: string; count: num
         </div>
         <label className="flex items-center gap-2 text-sm text-secondary">
           Group by
-          <Select value={mode} onChange={(e) => setMode(e.target.value as "auto" | "tags")} className="w-48">
+          <NativeSelect value={mode} onChange={(e) => setMode(e.target.value as "auto" | "tags")} className="w-48">
             <option value="auto">meaning, when a model is set</option>
             <option value="tags">my topic tags</option>
-          </Select>
+          </NativeSelect>
         </label>
       </div>
       {count === 0 ? (
         <EmptyState title="Nothing to group yet">Groups appear once the log has rows.</EmptyState>
       ) : groups.isPending ? (
-        <div className="space-y-2" aria-label="Grouping"><Skeleton className="h-12 w-full bg-subtle" /><Skeleton className="h-12 w-full bg-subtle" /></div>
+        <LoadingBlocks rows={2} label="Grouping the rows" />
       ) : groups.isError ? (
-        <div className="flex items-center gap-2"><ErrorLine>{messageOf(groups.error)}</ErrorLine><Button size="sm" variant="outline" onClick={() => void groups.refetch()}>Try again</Button></div>
+        <LoadError what="The groups" message={messageOf(groups.error)} onRetry={() => void groups.refetch()} />
       ) : g ? (
         <>
           <p className="text-xs text-muted">{g.note}{g.method === "tags" && g.untagged ? ` ${g.untagged} of ${g.total} rows have no topic yet and are not in any group.` : ""}</p>
           {g.groups.length === 0 ? (
             <EmptyState title="No groups yet">Set a topic on a few rows, or use Draft with AI above to suggest topics, or choose an embedding model in Admin to group by meaning.</EmptyState>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-hairline bg-surface">
-              <table className="w-full text-sm">
+            <Card variant="flat" className="overflow-hidden">
+              <Table>
                 <caption className="sr-only">Groups of reviews and questions with their counts</caption>
-                <thead>
-                  <tr className="border-b border-hairline text-left text-xs text-muted">
-                    <th scope="col" className="px-3 py-2 font-medium">Group</th>
-                    <th scope="col" className="px-3 py-2 text-right font-medium">Rows</th>
-                    <th scope="col" className="px-3 py-2 text-right font-medium">Questions</th>
-                    <th scope="col" className="px-3 py-2 text-right font-medium">Average rating</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Example</th>
-                    <th scope="col" className="px-3 py-2"><span className="sr-only">Action</span></th>
-                  </tr>
-                </thead>
-                <tbody>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead scope="col">Group</TableHead>
+                    <TableHead scope="col" className="text-right">Rows</TableHead>
+                    <TableHead scope="col" className="text-right">Questions</TableHead>
+                    <TableHead scope="col" className="text-right">Average rating</TableHead>
+                    <TableHead scope="col">Example</TableHead>
+                    <TableHead scope="col"><span className="sr-only">Action</span></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {g.groups.map((x) => (
-                    <tr key={`${x.label}-${x.reviewIds[0]}`} className="border-b border-hairline last:border-0 align-top">
-                      <td className="px-3 py-2 font-medium text-primary">{x.label}</td>
-                      <td className="px-3 py-2 text-right font-mono">{x.count}</td>
-                      <td className="px-3 py-2 text-right font-mono">{x.questions}</td>
-                      <td className="px-3 py-2 text-right font-mono">{x.averageRating ?? "none"}</td>
-                      <td className="max-w-md px-3 py-2 text-secondary"><span className="line-clamp-2">{x.examples[0]}</span></td>
-                      <td className="px-3 py-2 text-right">
+                    <TableRow key={`${x.label}-${x.reviewIds[0]}`} className="align-top">
+                      <TableCell className="font-medium text-primary">{x.label}</TableCell>
+                      <TableCell className="text-right font-mono">{x.count}</TableCell>
+                      <TableCell className="text-right font-mono">{x.questions}</TableCell>
+                      <TableCell className="text-right font-mono">{x.averageRating ?? "none"}</TableCell>
+                      <TableCell className="max-w-md text-secondary"><span className="line-clamp-2">{x.examples[0]}</span></TableCell>
+                      <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => onTurn(x)}><ClipboardList className="h-4 w-4" aria-hidden /> Turn into a requirement</Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </>
       ) : null}
@@ -202,12 +206,12 @@ function AddReview({ onClose, onCreate }: { onClose: () => void; onCreate: (v: {
     <Modal open onOpenChange={(o) => !o && onClose()} title="Add a review or question" description="As the customer wrote it. Leave out their name and contact details.">
       <form onSubmit={submit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Kind"><Select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="review">Review</option><option value="question">Question</option></Select></Field>
-          <Field label="Rating (1 to 5)"><Select value={f.rating} onChange={(e) => setF({ ...f, rating: e.target.value })}><option value="">none</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</Select></Field>
+          <Field label="Kind"><NativeSelect value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="review">Review</option><option value="question">Question</option></NativeSelect></Field>
+          <Field label="Rating (1 to 5)"><NativeSelect value={f.rating} onChange={(e) => setF({ ...f, rating: e.target.value })}><option value="">none</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</NativeSelect></Field>
           <Field label="Where it was left"><Input value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} placeholder="Amazon, own site, e-mail" /></Field>
           <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
           <Field label="Product version"><Input value={f.productVersion} onChange={(e) => setF({ ...f, productVersion: e.target.value })} /></Field>
-          <Field label="Sentiment"><Select value={f.sentiment} onChange={(e) => setF({ ...f, sentiment: e.target.value })}><option value="">not set</option>{SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
+          <Field label="Sentiment"><NativeSelect value={f.sentiment} onChange={(e) => setF({ ...f, sentiment: e.target.value })}><option value="">not set</option>{SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}</NativeSelect></Field>
         </div>
         <Field label="Topic"><Input value={f.topic} onChange={(e) => setF({ ...f, topic: e.target.value })} placeholder="battery life" /></Field>
         <Field label="What they wrote"><Textarea rows={5} value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} autoFocus /></Field>
@@ -245,7 +249,7 @@ function ImportDialog({ projectId, onClose }: { projectId: string; onClose: () =
             />
           </Field>
           <Field label="Where they were left (when the file has no column for it)"><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Amazon" /></Field>
-          <Field label="Kind (when the file has no column for it)"><Select value={kind} onChange={(e) => setKind(e.target.value as "" | "review" | "question")}><option value="">work it out</option><option value="review">reviews</option><option value="question">questions</option></Select></Field>
+          <Field label="Kind (when the file has no column for it)"><NativeSelect value={kind} onChange={(e) => setKind(e.target.value as "" | "review" | "question")}><option value="">work it out</option><option value="review">reviews</option><option value="question">questions</option></NativeSelect></Field>
         </div>
         <Field label="Or paste here"><Textarea rows={10} value={text} onChange={(e) => setText(e.target.value)} className="font-mono text-xs" /></Field>
         {err ? <ErrorLine>{err}</ErrorLine> : null}

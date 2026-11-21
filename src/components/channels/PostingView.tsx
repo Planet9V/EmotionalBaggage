@@ -7,9 +7,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
+import { EmptyState, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
+import { fmtDateTime } from "@/lib/format";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
 import { useChannelStatus } from "@/lib/channels/client";
@@ -26,7 +27,7 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
   const err = item.data.sendError as { message?: string } | undefined;
   const when = typeof item.data.scheduledAt === "string" && item.data.scheduledAt ? item.data.scheduledAt : "";
   return (
-    <li className="rounded-xl border border-hairline bg-surface p-4">
+    <Card as="li" variant="flat" className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{ch === "x" ? "X" : "Instagram"}</span>
@@ -35,7 +36,7 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
         </span>
         {sent ? (
           <span className="text-xs text-secondary">
-            Sent {sent.at ? new Date(sent.at).toLocaleString() : ""}
+            Sent {sent.at ? fmtDateTime(sent.at) : ""}
             {sent.url ? (
               <>
                 {" "}
@@ -51,7 +52,7 @@ function Row({ item, onSend }: { item: Item; onSend: () => void }) {
       </div>
       <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-sm text-primary wrap-anywhere">{item.body || item.title}</p>
       {err?.message && !sent ? <p className="mt-2 text-xs text-danger">Last attempt failed: {err.message}</p> : null}
-    </li>
+    </Card>
   );
 }
 
@@ -67,13 +68,13 @@ export function PostingView({ project, store }: ViewProps) {
   const s = status.data;
 
   return (
-    <div className="space-y-6">
-      <section aria-labelledby="conn-h" className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
+    <div className="animate-enter space-y-6">
+      <Card variant="flat" as="section" aria-labelledby="conn-h" className="space-y-3 p-5">
         <h2 id="conn-h" className="text-base font-semibold tracking-tight text-primary">Connections</h2>
         {status.isPending ? (
-          <Skeleton className="h-10 w-full bg-subtle" />
+          <LoadingBlocks rows={1} label="Checking the connections" />
         ) : status.isError ? (
-          <div className="flex items-center gap-2"><ErrorLine>{messageOf(status.error)}</ErrorLine><Button size="sm" variant="outline" onClick={() => void status.refetch()}>Try again</Button></div>
+          <LoadError what="The connections" message={messageOf(status.error)} onRetry={() => void status.refetch()} />
         ) : s ? (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1 text-sm">
@@ -88,7 +89,7 @@ export function PostingView({ project, store }: ViewProps) {
         ) : null}
         {s ? <CostStatement projectId={project.id} status={s} /> : null}
         <NotRealNote service="Posting to X and Instagram" />
-      </section>
+      </Card>
 
       <section aria-labelledby="ready-h" className="space-y-3">
         <div>
@@ -99,9 +100,9 @@ export function PostingView({ project, store }: ViewProps) {
           </p>
         </div>
         {error ? (
-          <div className="flex items-center gap-2"><ErrorLine>{error}</ErrorLine><Button size="sm" variant="outline" onClick={() => reload()}>Try again</Button></div>
+          <LoadError what="The posts" message={error} onRetry={() => reload()} />
         ) : loading ? (
-          <div className="space-y-2" aria-label="Loading the posts"><Skeleton className="h-24 w-full bg-subtle" /><Skeleton className="h-24 w-full bg-subtle" /></div>
+          <LoadingBlocks rows={2} label="Loading the posts" />
         ) : ready.length === 0 ? (
           <EmptyState title="Nothing approved to send">
             Approve a post for X or Instagram in <Link href="/s/marketing/social" className="text-link hover:underline">Social</Link> and it appears here.

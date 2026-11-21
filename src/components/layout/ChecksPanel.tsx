@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { fmtMm, type CheckResult } from "./geom";
+import { Card } from "@/components/ui/Card";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
@@ -27,7 +28,7 @@ function Line({ id, onSelect, children, tone }: { id: number; onSelect: (id: num
 export function ChecksPanel({ checks, noGeometry, onSelect, hasParts }: { checks: CheckResult; noGeometry: NoGeometry[]; onSelect: (id: number) => void; hasParts: boolean }) {
   const problems = checks.overlaps.length + checks.outside.length;
   return (
-    <section aria-label="Checks" className="rounded-xl border border-hairline bg-surface p-3">
+    <Card variant="flat" as="section" aria-label="Checks" className="p-3">
       <p className={eyebrow}>Checks</p>
       <p className="mt-1 text-xs text-muted">Checks use bounding boxes, so a round or odd-shaped part counts as the full box around it.</p>
 
@@ -63,6 +64,6 @@ export function ChecksPanel({ checks, noGeometry, onSelect, hasParts }: { checks
           </Line>
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }

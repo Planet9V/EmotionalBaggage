@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
-import { Field } from "@/components/parts/controls";
+import { Field } from "@/components/ui/field";
 
 /** A money field in the concept's currency: typed as an ordinary amount ("12.50"), kept by the form as text. */
 export function MoneyField({ label, value, onChange, currency, hint, className }: { label: string; value: string; onChange: (v: string) => void; currency: string; hint?: string; className?: string }) {

@@ -6,7 +6,6 @@
  * decides next; and, under it, the outcome of every decision made so far.
  */
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Check, Pencil, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -55,7 +54,6 @@ function DecisionLink({ k, byKey, all, onSelect }: { k: string; byKey: Map<strin
 }
 
 export function DecisionDetail({ d, all, byKey, tree, order, busy, onSelect, onChoose, onReopen, onEdit, onAddChild }: Props) {
-  const reduce = useReducedMotion();
   const state = stateOf(d, all);
   const waits = unmet(d, byKey);
   const ready = waits.length === 0;
@@ -78,15 +76,7 @@ export function DecisionDetail({ d, all, byKey, tree, order, busy, onSelect, onC
   const open = order.map((k) => byKey.get(k)!).filter((x) => x && !isDecided(x));
 
   return (
-    <motion.div
-      key={d.key}
-      initial={reduce ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-      className="space-y-6 p-5 sm:p-6"
-      data-testid="decision-detail"
-      data-key={d.key}
-    >
+    <div className="animate-enter space-y-6 p-5 sm:p-6" key={d.key} data-testid="decision-detail" data-key={d.key}>
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <p className={eyebrow}>Decision {d.key}</p>
@@ -298,6 +288,6 @@ export function DecisionDetail({ d, all, byKey, tree, order, busy, onSelect, onC
           </div>
         )}
       </section>
-    </motion.div>
+    </div>
   );
 }

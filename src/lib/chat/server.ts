@@ -100,7 +100,7 @@ export async function retrieve(projectId: string, question: string, o: { signal?
 // Chats and messages
 
 type ChatRow = { id: string; project_id: string; title: string; created_at: string; updated_at: string; messages?: number };
-type MessageRow = { id: string; role: "user" | "assistant"; content: string; sources: ChatSource[]; model: string; created_at: string };
+type MessageRow = { id: string; role: "user" | "assistant"; content: string; sources: ChatSource[]; model: string; retrieval: Retrieval | ""; retrieval_note: string; search: string; created_at: string };
 
 export const toChat = (r: ChatRow) => ({
   id: Number(r.id),
@@ -110,7 +110,18 @@ export const toChat = (r: ChatRow) => ({
   updatedAt: r.updated_at,
   ...(r.messages !== undefined ? { messages: Number(r.messages) } : {}),
 });
-export const toMessage = (r: MessageRow) => ({ id: Number(r.id), role: r.role, content: r.content, sources: r.sources, model: r.model, createdAt: r.created_at });
+export const toMessage = (r: MessageRow) => ({
+  id: Number(r.id),
+  role: r.role,
+  content: r.content,
+  sources: r.sources,
+  model: r.model,
+  /** how the sources were found; "" for an answer saved before this was kept */
+  retrieval: r.retrieval,
+  ...(r.retrieval_note ? { note: r.retrieval_note } : {}),
+  ...(r.search ? { search: r.search } : {}),
+  createdAt: r.created_at,
+});
 
 export async function listChats(projectId: string) {
   const rows = await q<ChatRow>(
@@ -128,14 +139,14 @@ export async function requireChat(id: number) {
 }
 
 export async function chatMessages(chatId: number) {
-  const rows = await q<MessageRow>("SELECT id, role, content, sources, model, created_at FROM chat_messages WHERE chat_id = $1 ORDER BY id", [chatId]);
+  const rows = await q<MessageRow>("SELECT id, role, content, sources, model, retrieval, retrieval_note, search, created_at FROM chat_messages WHERE chat_id = $1 ORDER BY id", [chatId]);
   return rows.map(toMessage);
 }
 
 /** The last `limit` messages of a chat, oldest first, for the model. */
 export async function recentMessages(chatId: number, limit: number) {
-  const rows = await q<{ role: "user" | "assistant"; content: string }>(
-    "SELECT role, content FROM (SELECT id, role, content FROM chat_messages WHERE chat_id = $1 ORDER BY id DESC LIMIT $2) m ORDER BY id",
+  const rows = await q<{ id: string; role: "user" | "assistant"; content: string }>(
+    "SELECT id, role, content FROM (SELECT id, role, content FROM chat_messages WHERE chat_id = $1 ORDER BY id DESC LIMIT $2) m ORDER BY id",
     [chatId, limit]
   );
   return rows;

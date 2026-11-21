@@ -15,6 +15,7 @@ import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { BuildPanel } from "./BuildPanel";
 import { CriteriaChecklist } from "./CriteriaChecklist";
+import { Card } from "@/components/ui/Card";
 
 const day = (v: unknown) => (typeof v === "string" && v ? v : "");
 
@@ -49,7 +50,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
 
   if (loading) {
     return (
-      <div className="grid gap-4 lg:grid-cols-2" aria-busy="true" aria-label="Loading builds">
+      <div className="grid gap-4 lg:grid-cols-2" role="status" aria-busy="true" aria-label="Loading builds">
         {[0, 1].map((i) => (
           <div key={i} className="h-56 animate-pulse rounded-xl bg-subtle" />
         ))}
@@ -137,7 +138,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
           const start = day(b.data.start);
           const end = day(b.data.end);
           return (
-            <li key={b.id} className="flex flex-col gap-3 rounded-xl border border-hairline bg-surface p-4" aria-label={b.title}>
+            <Card variant="flat" as="li" key={b.id} className="flex flex-col gap-3 p-4" aria-label={b.title}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="text-base font-semibold tracking-tight text-primary wrap-anywhere">{b.title}</h2>
@@ -194,7 +195,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
                   </Button>
                 )}
               </div>
-            </li>
+            </Card>
           );
         })}
       </ul>

@@ -7,7 +7,6 @@
  * Everything shown comes from the concept's decision store; nothing is made up here.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
 import { GitBranch, ListTree, Pause, Play, Plus, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
@@ -17,6 +16,9 @@ import { DecisionDetail } from "@/components/decisions/DecisionDetail";
 import { DecisionEditor, type DecisionDraft } from "@/components/decisions/DecisionEditor";
 import { ancestry, buildTree, caption, isDecided, routeKeys, stateOf, walkOrder } from "@/components/decisions/model";
 import type { ViewProps } from "./types";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+import { LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 const STEP_MS = 4000;
 
@@ -211,11 +213,11 @@ export function DecisionsView({ project }: ViewProps) {
     />
   );
 
-  if (loading) return <p className="text-sm text-secondary">Loading the decision tree.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading the decision tree" />;
 
   if (all.length === 0) {
     return (
-      <div className="rounded-2xl border border-hairline bg-surface p-8 sm:p-10" data-testid="decisions-empty">
+      <Card variant="flat" className="rounded-2xl p-8 sm:p-10" data-testid="decisions-empty">
         <div className="max-w-xl space-y-4">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-subtle text-link">
             <GitBranch className="h-5 w-5" aria-hidden />
@@ -234,7 +236,7 @@ export function DecisionsView({ project }: ViewProps) {
           </Button>
         </div>
         {editorEl}
-      </div>
+      </Card>
     );
   }
 
@@ -243,7 +245,7 @@ export function DecisionsView({ project }: ViewProps) {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-xs" data-testid="decisions-view">
+      <Card variant="flat" className="rounded-2xl overflow-hidden shadow-xs" data-testid="decisions-view">
         {/* toolbar */}
         <div className="flex flex-wrap items-center gap-2.5 border-b border-hairline px-4 py-2.5 sm:px-5">
           <div role="group" aria-label="View" className="flex rounded-full border border-hairline p-0.5">
@@ -375,7 +377,7 @@ export function DecisionsView({ project }: ViewProps) {
             )}
           </div>
         </div>
-      </div>
+      </Card>
       {(error || actionError) && (
         <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger" role="alert">
           {actionError || error}

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, pricingUnitCost, type Competitor } from "@/lib/market/pricing";
@@ -20,7 +19,9 @@ import { pricingData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { PriceStrip, type StripPoint } from "./PriceStrip";
-import { LoadFailed, LoadingBlock, Status } from "./shared";
+import { Status } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
 
 type PriceRow = { item: Item; priceMinor: number; approach: string; note: string; currency: string };
 type ChannelRow = { item: Item; name: string; feePercent: number; fixedFeeMinor: number };
@@ -64,8 +65,8 @@ export function PricingView({ project, store }: ViewProps) {
   const range = competitorRange(sameCurrency.filter((c) => c.sourced), currency);
   const otherCurrency = competitors.length - sameCurrency.length;
 
-  if (pricing.loading || econ.loading || settings.loading || comps.loading) return <LoadingBlock label="Loading pricing" />;
-  if (pricing.error && !items.length) return <LoadFailed what="Pricing" message={pricing.error} retry={() => void pricing.reload()} />;
+  if (pricing.loading || econ.loading || settings.loading || comps.loading) return <LoadingBlocks label="Loading pricing" />;
+  if (pricing.error && !items.length) return <LoadError what="Pricing" message={pricing.error} onRetry={() => void pricing.reload()} />;
 
   const guard = async (p: Promise<unknown>) => {
     setErr("");

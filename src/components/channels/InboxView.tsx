@@ -7,9 +7,11 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, Select } from "@/components/parts/controls";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
+import { fmtDateTime } from "@/lib/format";
 import { DraftButton } from "@/components/drafts/DraftButton";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
@@ -44,8 +46,8 @@ export function InboxView({ project, section, store }: ViewProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <section aria-labelledby="read-h" className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
+    <div className="animate-enter space-y-6">
+      <Card variant="flat" as="section" aria-labelledby="read-h" className="space-y-3 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 id="read-h" className="text-base font-semibold tracking-tight text-primary">Read new messages</h2>
@@ -54,9 +56,9 @@ export function InboxView({ project, section, store }: ViewProps) {
           <DraftButton projectId={project.id} store={CHANNEL.replies} sectionLabel="Replies to send" />
         </div>
         {status.isPending ? (
-          <Skeleton className="h-9 w-80 bg-subtle" />
+          <LoadingBlocks rows={1} label="Checking the connections" />
         ) : status.isError ? (
-          <div className="flex items-center gap-2"><ErrorLine>{messageOf(status.error)}</ErrorLine><Button size="sm" variant="outline" onClick={() => void status.refetch()}>Try again</Button></div>
+          <LoadError what="The connections" message={messageOf(status.error)} onRetry={() => void status.refetch()} />
         ) : s ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
@@ -79,24 +81,24 @@ export function InboxView({ project, section, store }: ViewProps) {
         {note ? <p role="status" className="text-sm text-success">{note}</p> : null}
         {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
         <NotRealNote service="Reading X mentions and Instagram comments" />
-      </section>
+      </Card>
 
       <section aria-labelledby="msgs-h" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <h2 id="msgs-h" className="text-base font-semibold tracking-tight text-primary">Messages</h2>
           <label className="flex items-center gap-2 text-sm text-secondary">
             Show
-            <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-40">
+            <NativeSelect value={filter} onChange={(e) => setFilter(e.target.value)} className="w-40">
               {[...statuses, "all"].map((x) => <option key={x} value={x}>{x}</option>)}
-            </Select>
+            </NativeSelect>
           </label>
         </div>
         {error ? (
-          <div className="flex items-center gap-2"><ErrorLine>{error}</ErrorLine><Button size="sm" variant="outline" onClick={() => reload()}>Try again</Button></div>
+          <LoadError what="The messages" message={error} onRetry={() => reload()} />
         ) : null}
         {writeError ? <ErrorLine>{writeError}</ErrorLine> : null}
         {loading ? (
-          <div className="space-y-2" aria-label="Loading the messages"><Skeleton className="h-20 w-full bg-subtle" /><Skeleton className="h-20 w-full bg-subtle" /></div>
+          <LoadingBlocks rows={2} label="Loading the messages" />
         ) : shown.length === 0 ? (
           <EmptyState title={items.length ? `Nothing ${filter === "all" ? "here" : filter}` : "No messages yet"}>
             {items.length ? "Choose another filter above." : "Press Read X mentions or Read Instagram comments once a connection is set up."}
@@ -106,12 +108,12 @@ export function InboxView({ project, section, store }: ViewProps) {
             {shown.map((m) => {
               const r = replyOf.get(m.id);
               return (
-                <li key={m.id} className="rounded-xl border border-hairline bg-surface p-4">
+                <Card as="li" variant="flat" key={m.id} className="p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{String(m.data.channel ?? "")}</span>
                       {m.data.author ? <span className="font-medium text-primary">@{String(m.data.author)}</span> : null}
-                      {m.data.at ? <span className="font-mono text-xs text-muted">{new Date(String(m.data.at)).toLocaleString()}</span> : null}
+                      {m.data.at ? <span className="font-mono text-xs text-muted">{fmtDateTime(String(m.data.at))}</span> : null}
                       {r ? <StatusBadge tone={r.sent ? "success" : "info"}>{r.sent ? "reply sent" : "reply approved"}</StatusBadge> : null}
                     </span>
                     <span className="flex items-center gap-2">
@@ -121,13 +123,13 @@ export function InboxView({ project, section, store }: ViewProps) {
                         </a>
                       ) : null}
                       <label className="sr-only" htmlFor={`st-${m.id}`}>Status of this message</label>
-                      <Select id={`st-${m.id}`} value={m.status} className="h-8 w-36 text-xs" onChange={(e) => void patch(m.id, { status: e.target.value }).catch((x) => setActionError((x as Error).message))}>
+                      <NativeSelect id={`st-${m.id}`} value={m.status} className="h-8 w-36 text-xs" onChange={(e) => void patch(m.id, { status: e.target.value }).catch((x) => setActionError((x as Error).message))}>
                         {statuses.map((x) => <option key={x} value={x}>{x}</option>)}
-                      </Select>
+                      </NativeSelect>
                     </span>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-primary wrap-anywhere">{m.body}</p>
-                </li>
+                </Card>
               );
             })}
           </ul>

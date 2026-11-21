@@ -32,7 +32,7 @@ export function SessionControls({ linkClass }: { linkClass: string }) {
   return (
     <>
       {me.usingDefaultPassword && (
-        <Link href="/account" className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-warning hover:bg-subtle">
+        <Link href="/account" className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-warning hover:bg-subtle [@media(max-height:800px)]:py-1">
           <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden /> Change the default password
         </Link>
       )}

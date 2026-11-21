@@ -61,7 +61,7 @@ export function InlineEdit({
       <button
         type="button"
         onClick={open}
-        aria-label={`Edit ${label}`}
+        aria-label={`${value || placeholder}, edit ${label}`}
         className={cn(
           "-mx-1.5 block w-full rounded-md px-1.5 py-1 text-sm transition hover:bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange",
           text,

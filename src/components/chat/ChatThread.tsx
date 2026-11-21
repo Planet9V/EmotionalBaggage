@@ -15,13 +15,16 @@ import { chatKeys, errorSentence, type SavedMessage } from "./api";
 import { Answer, AnswerFooter } from "./Answer";
 import { EmptyThread, QuestionBox } from "./parts";
 
-/** Saved messages in the shape useChat holds. Saved answers carry their sources and model; how they were found is not stored. */
+/** Saved messages in the shape useChat holds. Saved answers carry their sources, model and how the sources were found (an answer saved before that was kept shows no retrieval line). */
 export function toUIMessages(saved: SavedMessage[]): ChatUIMessage[] {
   return saved.map((m) => ({
     id: `saved-${m.id}`,
     role: m.role,
     parts: [{ type: "text", text: m.content }],
-    metadata: m.role === "assistant" ? { sources: m.sources, model: m.model, savedId: m.id } : undefined,
+    metadata:
+      m.role === "assistant"
+        ? { sources: m.sources, model: m.model, savedId: m.id, ...(m.retrieval ? { retrieval: m.retrieval } : {}), ...(m.note ? { note: m.note } : {}), ...(m.search ? { search: m.search } : {}) }
+        : undefined,
   }));
 }
 
@@ -91,6 +94,8 @@ export function ChatThread({
   }, [firstQuestion, sendMessage]);
 
   const busy = status === "submitted" || status === "streaming";
+  // the last message is a question with no answer: the stream broke, or the page was left before it ended
+  const unanswered = !busy && !error && messages.at(-1)?.role === "user";
   const ask = (text: string) => {
     const t = text.trim();
     if (!t || busy || disabled) return;
@@ -131,6 +136,18 @@ export function ChatThread({
           {status === "submitted" && (
             <div role="status" aria-live="polite">
               <Shimmer>Finding sources and asking the model</Shimmer>
+            </div>
+          )}
+          {unanswered && (
+            <div role="alert" className="flex items-start gap-3 rounded-lg border border-hairline bg-warning-soft px-4 py-3 text-sm text-primary">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">This question has no answer.</p>
+                <p className="mt-0.5 text-secondary">The answer stopped before it finished, and nothing was saved for it. Asking again does not save the question a second time.</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => void regenerate()} disabled={disabled}>
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Ask again
+              </Button>
             </div>
           )}
           {error && (

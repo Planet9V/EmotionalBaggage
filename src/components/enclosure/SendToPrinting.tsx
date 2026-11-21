@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ErrorLine } from "@/components/parts/controls";
+import { ErrorLine } from "@/components/ui/states";
 import { api } from "@/lib/client";
 import { keys, messageOf } from "@/lib/queries";
 

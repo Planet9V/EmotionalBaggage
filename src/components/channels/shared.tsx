@@ -8,10 +8,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { ErrorLine } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Modal } from "@/components/ui/modal";
+import { fmtDateTime } from "@/lib/format";
 import { channelQueries, useChannelActions, useChannelStatus } from "@/lib/channels/client";
 import type { SendKind } from "@/lib/channels/send";
 import type { ChannelStatus } from "@/lib/channels/status";
@@ -68,7 +69,7 @@ export function CostStatement({ projectId, status }: { projectId: string; status
       </ul>
       {ack ? (
         <p className="mt-2 text-xs text-muted">
-          {ack.by} recorded reading this statement on {new Date(ack.at).toLocaleString()}.
+          {ack.by} recorded reading this statement on {fmtDateTime(ack.at)}.
         </p>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -113,15 +114,9 @@ export function SendDialog({ projectId, kind, itemId, onClose }: { projectId: st
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={p ? `Send this ${kind} to ${where}?` : "Send"} description="Nothing is sent until you press the button at the bottom." wide>
       {prev.isPending ? (
-        <div className="space-y-2" aria-label="Reading what would be sent">
-          <Skeleton className="h-4 w-1/2 bg-subtle" />
-          <Skeleton className="h-20 w-full bg-subtle" />
-        </div>
+        <LoadingBlocks rows={1} label="Reading what would be sent" />
       ) : prev.isError ? (
-        <div className="space-y-2">
-          <ErrorLine>{messageOf(prev.error)}</ErrorLine>
-          <Button variant="outline" size="sm" onClick={() => void prev.refetch()}>Try again</Button>
-        </div>
+        <LoadError what="What would be sent" message={messageOf(prev.error)} onRetry={() => void prev.refetch()} />
       ) : done ? (
         <div className="space-y-3 text-sm">
           <p className="text-primary">
@@ -169,14 +164,12 @@ export function SendDialog({ projectId, kind, itemId, onClose }: { projectId: st
               <p className="text-secondary">
                 Instagram fetches the image itself from a public https address when you publish, and takes JPEG only. This app is behind sign-in, so give the address of a copy you host elsewhere.
               </p>
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-secondary">Public image address (JPEG)</span>
+              <Field label="Public image address (JPEG)">
                 <Input value={imageUrl ?? p.imageUrl ?? ""} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/images/hero.jpg" spellCheck={false} />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-secondary">Alt text (optional)</span>
+              </Field>
+              <Field label="Alt text (optional)">
                 <Input value={alt ?? ""} onChange={(e) => setAlt(e.target.value)} placeholder="What the image shows" />
-              </label>
+              </Field>
               <Button
                 size="sm"
                 variant="outline"

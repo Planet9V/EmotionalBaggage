@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
@@ -12,10 +11,12 @@ import { statusTone } from "@/lib/statusTones";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
 import type { Item } from "@/lib/types";
-import { areaClass } from "@/components/wizard/fields";
 import { NotConnected, stamp } from "@/components/wizard/shared";
 import type { ViewProps } from "./types";
 import { storeHref } from "@/lib/ai/drafts/shared";
+import { Textarea } from "@/components/ui/textarea";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+import { LoadingBlocks } from "@/components/ui/states";
 
 type Msg = { id: number | string; role: string; content: string; createdAt?: string; itemId?: number | null; item?: { section: string; title: string } };
 type Resp = { configured: boolean; model: string; messages: Msg[] };
@@ -89,7 +90,7 @@ export function ChallengeView({ project }: ViewProps) {
   };
 
   if (loadError && !state) return <p role="alert" className="text-sm text-danger">{loadError}</p>;
-  if (!state) return <p className="text-sm text-secondary">Loading.</p>;
+  if (!state) return <LoadingBlocks rows={2} label="Loading" />;
 
   const on = state.configured;
   const unverified = claims.items.filter((c) => c.status === "unverified");
@@ -121,13 +122,7 @@ export function ChallengeView({ project }: ViewProps) {
             {state.messages.map((m) => {
               const mine = m.role === "user";
               return (
-                <motion.div
-                  key={m.id}
-                  initial={reduce ? false : { opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
-                >
+                <div className={`animate-enter flex flex-col ${mine ? "items-end" : "items-start"}`} key={m.id}>
                   <div className={`max-w-[85%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm ${mine ? "bg-subtle text-primary" : "border border-hairline bg-surface text-primary"}`}>
                     {m.content}
                   </div>
@@ -147,16 +142,16 @@ export function ChallengeView({ project }: ViewProps) {
                     )}
                   </div>
                   {saving?.id === m.id && (
-                    <div className="mt-2 w-full max-w-[85%] rounded-xl border border-hairline bg-subtle p-3">
+                    <Card variant="well" className="mt-2 w-full max-w-[85%] p-3">
                       <label htmlFor="q-edit" className="text-xs font-medium text-primary">Question (the first 120 characters become the title)</label>
-                      <textarea id="q-edit" rows={3} className={`${areaClass} mt-1.5`} value={saving.text} onChange={(e) => setSaving({ id: saving.id, text: e.target.value })} />
+                      <Textarea id="q-edit" rows={3} className="mt-1.5" value={saving.text} onChange={(e) => setSaving({ id: saving.id, text: e.target.value })} />
                       <div className="mt-2 flex gap-2">
                         <Button size="sm" disabled={!saving.text.trim()} onClick={() => void saveQuestion()}>Save</Button>
                         <Button size="sm" variant="ghost" onClick={() => setSaving(null)}>Cancel</Button>
                       </div>
-                    </div>
+                    </Card>
                   )}
-                </motion.div>
+                </div>
               );
             })}
             {pending && <p className="text-sm text-muted">The reviewer is thinking.</p>}
@@ -179,14 +174,13 @@ export function ChallengeView({ project }: ViewProps) {
             </div>
             {error && <p role="alert" className="mb-2 text-sm text-danger">{error}</p>}
             <div className="flex items-end gap-2">
-              <textarea
+              <Textarea
                 ref={box}
                 rows={2}
                 aria-label="Message to the reviewer"
                 disabled={!on || pending}
                 value={text}
                 placeholder={on ? "Write a message. Enter sends, Shift+Enter adds a line." : "Connect the reviewer to write here."}
-                className={areaClass}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); }
@@ -212,7 +206,7 @@ export function ChallengeView({ project }: ViewProps) {
 
 function Rail({ title, href, items, empty }: { title: string; href: string; items: Item[]; empty: string }) {
   return (
-    <section className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="section" className="p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-primary">{title} <span className="font-mono text-xs text-muted">{items.length}</span></h3>
         <Link href={href} className="text-xs text-link hover:underline">Open</Link>
@@ -231,6 +225,6 @@ function Rail({ title, href, items, empty }: { title: string; href: string; item
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }

@@ -9,12 +9,16 @@ import { Input } from "@/components/ui/input";
 import { messageOf } from "@/lib/queries";
 import { httpUrl } from "@/lib/admin/schemas";
 import { useAdminSettings, useConnectionTest, useSaveSettings, type AdminSettings } from "@/lib/admin/client";
-import { ConfirmButton, describe, FormField, LoadError, LoadingBlocks, Panel, SaveError, SavedNote, TestOutcome, useFlag } from "./shared";
+import { TestOutcome } from "./shared";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Field, describe } from "@/components/ui/field";
+import { LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
+import { Panel } from "@/components/ui/panel";
 
 export function SlicerAddress() {
   const settings = useAdminSettings();
   if (settings.isPending) return <LoadingBlocks rows={1} label="Reading the slicer address" />;
-  if (settings.isError) return <LoadError message={messageOf(settings.error)} onRetry={() => void settings.refetch()} />;
+  if (settings.isError) return <LoadError what="The slicer address" message={messageOf(settings.error)} onRetry={() => void settings.refetch()} />;
   return <SlicerSection settings={settings.data} />;
 }
 
@@ -62,9 +66,9 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
             ? `In use: ${eff.url}, ${eff.source === "admin" ? "saved here" : "from the SLICER_URL environment variable (a fallback)"}.`
             : "No address is saved here and SLICER_URL is not set, so print jobs can be queued but not sliced."}
         </p>
-        <FormField id="slicer-url" label="Address" error={error} hint="For example http://slicer:8000 inside Docker Compose.">
+        <Field id="slicer-url" label="Address" error={error} hint="For example http://slicer:8000 inside Docker Compose.">
           <Input id="slicer-url" value={url} spellCheck={false} onChange={(e) => setUrl(e.target.value)} {...describe("slicer-url", { hint: true, error })} />
-        </FormField>
+        </Field>
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" size="sm" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save"}</Button>

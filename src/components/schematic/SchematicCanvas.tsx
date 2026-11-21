@@ -19,8 +19,9 @@ import {
 import { GripVertical, MousePointerClick } from "lucide-react";
 import { NET_COLOR, type NetClass, type Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, MISSING_PIN, type Graph, type Part, type XY } from "./model";
-import { SchematicContext, edgeTypes, nodeTypes, type PartNodeType, type ViaNodeType, type WireEdgeType } from "./nodes";
+import { SchematicContext, edgeTypes, nodeTypes, type PartNodeType, type WireEdgeType } from "./nodes";
 import type { Selection } from "./SidePanel";
+import { Card } from "@/components/ui/Card";
 
 const DRAG_TYPE = "application/x-schematic-part";
 
@@ -63,32 +64,17 @@ export function SchematicCanvas(p: Props) {
   const { graph, sel, hidden, hoverNet, onMove, onDragStop, onSelect, onConnect, onEditWire } = p;
 
   const nodes = useMemo(() => {
-    const out: (PartNodeType | ViaNodeType)[] = [];
-    for (const n of graph.nodes) {
-      if (n.kind === "part") {
-        out.push({
-          id: n.id,
-          type: "part",
-          position: n.pos,
-          data: { ref: n.ref, title: n.title, ghost: n.ghost, pins: n.pins },
-          selected: sel?.kind === "part" && sel.ref === n.ref,
-          measured: measured[n.id],
-        });
-      } else {
-        if (hidden.has(n.wire.netClass)) continue;
-        out.push({
-          id: n.id,
-          type: "via",
-          position: n.pos,
-          data: { ref: n.ref, title: n.title, ghost: n.ghost, wire: n.wire, dim: !!hoverNet && n.wire.net !== hoverNet },
-          selected: sel?.kind === "wire" && sel.id === n.wire.item.id,
-          connectable: false,
-          measured: measured[n.id],
-        });
-      }
-    }
-    return out;
-  }, [graph, sel, hidden, hoverNet, measured]);
+    return graph.nodes.map(
+      (n): PartNodeType => ({
+        id: n.id,
+        type: "part",
+        position: n.pos,
+        data: { ref: n.ref, title: n.title, ghost: n.ghost, pins: n.pins },
+        selected: sel?.kind === "part" && sel.ref === n.ref,
+        measured: measured[n.id],
+      })
+    );
+  }, [graph, sel, measured]);
 
   const edges = useMemo(() => {
     const out: WireEdgeType[] = [];
@@ -111,7 +97,7 @@ export function SchematicCanvas(p: Props) {
   }, [graph, hidden, sel, hoverNet, p.litWires]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChangeset<PartNodeType | ViaNodeType>) => {
+    (changes: NodeChangeset<PartNodeType>) => {
       const moves: Record<string, XY> = {};
       const dims: Record<string, { width: number; height: number }> = {};
       for (const c of changes) {
@@ -156,7 +142,7 @@ export function SchematicCanvas(p: Props) {
   return (
     <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight, onPickPin: p.onPickPin }}>
       {p.palette.length > 0 && (
-        <div className="mb-3 rounded-xl border border-hairline bg-surface px-3 py-2.5">
+        <Card variant="flat" className="mb-3 px-3 py-2.5">
           <p className="text-xs text-secondary">
             <span className="font-medium text-primary">Not on the schematic yet.</span> Drag a part onto the canvas, or press Place, then name its first pin.
           </p>
@@ -187,7 +173,7 @@ export function SchematicCanvas(p: Props) {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
       <div
         ref={wrap}
@@ -216,13 +202,7 @@ export function SchematicCanvas(p: Props) {
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onNodeDragStop={(_, _n, dragged: Node[]) => onDragStop(dragged.map((n) => n.id))}
-          onNodeClick={(_, n) => {
-            if (n.type === "via") onSelect({ kind: "wire", id: (n as ViaNodeType).data.wire.item.id });
-            else onSelect({ kind: "part", ref: (n as PartNodeType).data.ref });
-          }}
-          onNodeDoubleClick={(_, n) => {
-            if (n.type === "via") onEditWire((n as ViaNodeType).data.wire);
-          }}
+          onNodeClick={(_, n) => onSelect({ kind: "part", ref: (n as PartNodeType).data.ref })}
           onEdgeClick={(_, e) => {
             const w = wireOfEdge(e);
             if (w) onSelect({ kind: "wire", id: w.item.id });
@@ -256,8 +236,8 @@ export function SchematicCanvas(p: Props) {
             pannable
             zoomable
             className="rounded-md! border! border-hairline! bg-subtle!"
-            nodeColor={(n) => (n.type === "via" ? "#E05A10" : "var(--border-hairline)")}
-            nodeStrokeColor={(n) => (n.type === "via" ? "#E05A10" : "var(--text-muted)")}
+            nodeColor="var(--border-hairline)"
+            nodeStrokeColor="var(--text-muted)"
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
             maskColor="rgba(113, 113, 122, 0.16)"

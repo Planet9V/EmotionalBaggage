@@ -8,7 +8,6 @@ import { Check, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotConnected } from "@/components/wizard/shared";
-import { ErrorLine } from "@/components/parts/controls";
 import { api } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
@@ -129,24 +128,6 @@ export function GenerateButton({ children, pending, onClick, disabled }: { child
   );
 }
 
-export function LoadingBlock({ label }: { label: string }) {
-  return (
-    <div className="space-y-3" aria-busy="true" aria-label={label}>
-      {[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-subtle" />)}
-    </div>
-  );
-}
-
-export function LoadFailed({ what, message, retry }: { what: string; message: string; retry: () => void }) {
-  return (
-    <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
-      <p className="text-sm font-medium text-danger">{what} could not be loaded.</p>
-      <p className="mt-1 text-sm text-danger wrap-anywhere">{message}</p>
-      <Button variant="outline" size="sm" className="mt-3" onClick={retry}>Try again</Button>
-    </div>
-  );
-}
-
 export const FieldRow = ({ label, children }: { label: string; children: ReactNode }) => (
   <div>
     <dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{label}</dt>
@@ -154,4 +135,3 @@ export const FieldRow = ({ label, children }: { label: string; children: ReactNo
   </div>
 );
 
-export { ErrorLine };

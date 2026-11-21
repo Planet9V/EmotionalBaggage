@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { toPart } from "@/lib/domain";
 import { useItems } from "@/lib/client";
 import { useProductionSettings } from "@/lib/economics/client";
@@ -15,18 +12,19 @@ import type { ViewProps } from "@/components/views/types";
 import { SourcingView } from "@/components/views/SourcingView";
 import { PartCard } from "./PartCard";
 import { ShoppingList } from "./ShoppingList";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Modal } from "@/components/ui/modal";
 
 export function SourcingBoard(props: ViewProps) {
   const { project, store } = props;
   const { items, loading, error, writeError, patch } = useItems(project.id, store);
   const settings = useProductionSettings(project.id);
   const research = useSourcingResearch(project.id);
-  const reduce = useReducedMotion();
   const parts = useMemo(() => items.map(toPart), [items]);
   const [ask, setAsk] = useState<{ partId: number; title: string; kind: Kind } | null>(null);
   const [note, setNote] = useState("");
 
-  if (loading) return <p className="text-sm text-secondary">Loading the parts.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading the parts" />;
   if (error) return <ErrorLine>{error}</ErrorLine>;
   if (!parts.length) return <EmptyState title="No parts to source">Parts come from the bill of materials. <Link href="/s/design/bom" className="text-link underline">Add parts there</Link> first.</EmptyState>;
 
@@ -42,7 +40,7 @@ export function SourcingBoard(props: ViewProps) {
   };
 
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-8">
+    <div className="animate-enter space-y-8">
       {writeError ? <ErrorLine>{writeError}</ErrorLine> : null}
       {note ? <p role="status" className="text-sm text-secondary">{note}</p> : null}
       <p className="max-w-3xl text-sm text-secondary">
@@ -74,6 +72,6 @@ export function SourcingBoard(props: ViewProps) {
           <Button onClick={() => void go()} disabled={research.isPending}>{research.isPending ? "Asking, this takes a moment" : "Ask Perplexity (billed)"}</Button>
         </div>
       </Modal>
-    </motion.div>
+    </div>
   );
 }

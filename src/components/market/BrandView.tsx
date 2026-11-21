@@ -6,7 +6,6 @@ import { Plus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
-import { EmptyState, ErrorLine, Field, Textarea } from "@/components/parts/controls";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { queries } from "@/lib/queries";
 import { brandCssVariables, brandText, findKit, readKit } from "@/lib/market/brandKit";
@@ -14,7 +13,10 @@ import { checkColour } from "@/lib/market/contrast";
 import { HEX, type BrandColour, type VoiceRule } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { ApproveButton, GenerateButton, LoadFailed, LoadingBlock, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { ApproveButton, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
 
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 
@@ -39,8 +41,8 @@ export function BrandView({ project, store }: ViewProps) {
   const checks = items.filter((i) => i.data.kind === "voicecheck");
   const [actionError, setActionError] = useState("");
 
-  if (loading) return <LoadingBlock label="Loading the brand kit" />;
-  if (error && !items.length) return <LoadFailed what="The brand kit" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading the brand kit" />;
+  if (error && !items.length) return <LoadError what="The brand kit" message={error} onRetry={() => void reload()} />;
 
   return (
     <div className="space-y-5">
@@ -278,7 +280,7 @@ function VoiceCheck({ project, kit, checks, onDelete }: { project: ViewProps["pr
           {[...checks].reverse().map((c) => {
             const sugg = Array.isArray(c.data.suggestions) ? (c.data.suggestions as { before: string; after: string; why: string }[]) : [];
             return (
-              <li key={c.id} className="rounded-lg border border-hairline bg-surface p-3">
+              <Card variant="flat" as="li" key={c.id} className="rounded-lg p-3">
                 <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium text-primary">{c.body || "Checked"}</p><Button size="icon-sm" variant="ghost" aria-label="Delete this check" onClick={() => onDelete(c.id)}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button></div>
                 <p className="mt-1 text-xs text-muted">Text: {String(c.data.checked ?? "").slice(0, 160)}</p>
                 {sugg.length === 0 ? <p className="mt-2 text-sm text-secondary">No changes suggested.</p> : (
@@ -292,7 +294,7 @@ function VoiceCheck({ project, kit, checks, onDelete }: { project: ViewProps["pr
                     ))}
                   </ul>
                 )}
-              </li>
+              </Card>
             );
           })}
         </ul>

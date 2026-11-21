@@ -1,18 +1,19 @@
 "use client";
 
 import type { Consumables, PartLite } from "./derive";
+import { Card } from "@/components/ui/Card";
 
 export function Joints({ k, wireCount, parts }: { k: Consumables; wireCount: number; parts: Map<string, PartLite> }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-xl border border-hairline bg-surface p-4 print:break-inside-avoid">
+      <Card variant="flat" className="p-4 print:break-inside-avoid">
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Solder joints</p>
         <p className="mt-2 font-mono text-lg text-primary">{k.joints}</p>
         <p className="mt-1 text-xs text-secondary">
           2 per wire ({wireCount} wires). A part in series is its own part with a wire to each of its pins, so it is counted with the wires.
         </p>
-      </div>
-      <div className="rounded-xl border border-hairline bg-surface p-4 print:break-inside-avoid">
+      </Card>
+      <Card variant="flat" className="p-4 print:break-inside-avoid">
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Header pins</p>
         <p className="mt-1 text-xs text-muted">Parts with 3 or more pins in use.</p>
         {k.headers.length === 0 ? (
@@ -27,7 +28,7 @@ export function Joints({ k, wireCount, parts }: { k: Consumables; wireCount: num
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -3,12 +3,13 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Select } from "@/components/parts/controls";
 import { statusTone } from "@/lib/statusTones";
 import { inclusiveDays, formatDay } from "@/lib/campaigns/days";
 import type { Campaign } from "@/lib/campaigns/read";
 import { OBJECTIVE_LABEL, TARGET_INFO, type Objective } from "@/lib/campaigns/schemas";
 import type { useMoney } from "./hooks";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 
 type Money = ReturnType<typeof useMoney>;
 
@@ -46,7 +47,7 @@ export function CampaignBoard({ campaigns, statuses, money, onEdit, onDelete, on
       {columns.map((status) => {
         const here = campaigns.filter((c) => c.status === status);
         return (
-          <section key={status} aria-label={`${status}, ${here.length}`} className="min-w-0 rounded-xl border border-hairline bg-subtle p-2">
+          <Card variant="well" as="section" key={status} aria-label={`${status}, ${here.length}`} className="min-w-0 p-2">
             <h3 className="mb-2 flex items-center justify-between px-1 text-xs font-medium text-secondary">
               <span className="capitalize">{status}</span>
               <span className="font-mono text-[11px] text-muted">{here.length}</span>
@@ -56,7 +57,7 @@ export function CampaignBoard({ campaigns, statuses, money, onEdit, onDelete, on
             ) : (
               <ul className="space-y-2">
                 {here.map((c) => (
-                  <li key={c.id} className="rounded-lg border border-hairline bg-surface p-3 text-sm">
+                  <Card variant="flat" as="li" key={c.id} className="rounded-lg p-3 text-sm">
                     <p className="font-medium text-primary wrap-anywhere">{c.title}</p>
                     <p className="mt-0.5 text-xs text-secondary">
                       {[c.objective ? OBJECTIVE_LABEL[c.objective as Objective] ?? c.objective : "", c.channel].filter(Boolean).join(" on ") || "Objective and channel not set"}
@@ -67,18 +68,18 @@ export function CampaignBoard({ campaigns, statuses, money, onEdit, onDelete, on
                     {targetLine(c, money) && <p className="mt-1 text-xs text-secondary">Target: {targetLine(c, money)}</p>}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <label className="sr-only" htmlFor={`status-${c.id}`}>Status of {c.title}</label>
-                      <Select id={`status-${c.id}`} value={c.status} onChange={(e) => onStatus(c, e.target.value)} className="h-8 w-28 px-2 text-xs">
+                      <NativeSelect id={`status-${c.id}`} value={c.status} onChange={(e) => onStatus(c, e.target.value)} className="h-8 w-28 px-2 text-xs">
                         {[...new Set([...statuses, c.status])].map((s) => <option key={s}>{s}</option>)}
-                      </Select>
+                      </NativeSelect>
                       <Button size="sm" variant="outline" onClick={() => onEdit(c)} aria-label={`Edit ${c.title}`}><Pencil className="h-3.5 w-3.5" aria-hidden /></Button>
                       <Button size="sm" variant="ghost" onClick={() => onDelete(c)} aria-label={`Delete ${c.title}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                     </div>
                     {c.status === "killed" || c.status === "paused" ? <StatusBadge tone={statusTone(c.status)} className="mt-2">{c.status}</StatusBadge> : null}
-                  </li>
+                  </Card>
                 ))}
               </ul>
             )}
-          </section>
+          </Card>
         );
       })}
     </div>

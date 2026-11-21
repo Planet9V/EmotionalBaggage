@@ -2,17 +2,19 @@
 
 import { ComputedSections } from "@/components/plan/computedSections";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { NextStepCard } from "@/components/process/NextStepCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { fmtTime, storeHref, storeLabel } from "@/components/plan/format";
+import { storeHref, storeLabel } from "@/components/plan/format";
 import { useConcept, type ConceptData, type ConceptPart } from "@/components/plan/useConcept";
 import { CLOSED, STAGES, storeKey, type Section } from "@/lib/menu";
 import { statusTone } from "@/lib/statusTones";
 import { useProject } from "@/lib/client";
 import type { Item, Project } from "@/lib/types";
+import { fmtDateTime } from "@/lib/format";
+import { LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 const PARTS: ConceptPart[] = ["items", "events", "research", "challenge"];
 const TROUBLE = new Set(["blocked", "wrong", "fail", "failed"]);
@@ -25,7 +27,7 @@ export function OverviewView() {
         <PageHeader eyebrow="Overview" title="No concept open" />
         <div className="p-8 text-sm text-secondary">
           {loading ? (
-            "Loading the concept."
+            <LoadingBlocks rows={2} label="Loading the concept" />
           ) : (
             <p>
               There are no concepts yet. <Link href="/new" className="text-link hover:underline">Start one with the wizard</Link>.
@@ -61,7 +63,6 @@ function sectionState(section: Section, rows: Item[], data: ConceptData) {
 
 function OverviewBody({ project }: { project: Project }) {
   const { data, errors, loading } = useConcept(project.id, PARTS);
-  const reduce = useReducedMotion();
   const byStore = new Map<string, Item[]>();
   for (const it of data.items) byStore.set(it.section, [...(byStore.get(it.section) ?? []), it]);
   const trouble = data.items.filter((i) => TROUBLE.has(i.status));
@@ -119,7 +120,7 @@ function OverviewBody({ project }: { project: Project }) {
         )}
 
         {empty && (
-          <section className="rounded-xl border border-hairline bg-surface p-6">
+          <Card variant="flat" as="section" className="p-6">
             <h2 className="text-base font-semibold tracking-tight text-primary">Nothing recorded yet</h2>
             <p className="mt-1 max-w-2xl text-sm text-secondary">
               Start by writing the proposition down: what it is, who it is for, and why now. Every later stage builds on it.
@@ -138,23 +139,17 @@ function OverviewBody({ project }: { project: Project }) {
                 Or use the wizard
               </Link>
             </div>
-          </section>
+          </Card>
         )}
 
         {loading && !data.items.length ? (
-          <p className="text-sm text-secondary">Loading the concept.</p>
+          <LoadingBlocks rows={2} label="Loading the concept" />
         ) : (
           <ol aria-label="Stages" className="relative">
             {STAGES.map((stage, si) => {
               const last = si === STAGES.length - 1;
               return (
-                <motion.li
-                  key={stage.key}
-                  initial={reduce ? false : { opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: "easeOut", delay: reduce ? 0 : si * 0.04 }}
-                  className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 pb-8"
-                >
+                <li className="animate-enter relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 pb-8" style={{ animationDelay: `${(si * 0.04) * 1000}ms` }} key={stage.key}>
                   {!last && <span aria-hidden className="absolute bottom-0 left-5 top-10 w-px -translate-x-1/2 bg-hairline" />}
                   <span className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-hairline bg-surface font-mono text-xs text-link">
                     {String(stage.n).padStart(2, "0")}
@@ -218,7 +213,7 @@ function OverviewBody({ project }: { project: Project }) {
                       })}
                     </ul>
                   </div>
-                </motion.li>
+                </li>
               );
             })}
           </ol>
@@ -232,7 +227,7 @@ function OverviewBody({ project }: { project: Project }) {
             <ul className="mt-3 divide-y divide-hairline rounded-xl border border-hairline bg-surface">
               {data.events.slice(0, 8).map((e) => (
                 <li key={e.id} className="grid gap-x-4 px-4 py-2.5 text-sm sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
-                  <span className="font-mono text-[11px] text-muted">{fmtTime(e.createdAt)}</span>
+                  <span className="font-mono text-[11px] text-muted">{fmtDateTime(e.createdAt)}</span>
                   <span className="text-secondary">{e.summary}</span>
                   <span className="font-mono text-[10px] text-muted">{e.kind}</span>
                 </li>

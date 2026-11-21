@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorLine } from "@/components/parts/controls";
-import { LoadFailed, LoadingBlock } from "@/components/market/shared";
 import { useItems } from "@/lib/client";
 import { campaignsOf, planOf, type Campaign } from "@/lib/campaigns/read";
 import { toLaunch, toStep, isLaunchRow, isStepRow } from "@/lib/campaigns/launch";
@@ -17,6 +15,7 @@ import { CampaignDialog } from "./CampaignDialog";
 import { Section } from "./fields";
 import { useMoney, useSummary } from "./hooks";
 import { PlanCard } from "./PlanCard";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 
 export function CampaignsView({ project, section }: ViewProps) {
   const { items, loading, error, reload, patch, remove } = useItems(project.id, CAMPAIGN_STORE);
@@ -32,9 +31,9 @@ export function CampaignsView({ project, section }: ViewProps) {
   const steps = useMemo(() => launchRows.filter(isStepRow).map(toStep), [launchRows]);
   const statuses = section.statuses ?? [];
 
-  if (loading || summaryLoading) return <LoadingBlock label="Loading campaigns" />;
-  if (summaryError) return <LoadFailed what="The concept's currency and margins" message={summaryError} retry={retrySummary} />;
-  if (error && !items.length) return <LoadFailed what="Campaigns" message={error} retry={() => void reload()} />;
+  if (loading || summaryLoading) return <LoadingBlocks label="Loading campaigns" />;
+  if (summaryError) return <LoadError what="The concept's currency and margins" message={summaryError} onRetry={retrySummary} />;
+  if (error && !items.length) return <LoadError what="Campaigns" message={error} onRetry={() => void reload()} />;
 
   const guard = async (p: Promise<unknown>) => {
     setActionError("");

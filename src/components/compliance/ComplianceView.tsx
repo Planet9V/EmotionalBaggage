@@ -6,9 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, Select } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
-import { PanelLoading } from "@/components/economics/shared";
 import { api, saveOrMessage, useItems } from "@/lib/client";
 import { DRAFT_NOTE, NOT_ADVICE } from "@/lib/compliance/text";
 import { useProductionSettings } from "@/lib/economics/client";
@@ -17,6 +15,8 @@ import { keys } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ComplianceDialog } from "./ComplianceDialog";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 const tone = (s: string) => (s === "done" ? "success" : s === "applies" ? "info" : s === "does not apply" ? "neutral" : "warning");
@@ -35,7 +35,7 @@ export function ComplianceView({ project }: ViewProps) {
   const [message, setMessage] = useState("");
   const [confirmAs, setConfirmAs] = useState<Record<number, string>>({});
 
-  if (rows.loading || settings.loading) return <PanelLoading label="Loading the compliance checklist" />;
+  if (rows.loading || settings.loading) return <LoadingBlocks label="Loading the compliance checklist" />;
   if ((rows.error && !rows.items.length) || settings.error) {
     return (
       <div role="alert" className="max-w-xl rounded-xl border border-hairline bg-danger-soft p-4">
@@ -163,11 +163,11 @@ export function ComplianceView({ project }: ViewProps) {
                       {isDraft ? (
                         <>
                           <StatusBadge tone="warning">Draft</StatusBadge>
-                          <Select aria-label={`Confirm ${r.title} as`} value={confirmAs[r.id] ?? "to check"} className="h-8 w-40 text-xs" onChange={(e) => setConfirmAs({ ...confirmAs, [r.id]: e.target.value })}>
+                          <NativeSelect aria-label={`Confirm ${r.title} as`} value={confirmAs[r.id] ?? "to check"} className="h-8 w-40 text-xs" onChange={(e) => setConfirmAs({ ...confirmAs, [r.id]: e.target.value })}>
                             {CONFIRM_STATUSES.map((s) => (
                               <option key={s}>{s}</option>
                             ))}
-                          </Select>
+                          </NativeSelect>
                           <Button size="sm" onClick={() => void confirm(r)} aria-label={`Confirm ${r.title}`}>
                             Confirm
                           </Button>
@@ -175,7 +175,7 @@ export function ComplianceView({ project }: ViewProps) {
                       ) : (
                         <>
                           <StatusBadge tone={tone(r.status)}>{r.status}</StatusBadge>
-                          <Select
+                          <NativeSelect
                             aria-label={`Status of ${r.title}`}
                             value={r.status}
                             className="h-8 w-40 text-xs"
@@ -187,7 +187,7 @@ export function ComplianceView({ project }: ViewProps) {
                             {CONFIRM_STATUSES.map((s) => (
                               <option key={s}>{s}</option>
                             ))}
-                          </Select>
+                          </NativeSelect>
                         </>
                       )}
                       <Button variant="ghost" size="icon-sm" aria-label={`Edit ${r.title}`} onClick={() => setEditing(r.id)}>

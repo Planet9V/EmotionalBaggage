@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CheckList } from "./CheckList";
 import { gateBadge } from "./gateBadge";
+import { Card } from "@/components/ui/Card";
 
 /** The next step in full, for the overview: what to do, why, and the current stage's gate. */
 export function NextStepCard({ projectId, showGate = true }: { projectId: string; showGate?: boolean }) {
@@ -14,11 +15,11 @@ export function NextStepCard({ projectId, showGate = true }: { projectId: string
 
   if (loading) {
     return (
-      <section aria-label="Next step" aria-busy="true" className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
+      <Card variant="flat" as="section" aria-label="Next step" aria-busy="true" className="space-y-3 p-5">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-6 w-80 max-w-full" />
         <Skeleton className="h-4 w-full max-w-xl" />
-      </section>
+      </Card>
     );
   }
   if (error || !view) {
@@ -32,7 +33,7 @@ export function NextStepCard({ projectId, showGate = true }: { projectId: string
   const { next, current } = view;
   const badge = gateBadge(current);
   return (
-    <section aria-labelledby="next-step-h" className="rounded-xl border border-hairline bg-surface p-5" data-testid="next-step-card">
+    <Card variant="flat" as="section" aria-labelledby="next-step-h" className="p-5" data-testid="next-step-card">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">
         Stage {String(current.n).padStart(2, "0")} · {current.label}
       </p>
@@ -61,6 +62,6 @@ export function NextStepCard({ projectId, showGate = true }: { projectId: string
           <CheckList checks={current.result.checks} labelledBy="current-gate-h" />
         </div>
       </div>}
-    </section>
+    </Card>
   );
 }

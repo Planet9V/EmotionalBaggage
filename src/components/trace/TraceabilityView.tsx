@@ -13,6 +13,8 @@ import { traceOf } from "@/lib/trace/coverage";
 import { keyOf, listOf } from "@/lib/trace/spec";
 import type { Item, Project } from "@/lib/types";
 import { Coverage } from "./Coverage";
+import { NoConcept } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 export function TraceabilityView() {
   const { project, loading } = useProject();
@@ -25,9 +27,7 @@ export function TraceabilityView() {
       />
       <div className="px-8 py-6">
         {!project ? (
-          <p className="text-sm text-secondary">
-            {loading ? "Loading the concept." : <>No concept is open. <Link href="/new" className="text-link hover:underline">Start one</Link>.</>}
-          </p>
+          <NoConcept loading={loading} />
         ) : (
           <TraceBody key={project.id} project={project} />
         )}
@@ -38,7 +38,7 @@ export function TraceabilityView() {
 
 function Gap({ title, empty, rows, href, label }: { title: string; empty: string; rows: Item[]; href: string; label: (i: Item) => string }) {
   return (
-    <section aria-label={title} className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="section" aria-label={title} className="p-4">
       <h2 className="text-sm font-semibold tracking-tight text-primary">{title}</h2>
       {rows.length ? (
         <ul className="mt-2 space-y-1">
@@ -53,7 +53,7 @@ function Gap({ title, empty, rows, href, label }: { title: string; empty: string
       ) : (
         <p className="mt-2 text-sm text-secondary">{empty}</p>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -63,7 +63,7 @@ function TraceBody({ project }: { project: Project }) {
 
   if (loading) {
     return (
-      <div className="space-y-3" aria-busy="true" aria-label="Loading traceability">
+      <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading traceability">
         <div className="h-48 animate-pulse rounded-xl bg-subtle" />
         <div className="h-24 animate-pulse rounded-xl bg-subtle" />
       </div>
@@ -98,7 +98,7 @@ function TraceBody({ project }: { project: Project }) {
       <section aria-label="Requirements by test">
         <h2 className="mb-2 text-sm font-semibold tracking-tight text-primary">Requirements by test</h2>
         {t.tests.length ? (
-          <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+          <Card variant="flat" className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -145,7 +145,7 @@ function TraceBody({ project }: { project: Project }) {
                 })}
               </TableBody>
             </Table>
-          </div>
+          </Card>
         ) : (
           <p className="text-sm text-secondary">
             There are no acceptance tests yet. <Link href="/s/prototype/tests" className="text-link hover:underline">Add tests</Link> to cover the requirements.

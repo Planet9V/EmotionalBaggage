@@ -4,7 +4,8 @@ import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SEVERITY_LABEL, type Finding, type Severity } from "@/lib/parts/erc";
-import { EYEBROW } from "./controls";
+import { EYEBROW } from "@/components/ui/field";
+import { Card } from "@/components/ui/Card";
 
 const ICON: Record<Severity, React.ReactNode> = {
   error: <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden />,
@@ -30,7 +31,7 @@ export function ErcPanel({ findings, error, loading, onRetry, onPick, described,
   const errors = findings.filter((f) => f.severity === "error").length;
   const warnings = findings.filter((f) => f.severity === "warning").length;
   return (
-    <section aria-labelledby="erc-title" className="rounded-xl border border-hairline bg-surface p-4" data-testid="erc-panel">
+    <Card variant="flat" as="section" aria-labelledby="erc-title" className="p-4" data-testid="erc-panel">
       <p className={EYEBROW}>Electrical checks</p>
       <h3 id="erc-title" className="mt-1 text-base font-semibold tracking-tight text-primary">
         {loading ? "Reading the pins" : error ? "Checks not run" : errors ? `${errors} ${errors === 1 ? "error" : "errors"}${warnings ? `, ${warnings} to look at` : ""}` : warnings ? `${warnings} to look at` : "No electrical problems found"}
@@ -77,6 +78,6 @@ export function ErcPanel({ findings, error, loading, onRetry, onPick, described,
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }

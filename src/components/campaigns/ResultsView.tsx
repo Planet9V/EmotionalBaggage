@@ -8,8 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field, Select } from "@/components/parts/controls";
-import { LoadFailed, LoadingBlock } from "@/components/market/shared";
 import { useItems } from "@/lib/client";
 import { analyze } from "@/lib/campaigns/analyze";
 import { formatDay, isDay, todayUtc } from "@/lib/campaigns/days";
@@ -21,6 +19,9 @@ import { readNumber } from "./fields";
 import { explain, useMoney, useRemoveResults, useResults, useSaveResults, useSummary, type Explanation } from "./hooks";
 import { ImportPanel } from "./ImportPanel";
 import { ResultsChart } from "./ResultsChart";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const TONE = { stop: "danger", scale: "success", hold: "info", not_enough_data: "warning", no_rule: "neutral" } as const;
 const WORD = { stop: "Stop", scale: "Scale", hold: "Hold", not_enough_data: "Not enough data", no_rule: "No rule" } as const;
@@ -50,10 +51,10 @@ export function ResultsView({ project }: ViewProps) {
     return analyze({ campaign, rows: res.data.rows, linkClicks: res.data.linkClicks, plan, unitMarginBeforeAds: margin, money: money.format });
   }, [campaign, res.data, summary, plan, money]);
 
-  if (store.loading || res.loading || sLoading) return <LoadingBlock label="Loading campaign results" />;
-  if (store.error && !store.items.length) return <LoadFailed what="Campaigns" message={store.error} retry={() => void store.reload()} />;
-  if (res.error) return <LoadFailed what="Results" message={res.error} retry={res.retry} />;
-  if (sError) return <LoadFailed what="The concept's currency" message={sError} retry={sRetry} />;
+  if (store.loading || res.loading || sLoading) return <LoadingBlocks label="Loading campaign results" />;
+  if (store.error && !store.items.length) return <LoadError what="Campaigns" message={store.error} onRetry={() => void store.reload()} />;
+  if (res.error) return <LoadError what="Results" message={res.error} onRetry={res.retry} />;
+  if (sError) return <LoadError what="The concept's currency" message={sError} onRetry={sRetry} />;
   if (!campaign) return <EmptyState title="No campaign to show results for">Add a campaign in <Link className="text-link underline" href="/s/marketing/campaigns">Campaigns</Link>, then come back to enter or import what it spent and got.</EmptyState>;
 
   const rows = (res.data?.rows ?? []).filter((r) => r.campaignId === campaign.id);
@@ -63,9 +64,9 @@ export function ResultsView({ project }: ViewProps) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Campaign" className="min-w-64">
-          <Select value={String(campaign.id)} onChange={(e) => { setPicked(e.target.value); setMsg(""); }}>
+          <NativeSelect value={String(campaign.id)} onChange={(e) => { setPicked(e.target.value); setMsg(""); }}>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.status})</option>)}
-          </Select>
+          </NativeSelect>
         </Field>
         <Button variant={tab === "enter" ? "primary" : "outline"} aria-pressed={tab === "enter"} onClick={() => setTab(tab === "enter" ? null : "enter")}>Enter a day</Button>
         <Button variant={tab === "import" ? "primary" : "outline"} aria-pressed={tab === "import"} onClick={() => setTab(tab === "import" ? null : "import")}>Paste or import a report</Button>
@@ -198,7 +199,7 @@ function EntryForm({ projectId, campaignId, creatives, money, onDone }: { projec
     <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
       <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
         <Field label="Day"><Input type="date" value={v.day} onChange={set("day")} /></Field>
-        <Field label="Creative"><Select value={v.creative} onChange={set("creative")}><option value="">Whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</Select></Field>
+        <Field label="Creative"><NativeSelect value={v.creative} onChange={set("creative")}><option value="">Whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</NativeSelect></Field>
         <Field label={`Spend (${money.currency})`}><Input inputMode="decimal" value={v.spend} onChange={set("spend")} /></Field>
         <Field label={`Revenue (${money.currency})`}><Input inputMode="decimal" value={v.revenue} onChange={set("revenue")} /></Field>
         <Field label="Impressions"><Input inputMode="numeric" value={v.impressions} onChange={set("impressions")} /></Field>
@@ -228,11 +229,11 @@ function ExplainBox({ projectId, campaignId }: { projectId: string; campaignId: 
       <Button variant="outline" size="sm" onClick={() => void go()} disabled={state.busy} aria-busy={state.busy}><Sparkles className="h-3.5 w-3.5" aria-hidden /> {state.busy ? "Asking the model" : "Explain this with the model"}</Button>
       {state.err && <ErrorLine>{state.err} <Link className="underline" href="/admin?tab=models">Open Admin, Models</Link>.</ErrorLine>}
       {state.out && (
-        <div className="max-w-3xl rounded-lg border border-hairline bg-subtle p-3 text-sm" data-testid="explanation">
+        <Card variant="well" className="rounded-lg max-w-3xl p-3 text-sm" data-testid="explanation">
           <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Written by the model ({state.out.model}). The verdict is the rule&apos;s, not the model&apos;s.</p>
           <p className="mt-1 text-primary">{state.out.modelText.explanation}</p>
           <p className="mt-1 text-secondary">To consider: {state.out.modelText.suggestion}</p>
-        </div>
+        </Card>
       )}
     </div>
   );

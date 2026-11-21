@@ -80,7 +80,8 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
           position={POS[p.toward]}
           className="h-[9px]! w-[9px]! min-w-0! rounded-full! border-2! bg-surface!"
           style={{ left: X(p.x), top: Y(p.y), right: "auto", bottom: "auto", transform: "translate(-50%, -50%)", borderColor: litPins.has(`${data.ref}.${p.name}`) ? "#E05A10" : "var(--text-muted)" }}
-          aria-label={`Pin ${data.ref}.${p.name}. Drag to another pin to add a wire, or press to select it.`}
+          role="button"
+              aria-label={`Pin ${data.ref}.${p.name}. Drag to another pin to add a wire, or press to select it.`}
           onClick={(e) => {
             e.stopPropagation();
             onPickPin(data.ref, p.name);

@@ -4,8 +4,6 @@ import { useState } from "react";
 import { Download, Pause, Play, Printer, Scissors, Send, Square, Trash2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { ErrorLine } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { FILE_ONLY_STEPS } from "@/lib/slicing/fileOnlySteps";
@@ -13,6 +11,9 @@ import { STATUS_WORDS, normaliseStatus, printJobData, type PrintStatus } from "@
 import { duration } from "@/lib/slicing/format";
 import { usePlan, usePrintActions, useTrack } from "@/lib/slicing/queries";
 import { ResultForm } from "./ResultForm";
+import { ErrorLine } from "@/components/ui/states";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
 
 type Pending = null | { kind: "send" | "start" | "cancel"; printer: string; file: string };
 
@@ -55,7 +56,7 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
   const sentFile = d.sentName ?? p?.send?.name ?? "";
 
   return (
-    <li className="space-y-3 rounded-xl border border-hairline bg-surface p-4" aria-label={`Print job ${job.title}`}>
+    <Card variant="flat" as="li" className="space-y-3 p-4" aria-label={`Print job ${job.title}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-primary">{job.title}</p>
@@ -78,7 +79,7 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
       {err ? <ErrorLine>{err}</ErrorLine> : null}
 
       {hasSlice && d.slice ? (
-        <div className="rounded-lg border border-hairline bg-subtle p-3" aria-label="What the slicer says">
+        <Card variant="well" className="rounded-lg p-3" aria-label="What the slicer says">
           <p className="text-xs font-medium text-secondary">From OrcaSlicer {d.slice.orcaVersion}, read from its own output</p>
           <dl className="mt-1 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-3">
             <div><dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Print time</dt><dd className="font-mono text-primary">{duration(d.slice.seconds)}</dd></div>
@@ -87,7 +88,7 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
           </dl>
           <p className="mt-1 break-words font-mono text-[11px] text-muted">{d.slice.profile.machine} · {d.slice.profile.process} · {d.slice.profile.filament}</p>
           {d.slice.warnings.length > 0 && <ul className="mt-1 list-disc pl-5 text-xs text-warning">{d.slice.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
-        </div>
+        </Card>
       ) : null}
 
       {live && (
@@ -147,14 +148,14 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
       </div>
 
       {status === "sliced" && p?.fileOnly && p.download && (
-        <div className="rounded-lg border border-hairline bg-subtle p-3 text-sm" aria-label="File only">
+        <Card variant="well" className="rounded-lg p-3 text-sm" aria-label="File only">
           <p className="font-medium text-primary">{p.printer ? `${p.printer.name} has no connection from here` : "Choose a printer"}: take the file to it</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-secondary">{FILE_ONLY_STEPS.map((s) => <li key={s}>{s}</li>)}</ol>
           <div className="mt-2 flex flex-wrap gap-2">
             <a href={`/api/files/${p.download.gcodeFileId}`} className={buttonVariants({ variant: "outline", size: "sm" })}><Download className="h-3.5 w-3.5" aria-hidden /> Download G-code</a>
             {p.download.projectFileId != null && <a href={`/api/files/${p.download.projectFileId}`} className={buttonVariants({ variant: "outline", size: "sm" })}><Download className="h-3.5 w-3.5" aria-hidden /> Download sliced .3mf</a>}
           </div>
-        </div>
+        </Card>
       )}
 
       {d.sentAt && <p className="font-mono text-[11px] text-muted">Sent {dt(d.sentAt)} as {d.sentName}{d.startedAt ? ` · started ${dt(d.startedAt)}` : ""}</p>}
@@ -190,6 +191,6 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
           </Button>
         </div>
       </Modal>
-    </li>
+    </Card>
   );
 }

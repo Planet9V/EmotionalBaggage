@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select } from "@/components/parts/controls";
 import { AMPACITY_SOURCE, CONNECTIONS, connectionOf, stripSummary, swatch, totalsByColour, type SpecRow } from "./wiresheet";
 import type { PartLite } from "./derive";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 
 type Props = {
   rows: SpecRow[];
@@ -60,7 +61,7 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
   const unknownGauge = rows.filter((r) => r.gauge.set === "none" && r.gauge.label === "not set").length;
   return (
     <div className="space-y-4">
-      <div className="no-print space-y-2 rounded-xl border border-hairline bg-subtle p-3">
+      <Card variant="well" className="no-print space-y-2 p-3">
         <p className="text-sm font-medium text-primary">What each part draws and how it connects</p>
         <p className="text-xs text-secondary">
           A wire&apos;s gauge comes from its current. Enter the current a part draws (peak, in mA) and the connection type used at it. A wire takes the larger figure of its two ends; type a current on a single wire below to override. Where no current is set, the gauge stays unset.
@@ -81,10 +82,10 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
                     </td>
                     <td className="py-1.5">
                       {p ? (
-                        <Select aria-label={`Connection type at ${ref}`} className="h-8 text-xs" value={connectionOf(p)} onChange={(e) => void onPartData(p.item.id, { connection: e.target.value || null })}>
+                        <NativeSelect aria-label={`Connection type at ${ref}`} className="h-8 text-xs" value={connectionOf(p)} onChange={(e) => void onPartData(p.item.id, { connection: e.target.value || null })}>
                           <option value="">Not set</option>
                           {CONNECTIONS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                        </Select>
+                        </NativeSelect>
                       ) : <span className="text-muted">n/a</span>}
                     </td>
                   </tr>
@@ -93,7 +94,7 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       <p className="text-xs text-secondary">
         Gauge is the thinnest AWG whose chassis-wiring current limit carries the wire&apos;s current, from the table at{" "}
@@ -101,7 +102,7 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
         . Those limits are for single wires in free air; a tight bundle or a warm enclosure needs a thicker wire. {unknownGauge ? `${unknownGauge} of ${rows.length} wires have no current set, so no gauge is given for them.` : ""}
       </p>
 
-      <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+      <Card variant="flat" className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -151,7 +152,7 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <div>
         <p className="mb-1 text-sm font-medium text-primary">Total wire to cut</p>

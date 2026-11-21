@@ -76,5 +76,3 @@ export function FormError({ message }: { message: string }) {
 }
 
 export const fieldLabel = "block font-mono text-[10px] uppercase tracking-[0.15em] text-muted";
-export const selectClass =
-  "mt-1 h-9 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";

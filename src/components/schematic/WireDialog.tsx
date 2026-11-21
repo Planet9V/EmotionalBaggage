@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { NetClass, Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, WIRE_STATUSES, type NetInfo, type Part } from "./model";
-import { ErrorLine, Field, Modal, Select, Textarea } from "./controls";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Modal } from "@/components/ui/modal";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 
 export type WireDraft = {
   name: string;
@@ -122,7 +126,7 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
   return (
     <Modal
       open
-      onClose={onClose}
+      onOpenChange={(o) => !o && onClose()}
       title={editing ? `Wire ${mode.wire.order}` : "New wire"}
       description={editing ? "Change any field, or delete the wire." : "Saved to the wiring list with status to solder."}
       width="560px"
@@ -146,26 +150,26 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-[1fr_1fr] gap-3">
             <Field label="From part">
-              <Select value={d.from} onChange={(e) => set("from", e.target.value)}>
+              <NativeSelect value={d.from} onChange={(e) => set("from", e.target.value)}>
                 {refs.map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </Field>
             <Field label="From pin">
               <Input value={d.fromPin} onChange={(e) => set("fromPin", e.target.value)} list={`${uid}-fp`} className="font-mono" />
               {pinList(d.from, `${uid}-fp`)}
             </Field>
             <Field label="To part">
-              <Select value={d.to} onChange={(e) => set("to", e.target.value)}>
+              <NativeSelect value={d.to} onChange={(e) => set("to", e.target.value)}>
                 {refs.map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </Field>
             <Field label="To pin">
               <Input value={d.toPin} onChange={(e) => set("toPin", e.target.value)} list={`${uid}-tp`} className="font-mono" />
@@ -185,7 +189,7 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
               </datalist>
             </Field>
             <Field label="Net class">
-              <Select
+              <NativeSelect
                 value={d.netClass}
                 onChange={(e) => {
                   setClassTouched(true);
@@ -197,7 +201,7 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
                     {CLASS_LABEL[c]}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </Field>
             <div className="grid grid-cols-[88px_1fr] gap-3">
               <Field label="Order">
@@ -205,13 +209,13 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
               </Field>
               {editing ? (
                 <Field label="Status">
-                  <Select value={d.status} onChange={(e) => set("status", e.target.value)}>
+                  <NativeSelect value={d.status} onChange={(e) => set("status", e.target.value)}>
                     {statusList.map((s) => (
                       <option key={s} value={s}>
                         {s}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                 </Field>
               ) : (
                 <Field label="Status">

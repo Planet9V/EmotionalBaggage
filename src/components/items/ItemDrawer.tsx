@@ -11,8 +11,11 @@ import { linkedFrom } from "@/lib/trace/coverage";
 import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { ItemDialogShell } from "./ItemDialogShell";
-import { Field, SELECT_CLS, TEXTAREA_CLS, prim } from "./shared";
+import { Field } from "@/components/ui/field";
+import { prim } from "./shared";
 import { RowAssist } from "@/components/drafts/RowAssist";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Change = { title: string; body: string; status: string; data: Record<string, unknown> };
 type Restore = (id: number, change: Record<string, unknown>) => Promise<void>;
@@ -183,16 +186,16 @@ function EditForm({
 
   return (
     <form onSubmit={save} className="space-y-4 px-5 py-4" noValidate>
-      <Field label="Title" htmlFor="edit-title">
+      <Field label="Title" id="edit-title">
         <Input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} required aria-required />
       </Field>
-      <Field label="Details" htmlFor="edit-body">
-        <textarea id="edit-body" rows={5} className={TEXTAREA_CLS} value={body} onChange={(e) => setBody(e.target.value)} />
+      <Field label="Details" id="edit-body">
+        <Textarea id="edit-body" rows={5} value={body} onChange={(e) => setBody(e.target.value)} />
       </Field>
       {columns.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
           {columns.map((c) => (
-            <Field key={c.key} label={c.label} htmlFor={`edit-${c.key}`} hint={editable(c.key) ? undefined : "Structured value, not editable here."}>
+            <Field key={c.key} label={c.label} id={`edit-${c.key}`} hint={editable(c.key) ? undefined : "Structured value, not editable here."}>
               <Input
                 id={`edit-${c.key}`}
                 value={cols[c.key] ?? ""}
@@ -209,28 +212,28 @@ function EditForm({
           {extra.render(item)}
         </fieldset>
       )}
-      <Field label="Status" htmlFor="edit-status">
-        <select id="edit-status" className={SELECT_CLS} value={status} onChange={(e) => setStatus(e.target.value)}>
+      <Field label="Status" id="edit-status">
+        <NativeSelect id="edit-status" value={status} onChange={(e) => setStatus(e.target.value)}>
           {(statuses.includes(status) ? statuses : [...statuses, status]).map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </Field>
 
       <fieldset className="space-y-3 rounded-xl border border-hairline bg-subtle p-4">
         <legend className="px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step in the order of operations</legend>
         <p className="text-xs leading-snug text-secondary">Give this row a key and a duration and it becomes a step in the plan. Leave the key empty to keep it out.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Key" htmlFor="edit-step-key" hint="Unique, short, for example p1.">
+          <Field label="Key" id="edit-step-key" hint="Unique, short, for example p1.">
             <Input id="edit-step-key" value={key} onChange={(e) => setKey(e.target.value)} className="font-mono" />
           </Field>
-          <Field label="Minutes" htmlFor="edit-step-min">
+          <Field label="Minutes" id="edit-step-min">
             <Input id="edit-step-min" inputMode="decimal" value={minutes} onChange={(e) => setMinutes(e.target.value)} className="font-mono" />
           </Field>
         </div>
-        <Field label="After" htmlFor="edit-step-after" hint="Keys of the steps this one waits on, separated by commas.">
+        <Field label="After" id="edit-step-after" hint="Keys of the steps this one waits on, separated by commas.">
           <Input id="edit-step-after" value={after} onChange={(e) => setAfter(e.target.value)} className="font-mono" placeholder="p0, p2" />
         </Field>
       </fieldset>

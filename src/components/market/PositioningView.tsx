@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, Field, Textarea } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf } from "@/lib/queries";
 import { positioningFingerprint } from "@/lib/market/critique";
@@ -18,7 +16,11 @@ import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningData, type PositioningMessage, type ProofRef } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
-import { ApproveButton, GeneratedLine, GenerateButton, LoadFailed, LoadingBlock, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { ApproveButton, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
+import { Modal } from "@/components/ui/modal";
 
 const STATE_TONE: Record<ProofState, "success" | "info" | "warning" | "danger"> = {
   "verified claim": "success",
@@ -49,8 +51,8 @@ export function PositioningView({ project, store }: ViewProps) {
     return m;
   }, [claims.items, tests.items, reqs.items]);
 
-  if (loading) return <LoadingBlock label="Loading positioning" />;
-  if (error && !items.length) return <LoadFailed what="Positioning" message={error} retry={() => void reload()} />;
+  if (loading) return <LoadingBlocks label="Loading positioning" />;
+  if (error && !items.length) return <LoadError what="Positioning" message={error} onRetry={() => void reload()} />;
 
   const statements = items.filter(isStatement);
   const notes = items.filter((i) => !isStatement(i));
@@ -161,7 +163,7 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
               <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Supporting messages and their proof</h3>
               <ol className="mt-2 space-y-3">
                 {proof.map((p, i) => (
-                  <li key={i} className="rounded-lg border border-hairline bg-surface p-3">
+                  <Card variant="flat" as="li" key={i} className="rounded-lg p-3">
                     <p className="text-sm font-medium text-primary">{p.message.text}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {p.links.map((l) => (
@@ -174,7 +176,7 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
                       {!p.hasProof && <StatusBadge tone="danger">No proof: link a verified claim, a passing test or a requirement</StatusBadge>}
                       {p.hasProof && p.onlyRequirement && <StatusBadge tone="warning">Only a requirement: stated, not yet shown</StatusBadge>}
                     </div>
-                  </li>
+                  </Card>
                 ))}
                 {!proof.length && <li className="text-sm text-muted">No supporting messages yet. Edit to add up to three.</li>}
               </ol>

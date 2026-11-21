@@ -1,11 +1,15 @@
-// Accessibility floor with axe-core: critical violations fail the run; serious ones are reported
-// (annotation, attachment, console) so they become work for later without blocking the build.
+// Accessibility with axe-core on every page, in both themes. Critical and serious violations both fail.
+// The pages are the ones the sidebar and the docs index link to (same list as pages.spec.ts), so a new
+// section is covered without editing this file.
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
+import { collectRoutes } from "./helpers";
 
 test.use({ reducedMotion: "reduce" }); // no half-faded cards measured mid-animation
 
-async function audit(page: Page, path: string, info: TestInfo) {
+type Found = { critical: string[]; serious: string[] };
+
+async function audit(page: Page, path: string, info: TestInfo): Promise<Found> {
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
   await page.waitForLoadState("networkidle");
@@ -15,27 +19,40 @@ async function audit(page: Page, path: string, info: TestInfo) {
       .slice(0, 3)
       .map((n) => n.target.join(" "))
       .join(" | ")})`;
-  const critical = result.violations.filter((v) => v.impact === "critical").map(line);
-  const serious = result.violations.filter((v) => v.impact === "serious").map(line);
-  for (const s of serious) {
-    info.annotations.push({ type: "a11y serious", description: s });
-    console.log(`[a11y serious] ${s}`);
+  const found = {
+    critical: result.violations.filter((v) => v.impact === "critical").map(line),
+    serious: result.violations.filter((v) => v.impact === "serious").map(line),
+  };
+  if (found.critical.length || found.serious.length) {
+    await info.attach(`axe${path.replace(/\//g, "_") || "_root"}.json`, { body: JSON.stringify(result.violations, null, 2), contentType: "application/json" });
   }
-  await info.attach(`axe${path.replace(/\//g, "_") || "_root"}.json`, { body: JSON.stringify(result.violations, null, 2), contentType: "application/json" });
-  expect(critical, `critical accessibility violations on ${path}:\n  ${critical.join("\n  ")}\n`).toEqual([]);
+  return found;
 }
 
 test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
-  test("sign-in page has no critical accessibility violations", async ({ page }, info) => {
-    await audit(page, "/sign-in", info);
+  test("the sign-in page has no critical or serious accessibility violations", async ({ page }, info) => {
+    const f = await audit(page, "/sign-in", info);
+    expect([...f.critical, ...f.serious]).toEqual([]);
   });
 });
 
-test("overview has no critical accessibility violations", async ({ page }, info) => {
-  await audit(page, "/", info);
-});
-
-test("a section page (brief) has no critical accessibility violations", async ({ page }, info) => {
-  await audit(page, "/s/concept/brief", info);
-});
+for (const theme of ["light", "dark"] as const) {
+  test(`every page has no critical or serious accessibility violations in the ${theme} theme`, async ({ page }, info) => {
+    test.setTimeout(600_000);
+    const { routes } = await collectRoutes(page);
+    expect(routes.length, "the page list is not empty").toBeGreaterThan(30);
+    if (theme === "dark") {
+      await page.goto("/");
+      await page.locator("aside").getByRole("button", { name: "Dark theme" }).click();
+      await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
+    }
+    const problems: string[] = [];
+    for (const path of routes) {
+      const f = await test.step(`${theme} ${path}`, () => audit(page, path, info));
+      problems.push(...f.critical, ...f.serious);
+    }
+    info.annotations.push({ type: "pages", description: `${routes.length} pages audited in the ${theme} theme` });
+    expect(problems, `${problems.length} accessibility violation(s) in the ${theme} theme:\n  ${problems.join("\n  ")}\n`).toEqual([]);
+  });
+}

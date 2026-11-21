@@ -6,9 +6,10 @@
 import { useState } from "react";
 import { Check, Copy, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { EmptyState, ErrorLine, Select } from "@/components/parts/controls";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
 import { channelOf } from "@/lib/channels/channelName";
@@ -36,22 +37,22 @@ export function RepliesView({ project, section, store }: ViewProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="animate-enter space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <p className="max-w-3xl text-sm text-secondary">
           Drafted replies appear here once you approve them (Draft with AI, above). A reply to X or Instagram is sent only when you press its button and confirm. A reply to a review is never sent by this app: copy it and post it where the review was left.
         </p>
         <label className="flex items-center gap-2 text-sm text-secondary">
           Show
-          <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-36">
+          <NativeSelect value={filter} onChange={(e) => setFilter(e.target.value)} className="w-36">
             {[...statuses, "all"].map((x) => <option key={x} value={x}>{x}</option>)}
-          </Select>
+          </NativeSelect>
         </label>
       </div>
-      {error ? <div className="flex items-center gap-2"><ErrorLine>{error}</ErrorLine><Button size="sm" variant="outline" onClick={() => reload()}>Try again</Button></div> : null}
+      {error ? <LoadError what="The replies" message={error} onRetry={() => reload()} /> : null}
       {actionError || writeError ? <ErrorLine>{actionError || writeError}</ErrorLine> : null}
       {loading ? (
-        <div className="space-y-2" aria-label="Loading the replies"><Skeleton className="h-20 w-full bg-subtle" /><Skeleton className="h-20 w-full bg-subtle" /></div>
+        <LoadingBlocks rows={2} label="Loading the replies" />
       ) : shown.length === 0 ? (
         <EmptyState title={items.length ? `No ${filter === "all" ? "" : `${filter} `}replies` : "No replies yet"}>
           {items.length ? "Choose another filter above." : "Use Draft with AI to draft replies to mentions, comments, reviews and questions, then approve the ones you want."}
@@ -63,7 +64,7 @@ export function RepliesView({ project, section, store }: ViewProps) {
             const sent = r.data.sent as { id?: string; at?: string; url?: string } | undefined;
             const err = r.data.sendError as { message?: string } | undefined;
             return (
-              <li key={r.id} className="rounded-xl border border-hairline bg-surface p-4">
+              <Card as="li" variant="flat" key={r.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{String(r.data.channel ?? "Other")}</span>
@@ -93,7 +94,7 @@ export function RepliesView({ project, section, store }: ViewProps) {
                 <p className="mt-2 whitespace-pre-wrap text-sm text-primary wrap-anywhere">{r.body}</p>
                 {typeof r.data.reasoning === "string" && r.data.reasoning ? <p className="mt-1 text-xs text-secondary">Why: {r.data.reasoning}</p> : null}
                 {err?.message && !sent ? <p className="mt-1 text-xs text-danger">Last attempt failed: {err.message}</p> : null}
-              </li>
+              </Card>
             );
           })}
         </ul>

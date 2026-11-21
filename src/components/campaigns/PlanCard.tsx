@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
-import { ErrorLine } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
 import { CAMPAIGN_STORE } from "@/lib/campaigns/schemas";
 import { DEFAULT_MIN_CLICKS, DEFAULT_MIN_ORDERS, type PlanSettings } from "@/lib/campaigns/read";
 import { MoneyField, NumberField, readNumber } from "./fields";
 import { Input } from "@/components/ui/input";
-import { Field } from "@/components/parts/controls";
+import { Field } from "@/components/ui/field";
 import { parseHosts } from "@/lib/campaigns/hosts";
 import type { useMoney } from "./hooks";
+import { ErrorLine } from "@/components/ui/states";
 
 type Money = ReturnType<typeof useMoney>;
 

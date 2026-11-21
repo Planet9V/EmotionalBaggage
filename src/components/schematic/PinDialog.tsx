@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Modal } from "./controls";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { Modal } from "@/components/ui/modal";
 
 /** Name one pin: used for "Add pin" on a node and for the first pin of a part placed from the palette. */
 export function PinDialog({
@@ -42,7 +44,7 @@ export function PinDialog({
   };
 
   return (
-    <Modal open onClose={onClose} title={title} description={description} width="420px">
+    <Modal open onOpenChange={(o) => !o && onClose()} title={title} description={description} width="420px">
       <form onSubmit={submit} className="space-y-3">
         <Field label="Pin name" hint={existing.length ? `Pins so far: ${existing.join(", ")}` : undefined}>
           <Input value={pin} onChange={(e) => setPin(e.target.value)} autoFocus className="font-mono" placeholder="GPIO5" />

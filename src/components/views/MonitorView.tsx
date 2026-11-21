@@ -7,12 +7,9 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmptyState, ErrorLine, Field, Select } from "@/components/parts/controls";
-import { Modal } from "@/components/parts/Modal";
 import { money, parseAmount } from "@/components/parts/bom";
 import { NotConnected, NotRealNote } from "@/components/channels/shared";
 import { useItems } from "@/lib/client";
@@ -21,6 +18,11 @@ import { byDayAndChannel, toSaleRow } from "@/lib/channels/salesByDay";
 import { messageOf } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
+import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/Card";
 
 const today = () => {
   const d = new Date();
@@ -37,15 +39,15 @@ function AmazonPanel({ projectId }: { projectId: string }) {
   // The query's own fetch time stands in for "now", so render stays pure.
   const stale = a?.lastSyncAt ? status.dataUpdatedAt - new Date(a.lastSyncAt).getTime() > DAY_MS : false;
   return (
-    <section aria-labelledby="amz-h" className="space-y-3 rounded-xl border border-hairline bg-surface p-5">
+    <Card variant="flat" as="section" aria-labelledby="amz-h" className="space-y-3 p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="amz-h" className="text-base font-semibold tracking-tight text-primary">Amazon Seller Central</h2>
         {a ? <StatusBadge tone={a.configured ? "success" : "neutral"}>{a.configured ? "Credentials saved" : "Not connected"}</StatusBadge> : null}
       </div>
       {status.isPending ? (
-        <Skeleton className="h-16 w-full bg-subtle" />
+        <LoadingBlocks rows={1} label="Checking the Amazon connection" />
       ) : status.isError ? (
-        <div className="flex items-center gap-2"><ErrorLine>{messageOf(status.error)}</ErrorLine><Button size="sm" variant="outline" onClick={() => void status.refetch()}>Try again</Button></div>
+        <LoadError what="The Amazon connection" message={messageOf(status.error)} onRetry={() => void status.refetch()} />
       ) : a ? (
         <div className="space-y-3 text-sm">
           {!a.configured ? <NotConnected service="Amazon" what="no orders are read" /> : null}
@@ -54,7 +56,7 @@ function AmazonPanel({ projectId }: { projectId: string }) {
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <Field label="Marketplace" className="w-72">
-              <Select
+              <NativeSelect
                 value={a.marketplaceId ?? ""}
                 disabled={setMarketplace.isPending}
                 onChange={(e) => {
@@ -64,7 +66,7 @@ function AmazonPanel({ projectId }: { projectId: string }) {
               >
                 <option value="">Choose a marketplace</option>
                 {a.marketplaces.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </Select>
+              </NativeSelect>
             </Field>
             <Button
               disabled={!a.configured || !a.marketplaceId || sync.isPending}
@@ -98,7 +100,7 @@ function AmazonPanel({ projectId }: { projectId: string }) {
           <NotRealNote service="The Amazon connection" />
         </div>
       ) : null}
-    </section>
+    </Card>
   );
 }
 
@@ -123,7 +125,7 @@ function SalesChart({ items }: { items: Item[] }) {
           <span className="text-xs text-secondary">Sums of the rows below, {agg.days[0]} to {agg.days[agg.days.length - 1]}. Revenue is in each channel&apos;s own currency; nothing is converted.</span>
         </span>
         <span className="flex gap-2">
-          <Select aria-label="What the chart shows" value={metric} onChange={(e) => setMetric(e.target.value as "units" | "revenue")} className="h-8 w-32 text-xs"><option value="units">Units</option><option value="revenue">Revenue</option></Select>
+          <NativeSelect aria-label="What the chart shows" value={metric} onChange={(e) => setMetric(e.target.value as "units" | "revenue")} className="h-8 w-32 text-xs"><option value="units">Units</option><option value="revenue">Revenue</option></NativeSelect>
           <Button size="sm" variant="outline" aria-pressed={showTable} onClick={() => setShowTable((v) => !v)}>{showTable ? "Show the chart" : "Show as a table"}</Button>
         </span>
       </figcaption>
@@ -142,8 +144,8 @@ function SalesChart({ items }: { items: Item[] }) {
           </ChartContainer>
         </div>
       ) : null}
-      <div className={showTable ? "overflow-x-auto" : "sr-only"}>
-        <Table>
+      <div className={showTable ? undefined : "sr-only"}>
+        <Table scroll={showTable}>
           <caption className="sr-only">Units and revenue by day and channel</caption>
           <TableHeader><TableRow className="hover:bg-transparent"><TableHead scope="col">Day</TableHead><TableHead scope="col">Channel</TableHead><TableHead scope="col" className="text-right">Rows</TableHead><TableHead scope="col" className="text-right">Units</TableHead><TableHead scope="col" className="text-right">Revenue</TableHead></TableRow></TableHeader>
           <TableBody>
@@ -167,9 +169,9 @@ export function MonitorView({ project, store }: ViewProps) {
   const visible = showAll ? rows : rows.slice(0, 50);
 
   return (
-    <div className="space-y-6">
+    <div className="animate-enter space-y-6">
       <AmazonPanel projectId={project.id} />
-      {loading ? <Skeleton className="h-64 w-full bg-subtle" /> : <SalesChart items={items} />}
+      {loading ? <LoadingBlocks rows={1} label="Loading the sales chart" /> : <SalesChart items={items} />}
       <section aria-labelledby="log-h" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -178,14 +180,14 @@ export function MonitorView({ project, store }: ViewProps) {
           </div>
           <AddSale channels={channels} onCreate={(v) => add({ section: store, title: `${v.date} ${v.channel}`, data: { ...v, source: "hand" } }).then(() => undefined)} />
         </div>
-        {error ? <div className="flex items-center gap-2"><ErrorLine>{error}</ErrorLine><Button size="sm" variant="outline" onClick={() => reload()}>Try again</Button></div> : null}
+        {error ? <LoadError what="The sales rows" message={error} onRetry={() => reload()} /> : null}
         {actionError ? <ErrorLine>{actionError}</ErrorLine> : null}
         {loading ? (
-          <Skeleton className="h-32 w-full bg-subtle" />
+          <LoadingBlocks rows={2} label="Loading the sales rows" />
         ) : !rows.length ? (
           <EmptyState title="No sales yet">Press Sync now once Amazon is connected, or add a row for each day and channel you track.</EmptyState>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-hairline bg-surface">
+          <Card variant="flat" className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent"><TableHead>Date</TableHead><TableHead>Channel</TableHead><TableHead>Order</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Revenue</TableHead><TableHead className="w-10"><span className="sr-only">Delete</span></TableHead></TableRow>
@@ -207,7 +209,7 @@ export function MonitorView({ project, store }: ViewProps) {
               </TableBody>
             </Table>
             {rows.length > 50 ? <div className="border-t border-hairline p-2 text-center"><Button size="sm" variant="ghost" onClick={() => setShowAll((v) => !v)}>{showAll ? "Show the latest 50" : `Show all ${rows.length} rows`}</Button></div> : null}
-          </div>
+          </Card>
         )}
       </section>
 

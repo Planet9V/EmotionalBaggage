@@ -38,7 +38,7 @@ export function CostChart({ points, currency }: { points: SizePoint[]; currency:
       {!showTable ? (
         <div aria-hidden="true">
           <ChartContainer config={config} className="aspect-auto h-64 w-full">
-            <LineChart data={data} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
+            <LineChart accessibilityLayer={false} data={data} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="size" tickLine={false} axisLine={false} tickMargin={8} label={{ value: "Batch size (units)", position: "insideBottom", offset: -4 }} height={48} />
               <YAxis tickLine={false} axisLine={false} width={64} tickFormatter={(v: number) => formatMoney(back(v), currency)} />
@@ -49,7 +49,7 @@ export function CostChart({ points, currency }: { points: SizePoint[]; currency:
         </div>
       ) : null}
       <div className={showTable ? "" : "sr-only"}>
-        <Table>
+        <Table scroll={showTable}>
           <caption className="sr-only">Unit cost at each batch size</caption>
           <TableHeader>
             <TableRow>

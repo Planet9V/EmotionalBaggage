@@ -132,7 +132,7 @@ export function AnswerFooter({ metadata }: { metadata?: ChatMetadata }) {
         ? `Sources found by meaning${metadata.search ? ` (${SEARCH_LABEL[metadata.search] ?? metadata.search})` : ""} and by matching words, joined.`
         : metadata.retrieval === "text"
         ? "Sources found by matching words, not by meaning."
-        : null;
+        : "How the sources were found was not recorded for this answer.";
   return (
     <div className="space-y-0.5 text-[11px] text-muted">
       <p>

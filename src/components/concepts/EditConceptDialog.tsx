@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,21 +46,23 @@ export function EditConceptDialog({
   );
 }
 
+const schema = z.object({ name: z.string().max(120), oneLiner: z.string().max(400), type: z.string() });
+type Values = z.infer<typeof schema>;
+
 function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: () => void; onSaved: (c: Concept) => void }) {
   const edit = useEditConcept();
-  const [name, setName] = useState(concept.name);
-  const [oneLiner, setOneLiner] = useState(concept.oneLiner);
-  const [type, setType] = useState(concept.productType);
-  const [error, setError] = useState("");
-  const hiding = newlyHidden(concept.productType, type);
+  const { register, handleSubmit, control, setError, formState: { errors } } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { name: concept.name, oneLiner: concept.oneLiner, type: concept.productType },
+  });
+  const type = useWatch({ control, name: "type" });
+  const hiding = newlyHidden(concept.productType, type as typeof concept.productType);
 
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const save = handleSubmit(async (v) => {
     const change: ConceptChange = {};
-    if (name !== concept.name) change.name = name;
-    if (oneLiner !== concept.oneLiner) change.oneLiner = oneLiner;
-    if (type !== concept.productType) change.productType = type;
+    if (v.name !== concept.name) change.name = v.name;
+    if (v.oneLiner !== concept.oneLiner) change.oneLiner = v.oneLiner;
+    if (v.type !== concept.productType) change.productType = v.type as typeof concept.productType;
     if (!Object.keys(change).length) {
       onSaved(concept);
       return;
@@ -65,21 +70,21 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
     try {
       onSaved(await edit.mutateAsync({ id: concept.id, change }));
     } catch (err) {
-      setError(messageOf(err) || "The change was not saved.");
+      setError("root", { message: messageOf(err) || "The change was not saved." });
     }
-  };
+  });
 
   const busy = edit.isPending;
   return (
-    <form onSubmit={save} noValidate>
+    <form onSubmit={(e) => void save(e)} noValidate>
       <div className="space-y-4">
         <div>
           <label htmlFor="concept-name" className={fieldLabel}>Name</label>
-          <Input id="concept-name" className="mt-1" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} autoComplete="off" data-autofocus />
+          <Input id="concept-name" className="mt-1" maxLength={120} autoComplete="off" data-autofocus {...register("name")} />
         </div>
         <div>
           <label htmlFor="concept-oneliner" className={fieldLabel}>One-line description</label>
-          <Input id="concept-oneliner" className="mt-1" value={oneLiner} maxLength={400} onChange={(e) => setOneLiner(e.target.value)} autoComplete="off" />
+          <Input id="concept-oneliner" className="mt-1" maxLength={400} autoComplete="off" {...register("oneLiner")} />
         </div>
         <fieldset>
           <legend className={fieldLabel}>Product type</legend>
@@ -93,11 +98,9 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
               >
                 <input
                   type="radio"
-                  name="concept-type"
                   value={t.key}
-                  checked={type === t.key}
-                  onChange={() => setType(t.key)}
                   className="mt-0.5 accent-[#E05A10]"
+                  {...register("type")}
                 />
                 <span>
                   <span className="block font-medium text-primary">
@@ -123,7 +126,7 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
           The stage is changed on the <a className="text-link underline" href="/process">Process page</a>, where each stage has a gate.
         </p>
       </div>
-      <FormError message={error} />
+      <FormError message={errors.root?.message ?? ""} />
       <div className="mt-5 flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>Cancel</Button>
         <Button type="submit" disabled={busy} aria-busy={busy}>{busy ? "Saving..." : "Save"}</Button>

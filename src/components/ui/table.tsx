@@ -3,11 +3,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-x-auto">
-    <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
-  </div>
-));
+/** `scroll={false}` for a table that is only read aloud (inside `sr-only`): nothing to scroll, nothing to focus. */
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement> & { scroll?: boolean }>(({ className, scroll = true, ...props }, ref) => {
+  const table = <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />;
+  // A region that scrolls sideways takes the keyboard too, so its content can be reached without a mouse.
+  return scroll ? (
+    <div className="relative w-full overflow-x-auto" tabIndex={0} role="region" aria-label={props["aria-label"] ?? "Table, scrolls sideways"}>
+      {table}
+    </div>
+  ) : (
+    table
+  );
+});
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(

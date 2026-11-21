@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useFieldArray, useForm, useWatch, type FieldErrors, type Resolver, type UseFormRegister } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { defineStepper } from "@stepperize/react";
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { statusTone } from "@/lib/statusTones";
 import { useProject } from "@/lib/client";
@@ -15,68 +20,42 @@ import { useCreateConcept } from "@/lib/conceptsClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "@/lib/queries";
 import { processQuery, processView } from "@/lib/process/client";
-import { AreaField, Field, TextField, selectClass } from "@/components/wizard/fields";
-import {
-  SOURCES, buildGroups, buildItems, emptyAnswers, nextKey, stepError, type Answers, type NameRow, type PartRow,
-} from "@/components/wizard/model";
+import { PRODUCT_TYPES, productType } from "@/lib/productTypes";
+import { STAGES } from "@/lib/menu";
+import { SOURCES, STEP_SCHEMAS, buildGroups, buildItems, emptyAnswers, nextKey, type Answers, type StepId } from "@/components/wizard/model";
 
-const STEPS = [
-  { title: "Idea", blurb: "A name and one line. Everything else can wait." },
-  { title: "Who and why", blurb: "Who it is for, the problem, and why now." },
-  { title: "Product", blurb: "How it works, whether any of it is printed, and the parts." },
-  { title: "Proof", blurb: "The cheapest test that would show it is worth building." },
-  { title: "Selling", blurb: "Where it sells first, at what price, and what it might be called." },
-  { title: "Review", blurb: "Everything below is created when you press Create. Go back to change any of it. Then you go straight to the concept's first next step." },
-];
+// The steps are a Stepperize flow; each step's schema is what lets it move on (components/wizard/model.ts).
+const wizard = defineStepper([
+  { id: "idea", title: "Idea", blurb: "What kind of product it is, a name and one line. Everything else can wait.", schema: STEP_SCHEMAS.idea },
+  { id: "who", title: "Who and why", blurb: "Who it is for, the problem, and why now.", schema: STEP_SCHEMAS.who },
+  { id: "product", title: "Product", blurb: "How it works, whether any of it is printed, and the parts.", schema: STEP_SCHEMAS.product },
+  { id: "proof", title: "Proof", blurb: "The cheapest test that would show it is worth building.", schema: STEP_SCHEMAS.proof },
+  { id: "selling", title: "Selling", blurb: "Where it sells first, at what price, and what it might be called.", schema: STEP_SCHEMAS.selling },
+  { id: "review", title: "Review", blurb: "Everything below is created when you press Create. Go back to change any of it. Then you go straight to the concept's first next step.", schema: STEP_SCHEMAS.review },
+] as const);
+
+/** "Schematic and Wiring" for the sections a product type does not show. */
+const hiddenNames = (hidden: readonly string[]) =>
+  hidden
+    .map((k) => {
+      const [st, sec] = k.split("/");
+      return STAGES.find((x) => x.key === st)?.sections.find((x) => x.key === sec)?.label ?? sec;
+    })
+    .join(" and ");
 
 export function WizardView() {
   const router = useRouter();
   const { select } = useProject();
   const createConcept = useCreateConcept();
   const qc = useQueryClient();
-  const reduce = useReducedMotion();
-  const [a, setA] = useState<Answers>(emptyAnswers);
-  const [step, setStep] = useState(1);
-  const [reached, setReached] = useState(1);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [dir, setDir] = useState(1);
+  const idRef = useRef<StepId>("idea");
 
-  const set = <K extends keyof Answers>(k: K, v: Answers[K]) => {
-    setA((x) => ({ ...x, [k]: v }));
-    setError("");
-  };
-
-  const go = (to: number) => {
-    if (to > step) {
-      for (let s = step; s < to; s++) {
-        const e = stepError(a, s);
-        if (e) { setError(e); setStep(s); return; }
-      }
-    }
-    setDir(to >= step ? 1 : -1);
-    setError("");
-    setStep(to);
-    setReached((r) => Math.max(r, to));
-  };
-
-  const create = async () => {
-    for (let s = 1; s <= 5; s++) {
-      const e = stepError(a, s);
-      if (e) { setError(e); setStep(s); return; }
-    }
-    setBusy(true);
-    setError("");
-    try {
-      // A mutation: it puts the new concept into every cached concept list, so the sidebar has it at once.
-      const made = await createConcept.mutateAsync({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), items: buildItems(a) });
-      select(made.id);
-      router.push(await firstStepHref(made.id));
-    } catch (e) {
-      setError((e as Error).message);
-      setBusy(false);
-    }
-  };
+  // Each step is checked against its own schema, by the resolver of whichever step is showing.
+  const resolver: Resolver<Answers> = (values, ctx, opts) => zodResolver(STEP_SCHEMAS[idRef.current] as never)(values as never, ctx, opts as never) as never;
+  const form = useForm<Answers>({ defaultValues: emptyAnswers(), resolver, mode: "onSubmit", reValidateMode: "onChange" });
+  const { register, handleSubmit, getValues, formState } = form;
 
   /** Where the new concept's first next step is (plan 3.9). Loading it also fills the cache the page will read. */
   const firstStepHref = async (id: string) => {
@@ -89,8 +68,44 @@ export function WizardView() {
     }
   };
 
-  const last = step === STEPS.length;
-  const cur = STEPS[step - 1];
+  const create = async () => {
+    const a = getValues();
+    setBusy(true);
+    setError("");
+    try {
+      // A mutation: it puts the new concept into every cached concept list, so the sidebar has it at once.
+      const made = await createConcept.mutateAsync({ name: a.name.trim(), oneLiner: a.oneLiner.trim(), productType: a.productType, items: buildItems(a) });
+      select(made.id);
+      router.push(await firstStepHref(made.id));
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+      throw e;
+    }
+  };
+
+  const stepper = wizard.useStepper({ linear: true, onFinish: create });
+  const currentId = stepper.current.id as StepId;
+  useEffect(() => {
+    idRef.current = currentId;
+  }, [currentId]);
+  const index = stepper.index + 1;
+  const last = stepper.isLast;
+
+  const submit = handleSubmit(
+    async () => {
+      setError("");
+      const r = await stepper.next(getValues());
+      if (!r.accepted && "issues" in r && r.issues?.length) setError(r.issues[0]!.message);
+    },
+    () => setError(""), // every invalid field shows its own message, next to it
+  );
+
+  const a = useWatch({ control: form.control }) as Answers;
+  const go = async (id: StepId) => {
+    setError("");
+    await stepper.goTo(id);
+  };
 
   return (
     <>
@@ -98,23 +113,22 @@ export function WizardView() {
       <div className="grid gap-8 px-8 py-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <nav aria-label="Progress" className="lg:sticky lg:top-6 lg:self-start">
           <ol className="space-y-1">
-            {STEPS.map((s, i) => {
+            {stepper.steps.map((s, i) => {
               const n = i + 1;
-              const active = n === step;
-              const done = n < step || (n <= reached && n !== step);
-              const enabled = n <= reached || !stepError(a, 1);
+              const active = s.id === stepper.current.id;
+              const done = stepper.state(s.id) === "complete";
               return (
-                <li key={s.title}>
+                <li key={s.id}>
                   <button
                     type="button"
-                    disabled={!enabled}
+                    disabled={!active && !stepper.canGoTo(s.id)}
                     aria-current={active ? "step" : undefined}
-                    onClick={() => go(n)}
+                    onClick={() => void go(s.id as StepId)}
                     className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150 disabled:opacity-40 ${
                       active ? "bg-dutchOrange/10 text-primary" : "text-secondary hover:bg-subtle hover:text-primary"
                     }`}
                   >
-                    <span className={`font-mono text-xs ${active ? "text-dutchOrange" : "text-muted"}`}>
+                    <span className={`font-mono text-xs ${active ? "text-link" : "text-muted"}`}>
                       {done && !active ? <Check className="h-3.5 w-3.5" aria-label="Visited" /> : String(n).padStart(2, "0")}
                     </span>
                     <span className={active ? "font-medium" : ""}>{s.title}</span>
@@ -127,41 +141,30 @@ export function WizardView() {
 
         <div className="min-w-0 max-w-3xl">
           <Card hoverEffect={false} innerClassName="p-[26px]">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step {String(step).padStart(2, "0")} of {String(STEPS.length).padStart(2, "0")}</p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-primary">{cur.title}</h2>
-            <p className="mt-1 text-sm text-secondary">{cur.blurb}</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step {String(index).padStart(2, "0")} of {String(stepper.steps.length).padStart(2, "0")}</p>
+            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-primary">{stepper.current.title}</h2>
+            <p className="mt-1 text-sm text-secondary">{stepper.current.blurb}</p>
 
-            <form
-              className="mt-6"
-              noValidate
-              onSubmit={(e) => { e.preventDefault(); if (last) void create(); else go(step + 1); }}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={step}
-                  initial={reduce ? false : { opacity: 0, x: 16 * dir }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={reduce ? { opacity: 0 } : { opacity: 0, x: -16 * dir }}
-                  transition={{ duration: reduce ? 0 : 0.25, ease: "easeOut" }}
-                >
-                  {step === 1 && <StepIdea a={a} set={set} />}
-                  {step === 2 && <StepWho a={a} set={set} />}
-                  {step === 3 && <StepProduct a={a} set={set} setA={setA} />}
-                  {step === 4 && <StepProof a={a} set={set} />}
-                  {step === 5 && <StepSelling a={a} set={set} setA={setA} />}
-                  {step === 6 && <StepReview a={a} edit={go} />}
-                </motion.div>
-              </AnimatePresence>
+            <form className="mt-6" noValidate onSubmit={(e) => void submit(e)}>
+              <div key={stepper.current.id} className="animate-enter">
+                {stepper.match({
+                  idea: () => <StepIdea register={register} errors={formState.errors} selected={a.productType} />,
+                  who: () => <StepWho register={register} />,
+                  product: () => <StepProduct form={form} />,
+                  proof: () => <StepProof register={register} errors={formState.errors} />,
+                  selling: () => <StepSelling form={form} />,
+                  review: () => <StepReview a={a} edit={(id) => void go(id)} />,
+                })}
+              </div>
 
               <div aria-live="polite" className="mt-4 min-h-5 text-sm text-danger">{error}</div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-hairline pt-4">
-                <Button type="button" variant="ghost" disabled={step === 1 || busy} onClick={() => go(step - 1)}>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <Button type="button" variant="ghost" disabled={stepper.isFirst || busy} onClick={() => { setError(""); void stepper.prev(); }}>
                   <ArrowLeft className="h-4 w-4" aria-hidden /> Back
                 </Button>
                 <Button type="submit" disabled={busy}>
-                  {last ? (busy ? "Creating" : "Create concept") : "Next"}
-                  {!last && <ArrowRight className="h-4 w-4" aria-hidden />}
+                  {last ? (busy ? "Creating" : "Create the concept") : "Continue"} {last ? <Check className="h-4 w-4" aria-hidden /> : <ArrowRight className="h-4 w-4" aria-hidden />}
                 </Button>
               </div>
             </form>
@@ -172,134 +175,158 @@ export function WizardView() {
   );
 }
 
-type SetFn = <K extends keyof Answers>(k: K, v: Answers[K]) => void;
-type SetA = React.Dispatch<React.SetStateAction<Answers>>;
+type Reg = UseFormRegister<Answers>;
+type Errs = FieldErrors<Answers>;
 
-function StepIdea({ a, set }: { a: Answers; set: SetFn }) {
+function StepIdea({ register, errors, selected }: { register: Reg; errors: Errs; selected: string }) {
   return (
     <div className="space-y-5">
-      <TextField title="Name" required value={a.name} onChange={(v) => set("name", v)} hint="A working name is fine. You can add candidates in step 5." />
-      <TextField title="One-line description" required value={a.oneLiner} onChange={(v) => set("oneLiner", v)} hint="What it is, in one sentence." />
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-primary">What kind of product is it?</legend>
+        <p className="text-xs text-muted">This decides which sections the concept shows. You can change it later on the Concepts page, and nothing is deleted.</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {PRODUCT_TYPES.map((t) => (
+            <label
+              key={t.key}
+              className={`cursor-pointer rounded-lg border p-3 text-sm transition-colors duration-150 focus-within:ring-2 focus-within:ring-dutchOrange ${
+                selected === t.key ? "border-dutchOrange bg-dutchOrange/10 text-primary" : "border-hairline bg-surface text-secondary hover:border-dutchOrange/40"
+              }`}
+            >
+              <input type="radio" value={t.key} {...register("productType")} className="sr-only" />
+              <span className="block font-medium text-primary">{t.label}</span>
+              <span className="mt-1 block text-xs text-secondary">{t.hidden.length ? `Hides ${hiddenNames(t.hidden)}.` : "Shows every section."}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <Field id="w-name" label="Name" required hint="A working name is fine. You can add candidates in step 5." error={errors.name?.message}>
+        <Input id="w-name" aria-invalid={!!errors.name} {...register("name")} />
+      </Field>
+      <Field id="w-one" label="One-line description" required hint="What it is, in one sentence." error={errors.oneLiner?.message}>
+        <Input id="w-one" aria-invalid={!!errors.oneLiner} {...register("oneLiner")} />
+      </Field>
     </div>
   );
 }
 
-function StepWho({ a, set }: { a: Answers; set: SetFn }) {
+function StepWho({ register }: { register: Reg }) {
   return (
     <div className="space-y-5">
-      <AreaField title="Who it is for" value={a.who} onChange={(v) => set("who", v)} />
-      <AreaField title="The problem" value={a.problem} onChange={(v) => set("problem", v)} />
-      <AreaField title="Why now" value={a.why} onChange={(v) => set("why", v)} />
+      <Field id="w-who" label="Who it is for"><Textarea id="w-who" rows={3} {...register("who")} /></Field>
+      <Field id="w-problem" label="The problem"><Textarea id="w-problem" rows={3} {...register("problem")} /></Field>
+      <Field id="w-why" label="Why now"><Textarea id="w-why" rows={3} {...register("why")} /></Field>
     </div>
   );
 }
 
-function StepProduct({ a, set, setA }: { a: Answers; set: SetFn; setA: SetA }) {
-  const upd = (key: number, patch: Partial<PartRow>) =>
-    setA((x) => ({ ...x, parts: x.parts.map((p) => (p.key === key ? { ...p, ...patch } : p)) }));
-  const addPart = () => setA((x) => ({ ...x, parts: [...x.parts, { key: nextKey(), name: "", qty: "", source: "", search: "", line: "" }] }));
-  const del = (key: number) => setA((x) => ({ ...x, parts: x.parts.length > 1 ? x.parts.filter((p) => p.key !== key) : x.parts }));
+function StepProduct({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
+  const { register, control, formState: { errors } } = form;
+  const parts = useFieldArray({ control, name: "parts" });
+  const printed = useWatch({ control, name: "printed" });
   return (
     <div className="space-y-6">
-      <AreaField title="How it works" value={a.how} onChange={(v) => set("how", v)} rows={4} />
+      <Field id="w-how" label="How it works"><Textarea id="w-how" rows={4} {...register("how")} /></Field>
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-primary">Is any part 3D printed?</legend>
         <div className="flex gap-2">
           {(["yes", "no"] as const).map((v) => (
             <label key={v} className={`cursor-pointer rounded-md border px-4 py-1.5 text-sm transition-colors duration-150 focus-within:ring-2 focus-within:ring-dutchOrange ${
-              a.printed === v ? "border-dutchOrange bg-dutchOrange/10 text-primary" : "border-hairline bg-surface text-secondary hover:border-dutchOrange/40"
+              printed === v ? "border-dutchOrange bg-dutchOrange/10 text-primary" : "border-hairline bg-surface text-secondary hover:border-dutchOrange/40"
             }`}>
-              <input type="radio" name="printed" value={v} checked={a.printed === v} onChange={() => set("printed", v)} className="sr-only" />
+              <input type="radio" value={v} {...register("printed")} className="sr-only" />
               {v === "yes" ? "Yes" : "No"}
             </label>
           ))}
         </div>
         <div className="grid grid-cols-3 gap-3">
           {([["w", "Width"], ["h", "Height"], ["d", "Depth"]] as const).map(([k, t]) => (
-            <Field key={k} title={`${t} (mm)`}>
-              {(id) => <Input id={id} inputMode="decimal" className="font-mono" value={a[k]} onChange={(e) => set(k, e.target.value)} />}
+            <Field key={k} id={`w-${k}`} label={`${t} (mm)`}>
+              <Input id={`w-${k}`} inputMode="decimal" className="font-mono" aria-invalid={k === "w" && !!errors.w} {...register(k)} />
             </Field>
           ))}
         </div>
+        {errors.w?.message && <p role="alert" className="text-xs text-danger">{errors.w.message}</p>}
         <p className="text-xs text-muted">Optional overall envelope. With a printed part and all three sizes, an Enclosure part is added to the bill of materials.</p>
       </fieldset>
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-primary">Parts</legend>
         <ul className="space-y-3">
-          {a.parts.map((p, i) => (
-            <li key={p.key} className="rounded-xl border border-hairline bg-subtle p-3">
+          {parts.fields.map((p, i) => (
+            <Card variant="well" as="li" key={p.id} className="p-3">
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-12 sm:col-span-6">
-                  <Input aria-label={`Part ${i + 1} name`} placeholder="Part name" value={p.name} onChange={(e) => upd(p.key, { name: e.target.value })} />
+                  <Input aria-label={`Part ${i + 1} name`} placeholder="Part name" {...register(`parts.${i}.name`)} />
                 </div>
                 <div className="col-span-4 sm:col-span-2">
-                  <Input aria-label={`Part ${i + 1} quantity`} placeholder="Qty" inputMode="numeric" className="font-mono" value={p.qty} onChange={(e) => upd(p.key, { qty: e.target.value })} />
+                  <Input aria-label={`Part ${i + 1} quantity`} placeholder="Qty" inputMode="numeric" className="font-mono" aria-invalid={!!errors.parts?.[i]?.qty} {...register(`parts.${i}.qty`)} />
                 </div>
                 <div className="col-span-8 sm:col-span-4">
-                  <select aria-label={`Part ${i + 1} source`} className={selectClass} value={p.source} onChange={(e) => upd(p.key, { source: e.target.value })}>
+                  <NativeSelect aria-label={`Part ${i + 1} source`} {...register(`parts.${i}.source`)}>
                     <option value="">Source</option>
                     {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="col-span-7 sm:col-span-8">
-                  <Input aria-label={`Part ${i + 1} search term`} placeholder="Search term" value={p.search} onChange={(e) => upd(p.key, { search: e.target.value })} />
+                  <Input aria-label={`Part ${i + 1} search term`} placeholder="Search term" {...register(`parts.${i}.search`)} />
                 </div>
                 <div className="col-span-5 sm:col-span-4 flex gap-2">
-                  <Input aria-label={`Part ${i + 1} estimated line cost`} placeholder="Line cost" inputMode="decimal" className="font-mono" value={p.line} onChange={(e) => upd(p.key, { line: e.target.value })} />
-                  <Button type="button" variant="ghost" size="icon" aria-label={`Remove part ${i + 1}`} disabled={a.parts.length === 1} onClick={() => del(p.key)}>
+                  <Input aria-label={`Part ${i + 1} estimated line cost`} placeholder="Line cost" inputMode="decimal" className="font-mono" aria-invalid={!!errors.parts?.[i]?.line} {...register(`parts.${i}.line`)} />
+                  <Button type="button" variant="ghost" size="icon" aria-label={`Remove part ${i + 1}`} disabled={parts.fields.length === 1} onClick={() => parts.remove(i)}>
                     <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
                 </div>
               </div>
-            </li>
+              {(errors.parts?.[i]?.qty?.message || errors.parts?.[i]?.line?.message) && (
+                <p role="alert" className="mt-2 text-xs text-danger">{errors.parts?.[i]?.qty?.message ?? errors.parts?.[i]?.line?.message}</p>
+              )}
+            </Card>
           ))}
         </ul>
-        <Button type="button" variant="outline" size="sm" onClick={addPart}><Plus className="h-3.5 w-3.5" aria-hidden /> Add part</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => parts.append({ key: nextKey(), name: "", qty: "", source: "", search: "", line: "" })}><Plus className="h-3.5 w-3.5" aria-hidden /> Add part</Button>
         <p className="text-xs text-muted">Rows without a name are ignored. Parts are numbered P1, P2 and so on.</p>
       </fieldset>
     </div>
   );
 }
 
-function StepProof({ a, set }: { a: Answers; set: SetFn }) {
+function StepProof({ register, errors }: { register: Reg; errors: Errs }) {
   return (
     <div className="space-y-5">
-      <AreaField title="The cheapest test" hint="What would show this is worth building, before you build it." value={a.test} onChange={(v) => set("test", v)} />
-      <TextField title="What the test costs" mono inputMode="decimal" value={a.testCost} onChange={(v) => set("testCost", v)} />
-      <AreaField title="Go/no-go gate" hint="The result that means go, and the result that means stop." value={a.gate} onChange={(v) => set("gate", v)} />
+      <Field id="w-test" label="The cheapest test" hint="What would show this is worth building, before you build it."><Textarea id="w-test" rows={3} {...register("test")} /></Field>
+      <Field id="w-cost" label="What the test costs" error={errors.testCost?.message}><Input id="w-cost" inputMode="decimal" className="font-mono" aria-invalid={!!errors.testCost} {...register("testCost")} /></Field>
+      <Field id="w-gate" label="Go/no-go gate" hint="The result that means go, and the result that means stop."><Textarea id="w-gate" rows={3} {...register("gate")} /></Field>
     </div>
   );
 }
 
-function StepSelling({ a, set, setA }: { a: Answers; set: SetFn; setA: SetA }) {
-  const upd = (key: number, patch: Partial<NameRow>) =>
-    setA((x) => ({ ...x, names: x.names.map((n) => (n.key === key ? { ...n, ...patch } : n)) }));
+function StepSelling({ form }: { form: ReturnType<typeof useForm<Answers>> }) {
+  const { register, control, formState: { errors } } = form;
+  const names = useFieldArray({ control, name: "names" });
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField title="Primary channel" value={a.channel} onChange={(v) => set("channel", v)} />
-        <TextField title="Target price" mono inputMode="decimal" value={a.price} onChange={(v) => set("price", v)} />
+        <Field id="w-channel" label="Primary channel"><Input id="w-channel" {...register("channel")} /></Field>
+        <Field id="w-price" label="Target price" error={errors.price?.message}><Input id="w-price" inputMode="decimal" className="font-mono" aria-invalid={!!errors.price} {...register("price")} /></Field>
       </div>
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-primary">Working names and taglines</legend>
         <ul className="space-y-2">
-          {a.names.map((n, i) => (
-            <li key={n.key} className="flex gap-2">
-              <select aria-label={`Entry ${i + 1} kind`} className={`${selectClass} w-28 shrink-0`} value={n.kind} onChange={(e) => upd(n.key, { kind: e.target.value as NameRow["kind"] })}>
+          {names.fields.map((n, i) => (
+            <li key={n.id} className="flex gap-2">
+              <NativeSelect aria-label={`Entry ${i + 1} kind`} className="w-28 shrink-0" {...register(`names.${i}.kind`)}>
                 <option>Name</option>
                 <option>Tagline</option>
-              </select>
-              <Input aria-label={`Entry ${i + 1} text`} value={n.text} onChange={(e) => upd(n.key, { text: e.target.value })} />
-              <Button type="button" variant="ghost" size="icon" aria-label={`Remove entry ${i + 1}`} disabled={a.names.length === 1}
-                onClick={() => setA((x) => ({ ...x, names: x.names.filter((m) => m.key !== n.key) }))}>
+              </NativeSelect>
+              <Input aria-label={`Entry ${i + 1} text`} {...register(`names.${i}.text`)} />
+              <Button type="button" variant="ghost" size="icon" aria-label={`Remove entry ${i + 1}`} disabled={names.fields.length === 1} onClick={() => names.remove(i)}>
                 <Trash2 className="h-4 w-4" aria-hidden />
               </Button>
             </li>
           ))}
         </ul>
-        <Button type="button" variant="outline" size="sm" onClick={() => setA((x) => ({ ...x, names: [...x.names, { key: nextKey(), kind: "Name", text: "" }] }))}>
+        <Button type="button" variant="outline" size="sm" onClick={() => names.append({ key: nextKey(), kind: "Name", text: "" })}>
           <Plus className="h-3.5 w-3.5" aria-hidden /> Add another
         </Button>
       </fieldset>
@@ -307,26 +334,29 @@ function StepSelling({ a, set, setA }: { a: Answers; set: SetFn; setA: SetA }) {
   );
 }
 
-function StepReview({ a, edit }: { a: Answers; edit: (n: number) => void }) {
+const STEP_IDS: StepId[] = ["idea", "who", "product", "proof", "selling"];
+
+function StepReview({ a, edit }: { a: Answers; edit: (id: StepId) => void }) {
   const groups = buildGroups(a);
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-hairline bg-subtle p-4">
+      <Card variant="well" className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept</p>
             <p className="mt-1 text-base font-semibold text-primary">{a.name.trim()}</p>
             <p className="text-sm text-secondary">{a.oneLiner.trim()}</p>
+            <p className="mt-1 text-xs text-muted">{productType(a.productType).label}</p>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => edit(1)}>Edit</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => edit("idea")}>Edit</Button>
         </div>
-      </div>
+      </Card>
       {groups.length === 0 && <p className="text-sm text-secondary">Nothing else was entered, so only the concept itself is created.</p>}
       {groups.map((g) => (
         <section key={g.label} className="rounded-xl border border-hairline p-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">{g.label}</h3>
-            <Button type="button" variant="ghost" size="sm" onClick={() => edit(g.step)}>Edit</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => edit(STEP_IDS[g.step - 1]!)}>Edit</Button>
           </div>
           <ul className="mt-3 divide-y divide-hairline">
             {g.items.map((it, i) => (

@@ -15,8 +15,9 @@ import { ConceptTable } from "./ConceptTable";
 import { EditConceptDialog } from "./EditConceptDialog";
 import { DeleteConceptDialog } from "./DeleteConceptDialog";
 import { ArchiveConceptDialog, DuplicateConceptDialog } from "./SmallDialogs";
-import { selectClass } from "./ConceptDialog";
 import { groupConcepts, sortConcepts, type SortKey } from "./model";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 
 /** The concept is kept as it was when the dialog opened, so a dialog whose concept has just gone can still close properly. */
 type Action = { kind: "edit" | "delete" | "duplicate" | "archive"; id: string; concept: Concept };
@@ -143,12 +144,12 @@ export function ConceptsView() {
             </Button>
           </div>
         ) : empty ? (
-          <div className="rounded-xl border border-hairline bg-surface p-8 text-center">
+          <Card variant="flat" className="p-8 text-center">
             <p className="text-sm text-secondary">There are no concepts yet. The wizard starts one from a name and a line.</p>
             <Button asChild className="mt-4">
               <Link href="/new"><Plus className="h-4 w-4" aria-hidden /> Start a concept</Link>
             </Button>
-          </div>
+          </Card>
         ) : (
           <>
             <div className="flex flex-wrap items-end gap-3">
@@ -170,14 +171,14 @@ export function ConceptsView() {
               </div>
               <div className="w-48">
                 <label htmlFor="concept-sort" className="block font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Sort by</label>
-                <select id="concept-sort" className={selectClass} value={sort} onChange={(e) => setSort(e.target.value as SortKey)} disabled={loading}>
+                <NativeSelect id="concept-sort" className="mt-1" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} disabled={loading}>
                   <option value="changed">Last changed</option>
                   <option value="name">Name</option>
-                </select>
+                </NativeSelect>
               </div>
             </div>
 
-            <section aria-labelledby="active-heading" className="rounded-xl border border-hairline bg-surface">
+            <Card variant="flat" as="section" aria-labelledby="active-heading">
               <h2 id="active-heading" className="border-b border-hairline px-4 py-3 text-sm font-semibold text-primary">
                 Active <span className="font-mono text-xs font-normal text-muted">{loading ? "" : groups.active.length}</span>
               </h2>
@@ -192,10 +193,10 @@ export function ConceptsView() {
                     : "No active concepts. Restore one from the archive or start a new one."}
                 </p>
               )}
-            </section>
+            </Card>
 
             {!loading && totalArchived > 0 && (
-              <section aria-labelledby="archived-heading" className="rounded-xl border border-hairline bg-surface">
+              <Card variant="flat" as="section" aria-labelledby="archived-heading">
                 <h2 id="archived-heading" className="text-sm font-semibold text-primary">
                   <button
                     ref={archivedToggleRef}
@@ -216,7 +217,7 @@ export function ConceptsView() {
                     <p className="px-4 py-6 text-sm text-secondary">No archived concept matches &quot;{search.trim()}&quot;.</p>
                   )}
                 </div>
-              </section>
+              </Card>
             )}
           </>
         )}

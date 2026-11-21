@@ -5,6 +5,7 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fieldValue, sameValue, valueText, type HistoryChange, type HistoryEntry } from "@/lib/trace/history";
 import type { Item } from "@/lib/types";
+import { Card } from "@/components/ui/Card";
 
 /** Written the way people read a date: the time in their own zone, with the full stamp in the tooltip. */
 export function when(at: string) {
@@ -94,7 +95,7 @@ export function HistoryEntryView({
   showRow?: boolean;
 }) {
   return (
-    <li className="rounded-xl border border-hairline bg-surface p-3">
+    <Card variant="flat" as="li" className="p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <p className="text-sm font-medium text-primary wrap-anywhere">
           {showRow && entry.title && !entry.summary.includes(entry.title) ? <>{entry.title}: </> : null}
@@ -111,6 +112,6 @@ export function HistoryEntryView({
           ))}
         </ul>
       )}
-    </li>
+    </Card>
   );
 }

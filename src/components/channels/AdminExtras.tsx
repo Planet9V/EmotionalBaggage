@@ -7,8 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorLine } from "@/components/parts/controls";
+import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
 import { channelQueries, useChannelActions } from "@/lib/channels/client";
 import { messageOf } from "@/lib/queries";
 
@@ -90,9 +89,9 @@ function InstagramChecklist() {
       <p className="font-medium text-primary">Meta App Review checklist</p>
       <p>Meta&apos;s review can take weeks, so start it as soon as an account exists. Ticks are saved for this install.</p>
       {review.isPending ? (
-        <Skeleton className="h-24 w-full bg-subtle" />
+        <LoadingBlocks rows={1} label="Reading the checklist" />
       ) : review.isError ? (
-        <div className="flex items-center gap-2"><ErrorLine>{messageOf(review.error)}</ErrorLine><Button size="sm" variant="outline" onClick={() => void review.refetch()}>Try again</Button></div>
+        <LoadError what="The checklist" message={messageOf(review.error)} onRetry={() => void review.refetch()} />
       ) : (
         <ul className="space-y-2">
           {review.data.items.map((it) => {

@@ -4,6 +4,7 @@ import { COLOUR_SWATCH, ROUND_TO, totalsByClass, type CutRow } from "./derive";
 import { NET_COLOR } from "@/lib/domain";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/Card";
 
 type Props = {
   rows: CutRow[];
@@ -21,7 +22,7 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
   const totals = totalsByClass(rows);
   return (
     <div className="space-y-3">
-      <div className="no-print flex flex-wrap items-end gap-4 rounded-xl border border-hairline bg-subtle p-3">
+      <Card variant="well" className="no-print flex flex-wrap items-end gap-4 p-3">
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-secondary">Routing factor</span>
           <Input inputMode="decimal" value={routing} onChange={(e) => onRouting(e.target.value)} className="h-8 w-24 font-mono" aria-invalid={!routingOk} />
@@ -33,12 +34,12 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
         {(!routingOk || !allowanceOk) && (
           <p role="alert" className="text-xs text-danger">Enter a number, zero or more. The last valid values are still in use.</p>
         )}
-      </div>
+      </Card>
       <p className="text-xs text-secondary">
         <strong className="font-medium text-primary">Routed</strong> = the path the planner found through the enclosure + {allowanceValue} mm (strip and slack), rounded up to {ROUND_TO} mm.{" "}
         <strong className="font-medium text-primary">Estimate</strong> = straight-line distance between the two parts&apos; assembled centres × {routingValue} (routing factor) + {allowanceValue} mm, rounded up to {ROUND_TO} mm; it stands in for any wire that is not routed, or whose route is out of date. Route wires in the 3D model. Colours are suggested.
       </p>
-      <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+      <Card variant="flat" className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -94,7 +95,7 @@ export function CutList({ rows, routing, allowance, onRouting, onAllowance, rout
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       <ul className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-secondary" aria-label="Total length per class">
         {totals.map((t) => (
           <li key={t.netClass} className="font-mono">

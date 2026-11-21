@@ -6,6 +6,7 @@ import type { PartGeometry } from "../three/layout";
 import { NumField } from "./NumField";
 import { BasisPicker } from "./SelectionPanel";
 import { BASIS_TEXT, round3 } from "./geom";
+import { Card } from "@/components/ui/Card";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
@@ -25,7 +26,7 @@ export function EnvelopePanel({
   const ready = size.every((s) => s !== null && s > 0) && basis !== "";
 
   return (
-    <section aria-label="Envelope" className="rounded-xl border border-hairline bg-surface p-3">
+    <Card variant="flat" as="section" aria-label="Envelope" className="p-3">
       <p className={eyebrow}>Envelope</p>
       {shell ? (
         <div className="mt-2 flex flex-col gap-3">
@@ -70,6 +71,6 @@ export function EnvelopePanel({
           </div>
         </form>
       )}
-    </section>
+    </Card>
   );
 }

@@ -3,10 +3,13 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { FIELDS, FIELD_LABEL, LAYOUTS, applyMapping, dateSpan, detectLayout, layoutFor, mappingFor, parseReport, type DateOrder, type ImportResult, type Mapping, type ParsedFile } from "@/lib/campaigns/csv";
 import type { Item } from "@/lib/types";
 import { fetchMapping, saveMapping, useSaveResults, type useMoney } from "./hooks";
+import { ErrorLine } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Money = ReturnType<typeof useMoney>;
 
@@ -130,30 +133,30 @@ export function ImportPanel({ projectId, campaignId, campaignTitle, creatives, m
           {file.skippedAbove > 0 && <p className="text-xs text-secondary">{file.skippedAbove} lines above the column names were skipped.</p>}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Field label="Report layout">
-              <Select value={layoutId} onChange={(e) => { const l = layoutFor(e.target.value)!; setLayoutId(l.id); setMapping(mappingFor(l, file.headers)); }}>
+              <NativeSelect value={layoutId} onChange={(e) => { const l = layoutFor(e.target.value)!; setLayoutId(l.id); setMapping(mappingFor(l, file.headers)); }}>
                 {LAYOUTS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
-              </Select>
+              </NativeSelect>
             </Field>
             {FIELDS.map((f) => (
               <Field key={f} label={FIELD_LABEL[f]}>
-                <Select value={mapping[f] ?? ""} onChange={(e) => setMapping((m) => { const n = { ...m }; if (e.target.value) n[f] = e.target.value; else delete n[f]; return n; })}>
+                <NativeSelect value={mapping[f] ?? ""} onChange={(e) => setMapping((m) => { const n = { ...m }; if (e.target.value) n[f] = e.target.value; else delete n[f]; return n; })}>
                   <option value="">Not in this file</option>
                   {file.headers.map((h, i) => <option key={`${h}-${i}`} value={h}>{h}</option>)}
-                </Select>
+                </NativeSelect>
               </Field>
             ))}
             <Field label="Date order in the file">
-              <Select value={order} onChange={(e) => setOrder(e.target.value as DateOrder)}>
+              <NativeSelect value={order} onChange={(e) => setOrder(e.target.value as DateOrder)}>
                 <option value="mdy">Month first (12/31/2026)</option>
                 <option value="dmy">Day first (31/12/2026)</option>
-              </Select>
+              </NativeSelect>
             </Field>
             {mapping.campaign && (
               <Field label="Only the campaign named" hint="Leave empty to take every row.">
-                <Select value={only} onChange={(e) => setOnly(e.target.value)}>
+                <NativeSelect value={only} onChange={(e) => setOnly(e.target.value)}>
                   <option value="">Every campaign in the file</option>
                   {(result?.campaigns ?? []).map((c) => <option key={c}>{c}</option>)}
-                </Select>
+                </NativeSelect>
               </Field>
             )}
           </div>

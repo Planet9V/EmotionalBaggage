@@ -5,9 +5,10 @@
 import { useState } from "react";
 import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/parts/controls";
 import { api, useFilesChanged, useItems } from "@/lib/client";
 import { shotByKey } from "@/lib/market/imagery";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Card } from "@/components/ui/Card";
 
 /** A PNG data address drawn onto a white background (or left as it is), as a Blob. */
 export async function renderBlob(dataUrl: string, background: "white" | "transparent"): Promise<Blob> {
@@ -62,21 +63,21 @@ export function RenderToImagery({ projectId, capture }: { projectId: string; cap
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border border-hairline bg-surface px-3 py-2">
+    <Card variant="flat" className="rounded-lg flex flex-wrap items-end gap-3 px-3 py-2">
       <div className="min-w-48">
         <label htmlFor="render-shot" className="mb-1 block text-xs font-medium text-secondary">Save this view as a render for</label>
-        <Select id="render-shot" value={shot} onChange={(e) => setShot(e.target.value)}>
+        <NativeSelect id="render-shot" value={shot} onChange={(e) => setShot(e.target.value)}>
           <option value="">Just save the file</option>
           {renderable.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-        </Select>
+        </NativeSelect>
       </div>
       <div>
         <label htmlFor="render-bg" className="mb-1 block text-xs font-medium text-secondary">Background</label>
-        <Select id="render-bg" value={bg} onChange={(e) => setBg(e.target.value as typeof bg)}><option value="white">White</option><option value="transparent">Transparent</option></Select>
+        <NativeSelect id="render-bg" value={bg} onChange={(e) => setBg(e.target.value as typeof bg)}><option value="white">White</option><option value="transparent">Transparent</option></NativeSelect>
       </div>
       <Button size="sm" onClick={() => void save()} disabled={!capture || busy}><Camera className="h-3.5 w-3.5" aria-hidden /> {busy ? "Saving" : "Save a render"}</Button>
       {!shots.items.length && !shots.loading && <p className="text-xs text-muted">Add the standard shots on the Imagery page to attach a render to one.</p>}
       {msg && <p role={msg.ok ? "status" : "alert"} className={`w-full text-xs ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</p>}
-    </div>
+    </Card>
   );
 }

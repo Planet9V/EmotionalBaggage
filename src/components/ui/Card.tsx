@@ -23,11 +23,16 @@
  *
  * `outlined` and `subtle` stay single-layer plates (no shell) for dense, quiet
  * surfaces; `innerClassName` is merged into `className` for them.
+ *
+ * `flat` and `well` are the static panels of forms and lists: a hairline border on the surface
+ * colour (`flat`) or on the subtle fill (`well`), no hover, no lift. Use them for any box that
+ * holds content and does not itself act. `className` wins over their radius and padding.
  */
 import React from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-type Variant = "elevated" | "outlined" | "subtle";
+type Variant = "elevated" | "outlined" | "subtle" | "flat" | "well";
 
 interface CardBaseProps {
   variant?: Variant;
@@ -64,6 +69,12 @@ function join(...parts: Array<string | false | undefined>) {
 }
 
 function plateClasses(variant: Variant, hoverEffect: boolean, className: string, innerClassName: string, accent = false) {
+  if (variant === "flat" || variant === "well") {
+    return {
+      shell: cn("rounded-xl border border-hairline text-primary", variant === "flat" ? "bg-surface" : "bg-subtle", className, innerClassName),
+      core: null,
+    };
+  }
   if (variant === "elevated") {
     return {
       shell: join(

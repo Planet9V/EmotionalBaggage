@@ -5,22 +5,18 @@ import { Check as CheckIcon, Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, useFilesChanged } from "@/lib/client";
 import type { FileMeta } from "@/lib/types";
-import { EYEBROW, ErrorLine } from "./controls";
+import { EYEBROW } from "@/components/ui/field";
+import { ErrorLine } from "@/components/ui/states";
+import { downloadFile } from "@/lib/download";
+import { fmtBytes } from "@/lib/format";
+import { Card } from "@/components/ui/Card";
 
 export type GeneratedFile = { name: string; mime: string; text: string; format: string };
 
 type Spec = { key: string; label: string; detail: string; note?: string; make: () => GeneratedFile[] };
 
-function download(f: GeneratedFile) {
-  const url = URL.createObjectURL(new Blob([f.text], { type: f.mime }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = f.name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+const download = (f: GeneratedFile) => downloadFile(f.name, f.text, f.mime);
 
-const kb = (n: number) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
 
 /** Download or store each generated file. Files are generated at the moment of the click. */
 export function FilesPanel({ projectId, specs, disabled }: { projectId: string; specs: Spec[]; disabled: boolean }) {
@@ -52,7 +48,7 @@ export function FilesPanel({ projectId, specs, disabled }: { projectId: string; 
   };
 
   return (
-    <section aria-labelledby="schematic-files" className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="section" aria-labelledby="schematic-files" className="p-4">
       <p className={EYEBROW}>Generate files</p>
       <h3 id="schematic-files" className="mt-1 text-base font-semibold tracking-tight text-primary">
         Wiring files
@@ -88,7 +84,7 @@ export function FilesPanel({ projectId, specs, disabled }: { projectId: string; 
                       <a href={`/api/files/${f.id}`} className="font-mono text-link hover:underline">
                         {f.name}
                       </a>
-                      <span className="text-muted">({kb(f.size)})</span>
+                      <span className="text-muted">({fmtBytes(f.size)})</span>
                     </li>
                   ))}
                 </ul>
@@ -102,6 +98,6 @@ export function FilesPanel({ projectId, specs, disabled }: { projectId: string; 
           <ErrorLine>{error}</ErrorLine>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

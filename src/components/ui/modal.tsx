@@ -4,13 +4,17 @@ import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 
-/** A centred modal on the shared dialog primitive: title, optional description, scrolling body. */
+/**
+ * The one centred modal: a title, an optional description, a scrolling body, and a close button.
+ * Focus, Escape and the scrim come from Radix Dialog. `width` is a CSS length for the wide cases.
+ */
 export function Modal({
   open,
   onOpenChange,
   title,
   description,
   wide = false,
+  width,
   children,
 }: {
   open: boolean;
@@ -18,6 +22,7 @@ export function Modal({
   title: string;
   description?: string;
   wide?: boolean;
+  width?: string;
   children: ReactNode;
 }) {
   return (
@@ -25,14 +30,15 @@ export function Modal({
       <DialogPortal>
         <DialogOverlay />
         <DialogContent
-          className={`fixed left-1/2 top-1/2 max-h-[88vh] -translate-x-1/2 -translate-y-1/2 rounded-xl ${wide ? "w-[min(52rem,94vw)]" : "w-[min(30rem,94vw)]"}`}
+          className={`fixed left-1/2 top-1/2 max-h-[88vh] -translate-x-1/2 -translate-y-1/2 rounded-xl ${width ? "" : wide ? "w-[min(52rem,94vw)]" : "w-[min(30rem,94vw)]"}`}
+          style={width ? { width: `min(94vw, ${width})` } : undefined}
         >
           <div className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4">
             <div className="min-w-0">
               <DialogTitle className="text-base tracking-tight">{title}</DialogTitle>
               <DialogDescription className={description ? "mt-1 text-xs" : "sr-only"}>{description ?? title}</DialogDescription>
             </div>
-            <DialogClose className="rounded-md p-1 text-muted transition hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
+            <DialogClose className="rounded-md p-1 text-muted transition-colors duration-150 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" aria-label="Close">
               <X className="h-4 w-4" aria-hidden />
             </DialogClose>
           </div>

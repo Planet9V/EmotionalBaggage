@@ -11,14 +11,16 @@ import { Pause, Play, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { ErrorLine } from "@/components/parts/controls";
-import { ConfirmButton, TestOutcome } from "@/components/admin/shared";
+import { TestOutcome } from "@/components/admin/shared";
 import { useConnectionTest } from "@/lib/admin/client";
 import { messageOf, queries } from "@/lib/queries";
 import { cancelPrint, controlPrinter, printerFetchers, printerKeys, type PrinterReading } from "@/lib/printers/client";
 import { findModelFor } from "@/lib/printers/modelLookup";
 import { FileOnlyGuide } from "./FileOnlyGuide";
 import { minutesText, STATE_LABEL, STATE_TONE, tempText } from "./format";
+import { ErrorLine } from "@/components/ui/states";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Card } from "@/components/ui/Card";
 
 const POLL_MS = 10_000;
 const timeOf = (iso: string) => {
@@ -61,7 +63,7 @@ function Reading({ r }: { r: PrinterReading }) {
   );
 }
 
-function Card({ r }: { r: PrinterReading }) {
+function PrinterCard({ r }: { r: PrinterReading }) {
   const qc = useQueryClient();
   const test = useConnectionTest();
   const [note, setNote] = useState("");
@@ -86,7 +88,7 @@ function Card({ r }: { r: PrinterReading }) {
 
   const certificate = r.family === "bambu" ? r.capabilities.notes.find((n) => /certificate/i.test(n)) : undefined;
   return (
-    <li className="space-y-3 rounded-xl border border-hairline bg-surface p-4" data-testid={`printer-card-${r.printerId}`}>
+    <Card variant="flat" as="li" className="space-y-3 p-4" data-testid={`printer-card-${r.printerId}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-primary">{r.name}</h3>
@@ -163,7 +165,7 @@ function Card({ r }: { r: PrinterReading }) {
           </ul>
         </details>
       ) : null}
-    </li>
+    </Card>
   );
 }
 
@@ -191,7 +193,7 @@ export function PrintersPanel() {
   const empty = list.isSuccess && list.data.length === 0;
 
   return (
-    <section aria-labelledby="printers-h" className="rounded-xl border border-hairline bg-surface p-5">
+    <Card variant="flat" as="section" aria-labelledby="printers-h" className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="printers-h" className="text-base font-semibold tracking-tight text-primary">Printers</h2>
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">Refreshes every 10 s</span>
@@ -216,12 +218,12 @@ export function PrintersPanel() {
         ) : (
           <ul className="space-y-3">
             {list.data.map((r) => (
-              <Card key={r.printerId} r={r} />
+              <PrinterCard key={r.printerId} r={r} />
             ))}
           </ul>
         )}
       </div>
-    </section>
+    </Card>
   );
 }
 

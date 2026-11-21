@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_PARAMS, LID_LABELS, LID_TYPES, NUMERIC_RULES, SCREW_SIZES, type EnclosureParams, type Issue } from "@/lib/enclosure/types";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export type Draft = Record<(typeof NUMERIC_RULES)[number]["key"], string> & Pick<EnclosureParams, "lidType" | "screwSize">;
 
@@ -31,9 +32,6 @@ export function fromDraft(d: Draft): Record<keyof EnclosureParams, number | stri
     screwSize: d.screwSize,
   };
 }
-
-const selectCls =
-  "h-9 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange";
 
 export function ParamsForm({ draft, onChange, issues }: { draft: Draft; onChange: (d: Draft) => void; issues: Issue[] }) {
   const problem = (key: string) => issues.find((i) => i.about === key && i.code === "param-range");
@@ -68,22 +66,21 @@ export function ParamsForm({ draft, onChange, issues }: { draft: Draft; onChange
           <Label htmlFor="enc-lid" className="text-xs text-secondary">
             Lid
           </Label>
-          <select id="enc-lid" className={selectCls} value={draft.lidType} onChange={(e) => onChange({ ...draft, lidType: e.target.value as Draft["lidType"] })}>
+          <NativeSelect id="enc-lid" value={draft.lidType} onChange={(e) => onChange({ ...draft, lidType: e.target.value as Draft["lidType"] })}>
             {LID_TYPES.map((t) => (
               <option key={t} value={t}>
                 {LID_LABELS[t]}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <p className="text-xs text-muted">Default {LID_LABELS[DEFAULT_PARAMS.lidType].toLowerCase()}.</p>
         </div>
         <div className="space-y-1">
           <Label htmlFor="enc-screw" className="text-xs text-secondary">
             Screw size
           </Label>
-          <select
+          <NativeSelect
             id="enc-screw"
-            className={selectCls}
             value={draft.screwSize}
             disabled={draft.lidType !== "screw"}
             onChange={(e) => onChange({ ...draft, screwSize: e.target.value as Draft["screwSize"] })}
@@ -93,7 +90,7 @@ export function ParamsForm({ draft, onChange, issues }: { draft: Draft; onChange
                 {s}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <p className="text-xs text-muted">Used for the lid posts when the lid is screwed down. Default {DEFAULT_PARAMS.screwSize}.</p>
         </div>
       </div>

@@ -1,29 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { api, useItems } from "@/lib/client";
 import { keys } from "@/lib/queries";
-import { STORE, NET_COLOR, toPart, toWire, type NetClass, type Part, type Wire } from "@/lib/domain";
-import type { CanvasPart, CanvasWire, CutPlane, Measurement, RoutedDraw, ShellView, TransformMode } from "@/components/three/ModelCanvas";
+import { STORE, NET_COLOR, toPart, type NetClass, type Part } from "@/lib/domain";
+import type { CutPlane, Measurement, ShellView, TransformMode } from "@/components/three/ModelCanvas";
 import { describeSize, sceneBounds, type PartGeometry } from "@/components/three/layout";
 import { EditBar, ExportBar, MeasureReadout, PartsTable, RoutePanel, SectionPanel, type RouteState } from "@/components/three/ViewTools";
 import { useShapes } from "@/lib/geometry/useShapes";
 import { assembly3mf, assemblyStl, type ExportPart } from "@/lib/geometry/export";
-import { bundleRadius, buildRouteRequest, routeState, type RouteOutcome } from "@/lib/geometry/routing";
-import { routePartsOf } from "@/lib/geometry/pins3d";
+import type { RouteOutcome } from "@/lib/geometry/routing";
 import { usePins } from "@/lib/parts/client";
-import { snap } from "@/lib/geometry/rotation";
-import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
+import type { PinRow } from "@/lib/parts/pins";
+import { PartPanel } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
 import { SHELL_DEFAULTS, type ShellParams } from "@/components/three/stl";
 import { RenderToImagery } from "@/components/market/RenderToImagery";
 import type { ViewProps } from "./types";
+import { useSceneModel } from "./model/useSceneModel";
+import { useGeometryEdits } from "./model/useGeometryEdits";
+import { NativeSelect } from "@/components/ui/native-select";
+import { downloadFile } from "@/lib/download";
+import { fileSlug } from "@/lib/format";
+import { LoadingBlocks } from "@/components/ui/states";
+import { Card } from "@/components/ui/Card";
 
 const ModelCanvas = dynamic(() => import("@/components/three/ModelCanvas"), {
   ssr: false,
@@ -31,15 +36,12 @@ const ModelCanvas = dynamic(() => import("@/components/three/ModelCanvas"), {
 });
 
 const BOM_STORE = "design/bom";
+/** one empty list while the pin rows load, so the scene model does not recompute on every render */
+const NO_PINS: PinRow[] = [];
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
-const CLASS_ORDER: NetClass[] = ["power", "ground", "signal", "audio"];
 const CLASS_LABEL: Record<NetClass, string> = { power: "Power", ground: "Ground", signal: "Signal", audio: "Audio" };
-const FADED = 0.12;
-const NEIGHBOUR = 0.6;
 const NO_WIRES = "No wires yet. Add them in Schematic to draw them here, pull one net apart and see a part's connections.";
-
-const pin = (ref: string, p: string) => (p ? `${ref}.${p}` : ref);
 
 function subscribeTheme(cb: () => void) {
   const mo = new MutationObserver(cb);
@@ -56,7 +58,6 @@ const useDark = () =>
 export function ModelView({ project }: ViewProps) {
   const { items, loading, error, writeError, patch } = useItems(project.id, BOM_STORE);
   const dark = useDark();
-  const reduce = useReducedMotion();
 
   const parts = useMemo(() => [...items].sort((a, b) => a.sort - b.sort || a.id - b.id).map(toPart), [items]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -86,285 +87,18 @@ export function ModelView({ project }: ViewProps) {
   const [route, setRoute] = useState<RouteState>({ state: "idle" });
   const [exportBusy, setExportBusy] = useState("");
   const [exportError, setExportError] = useState("");
-  // Undo for this session: the geometry a part had before each change.
-  type Step = { id: number; before: PartGeometry; at: number };
-  const undoStack = useRef<Step[]>([]);
-  const redoStack = useRef<Step[]>([]);
-  const [history, setHistory] = useState({ undo: 0, redo: 0 });
 
   const withGeometry = parts.filter((p) => p.geometry);
   const shapeFiles = useShapes(parts.map((p) => ({ id: p.item.id, geometry: p.geometry })));
-  const canvasParts = useMemo<CanvasPart[]>(
-    () =>
-      parts
-        .filter((p) => p.geometry && !hidden.has(p.item.id))
-        .map((p) => ({ id: p.item.id, ref: p.ref, title: p.item.title, geometry: p.geometry as PartGeometry, shape: shapeFiles.shapes.get(p.item.id) ?? null })),
-    [parts, hidden, shapeFiles.shapes]
-  );
   const selected = parts.find((p) => p.item.id === selectedId) ?? null;
-
-  const wires = useMemo(
-    () =>
-      [...wiringItems.items]
-        .sort((a, b) => a.sort - b.sort || a.id - b.id)
-        .map(toWire)
-        .filter((w): w is Wire => w !== null),
-    [wiringItems.items]
-  );
-  const partByRef = useMemo(() => {
-    const m = new Map<string, Part>();
-    for (const p of parts) if (p.ref && !m.has(p.ref)) m.set(p.ref, p);
-    return m;
-  }, [parts]);
-  const classesPresent = useMemo(() => CLASS_ORDER.filter((c) => wires.some((w) => w.netClass === c)), [wires]);
-  const netsPresent = useMemo(() => [...new Set(wires.map((w) => w.net).filter(Boolean))].sort(), [wires]);
-
-  const focus = focusId === null ? null : (parts.find((p) => p.item.id === focusId && p.geometry) ?? null);
-  // A focused part that was deleted or lost its geometry simply stops being focused (focus is null).
-  const focused = focus !== null;
-
-  /** Wires that touch the focused part. A part in series is its own part with a wire to each pin. */
-  const touching = useMemo(() => (focus && focus.ref ? wires.filter((w) => w.from === focus.ref || w.to === focus.ref) : []), [focus, wires]);
-  const neighbourIds = useMemo(() => {
-    const ids = new Set<number>();
-    if (!focus) return ids;
-    for (const w of touching) {
-      for (const r of [w.from, w.to]) {
-        const p = r ? partByRef.get(r) : undefined;
-        if (p && p.item.id !== focus.item.id && p.geometry) ids.add(p.item.id);
-      }
-    }
-    return ids;
-  }, [focus, touching, partByRef]);
-
-  const fade = useMemo<ReadonlyMap<number, number> | null>(() => {
-    if (!focus) return null;
-    const m = new Map<number, number>();
-    for (const p of parts) {
-      const id = p.item.id;
-      m.set(id, id === focus.item.id ? 1 : neighbourIds.has(id) ? (sub ? 1 : NEIGHBOUR) : FADED);
-    }
-    return m;
-  }, [focus, parts, neighbourIds, sub]);
-  const focusIds = useMemo(() => (focus ? [focus.item.id, ...(sub ? [...neighbourIds] : [])] : null), [focus, sub, neighbourIds]);
-
-  // Explode by net: only parts on the chosen class or net move with the slider.
-  const explodeByValid = explodeBy.startsWith("class:") ? classesPresent.includes(explodeBy.slice(6) as NetClass) : explodeBy.startsWith("net:") ? netsPresent.includes(explodeBy.slice(4)) : false;
-  const weights = useMemo<ReadonlyMap<number, number> | null>(() => {
-    if (!explodeByValid) return null;
-    const match = (w: Wire) => (explodeBy.startsWith("class:") ? w.netClass === explodeBy.slice(6) : w.net === explodeBy.slice(4));
-    const refs = new Set<string>();
-    for (const w of wires) if (match(w)) for (const r of [w.from, w.to]) if (r) refs.add(r);
-    return new Map(parts.map((p) => [p.item.id, p.ref && refs.has(p.ref) ? 1 : 0]));
-  }, [explodeByValid, explodeBy, wires, parts]);
-
-  // Which wires have a current route, and which are out of date.
-  const routeBuilt = useMemo(
-    () =>
-      buildRouteRequest(
-        // the same pin positions the route request uses (pin rows, else the library entry), so a fresh route reads as current
-        routePartsOf(parts, pinRows ?? []),
-        wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })),
-        { cell: routeCell }
-      ),
-    [parts, wires, routeCell, pinRows]
-  );
-  const fingerprints = routeBuilt.fingerprints;
-  /** wire ends placed at the middle of a part face because the part has no position for that pin */
-  const approximateEnds = useMemo(() => [...routeBuilt.pinSources.values()].reduce((n, [a, b]) => n + (a === "face" ? 1 : 0) + (b === "face" ? 1 : 0), 0), [routeBuilt]);
-  const routeCounts = useMemo(() => {
-    let routed = 0;
-    let stale = 0;
-    for (const w of wires) {
-      if (!w.routed) continue;
-      const st = routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fingerprints.get(w.item.id) ?? "");
-      if (st === "current") routed++;
-      else stale++;
-    }
-    return { routed, stale, total: wires.length };
-  }, [wires, fingerprints]);
-
-  // Wires that can be drawn, and why the rest cannot. Routed wires with a current path are tubes
-  // while assembled; the rest (and every wire while exploded) are straight curves between centres.
-  const wirePlan = useMemo(() => {
-    const draw: CanvasWire[] = [];
-    const routed: RoutedDraw[] = [];
-    let noGeometry = 0;
-    let unknown = 0;
-    let hiddenEnd = 0;
-    const assembled = explodePct === 0;
-    for (const w of wires) {
-      const a = partByRef.get(w.from);
-      const b = partByRef.get(w.to);
-      if (!a || !b) unknown++;
-      else if (!a.geometry || !b.geometry) noGeometry++;
-      else if (hidden.has(a.item.id) || hidden.has(b.item.id)) hiddenEnd++;
-      else if (!classOff.has(w.netClass)) {
-        const ends = `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`;
-        const current = w.routed && w.routed.path.length >= 2 && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fingerprints.get(w.item.id) ?? "") === "current";
-        if (assembled && current && w.routed) {
-          routed.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, length: w.routed.lengthMm, color: NET_COLOR[w.netClass], path: w.routed.path, radius: 0.6 });
-        } else {
-          draw.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, color: NET_COLOR[w.netClass], a: a.item.id, b: b.item.id, via: "" });
-        }
-      }
-    }
-    const radii = bundleRadius(new Map(routed.map((r) => [r.id, r.path])));
-    for (const r of routed) r.radius = radii.get(r.id) ?? 0.6;
-    const reasons: [number, string][] = [
-      [noGeometry, "a part has no geometry"],
-      [unknown, "a part is not in the bill of materials"],
-      [hiddenEnd, "a part is hidden"],
-    ];
-    const active = reasons.filter(([n]) => n > 0);
-    const total = noGeometry + unknown + hiddenEnd;
-    const note =
-      total === 0
-        ? ""
-        : active.length === 1
-          ? `${total} wire${total === 1 ? "" : "s"} not drawn: ${active[0][1]}.`
-          : `${total} wires not drawn: ${active.map(([n, r]) => `${n} where ${r}`).join(", ")}.`;
-    return { draw, routed, note };
-  }, [wires, partByRef, hidden, classOff, fingerprints, explodePct]);
-
-  const connections = useMemo<ConnectionRow[]>(() => {
-    if (!focus) return [];
-    return touching.map((w) => {
-      const end = w.from === focus.ref || w.to === focus.ref;
-      const fromSide = w.from === focus.ref;
-      const otherRef = end ? (fromSide ? w.to : w.from) : "";
-      const other = otherRef ? partByRef.get(otherRef) : undefined;
-      return {
-        key: w.item.id,
-        pin: end ? (fromSide ? w.fromPin : w.toPin) : "",
-        otherRef,
-        otherPin: end ? (fromSide ? w.toPin : w.fromPin) : "",
-        otherTitle: other ? other.item.title : otherRef ? "Not in the bill of materials" : "",
-        otherId: other && other.geometry ? other.item.id : null,
-        net: w.net,
-        color: NET_COLOR[w.netClass],
-        via: "",
-        status: w.status,
-        series: end ? "" : `In series: ${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}`,
-      };
-    });
-  }, [focus, touching, partByRef]);
-
-  // A failed save is shown in the error line (writeError) and the part goes back to its saved geometry.
-  // The latest parts, for handlers that run later (key repeats, undo).
-  const partsRef = useRef(parts);
-  useEffect(() => {
-    partsRef.current = parts;
-  }, [parts]);
-
-  /**
-   * Saves a part's geometry and remembers the one it replaced, so Ctrl+Z can bring it back.
-   * Changes to the same part within 600 ms (a held arrow key) count as one step.
-   */
-  const commitGeometry = useCallback(
-    (id: number, geometry: PartGeometry, record = true) => {
-      const current = partsRef.current.find((x) => x.item.id === id)?.geometry;
-      if (record && current) {
-        const top = undoStack.current[undoStack.current.length - 1];
-        const now = Date.now();
-        if (!(top && top.id === id && now - top.at < 600)) undoStack.current.push({ id, before: current, at: now });
-        else top.at = now;
-        if (undoStack.current.length > 100) undoStack.current.shift();
-        redoStack.current = [];
-        setHistory({ undo: undoStack.current.length, redo: redoStack.current.length });
-      }
-      // Later key presses start from this geometry even before the save comes back.
-      const before = partsRef.current;
-      partsRef.current = before.map((x) => (x.item.id === id ? { ...x, geometry } : x));
-      // A failed save is shown in the error line and the part goes back to its saved geometry.
-      return patch(id, { data: { geometry } }).catch(() => {
-        partsRef.current = before;
-      });
-    },
-    [patch]
-  );
-  const saveGeometry = useCallback((p: Part, geometry: PartGeometry) => commitGeometry(p.item.id, geometry), [commitGeometry]);
-
-  const undo = useCallback(() => {
-    const step = undoStack.current.pop();
-    if (!step) return;
-    const now = partsRef.current.find((x) => x.item.id === step.id)?.geometry;
-    if (now) redoStack.current.push({ id: step.id, before: now, at: 0 });
-    setHistory({ undo: undoStack.current.length, redo: redoStack.current.length });
-    void commitGeometry(step.id, step.before, false);
-  }, [commitGeometry]);
-  const redo = useCallback(() => {
-    const step = redoStack.current.pop();
-    if (!step) return;
-    const now = partsRef.current.find((x) => x.item.id === step.id)?.geometry;
-    if (now) undoStack.current.push({ id: step.id, before: now, at: 0 });
-    setHistory({ undo: undoStack.current.length, redo: redoStack.current.length });
-    void commitGeometry(step.id, step.before, false);
-  }, [commitGeometry]);
-
-  /** A drag of a handle ended: the canvas has snapped the numbers; save them. */
-  const onTransform = useCallback(
-    (id: number, change: { pos: [number, number, number]; rotation: [number, number, number] }) => {
-      const g = partsRef.current.find((x) => x.item.id === id)?.geometry;
-      if (!g) return;
-      const next: PartGeometry = { ...g, pos: [...change.pos] };
-      if (change.rotation.some((a) => a !== 0)) next.rotation = [...change.rotation];
-      else delete next.rotation;
-      void commitGeometry(id, next);
-    },
-    [commitGeometry]
-  );
-
-  // Ctrl+Z and Ctrl+Shift+Z, unless the user is typing in a field.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
-      e.preventDefault();
-      if (e.shiftKey) redo();
-      else undo();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo]);
-
-  /** Arrow keys nudge the selected part: 1 mm (10 mm with Shift); Page Up and Down move it up and down; R turns it 15 degrees about y. */
-  const onCanvasKey = (e: React.KeyboardEvent) => {
-    if (e.target !== e.currentTarget || selectedId === null) return;
-    const p = partsRef.current.find((x) => x.item.id === selectedId);
-    const g = p?.geometry;
-    if (!g) return;
-    const step = e.shiftKey ? 10 : 1;
-    const d: [number, number, number] = [0, 0, 0];
-    let turn = 0;
-    switch (e.key) {
-      case "ArrowLeft": d[0] = -step; break;
-      case "ArrowRight": d[0] = step; break;
-      case "ArrowUp": d[2] = -step; break;
-      case "ArrowDown": d[2] = step; break;
-      case "PageUp": d[1] = step; break;
-      case "PageDown": d[1] = -step; break;
-      case "r": case "R": turn = e.shiftKey ? -15 : 15; break;
-      default: return;
-    }
-    e.preventDefault();
-    if (g.shape === "shell" && turn) return;
-    const next: PartGeometry = { ...g, pos: g.pos.map((v, i) => snap(v + d[i], 0.001)) };
-    if (turn) {
-      const r = g.rotation ?? [0, 0, 0];
-      const y = snap(((((r[1] + turn + 180) % 360) + 360) % 360) - 180, 15);
-      next.rotation = [r[0], y, r[2]];
-      if (next.rotation.every((a) => a === 0)) delete next.rotation;
-    }
-    void commitGeometry(selectedId, next);
-  };
+  const scene = useSceneModel({ parts, hidden, shapes: shapeFiles.shapes, wireItems: wiringItems.items, focusId, sub, explodeBy, routeCell, explodePct, classOff, pinRows: pinRows ?? NO_PINS });
+  const { canvasParts, wires, classesPresent, netsPresent, focus, focused, neighbourIds, explodeByValid, fade, focusIds, weights, approximateEnds, routeCounts, wirePlan, connections } = scene;
+  const { saveGeometry, undo, redo, onTransform, onCanvasKey, history } = useGeometryEdits({ parts, patch, selectedId });
 
   const exportParts = useMemo<ExportPart[]>(
     () => canvasParts.map((c) => ({ id: c.id, ref: c.ref, title: c.title, geometry: c.geometry, shape: c.shape })),
     [canvasParts]
   );
-  const slugOf = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "model";
   const runExport = async (what: "assembly" | "part", format: "stl" | "3mf") => {
     setExportError("");
     const only = what === "part" ? selectedId ?? undefined : undefined;
@@ -373,13 +107,8 @@ export function ModelView({ project }: ViewProps) {
     try {
       const buf = format === "stl" ? assemblyStl(exportParts, params, only) : await assembly3mf(exportParts, params, only);
       const sel = only !== undefined ? parts.find((x) => x.item.id === only) : null;
-      const name = `${slugOf(project.id)}-${sel ? slugOf(sel.ref || sel.item.title) : "assembly"}.${format}`;
-      const url = URL.createObjectURL(new Blob([buf], { type: format === "stl" ? "model/stl" : "model/3mf" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const name = `${fileSlug(project.id, "model")}-${sel ? fileSlug(sel.ref || sel.item.title, "model") : "assembly"}.${format}`;
+      downloadFile(name, buf, format === "stl" ? "model/stl" : "model/3mf");
     } catch (e) {
       setExportError(`Could not write the file: ${(e as Error).message}`);
     } finally {
@@ -466,7 +195,7 @@ export function ModelView({ project }: ViewProps) {
   const uploadedForCanvas = useMemo(() => (loaded && loaded.show ? { mesh: loaded.mesh, key: loaded.key } : null), [loaded]);
   const showCanvas = withGeometry.length > 0 || uploadedForCanvas !== null;
 
-  if (loading) return <p className="text-sm text-secondary">Loading parts.</p>;
+  if (loading) return <LoadingBlocks rows={2} label="Loading parts" />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -605,8 +334,8 @@ export function ModelView({ project }: ViewProps) {
               })}
             <label className="ml-auto flex items-center gap-2 text-xs text-secondary">
               Explode by net
-              <select
-                className="h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-primary focus-visible:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange disabled:opacity-40"
+              <NativeSelect
+                className="h-8 w-auto text-xs"
                 value={explodeByValid ? explodeBy : ""}
                 disabled={!showCanvas || wires.length === 0}
                 onChange={(e) => setExplodeBy(e.target.value)}
@@ -630,7 +359,7 @@ export function ModelView({ project }: ViewProps) {
                     ))}
                   </optgroup>
                 )}
-              </select>
+              </NativeSelect>
             </label>
           </div>
           <RoutePanel
@@ -676,15 +405,13 @@ export function ModelView({ project }: ViewProps) {
             </nav>
           )}
 
-          <div
-            className="relative h-[560px] overflow-hidden rounded-xl border border-hairline bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
-            tabIndex={showCanvas ? 0 : -1}
-            role="group"
-            aria-label="3D model"
-            aria-describedby="model-keys"
-            aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
-            onKeyDown={onCanvasKey}
-          >
+          <Card variant="well" className="relative h-[560px] overflow-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+ tabIndex={showCanvas ? 0 : -1}
+ role="group"
+ aria-label="3D model"
+ aria-describedby="model-keys"
+ aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
+ onKeyDown={onCanvasKey}>
             {showCanvas ? (
               <ModelCanvas
                 parts={canvasParts}
@@ -743,7 +470,7 @@ export function ModelView({ project }: ViewProps) {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
           <p id="model-keys" className="sr-only">
             With a part selected and this area focused: arrow keys move it 1 mm in x and z, Shift for 10 mm, Page Up and Page Down move it in y, R turns it 15 degrees about y, Control Z undoes.
           </p>
@@ -768,15 +495,8 @@ export function ModelView({ project }: ViewProps) {
 
         {/* Side panel */}
         <aside className="order-3 rounded-xl border border-hairline bg-surface p-4">
-          <AnimatePresence mode="wait" initial={false}>
             {selected ? (
-              <motion.div
-                key={selected.item.id}
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
+              <div className="animate-enter" key={selected.item.id}>
                 <PartPanel
                   part={selected}
                   onClose={() => {
@@ -798,15 +518,14 @@ export function ModelView({ project }: ViewProps) {
                   onSave={(g) => saveGeometry(selected, g)}
                   onTogglePrint={(v) => togglePrint(selected, v)}
                 />
-              </motion.div>
+              </div>
             ) : (
-              <motion.div key="none" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+              <div className="animate-enter" key="none">
                 <p className={eyebrow}>Part details</p>
                 <p className="mt-2 text-sm text-secondary">Click a part in the model or the list to see its spec, cost, size and where that size comes from.</p>
                 <p className="mt-2 text-sm text-secondary">Parts without geometry can be given a shape and size here, so the model works for any concept.</p>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </aside>
       </div>
 

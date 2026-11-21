@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useProject } from "@/lib/client";
 import { useProcess } from "@/lib/process/client";
 import { productType } from "@/lib/productTypes";
-import { fmtTime } from "@/components/plan/format";
 import { NextStepCard } from "./NextStepCard";
 import { ProcessStepper } from "./ProcessStepper";
+import { fmtDateTime } from "@/lib/format";
 
 /** The Process page: the stages, their gates, override and advance, and the history of gate and stage changes. */
 export function ProcessPage() {
@@ -73,7 +73,7 @@ function Body({ projectId, name }: { projectId: string; name: string }) {
               {view.state.history.map((e) => (
                 <li key={e.id} className="px-4 py-2.5 text-sm">
                   <p className="font-mono text-[11px] text-muted">
-                    {fmtTime(e.createdAt)}
+                    {fmtDateTime(e.createdAt)}
                     {typeof e.data.by === "string" && e.data.by ? ` · ${e.data.by}` : ""}
                   </p>
                   <p className="mt-0.5 text-secondary">{e.summary}</p>

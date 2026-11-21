@@ -4,11 +4,15 @@ import { useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { asFlags, FlagList, MessageLine, StatusPill } from "./shared";
+import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
+import { Field } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/Card";
 
 const KINDS: Record<string, string> = { email: "Launch email", "press-note": "Press note", sequence: "Email sequence" };
 const kindOf = (i: Item) => String(i.data.kind ?? "email");
@@ -41,7 +45,7 @@ export function LaunchView({ project, store }: ViewProps) {
       {err || writeError ? <ErrorLine>{err || writeError}</ErrorLine> : null}
       {error && !items.length ? <ErrorLine>{error}</ErrorLine> : null}
       {loading ? (
-        <p role="status" className="text-sm text-secondary">Loading.</p>
+        <LoadingBlocks rows={2} label="Loading" />
       ) : ordered.length === 0 ? (
         <EmptyState title="No launch pieces yet">Draft them with AI once the press release is approved, or add one.</EmptyState>
       ) : (
@@ -86,7 +90,7 @@ function LaunchCard({ projectId, row, onSave, onDelete }: { projectId: string; r
       },
     });
   return (
-    <article aria-label={row.title} className="rounded-xl border border-hairline bg-surface p-4">
+    <Card variant="flat" as="article" aria-label={row.title} className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-secondary">{KINDS[kind] ?? kind}</span>
@@ -134,10 +138,10 @@ function LaunchCard({ projectId, row, onSave, onDelete }: { projectId: string; r
         <Button size="sm" disabled={busy || !dirty} onClick={() => void run(save)}>{busy ? "Saving" : dirty ? "Save changes" : "Saved"}</Button>
         <label className="flex items-center gap-2 text-xs text-secondary">
           Status
-          <Select aria-label={`Status of ${row.title}`} className="h-8 w-32" value={row.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
+          <NativeSelect aria-label={`Status of ${row.title}`} className="h-8 w-32" value={row.status} disabled={busy || dirty} onChange={(e) => void run(() => onSave({ status: e.target.value }))}>
             <option>draft</option>
             <option>approved</option>
-          </Select>
+          </NativeSelect>
         </label>
         {row.status === "approved" ? (
           <>
@@ -148,6 +152,6 @@ function LaunchCard({ projectId, row, onSave, onDelete }: { projectId: string; r
           <span className="text-xs text-muted">Approve it to export.</span>
         )}
       </div>
-    </article>
+    </Card>
   );
 }

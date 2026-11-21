@@ -8,10 +8,10 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { messageOf } from "@/lib/queries";
 import { useMoveStage, useWithdrawOverride, type ProcessView, type StageView } from "@/lib/process/client";
-import { fmtTime } from "@/components/plan/format";
 import { CheckList } from "./CheckList";
 import { OverrideDialog } from "./OverrideDialog";
 import { gateBadge } from "./gateBadge";
+import { fmtDateTime } from "@/lib/format";
 
 /**
  * The seven stages as a vertical stepper. shadcn/ui has no stepper component (its registry
@@ -123,7 +123,7 @@ function StageRow({
             <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
             <span>
               Overridden{stage.record.decidedBy ? ` by ${stage.record.decidedBy}` : ""}
-              {stage.record.decidedAt ? ` on ${fmtTime(stage.record.decidedAt)}` : ""}. Reason: {stage.record.note}
+              {stage.record.decidedAt ? ` on ${fmtDateTime(stage.record.decidedAt)}` : ""}. Reason: {stage.record.note}
             </span>
             <Button size="xs" variant="ghost" className="ml-auto" onClick={onWithdraw} disabled={busy}>Withdraw override</Button>
           </p>

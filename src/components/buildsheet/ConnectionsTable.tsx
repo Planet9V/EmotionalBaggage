@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusTone } from "@/lib/statusTones";
 import type { PartConn, PartLite } from "./derive";
+import { Card } from "@/components/ui/Card";
 
 export function ConnectionsTable({ blocks, parts }: { blocks: PartConn[]; parts: Map<string, PartLite> }) {
   return (
@@ -12,7 +13,7 @@ export function ConnectionsTable({ blocks, parts }: { blocks: PartConn[]; parts:
       {blocks.map((b) => {
         const p = parts.get(b.ref);
         return (
-          <div key={b.ref} className="overflow-hidden rounded-xl border border-hairline bg-surface print:break-inside-avoid">
+          <Card variant="flat" key={b.ref} className="overflow-hidden print:break-inside-avoid">
             <div className="flex flex-wrap items-baseline gap-2 border-b border-hairline px-4 py-2.5">
               <span className="font-mono text-sm text-primary">{b.ref}</span>
               <span className="text-sm text-secondary">{p ? p.title : "not in the bill of materials"}</span>
@@ -51,7 +52,7 @@ export function ConnectionsTable({ blocks, parts }: { blocks: PartConn[]; parts:
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </Card>
         );
       })}
     </div>

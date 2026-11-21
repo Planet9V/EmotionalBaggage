@@ -1,18 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { Download, FileText, Printer, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fmtBytes } from "@/components/plan/format";
-import { buildReport, slugify, toMarkdown, type Block } from "@/components/plan/report";
+import { buildReport, toMarkdown, type Block } from "@/components/plan/report";
 import { useConcept, type ConceptPart } from "@/components/plan/useConcept";
 import { sectionsToBlocks, useReportSections } from "@/components/plan/computedSections";
 import { messageOf } from "@/lib/queries";
 import { api, useProject } from "@/lib/client";
 import type { FileMeta, Project } from "@/lib/types";
+import { downloadFile } from "@/lib/download";
+import { fileSlug, fmtBytes } from "@/lib/format";
+import { NoConcept } from "@/components/ui/states";
 
 const PARTS: ConceptPart[] = ["items", "files", "plan", "research", "challenge", "events"];
 
@@ -38,24 +39,11 @@ export function ReportView() {
     return (
       <>
         <PageHeader eyebrow="Report" title="Report" />
-        <p className="p-8 text-sm text-secondary">
-          {loading ? "Loading the concept." : <>No concept is open. <Link href="/new" className="text-link hover:underline">Start one</Link>.</>}
-        </p>
+        <NoConcept loading={loading} />
       </>
     );
   }
   return <ReportBody key={project.id} project={project} />;
-}
-
-function download(name: string, type: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function ReportBody({ project }: { project: Project }) {
@@ -69,7 +57,7 @@ function ReportBody({ project }: { project: Project }) {
   const generatedIso = loadedAt?.toISOString() ?? "";
   const generatedLabel = loadedAt ? loadedAt.toLocaleString(undefined, { dateStyle: "long", timeStyle: "medium" }) : "";
   const stamp = generatedIso.replace(/[:.]/g, "-").slice(0, 19);
-  const base = `${slugify(project.name)}-report-${stamp}`;
+  const base = `${fileSlug(project.name)}-report-${stamp}`;
   const ready = !loading && !!loadedAt && !computed.isPending;
 
   const markdown = () => toMarkdown(project, generatedLabel ? `${generatedLabel} (${generatedIso})` : "", blocks);
@@ -86,7 +74,7 @@ function ReportBody({ project }: { project: Project }) {
       events: data.events,
       loadErrors: errors,
     };
-    download(`${base}.json`, "application/json", JSON.stringify(full, null, 2));
+    downloadFile(`${base}.json`, JSON.stringify(full, null, 2), "application/json");
   };
 
   const saveToConcept = async () => {
@@ -118,7 +106,7 @@ function ReportBody({ project }: { project: Project }) {
         <Button variant="outline" size="sm" onClick={downloadJson} disabled={!ready}>
           <Download className="h-3.5 w-3.5" aria-hidden /> Download JSON
         </Button>
-        <Button variant="outline" size="sm" onClick={() => download(`${base}.md`, "text/markdown", markdown())} disabled={!ready}>
+        <Button variant="outline" size="sm" onClick={() => downloadFile(`${base}.md`, markdown(), "text/markdown")} disabled={!ready}>
           <FileText className="h-3.5 w-3.5" aria-hidden /> Download Markdown
         </Button>
         <Button size="sm" onClick={() => void saveToConcept()} disabled={!ready || saving}>
