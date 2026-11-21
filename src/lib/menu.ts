@@ -21,7 +21,15 @@ export type Section = {
     | "decisions"
     | "schematic"
     | "layout"
-    | "buildsheet";
+    | "buildsheet"
+    // marketing (plan 8.1 to 8.7)
+    | "personas"
+    | "competitors"
+    | "positioning"
+    | "pricing"
+    | "names"
+    | "brand"
+    | "imagery";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -63,9 +71,9 @@ export const STAGES: Stage[] = [
         key: "names",
         label: "Names and taglines",
         blurb: "Candidate names and lines, with what still has to be cleared.",
-        view: "items",
         columns: [{ key: "kind", label: "Kind" }],
-        statuses: ["candidate", "shortlist", "chosen", "rejected"],
+        view: "names",
+        statuses: ["draft", "candidate", "shortlist", "chosen", "rejected"],
         addLabel: "Add name or tagline",
       },
       {
@@ -250,11 +258,59 @@ export const STAGES: Stage[] = [
     goal: "Positioning, pages, ads and posts, all tied to one action each.",
     sections: [
       {
+        key: "personas",
+        label: "Personas",
+        blurb: "Who buys it, the job they are trying to get done, what makes them buy and what stops them.",
+        view: "personas",
+        statuses: ["draft", "approved"],
+        addLabel: "Add persona",
+      },
+      {
+        key: "competitors",
+        label: "Competitors",
+        blurb: "What else a buyer could choose, including doing nothing, with price, claim and weakness, each with its source.",
+        view: "competitors",
+        statuses: ["draft", "approved"],
+        addLabel: "Add competitor",
+      },
+      {
         key: "positioning",
         label: "Positioning",
-        blurb: "Who it is for and the voice it speaks in.",
-        view: "items",
-        addLabel: "Add positioning note",
+        blurb: "One line, three messages, the proof for each, and the reviewer's attack on it.",
+        view: "positioning",
+        statuses: ["draft", "approved", "done"],
+        addLabel: "Add positioning",
+      },
+      {
+        key: "pricing",
+        label: "Pricing",
+        blurb: "Price options against unit cost, channel fees and competitor prices, with the margin worked out.",
+        view: "pricing",
+        statuses: ["draft", "approved"],
+        addLabel: "Add price",
+      },
+      {
+        key: "names",
+        label: "Names and taglines",
+        blurb: "The same list as under Concept: candidates with the checks you still have to run yourself.",
+        view: "names",
+        store: "concept/names",
+      },
+      {
+        key: "brand",
+        label: "Brand kit",
+        blurb: "Voice, colours, type, logos, tagline and boilerplate, applied to everything generated.",
+        view: "brand",
+        statuses: ["draft", "approved"],
+        addLabel: "Add brand note",
+      },
+      {
+        key: "imagery",
+        label: "Imagery",
+        blurb: "The shots a listing and ads need, and the file for each.",
+        view: "imagery",
+        statuses: ["draft", "approved"],
+        addLabel: "Add shot",
       },
       {
         key: "landing",

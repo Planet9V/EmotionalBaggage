@@ -2,6 +2,7 @@
 // The API validates writes with these; the readers in this folder parse with them;
 // the TypeScript types are inferred from them. Nothing else describes these shapes.
 import { z } from "zod";
+import { MARKET_SCHEMAS } from "@/lib/market/schemas";
 
 export const STORE = {
   parts: "design/bom",
@@ -126,6 +127,7 @@ const BY_STORE: Record<string, z.ZodType<Record<string, unknown>>> = {
   [STORE.parts]: partData,
   [STORE.wiring]: wireData,
   [STORE.decisions]: decisionData,
+  ...MARKET_SCHEMAS,
 };
 
 /** The schema a section's `data` must satisfy. */

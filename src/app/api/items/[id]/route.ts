@@ -3,6 +3,7 @@ import { ITEM_COLS, logEventIn, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, notFound, recordId, route } from "@/lib/api/route";
 import { assertStatus, itemPatch, parseData } from "@/lib/api/schemas";
 import { assertClaimChange } from "@/lib/research/rules";
+import { assertMarketChange } from "@/lib/market/rules";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -17,6 +18,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     assertStatus(was.section, b.status);
     // Claims: evidence only through /api/research/evidence; a hand-set status the evidence allows.
     assertClaimChange(was, b);
+    // Positioning: approval needs the reviewer's critique, which only its own route writes.
+    assertMarketChange(was, b);
     const data = parseData(was.section, b.data);
     const res = await c.query<ItemRow>(
       `UPDATE items SET

@@ -16,6 +16,13 @@ import { PrintingView } from "./PrintingView";
 import { ResearchView } from "./ResearchView";
 import { SocialView } from "./SocialView";
 import { SourcingView } from "./SourcingView";
+import { BrandView } from "@/components/market/BrandView";
+import { CompetitorsView } from "@/components/market/CompetitorsView";
+import { ImageryView } from "@/components/market/ImageryView";
+import { NamesView } from "@/components/market/NamesView";
+import { PersonasView } from "@/components/market/PersonasView";
+import { PositioningView } from "@/components/market/PositioningView";
+import { PricingView } from "@/components/market/PricingView";
 import type { ViewProps } from "./types";
 
 const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
@@ -32,6 +39,13 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   schematic: SchematicView,
   layout: LayoutView,
   buildsheet: BuildSheetView,
+  personas: PersonasView,
+  competitors: CompetitorsView,
+  positioning: PositioningView,
+  pricing: PricingView,
+  names: NamesView,
+  brand: BrandView,
+  imagery: ImageryView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

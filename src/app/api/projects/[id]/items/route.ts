@@ -3,6 +3,7 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, requireProject, route } from "@/lib/api/route";
 import { defaultStatus, newItem, STORE_STATUSES, STORES } from "@/lib/api/schemas";
 import { assertNewClaim } from "@/lib/research/rules";
+import { assertNewMarket } from "@/lib/market/rules";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,6 +25,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   await requireProject(id);
   const b = await body(req, newItem);
   assertNewClaim(b);
+  assertNewMarket(b);
   const row = await tx(async (c) => {
     const res = await c.query<ItemRow>(
       `INSERT INTO items (project_id, section, title, body, data, status, sort)
