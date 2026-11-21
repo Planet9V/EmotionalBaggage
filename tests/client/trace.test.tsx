@@ -22,6 +22,8 @@ import { LinkPicker } from "@/components/trace/LinkPicker";
 import { TraceabilityView } from "@/components/trace/TraceabilityView";
 import { ActivityView } from "@/components/trace/ActivityView";
 import { BuildsView } from "@/components/builds/BuildsView";
+import { ReportProcess } from "@/components/process/ReportProcess";
+import { ComplianceView } from "@/components/compliance/ComplianceView";
 import { findSection } from "@/lib/menu";
 
 const P = "p1";
@@ -33,6 +35,7 @@ let db: Item[] = [];
 let history: Record<number, HistoryEntry[]> = {};
 let activityPages: HistoryEntry[][] = [];
 let refuse: Record<number, string> = {};
+let processState: Record<string, unknown> | null = null;
 
 function install() {
   calls = [];
@@ -48,6 +51,8 @@ function install() {
       const hist = /^\/api\/items\/(\d+)\/history$/.exec(url.pathname);
       if (hist) return reply(200, { entries: history[Number(hist[1])] ?? [], next: null });
       if (/^\/api\/items\/\d+\/reason$/.test(url.pathname) && method === "POST") return reply(200, { ok: true });
+      if (/^\/api\/projects\/p1\/process$/.test(url.pathname)) return reply(200, processState);
+      if (/^\/api\/projects\/p1\/production-settings$/.test(url.pathname)) return reply(200, { currency: "USD", regions: ["eu"], productType: "electronics" });
       if (/^\/api\/projects\/p1\/activity$/.test(url.pathname)) {
         const before = Number(url.searchParams.get("before") ?? 0);
         const page = before ? 1 : 0;
@@ -304,6 +309,62 @@ describe("traceability", () => {
     db = [];
     renderWith(<TraceabilityView />);
     expect(await screen.findByText("No requirements yet")).toBeTruthy();
+  });
+});
+
+describe("process on the report", () => {
+  it("shows the current stage, each gate, the override with its reason and who, and each build with its evidence", async () => {
+    processState = {
+      projectId: P, name: "Probe", oneLiner: "A lamp", productType: "electronics", stage: "research",
+      gates: [{ stage: "concept", status: "go", overridden: true, note: "Checked by phone with the buyer", decidedBy: "demo", decidedAt: "2026-11-20T10:00:00.000Z" }],
+      history: [], facts: { currency: "USD", erc: null }, skipped: [],
+    };
+    db = [
+      item(1, "prototype/builds", "EVT", { status: "passed", data: { tests: ["t1"], criteria: [{ text: "Dims", met: true }] } }),
+      item(2, "prototype/builds", "DVT", { status: "planned", data: {} }),
+      item(3, "prototype/tests", "Dark room", { status: "fail", data: { key: "t1" } }),
+    ];
+    renderWith(<ReportProcess projectId={P} />);
+    const root = await screen.findByTestId("report-process");
+    await within(root).findByText("EVT");
+    expect(root.textContent).toContain("Current stage: Research");
+    expect(within(screen.getByTestId("report-gate-concept")).getByText(/Overridden/)).toBeTruthy();
+    expect(root.textContent).toContain("Checked by phone with the buyer");
+    expect(root.textContent).toContain("by demo");
+    const evt = screen.getByTestId("report-build-1");
+    expect(evt.textContent).toContain("1 of 1 exit criteria met; 0 of 1 linked tests passed.");
+    expect(evt.textContent).toContain("Marked passed, but the evidence no longer supports it.");
+    expect(screen.getByTestId("report-build-2").textContent).toContain("Add at least one exit criterion and one test");
+  });
+
+  it("says so when nothing was overridden and no build exists", async () => {
+    processState = { projectId: P, name: "Probe", oneLiner: "", productType: "electronics", stage: "concept", gates: [], history: [], facts: { currency: "USD", erc: null }, skipped: [] };
+    db = [];
+    renderWith(<ReportProcess projectId={P} />);
+    expect(await screen.findByText("No gate has been overridden.")).toBeTruthy();
+    expect(screen.getByText("No builds recorded.")).toBeTruthy();
+  });
+});
+
+describe("compliance page", () => {
+  it("has no second draft button, no confirm step and no 'to confirm' counter; a row at draft is edited like any row", async () => {
+    db = [
+      item(1, "production/compliance", "Radio rules", { status: "to check" }),
+      item(2, "production/compliance", "Batteries", { status: "done" }),
+      item(3, "production/compliance", "Older draft row", { status: "draft" }),
+    ];
+    const found = findSection("production", "compliance")!;
+    renderWith(<ComplianceView project={project as never} stage={found.stage} section={found.section} store="production/compliance" />);
+    await screen.findByText("Radio rules");
+    expect(screen.queryByRole("button", { name: /Draft a checklist/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Confirm/ })).toBeNull();
+    expect(screen.queryByText(/to confirm/)).toBeNull();
+    expect(screen.getByText(/1 to check, 1 decided, 1 with no decision yet/)).toBeTruthy();
+    expect(screen.getByText(/Draft with AI, at the top of this page/)).toBeTruthy();
+    const select = screen.getByLabelText("Status of Older draft row") as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(["to check", "applies", "does not apply", "done", "draft"]);
+    fireEvent.change(select, { target: { value: "applies" } });
+    await waitFor(() => expect(calls.some((c) => c.method === "PATCH" && c.path === "/api/items/3" && (c.body as { status: string }).status === "applies")).toBe(true));
   });
 });
 
