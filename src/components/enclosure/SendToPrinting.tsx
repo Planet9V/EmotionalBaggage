@@ -37,7 +37,7 @@ export function SendToPrinting({ projectId, disabled, reason, beforeSend }: { pr
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="outline" onClick={() => void send()} disabled={busy || disabled} aria-describedby="send-to-printing-hint">
+        <Button id="send-to-printing" size="sm" variant="outline" onClick={() => void send()} disabled={busy || disabled} aria-describedby="send-to-printing-hint">
           <Printer className="h-3.5 w-3.5" aria-hidden /> {busy ? "Building the base and lid" : "Send to printing"}
         </Button>
         <span id="send-to-printing-hint" className="text-xs text-muted">{disabled ? reason : "Builds the saved choice and stores the base and the lid, turned for printing, as files of this concept."}</span>
@@ -46,7 +46,7 @@ export function SendToPrinting({ projectId, disabled, reason, beforeSend }: { pr
       {done && (
         <p role="status" className="rounded-md bg-success-soft px-3 py-2 text-sm text-success">
           Stored {done.files.map((f) => f.name).join(" and ")}.{done.failed ? ` ${done.failed} of the checks failed on this build; read them above before printing.` : ""}{" "}
-          <Link className="underline" href="/s/prototype/printing">Open 3D printing</Link> to make a job from them.
+          <Link className="underline" href="/s/prototype/printing#new-print-job">Make a print job from them in 3D printing</Link>.
         </p>
       )}
     </div>

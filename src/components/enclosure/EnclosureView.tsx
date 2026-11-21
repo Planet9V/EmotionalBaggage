@@ -43,7 +43,10 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
 
   const row = saved.items[0];
   const first = (row?.data ?? {}) as Saved;
-  const [generator, setGenerator] = useState<GeneratorKey>(first.enclosureGenerator && GENERATOR_KEYS.includes(first.enclosureGenerator) ? first.enclosureGenerator : "casemaker");
+  // The saved choice, or none: a generator only counts as chosen once it is saved (U11). Until then the page
+  // works with CaseMaker but shows no selection and says nothing is saved.
+  const [chosen, setGenerator] = useState<GeneratorKey | null>(first.enclosureGenerator && GENERATOR_KEYS.includes(first.enclosureGenerator) ? first.enclosureGenerator : null);
+  const generator: GeneratorKey = chosen ?? "casemaker";
   const [draft, setDraft] = useState<Draft>(() => toDraft(withDefaults(first.params)));
   const [held, setHeld] = useState<Partial<Record<GeneratorKey, Held>>>({});
   const [running, setRunning] = useState<GeneratorKey[] | null>(null);
@@ -61,7 +64,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
   const inputKey = useMemo(() => JSON.stringify([usable, spec.outer, spec.inner, spec.openings.map((o) => [o.partRef, o.face, o.center, o.width, o.height])]), [usable, spec]);
 
   // Save the choice a moment after the last change.
-  const lastSaved = useRef<string>(JSON.stringify([generator, usableAtStart(first)]));
+  const lastSaved = useRef<string>(JSON.stringify([chosen, usableAtStart(first)]));
   const { add, patch } = saved;
   const persist = useCallback(
     async (g: GeneratorKey, p: EnclosureParams) => {
@@ -79,18 +82,20 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
     [row, patch, add]
   );
   useEffect(() => {
-    if (paramIssues.length) return;
-    const key = JSON.stringify([generator, usable]);
+    if (paramIssues.length || !chosen) return;
+    const key = JSON.stringify([chosen, usable]);
     if (key === lastSaved.current) return;
     const t = setTimeout(() => {
       lastSaved.current = key;
-      void persist(generator, usable);
+      void persist(chosen, usable);
     }, 700);
     return () => clearTimeout(t);
-  }, [generator, usable, paramIssues.length, row, persist]);
+  }, [chosen, usable, paramIssues.length, row, persist]);
 
   const run = async (which: GeneratorKey[]) => {
     setRunError("");
+    // Generating with one generator is choosing it: it is saved with the parameters (U11).
+    if (!chosen && which.length === 1) setGenerator(which[0]);
     setRunning(which);
     try {
       const answer: GenerateAnswer = await generate(project.id, which, usable);
@@ -129,9 +134,10 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </span>
         }
       >
+        {!chosen ? <p className="mb-2 text-sm text-secondary" data-testid="generator-not-saved">No generator is chosen: not saved yet. Choose one, or generate with one, and it is saved.</p> : null}
         <div role="radiogroup" aria-label="Enclosure generator" className="grid gap-3 md:grid-cols-2">
           {options.map((o) => {
-            const on = generator === o.key;
+            const on = chosen === o.key;
             const st = stat?.[o.key];
             return (
               <button
@@ -173,7 +179,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </p>
         ) : null}
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
-        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => persist(generator, usable)} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
+        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => { setGenerator(generator); return persist(generator, usable); }} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
       </Panel>
 
       <Panel compact title="Parameters" description="Defaults are shown under each field. The checks hold the result to the clearance you set." actions={

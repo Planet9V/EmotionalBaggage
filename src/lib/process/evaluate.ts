@@ -118,6 +118,10 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
     return { id: check.id, label: check.label, href: path ? fixHref(path) : "/concepts", met: true, detail: "No part in the parts list is to be printed, so no print job is needed.", action: "Nothing to do" };
   }
   const r = evaluateOne(check, rows, concept, facts);
+  // A saved enclosure with no file stored for printing: the step is to send it, not to set up a job from nothing (U12).
+  if (!r.met && check.id === "prototype.print-jobs" && facts.enclosureFiles === 0 && rows.some((x) => x.section === "design/enclosure" && (x.data as { enclosureGenerator?: unknown })?.enclosureGenerator)) {
+    return { ...r, action: "Send the enclosure to printing", href: "/s/design/enclosure#send-to-printing", detail: `${r.detail} The enclosure is saved but no file of it is stored for printing yet.` };
+  }
   const n = check.needs;
   if (r.met || !n || rowsOf(rows, n.section).some((x) => n.statuses.includes(x.status))) return r;
   const waiting = rowsOf(rows, n.section)[0];

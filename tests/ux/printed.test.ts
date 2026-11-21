@@ -42,3 +42,13 @@ describe("the wizard's printed part", () => {
     expect((part.data as { geometry: { shape: string } }).geometry.shape).toBe("shell");
   });
 });
+
+describe("U12: the print-job step names sending the enclosure", () => {
+  it("says Send the enclosure to printing when a saved enclosure has no stored file", async () => {
+    const { evaluateCheck } = await import("@/lib/process/evaluate");
+    const c = gateOf(processFor("electronics"), "prototype").checks.find((x) => x.id === "prototype.print-jobs")!;
+    const rows = [row("design/bom", "to print", { source: "Own printer" }), row("design/enclosure", "open", { enclosureGenerator: "casemaker" })];
+    expect(evaluateCheck(c, rows, {}, { enclosureFiles: 0 })).toMatchObject({ met: false, action: "Send the enclosure to printing", href: "/s/design/enclosure#send-to-printing" });
+    expect(evaluateCheck(c, rows, {}, { enclosureFiles: 2 }).action).toMatch(/^Set up a print job/);
+  });
+});

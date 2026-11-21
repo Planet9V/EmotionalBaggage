@@ -26,6 +26,8 @@ export type GateFacts = {
   /** tracked links and days of campaign results (their own tables); undefined when not counted */
   links?: number;
   results?: number;
+  /** files stored by the Enclosure page's "Send to printing"; undefined when not counted (U12) */
+  enclosureFiles?: number;
 };
 
 export type Computed = { met: boolean; detail: string; action: string; href: string };
