@@ -6,8 +6,12 @@ export type DraftStatus = "draft" | "approved" | "rejected";
 /** A row a draft was generated from. */
 export type DraftSource = { kind: "item" | "research" | "message"; id: number; title: string; section?: string };
 
-/** What an optimisation or a realignment asks of an existing row. Kept in `data._draft`, never saved into the row. */
-export type DraftOp = { op: "add" | "replace" | "remove"; reason?: string };
+/**
+ * What a draft asks of the target store. Kept in `data._draft`, never saved into the row.
+ * "append": add `data.value` to the list at `field` (a dotted path such as "sourcing.offers") inside the
+ * existing row `itemId`, read as it is at approval, so nothing else on the row is overwritten.
+ */
+export type DraftOp = { op: "add" | "replace" | "remove" | "append"; reason?: string; field?: string };
 
 export type Draft = {
   id: number;

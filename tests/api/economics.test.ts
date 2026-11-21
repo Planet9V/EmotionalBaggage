@@ -5,6 +5,7 @@ import { pool, q } from "@/lib/db";
 import { GET as getSettings, PATCH as patchSettings } from "@/app/api/projects/[id]/production-settings/route";
 import { POST as draft } from "@/app/api/projects/[id]/compliance/draft/route";
 import { POST as confirm } from "@/app/api/items/[id]/confirm/route";
+import { POST as approveRun } from "@/app/api/drafts/approve-run/route";
 import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { start } from "../standins/openai";
@@ -136,43 +137,55 @@ describe("drafting the compliance checklist", () => {
     expect((await res.json()).error).toBe("No reasoning model is chosen. Choose one in Admin, Models.");
     expect(await q("SELECT 1 FROM items WHERE project_id=$1 AND section='production/compliance'", [PROJECT])).toHaveLength(0);
   });
-  it("saves each proposed row as a draft that records what it came from, and drops repeats", async () => {
+  it("saves each proposed row as a draft of the drafting engine with what it came from, drops repeats, and only approval makes rows", async () => {
     await settings({ regions: ["us", "eu"] });
     await chooseReasoning({ provider: "ollama", baseUrl: `${s.url}/v1`, model: "stand-in-chat" });
-    const r = await read<{ created: (Item & { data: { why: string; generated: { sources: { title: string }[]; model: string; at: string; regions: string[]; trigger?: string } } })[]; skipped: number; model: string }>(
-      await draft(json("POST"), ctx(PROJECT)),
-    );
+    type D = { title: string; data: { why: string; generated: { sources: { title: string }[]; model: string; at: string; regions: string[]; trigger?: string } }; sources: { kind: string; title: string }[] };
+    const r = await read<{ runId: string; generator: string; drafts: D[]; dropped: { title: string; reason: string }[]; model: string }>(await draft(json("POST", { supersede: true }), ctx(PROJECT)));
     expect(r.status).toBe(201);
-    expect(r.body.created).toHaveLength(2);
-    expect(r.body.skipped).toBe(1);
-    const first = r.body.created[0];
-    expect(first.status).toBe("draft");
+    expect(r.body.generator).toBe("compliance");
+    expect(r.body.drafts).toHaveLength(2);
+    expect(r.body.dropped).toHaveLength(1);
+    const first = r.body.drafts[0];
     expect(first.data.why).toMatch(/W1/);
     expect(first.data.generated.model).toBe("stand-in-chat");
     expect(first.data.generated.regions).toEqual(["us", "eu"]);
     expect(first.data.generated.sources.map((x) => x.title).sort()).toEqual(["Sold to children", "Wi-Fi module"]);
+    expect(first.sources.map((x) => x.title).sort()).toEqual(["Sold to children", "Wi-Fi module"]);
     expect(first.data.generated.trigger).toBe("W1");
     expect(Number.isNaN(Date.parse(first.data.generated.at))).toBe(false);
+    // nothing is a row until approved
+    expect(await q("SELECT 1 FROM items WHERE project_id=$1 AND section='production/compliance'", [PROJECT])).toHaveLength(0);
+    const a = await approveRun(json("POST", { projectId: PROJECT, runId: r.body.runId, confirm: true }));
+    expect(a.status).toBe(200);
+    const rows = await q<{ status: string; title: string }>("SELECT status, title FROM items WHERE project_id=$1 AND section='production/compliance' ORDER BY id", [PROJECT]);
+    expect(rows.map((x) => x.status)).toEqual(["to check", "to check"]);
     // what the model was shown: the regions, the parts and the brief
     const prompt = JSON.stringify(s.requests.at(-1)?.body);
     expect(prompt).toContain("United States");
     expect(prompt).toContain("Wi-Fi module");
     expect(prompt).toContain("Sold to children");
+    await q("DELETE FROM items WHERE project_id=$1 AND section='production/compliance'", [PROJECT]);
   });
   it("does not draft a topic that is already on the list", async () => {
     await settings({ regions: ["us"] });
     await chooseReasoning({ provider: "ollama", baseUrl: `${s.url}/v1`, model: "stand-in-chat" });
     await add("production/compliance", "Radio equipment: FCC Part 15 in the US, RED in the EU");
-    const r = await read<{ created: Item[] }>(await draft(json("POST"), ctx(PROJECT)));
-    expect(r.body.created.map((i) => i.title)).toEqual(["Batteries: transport and labelling"]);
+    const r = await read<{ drafts: Item[] }>(await draft(json("POST", { supersede: true }), ctx(PROJECT)));
+    expect(r.body.drafts.map((i) => i.title)).toEqual(["Batteries: transport and labelling"]);
+    await q("DELETE FROM items WHERE project_id=$1 AND section='production/compliance'", [PROJECT]);
   });
 });
 
 describe("confirming a draft", () => {
+  // A compliance row left at "draft" by the earlier drafting path (before the drafting engine): the
+  // confirm route still turns it into a normal row.
   async function drafted() {
-    await settings({ regions: ["us"] });
-    await chooseReasoning({ provider: "ollama", baseUrl: `${s.url}/v1`, model: "stand-in-chat" });
-    return (await read<{ created: Item[] }>(await draft(json("POST"), ctx(PROJECT)))).body.created[0];
+    const r = await q<{ id: string }>(
+      "INSERT INTO items (project_id, section, title, body, data, status) VALUES ($1,'production/compliance','test: radio rules','',$2,'draft') RETURNING id",
+      [PROJECT, JSON.stringify({ why: "W1 transmits.", check: "Certificates.", generated: { model: "stand-in-chat", at: new Date().toISOString(), sources: [] } })]
+    );
+    return { id: Number(r[0].id) };
   }
   it("turns the draft into a normal row with the chosen status and keeps where it came from", async () => {
     const d = await drafted();

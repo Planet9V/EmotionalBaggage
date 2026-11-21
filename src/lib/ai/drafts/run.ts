@@ -37,7 +37,7 @@ export async function readStores(projectId: string, stores: string[]): Promise<R
 }
 
 /** The context a generator works from. */
-export async function buildContext(g: Generator<Record<string, unknown>>, concept: ConceptInfo, opts: { reviseIds?: number[]; why?: string; critique?: string } = {}): Promise<GenContext> {
+export async function buildContext(g: Generator<Record<string, unknown>>, concept: ConceptInfo, opts: { reviseIds?: number[]; why?: string; critique?: string; params?: Record<string, unknown> } = {}): Promise<GenContext> {
   const stores = [...new Set([...g.from, g.to])];
   const rows = await readStores(concept.id, stores);
   const used = await q<{ key: string | null; ref: string | null }>(
@@ -51,6 +51,8 @@ export async function buildContext(g: Generator<Record<string, unknown>>, concep
     usedKeys: new Set(used.map((u) => u.key).filter((k): k is string => !!k)),
     usedRefs: new Set(used.map((u) => u.ref).filter((k): k is string => !!k)),
     ...(opts.critique ? { critique: opts.critique } : {}),
+    params: opts.params ?? {},
+    ...(g.load ? { extra: await g.load(concept, opts.params ?? {}) } : {}),
   };
   if (opts.reviseIds) {
     const byId = new Map(ctx.existing.map((i) => [i.id, i]));
@@ -125,7 +127,7 @@ export function checkRows(g: Generator<Record<string, unknown>>, ctx: GenContext
       }
       const cited = (p.basedOn ?? []).filter((id) => known.has(id) && byId.has(id));
       const from = cited.length ? cited.map((id) => byId.get(id)!) : allSources.slice(0, MAX_SOURCES);
-      const sources: DraftSource[] = from.map((i) => ({ kind: "item", id: i.id, title: i.title, section: i.section }));
+      const sources: DraftSource[] = p.sources?.length ? p.sources.slice(0, MAX_SOURCES) : from.map((i) => ({ kind: "item", id: i.id, title: i.title, section: i.section }));
       kept.push({ proposed: { ...p, title: title.slice(0, 300), body: p.body.slice(0, 20_000) }, data, sources });
     }
   }
@@ -144,6 +146,8 @@ export type RunOptions = {
   signal?: AbortSignal;
   /** extra lines recorded with the run in the activity log (an optimisation's before) */
   record?: Record<string, unknown>;
+  /** what the person asked for in this run, passed to the generator (validated by it) */
+  params?: Record<string, unknown>;
 };
 
 export async function runGenerator(o: RunOptions): Promise<RunResult> {
@@ -155,7 +159,7 @@ export async function runGenerator(o: RunOptions): Promise<RunResult> {
   }
   if (!(g.to in STORE_STATUSES)) throw new HttpError(500, `The generator ${g.id} writes to ${g.to}, which is not a section.`);
   if (o.reviseIds && !g.revises) throw new HttpError(400, `${g.label} cannot revise existing rows.`);
-  const ctx = await buildContext(g, concept, { reviseIds: o.reviseIds, why: o.why, critique: o.critique });
+  const ctx = await buildContext(g, concept, { reviseIds: o.reviseIds, why: o.why, critique: o.critique, params: o.params });
   const blocked = g.blocked(ctx);
   if (blocked && !ctx.revise) throw new HttpError(400, blocked);
 
@@ -182,6 +186,7 @@ export async function runGenerator(o: RunOptions): Promise<RunResult> {
     signal: o.signal,
   });
 
+  ctx.model = res.info.model;
   const { kept, dropped, notes } = checkRows(g, ctx, res.object.rows);
   const runId = randomUUID();
   const counts = Object.fromEntries(Object.entries(ctx.rows).map(([s, r]) => [s, r.length]));
@@ -238,4 +243,39 @@ export async function runGenerator(o: RunOptions): Promise<RunResult> {
     path: res.path,
     notes,
   };
+}
+
+/**
+ * Saves drafts that did not come from the reasoning model (a research answer read by code, for
+ * example) as one run of a generator id, with their sources, recorded as `draft.run`. The same rules
+ * hold: they are drafts, and approval is the only path to a row.
+ */
+export async function saveDrafts(o: {
+  projectId: string;
+  generator: string;
+  label: string;
+  targetStore: string;
+  model: string;
+  provider: string;
+  drafts: { proposed: Proposed; data: Record<string, unknown>; sources: DraftSource[] }[];
+  dropped: DroppedRow[];
+  record?: Record<string, unknown>;
+}, c?: import("pg").PoolClient): Promise<{ runId: string; drafts: ReturnType<typeof toDraftRow>[] }> {
+  const runId = randomUUID();
+  const work = async (cl: import("pg").PoolClient) => {
+    const saved: DraftDbRow[] = [];
+    for (const k of o.drafts) {
+      const r = await cl.query<DraftDbRow>(
+        `INSERT INTO drafts (project_id, generator, target_store, title, body, data, sources, model, provider, run_id, item_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING ${DRAFT_COLS}`,
+        [o.projectId, o.generator, o.targetStore, k.proposed.title.slice(0, 300), k.proposed.body.slice(0, 20_000), JSON.stringify({ ...k.data, _draft: k.proposed.op }), JSON.stringify(k.sources), o.model, o.provider, runId, k.proposed.itemId ?? null]
+      );
+      saved.push(r.rows[0]);
+    }
+    await logEventIn(cl, o.projectId, "draft.run", `${o.label}: ${saved.length} ${saved.length === 1 ? "draft" : "drafts"} saved for review (${o.dropped.length} dropped)`, {
+      runId, generator: o.generator, targetStore: o.targetStore, drafts: saved.length, dropped: o.dropped, model: o.model, provider: o.provider, ...(o.record ?? {}),
+    });
+    return { runId, drafts: saved.map(toDraftRow) };
+  };
+  return c ? work(c) : tx(work);
 }

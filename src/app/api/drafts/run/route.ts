@@ -16,6 +16,7 @@ export const POST = route(async (req: Request) => {
     reviseIds: b.reviseIds,
     why: b.why,
     critique: b.critique,
+    params: b.params,
     signal: req.signal,
   });
   return NextResponse.json(result, { status: 201 });

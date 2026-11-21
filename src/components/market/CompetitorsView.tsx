@@ -230,7 +230,7 @@ export function CompetitorsView({ project, store }: ViewProps) {
               setAsking(false);
               setFlow({ cost, message: `Perplexity answered and the answer is saved in Research${cost !== null ? ` (it reported about $${cost.toFixed(3)} for the question)` : ""}. Reading rows out of it now.` });
               const out = await gen.run({ generator: "competitors", researchId: r.entry.id });
-              setFlow({ cost, message: `Perplexity answered${cost !== null ? ` (about $${cost.toFixed(3)} billed for the question)` : ""}. ${out.items.length} row${out.items.length === 1 ? "" : "s"} added as drafts.` });
+              setFlow({ cost, message: `Perplexity answered${cost !== null ? ` (about $${cost.toFixed(3)} billed for the question)` : ""}. ${out.drafts.length} ${out.drafts.length === 1 ? "row is" : "rows are"} waiting for review in Draft with AI at the top of this page.` });
             } catch (e) {
               setAsking(false);
               setFlow({ cost: null, message: `${(e as Error).message} If the answer was saved, you can read it from the list of saved answers above.` });

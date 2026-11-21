@@ -75,3 +75,68 @@ export async function askForDraft(c: DraftContext, signal?: AbortSignal) {
     signal,
   });
 }
+
+// ------------------------------------------------------------------------------------------------
+// On the shared drafting engine (src/lib/ai/drafts): the same prompt and rules, rows reviewed as
+// drafts with their sources, approval the only path to a row. After approval a row is still at the
+// section's first status and is confirmed on the Compliance page as before.
+// ------------------------------------------------------------------------------------------------
+
+import type { Generator } from "@/lib/ai/drafts/types";
+import { q } from "@/lib/db";
+import { REGIONS, STORE_COMPLIANCE } from "@/lib/economics/schemas";
+
+const complianceRow = draftSchema.shape.rows.element;
+
+export const COMPLIANCE_GENERATOR_ID = "compliance";
+
+export const complianceGenerator: Generator<z.infer<typeof complianceRow>> = {
+  id: COMPLIANCE_GENERATOR_ID,
+  label: "Compliance checklist",
+  action: "Draft the compliance checklist",
+  from: ["concept/brief", "design/bom"],
+  to: STORE_COMPLIANCE,
+  kind: "section",
+  applies: () => true,
+  revises: false,
+  load: async (concept) => {
+    const r = await q<{ sales_regions: string[] }>("SELECT sales_regions FROM projects WHERE id=$1", [concept.id]);
+    return { regions: REGIONS.filter((x) => (r[0]?.sales_regions ?? []).includes(x)) };
+  },
+  blocked: (ctx) => (((ctx.extra?.regions as Region[] | undefined) ?? []).length ? "" : "Choose the sales regions first. The checklist is drafted for the regions you sell in."),
+  buildPrompt: (ctx) => ({
+    system: SYSTEM,
+    user: promptFor({
+      conceptName: ctx.concept.name,
+      oneLiner: ctx.concept.oneLiner,
+      productType: ctx.concept.productType,
+      regions: (ctx.extra?.regions as Region[] | undefined) ?? [],
+      brief: ctx.rows["concept/brief"] ?? [],
+      parts: ctx.rows["design/bom"] ?? [],
+      existing: ctx.existing.map((e) => e.title),
+    }),
+  }),
+  schema: complianceRow,
+  toDraft: (r, ctx, run) => {
+    const seen = (run.memo.get("topics") as Set<string> | undefined) ?? new Set(ctx.existing.map((e) => normalTopic(e.title)));
+    run.memo.set("topics", seen);
+    const k = normalTopic(r.topic);
+    if (!k || seen.has(k)) return { ok: false, reason: "that topic is already on the list" };
+    seen.add(k);
+    const regions = (ctx.extra?.regions as Region[] | undefined) ?? [];
+    const read = [...(ctx.rows["concept/brief"] ?? []), ...(ctx.rows["design/bom"] ?? [])].slice(0, 100);
+    const sources = read.map((i) => ({ id: i.id, section: i.section, title: i.title.slice(0, 300) }));
+    return {
+      ok: true,
+      drafts: [
+        {
+          title: r.topic,
+          body: "",
+          data: { why: r.why, check: r.check, generated: { sources, model: ctx.model ?? "", at: new Date().toISOString(), regions, ...(r.trigger ? { trigger: r.trigger } : {}) } },
+          op: { op: "add" },
+          sources: sources.map((x) => ({ kind: "item" as const, ...x })),
+        },
+      ],
+    };
+  },
+};

@@ -15,6 +15,8 @@ export const runRequest = z.object({
   why: z.string().max(4000).optional(),
   /** a reviewer critique to answer (with reviseIds) */
   critique: z.string().max(20_000).optional(),
+  /** what a generator run from its own screen needs (a research answer id, how many, a note); each generator checks its own */
+  params: z.record(z.string().max(40), z.union([z.string().max(6000), z.number(), z.boolean()])).optional(),
 });
 
 export const draftEdit = z
