@@ -1,5 +1,6 @@
 "use client";
 
+import { prefersDark } from "@/lib/theme";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +15,7 @@ export function PreviewFrame({ id }: { id: string }) {
   const [scheme, setScheme] = useState<"light" | "dark">("light");
   useEffect(() => {
     // The shell is not drawn here, so apply the stored theme to the page chrome and start the preview in it.
-    const d = window.localStorage.getItem("c2r.theme") === "dark";
+    const d = prefersDark();
     document.documentElement.classList.toggle("dark", d);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the stored theme on mount
     setScheme(d ? "dark" : "light");

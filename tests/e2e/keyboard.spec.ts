@@ -220,3 +220,28 @@ test.describe("focus after a dialog closes", () => {
     }
   });
 });
+
+test.describe("skip link and theme", () => {
+  test("the first Tab reaches Skip to content, and Enter moves focus to the page", async ({ page }) => {
+    await page.goto("/s/concept/brief");
+    await page.waitForLoadState("networkidle");
+    await page.keyboard.press("Tab");
+    expect(await focused(page)).toBe("Skip to content");
+    await page.keyboard.press("Enter");
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
+    // the next Tab is inside the page, not in the sidebar
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => !!document.activeElement?.closest("main"))).toBe(true);
+  });
+});
+
+test.describe("theme with nothing saved", () => {
+  test.use({ colorScheme: "dark" });
+  test("follows the system's dark setting", async ({ page }) => {
+    await page.goto("/s/concept/brief");
+    await page.evaluate(() => localStorage.removeItem("c2r.theme"));
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("html")).toHaveClass(/dark/);
+  });
+});

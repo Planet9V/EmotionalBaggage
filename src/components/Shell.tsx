@@ -1,5 +1,6 @@
 "use client";
 
+import { prefersDark } from "@/lib/theme";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -40,7 +41,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the stored concept and theme on mount
     setChosen(window.localStorage.getItem(KEY) ?? "");
-    const d = window.localStorage.getItem("c2r.theme") === "dark";
+    // With nothing saved, follow the system's light or dark setting (U26).
+    const d = prefersDark();
     setDark(d);
     document.documentElement.classList.toggle("dark", d);
   }, []);
@@ -70,6 +72,13 @@ function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ProjectContext.Provider value={ctx}>
       <div className="flex min-h-dvh bg-canvas text-primary">
+        {/* The first thing a Tab reaches: past the sidebar, straight to the page (U8). */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-link focus:shadow-lg focus:ring-2 focus:ring-dutchOrange"
+        >
+          Skip to content
+        </a>
         <aside className="no-print sticky top-0 flex h-dvh w-64 shrink-0 flex-col border-r border-hairline bg-surface">
           <div className="border-b border-hairline px-4 py-4 [@media(max-height:800px)]:py-2.5">
             <Link href="/" className="block">
@@ -157,7 +166,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 focus:outline-hidden">
           {error ? (
             <div className="m-8 rounded-xl border border-hairline bg-danger-soft p-5 text-sm text-danger" role="alert">
               <p className="font-semibold">The database could not be reached.</p>
