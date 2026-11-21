@@ -47,7 +47,10 @@ jobs:
   # writes (20260306). Without recommended packages, so KiCad's symbol libraries are not installed: the
   # export embeds its own symbols.
   kicad:
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: that is Ubuntu 26.04 on amd64v3, where apt reads only the PPA's amd64v3 index,
+    # which holds no kicad binary, so apt silently installed Ubuntu's own KiCad 9.0.8. KiCad 9 refuses
+    # file version 20260306 ("Failed to load schematic"). The PPA builds KiCad 10 for 24.04 amd64.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       db:
@@ -78,8 +81,9 @@ jobs:
         run: |
           sudo add-apt-repository -y ppa:kicad/kicad-10.0-releases
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends kicad
-          kicad-cli version
+          sudo apt-get install -y --no-install-recommends 'kicad=10.0.*'
+          v="$(kicad-cli version)"; echo "kicad-cli $v"
+          case "$v" in 10.*) ;; *) echo "expected KiCad 10, got $v"; exit 1 ;; esac
       - run: npm ci
       - run: npx vitest run tests/parts/kicad.test.ts
         env:
@@ -150,7 +154,8 @@ jobs:
       - name: Build the slicer image
         run: docker build -t c2r-slicer slicer
       - name: Run the slicer's own tests inside the image, with the real OrcaSlicer
-        run: docker run --rm c2r-slicer python3 -m pytest -q /srv/tests
+        # The test tools are not part of the image; they are added for this run only.
+        run: docker run --rm c2r-slicer sh -c "pip install -q 'pytest>=8,<10' 'httpx==0.28.*' && python3 -m pytest -q /srv/tests"
       - name: Start the service
         run: |
           docker run -d --name slicer -p 8811:8000 c2r-slicer

@@ -1,11 +1,11 @@
-import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildCircuit, pinLabel } from "@/lib/parts/circuit";
 import { KICAD_SCH_VERSION, kicadSchematic } from "@/lib/parts/kicad";
-import { child, children, num, parse, text, type SNode } from "@/lib/parts/sexpr";
+import { child, children, num, parse, text, write, type SNode } from "@/lib/parts/sexpr";
 import { part, pinsFor, seeded, wire } from "./fixtures";
 
 const META = { title: "Example concept", revision: "A", date: "2026-11-21" };
@@ -134,16 +134,71 @@ describe("KiCad schematic export", () => {
       console.warn("kicad-cli is not installed here; the KiCad load check did not run.");
       return;
     }
+    // Our file is version 20260306, which only KiCad 10 reads: KiCad 9.0 stops at 20250114 and refuses
+    // anything newer (sch_file_versions.h; SCH_IO_KICAD_SEXPR_PARSER::ParseSchematic throws
+    // FUTURE_FORMAT_ERROR), and kicad-cli then says only "Failed to load schematic".
+    const version = has.stdout.trim();
+    const major = Number(version.split(".")[0]);
+    console.info(`kicad-cli version ${version}`);
+    if (!(major >= 10)) {
+      const why = `kicad-cli ${version} is older than KiCad 10 and cannot read file version ${KICAD_SCH_VERSION}.`;
+      if (process.env.KICAD_CLI_REQUIRED) throw new Error(`${why} Install KiCad 10 (KICAD_CLI_REQUIRED is set).`);
+      console.warn(`${why} The KiCad load check did not run.`);
+      return;
+    }
     // CI sets KICAD_KEEP_DIR so the exported file is kept and uploaded when KiCad refuses it.
     const dir = process.env.KICAD_KEEP_DIR ?? mkdtempSync(join(tmpdir(), "c2r-kicad-"));
     mkdirSync(dir, { recursive: true });
+    const run = (args: string[]) => {
+      const r = spawnSync("kicad-cli", args, { encoding: "utf8" });
+      return { status: r.status, out: `${r.stdout ?? ""}${r.stderr ?? ""}`.trim() };
+    };
+
+    // Control: a schematic KiCad 10 wrote itself (the demo kept as tests/parts/fixtures/kicad), with its
+    // two sub-sheet references taken out so it stands alone. If this fails, the KiCad install is at
+    // fault, not our export.
+    const ref = parse(readFileSync(join(__dirname, "fixtures/kicad/complex_hierarchy.kicad_sch"), "utf8")) as SNode[];
+    const control = join(dir, "kicad-control.kicad_sch");
+    writeFileSync(control, write(ref.filter((n) => !(Array.isArray(n) && n[0] === "sheet"))) + "\n");
+    const c1 = run(["sch", "export", "netlist", "--output", join(dir, "kicad-control.net"), control]);
+    expect(c1.status, `kicad-cli could not load a file KiCad 10 wrote itself, so the install is at fault: ${c1.out}`).toBe(0);
+
     const { parts, wires } = seeded();
+    const circuit = buildCircuit(parts, wires, []);
     const file = join(dir, "example.kicad_sch");
-    writeFileSync(file, kicadSchematic(buildCircuit(parts, wires, []), { ...META, project: "example" }));
-    const out = execFileSync("kicad-cli", ["sch", "export", "netlist", "--output", join(dir, "example.net"), file], { encoding: "utf8" });
-    expect(out).not.toMatch(/error/i);
-    const erc = spawnSync("kicad-cli", ["sch", "erc", "--output", join(dir, "erc.rpt"), file], { encoding: "utf8" });
-    expect(erc.status, erc.stderr).toBe(0);
+    const src = kicadSchematic(circuit, { ...META, project: "example" });
+    writeFileSync(file, src);
+    const net = run(["sch", "export", "netlist", "--output", join(dir, "example.net"), file]);
+    expect(net.status, `kicad-cli refused our export: ${net.out}`).toBe(0);
+    expect(net.out).not.toMatch(/error/i);
+
+    // KiCad's own connectivity must give the circuit's nets: read its netlist, map each node's pin
+    // number back to our pin name through the file's library symbols.
+    const doc = parse(src) as SNode[];
+    const pinName = new Map<string, string>();
+    const libPins = new Map(children(child(doc, "lib_symbols")!, "symbol").map((s) => [text(s[1]), children(s, "symbol").flatMap((u) => children(u, "pin"))]));
+    for (const s of children(doc, "symbol")) {
+      const r = text(child(child(child(child(s, "instances")!, "project")!, "path")!, "reference")![1]);
+      for (const p of libPins.get(text(child(s, "lib_id")![1])) ?? []) pinName.set(`${r}#${text(child(p, "number")![1])}`, text(child(p, "name")![1]));
+    }
+    const netlist = parse(readFileSync(join(dir, "example.net"), "utf8")) as SNode[];
+    const kicadNets = children(child(netlist, "nets")!, "net")
+      .map((n) => children(n, "node").map((d) => pinLabel(text(child(d, "ref")![1]), pinName.get(`${text(child(d, "ref")![1])}#${text(child(d, "pin")![1])}`) ?? `#${text(child(d, "pin")![1])}`)).sort())
+      .filter((g) => g.length > 1)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+    const expected = circuit.nets.map((n) => n.members.map((m) => pinLabel(m.ref, m.pin)).sort()).sort((a, b) => a[0].localeCompare(b[0]));
+    expect(kicadNets).toEqual(expected);
+
+    // ERC: kicad-cli exits 0 whatever it finds unless --exit-code-violations is given
+    // (kicad/cli/command_sch_erc.cpp), so this proves the file loads and the check runs. The findings
+    // are printed and kept in the report for review; they do not fail the test.
+    const rpt = join(dir, "erc.json");
+    const erc = run(["sch", "erc", "--format", "json", "--severity-all", "--output", rpt, file]);
+    expect(erc.status, erc.out).toBe(0);
+    const report = JSON.parse(readFileSync(rpt, "utf8")) as { sheets?: { violations?: { type: string; severity: string }[] }[] };
+    const counts = new Map<string, number>();
+    for (const v of (report.sheets ?? []).flatMap((s) => s.violations ?? [])) counts.set(`${v.severity} ${v.type}`, (counts.get(`${v.severity} ${v.type}`) ?? 0) + 1);
+    console.info(`KiCad ERC on the export: ${counts.size ? [...counts].map(([k, n]) => `${n} x ${k}`).join("; ") : "no violations"}`);
   });
 });
 

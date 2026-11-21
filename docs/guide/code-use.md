@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit cb26aaa by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 8b77b55 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -144,7 +144,8 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | Graphviz (apt package graphviz) | as installed by apt in the planner image (Debian) | EPL-1.0 (Graphviz; the Debian package also contains libraries under their own licences) | separate process | https://graphviz.org/ |
 | Inter (typeface) | Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0 | OFL-1.1 | font files | https://github.com/rsms/inter |
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
-| KiCad command-line tool (kicad-cli), CI only | 10.0 (Ubuntu package from ppa:kicad/kicad-10.0-releases) | GPL-3.0-or-later (KiCad); its libraries are not installed or used | separate process | https://gitlab.com/kicad/code/kicad |
+| KiCad command-line tool (kicad-cli), CI only | 10.0 (Ubuntu 24.04 package from ppa:kicad/kicad-10.0-releases, pinned to 10.0.*) | GPL-3.0-or-later (KiCad); its libraries are not installed or used | separate process | https://gitlab.com/kicad/code/kicad |
+| KiCad demo schematic complex_hierarchy.kicad_sch (test fixture) | KiCad tag 10.0.8 (commit e432beac2668303194ba2040274f9e5efe773fc0), file version 20260306 | CC-BY-SA-4.0 | copied source | https://gitlab.com/kicad/code/kicad |
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
 | occt-import-js (OpenCascade STEP reader, WebAssembly) | as copied from the npm package occt-import-js | LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it) | copied source | https://github.com/kovacsv/occt-import-js |
 | OpenSCAD (Debian package openscad) | 2021.01 in the Debian package the planner image installs | GPL-2.0-or-later with the CGAL exception (as the Debian package states it) | separate process | https://openscad.org |
@@ -163,6 +164,8 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 **AI Elements components**: origin Vercel's AI Elements registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them.
 
 **CaseMaker (engine source)**: origin Forked into this repository so the enclosure generator can run CaseMaker's engine headless on the server. None to the copied files. Added entry.ts, build.mjs, stubs/ and the committed bundle dist/engine.mjs; see vendor/casemaker/UPSTREAM.md.
+
+**KiCad demo schematic complex_hierarchy.kicad_sch (test fixture)**: origin demos/complex_hierarchy/complex_hierarchy.kicad_sch at KiCad tag 10.0.8, last changed in d1a5ae8bc80c4ce7267539547d155947f704ab63 ('Demo complex_hierarchy update', 20 Oct 2026); written by KiCad 10 itself (generator eeschema, generator_version 10.0). SHA-256 a72bf0b45aef72eea5583bb1cf259a84962c62ef50d9616a716a3ec61926d13f.. None to the committed file. tests/parts/kicad.test.ts writes a temporary copy without the two sub-sheet nodes to load in kicad-cli as a control.
 
 **occt-import-js (OpenCascade STEP reader, WebAssembly)**: origin npm package occt-import-js, copied into public/vendor/occt so the browser can load it from the same origin. None. The files are as the package ships them (about 7.6 MB of wasm).
 

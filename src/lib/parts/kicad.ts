@@ -8,7 +8,10 @@
 //   label are one net; every unwired pin gets a no-connect flag;
 // - the title block carries the concept, the revision and the date.
 //
-// tests/parts/kicad.test.ts reads the file back and rebuilds the nets from the coordinates alone.
+// tests/parts/kicad.test.ts reads the file back and rebuilds the nets from the coordinates alone;
+// tests/parts/kicad-format.test.ts compares every node with a schematic KiCad 10 wrote itself, and the
+// layout below (property flags, pin_numbers before pin_names, sheet items grouped by type) follows
+// KiCad 10's own writer so a re-save in KiCad does not reorder the file.
 import { pinKey, type Circuit, type CircuitPart } from "./circuit";
 import type { PinKind } from "./kinds";
 import { qs, write, type SNode } from "./sexpr";
@@ -80,6 +83,30 @@ function pinNumbers(layout: SymbolLayout): string[] {
   });
 }
 
+// Property layout as KiCad 10 writes it (format 20251028: show_name and do_not_autoplace always written).
+// In a library symbol: at, show_name, do_not_autoplace, hide, effects (SCH_IO_KICAD_SEXPR_LIB_CACHE::saveField).
+const libProperty = (name: string, value: string, x: number, y: number, hide = false): SNode => [
+  "property",
+  qs(name),
+  qs(value),
+  ["at", fmt(x), fmt(y), "0"],
+  ["show_name", "no"],
+  ["do_not_autoplace", "no"],
+  ...(hide ? [["hide", "yes"] as SNode] : []),
+  font(),
+];
+// On a placed symbol: at, hide, show_name, do_not_autoplace, effects (SCH_IO_KICAD_SEXPR::saveField).
+const schProperty = (name: string, value: string, x: number, y: number, hide = false): SNode => [
+  "property",
+  qs(name),
+  qs(value),
+  ["at", fmt(x), fmt(y), "0"],
+  ...(hide ? [["hide", "yes"] as SNode] : []),
+  ["show_name", "no"],
+  ["do_not_autoplace", "no"],
+  font(),
+];
+
 function libSymbol(pl: Placed): SNode {
   const { layout, name, part } = pl;
   const body: SNode[] = [];
@@ -109,15 +136,18 @@ function libSymbol(pl: Placed): SNode {
   return [
     "symbol",
     qs(`C2R:${name}`),
-    ...(drawn ? [["pin_names", ["offset", "0"], ["hide", "yes"]] as SNode, ["pin_numbers", ["hide", "yes"]] as SNode] : [["pin_names", ["offset", "1.016"]] as SNode]),
+    // KiCad 10's writer puts pin_numbers before pin_names (sch_io_kicad_sexpr_lib_cache.cpp, SaveSymbol)
+    ...(drawn ? [["pin_numbers", ["hide", "yes"]] as SNode, ["pin_names", ["offset", "0"], ["hide", "yes"]] as SNode] : [["pin_names", ["offset", "1.016"]] as SNode]),
     ["exclude_from_sim", "no"],
     ["in_bom", "yes"],
     ["on_board", "yes"],
-    ["property", qs("Reference"), qs(refPrefix(part.ref)), ["at", "0", fmt(-(top - 2.54)), "0"], font()],
-    ["property", qs("Value"), qs(part.title || part.ref), ["at", "0", fmt(-(bottom + 2.54)), "0"], font()],
-    ["property", qs("Footprint"), qs(""), ["at", "0", "0", "0"], ["hide", "yes"], font()],
-    ["property", qs("Datasheet"), qs(""), ["at", "0", "0", "0"], ["hide", "yes"], font()],
-    ["property", qs("Description"), qs(part.item.body || ""), ["at", "0", "0", "0"], ["hide", "yes"], font()],
+    ["in_pos_files", "yes"],
+    ["duplicate_pin_numbers_are_jumpers", "no"],
+    libProperty("Reference", refPrefix(part.ref), 0, -(top - 2.54)),
+    libProperty("Value", part.title || part.ref, 0, -(bottom + 2.54)),
+    libProperty("Footprint", "", 0, 0, true),
+    libProperty("Datasheet", "", 0, 0, true),
+    libProperty("Description", part.item.body || "", 0, 0, true),
     ["symbol", qs(`${name}_0_1`), ...body],
     ["symbol", qs(`${name}_1_1`), ...pins],
     ["embedded_fonts", "no"],
@@ -177,12 +207,26 @@ function place(c: Circuit, meta: KicadMeta): Placed[] {
   return out;
 }
 
+/** The uuid of a sheet item (its direct `(uuid "...")` child). */
+const uuidOf = (n: SNode): string => {
+  const u = Array.isArray(n) ? n.find((x) => Array.isArray(x) && x[0] === "uuid") : undefined;
+  const v = Array.isArray(u) ? u[1] : undefined;
+  return v && typeof v === "object" && !Array.isArray(v) ? v.q : "";
+};
+const byUuid = (xs: SNode[]) => [...xs].sort((a, b) => (uuidOf(a) < uuidOf(b) ? -1 : uuidOf(a) > uuidOf(b) ? 1 : 0));
+
 /** The .kicad_sch text for a circuit. */
 export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
   const project = meta.project ?? (meta.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "concept");
   const root = uuidFrom(`root:${project}`);
   const placed = place(c, meta);
-  const items: SNode[] = [];
+  // KiCad 10 saves sheet items grouped by type (no_connect, then wires, then labels, then symbols:
+  // the order of KICAD_T), each group sorted by uuid (SCH_IO_KICAD_SEXPR::Format). The parser takes
+  // any order; writing KiCad's own keeps a re-save by KiCad free of reordering noise.
+  const noConnects: SNode[] = [];
+  const wires: SNode[] = [];
+  const labels: SNode[] = [];
+  const symbols: SNode[] = [];
 
   for (const pl of placed) {
     pl.layout.pins.forEach((p) => {
@@ -190,16 +234,16 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
       const net = c.netOf.get(pinKey(pl.part.ref, p.name));
       const id = `${pl.part.ref}.${p.name}`;
       if (!net) {
-        items.push(["no_connect", ["at", fmt(at.x), fmt(at.y)], ["uuid", qs(uuidFrom(`nc:${id}`))]]);
+        noConnects.push(["no_connect", ["at", fmt(at.x), fmt(at.y)], ["uuid", qs(uuidFrom(`nc:${id}`))]]);
         return;
       }
       // a stub away from the body, and the net's label at its end
       const away = { right: [-1, 0], left: [1, 0], down: [0, -1], up: [0, 1] }[p.toward];
       const end = { x: at.x + away[0] * GRID, y: at.y + away[1] * GRID };
-      items.push(["wire", ["pts", ["xy", fmt(at.x), fmt(at.y)], ["xy", fmt(end.x), fmt(end.y)]], ["stroke", ["width", "0"], ["type", "default"]], ["uuid", qs(uuidFrom(`w:${id}`))]]);
+      wires.push(["wire", ["pts", ["xy", fmt(at.x), fmt(at.y)], ["xy", fmt(end.x), fmt(end.y)]], ["stroke", ["width", "0"], ["type", "default"]], ["uuid", qs(uuidFrom(`w:${id}`))]]);
       const angle = away[0] < 0 ? "180" : away[0] > 0 ? "0" : away[1] < 0 ? "90" : "270";
       const justify = angle === "180" || angle === "270" ? ["right", "bottom"] : ["left", "bottom"];
-      items.push(["label", qs(net.name), ["at", fmt(end.x), fmt(end.y), angle], fontJ(justify), ["uuid", qs(uuidFrom(`l:${id}`))]]);
+      labels.push(["label", qs(net.name), ["at", fmt(end.x), fmt(end.y), angle], fontJ(justify), ["uuid", qs(uuidFrom(`l:${id}`))]]);
     });
   }
 
@@ -207,7 +251,7 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
     const { part, at, layout, name } = pl;
     const top = layout.bbox.y1;
     const bottom = layout.bbox.y2;
-    items.push([
+    symbols.push([
       "symbol",
       ["lib_id", qs(`C2R:${name}`)],
       ["at", fmt(at.x), fmt(at.y), "0"],
@@ -219,11 +263,11 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
       ["in_pos_files", "yes"],
       ["dnp", "no"],
       ["uuid", qs(uuidFrom(`s:${part.ref}`))],
-      ["property", qs("Reference"), qs(part.ref), ["at", fmt(at.x), fmt(at.y + top - 2.54), "0"], font()],
-      ["property", qs("Value"), qs(part.title || part.ref), ["at", fmt(at.x), fmt(at.y + bottom + 2.54), "0"], font()],
-      ["property", qs("Footprint"), qs(""), ["at", fmt(at.x), fmt(at.y), "0"], ["hide", "yes"], font()],
-      ["property", qs("Datasheet"), qs(""), ["at", fmt(at.x), fmt(at.y), "0"], ["hide", "yes"], font()],
-      ["property", qs("Description"), qs(part.item.body || ""), ["at", fmt(at.x), fmt(at.y), "0"], ["hide", "yes"], font()],
+      schProperty("Reference", part.ref, at.x, at.y + top - 2.54),
+      schProperty("Value", part.title || part.ref, at.x, at.y + bottom + 2.54),
+      schProperty("Footprint", "", at.x, at.y, true),
+      schProperty("Datasheet", "", at.x, at.y, true),
+      schProperty("Description", part.item.body || "", at.x, at.y, true),
       ...pl.numbers.map((n) => ["pin", qs(n), ["uuid", qs(uuidFrom(`p:${part.ref}:${n}`))]] as SNode),
       ["instances", ["project", qs(project), ["path", qs(`/${root}`), ["reference", qs(part.ref)], ["unit", "1"]]]],
     ]);
@@ -252,7 +296,10 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
       ["comment", "1", qs("Exported from the concept to realization workbench. Symbols are the workbench's own drawings.")],
     ],
     ["lib_symbols", ...placed.map(libSymbol)],
-    ...items,
+    ...byUuid(noConnects),
+    ...byUuid(wires),
+    ...byUuid(labels),
+    ...byUuid(symbols),
     ["sheet_instances", ["path", qs("/"), ["page", qs("1")]]],
     ["embedded_fonts", "no"],
   ];

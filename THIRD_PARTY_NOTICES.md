@@ -1,6 +1,6 @@
 # Third-party notices
 
-Generated from package-lock.json at commit cb26aaa by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 8b77b55 by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
@@ -3211,13 +3211,25 @@ Listed by hand in `docs/third-party.manual.json`.
 
 ### KiCad command-line tool (kicad-cli), CI only
 
-- Version or tag: 10.0 (Ubuntu package from ppa:kicad/kicad-10.0-releases)
+- Version or tag: 10.0 (Ubuntu 24.04 package from ppa:kicad/kicad-10.0-releases, pinned to 10.0.*)
 - Licence: GPL-3.0-or-later (KiCad); its libraries are not installed or used
 - How it is used: separate process
 - Referenced in: `.github/workflows/ci.yml`, `tests/parts/kicad.test.ts`
 - Source: https://gitlab.com/kicad/code/kicad
 - Licence evidence: https://www.kicad.org/about/licenses/ states KiCad's source code is licensed under the GNU GPL version 3 or later; not re-read in full for this entry.
 - Notes: Installed in CI only, run as its own program to load the exported .kicad_sch (sch export netlist, sch erc). Not part of the app or its image. Installed without recommended packages, so KiCad's symbol libraries are not installed.
+
+### KiCad demo schematic complex_hierarchy.kicad_sch (test fixture)
+
+- Version or tag: KiCad tag 10.0.8 (commit e432beac2668303194ba2040274f9e5efe773fc0), file version 20260306
+- Licence: CC-BY-SA-4.0
+- How it is used: copied source
+- Origin: demos/complex_hierarchy/complex_hierarchy.kicad_sch at KiCad tag 10.0.8, last changed in d1a5ae8bc80c4ce7267539547d155947f704ab63 ('Demo complex_hierarchy update', 20 Oct 2026); written by KiCad 10 itself (generator eeschema, generator_version 10.0). SHA-256 a72bf0b45aef72eea5583bb1cf259a84962c62ef50d9616a716a3ec61926d13f.
+- Changes: None to the committed file. tests/parts/kicad.test.ts writes a temporary copy without the two sub-sheet nodes to load in kicad-cli as a control.
+- Referenced in: `tests/parts/fixtures/kicad/complex_hierarchy.kicad_sch`, `tests/parts/fixtures/kicad/README.md`, `tests/parts/kicad-format.test.ts`, `tests/parts/kicad.test.ts`
+- Source: https://gitlab.com/kicad/code/kicad
+- Licence evidence: LICENSE.README at tag 10.0.8 of https://gitlab.com/kicad/code/kicad: 'Licensed under CC BY-SA 4.0: All the demo files provided in demos/*'; read on 21 Nov 2026.
+- Notes: Test data only, the ground truth for the KiCad export's structure. Not part of the app or its image.
 
 ### Node.js (official Docker image node)
 
