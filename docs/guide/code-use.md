@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 6de0eb9 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 17a8e61 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -58,7 +58,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | Package | Version | Licence | How it is used | Imported in src/ |
 | --- | --- | --- | --- | --- |
 | @ai-sdk/openai-compatible | 3.0.94 | Apache-2.0 | linked library | yes |
-| @ai-sdk/react | 4.0.183 | Apache-2.0 | linked library | no |
+| @ai-sdk/react | 4.0.183 | Apache-2.0 | linked library | yes |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | font files | yes |
 | @fontsource-variable/jetbrains-mono | 5.3.0 | OFL-1.1 | font files | yes |
 | @radix-ui/react-dialog | 1.3.1 | MIT | linked library | yes |

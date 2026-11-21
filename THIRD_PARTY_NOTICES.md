@@ -1,6 +1,6 @@
 # Third-party notices
 
-Generated from package-lock.json at commit 6de0eb9 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 17a8e61 by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
