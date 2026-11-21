@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field, model_validator
 import networkx as nx
 
+from impact import ImpactRequest, impact as impact_of
 from routing import RouteRequest, route as route_wires
 
 app = FastAPI(title="Concept-to-realization planner")
@@ -135,3 +136,9 @@ def plan(g: Graph):
 def route(req: RouteRequest):
     """Routes wires through an enclosure. See routing.py for the method."""
     return route_wires(req)
+
+
+@app.post("/impact")
+def impact(req: ImpactRequest):
+    """Everything downstream of the changed rows, by section, with the path to each. See impact.py."""
+    return impact_of(req)
