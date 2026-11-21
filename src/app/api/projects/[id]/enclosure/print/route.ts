@@ -5,7 +5,7 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { HttpError, requireProject, route } from "@/lib/api/route";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { withDefaults } from "@/lib/enclosure/validate";
-import { runGenerator } from "@/lib/enclosure/run";
+import { runEnclosureGenerator } from "@/lib/enclosure/run";
 import { parseStl, writeBinaryStl } from "@/lib/enclosure/stl";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { GENERATOR_KEYS, GENERATORS, type GeneratedMesh, type GeneratorKey } from "@/lib/enclosure/types";
@@ -35,7 +35,7 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
   const errors = validateSpec(spec).filter((i) => i.severity === "error");
   if (errors.length) throw new HttpError(409, `The enclosure cannot be generated yet: ${errors.map((e) => e.message).join(" ")}`);
 
-  const r = await runGenerator(gen, spec);
+  const r = await runEnclosureGenerator(gen, spec);
   if (!r.ok) throw new HttpError(r.code === "failed" ? 502 : 503, `${GENERATORS[gen].label} could not build the enclosure: ${r.error}`);
   const failed = r.checks.filter((c) => !c.ok);
   const fingerprint = specFingerprint(spec);
