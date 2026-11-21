@@ -1,7 +1,8 @@
 import os
 WALK = os.environ.get("WALK_DIR", os.path.dirname(os.path.abspath(__file__)))
 import json, requests
-B = "http://127.0.0.1:3378"
+# the app under test: npm run walk sets WALK_BASE (scripts/walk.mjs)
+B = os.environ.get("WALK_BASE", "http://127.0.0.1:3378")
 class Api:
     def __init__(self):
         self.s = requests.Session()

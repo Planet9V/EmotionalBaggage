@@ -230,6 +230,12 @@ def launch(pg, label, href):
 
 @on(r"^Make a tracked link")
 def link(pg, label, href):
+    # since the hardening, a link may only open a host on the plan's allow-list (Campaigns, plan card)
+    plan = next((i for i in items("marketing/campaigns") if i["data"].get("kind") == "plan"), None)
+    if plan and "example.com" not in (plan["data"].get("linkHosts") or []):
+        a.patch(f"/api/items/{plan['id']}", {"data": {"linkHosts": ["example.com"]}}, ok=200)
+        log("     (API) example.com added to the plan's link hosts")
+        pg.reload(); pg.wait_for_timeout(1500)
     f = pg.locator("#new-link")
     f.get_by_label("Page it goes to").fill("https://example.com/clip")
     f.get_by_label(re.compile("^Source")).fill("meta")
