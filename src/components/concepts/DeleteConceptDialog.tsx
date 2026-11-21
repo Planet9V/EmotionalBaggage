@@ -102,6 +102,7 @@ export function DeleteConceptDialog({
             autoComplete="off"
             spellCheck={false}
             aria-describedby="delete-confirm-name"
+            data-autofocus
           />
         </div>
         <FormError message={error} />

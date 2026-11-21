@@ -37,7 +37,7 @@ export function DuplicateConceptDialog({ concept, onDone, onClosed }: { concept:
     >
       <form onSubmit={submit} noValidate>
         <label htmlFor="duplicate-name" className={fieldLabel}>Name of the copy</label>
-        <Input id="duplicate-name" className="mt-1" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} autoComplete="off" />
+        <Input id="duplicate-name" className="mt-1" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} autoComplete="off" data-autofocus />
         <FormError message={error} />
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>

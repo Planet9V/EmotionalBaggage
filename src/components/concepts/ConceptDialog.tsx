@@ -31,6 +31,14 @@ export function ConceptDialog({
       <DialogPortal>
         <DialogOverlay />
         <DialogContent
+          onOpenAutoFocus={(e) => {
+            // Start in the field that matters (marked data-autofocus), not on the close button.
+            const target = (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>("[data-autofocus]");
+            if (target) {
+              e.preventDefault();
+              target.focus();
+            }
+          }}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
             onClosed();

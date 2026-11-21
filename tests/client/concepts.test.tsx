@@ -120,6 +120,7 @@ describe("delete dialog", () => {
     const button = within(dialog).getByRole("button", { name: "Delete concept" }) as HTMLButtonElement;
     const input = within(dialog).getByLabelText("Type the name to confirm");
     expect(button.disabled).toBe(true);
+    await waitFor(() => expect(document.activeElement).toBe(input));
     for (const wrong of ["desk lamp", "Desk Lam", "Desk Lamp ", "lamp"]) {
       fireEvent.change(input, { target: { value: wrong } });
       expect(button.disabled).toBe(true);

@@ -78,7 +78,7 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
       <div className="space-y-4">
         <div>
           <label htmlFor="concept-name" className={fieldLabel}>Name</label>
-          <Input id="concept-name" className="mt-1" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} autoComplete="off" />
+          <Input id="concept-name" className="mt-1" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} autoComplete="off" data-autofocus />
         </div>
         <div>
           <label htmlFor="concept-oneliner" className={fieldLabel}>One-line description</label>
@@ -103,7 +103,10 @@ function EditForm({ concept, onCancel, onSaved }: { concept: Concept; onCancel: 
                   className="mt-0.5 accent-[#E05A10]"
                 />
                 <span>
-                  <span className="block font-medium text-primary">{t.label}</span>
+                  <span className="block font-medium text-primary">
+                    {t.label}
+                    {t.key === concept.productType && <span className="ml-2 font-mono text-[10px] font-normal uppercase tracking-wide text-muted">Current</span>}
+                  </span>
                   <span className="block text-xs text-secondary">{t.sentence}</span>
                 </span>
               </label>

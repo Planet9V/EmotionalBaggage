@@ -40,8 +40,8 @@ export function ConceptTable({
         <TableRow className="hover:bg-transparent">
           <TableHead>Name</TableHead>
           <TableHead className="hidden lg:table-cell">Product type</TableHead>
-          <TableHead className="hidden md:table-cell">Stage</TableHead>
-          <TableHead className="hidden md:table-cell">Last changed</TableHead>
+          <TableHead className="hidden lg:table-cell">Stage</TableHead>
+          <TableHead className="hidden lg:table-cell">Last changed</TableHead>
           <TableHead className="hidden text-right lg:table-cell">Rows</TableHead>
           <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
         </TableRow>
@@ -75,7 +75,7 @@ function Row({
   const act = (kind: ActionKind) => () => onAction({ kind, id: c.id, concept: c });
   return (
     <TableRow data-concept={c.id}>
-      <TableCell className="max-w-0 w-full py-3">
+      <TableCell className="w-full max-w-0 min-w-[10rem] py-3">
         <p className="flex items-center gap-2 truncate font-medium text-primary">
           <span className="truncate">{c.name}</span>
           {current && (
@@ -85,15 +85,14 @@ function Row({
           )}
         </p>
         <p className="truncate text-xs text-secondary">{c.oneLiner || <span className="text-muted">No description</span>}</p>
-        <p className="mt-0.5 truncate font-mono text-[10px] text-muted lg:hidden">
-          {typeLabel(c.productType)}
-          <span className="md:hidden"> · {stageLabel(c.stage)} · {fmtDate(changed)}</span>
-          {" · "}{plural(c.rowCount, "row")}
+        {/* Below 1024 px the other columns fold into this line, so the name keeps its width. */}
+        <p className="mt-0.5 whitespace-normal font-mono text-[10px] text-muted lg:hidden">
+          {typeLabel(c.productType)} · {stageLabel(c.stage)} · {fmtDate(changed)} · {plural(c.rowCount, "row")}
         </p>
       </TableCell>
       <TableCell className="hidden whitespace-nowrap lg:table-cell">{typeLabel(c.productType)}</TableCell>
-      <TableCell className="hidden whitespace-nowrap md:table-cell">{stageLabel(c.stage)}</TableCell>
-      <TableCell className="hidden whitespace-nowrap font-mono text-xs md:table-cell">
+      <TableCell className="hidden whitespace-nowrap lg:table-cell">{stageLabel(c.stage)}</TableCell>
+      <TableCell className="hidden whitespace-nowrap font-mono text-xs lg:table-cell">
         <time dateTime={changed}>{fmtDate(changed)}</time>
       </TableCell>
       <TableCell className="hidden text-right font-mono text-xs lg:table-cell">{c.rowCount.toLocaleString()}</TableCell>
