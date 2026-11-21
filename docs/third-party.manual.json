@@ -153,6 +153,46 @@
       ],
       "source": "https://github.com/vercel/ai-elements",
       "changes": "None. The files are as the CLI wrote them."
+    },
+    {
+      "name": "OrcaSlicer",
+      "version": "2.5.0 (tag v2.5.0, commit 40ecc66f78ed72dc368e0c1ebe40d77f00cc8a19)",
+      "license": "AGPL-3.0",
+      "licenseEvidence": "LICENSE.txt at the v2.5.0 tag of https://github.com/OrcaSlicer/OrcaSlicer opens 'GNU AFFERO GENERAL PUBLIC LICENSE, Version 3, 19 November 2007'; read from a clone of that tag on 21 Nov 2026. The profile files under resources/profiles are part of the same repository; the licence of each vendor's profile files was not read one by one.",
+      "use": "separate process",
+      "referencedIn": [
+        "slicer/Dockerfile",
+        "slicer/app/orca.py",
+        "slicer/profiles.json",
+        "docker-compose.yml",
+        ".github/workflows/ci.yml"
+      ],
+      "source": "https://github.com/OrcaSlicer/OrcaSlicer",
+      "notes": "Runs in its own container (slicer/) and is started once per slice as a command line program. The web app never links it, loads it or includes its code; it talks to the container over HTTP. The release AppImage is downloaded at image build time and checked against a SHA-256; nothing of it is stored in this repository except profiles.json, which is generated from its profile names. Legal sign-off for this use is decision D13 in docs/PLAN.md."
+    },
+    {
+      "name": "Ubuntu (official Docker image ubuntu)",
+      "version": "24.04",
+      "license": "Debian-style per-package licences (the image holds many packages, each under its own licence)",
+      "licenseEvidence": "Docker Hub page for the ubuntu image states the image contains software under various licences; not read package by package.",
+      "use": "container image",
+      "referencedIn": [
+        "slicer/Dockerfile"
+      ],
+      "source": "https://hub.docker.com/_/ubuntu",
+      "notes": "Base image of the slicer service; OrcaSlicer's AppImage needs libraries (WebKitGTK, GTK) that this image installs with apt."
+    },
+    {
+      "name": "FastAPI, Uvicorn and python-multipart (Python packages)",
+      "version": "fastapi 0.115.x, uvicorn 0.32.x, python-multipart 0.0.x",
+      "license": "MIT (fastapi), BSD-3-Clause (uvicorn), Apache-2.0 (python-multipart)",
+      "licenseEvidence": "Read from the installed packages' metadata on 21 Nov 2026 (fastapi: classifier 'MIT License'; uvicorn: 'BSD-3-Clause'; python-multipart: 'Apache-2.0'). Their own dependencies were not listed.",
+      "use": "linked library",
+      "referencedIn": [
+        "slicer/requirements.txt"
+      ],
+      "source": "https://pypi.org/project/fastapi/",
+      "notes": "The HTTP wrapper of the slicer service only; not part of the web app."
     }
   ],
   "useOverrides": {

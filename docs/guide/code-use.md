@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit eaa25f1 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit ce0cb2d by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 557 packages (40 direct, 517 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 558 packages (41 direct, 517 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 430 |
+| MIT | 431 |
 | ISC | 47 |
 | Apache-2.0 | 43 |
 | LGPL-3.0-or-later | 10 |
@@ -85,6 +85,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
+| papaparse | 5.7.1 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |
 | radix-ui | 1.8.1 | MIT | linked library | yes |
 | react | 19.3.0 | MIT | linked library | yes |
@@ -117,14 +118,17 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | Name | Version or tag | Licence | How it is used | Source |
 | --- | --- | --- | --- | --- |
 | AI Elements components | as fetched from https://elements.ai-sdk.dev/api/registry on 2026-11-20 | Apache-2.0 | copied source | https://github.com/vercel/ai-elements |
+| FastAPI, Uvicorn and python-multipart (Python packages) | fastapi 0.115.x, uvicorn 0.32.x, python-multipart 0.0.x | MIT (fastapi), BSD-3-Clause (uvicorn), Apache-2.0 (python-multipart) | linked library | https://pypi.org/project/fastapi/ |
 | Inter (typeface) | Fontsource metadata version v20 (2025-09-10), as packaged in @fontsource-variable/inter 5.3.0 | OFL-1.1 | font files | https://github.com/rsms/inter |
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
+| OrcaSlicer | 2.5.0 (tag v2.5.0, commit 40ecc66f78ed72dc368e0c1ebe40d77f00cc8a19) | AGPL-3.0 | separate process | https://github.com/OrcaSlicer/OrcaSlicer |
 | pgvector (Docker image pgvector/pgvector) | 0.8.7-pg19-trixie (default; PG_IMAGE may override it) | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | pgvector (Docker image pgvector/pgvector, CI only) | pg17 | PostgreSQL | container image | https://github.com/pgvector/pgvector |
 | PostgreSQL | 19 (inside pgvector/pgvector:0.8.7-pg19-trixie) | PostgreSQL | separate process | https://www.postgresql.org |
 | Python (official Docker image python) | 3.13-slim | PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences | container image | https://hub.docker.com/_/python |
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
+| Ubuntu (official Docker image ubuntu) | 24.04 | Debian-style per-package licences (the image holds many packages, each under its own licence) | container image | https://hub.docker.com/_/ubuntu |
 | UI components (Button, Dialog, Input, Table, Card, StatusBadge) | as committed in eb362b6 (2026-11-20) | owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT) | copied source | https://github.com/shadcn-ui/ui |
 
 **AI Elements components**: origin Vercel's AI Elements registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them.
@@ -151,6 +155,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @testing-library/dom | 10.4.2 | MIT |
 | @testing-library/react | 16.3.3 | MIT |
 | @types/node | 22.20.5 | MIT |
+| @types/papaparse | 5.5.2 | MIT |
 | @types/pg | 8.23.1 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
