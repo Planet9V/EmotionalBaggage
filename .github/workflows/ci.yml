@@ -179,6 +179,33 @@ jobs:
           echo "::notice title=pgvector in database::extversion=$V"
           test -n "$V"
 
+      - name: Assert the vector-search settings from docker-compose.yml are in force
+        run: |
+          S=$(docker compose exec -T db psql -U c2r -d c2r -tAc "select string_agg(name || '=' || current_setting(name), ' ' order by name) from pg_settings where name in ('shared_buffers','effective_cache_size','maintenance_work_mem','max_parallel_maintenance_workers','work_mem','jit','default_toast_compression','io_method')")
+          echo "- database settings: \`$S\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Database settings::$S"
+          for want in shared_buffers=1GB effective_cache_size=3GB maintenance_work_mem=1GB max_parallel_maintenance_workers=4 work_mem=32MB jit=off; do
+            echo "$S" | grep -q "$want" || { echo "missing $want in: $S"; exit 1; }
+          done
+          SHM=$(docker compose exec -T db df -m /dev/shm | awk 'NR==2 {print $2}')
+          echo "::notice title=/dev/shm::${SHM} MB"
+          test "$SHM" -ge 1000
+
+      - name: Assert a 4,096-number vector can be stored, indexed one bit per number and searched
+        run: |
+          docker compose exec -T db psql -v ON_ERROR_STOP=1 -U c2r -d c2r <<'SQL'
+          CREATE TABLE ci_vec (id int PRIMARY KEY, embedding vector NOT NULL);
+          INSERT INTO ci_vec SELECT n, l2_normalize((SELECT array_agg(sin(n * i::float8)) FROM generate_series(1, 4096) i)::vector(4096)) FROM generate_series(1, 200) n;
+          CREATE INDEX ci_vec_bq ON ci_vec USING hnsw ((binary_quantize(embedding::vector(4096))::bit(4096)) bit_hamming_ops);
+          SET hnsw.ef_search = 100;
+          DO $$ DECLARE got int; BEGIN
+            SELECT id INTO got FROM (SELECT id, embedding FROM ci_vec ORDER BY binary_quantize(embedding::vector(4096))::bit(4096) <~> binary_quantize((SELECT embedding FROM ci_vec WHERE id = 42)::vector(4096)) LIMIT 100) c
+              ORDER BY embedding::vector(4096) <=> (SELECT embedding FROM ci_vec WHERE id = 42)::vector(4096) LIMIT 1;
+            IF got <> 42 THEN RAISE EXCEPTION 'nearest row was %, expected 42', got; END IF;
+          END $$;
+          DROP TABLE ci_vec;
+          SQL
+
       - name: Assert planner is reachable from web
         run: jq -e '.planner.connected == true and (.planner.networkx | type == "string")' /tmp/integrations.json
 

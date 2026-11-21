@@ -5,9 +5,30 @@
 name: concept-to-realization
 services:
   db:
-    # PostgreSQL 19 with pgvector 0.8.7 (tag checked to exist on Docker Hub by the CI "stack" job).
-    # To stay on 18: PG_IMAGE=pgvector/pgvector:0.8.7-pg18-trixie
+    # PostgreSQL 19 (the current release, 19 November 2026) with pgvector 0.8.7, the current pgvector.
+    # The tag is checked to exist on Docker Hub by the CI "stack" job.
     image: ${PG_IMAGE:-pgvector/pgvector:0.8.7-pg19-trixie}
+    # Settings for vector search, each with its reason and the measurement behind it in
+    # docs/design/vector-search.md. Sized for a machine that gives Docker 4 GB or more; change them in .env.
+    command:
+      - postgres
+      # pgvector: about a quarter of the memory. PostgreSQL's own default is 128MB.
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-1GB}
+      - -c
+      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-3GB}
+      # An index build is fast only while its graph fits here. Measured at 4,096 numbers per vector,
+      # 20,000 rows: 143 s at the default 64MB, 11 s at 1GB.
+      - -c
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-1GB}
+      - -c
+      - max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      # Sorting the re-ranked candidates, and the ceiling for pgvector's iterative scans.
+      - -c
+      - work_mem=${PG_WORK_MEM:-32MB}
+    # Parallel index builds and parallel scans share memory through /dev/shm, which Docker limits to
+    # 64 MB unless told otherwise; an index build with maintenance_work_mem above that would fail.
+    shm_size: ${PG_SHM_SIZE:-1gb}
     environment:
       POSTGRES_DB: c2r
       POSTGRES_USER: c2r

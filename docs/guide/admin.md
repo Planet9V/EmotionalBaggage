@@ -28,7 +28,7 @@ The first request brings the database up to date, turns on pgvector and loads th
 
 **Status of this procedure:** GitHub Actions starts the three containers on every change, both without a `.env` and with one copied from `.env.example`, and checks that they are healthy, that the app answers, that pgvector is active, that the planner is reachable, and that backup and restore work. It has been run on Linux there; it has not yet been run on a Mac.
 
-**Database version:** the default image is PostgreSQL 19 with pgvector 0.8.7. A data volume created by one major version of PostgreSQL will not start under another, so choose before the first start (`PG_IMAGE` in `.env`).
+**Database version:** the default image is PostgreSQL 19.0 (the current release, 19 November 2026) with pgvector 0.8.7. Its memory settings are tuned for vector search and can be changed in `.env` (`PG_SHARED_BUFFERS`, `PG_EFFECTIVE_CACHE_SIZE`, `PG_MAINTENANCE_WORK_MEM`, `PG_MAX_PARALLEL_MAINTENANCE_WORKERS`, `PG_WORK_MEM`, `PG_SHM_SIZE`); the defaults suit a machine that gives Docker 4 GB or more. The reasons and measurements are on the Vector search page under Documentation. A data volume created by one major version of PostgreSQL will not start under another, so choose before the first start (`PG_IMAGE` in `.env`).
 
 ## Signing in
 
