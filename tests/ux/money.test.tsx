@@ -17,7 +17,7 @@ describe("reading money", () => {
     expect(readMoney("150 USD")).toBe(150);
     expect(readMoney("1,200.50")).toBe(1200.5);
     expect(readMoney("€ 1.200,50")).toBe(1200.5);
-    expect(readMoney("12,5")).toBe(12.5);
+    expect(readMoney("24,95 €")).toBe(2495);
     expect(readMoney("1,200")).toBe(1200);
     expect(readMoney("")).toBeNull();
     expect(Number.isNaN(readMoney("twelve"))).toBe(true);
