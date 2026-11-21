@@ -16,6 +16,9 @@ export function criteriaOf(data: Record<string, unknown>): Criterion[] {
   });
 }
 
+/** The sentence for a build that has no exit criterion or no linked test. */
+export const EMPTY_EVIDENCE = "Add at least one exit criterion and one test before marking this build passed.";
+
 export function buildProgress(build: Row, tests: Row[]) {
   const byKey = new Map(tests.map((t) => [keyOf(t.data), t]));
   const criteria = criteriaOf(build.data);
@@ -27,6 +30,8 @@ export function buildProgress(build: Row, tests: Row[]) {
   const notDone = linked.filter((t) => !t.done);
   /** why this build cannot be marked passed yet; empty when it can */
   const blockers: string[] = [];
+  // Nothing to prove is not proof: a build needs at least one criterion and one linked test before it can pass.
+  if (!criteria.length || !linked.length) blockers.push(EMPTY_EVIDENCE);
   if (unmet.length) blockers.push(`${unmet.length} of ${criteria.length} exit criteria ${unmet.length === 1 ? "is" : "are"} not met (for example "${unmet[0].text}")`);
   if (notDone.length) {
     const t = notDone[0];
@@ -42,5 +47,9 @@ export const PASSED = "passed";
 /** The sentence for a refused "Mark passed", or null when the build may pass. */
 export const passRefusal = (build: Row, tests: Row[]): string | null => {
   const { blockers } = buildProgress(build, tests);
-  return blockers.length ? `This build cannot be marked passed: ${blockers.join("; and ")}.` : null;
+  if (!blockers.length) return null;
+  // The missing-evidence sentence leads; any unmet criterion or test follows it.
+  const [first, ...rest] = blockers;
+  if (first === EMPTY_EVIDENCE) return rest.length ? `${EMPTY_EVIDENCE} Also: ${rest.join("; and ")}.` : EMPTY_EVIDENCE;
+  return `This build cannot be marked passed: ${blockers.join("; and ")}.`;
 };

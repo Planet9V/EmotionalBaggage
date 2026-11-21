@@ -10,7 +10,7 @@ import { statusList } from "@/components/items/shared";
 import type { ViewProps } from "@/components/views/types";
 import { useItems } from "@/lib/client";
 import { STORE } from "@/lib/domain/schemas";
-import { buildProgress, PASSED } from "@/lib/trace/builds";
+import { buildProgress, passRefusal, PASSED } from "@/lib/trace/builds";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { BuildPanel } from "./BuildPanel";
@@ -136,6 +136,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
         {builds.map((b) => {
           const p = buildProgress(b, tests);
           const passed = b.status === PASSED;
+          const cannotPass = passed ? null : passRefusal(b, tests);
           const start = day(b.data.start);
           const end = day(b.data.end);
           return (
@@ -176,7 +177,11 @@ export function BuildsView({ project, section, store }: ViewProps) {
                 )}
               </section>
 
-              {!passed && p.blockers.length > 0 && !refused[b.id] && <p className="text-xs text-warning">Not ready to pass: {p.blockers.join("; and ")}.</p>}
+              {cannotPass && !refused[b.id] && (
+                <p id={`pass-reason-${b.id}`} className="text-xs text-warning wrap-anywhere">
+                  {cannotPass}
+                </p>
+              )}
               {refused[b.id] && (
                 <p role="alert" className="text-sm text-danger wrap-anywhere">
                   {refused[b.id]}
@@ -191,7 +196,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Passed
                   </span>
                 ) : (
-                  <Button size="sm" onClick={() => void setStatus(b, PASSED)} aria-label={`Mark ${b.title} passed`}>
+                  <Button size="sm" disabled={cannotPass !== null} aria-describedby={cannotPass ? `pass-reason-${b.id}` : undefined} onClick={() => void setStatus(b, PASSED)} aria-label={`Mark ${b.title} passed`}>
                     Mark passed
                   </Button>
                 )}

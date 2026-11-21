@@ -74,9 +74,25 @@ describe("named builds", () => {
     expect(r.body.error).toContain("cannot be marked passed");
   });
 
-  it("refuses to create a build that is already passed when it does not qualify, and allows one with nothing to prove", async () => {
+  it("refuses to create a build that is already passed when it does not qualify", async () => {
     expect((await add(project, "prototype/builds", "PVT", { status: "passed", data: { criteria: [{ text: "x", met: false }] } })).status).toBe(400);
-    expect((await add(project, "prototype/builds", "Looks-like", { status: "passed" })).status).toBe(201);
+  });
+
+  it("refuses passed with no exit criterion or no linked test, in POST and in PATCH (process review 1)", async () => {
+    const msg = "Add at least one exit criterion and one test before marking this build passed.";
+    const empty = await add(project, "prototype/builds", "Empty", { status: "passed" });
+    expect(empty.status).toBe(400);
+    expect(empty.body.error).toContain(msg);
+    // criteria but no tests, tests but no criteria
+    expect((await add(project, "prototype/builds", "NoTests", { status: "passed", data: { criteria: [{ text: "x", met: true }] } })).body.error).toContain(msg);
+    expect((await add(project, "prototype/builds", "NoCriteria", { status: "passed", data: { tests: ["t1"] } })).body.error).toContain(msg);
+    const planned = (await add(project, "prototype/builds", "Planned")).body.item;
+    const r = await patch(planned.id, { status: "passed" });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toContain(msg);
+    // with both it passes (t1 and t2 passed above)
+    const ok = await patch(planned.id, { status: "passed", data: { criteria: [{ text: "Boots", met: true }], tests: ["t1"] } });
+    expect(ok.status).toBe(200);
   });
 
   it("failed and testing are never refused", async () => {
@@ -98,8 +114,11 @@ describe("build progress, the same function the card and the server use", () => 
     expect(p.linked.map((t) => t.title)).toEqual(["Drop", "Idle", null]);
     expect(p.blockers).toHaveLength(2);
   });
-  it("has no blockers for a build with nothing to prove", () => {
-    expect(passRefusal({ title: "x", status: "planned", data: {} }, [])).toBeNull();
+  it("a build with nothing to prove cannot pass", () => {
+    expect(passRefusal({ title: "x", status: "planned", data: {} }, [])).toBe("Add at least one exit criterion and one test before marking this build passed.");
+  });
+  it("a build with a criterion and a passing test has no blockers", () => {
+    expect(passRefusal({ title: "x", status: "planned", data: { criteria: [{ text: "a", met: true }], tests: ["a"] } }, tests)).toBeNull();
   });
   it("names a linked test that no longer exists", () => {
     expect(passRefusal({ title: "x", status: "planned", data: { tests: ["gone"] } }, [])).toContain("no longer exists");
