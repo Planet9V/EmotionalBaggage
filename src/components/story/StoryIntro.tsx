@@ -17,7 +17,7 @@ export function StoryIntro({ projectId }: { projectId: string }) {
   if (story.error) return <LoadError what="The concept story" message={story.error} onRetry={() => void story.reload()} />;
   const pitch = story.items.find((i) => i.data.part === "pitch");
   const position = story.items.find((i) => i.data.part === "positioning")?.data.position;
-  const stored = sources.items.filter((s) => s.status === "stored").length;
+  const stored = sources.items.filter((s) => Number(s.data.chunks ?? 0) > 0).length;
   const sourceLine = sources.loading
     ? ""
     : sources.items.length
