@@ -8,7 +8,7 @@ const TONES: Record<string, StatusTone> = {
   running: "info", ordered: "info", quoted: "info", funded: "info", building: "info", drafted: "info",
   soldered: "info", tested: "success", "to solder": "warning",
   blocked: "danger", wrong: "danger", fail: "danger", failed: "danger",
-  unverified: "warning", "waiting on file": "warning", "not run": "warning", "to buy": "warning", "to print": "warning",
+  unverified: "warning", "waiting on file": "warning", queued: "warning", slicing: "info", sliced: "info", sent: "info", cancelled: "neutral", "not run": "warning", "to buy": "warning", "to print": "warning",
 };
 
 export const statusTone = (s: string): StatusTone => TONES[s] ?? "neutral";

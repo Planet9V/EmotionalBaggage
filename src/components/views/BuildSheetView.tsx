@@ -14,6 +14,8 @@ import { ConnectionsTable } from "@/components/buildsheet/ConnectionsTable";
 import { CutList } from "@/components/buildsheet/CutList";
 import { Joints } from "@/components/buildsheet/Joints";
 import { Progress } from "@/components/buildsheet/Progress";
+import { WireSpec } from "@/components/buildsheet/WireSpec";
+import { DEFAULT_STRIP, specRows } from "@/components/buildsheet/wiresheet";
 import { StepCard } from "@/components/buildsheet/StepCard";
 import {
   DEFAULT_ALLOWANCE, DEFAULT_ROUTING, beforePower, connectionsByPart, consumables, counts, cutList,
@@ -86,6 +88,9 @@ export function BuildSheetView({ project, store }: ViewProps) {
   const groups = useMemo(() => groupByPart(steps, hub), [steps, hub]);
   const blocks = useMemo(() => connectionsByPart(steps), [steps]);
   const cuts = useMemo(() => cutList(steps, parts, routing.value, allowance.value), [steps, parts, routing.value, allowance.value]);
+  const [strips, setStrips] = useState<Record<string, number>>(DEFAULT_STRIP);
+  const spec = useMemo(() => specRows(steps, parts, routing.value, allowance.value, strips), [steps, parts, routing.value, allowance.value, strips]);
+  const refs = useMemo(() => [...new Set(wires.flatMap((w) => [w.from, w.to]))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), [wires]);
   const k = useMemo(() => consumables(wires), [wires]);
   const lines = useMemo(() => beforePower(wires), [wires]);
 
@@ -94,7 +99,7 @@ export function BuildSheetView({ project, store }: ViewProps) {
     void wiring.patch(id, { status: next });
   };
 
-  const markdown = () => buildMarkdown({ projectName: project.name, steps, parts, routing: routing.value, allowance: allowance.value });
+  const markdown = () => buildMarkdown({ projectName: project.name, steps, parts, routing: routing.value, allowance: allowance.value, strips });
 
   const save = async () => {
     setSaving(true);
@@ -254,11 +259,23 @@ export function BuildSheetView({ project, store }: ViewProps) {
         />
       </Section>
 
-      <Section n="04" title="Joints and consumables" blurb="Counted from the wires. No solder or flux quantities are given, because they are not derivable.">
+      <Section n="04" title="Wire gauge, colour and strip lengths" blurb="The cut list again, sorted by colour and gauge, with the gauge chosen from each wire's current, the total to cut per colour, and the strip length at each end.">
+        <WireSpec
+          rows={spec}
+          parts={parts}
+          refs={refs}
+          strips={strips}
+          onStrip={(key, mm) => setStrips((v) => ({ ...v, [key]: mm }))}
+          onPartData={async (id, data) => { await partItems.patch(id, { data }); }}
+          onWireData={async (id, data) => { await wiring.patch(id, { data }); }}
+        />
+      </Section>
+
+      <Section n="05" title="Joints and consumables" blurb="Counted from the wires. No solder or flux quantities are given, because they are not derivable.">
         <Joints k={k} wireCount={wires.length} parts={parts} />
       </Section>
 
-      <Section n="05" title="Before power" blurb="Live from the statuses above.">
+      <Section n="06" title="Before power" blurb="Live from the statuses above.">
         <Checklist lines={lines} />
       </Section>
 

@@ -16,10 +16,10 @@ import { ChallengeView } from "./ChallengeView";
 import { ItemsView } from "./ItemsView";
 import { ModelView } from "./ModelView";
 import { MonitorView } from "./MonitorView";
-import { PrintingView } from "./PrintingView";
+import { PrintFlowView } from "@/components/printing/PrintFlowView";
 import { ResearchView } from "./ResearchView";
 import { SocialView } from "./SocialView";
-import { SourcingView } from "./SourcingView";
+import { SourcingBoard } from "@/components/sourcing/SourcingBoard";
 import { BatchesView } from "@/components/production/BatchesView";
 import { PartPricesView } from "@/components/production/PartPricesView";
 import { ComplianceView } from "@/components/compliance/ComplianceView";
@@ -39,8 +39,8 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   research: ResearchView,
   model: ModelView,
   bom: BomView,
-  sourcing: SourcingView,
-  printing: PrintingView,
+  sourcing: SourcingBoard,
+  printing: PrintFlowView,
   monitor: MonitorView,
   social: SocialView,
   decisions: DecisionsView,

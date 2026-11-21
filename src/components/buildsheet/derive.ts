@@ -164,10 +164,26 @@ export function signalNetsOf(steps: Step[]): string[] {
 /** The domain reader has already checked the position is three finite numbers. */
 const validPos = (g?: Geometry | null) => !!g;
 
-export type Length = { straight: number; raw: number; mm: number; from: number[]; to: number[] } | null;
+/** source "routed": the path length the router wrote on the wire plus the service allowance. "estimate": centre to centre. */
+export type Length = { straight: number; raw: number; mm: number; from: number[]; to: number[]; source: "routed" | "estimate" } | null;
 
-/** straight-line distance between the assembled centres x routing factor + allowance, rounded up to 5 mm. */
+/** The routed path length written on the wire row (data.routedLengthMm), or null. Zero, negative and non-numbers are not a route. */
+export function routedLengthMm(w: Wire): number | null {
+  const v = (w.item.data as Record<string, unknown>).routedLengthMm;
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * With a routed length: the path plus the service allowance, rounded up to 5 mm. Without one: the straight-line distance between the
+ * assembled centres x routing factor + allowance, rounded up to 5 mm, and labelled as an estimate.
+ */
 export function estimateLength(w: Wire, parts: Map<string, PartLite>, routing: number, allowance: number): Length {
+  const routed = routedLengthMm(w);
+  if (routed !== null) {
+    const raw = routed + allowance;
+    return { straight: routed, raw, mm: Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO, from: [], to: [], source: "routed" };
+  }
   const a = parts.get(w.from)?.geometry;
   const b = parts.get(w.to)?.geometry;
   if (!validPos(a) || !validPos(b)) return null;
@@ -176,7 +192,7 @@ export function estimateLength(w: Wire, parts: Map<string, PartLite>, routing: n
   const straight = Math.hypot(pa[0] - pb[0], pa[1] - pb[1], pa[2] - pb[2]);
   const raw = straight * routing + allowance;
   const mm = Math.ceil(raw / ROUND_TO - 1e-9) * ROUND_TO;
-  return { straight, raw, mm, from: pa, to: pb };
+  return { straight, raw, mm, from: pa, to: pb, source: "estimate" };
 }
 
 export type CutRow = {
@@ -196,11 +212,14 @@ export function cutList(steps: Step[], parts: Map<string, PartLite>, routing: nu
   }));
 }
 
-export type ClassTotal = { netClass: NetClass; mm: number; counted: number; wires: number };
+export type ClassTotal = { netClass: NetClass; mm: number; counted: number; wires: number; routed: number; estimated: number };
 export function totalsByClass(rows: CutRow[]): ClassTotal[] {
   return CLASS_ORDER.map((c) => {
     const of = rows.filter((r) => r.wire.netClass === c);
-    return { netClass: c, mm: of.reduce((a, r) => a + (r.length?.mm ?? 0), 0), counted: of.filter((r) => r.length).length, wires: of.length };
+    return {
+      netClass: c, mm: of.reduce((a, r) => a + (r.length?.mm ?? 0), 0), counted: of.filter((r) => r.length).length, wires: of.length,
+      routed: of.filter((r) => r.length?.source === "routed").length, estimated: of.filter((r) => r.length?.source === "estimate").length,
+    };
   }).filter((t) => t.wires > 0);
 }
 

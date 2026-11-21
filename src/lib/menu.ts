@@ -192,7 +192,7 @@ export const STAGES: Stage[] = [
           { key: "settings", label: "Settings" },
           { key: "estimate", label: "Estimate" },
         ],
-        statuses: ["waiting on file", "ready", "printing", "printed", "failed"],
+        statuses: ["queued", "slicing", "sliced", "sent", "printing", "done", "failed", "cancelled"],
         addLabel: "Add print job",
       },
       {

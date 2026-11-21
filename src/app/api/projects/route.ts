@@ -5,6 +5,7 @@ import { defaultStatus, newProject } from "@/lib/api/schemas";
 import { archivedFilter, CONCEPT_SELECT, insertConcept, loadConcept, productTypeField, toConcept, type ConceptRow } from "@/lib/api/concepts";
 import { DEFAULT_PRODUCT_TYPE } from "@/lib/productTypes";
 import { assertNewClaim } from "@/lib/research/rules";
+import { assertNewPrintJob } from "@/lib/slicing/rules";
 import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
 
 const WHERE = {
@@ -24,7 +25,7 @@ const createConcept = newProject.extend({ productType: productTypeField.optional
 
 export const POST = route(async (req: Request) => {
   const b = await body(req, createConcept);
-  for (const it of b.items ?? []) assertNewClaim(it);
+  for (const it of b.items ?? []) { assertNewClaim(it); assertNewPrintJob(it); }
   const oneLiner = b.oneLiner ?? "";
   const productType = b.productType ?? DEFAULT_PRODUCT_TYPE;
   const id = await tx(async (c) => {

@@ -326,7 +326,7 @@ export const SEED_ITEMS: SeedItem[] = [
     title: "Hinge clearance coupon",
     body: "Print the stepped coupon first: 1.3 / 1.4 / 1.5 mm pins against 1.7 / 1.8 / 1.9 mm bores. The pair that pops free and turns without grit sets the clearance.",
     data: { material: "PETG", settings: "0.2 mm layers", estimate: "45 min" },
-    status: "waiting on file",
+    status: "queued",
   },
   {
     section: "prototype/printing",
@@ -337,7 +337,7 @@ export const SEED_ITEMS: SeedItem[] = [
       settings: "0.2 mm layers, 4 perimeters, 25% infill, supports off",
       estimate: "~62 g, 4-5 h",
     },
-    status: "waiting on file",
+    status: "queued",
   },
   // Step order: the build guide lists the phases in sequence. The "after" links below
   // are inferred from what each phase physically needs, so printing, electronics and
