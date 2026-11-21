@@ -32,6 +32,7 @@ import { z } from "zod";
 import { HttpError } from "@/lib/api/route";
 import { DEFAULT_BASE_URL, embeddingModel, getCredential, reasoningModel, type ModelChoice } from "@/lib/settings";
 import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
+import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 import { savedModelChoice } from "./schemas";
 
 export type ProviderId = ModelChoice["provider"];
@@ -122,6 +123,8 @@ function client(provider: ProviderId, baseUrl: string, key: string | null) {
     baseURL: baseUrl,
     // Sent as "Authorization: Bearer <key>" only when a key is saved.
     ...(key ? { apiKey: key } : {}),
+    // Every call goes through the shared outbound rule (no link-local or metadata addresses, no rebinding).
+    fetch: safeFetch,
     // Usage counts in streamed answers (stream_options.include_usage).
     includeUsage: true,
     // Lets Output.object send response_format json_schema; plain text calls are unaffected.
@@ -197,6 +200,9 @@ export function explain(error: unknown, ctx: Ctx): ModelError {
     return new ModelError(504, `${where} did not answer within ${formatMs(ctx.timeoutMs)}. The model may be loading or too slow for this request.`, "timeout");
   }
   if (ctx.cancelled()) return new ModelError(499, "The request was cancelled.", "cancelled");
+
+  const refused = blockedIn(error);
+  if (refused) return new ModelError(400, `${where} cannot be called: ${blockedSentence(refused)}`, "unreachable");
 
   let e = error;
   if (RetryError.isInstance(e)) e = e.lastError;

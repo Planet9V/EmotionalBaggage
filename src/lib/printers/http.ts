@@ -1,5 +1,6 @@
 // Shared HTTP plumbing for the adapters that talk HTTP: time limit, plain-sentence failures, secrets scrubbed.
 import { DEFAULT_TIMEOUT_MS, PrinterError, scrub, type AdapterOptions, type PrinterValues, type TestOutcome } from "./adapter";
+import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 
 export const secondsText = (ms: number) => (ms >= 1000 ? `${Math.round(ms / 1000)} seconds` : `${ms} ms`);
 
@@ -7,6 +8,8 @@ export const secondsText = (ms: number) => (ms >= 1000 ? `${Math.round(ms / 1000
 export function networkSentence(e: unknown, secrets: (string | null | undefined)[], ms: number): { kind: PrinterError["kind"]; message: string } {
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
   if (err?.name === "TimeoutError" || err?.name === "AbortError") return { kind: "timeout", message: `No answer within ${secondsText(ms)}.` };
+  const refused = blockedIn(e);
+  if (refused) return { kind: "unreachable", message: blockedSentence(refused) };
   const code = err?.cause?.code;
   if (code === "ECONNREFUSED") return { kind: "unreachable", message: "Nothing answered at that address (connection refused). Check the address and that the service is running." };
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") return { kind: "unreachable", message: "That host name could not be found. Check the address." };
@@ -71,7 +74,7 @@ export abstract class HttpAdapterBase {
   /** One time-limited call. Throws PrinterError for network failures; the caller judges the status. */
   protected async send(path: string, init: RequestInit = {}, ms = this.ms): Promise<Response> {
     try {
-      return await fetch(`${this.address}${path}`, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) });
+      return await safeFetch(`${this.address}${path}`, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) });
     } catch (e) {
       const s = networkSentence(e, this.secrets(), ms);
       throw new PrinterError(s.kind, s.message);

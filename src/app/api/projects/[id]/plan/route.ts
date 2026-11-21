@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { requireProject, route } from "@/lib/api/route";
 import { planFromService, planGraph, plannerRequest, planUnavailable, type PlannerResponse } from "@/lib/plan";
+import { safeFetch } from "@/lib/net/outbound";
 
 const NOT_RUNNING =
   "The planner service is not running, so the order of operations cannot be worked out. The steps and decisions are listed without an order until it is started.";
@@ -21,7 +22,7 @@ export const GET = route(async (_req: Request, { params }: { params: Promise<{ i
   if (!url) return NextResponse.json(planUnavailable(graph, `${NOT_RUNNING} (No planner address is set in Admin or in PLANNER_URL.)`));
   let res: Response;
   try {
-    res = await fetch(`${url.replace(/\/$/, "")}/plan`, {
+    res = await safeFetch(`${url.replace(/\/$/, "")}/plan`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(plannerRequest(graph)),

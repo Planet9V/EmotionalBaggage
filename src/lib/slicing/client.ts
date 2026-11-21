@@ -8,6 +8,7 @@ const SLICE_TIMEOUT_MS = 6 * 60_000;
 const QUICK_TIMEOUT_MS = 15_000;
 
 import type { SlicerCatalogue } from "./match";
+import { safeFetch } from "@/lib/net/outbound";
 export type { SlicerCatalogue, SlicerPrinter } from "./match";
 
 export type SliceRequest = {
@@ -39,7 +40,7 @@ async function base(): Promise<string> {
 async function call(path: string, init: RequestInit, ms: number): Promise<Response> {
   const root = await base();
   try {
-    return await fetch(`${root}${path}`, { ...init, signal: AbortSignal.timeout(ms) });
+    return await safeFetch(`${root}${path}`, { ...init, signal: AbortSignal.timeout(ms) });
   } catch (e) {
     const name = (e as Error)?.name;
     if (name === "TimeoutError" || name === "AbortError") throw new HttpError(504, `The slicer did not answer within ${Math.round(ms / 1000)} seconds.`);

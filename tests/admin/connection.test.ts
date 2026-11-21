@@ -116,7 +116,8 @@ describe("kind: model", () => {
     );
     const r = await test({ kind: "model", provider: "openrouter", baseUrl: s.url, apiKey: KEY });
     expect(r.body.ok).toBe(false);
-    expect(r.body.detail!.says).toBe("Incorrect API key provided: Bearer [hidden]");
+    // the model test shows only the status and its own sentence: no remote text at all (robustness review S3)
+    expect(r.body.detail).toEqual({ status: 401 });
     expect(JSON.stringify(r.body)).not.toContain(KEY);
     expect(scrub("a KEY1 b KEY1", ["KEY1", null, "ab"])).toBe("a [hidden] b [hidden]");
   });

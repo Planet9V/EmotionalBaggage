@@ -10,6 +10,7 @@ import { getPrinterRow, requireFamily, resolveAccess, valuesOf } from "./printer
 import { createAdapter } from "@/lib/printers/factory";
 import type { ConnectionTest } from "./schemas";
 import { testChannel } from "@/lib/channels/connection";
+import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
 
@@ -35,6 +36,8 @@ export function scrub(text: string, secrets: (string | null | undefined)[]): str
 function networkFailure(e: unknown, secrets: (string | null | undefined)[], ms = limitMs): TestResult {
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } };
   if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, message: `No answer within ${seconds(ms)}.` };
+  const refused = blockedIn(e);
+  if (refused) return { ok: false, message: blockedSentence(refused) };
   const code = err?.cause?.code;
   if (code === "ECONNREFUSED") return { ok: false, message: "Nothing answered at that address (connection refused). Check the address and that the service is running." };
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") return { ok: false, message: "That host name could not be found. Check the address." };
@@ -61,8 +64,13 @@ async function upstreamSays(res: Response, secrets: (string | null | undefined)[
   }
 }
 
-async function httpFailure(res: Response, who: string, secrets: (string | null | undefined)[], notFoundHint = "Check the address."): Promise<TestResult> {
-  const says = await upstreamSays(res, secrets);
+/**
+ * The answer for a non-success status. `echo` false (model, embedding and planner tests, whose address any
+ * signed-in user can type) gives only the status and our own sentence: the remote body is never shown, so the
+ * test cannot be used to read an internal service (robustness review S3).
+ */
+async function httpFailure(res: Response, who: string, secrets: (string | null | undefined)[], notFoundHint = "Check the address.", echo = true): Promise<TestResult> {
+  const says = echo ? await upstreamSays(res, secrets) : (await res.body?.cancel().catch(() => undefined), undefined);
   const detail = { status: res.status, ...(says ? { says } : {}) };
   if (res.status === 401 || res.status === 403) return { ok: false, message: `${who} refused the key (HTTP ${res.status}). Check the key.`, detail };
   if (res.status === 404) return { ok: false, message: `${who} has nothing at that path (HTTP 404). ${notFoundHint}`, detail };
@@ -74,7 +82,7 @@ type Call = { res: Response } | { fail: TestResult };
 
 async function call(url: string, init: RequestInit, secrets: (string | null | undefined)[], ms = limitMs): Promise<Call> {
   try {
-    return { res: await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) }) };
+    return { res: await safeFetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) }) };
   } catch (e) {
     return { fail: networkFailure(e, secrets, ms) };
   }
@@ -114,7 +122,7 @@ async function testModel(t: Extract<ConnectionTest, { kind: "model" }>): Promise
   if (refusal) return refusal;
   const c = await call(`${t.baseUrl}/models`, { headers: key ? { authorization: `Bearer ${key}` } : {} }, [key]);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT);
+  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
   const j = (await readJson(c.res)) as { data?: { id?: unknown }[] } | undefined;
   if (!j || !Array.isArray(j.data)) return { ok: false, message: "It answered, but not with a list of models. Check the address." };
   const ids = j.data.map((m) => m?.id).filter((x): x is string => typeof x === "string");
@@ -136,7 +144,7 @@ async function testEmbedding(t: Extract<ConnectionTest, { kind: "embedding" }>):
   if (key) headers.authorization = `Bearer ${key}`;
   const c = await call(`${t.baseUrl}/embeddings`, { method: "POST", headers, body: JSON.stringify({ model: t.model, input: "hello" }) }, [key]);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT);
+  if (c.res.status !== 200) return httpFailure(c.res, "The model host", [key], MODEL_PATH_HINT, false);
   const j = (await readJson(c.res)) as { data?: { embedding?: unknown }[] } | undefined;
   const vec = j?.data?.[0]?.embedding;
   if (!Array.isArray(vec) || !vec.length || !vec.every((n) => typeof n === "number")) {
@@ -230,7 +238,7 @@ async function testPlanner(t: Extract<ConnectionTest, { kind: "planner" }>): Pro
   if (!url) return { ok: false, message: "No planner address is saved and PLANNER_URL is not set." };
   const c = await call(`${url}/health`, {}, []);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The planner", []);
+  if (c.res.status !== 200) return httpFailure(c.res, "The planner", [], "Check the address.", false);
   const j = (await readJson(c.res)) as { ok?: boolean; networkx?: string } | undefined;
   if (!j?.ok) return { ok: false, message: "Something answered, but not the planner. Check the address." };
   return { ok: true, message: `The planner answered (NetworkX ${j.networkx ?? "unknown"}).`, detail: { url, networkx: j.networkx ?? null } };

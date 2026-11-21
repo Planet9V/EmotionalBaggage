@@ -33,6 +33,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { Readable } from "node:stream";
 import mqtt, { type MqttClient } from "mqtt";
 import { Client as FtpClient } from "basic-ftp";
+import { blockedIn, blockedSentence, resolveAllowed } from "@/lib/net/outbound";
 import {
   PrinterError, safeFileName, scrub, DEFAULT_TIMEOUT_MS,
   type ActionResult, type AdapterOptions, type Capabilities, type PrinterAdapter, type PrinterFile, type PrinterState, type PrinterStatus,
@@ -135,6 +136,17 @@ export class BambuAdapter implements PrinterAdapter {
     if (!this.serial) throw new PrinterError("invalid", "The serial number is missing. It is on the printer's label and under Settings, Device.");
   }
 
+  /** The checked address to connect to (src/lib/net/outbound.ts): MQTT and FTP connect to it, not to the name. */
+  private async target(): Promise<string> {
+    try {
+      return await resolveAllowed(this.host);
+    } catch (e) {
+      const refused = blockedIn(e);
+      if (refused) throw new PrinterError("invalid", blockedSentence(refused));
+      return this.host; // a name that does not resolve: the client reports it in its own words
+    }
+  }
+
   private async session(): Promise<Session> {
     this.need();
     const key = `${this.host}:${this.mqttPort}|${this.serial}|${createHash("sha256").update(this.code).digest("hex").slice(0, 8)}`;
@@ -144,9 +156,10 @@ export class BambuAdapter implements PrinterAdapter {
       return found;
     }
     if (found) dropSession(found);
+    const host = await this.target();
     const client = await new Promise<MqttClient>((resolve, reject) => {
       const c = mqtt.connect({
-        protocol: "mqtts", host: this.host, port: this.mqttPort, username: "bblp", password: this.code,
+        protocol: "mqtts", host, port: this.mqttPort, username: "bblp", password: this.code,
         clientId: `c2r-${randomBytes(4).toString("hex")}`,
         // Skipped for this one local connection to the printer: its certificate is self-signed by Bambu. See the note at the top.
         rejectUnauthorized: false,
@@ -304,10 +317,11 @@ export class BambuAdapter implements PrinterAdapter {
 
   private async ftp<T>(run: (c: FtpClient) => Promise<T>): Promise<T> {
     this.need();
+    const host = await this.target();
     const c = new FtpClient(this.ms);
     try {
       await c.access({
-        host: this.host, port: this.ftpPort, user: "bblp", password: this.code, secure: "implicit",
+        host, port: this.ftpPort, user: "bblp", password: this.code, secure: "implicit",
         // Skipped for this one local connection to the printer: its certificate is self-signed by Bambu. See the note at the top.
         secureOptions: { rejectUnauthorized: false },
       });

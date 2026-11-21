@@ -5,6 +5,7 @@ import { plannerUrl } from "@/lib/admin/planner";
 import { STORE, toPart, toWire, type Wire } from "@/lib/domain";
 import { buildHarnessRequest, type HarnessOutcome } from "@/lib/geometry/harness";
 import { buildRouteRequest, routeState, type RoutePart } from "@/lib/geometry/routing";
+import { safeFetch } from "@/lib/net/outbound";
 
 type Ctx = { params: Promise<{ id: string }> };
 const SECONDS = 30;
@@ -37,7 +38,7 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
   if (!url) throw new HttpError(503, "The planner service is not set up, so the harness cannot be drawn. Set its address in Admin or in PLANNER_URL.", { reason: "not-configured" });
   let res: Response;
   try {
-    res = await fetch(`${url}/harness`, {
+    res = await safeFetch(`${url}/harness`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),

@@ -232,7 +232,8 @@ describe("status routes", () => {
     await statusAll(json("GET"));
     const s = await octoprint.start({ apiKey: OCTO_KEY });
     closers.push(() => s.close());
-    await patchPrinter(json("PATCH", { access: { address: s.url } }), ctx(String(p.id)));
+    // a new host needs the key typed again: a saved secret never follows the address (robustness review S1)
+    await patchPrinter(json("PATCH", { access: { address: s.url, apiKey: OCTO_KEY } }), ctx(String(p.id)));
     const r = (await read<{ printers: { printerId: number; ok: boolean }[] }>(await statusAll(json("GET")))).body.printers.find((x) => x.printerId === p.id)!;
     expect(r.ok).toBe(true);
   });

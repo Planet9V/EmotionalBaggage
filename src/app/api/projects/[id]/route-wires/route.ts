@@ -5,6 +5,7 @@ import { HttpError, body, requireProject, route } from "@/lib/api/route";
 import { plannerUrl } from "@/lib/admin/planner";
 import { STORE, toPart, toWire, type Wire } from "@/lib/domain";
 import { ROUTED_KEYS, buildRouteRequest, toRoutedFields, type PlannerResult, type RouteOutcome, type RoutePart, type RouteWire } from "@/lib/geometry/routing";
+import { safeFetch } from "@/lib/net/outbound";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -53,7 +54,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const started = Date.now();
   let res: Response;
   try {
-    res = await fetch(`${url}/route`, {
+    res = await safeFetch(`${url}/route`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(built.request),

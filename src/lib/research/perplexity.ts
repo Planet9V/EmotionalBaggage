@@ -5,6 +5,7 @@
 // (POST /v1/sonar) is not used: its support ended on 27 Sep 2026.
 import { getSetting } from "@/lib/settings";
 import { getSecretFor, PERPLEXITY_DEFAULT_BASE_URL, perplexityBaseUrl } from "@/lib/secretOrigin";
+import { safeFetch } from "@/lib/net/outbound";
 
 /** Address of the Perplexity API; tests point it at the stand-in. */
 export const DEFAULT_BASE_URL = PERPLEXITY_DEFAULT_BASE_URL;
@@ -166,7 +167,7 @@ export async function ask(opts: AskOptions): Promise<AskResult> {
 
   let res: Response;
   try {
-    res = await fetch(`${baseUrl()}${AGENT_PATH}`, {
+    res = await safeFetch(`${baseUrl()}${AGENT_PATH}`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({ effort, instructions: INSTRUCTIONS, input: question, tools: [{ type: "web_search" }] }),
