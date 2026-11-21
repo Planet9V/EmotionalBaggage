@@ -4,6 +4,7 @@
 import type { Item } from "@/lib/types";
 import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type NetClass, type Part, type Wire, type XY } from "@/lib/domain";
 import { toCsvText } from "@/lib/csv";
+import { esc } from "@/lib/html";
 
 export { CLASS_LABEL, readWires };
 export type { Part, XY };
@@ -404,7 +405,6 @@ export function netlistKicad(parts: Part[], wires: Wire[], meta: FileMeta): stri
 
 // ───────── SVG drawn from the node positions (not a screenshot)
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 type Anchor = { x: number; y: number; dir: -1 | 1 };

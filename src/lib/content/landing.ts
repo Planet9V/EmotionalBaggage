@@ -8,6 +8,7 @@ import { contrastRatio, parseHex } from "@/lib/market/contrast";
 import { onColour } from "@/lib/market/brandKit";
 import type { LandingKind } from "./schemas";
 import { LANDING_KINDS } from "./schemas";
+import { esc } from "@/lib/html";
 
 const s = (n = 600) => z.string().max(n);
 const href = z.string().max(500).optional();
@@ -52,8 +53,6 @@ export type RenderEnv = {
 };
 
 export type Rendered = { html: string; images: { fileId: number; file: string }[]; problems: string[] };
-
-export const esc = (v: unknown) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 const safeHref = (h: unknown) => {
   const v = String(h ?? "").trim();

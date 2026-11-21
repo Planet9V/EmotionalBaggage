@@ -5,10 +5,11 @@ import { AD_CHANNELS, SOCIAL_CHANNELS, LISTING_CATEGORIES, checkChannel, checkLi
 import { evaluate, numbersIn, proofStateOf, type ProofRow } from "@/lib/content/claims";
 import { adsCsv, launchHtml, launchText, listingFlatFile, listingText } from "@/lib/content/exports";
 import { toCsvText } from "@/lib/csv";
+import { esc } from "@/lib/html";
+import { contrastReport, renderPage, type LandingSection, type RenderEnv } from "@/lib/content/landing";
+import type { Item } from "@/lib/types";
 
 const cell = (v: unknown) => toCsvText([[v]], { trailingNewline: false });
-import { contrastReport, esc, renderPage, type LandingSection, type RenderEnv } from "@/lib/content/landing";
-import type { Item } from "@/lib/types";
 
 const row = (over: Partial<ProofRow> = {}): ProofRow => ({ id: 1, section: "research/claims", title: "Battery lasts 7 days", body: "", status: "verified", data: {}, ...over });
 
