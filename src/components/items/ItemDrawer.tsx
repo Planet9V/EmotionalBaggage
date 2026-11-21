@@ -224,16 +224,16 @@ function EditForm({
 
       <fieldset className="space-y-3 rounded-xl border border-hairline bg-subtle p-4">
         <legend className="px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-link">Step in the order of operations</legend>
-        <p className="text-xs leading-snug text-secondary">Give this row a key and a duration and it becomes a step in the plan. Leave the key empty to keep it out.</p>
+        <p className="text-xs leading-snug text-secondary">Give this row a short name and the minutes it takes, and it becomes a step in the order of operations. Leave the name empty to keep it out.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Key" id="edit-step-key" hint="Unique, short, for example p1.">
+          <Field label="Step name" id="edit-step-key" hint="Short and unique, for example p1. Other steps use it to wait on this one.">
             <Input id="edit-step-key" value={key} onChange={(e) => setKey(e.target.value)} className="font-mono" />
           </Field>
           <Field label="Minutes" id="edit-step-min">
             <Input id="edit-step-min" inputMode="decimal" value={minutes} onChange={(e) => setMinutes(e.target.value)} className="font-mono" />
           </Field>
         </div>
-        <Field label="After" id="edit-step-after" hint="Keys of the steps this one waits on, separated by commas.">
+        <Field label="Waits on" id="edit-step-after" hint="The step names this one waits on, separated by commas.">
           <Input id="edit-step-after" value={after} onChange={(e) => setAfter(e.target.value)} className="font-mono" placeholder="p0, p2" />
         </Field>
       </fieldset>

@@ -278,7 +278,7 @@ function Form({ onOpenChange, editing, defaultParent, all, byKey, tree, onSave, 
           <label className="block space-y-1.5">
             <span className={label}>Unlocks</span>
             <Input value={draft.unlocks} onChange={(e) => set("unlocks", e.target.value)} placeholder="design/bom, sales/listing" />
-            <span className="block text-[11px] text-muted">Comma separated. stage/section keys become links.</span>
+            <span className="block text-[11px] text-muted">The sections this decision opens, separated by commas. Write a section as its address, for example design/bom for the parts list, and it becomes a link.</span>
           </label>
         </div>
 

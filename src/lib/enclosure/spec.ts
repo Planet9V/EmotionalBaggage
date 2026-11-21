@@ -239,7 +239,7 @@ export function buildSpec({ items, params: given }: BuildInput): EnclosureSpec {
     const wantsKind = (OPENING_KINDS as readonly string[]).includes(p.kind);
     if (ov && (ov.face || ov.width || ov.height || ov.shape || ov.shift)) {
       const face = ov.face ?? near.face;
-      openings.push(makeOpening(p, face, outer, t, "row", `Set on the part row (data.opening).`, ov));
+      openings.push(makeOpening(p, face, outer, t, "row", `Set on the part in the parts list.`, ov));
     } else if (p.role === "through") {
       const face = near.face;
       openings.push(makeOpening(p, face, outer, t, "crossing", `${p.ref || p.title} crosses the ${face} wall, so the wall is opened for it.`, null));

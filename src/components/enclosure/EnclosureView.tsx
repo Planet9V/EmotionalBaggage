@@ -13,7 +13,7 @@ import { messageOf } from "@/lib/queries";
 import { sectionHref } from "@/lib/chat/shared";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { validateParams, withDefaults } from "@/lib/enclosure/validate";
-import { DEFAULT_PARAMS, FACE_AXES, GENERATORS, GENERATOR_KEYS, type EnclosureParams, type GeneratorKey } from "@/lib/enclosure/types";
+import { DEFAULT_PARAMS, GENERATORS, GENERATOR_KEYS, type EnclosureParams, type GeneratorKey } from "@/lib/enclosure/types";
 import type { ViewProps } from "@/components/views/types";
 import { generate, getStatus, type GenerateAnswer, type ResultFailed, type ResultOk } from "./client";
 import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
@@ -247,12 +247,12 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
         {spec.standoffs ? (
           <p className="mt-3 text-sm text-secondary">
             {spec.standoffs.partRef} stands on {spec.standoffs.holes.length} standoffs, {mm(spec.standoffs.height)} mm tall
-            {spec.standoffs.assumed ? ". The mounting holes are assumed (four, 3.5 mm in from the corners) because the part row has none; set data.mountingHoles on it to use the real ones" : ""}
+            {spec.standoffs.assumed ? ". The mounting holes are assumed (four, 3.5 mm in from the corners) because none are recorded for this part. Check them against the real board before printing" : ""}
             {spec.standoffs.dropped.length ? `. Assumed holes under ${spec.standoffs.dropped.join(", ")} were left out` : ""}.
           </p>
         ) : null}
         <p className="mt-3 text-xs text-muted">
-          Which wall a cut-out goes in, and its size, can be overridden on a part row with data.opening (face, shape, width, height, shift, or off). Faces: {Object.keys(FACE_AXES).join(", ")}.
+          A cut-out goes in the wall a part faces or crosses in the layout. To move it to another wall, move the part in Design, Layout, and generate again.
         </p>
       </Panel>
 
