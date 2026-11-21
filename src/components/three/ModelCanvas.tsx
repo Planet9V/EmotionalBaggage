@@ -48,6 +48,12 @@ export type ModelCanvasProps = {
   /** Part ids to frame; null = the whole product. */
   focusIds: number[] | null;
   onFocusPart: (id: number) => void;
+  /**
+   * Gives the caller a function that draws the scene once and returns it as a PNG data address
+   * (transparent background), or null when the canvas goes away. Used by the Imagery screen's
+   * "Render from the 3D model" (plan 8.7).
+   */
+  onCaptureReady?: (capture: (() => string) | null) => void;
 };
 
 /**
@@ -857,6 +863,21 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
   );
 }
 
+/** Hands out a synchronous capture: render, then read the canvas in the same task so the buffer is still there. */
+function CaptureBridge({ onReady }: { onReady: (capture: (() => string) | null) => void }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    onReady(() => {
+      gl.render(scene, camera);
+      return gl.domElement.toDataURL("image/png");
+    });
+    return () => onReady(null);
+  }, [gl, scene, camera, onReady]);
+  return null;
+}
+
 export default function ModelCanvas(props: ModelCanvasProps) {
   const [progress] = useState(() => new Progress(props.explode));
   useEffect(() => () => setCursor("auto"), []);
@@ -869,6 +890,7 @@ export default function ModelCanvas(props: ModelCanvasProps) {
       style={{ touchAction: "none" }}
     >
       <Scene {...props} progress={progress} />
+      {props.onCaptureReady && <CaptureBridge onReady={props.onCaptureReady} />}
     </Canvas>
   );
 }

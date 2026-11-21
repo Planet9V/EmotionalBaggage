@@ -13,6 +13,7 @@ import { describeSize, type PartGeometry } from "@/components/three/layout";
 import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
 import { SHELL_DEFAULTS, type ShellParams } from "@/components/three/stl";
+import { RenderToImagery } from "@/components/market/RenderToImagery";
 import type { ViewProps } from "./types";
 
 const ModelCanvas = dynamic(() => import("@/components/three/ModelCanvas"), {
@@ -58,6 +59,9 @@ export function ModelView({ project }: ViewProps) {
   const [params, setParams] = useState<ShellParams>(SHELL_DEFAULTS);
   const [loaded, setLoaded] = useState<LoadedStl | null>(null);
   const [focusId, setFocusId] = useState<number | null>(null);
+  // the canvas hands out a function that draws the scene once as a PNG (Imagery, plan 8.7)
+  const [capture, setCapture] = useState<(() => string) | null>(null);
+  const onCaptureReady = useCallback((fn: (() => string) | null) => setCapture(() => fn), []);
   const [sub, setSub] = useState(false);
   const [wiresOn, setWiresOn] = useState(false);
   const [classOff, setClassOff] = useState<Set<NetClass>>(() => new Set());
@@ -461,6 +465,7 @@ export function ModelView({ project }: ViewProps) {
                 weights={weights}
                 focusIds={focusIds}
                 onFocusPart={focusOn}
+                onCaptureReady={onCaptureReady}
               />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
@@ -495,6 +500,7 @@ export function ModelView({ project }: ViewProps) {
               </div>
             )}
           </div>
+          {showCanvas && <RenderToImagery projectId={project.id} capture={capture} />}
           {canvasParts.length > 0 && hidden.size > 0 && (
             <p className="text-xs text-muted">
               {hidden.size} hidden.{" "}

@@ -1,19 +1,12 @@
 import { NextResponse } from "next/server";
-import { ITEM_COLS, logEvent, q, toItem, type ItemRow } from "@/lib/db";
+import { logEvent, q } from "@/lib/db";
 import { body as readBody, requireProject, route } from "@/lib/api/route";
 import { challengeTurn } from "@/lib/api/schemas";
 import { complete, getReasoning, type ChatMessage } from "@/lib/ai/models";
+import { REVIEWER_SYSTEM, reviewerContext } from "@/lib/ai/reviewer";
 
 /** Turns of earlier conversation sent with each new message. */
 const HISTORY = 40;
-
-const SYSTEM = `You review product concepts before money is spent on them. Your job is to push back.
-- Question the proposition: who buys it, why now, what it replaces, what would make it fail.
-- Name the weakest assumption first and say what evidence would settle it.
-- Point out conflicts between the brief, the open questions and the claims marked unverified.
-- Ask at most three sharp questions per reply. No praise, no summaries of what you were told.
-- When the person answers well, say so in one line and move to the next weakest point.
-- Never invent market figures, regulations or prices. If a fact is needed, say it must be researched.`;
 
 type Msg = { id: string; role: string; content: string; created_at: string };
 
@@ -35,14 +28,7 @@ export const POST = route(async (req: Request) => {
   const proj = [await requireProject(b.projectId)];
   const reasoning = await getReasoning();
   if (!reasoning.ok) return NextResponse.json({ error: reasoning.reason }, { status: 503 });
-  const ctx = (await q<ItemRow>(
-    `SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section IN ('concept/brief','concept/questions','research/claims') ORDER BY sort, id`,
-    [b.projectId]
-  )).map(toItem);
-  const context = [
-    `Concept: ${proj[0].name}. ${proj[0].one_liner}`,
-    ...ctx.map((i) => `[${i.section} | ${i.status}] ${i.title}${i.body ? `: ${i.body}` : ""}`),
-  ].join("\n");
+  const context = await reviewerContext(proj[0]);
   const history = (
     await q<Msg>("SELECT id, role, content, created_at FROM messages WHERE project_id=$1 ORDER BY id DESC LIMIT $2", [b.projectId, HISTORY])
   ).reverse();
@@ -54,7 +40,7 @@ export const POST = route(async (req: Request) => {
   // Provider failures leave as plain sentences with a status (502, 504) through the route wrapper.
   const { text: reply } = await complete({
     use: reasoning,
-    system: `${SYSTEM}\n\nWhat is on record for this concept:\n${context}`,
+    system: `${REVIEWER_SYSTEM}\n\nWhat is on record for this concept:\n${context}`,
     messages,
     maxOutputTokens: 1200,
     signal: req.signal,

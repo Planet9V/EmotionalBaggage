@@ -21,6 +21,13 @@ import { BatchesView } from "@/components/production/BatchesView";
 import { PartPricesView } from "@/components/production/PartPricesView";
 import { ComplianceView } from "@/components/compliance/ComplianceView";
 import { EconomicsView } from "@/components/economics/EconomicsView";
+import { BrandView } from "@/components/market/BrandView";
+import { CompetitorsView } from "@/components/market/CompetitorsView";
+import { ImageryView } from "@/components/market/ImageryView";
+import { NamesView } from "@/components/market/NamesView";
+import { PersonasView } from "@/components/market/PersonasView";
+import { PositioningView } from "@/components/market/PositioningView";
+import { PricingView } from "@/components/market/PricingView";
 import type { ViewProps } from "./types";
 
 const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
@@ -42,6 +49,13 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   batches: BatchesView,
   partprices: PartPricesView,
   compliance: ComplianceView,
+  personas: PersonasView,
+  competitors: CompetitorsView,
+  positioning: PositioningView,
+  pricing: PricingView,
+  names: NamesView,
+  brand: BrandView,
+  imagery: ImageryView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

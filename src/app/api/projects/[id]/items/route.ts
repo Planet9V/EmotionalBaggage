@@ -5,6 +5,7 @@ import { defaultStatus, newItem, STORE_STATUSES, STORES } from "@/lib/api/schema
 import { assertNewClaim } from "@/lib/research/rules";
 import { addedDetail } from "@/lib/trace/changes";
 import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
+import { assertNewMarket } from "@/lib/market/rules";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,6 +27,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   await requireProject(id);
   const b = await body(req, newItem);
   assertNewClaim(b);
+  assertNewMarket(b);
   const row = await tx(async (c) => {
     await assertLinks(c, id, b.section, b.data);
     await assertBuildMayPass(c, id, { section: b.section, title: b.title, status: b.status ?? defaultStatus(b.section), data: b.data ?? {} });

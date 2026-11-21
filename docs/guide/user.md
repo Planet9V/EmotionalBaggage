@@ -126,7 +126,13 @@ Wire lengths on the cut list are estimates from the distance between parts, not 
 
 | Section | What you do there |
 |---|---|
-| Positioning | Record how the product is positioned. |
+| Personas | Who buys this: the job they are trying to get done, what triggers the purchase, the objection, and where they look. Drafted from the brief, verified claims and saved research; you edit and approve. |
+| Competitors | A sortable comparison of competitors and alternatives, including "do nothing". Prices and claims come from a cited research answer or from you; a row with no source is marked "unsourced: check this". Research competitors asks first and says Perplexity bills per question. |
+| Positioning | One positioning line and three supporting messages, each with its proof; a message with no proof is flagged. The reviewer must attack it once before it can be approved. |
+| Pricing | Candidate prices against the unit cost, channel fees and competitor prices, with margin worked out per channel. Margins marked with a star rest on an incomplete cost. |
+| Names | Name and tagline candidates with reasons, each with links you follow and tick yourself: domain, marketplaces, trademark search pages, social handles. The app does not run the searches and never says a name is available. This is not a trademark or domain clearance. |
+| Brand kit | Voice rules with do and do-not examples, colours with their contrast against white and black, type, logo files, tagline and boilerplate. A tool checks a piece of text against the voice. |
+| Imagery | The shots a listing and ads need, each with its purpose, where it is used and the file. Hero and detail shots can be rendered from the 3D model. |
 | Landing pages | List the pages you plan, with the path and the call to action. |
 | Ads | Keep ad copy by channel, with its rule for stopping or scaling, and move each from draft to approved, running or killed. |
 | Campaigns | Plan campaigns by funnel stage, budget and measure of success. |
