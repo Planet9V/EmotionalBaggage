@@ -11,6 +11,7 @@ import { json, read } from "../api/helpers";
 import { chooseReasoning, clearModelRows } from "../ai/setup";
 import { addItem, approve, approveRun, askedBy, edit, itemsOf, list, makeConcept, reject, run, scriptedModel, type Script } from "./helpers";
 import type { GeneratorsReply } from "@/lib/ai/drafts/shared";
+import { CONTENT_GENERATORS } from "@/lib/content/generators";
 
 const P = "zz-drafts-gen";
 const PHYS = "zz-drafts-phys";
@@ -264,7 +265,9 @@ describe("product types", () => {
     expect(w.status).toBe(400);
     expect(w.body.error).toContain("does not apply");
     const g = await read<GeneratorsReply>(await GENERATORS(json("GET", undefined, `http://t/x?projectId=${PHYS}&kind=section`)));
-    expect(g.body.generators.map((x) => x.id)).toEqual(["press-release", "faq", "requirements", "parts", "assembly", "tests"]);
+    // The content generators (src/lib/content/generators) apply to every product type; this list is about the engineering ones.
+    const content = new Set(CONTENT_GENERATORS.map((c) => c.id));
+    expect(g.body.generators.map((x) => x.id).filter((id) => !content.has(id))).toEqual(["press-release", "faq", "requirements", "parts", "assembly", "tests"]);
     await addItem(PHYS, "design/requirements", "Holds 120 kg", { key: "phys-1" });
     script.parts = { rows: [{ ref: "LEG1", title: "Leg", spec: "Beech", kind: "mechanical", qty: 3, pins: [{ name: "1", role: "passive" }] }] };
     const r = await run({ projectId: PHYS, generator: "parts" });

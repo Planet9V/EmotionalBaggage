@@ -34,7 +34,12 @@ export type Section = {
     | "pricing"
     | "names"
     | "brand"
-    | "imagery";
+    | "imagery"
+    // content (plan 8.8 to 8.12)
+    | "ads"
+    | "landing"
+    | "listing"
+    | "launch";
   /** backend section key the items live under (defaults to stage/key) */
   store?: string;
   columns?: Column[];
@@ -378,26 +383,18 @@ export const STAGES: Stage[] = [
       },
       {
         key: "landing",
-        label: "Landing pages",
-        blurb: "Each page, its job and its single call to action.",
-        view: "items",
-        columns: [
-          { key: "path", label: "Path" },
-          { key: "cta", label: "Call to action" },
-        ],
-        statuses: ["planned", "drafted", "live"],
-        addLabel: "Add page",
+        label: "Landing page",
+        blurb: "The page for one approved message, as sections you can edit and reorder, in the brand kit. Preview it, then export it as a static page.",
+        view: "landing",
+        statuses: ["draft", "planned", "approved"],
+        addLabel: "Add section",
       },
       {
         key: "ads",
         label: "Ads",
-        blurb: "Ad copy and the rule for killing or scaling it.",
-        view: "items",
-        columns: [
-          { key: "channel", label: "Channel" },
-          { key: "rule", label: "Kill / scale rule" },
-        ],
-        statuses: ["draft", "approved", "running", "killed"],
+        blurb: "Ad variants per channel within the platform's limits, each tied to one message, with the rule for stopping or scaling it.",
+        view: "ads",
+        statuses: ["draft", "approved", "running", "paused", "killed"],
         addLabel: "Add ad",
       },
       {
@@ -409,6 +406,8 @@ export const STAGES: Stage[] = [
           { key: "funnel", label: "Funnel stage" },
           { key: "budget", label: "Budget" },
           { key: "kpi", label: "KPI" },
+          { key: "start", label: "Starts (date)" },
+          { key: "end", label: "Ends (date)" },
         ],
         statuses: ["planned", "running", "done", "killed"],
         addLabel: "Add campaign",
@@ -416,11 +415,19 @@ export const STAGES: Stage[] = [
       {
         key: "social",
         label: "Social",
-        blurb: "Draft, approve and post to X and Instagram; replies come back here.",
+        blurb: "Posts per channel within each channel's limits, scheduled on a calendar. Posting is done by the channel connection, not here.",
         view: "social",
         columns: [{ key: "channel", label: "Channel" }],
-        statuses: ["draft", "approved", "posted"],
+        statuses: ["draft", "approved", "scheduled", "posted"],
         addLabel: "Add draft post",
+      },
+      {
+        key: "launch",
+        label: "Launch email and press note",
+        blurb: "The launch email, a short press note and a three-email sequence, written from the approved press release. Nothing is sent from here.",
+        view: "launch",
+        statuses: ["draft", "approved"],
+        addLabel: "Add launch piece",
       },
     ],
   },
@@ -433,11 +440,10 @@ export const STAGES: Stage[] = [
       {
         key: "listing",
         label: "Amazon listing",
-        blurb: "Title, bullets, images and keywords for the listing.",
-        view: "items",
-        columns: [{ key: "field", label: "Listing field" }],
+        blurb: "Title, five bullets, description and search terms within Amazon's limits for the category, with the claims Amazon does not allow flagged and an image checklist.",
+        view: "listing",
         statuses: ["draft", "ready", "live"],
-        addLabel: "Add listing element",
+        addLabel: "Add listing",
       },
       {
         key: "monitor",

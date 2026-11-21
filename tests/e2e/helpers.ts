@@ -133,6 +133,10 @@ export async function collectRoutes(page: Page) {
     else if (res.status() === 404) notPresent.push(r);
     else problems.push(`${r}: optional route answered ${res.status()} (expected 200, or 404 while it is not built)`);
   }
-  const routes = [...new Set([...FIXED_ROUTES, ...fromSidebar.map((h) => h.split(/[?#]/)[0]!), ...fromDocs, ...optional])];
+  // The landing page preview lives at /p/<concept id>; it needs a real id, so it is added here rather than in FIXED_ROUTES.
+  const concepts = await page.request.get("/api/projects");
+  const conceptId = concepts.ok() ? ((await concepts.json()) as { projects?: { id: string }[] }).projects?.[0]?.id : undefined;
+  const preview = conceptId ? [`/p/${conceptId}`] : [];
+  const routes = [...new Set([...FIXED_ROUTES, ...preview, ...fromSidebar.map((h) => h.split(/[?#]/)[0]!), ...fromDocs, ...optional])];
   return { routes, notPresent: notPresent.filter((r) => !routes.includes(r)), problems, sidebarCount: fromSidebar.length, docsCount: fromDocs.length };
 }
