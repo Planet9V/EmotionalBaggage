@@ -40,7 +40,8 @@ export const optimiseCost: Generator<z.infer<typeof costRow>> = {
     const t = revisionTarget(ctx, row.replaces);
     if (!t.ok || !t.item) return { ok: false, reason: t.ok ? "it does not name a part" : t.reason };
     const data: Record<string, unknown> = { ...t.item.data };
-    // The substitute is unpriced until the user enters its cost.
+    // The substitute is unpriced until the user enters its cost; the replaced part's price stays on the row as "was".
+    if (typeof t.item.data.line === "number") data.wasLine = t.item.data.line;
     delete data.line;
     delete data.asin;
     if (row.search) data.search = row.search.trim();

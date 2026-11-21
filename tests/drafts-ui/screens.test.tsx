@@ -162,6 +162,20 @@ describe("the review card", () => {
     await waitFor(() => expect(calls.some((c) => c.path === "/api/drafts/11/approve")).toBe(true));
   });
 
+  it("a substitute part that drops a price asks first, names the old price, and keeps it as was (F3)", async () => {
+    const { calls } = adminServer([on("POST", "/api/drafts/12/approve", () => ({ body: { draft: draft({ id: 12, status: "approved" }), item: row(), before: null } }))]);
+    const part = row({ id: 41, section: "design/bom", title: "Dev board", data: { ref: "U1", line: 12 } });
+    const sub = draft({ id: 12, generator: "optimise-cost", targetStore: "design/bom", title: "Bare module", data: { ref: "U1", wasLine: 12 }, op: { op: "replace", reason: "Cheaper" }, itemId: 41 });
+    renderWithClient(<DraftCard draft={sub} current={part} />);
+    fireEvent.click(screen.getByRole("button", { name: "Approve (removes the price)" }));
+    const ask = screen.getByRole("alertdialog", { name: /removes this part's price/ });
+    expect(ask.textContent).toContain("(12.00) out of the parts total");
+    expect(ask.textContent).toContain('"was 12.00"');
+    expect(calls.some((c) => c.path === "/api/drafts/12/approve")).toBe(false);
+    fireEvent.click(within(ask).getByRole("button", { name: "Approve and remove the price" }));
+    await waitFor(() => expect(calls.some((c) => c.path === "/api/drafts/12/approve")).toBe(true));
+  });
+
   it("an approved press release is attacked by the server: the browser does not call the reviewer", async () => {
     const press = draft({ targetStore: "concept/press", generator: "press-release", title: "Doorbell" });
     const { calls } = adminServer([

@@ -148,6 +148,7 @@ export function BomView({ project, section, store }: ViewProps) {
                       </TableCell>
                       <TableCell>
                         <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={p.line === null ? "" : money(p.line)} onSave={numberSave(p, "line")} />
+                        {typeof p.item.data.wasLine === "number" && <p className="mt-0.5 text-right font-mono text-[11px] text-muted">was {money(p.item.data.wasLine)}</p>}
                       </TableCell>
                       <TableCell>
                         <Select

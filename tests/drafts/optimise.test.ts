@@ -102,12 +102,16 @@ describe("optimisation runs", () => {
     const d = r.body.drafts[0];
     expect(d).toMatchObject({ itemId: ids.board, op: { op: "replace", reason: "No USB bridge or headers" } });
     expect(d.data.line).toBeUndefined();
+    expect(d.data.wasLine).toBe(12);
     expect(d.data.ref).toBe("U1");
     const a = (await state())[0];
     expect(a.last!.before.text).toBe("16.40 for 4 parts");
-    expect(a.last!.ifApproved.text).toBe("Not priced (3 of 4 parts have a cost, adding up to 4.40)");
+    expect(a.last!.ifApproved.text).toBe("Not priced (3 of 4 parts have a cost, adding up to 4.40; 1 substitute has no cost yet, was 12.00)");
     expect(a.last!.drafts).toEqual({ waiting: 1, approved: 0, rejected: 0 });
     await approve(d.id);
+    // approved: the price is gone from the total, the old one kept on the row as "was"
+    const mid = (await state())[0];
+    expect(mid.now.text).toBe("Not priced (3 of 4 parts have a cost, adding up to 4.40; 1 substitute has no cost yet, was 12.00)");
     await q("UPDATE items SET data = data || '{\"line\": 4}'::jsonb WHERE id=$1", [ids.board]);
     const b = (await state())[0];
     expect(b.now.text).toBe("8.40 for 4 parts");

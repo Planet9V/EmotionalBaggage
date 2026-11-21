@@ -70,13 +70,13 @@ describe("coverage after a drafted chain", () => {
   it("a link removed at the requirement's end is removed at the test's end, and added back from the test's end", async () => {
     const req = (await itemsOf(P, "design/requirements"))[0];
     const testRow = (await itemsOf(P, "prototype/tests")).find((x) => (x.data.requirements as string[]).includes(String(req.data.key)))!;
-    const r = await patch(req.id, { data: { tests: [] } });
+    const r = await patch(Number(req.id), { data: { tests: [] } });
     expect(r.status).toBe(200);
     const after = (await itemsOf(P, "prototype/tests")).find((x) => x.id === testRow.id)!;
     expect(after.data.requirements).toEqual([]);
     expect(traceOf(await all()).untested.map((x) => x.id)).toContain(Number(req.id));
 
-    const back = await patch(testRow.id, { data: { requirements: [String(req.data.key)] } });
+    const back = await patch(Number(testRow.id), { data: { requirements: [String(req.data.key)] } });
     expect(back.status).toBe(200);
     const reqNow = (await itemsOf(P, "design/requirements")).find((x) => x.id === req.id)!;
     expect(reqNow.data.tests).toEqual([String(testRow.data.key)]);
@@ -85,7 +85,7 @@ describe("coverage after a drafted chain", () => {
 
   it("a test end naming a requirement that does not exist is refused, with a sentence", async () => {
     const testRow = (await itemsOf(P, "prototype/tests"))[0];
-    const r = await patch(testRow.id, { data: { requirements: ["req-nothing"] } });
+    const r = await patch(Number(testRow.id), { data: { requirements: ["req-nothing"] } });
     expect(r.status).toBe(400);
     expect(r.body.error).toContain('"req-nothing" names no requirement');
   });
@@ -106,7 +106,7 @@ describe("coverage after a drafted chain", () => {
   it("deleting a requirement removes it from the parts and tests that named it", async () => {
     const req = (await itemsOf(P, "design/requirements"))[1];
     const k = String(req.data.key);
-    expect((await remove(req.id)).status).toBe(200);
+    expect((await remove(Number(req.id))).status).toBe(200);
     for (const x of [...(await itemsOf(P, "prototype/tests")), ...(await itemsOf(P, "design/bom"))]) expect((x.data.requirements as string[] | undefined) ?? []).not.toContain(k);
   });
 });

@@ -12,6 +12,9 @@ export type CostMeasure = {
   pricedTotal: number;
   /** the whole list's cost, only when every part has a cost; otherwise null ("not priced") */
   total: number | null;
+  /** unpriced parts that replaced a priced one (an approved substitute), and the sum of the prices they replaced */
+  substitutes?: number;
+  wasTotal?: number;
 };
 
 export type CountMeasure = {
@@ -40,7 +43,9 @@ export function measureCost(bom: Item[]): CostMeasure {
   const parts = readParts(bom);
   const priced = parts.filter((p) => p.line !== null);
   const pricedTotal = Math.round(priced.reduce((a, p) => a + (p.line ?? 0), 0) * 100) / 100;
-  return { parts: parts.length, priced: priced.length, pricedTotal, total: parts.length && priced.length === parts.length ? pricedTotal : null };
+  const subs = parts.filter((p) => p.line === null && typeof p.item.data.wasLine === "number");
+  const wasTotal = Math.round(subs.reduce((a, p) => a + (p.item.data.wasLine as number), 0) * 100) / 100;
+  return { parts: parts.length, priced: priced.length, pricedTotal, total: parts.length && priced.length === parts.length ? pricedTotal : null, ...(subs.length ? { substitutes: subs.length, wasTotal } : {}) };
 }
 
 const FASTENER = /\b(screws?|bolts?|nuts?|washers?|rivets?|standoffs?|inserts?|fasteners?)\b/i;
@@ -132,8 +137,9 @@ export function describe(action: OptimiseAction, m: Measure): string {
     const c = m as CostMeasure;
     if (!c.parts) return "No parts";
     if (c.total !== null) return `${money(c.total)} for ${c.parts} parts`;
-    if (!c.priced) return `Not priced (none of ${c.parts} parts has a cost)`;
-    return `Not priced (${c.priced} of ${c.parts} parts have a cost, adding up to ${money(c.pricedTotal)})`;
+    const was = c.substitutes ? `; ${c.substitutes === 1 ? "1 substitute has" : `${c.substitutes} substitutes have`} no cost yet, was ${money(c.wasTotal ?? 0)}` : "";
+    if (!c.priced) return `Not priced (none of ${c.parts} parts has a cost${was})`;
+    return `Not priced (${c.priced} of ${c.parts} parts have a cost, adding up to ${money(c.pricedTotal)}${was})`;
   }
   if (action === "parts") {
     const c = m as CountMeasure;
