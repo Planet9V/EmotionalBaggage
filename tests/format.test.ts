@@ -1,6 +1,6 @@
 // The shared text helpers in src/lib/format.ts.
 import { describe, expect, it } from "vitest";
-import { fileSlug, slugify } from "@/lib/format";
+import { fileSlug, plural, slugify } from "@/lib/format";
 import { fileSafe } from "@/lib/content/http";
 
 describe("slugify", () => {
@@ -34,5 +34,15 @@ describe("slugify", () => {
     // a row key: 40 characters, the section prefix when empty
     expect(slugify("Battery / charger board R1".repeat(3), { max: 40, fallback: "row" }).length).toBeLessThanOrEqual(40);
     expect(slugify("···", { max: 40, fallback: "row" })).toBe("row");
+  });
+});
+
+describe("plural", () => {
+  it("is one count with its noun, in English number format", () => {
+    expect(plural(1, "part")).toBe("1 part");
+    expect(plural(0, "part")).toBe("0 parts");
+    expect(plural(12, "wire")).toBe("12 wires");
+    expect(plural(2, "category", "categories")).toBe("2 categories");
+    expect(plural(1200, "part")).toBe("1,200 parts");
   });
 });

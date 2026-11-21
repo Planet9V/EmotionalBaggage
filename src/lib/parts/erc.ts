@@ -6,6 +6,7 @@ import type { Item } from "@/lib/types";
 import { BUSES, partKind } from "./kinds";
 import { buildCircuit, pinKey, pinLabel, supplyGroups, type Circuit, type CircuitPart, type Net } from "./circuit";
 import type { Pin, PinRow } from "./pins";
+import { plural } from "@/lib/format";
 
 export type Severity = "error" | "warning" | "info";
 
@@ -54,7 +55,6 @@ export type ErcOptions = { projectId?: string };
 const SEVERITY_ORDER: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
 const list = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 const volts = (v: number) => `${Number(v.toFixed(2))} V`;
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function linkTo(opts: ErcOptions, select: string) {
   const q = new URLSearchParams();

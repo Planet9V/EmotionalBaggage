@@ -48,5 +48,5 @@ export function fmtMinutes(m: number): string {
   return r ? `${h} h ${r} min` : `${h} h`;
 }
 
-/** "1 part", "12 parts": a count with its noun. */
-export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+/** "1 part", "12 parts", "1,200 parts": a count with its noun. English formatting on purpose, so a server sentence and a screen agree. */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;

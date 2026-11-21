@@ -3,7 +3,7 @@
 import type { Item } from "@/lib/types";
 import { STORE } from "@/lib/domain/schemas";
 import { keyOf, LINK_FIELDS, listOf, MIRRORED, TEST_DONE } from "./spec";
-import { slugify } from "@/lib/format";
+import { slugify, plural } from "@/lib/format";
 
 export type Coverage = { tests: number; parts: number };
 
@@ -45,7 +45,6 @@ export function coverageOf(req: Pick<Item, "data">, items?: Pick<Item, "id" | "s
   return { tests: l.tests.length, parts: l.parts.length };
 }
 
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
 /** "2 tests, 1 part"; with no test, the sentence that says so. */
 export function coverageText(c: Coverage): string {

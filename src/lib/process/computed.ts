@@ -14,6 +14,7 @@ import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
 import { positioningFingerprint } from "@/lib/market/critique";
 import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
+import { plural } from "@/lib/format";
 
 /** What the server works out that rows alone cannot give. */
 export type GateFacts = {
@@ -28,7 +29,6 @@ export type GateFacts = {
 
 export type Computed = { met: boolean; detail: string; action: string; href: string };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export const ENCLOSURE_STORE = "design/enclosure";
 

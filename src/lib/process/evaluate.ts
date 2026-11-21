@@ -4,6 +4,7 @@ import { toDecision } from "@/lib/domain/decision";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
 import { campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
+import { plural } from "@/lib/format";
 
 export type { GateFacts } from "./computed";
 
@@ -40,7 +41,6 @@ export type ProcessState = { stage: string; gates: GateRecord[] };
 
 export type NextStep = { label: string; reason: string; href: string };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const listOr = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} or ${xs[xs.length - 1]}`);
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 

@@ -20,6 +20,7 @@ import { campaignsOf, planOf } from "@/lib/campaigns/read";
 import { channelMargins } from "@/lib/campaigns/margin";
 import { LAUNCH_STORE } from "@/lib/campaigns/schemas";
 import { loadLinkClicks, loadResults } from "@/lib/campaigns/server";
+import { plural } from "@/lib/format";
 
 export type ReportBlock =
   | { t: "p"; text: string; muted?: boolean }
@@ -27,7 +28,6 @@ export type ReportBlock =
 
 export type ReportSection = { id: string; title: string; href: string; blocks: ReportBlock[] };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function economics(by: (s: string) => Item[], currency: string): ReportSection | null {
   const rows = { parts: by("design/bom"), economics: by(STORE_ECONOMICS), channels: by(STORE_CHANNELS), methods: by(STORE_METHODS), batches: by(STORE_BATCHES) };
