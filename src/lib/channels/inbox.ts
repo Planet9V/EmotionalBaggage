@@ -60,7 +60,7 @@ export async function fetchInbox(projectId: string, channel: "x" | "instagram"):
   }
   const added = await upsertInbound(projectId, rows);
   const where = channel === "x" ? "X mentions" : "Instagram comments";
-  const message = `Read ${rows.length} ${where}; ${added} new.`;
+  const message = `Read ${rows.length} ${rows.length === 1 ? where.replace(/s$/, "") : where}; ${added} new.`;
   await tx((c) => logEventIn(c, projectId, `channel.${channel}.inbox`, message, { read: rows.length, added }));
   return { added, read: rows.length, message };
 }

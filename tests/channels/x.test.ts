@@ -11,7 +11,7 @@ import { GET as PREVIEW } from "@/app/api/channels/send/preview/route";
 import { POST as FETCH } from "@/app/api/channels/inbox/fetch/route";
 import { PATCH as ITEM_PATCH } from "@/app/api/items/[id]/route";
 import { POST as TEST } from "@/app/api/admin/test/route";
-import { resetX, challengeOf } from "@/lib/channels/x";
+import { resetX, challengeOf, browserOrigin } from "@/lib/channels/x";
 import { saveXAccount } from "@/lib/channels/state";
 import { X_COST_STATEMENT, postCost } from "@/lib/channels/xCost";
 import type { Preview } from "@/lib/channels/send";
@@ -88,6 +88,11 @@ describe("Connect X account (OAuth 2.0 with PKCE)", () => {
     expect(c.params.get("code_challenge")).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(c.url).not.toContain("code_verifier");
     expect(challengeOf("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")).toBe("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"); // RFC 7636 appendix B
+  });
+
+  it("builds the callback from the address the browser used, or a proxy's forwarded host", () => {
+    expect(browserOrigin(new Request("http://localhost:3000/x", { headers: { host: "127.0.0.1:3373" } }))).toBe("http://127.0.0.1:3373");
+    expect(browserOrigin(new Request("http://localhost:3000/x", { headers: { host: "app:3000", "x-forwarded-host": "c2r.example.com", "x-forwarded-proto": "https" } }))).toBe("https://c2r.example.com");
   });
 
   it("refuses a state it did not start, saves nothing and exchanges nothing", async () => {
@@ -266,12 +271,12 @@ describe("mentions and replies", () => {
     const inbox = (await q<{ id: string }>("SELECT id FROM items WHERE project_id=$1 AND section='marketing/inbox'", [P]))[0];
     const inboxId = Number(inbox.id);
     modelReply = JSON.stringify({ rows: [{ answers: inboxId, text: "Yes. It is 35 by 20 by 8 cm.", reasoning: "Answers the size question." }, { answers: 999999, text: "Not a real message." }] });
-    const r = await run({ projectId: P, generator: "channel-replies" });
+    const r = await run({ projectId: P, generator: "replies" });
     expect(r.status, JSON.stringify(r.body)).toBe(201);
     expect(r.body.drafts).toHaveLength(1);
     expect(r.body.dropped).toHaveLength(1);
     const sys = String((model.requests.at(-1)!.body as { messages: { content: string }[] }).messages[0].content);
-    expect(sys).toContain("You draft public replies");
+    expect(sys).toContain("You draft replies");
     const user = String((model.requests.at(-1)!.body as { messages: { content: string }[] }).messages[1].content);
     expect(user).toContain("Plain and dry, never salesy.");
     expect(r.body.drafts[0].sources.map((x) => x.id)).toContain(inboxId);

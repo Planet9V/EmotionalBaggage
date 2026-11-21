@@ -73,7 +73,7 @@ export function ReviewsView({ project, section, store }: ViewProps) {
                     <label className="sr-only" htmlFor={`topic-${r.id}`}>Topic</label>
                     <Input id={`topic-${r.id}`} defaultValue={String(r.data.topic ?? "")} placeholder="Topic" className="h-8 w-36 text-xs" onBlur={(e) => e.target.value.trim() !== String(r.data.topic ?? "") && save(r, { topic: e.target.value.trim().slice(0, 80) })} />
                     <label className="sr-only" htmlFor={`sent-${r.id}`}>Sentiment</label>
-                    <Select id={`sent-${r.id}`} value={String(r.data.sentiment ?? "")} className="h-8 w-28 text-xs" onChange={(e) => save(r, { sentiment: e.target.value })}>
+                    <Select id={`sent-${r.id}`} value={String(r.data.sentiment ?? "")} className="h-8 w-32 text-xs" onChange={(e) => save(r, { sentiment: e.target.value })}>
                       <option value="">sentiment</option>
                       {SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </Select>

@@ -118,7 +118,7 @@ describe("drafts: tags, replies and requirements", () => {
   it("drafts a reply to a review; once approved it is a reply row the app refuses to send (Amazon)", async () => {
     const broke = (await rows()).find((r) => r.body === "The handle broke on day two")!;
     modelReply = JSON.stringify({ rows: [{ answers: Number(broke.id), text: "Sorry the handle failed. We are checking it." }] });
-    const r = await run({ projectId: P, generator: "review-replies" });
+    const r = await run({ projectId: P, generator: "replies" });
     expect(r.status, JSON.stringify(r.body)).toBe(201);
     const sys = String((model.requests.at(-1)!.body as { messages: { content: string }[] }).messages[0].content);
     expect(sys).toMatch(/must not ask for a review/);

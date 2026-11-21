@@ -38,78 +38,66 @@ const replyRow = z.object({
   basedOn,
 });
 
-export const channelReplies: Generator<z.infer<typeof replyRow>> = {
-  id: "channel-replies",
-  label: "Replies to mentions and comments",
-  action: "Draft replies to mentions and comments",
-  from: [CHANNEL.inbox, CHANNEL.brand, "concept/faq", "research/claims"],
-  to: CHANNEL.replies,
-  kind: "section",
-  applies: always,
-  revises: false,
-  blocked: (ctx) => (unanswered(ctx, CHANNEL.inbox).length ? "" : "Nothing new to answer: read mentions or comments in Replies and comments first."),
-  buildPrompt: (ctx) => ({
-    system: ["You draft public replies, for a small product company, to mentions on X and comments on Instagram.", ...REPLY_RULES, `A reply on X must be at most ${X_REPLY_MAX} characters.`, "One row per message you answer; skip messages that need no reply (spam, a plain like).", RULES].join("\n"),
-    user: [conceptHeader(ctx), voice(ctx), block("Messages to answer", unanswered(ctx, CHANNEL.inbox)), block("FAQ", ctx.rows["concept/faq"]), block("Checked claims", (ctx.rows["research/claims"] ?? []).filter((c) => c.status === "verified"))].join("\n\n"),
-  }),
-  schema: replyRow,
-  toDraft(row, ctx) {
-    const src = unanswered(ctx, CHANNEL.inbox).find((i) => i.id === row.answers);
-    if (!src) return { ok: false, reason: `#${row.answers} is not a new mention or comment without a reply` };
-    const channel = src.data.channel === "Instagram" ? "Instagram" : "X";
-    const text = row.text.trim();
-    const len = Array.from(text).length;
-    if (channel === "X" && len > X_REPLY_MAX) return { ok: false, reason: `the reply is ${len} characters; X allows ${X_REPLY_MAX}` };
-    const who = typeof src.data.author === "string" && src.data.author ? ` @${src.data.author}` : "";
-    return {
-      ok: true,
-      drafts: [
-        {
-          title: clip(`Reply to${who} on ${channel}: ${text}`, 120),
-          body: text,
-          data: { channel, answers: src.id, replyTo: String(src.data.replyTo ?? ""), ...(row.reasoning ? { reasoning: row.reasoning.trim() } : {}) },
-          op: { op: "add" },
-          basedOn: [src.id, ...(row.basedOn ?? [])],
-        },
-      ],
-    };
-  },
-};
+/** New mentions, comments, reviews and questions that nothing in Replies answers yet. */
+const toAnswer = (ctx: GenContext) => [...unanswered(ctx, CHANNEL.inbox), ...unanswered(ctx, CHANNEL.reviews)];
 
-export const reviewReplies: Generator<z.infer<typeof replyRow>> = {
-  id: "review-replies",
-  label: "Replies to reviews and questions",
-  action: "Draft replies to reviews and questions",
-  from: [CHANNEL.reviews, CHANNEL.brand, "concept/faq", "research/claims"],
+/**
+ * One generator for every reply, so the Draft with AI button means the same on Replies and comments,
+ * Reviews and questions, and Replies to send. The channel of each reply comes from the row it answers.
+ */
+export const replies: Generator<z.infer<typeof replyRow>> = {
+  id: "replies",
+  label: "Replies",
+  action: "Draft replies",
+  from: [CHANNEL.inbox, CHANNEL.reviews, CHANNEL.brand, "concept/faq", "research/claims"],
   to: CHANNEL.replies,
   kind: "section",
   applies: always,
   revises: false,
-  blocked: (ctx) => (unanswered(ctx, CHANNEL.reviews).length ? "" : "Nothing new to answer: add or import reviews and questions in Sales, Reviews and questions first."),
+  blocked: (ctx) => (toAnswer(ctx).length ? "" : "Nothing new to answer: read mentions or comments, or add reviews and questions, first."),
   buildPrompt: (ctx) => ({
     system: [
-      "You draft replies, for a small product company, to customer reviews and questions. The person approving them posts them by hand where the review was left.",
+      "You draft replies, for a small product company, to mentions on X, comments on Instagram, and customer reviews and questions.",
       ...REPLY_RULES,
-      "On Amazon, a reply must not ask for a review, offer anything in return or direct the customer off Amazon.",
-      "One row per review or question you answer.",
+      `A reply on X must be at most ${X_REPLY_MAX} characters.`,
+      "Replies to reviews are posted by hand where the review was left. On Amazon, a reply must not ask for a review, offer anything in return or direct the customer off Amazon.",
+      "One row per message you answer; skip messages that need no reply (spam, a plain like).",
       RULES,
     ].join("\n"),
-    user: [conceptHeader(ctx), voice(ctx), block("Reviews and questions to answer", unanswered(ctx, CHANNEL.reviews)), block("FAQ", ctx.rows["concept/faq"]), block("Checked claims", (ctx.rows["research/claims"] ?? []).filter((c) => c.status === "verified"))].join("\n\n"),
+    user: [
+      conceptHeader(ctx),
+      voice(ctx),
+      block("Mentions and comments to answer", unanswered(ctx, CHANNEL.inbox)),
+      block("Reviews and questions to answer", unanswered(ctx, CHANNEL.reviews)),
+      block("FAQ", ctx.rows["concept/faq"]),
+      block("Checked claims", (ctx.rows["research/claims"] ?? []).filter((c) => c.status === "verified")),
+    ].join("\n\n"),
   }),
   schema: replyRow,
   toDraft(row, ctx) {
-    const src = unanswered(ctx, CHANNEL.reviews).find((i) => i.id === row.answers);
-    if (!src) return { ok: false, reason: `#${row.answers} is not a new review or question without a reply` };
+    const src = toAnswer(ctx).find((i) => i.id === row.answers);
+    if (!src) return { ok: false, reason: `#${row.answers} is not a new message, review or question without a reply` };
+    const text = row.text.trim();
+    const why = row.reasoning ? { reasoning: row.reasoning.trim() } : {};
+    if (src.section === CHANNEL.inbox) {
+      const channel = src.data.channel === "Instagram" ? "Instagram" : "X";
+      const len = Array.from(text).length;
+      if (channel === "X" && len > X_REPLY_MAX) return { ok: false, reason: `the reply is ${len} characters; X allows ${X_REPLY_MAX}` };
+      const who = typeof src.data.author === "string" && src.data.author ? ` @${src.data.author}` : "";
+      return {
+        ok: true,
+        drafts: [{ title: clip(`Reply to${who} on ${channel}: ${text}`, 120), body: text, data: { channel, answers: src.id, replyTo: String(src.data.replyTo ?? ""), ...why }, op: { op: "add" }, basedOn: [src.id, ...(row.basedOn ?? [])] }],
+      };
+    }
     const source = typeof src.data.source === "string" ? src.data.source : "";
     const channel = /amazon/i.test(source) ? "Amazon" : "Other";
-    const text = row.text.trim();
     return {
       ok: true,
       drafts: [
         {
           title: clip(`Reply to ${src.data.kind === "question" ? "question" : "review"}${source ? ` on ${source}` : ""}: ${text}`, 120),
           body: text,
-          data: { channel, answers: src.id, ...(row.reasoning ? { reasoning: row.reasoning.trim() } : {}) },
+          data: { channel, answers: src.id, ...why },
           op: { op: "add" },
           basedOn: [src.id, ...(row.basedOn ?? [])],
         },
@@ -161,4 +149,4 @@ export const reviewTags: Generator<z.infer<typeof tagRow>> = {
   },
 };
 
-export const CHANNEL_GENERATORS = [channelReplies, reviewReplies, reviewTags];
+export const CHANNEL_GENERATORS = [replies, reviewTags];

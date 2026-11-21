@@ -3,7 +3,8 @@ import { HttpError, route, sessionOf } from "@/lib/api/route";
 import { audit } from "@/lib/db";
 import { finishXSignIn, takePending } from "@/lib/channels/x";
 
-const back = (req: Request, outcome: string) => NextResponse.redirect(new URL(`/admin?tab=credentials&x=${outcome}#x`, req.url), 303);
+// A relative Location keeps the browser on the address it came back on (req.url can name the server's own listening host).
+const back = (_req: Request, outcome: string) => new NextResponse(null, { status: 303, headers: { location: `/admin?tab=credentials&x=${outcome}#x` } });
 
 /**
  * GET ?code&state (or ?error): where X sends the browser back. The state must be one this session

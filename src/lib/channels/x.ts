@@ -62,6 +62,18 @@ export async function xClient() {
   return { clientId, clientSecret, callbackUrl };
 }
 
+/**
+ * This app's address as the browser sees it: the Host header (or a proxy's X-Forwarded-Host and
+ * X-Forwarded-Proto), not req.url, which the standalone server fills with its own listening name.
+ */
+export function browserOrigin(req: Request): string {
+  const u = new URL(req.url);
+  const fwdHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = fwdHost || req.headers.get("host") || u.host;
+  const proto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || u.protocol.replace(/:$/, "");
+  return `${proto}://${host}`;
+}
+
 /** Where X sends the browser back: the saved callback address, else this app's own address. */
 export function callbackFor(origin: string, saved: string | null) {
   return saved?.trim() || `${origin.replace(/\/+$/, "")}/api/channels/x/callback`;
