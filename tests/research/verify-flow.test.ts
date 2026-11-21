@@ -138,6 +138,21 @@ describe("Verify this on the example concept", () => {
   });
 });
 
+describe("a long research question (the Competitors page's own default is over 300 characters)", () => {
+  it("does not drop every drafted competitor: the source title is clipped to what the record keeps", async () => {
+    const long = `zz verify long: ${"What do buyers use today instead of this product? ".repeat(8)}`;
+    expect(long.length).toBeGreaterThan(300);
+    const rid = Number((await q<{ id: string }>("INSERT INTO research (project_id, query, answer, citations, sources) VALUES ($1,$2,'Rival Scale sells for $24.99 [1].','[\"https://cite.example/rival\"]','[{\"url\":\"https://cite.example/rival\",\"title\":\"\"}]') RETURNING id", [SEEDED, long]))[0].id);
+    modelReply = JSON.stringify({ rows: [{ rows: [{ name: "Long Rival", kind: "product", what: "x", priceText: "$24.99", claim: "", weakness: "", sourceUrl: "https://cite.example/rival" }] }] });
+    const r = await read<{ drafts: { data: { generatedFrom: { sources: { title: string }[] } } }[]; dropped: unknown[] }>(await generate(json("POST", { generator: "competitors", researchId: rid, supersede: true }), ctx(SEEDED)));
+    expect(r.status).toBe(201);
+    expect(r.body.dropped).toEqual([]);
+    expect(r.body.drafts).toHaveLength(1);
+    expect(r.body.drafts[0].data.generatedFrom.sources[0].title.length).toBeLessThanOrEqual(300);
+    await q("DELETE FROM drafts WHERE project_id=$1 AND title='Long Rival'", [SEEDED]);
+  });
+});
+
 describe.runIf(hasVector)("Chat finds a saved research answer by meaning", () => {
   it("a question that shares no word with the answer finds it by meaning alone, at width 4", async () => {
     const P = "zz-verify-chat";

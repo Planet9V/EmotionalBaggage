@@ -297,7 +297,7 @@ function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: numbe
     setV("");
   };
   return (
-    <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
+    <form id="add-price" className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
       <Field label={`A price to consider (${currency})`} className="w-56"><Input inputMode="decimal" value={v} onChange={(e) => setV(e.target.value)} placeholder="24.95" /></Field>
       <Button type="submit"><Plus className="h-4 w-4" aria-hidden /> Add price</Button>
       {err && <p role="alert" className="w-full text-sm text-danger">{err}</p>}

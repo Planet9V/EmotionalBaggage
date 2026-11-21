@@ -115,7 +115,7 @@ export function EconomicsView({ project }: ViewProps) {
         </label>
         <p className="max-w-md pb-2 text-xs text-secondary">Every amount is in one currency. Nothing is converted. A price break or setup cost follows the batch size.</p>
         <div className="ml-auto">
-          <Button onClick={() => setEditing("new")}>
+          <Button id="add-row" onClick={() => setEditing("new")}>
             <Plus className="h-4 w-4" aria-hidden /> Add cost line
           </Button>
         </div>

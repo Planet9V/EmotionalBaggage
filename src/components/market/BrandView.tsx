@@ -49,7 +49,7 @@ export function BrandView({ project, store }: ViewProps) {
         <EmptyState title="No brand kit yet">
           <p>The kit holds the voice, colours, type, logos, tagline and boilerplate once, and every generated piece reads it.</p>
           <div className="mt-3 flex justify-center">
-            <Button onClick={async () => { setActionError(""); try { await add({ section: store, title: "Brand kit", data: { kind: "kit" }, status: "draft" }); } catch (e) { setActionError((e as Error).message); } }}><Plus className="h-4 w-4" aria-hidden /> Set up the brand kit</Button>
+            <Button id="brand-kit" onClick={async () => { setActionError(""); try { await add({ section: store, title: "Brand kit", data: { kind: "kit" }, status: "draft" }); } catch (e) { setActionError((e as Error).message); } }}><Plus className="h-4 w-4" aria-hidden /> Set up the brand kit</Button>
           </div>
         </EmptyState>
       ) : (

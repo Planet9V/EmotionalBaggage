@@ -30,7 +30,7 @@ describe("the Marketing chain", () => {
     walk("marketing", "printed", [
       { add: [], expect: { label: "Draft Personas with AI, or add a row by hand", href: "/s/marketing/personas#draft-with-ai" } },
       { add: [persona], expect: { label: 'Approve "Careful Chris" in Personas', href: "/s/marketing/personas" } },
-      { add: [{ ...persona, id: id++, status: "approved" }], expect: { label: "Draft Competitors with AI, or add a row by hand", href: "/s/marketing/competitors#draft-with-ai" } },
+      { add: [{ ...persona, id: id++, status: "approved" }], expect: { label: "Research competitors and alternatives, then review the rows", href: "/s/marketing/competitors#research-competitors" } },
       { add: [row("marketing/competitors", "approved")], expect: { label: "Draft the positioning with AI, from the personas and competitors", href: "/s/marketing/positioning#draft-with-ai" } },
       { add: [pos], expect: { label: 'Ask the reviewer to attack the positioning "For careful buyers"', href: `/s/marketing/positioning#positioning-${pos.id}` } },
     ]);
@@ -45,9 +45,9 @@ describe("the Marketing chain", () => {
     expect(next()).toMatchObject({ label: 'Approve the positioning "Line"', href: `/s/marketing/positioning#positioning-${pos.id}` });
     rows.push({ ...pos, id: id++, status: "approved" });
     const order: [string, string, Item][] = [
-      ["/s/marketing/pricing#draft-with-ai", "pricing", row("marketing/pricing", "approved")],
+      ["/s/marketing/pricing#add-price", "pricing", row("marketing/pricing", "approved")],
       ["/s/marketing/names#draft-with-ai", "name", row("concept/names", "chosen")],
-      ["/s/marketing/brand#draft-with-ai", "brand", row("marketing/brand", "approved")],
+      ["/s/marketing/brand#brand-kit", "brand", row("marketing/brand", "approved")],
       ["/s/marketing/ads#draft-with-ai", "ads", row("marketing/ads", "approved")],
       ["/s/marketing/landing#draft-with-ai", "landing", row("marketing/landing", "approved")],
       ["/s/sales/listing#draft-with-ai", "listing", row("sales/listing", "draft")],
@@ -63,7 +63,7 @@ describe("the Marketing chain", () => {
       expect(next().href, what).toBe(href);
       rows.push(r);
     }
-    expect(next()).toMatchObject({ label: "Advance to Sales", href: "/process" });
+    expect(next()).toMatchObject({ label: "Advance to Sales", href: "/process#advance" });
   });
 
   it("the budget row alone is not a campaign; a half-set budget says what is missing", () => {
@@ -86,7 +86,7 @@ describe("the Prototype chain", () => {
     const rows: Item[] = [row("design/bom", "in hand"), row("design/bom", "to print")];
     const state: ProcessState = { stage: "prototype", gates: [] };
     const n = () => nextStep(processFor("electronics"), state, rows, {}, {});
-    expect(n().href).toBe("/s/prototype/printing#new-print-job");
+    expect(n()).toMatchObject({ label: "Set up a print job: a file, a printer and the settings", href: "/s/prototype/printing#new-print-job" });
     const job = row("prototype/printing", "queued", {}, "Enclosure base");
     rows.push(job);
     expect(n()).toMatchObject({ label: 'Move "Enclosure base" in 3D printing to done', href: "/s/prototype/printing" });
@@ -100,12 +100,12 @@ describe("the Prototype chain", () => {
     rows.push(t);
     expect(n()).toMatchObject({ label: 'Move "Drop test" in Acceptance tests to pass', href: `/s/prototype/tests?item=${t.id}` });
     rows.splice(rows.indexOf(t), 1, { ...t, status: "pass" });
-    expect(n()).toMatchObject({ label: "Add 1 more row to Builds", href: "/s/prototype/builds#add-build" });
+    expect(n()).toMatchObject({ label: "Add a build with its exit criteria and tests", href: "/s/prototype/builds#add-build" });
     const b = row("prototype/builds", "testing", {}, "EVT");
     rows.push(b);
     expect(n()).toMatchObject({ label: 'Pass the build "EVT" in Builds', href: "/s/prototype/builds" });
     rows.splice(rows.indexOf(b), 1, { ...b, status: "passed" });
-    expect(n()).toMatchObject({ label: "Advance to Production", href: "/process" });
+    expect(n()).toMatchObject({ label: "Advance to Production", href: "/process#advance" });
   });
 
   it("a finished print counts: the job status is done (the gate asked for printed, which no job reaches)", () => {

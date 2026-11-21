@@ -132,7 +132,7 @@ function StageRow({
           <CheckList checks={stage.result.checks} labelledBy={headId} />
           <div className="flex flex-wrap items-center gap-2">
             {current && next && (
-              <Button size="sm" onClick={onAdvance} disabled={busy || !stage.passed} aria-describedby={stage.passed ? undefined : blockedId}>
+              <Button id="advance" size="sm" onClick={onAdvance} disabled={busy || !stage.passed} aria-describedby={stage.passed ? undefined : blockedId}>
                 Advance to {next.label} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Button>
             )}

@@ -83,10 +83,23 @@ export function productionCheck(rows: Item[], facts: GateFacts): Computed {
   const batch = rr.batches.find((b) => readBatch(b).units !== null) ?? null;
   const checks = readiness(rr, { batchId: batch?.id ?? null, currency: facts.currency });
   const unmet = checks.filter((c) => !c.met);
+  // The readiness check's own label is a statement; the next step is the thing to do about it.
+  const TODO: Record<string, string> = {
+    tests: "Pass the acceptance tests for this build",
+    compliance: "Decide every compliance row",
+    parts: "Price every part and give it a supplier",
+    economics: "Complete the economics for one sales channel",
+  };
+  // When nothing exists yet, say what to make rather than what to decide.
+  const NONE: Record<string, string> = {
+    tests: "Write the acceptance tests for this build",
+    compliance: "Draft the compliance checklist, then decide each row",
+  };
+  const first = unmet[0];
   return {
     met: unmet.length === 0,
     detail: unmet.length ? `${unmet.length} of 4 readiness checks not met: ${unmet.map((c) => `${c.label.toLowerCase()} (${c.detail})`).join("; ")}` : "All four readiness checks are met.",
-    action: unmet[0] ? unmet[0].label : "Nothing to do",
+    action: first ? (first.missing[0] ? `${TODO[first.key] ?? first.label}, starting with ${first.missing[0]}` : (NONE[first.key] ?? TODO[first.key] ?? first.label)) : "Nothing to do",
     href: unmet[0]?.href ?? "/s/production/batches",
   };
 }

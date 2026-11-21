@@ -34,7 +34,8 @@ export type ConceptField = "name" | "oneLiner";
  * `/s/<section>#<anchor>`, and the page scrolls to and focuses it). A check about rows that are not yet in the
  * right state links to the first such row with `?item=<id>` where the section's page opens a row from the address.
  */
-type Base = { id: string; label: string; anchor?: string };
+/** `todo`: what to do when the section has no row yet, in words, when the generic "Add a row" would not say it. */
+type Base = { id: string; label: string; anchor?: string; todo?: string };
 
 export type Check =
   /**
@@ -101,14 +102,14 @@ const requirementsClosed: Check = { id: "design.requirements-open", label: "No r
 const inHand: Check = { id: "prototype.parts-in-hand", label: "Every bought part is in hand", kind: "all-status", params: { section: "prototype/sourcing", statuses: ["in hand", "to print"] } };
 const testsWritten: Check = { id: "prototype.tests", label: "At least one acceptance test is written", kind: "min-rows", anchor: "draft-with-ai", params: { section: "prototype/tests", min: 1 } };
 const testsPass: Check = { id: "prototype.tests-pass", label: "Every acceptance test passes", kind: "all-status", params: { section: "prototype/tests", statuses: ["pass"] } };
-const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "min-rows", anchor: "add-build", params: { section: "prototype/builds", min: 1, statuses: ["passed"] } };
-const printJob: Check = { id: "prototype.print-jobs", label: "At least one print job is set up", kind: "min-rows", anchor: "new-print-job", params: { section: "prototype/printing", min: 1 } };
+const buildPassed: Check = { id: "prototype.build-passed", label: "A build has passed its exit criteria and tests", kind: "min-rows", anchor: "add-build", todo: "Add a build with its exit criteria and tests", params: { section: "prototype/builds", min: 1, statuses: ["passed"] } };
+const printJob: Check = { id: "prototype.print-jobs", label: "At least one print job is set up", kind: "min-rows", anchor: "new-print-job", todo: "Set up a print job: a file, a printer and the settings", params: { section: "prototype/printing", min: 1 } };
 // The print job statuses since migration 0018: a finished print is "done" (the gate asked for "printed", which no job can reach).
 const printed: Check = { id: "prototype.printed", label: "Every print job is printed", kind: "all-status", params: { section: "prototype/printing", statuses: ["done"] } };
 
 const productionGate: Check[] = [
-  { id: "production.economics", label: "Unit economics have at least one line", kind: "min-rows", anchor: "add-row", params: { section: "production/economics", min: 1 } },
-  { id: "production.batches", label: "At least one batch is planned", kind: "min-rows", anchor: "add-row", params: { section: "production/batches", min: 1 } },
+  { id: "production.economics", label: "Unit economics have at least one line", kind: "min-rows", anchor: "add-row", todo: "Add a cost line in Unit economics", params: { section: "production/economics", min: 1 } },
+  { id: "production.batches", label: "At least one batch is planned", kind: "min-rows", anchor: "add-row", todo: "Plan a batch: its size and date", params: { section: "production/batches", min: 1 } },
   { id: "production.ready", label: "Production readiness: tests, compliance, parts and economics", kind: "production-ready", params: {} },
 ];
 
@@ -119,11 +120,11 @@ const approved = (id: string, section: string, label: string, anchor = "draft-wi
 
 const marketingGate: Check[] = [
   approved("marketing.personas", "marketing/personas", "At least one persona is approved"),
-  approved("marketing.competitors", "marketing/competitors", "At least one competitor or alternative is approved"),
+  { ...approved("marketing.competitors", "marketing/competitors", "At least one competitor or alternative is approved", "research-competitors"), todo: "Research competitors and alternatives, then review the rows" },
   { id: "marketing.positioning", label: "The positioning is attacked by the reviewer and approved", kind: "positioning", params: {} },
-  approved("marketing.pricing", "marketing/pricing", "A price is approved"),
+  { ...approved("marketing.pricing", "marketing/pricing", "A price is approved", "add-price"), todo: "Add a price to consider and read its margin" },
   { id: "marketing.name", label: "A name is chosen", kind: "min-rows", anchor: "draft-with-ai", params: { section: "marketing/names", min: 1, statuses: ["chosen"] } },
-  approved("marketing.brand", "marketing/brand", "The brand kit has an approved note"),
+  { ...approved("marketing.brand", "marketing/brand", "The brand kit is approved", "brand-kit"), todo: "Set up the brand kit: voice, colours and type" },
   approved("marketing.ads", "marketing/ads", "At least one ad is approved"),
   approved("marketing.landing", "marketing/landing", "The landing page has an approved section"),
   { id: "marketing.listing", label: "The marketplace listing is drafted", kind: "min-rows", anchor: "draft-with-ai", params: { section: "sales/listing", min: 1 } },
@@ -131,14 +132,14 @@ const marketingGate: Check[] = [
   approved("marketing.announce", "marketing/announce", "The launch email or press note is approved"),
   { id: "marketing.proof", label: "Every approved ad, page, post and announcement has proof for its claims", kind: "content-proof", params: { sections: ["marketing/ads", "marketing/landing", "marketing/social", "marketing/announce"] } },
   { id: "marketing.budget", label: "The campaign budget and the rule numbers are set", kind: "campaign-budget", anchor: "campaign-budget", params: {} },
-  { id: "marketing.campaigns", label: "At least one campaign is planned", kind: "min-rows", anchor: "draft-with-ai", params: { section: "marketing/campaigns", min: 1, except: { field: "kind", value: "plan" } } },
-  { id: "marketing.launch", label: "A launch plan has dated steps", kind: "min-rows", anchor: "launch-template", params: { section: "marketing/launch", min: 1 } },
+  { id: "marketing.campaigns", label: "At least one campaign is planned", kind: "min-rows", anchor: "draft-with-ai", todo: "Draft a campaign plan with AI from the budget and the approved messages", params: { section: "marketing/campaigns", min: 1, except: { field: "kind", value: "plan" } } },
+  { id: "marketing.launch", label: "A launch plan has dated steps", kind: "min-rows", anchor: "launch-template", todo: "Start a launch plan from a template, with a launch date", params: { section: "marketing/launch", min: 1 } },
   { id: "marketing.links", label: "A tracked link exists for a campaign", kind: "tracked-links", anchor: "new-link", params: { min: 1 } },
   { id: "marketing.results", label: "A campaign has results recorded", kind: "campaign-results", anchor: "enter-results", params: { min: 1 } },
 ];
 
 const salesGate: Check[] = [
-  { id: "sales.channels", label: "At least one sales channel is set", kind: "min-rows", anchor: "add-row", params: { section: "sales/channels", min: 1 } },
+  { id: "sales.channels", label: "At least one sales channel is set", kind: "min-rows", anchor: "add-row", todo: "Add a sales channel with its price and fees", params: { section: "sales/channels", min: 1 } },
   { id: "sales.listing", label: "The listing has at least one element", kind: "min-rows", anchor: "draft-with-ai", params: { section: "sales/listing", min: 1 } },
   { id: "sales.listing-ready", label: "Every listing element is ready or live", kind: "all-status", params: { section: "sales/listing", statuses: ["ready", "live"] } },
   { id: "sales.listing-proof", label: "Every ready or live listing has proof for its claims", kind: "content-proof", params: { sections: ["sales/listing"] } },

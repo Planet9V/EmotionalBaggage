@@ -75,7 +75,10 @@ describe("check kinds", () => {
     const c = check({ id: "a", label: "Claims", kind: "claims-verified", params: { share: 0.8 } });
     expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: "No claims recorded yet.", href: "/s/research/claims" });
     const five = ["verified", "verified", "verified", "unverified", "wrong"].map((s) => row("research/claims", s));
-    expect(evaluateCheck(c, five)).toMatchObject({ met: false, detail: "3 of 5 claims verified (60%), 80% needed.", action: "Verify 1 more claim" });
+    const r = evaluateCheck(c, five);
+    expect(r).toMatchObject({ met: false, detail: "3 of 5 claims verified (60%), 80% needed.", action: `Verify "${five[3].title}" in Research, Ask` });
+    // the link is "Verify this" for the first claim not verified: Research, Ask with the claim as the question, attached to it
+    expect(r.href).toBe(`/s/research/ask?ask=${encodeURIComponent(five[3].title).replace(/%20/g, "+")}&item=${five[3].id}&claim=${five[3].id}`);
     five[3].status = "verified";
     expect(evaluateCheck(c, five).met).toBe(true);
   });
@@ -181,7 +184,7 @@ describe("nextStep", () => {
     expect(nextStep(def, empty, [...rows, decision("go", "yes")], { oneLiner: "x" })).toEqual({
       label: "Advance to Research",
       reason: "Every check of the Concept gate is met.",
-      href: "/process",
+      href: "/process#advance",
     });
   });
 
@@ -196,7 +199,7 @@ describe("nextStep", () => {
 
   it("an overridden gate counts as passed", () => {
     const state: ProcessState = { stage: "research", gates: [{ stage: "research", status: "go", overridden: true, note: "Checked by phone", decidedBy: "demo", decidedAt: null }] };
-    expect(nextStep(processFor("printed"), state, [])).toEqual({ label: "Advance to Design", reason: "The Research gate was passed by override.", href: "/process" });
+    expect(nextStep(processFor("printed"), state, [])).toEqual({ label: "Advance to Design", reason: "The Research gate was passed by override.", href: "/process#advance" });
   });
 
   it("at the last stage with its gate passed there is nothing more to advance to", () => {

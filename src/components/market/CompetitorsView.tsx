@@ -144,7 +144,7 @@ export function CompetitorsView({ project, store }: ViewProps) {
           A price or a claim is shown only when a cited research answer says it, or when you type it. Anything the model could not tie to a source is marked &ldquo;unsourced: check this&rdquo;. Include what a buyer does today instead, even if that is nothing.
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <Button onClick={() => { setFlow(null); setAsking(true); }} disabled={perplexityOn === false || model.configured === false}>
+          <Button id="research-competitors" onClick={() => { setFlow(null); setAsking(true); }} disabled={perplexityOn === false || model.configured === false}>
             <Search className="h-4 w-4" aria-hidden /> Research competitors
           </Button>
           <Button variant="outline" onClick={() => setEditing("new")}><Plus className="h-4 w-4" aria-hidden /> Add by hand</Button>

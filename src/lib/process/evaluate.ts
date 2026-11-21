@@ -113,7 +113,12 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
         ...base,
         met,
         detail: met ? `${plural(n, "row")} ${p.statuses ? listOr(p.statuses) : "recorded"}.` : `${plural(n, "row")} ${p.statuses ? listOr(p.statuses) : "recorded"}, ${p.min} needed.`,
-        action: n === 0 && check.anchor === "draft-with-ai" ? `Draft ${label} with AI, or add a row by hand` : `Add ${p.min - n > 0 ? plural(p.min - n, "more row") : "rows"} to ${label}`,
+        action:
+          n === 0 && check.todo
+            ? check.todo
+            : n === 0 && check.anchor === "draft-with-ai"
+              ? `Draft ${label} with AI, or add a row by hand`
+              : `Add ${p.min - n > 0 ? plural(p.min - n, "more row") : "rows"} to ${label}`,
       };
     }
     case "all-status": {
@@ -155,11 +160,16 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
       }
       const met = verified / xs.length >= share;
       const needed = Math.max(0, Math.ceil(share * xs.length - 1e-9) - verified);
+      // The control that verifies a claim is Research, Ask with the claim as the question ("Verify this"):
+      // the answer is attached to the claim and each source is judged there.
+      const first = xs.find((r) => r.status !== "verified");
+      const ask = first ? `/s/research/ask?${new URLSearchParams({ ask: [first.title, first.body].filter(Boolean).join(": ").slice(0, 600), item: String(first.id), claim: String(first.id) }).toString()}` : base.href;
       return {
         ...base,
+        href: met ? base.href : ask,
         met,
         detail: `${verified} of ${plural(xs.length, "claim")} verified (${pct(verified / xs.length)}), ${pct(share)} needed.`,
-        action: `Verify ${plural(needed, "more claim")}`,
+        action: needed === 1 && first ? `Verify "${first.title}" in Research, Ask` : `Verify ${plural(needed, "more claim")}, starting with "${first?.title ?? ""}"`,
       };
     }
     case "decision-made": {
@@ -257,6 +267,6 @@ export function nextStep(definition: ProcessDefinition, state: ProcessState, row
   return {
     label: `Advance to ${stageLabel(after)}`,
     reason: overridden && !result.met ? `The ${label} gate was passed by override.` : `Every check of the ${label} gate is met.`,
-    href: "/process",
+    href: "/process#advance",
   };
 }

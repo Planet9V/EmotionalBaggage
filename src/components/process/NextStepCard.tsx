@@ -42,6 +42,7 @@ export function NextStepCard({ projectId, showGate = true }: { projectId: string
         <Link
           href={next.href}
           onClick={() => window.setTimeout(() => focusHash(new URL(next.href, window.location.href).hash), 50)}
+          data-testid="next-step-link"
           className="inline-flex items-center gap-1.5 rounded-md bg-action px-3 py-2 text-sm font-medium text-white transition hover:bg-action-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange focus-visible:ring-offset-2"
         >
           {next.label} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
