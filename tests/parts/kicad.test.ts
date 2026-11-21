@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildCircuit, pinLabel } from "@/lib/parts/circuit";
-import { KICAD_SCH_VERSION, kicadSchematic } from "@/lib/parts/kicad";
+import { KICAD_SCH_VERSION, kicadSchematic, powerFlagNets } from "@/lib/parts/kicad";
 import { child, children, num, parse, text, write, type SNode } from "@/lib/parts/sexpr";
 import { part, pinsFor, seeded, wire } from "./fixtures";
 
@@ -61,8 +61,48 @@ function netsFromFile(src: string) {
   const groups = new Map<string, string[]>();
   for (const [k, pins] of pinAt) groups.set(find(k), [...(groups.get(find(k)) ?? []), ...pins]);
   const noConnect = new Set(children(doc, "no_connect").map((n) => key(num(child(n, "at")![1]), num(child(n, "at")![2]))));
-  return { doc, nets: [...groups.values()].filter((g) => g.length > 1).map((g) => g.sort()).sort((a, b) => a[0].localeCompare(b[0])), pinAt, noConnect, lib };
+  // power flags (#FLG..) are KiCad's business, not a member of the circuit's nets
+  const real = (g: string[]) => g.filter((p) => !p.startsWith("#"));
+  return { doc, nets: [...groups.values()].map(real).filter((g) => g.length > 1).map((g) => g.sort()).sort((a, b) => a[0].localeCompare(b[0])), pinAt, noConnect, lib, flags: [...groups.values()].flat().filter((p) => p.startsWith("#")) };
 }
+
+/** A circuit that is not the seed: a USB-powered board, a regulator, an LED on a switched supply and a sensor. */
+function secondCircuit() {
+  const mcu = part("U1", { library: "raspberry-pi-pico" });
+  const s = part("U2", { library: "dht22" });
+  const sw = part("S1", { library: "slide-switch-spst" });
+  const led = part("D1", { library: "led-5mm" });
+  const r = part("R1", { library: "resistor-axial" });
+  const wires = [
+    wire("U1", "3V3", "S1", "1"),
+    wire("S1", "2", "U2", "VDD"),
+    wire("U1", "GND", "U2", "GND"),
+    wire("U1", "GP2", "U2", "DATA"),
+    wire("U1", "GP15", "R1", "1"),
+    wire("R1", "2", "D1", "A"),
+    wire("D1", "K", "U1", "GND"),
+  ];
+  return buildCircuit([mcu, s, sw, led, r], wires, []);
+}
+
+describe("power flags", () => {
+  it("flag the example's ground return and its switched supply, and nothing already driven", () => {
+    const { parts, wires } = seeded();
+    const c = buildCircuit(parts, wires, []);
+    const flagged = powerFlagNets(c).map((n) => n.name);
+    expect(flagged.length).toBeGreaterThan(0);
+    for (const n of powerFlagNets(c)) expect(n.members.some((m) => m.def?.kind === "power_out")).toBe(false);
+    const { flags, nets } = netsFromFile(kicadSchematic(c, META));
+    expect(flags.length).toBe(flagged.length);
+    // the flags join their nets without changing the circuit's nets
+    expect(nets).toEqual(c.nets.map((n) => n.members.map((m) => pinLabel(m.ref, m.pin)).sort()).sort((a, b) => a[0].localeCompare(b[0])));
+  });
+  it("on a second circuit: the supply behind the switch is flagged", () => {
+    const c = secondCircuit();
+    const flagged = powerFlagNets(c);
+    expect(flagged.some((n) => n.members.some((m) => m.ref === "U2" && m.pin === "VDD"))).toBe(true);
+  });
+});
 
 describe("KiCad schematic export", () => {
   it("writes the current KiCad file version with a title block and our own embedded symbols", () => {
@@ -121,7 +161,7 @@ describe("KiCad schematic export", () => {
     }
     const wired = new Set(nets.flat());
     const all = [...pinAt.values()].flat();
-    const unwired = all.filter((p) => !wired.has(p));
+    const unwired = all.filter((p) => !wired.has(p) && !p.startsWith("#"));
     expect(unwired).toContain("U3.IN \"quoted\"");
     expect(noConnect.size).toBe(unwired.length);
     expect(nets).toContainEqual(["U1.GND", "U2.GND", "U3.GND"]);
@@ -183,21 +223,45 @@ describe("KiCad schematic export", () => {
     }
     const netlist = parse(readFileSync(join(dir, "example.net"), "utf8")) as SNode[];
     const kicadNets = children(child(netlist, "nets")!, "net")
-      .map((n) => children(n, "node").map((d) => pinLabel(text(child(d, "ref")![1]), pinName.get(`${text(child(d, "ref")![1])}#${text(child(d, "pin")![1])}`) ?? `#${text(child(d, "pin")![1])}`)).sort())
+      .map((n) => children(n, "node").filter((d) => !text(child(d, "ref")![1]).startsWith("#")).map((d) => pinLabel(text(child(d, "ref")![1]), pinName.get(`${text(child(d, "ref")![1])}#${text(child(d, "pin")![1])}`) ?? `#${text(child(d, "pin")![1])}`)).sort())
       .filter((g) => g.length > 1)
       .sort((a, b) => a[0].localeCompare(b[0]));
     const expected = circuit.nets.map((n) => n.members.map((m) => pinLabel(m.ref, m.pin)).sort()).sort((a, b) => a[0].localeCompare(b[0]));
     expect(kicadNets).toEqual(expected);
 
-    // ERC: kicad-cli exits 0 whatever it finds unless --exit-code-violations is given
-    // (kicad/cli/command_sch_erc.cpp), so this proves the file loads and the check runs. The findings
-    // are printed and kept in the report for review; they do not fail the test.
+    // ERC: every finding is listed for review; errors fail the test. With the power flags the example has no
+    // "input power pin not driven" errors. --exit-code-violations makes kicad-cli exit non-zero on a violation
+    // of the severity asked for (kicad/cli/command_sch_erc.cpp).
     const rpt = join(dir, "erc.json");
     const erc = run(["sch", "erc", "--format", "json", "--severity-all", "--output", rpt, file]);
     expect(erc.status, erc.out).toBe(0);
-    const report = JSON.parse(readFileSync(rpt, "utf8")) as { sheets?: { violations?: { type: string; severity: string }[] }[] };
+    const report = JSON.parse(readFileSync(rpt, "utf8")) as { sheets?: { violations?: { type: string; severity: string; description?: string }[] }[] };
     const counts = new Map<string, number>();
     for (const v of (report.sheets ?? []).flatMap((s) => s.violations ?? [])) counts.set(`${v.severity} ${v.type}`, (counts.get(`${v.severity} ${v.type}`) ?? 0) + 1);
+    const errorsOnly = run(["sch", "erc", "--format", "json", "--severity-error", "--exit-code-violations", "--output", join(dir, "erc-errors.json"), file]);
+    expect(errorsOnly.status, `KiCad's ERC found errors in the export: ${[...counts].filter(([k]) => k.startsWith("error")).map(([k, n]) => `${n} x ${k}`).join("; ")}`).toBe(0);
+
+    // a second circuit, not the seed: it loads, its nets are KiCad's nets, and ERC finds no errors
+    const second = secondCircuit();
+    const file2 = join(dir, "second.kicad_sch");
+    const src2 = kicadSchematic(second, { ...META, title: "Second circuit", project: "second" });
+    writeFileSync(file2, src2);
+    const net2 = run(["sch", "export", "netlist", "--output", join(dir, "second.net"), file2]);
+    expect(net2.status, `kicad-cli refused the second export: ${net2.out}`).toBe(0);
+    const doc2 = parse(src2) as SNode[];
+    const pinName2 = new Map<string, string>();
+    const libPins2 = new Map(children(child(doc2, "lib_symbols")!, "symbol").map((s) => [text(s[1]), children(s, "symbol").flatMap((u) => children(u, "pin"))]));
+    for (const s of children(doc2, "symbol")) {
+      const r = text(child(child(child(child(s, "instances")!, "project")!, "path")!, "reference")![1]);
+      for (const p of libPins2.get(text(child(s, "lib_id")![1])) ?? []) pinName2.set(`${r}#${text(child(p, "number")![1])}`, text(child(p, "name")![1]));
+    }
+    const kicadNets2 = children(child(parse(readFileSync(join(dir, "second.net"), "utf8")) as SNode[], "nets")!, "net")
+      .map((n) => children(n, "node").map((d) => ({ ref: text(child(d, "ref")![1]), pin: text(child(d, "pin")![1]) })).filter((x) => !x.ref.startsWith("#")).map((x) => pinLabel(x.ref, pinName2.get(`${x.ref}#${x.pin}`) ?? `#${x.pin}`)).sort())
+      .filter((g) => g.length > 1)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+    expect(kicadNets2).toEqual(second.nets.map((n) => n.members.map((m) => pinLabel(m.ref, m.pin)).sort()).sort((a, b) => a[0].localeCompare(b[0])));
+    const erc2 = run(["sch", "erc", "--format", "json", "--severity-error", "--exit-code-violations", "--output", join(dir, "erc-second.json"), file2]);
+    expect(erc2.status, `KiCad's ERC found errors in the second export: ${readFileSync(join(dir, "erc-second.json"), "utf8").slice(0, 2000)}`).toBe(0);
     console.info(`KiCad ERC on the export: ${counts.size ? [...counts].map(([k, n]) => `${n} x ${k}`).join("; ") : "no violations"}`);
   });
 });

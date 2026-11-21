@@ -34,7 +34,7 @@ export function declaredPins(raw: unknown): string[] {
 }
 
 /**
- * @param lengths routed run per wire row id, in mm. A wire with no entry is drawn with no length:
+ * @param lengths cut length per wire row id, in mm (the routed run plus the allowance, rounded up; cutLengthMm). A wire with no entry is drawn with no length:
  *   the drawing never carries a guessed number.
  */
 export function buildHarnessRequest(
@@ -95,7 +95,9 @@ export type HarnessOutcome = {
   wireviz: string;
   /** wires left off the drawing, with why */
   problems: string[];
-  /** wires drawn with a routed length, and wires drawn without one */
+  /** the strip and slack allowance added to each routed run to give the cut length on the drawing */
+  allowanceMm: number;
+  /** wires drawn with a cut length, and wires drawn without one */
   withLength: number;
   withoutLength: number;
 };

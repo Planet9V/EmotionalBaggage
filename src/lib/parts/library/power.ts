@@ -13,6 +13,7 @@ export const POWER: Entry[] = [
     basis: "typical",
     symbol: "battery",
     sources: [],
+    note: "A generic holder: sizes are typical and makers differ; check the one you buy.",
     pins: row([p("+", "power_out"), p("-", "ground")], { pitch: 10, axis: "x", at: 24 }),
   },
   {
@@ -24,6 +25,7 @@ export const POWER: Entry[] = [
     basis: "typical",
     symbol: "battery",
     sources: [],
+    note: "A generic holder: sizes are typical and makers differ; check the one you buy.",
     pins: [
       { name: "+", kind: "power_out", position: { x: 38.5, y: 0 } },
       { name: "-", kind: "ground", position: { x: -38.5, y: 0 } },

@@ -1,7 +1,7 @@
 // Rows read once, for the economics. A number nobody entered is null, never 0.
 import { readMoney } from "@/lib/moneyText";
 import type { Item } from "@/lib/types";
-import { toPart } from "@/lib/domain/part";
+import { partPrice, toPart } from "@/lib/domain/part";
 import { COST_KINDS, METHODS, type CostKind, type Method } from "./schemas";
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -24,9 +24,31 @@ export type PartInput = {
   line: number | null;
   breaks: { qty: number; unit: number }[];
   supplier: string;
+  /** set when the unit price is the chosen offer's (Sourcing): where and when it was checked */
+  offer?: { supplier: string; checkedAt: string } | null;
+  /** a part printed in house: the newest slice of a print job for it, and the material price per kg the user set on the part */
+  printed?: { slice: { grams: number; job: string; by: string } | null; pricePerKg: number | null } | null;
 };
 
-export function readPartInput(item: Item): PartInput {
+/** The newest slice of a print job tied to this part (data.part is its reference or title). */
+function sliceFor(ref: string, title: string, jobs: Item[]): { grams: number; job: string; by: string } | null {
+  let best: { grams: number; job: string; by: string; at: string } | null = null;
+  for (const j of jobs) {
+    const d = (j.data ?? {}) as { part?: unknown; slice?: { filamentG?: unknown; slicedAt?: unknown; orcaVersion?: unknown; byHand?: { slicer?: unknown } } };
+    const tie = str(d.part);
+    if (!tie || (tie !== ref && tie !== title)) continue;
+    const g = num(d.slice?.filamentG);
+    if (g === null || g <= 0) continue;
+    const at = str(d.slice?.slicedAt);
+    const by = d.slice?.byHand ? `entered by hand from ${str(d.slice.byHand.slicer) || "another slicer"}` : `OrcaSlicer${str(d.slice?.orcaVersion) ? ` ${str(d.slice?.orcaVersion)}` : ""}`;
+    if (!best || at > best.at) best = { grams: g, job: j.title, by, at };
+  }
+  return best ? { grams: best.grams, job: best.job, by: best.by } : null;
+}
+
+const isPrinted = (item: Item) => item.status === "to print" || (item.data?.geometry as { print?: unknown } | undefined)?.print === true;
+
+export function readPartInput(item: Item, jobs: Item[] = []): PartInput {
   const p = toPart(item);
   const d = item.data ?? {};
   const breaks = Array.isArray(d.priceBreaks)
@@ -35,7 +57,13 @@ export function readPartInput(item: Item): PartInput {
         .filter((b): b is { qty: number; unit: number } => b.qty !== null && b.qty >= 1 && b.unit !== null && b.unit >= 0)
         .sort((a, b) => a.qty - b.qty)
     : [];
-  return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: num(d.unit), line: p.line, breaks, supplier: str(d.supplier) };
+  // one price per part: a chosen offer's unit price wins over a stored copy, so a stale data.unit is never read
+  const pr = partPrice(p);
+  if (isPrinted(item) && pr.basis !== "offer") {
+    return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: num(d.unit), line: p.line, breaks, supplier: str(d.supplier), offer: null, printed: { slice: sliceFor(p.ref, item.title, jobs), pricePerKg: num(d.printPricePerKg) } };
+  }
+  if (pr.basis === "offer") return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: pr.unit, line: p.line, breaks, supplier: pr.supplier, offer: { supplier: pr.supplier, checkedAt: pr.checkedAt } };
+  return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: num(d.unit), line: p.line, breaks, supplier: str(d.supplier), offer: null };
 }
 
 export type CostRow = {
@@ -145,6 +173,8 @@ export type EconomicsRows = {
   channels: Item[];
   methods: Item[];
   batches: Item[];
+  /** prototype/printing rows: a printed part's material cost is worked out from its slice */
+  printJobs?: Item[];
 };
 
 export type EconomicsInputs = {
@@ -159,7 +189,7 @@ export type EconomicsInputs = {
 export function readEconomics(rows: EconomicsRows, currency: string): EconomicsInputs {
   return {
     currency,
-    parts: rows.parts.map(readPartInput),
+    parts: rows.parts.map((i) => readPartInput(i, rows.printJobs ?? [])),
     costs: rows.economics.map(readCostRow),
     channels: rows.channels.map(readChannel),
     methods: rows.methods.map(readMethod),

@@ -1,9 +1,9 @@
 import os
 WALK = os.environ.get("WALK_DIR", os.path.dirname(os.path.abspath(__file__)))
 import json, requests
-# The app and the stand-ins: WALK_APP (default http://127.0.0.1:3378) and WALK_PORT_BASE (default 3410), so two
-# walks on one machine do not take each other's ports.
-B = os.environ.get("WALK_APP", "http://127.0.0.1:3378")
+# The app and the stand-ins: WALK_BASE or WALK_APP (default http://127.0.0.1:3378; npm run walk sets WALK_BASE, scripts/walk.mjs)
+# and WALK_PORT_BASE (default 3410), so two walks on one machine do not take each other's ports.
+B = os.environ.get("WALK_BASE") or os.environ.get("WALK_APP", "http://127.0.0.1:3378")
 PORT_BASE = int(os.environ.get("WALK_PORT_BASE", "3410"))
 class Api:
     def __init__(self):

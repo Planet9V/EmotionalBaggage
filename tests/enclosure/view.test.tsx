@@ -8,6 +8,9 @@ import { adminServer, on, renderWithClient, shimBrowser } from "../admin-ui/harn
 import type { ViewProps } from "@/components/views/types";
 import { part } from "./helpers";
 
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn() }), usePathname: () => "/s/design/enclosure", useSearchParams: () => new URLSearchParams() }));
+
 beforeEach(shimBrowser);
 afterEach(() => {
   cleanup();
@@ -19,13 +22,33 @@ const props = { project, stage: { key: "design" }, section: { key: "enclosure" }
 const row = (i: { section: string; title: string; data?: unknown }, n: number) => ({ id: n + 1, projectId: "p1", section: i.section, title: i.title, body: "", data: i.data ?? {}, status: "to buy", sort: n });
 const example = SEED_ITEMS.filter((i) => i.section === "design/bom").map(row);
 
-const items = (bom: unknown[], saved: unknown[] = []) => [
+const items = (bom: unknown[], saved: unknown[] = [], stored: unknown = null) => [
   on("GET", "/api/projects/p1/items?section=design%2Fbom", () => ({ body: { items: bom } })),
   on("GET", "/api/projects/p1/items?section=design%2Fenclosure", () => ({ body: { items: saved } })),
+  on("GET", "/api/projects/p1/enclosure/print", () => ({ body: { stored } })),
 ];
 const status = (yapp: unknown) => on("GET", "/api/projects/p1/enclosure/status", () => ({ body: { casemaker: { available: true }, yapp } }));
 
 describe("Enclosure section", () => {
+  it("shows the result saved to the concept, with its five checks and its files, when the page loads", async () => {
+    const checks = ["Base is watertight", "Lid is watertight", "Every part fits inside with the clearance", "Openings line up with their parts", "The lid closes"].map((label, i) => ({ key: `k${i}`, label, ok: i !== 2, detail: `detail ${i}` }));
+    const stored = { generator: "casemaker", paramsHash: "abcd1234", at: "2026-11-21T09:00:00.000Z", checks, files: [{ id: 7, name: "enclosure-casemaker-abcd1234-base.stl", piece: "base", kind: "stl", size: 2048 }, { id: 8, name: "enclosure-casemaker-abcd1234-lid.stl", piece: "lid", kind: "stl", size: 1024 }, { id: 9, name: "enclosure-casemaker-abcd1234.3mf", piece: "both", kind: "3mf", size: 4096 }] };
+    adminServer([...items(example, [], stored), status({ available: true })]);
+    renderWithClient(<EnclosureView {...props} />);
+    expect(await screen.findByRole("heading", { name: /Saved to the concept: CaseMaker, settings abcd1234/ })).toBeTruthy();
+    for (const c of checks) expect(screen.getByText(new RegExp(c.label))).toBeTruthy();
+    expect(screen.getByText(/1 not met/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Base and lid together \(3MF/ }).getAttribute("href")).toBe("/api/files/9");
+    fireEvent.click(screen.getByRole("button", { name: /New print job from these/ }));
+    expect(push).toHaveBeenCalledWith("/s/prototype/printing?newJob=9#new-print-job");
+  });
+
+  it("says nothing is saved yet when no enclosure is stored", async () => {
+    adminServer([...items(example), status({ available: true })]);
+    renderWithClient(<EnclosureView {...props} />);
+    expect(await screen.findByText(/Nothing is saved to the concept yet/)).toBeTruthy();
+  });
+
   it("is not offered for a concept with no part that has a box", async () => {
     adminServer([...items([row(part(1, "S", "Sign-up form", null), 0)]), status({ available: false })]);
     renderWithClient(<EnclosureView {...props} />);

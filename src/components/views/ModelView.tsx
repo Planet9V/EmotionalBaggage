@@ -258,6 +258,89 @@ export function ModelView({ project }: ViewProps) {
 
         {/* Canvas */}
         <section className="order-1 flex min-w-0 flex-col gap-2 xl:order-2">
+          {focus && (
+            <nav aria-label="Focus" className="flex flex-wrap items-center gap-1 text-sm">
+              <button type="button" className="text-link hover:underline" onClick={exitFocus}>
+                Whole product
+              </button>
+              <ChevronRight className="h-3.5 w-3.5 text-muted" aria-hidden />
+              <span className="font-medium text-primary">
+                {focus.ref && <span className="mr-1 font-mono text-xs text-link">{focus.ref}</span>}
+                {focus.item.title}
+                {sub && neighbourIds.size > 0 ? <span className="ml-1 text-xs font-normal text-muted">and {neighbourIds.size} wired to it</span> : null}
+              </span>
+              <span className="ml-auto font-mono text-[10px] text-muted">Esc to go back</span>
+            </nav>
+          )}
+
+          <Card variant="well" className="relative h-[max(560px,64vh)] overflow-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+ tabIndex={showCanvas ? 0 : -1}
+ role="group"
+ aria-label="3D model"
+ aria-describedby="model-keys"
+ aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
+ onKeyDown={onCanvasKey}>
+            {showCanvas ? (
+              <ModelCanvas
+                parts={canvasParts}
+                selectedId={selectedId}
+                onSelect={choose}
+                explode={explodePct / 100}
+                labels={labels}
+                shellView={shellView}
+                shellParams={params}
+                resetToken={resetToken}
+                dark={dark}
+                uploaded={uploadedForCanvas}
+                wires={wirePlan.draw}
+                wiresOn={wiresOn}
+                fade={fade}
+                weights={weights}
+                focusIds={focusIds}
+                onFocusPart={focusOn}
+                onCaptureReady={onCaptureReady}
+                transform={mode}
+                onTransform={onTransform}
+                section={cut}
+                measure={measure}
+                onMeasure={setMeasurement}
+                routed={wirePlan.routed}
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
+                <p className={eyebrow}>Nothing to show yet</p>
+                <p className="max-w-md text-sm text-secondary">
+                  {parts.length === 0 ? (
+                    <>
+                      Add parts in{" "}
+                      <Link href="/s/design/bom" className="text-link hover:underline">
+                        Bill of materials
+                      </Link>
+                      , then come back and give each one a shape and size here. Use an enclosure shell for the case.
+                    </>
+                  ) : (
+                    <>Pick a part in the list and add its geometry: a shape, a size in mm and where it sits. Use an enclosure shell for the case.</>
+                  )}
+                </p>
+                <p className="max-w-md text-xs text-muted">You can also load an existing STL below to view it here.</p>
+              </div>
+            )}
+            {showCanvas && (
+              <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-2">
+                <p className="font-mono text-[10px] text-muted">mm · grid 10 / 50 · drag to orbit, scroll to zoom, right drag to pan · arrow keys nudge the selected part</p>
+                <div className="pointer-events-auto flex gap-1.5">
+                  <Button size="chip" variant="outline" onClick={() => setLabels((v) => !v)} aria-pressed={labels}>
+                    Labels {labels ? "on" : "off"}
+                  </Button>
+                  <Button size="chip" variant="outline" onClick={() => setShellView((v) => (v === "clear" ? "solid" : "clear"))}>
+                    Shell {shellView === "clear" ? "see-through" : "solid"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+          {/* the view comes first; its controls sit under it, in a compact block */}
+          <div className="flex flex-col gap-2 rounded-xl border border-hairline bg-surface p-3" aria-label="View controls" role="group">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-md border border-hairline bg-surface p-0.5">
               <Button size="sm" variant={explodePct === 0 ? "subtle" : "ghost"} className="h-7" onClick={() => showAt(0)} disabled={!showCanvas}>
@@ -380,87 +463,7 @@ export function ModelView({ project }: ViewProps) {
           />
           <SectionPanel cut={cut} bounds={sceneBox} onChange={setCut} />
 
-          {focus && (
-            <nav aria-label="Focus" className="flex flex-wrap items-center gap-1 text-sm">
-              <button type="button" className="text-link hover:underline" onClick={exitFocus}>
-                Whole product
-              </button>
-              <ChevronRight className="h-3.5 w-3.5 text-muted" aria-hidden />
-              <span className="font-medium text-primary">
-                {focus.ref && <span className="mr-1 font-mono text-xs text-link">{focus.ref}</span>}
-                {focus.item.title}
-                {sub && neighbourIds.size > 0 ? <span className="ml-1 text-xs font-normal text-muted">and {neighbourIds.size} wired to it</span> : null}
-              </span>
-              <span className="ml-auto font-mono text-[10px] text-muted">Esc to go back</span>
-            </nav>
-          )}
-
-          <Card variant="well" className="relative h-[560px] overflow-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
- tabIndex={showCanvas ? 0 : -1}
- role="group"
- aria-label="3D model"
- aria-describedby="model-keys"
- aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
- onKeyDown={onCanvasKey}>
-            {showCanvas ? (
-              <ModelCanvas
-                parts={canvasParts}
-                selectedId={selectedId}
-                onSelect={choose}
-                explode={explodePct / 100}
-                labels={labels}
-                shellView={shellView}
-                shellParams={params}
-                resetToken={resetToken}
-                dark={dark}
-                uploaded={uploadedForCanvas}
-                wires={wirePlan.draw}
-                wiresOn={wiresOn}
-                fade={fade}
-                weights={weights}
-                focusIds={focusIds}
-                onFocusPart={focusOn}
-                onCaptureReady={onCaptureReady}
-                transform={mode}
-                onTransform={onTransform}
-                section={cut}
-                measure={measure}
-                onMeasure={setMeasurement}
-                routed={wirePlan.routed}
-              />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
-                <p className={eyebrow}>Nothing to show yet</p>
-                <p className="max-w-md text-sm text-secondary">
-                  {parts.length === 0 ? (
-                    <>
-                      Add parts in{" "}
-                      <Link href="/s/design/bom" className="text-link hover:underline">
-                        Bill of materials
-                      </Link>
-                      , then come back and give each one a shape and size here. Use an enclosure shell for the case.
-                    </>
-                  ) : (
-                    <>Pick a part in the list and add its geometry: a shape, a size in mm and where it sits. Use an enclosure shell for the case.</>
-                  )}
-                </p>
-                <p className="max-w-md text-xs text-muted">You can also load an existing STL below to view it here.</p>
-              </div>
-            )}
-            {showCanvas && (
-              <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-2">
-                <p className="font-mono text-[10px] text-muted">mm · grid 10 / 50 · drag to orbit, scroll to zoom, right drag to pan · arrow keys nudge the selected part</p>
-                <div className="pointer-events-auto flex gap-1.5">
-                  <Button size="chip" variant="outline" onClick={() => setLabels((v) => !v)} aria-pressed={labels}>
-                    Labels {labels ? "on" : "off"}
-                  </Button>
-                  <Button size="chip" variant="outline" onClick={() => setShellView((v) => (v === "clear" ? "solid" : "clear"))}>
-                    Shell {shellView === "clear" ? "see-through" : "solid"}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
+          </div>
           <p id="model-keys" className="sr-only">
             With a part selected and this area focused: arrow keys move it 1 mm in x and z, Shift for 10 mm, Page Up and Page Down move it in y, R turns it 15 degrees about y, Control Z undoes.
           </p>

@@ -8,27 +8,45 @@ import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { totalExtent, type PartGeometry } from "../three/layout";
 import { NumField } from "./NumField";
-import { BASIS_TEXT, round3, type Draft } from "./geom";
+import { basisText, round3, type Draft } from "./geom";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
 
-export function BasisPicker({ value, onChange, name }: { value: "doc" | "typical" | "entered" | ""; onChange: (b: "doc" | "typical" | "entered") => void; name: string }) {
+const PICK: { b: "doc" | "typical"; label: string }[] = [
+  { b: "doc", label: "Stated in a document (a data sheet or drawing): name it below" },
+  { b: "typical", label: "Typical size for this kind of part; not measured" },
+];
+
+/** Where a size comes from. A document is named; a library size shows the entry it came from. */
+export function BasisPicker({ value, onChange, name, source, onSource }: { value: "doc" | "typical" | "library" | ""; onChange: (b: "doc" | "typical") => void; name: string; source?: string; onSource?: (s: string) => void }) {
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="mb-1 text-xs text-muted">Where the size comes from</legend>
-      {(["entered", "doc", "typical"] as const).map((b) => (
+      {value === "library" ? <p className="text-sm text-primary">{basisText({ basis: "library", basisSource: source })}</p> : null}
+      {PICK.map(({ b, label }) => (
         <label key={b} className="flex cursor-pointer items-start gap-2 text-sm text-primary">
-          <input
-            type="radio"
-            name={name}
-            checked={value === b}
-            onChange={() => onChange(b)}
-            className="mt-1 accent-[#E05A10]"
-          />
-          <span>{BASIS_TEXT[b]}</span>
+          <input type="radio" name={name} checked={value === b} onChange={() => onChange(b)} className="mt-1 accent-[#E05A10]" />
+          <span>{label}</span>
         </label>
       ))}
+      {value === "doc" && onSource ? (
+        <label className="mt-1 block text-xs text-secondary">
+          Document
+          <Input
+            key={source ?? ""}
+            className="mt-1 h-8 text-sm"
+            defaultValue={source ?? ""}
+            placeholder="e.g. Espressif ESP32-S3-DevKitC-1 user guide"
+            onBlur={(e) => {
+              const v = e.target.value.trim();
+              if (v !== (source ?? "")) onSource(v);
+            }}
+          />
+          {!source ? <span className="mt-0.5 block text-[11px] text-muted">Until a document is named, the size reads as entered by hand.</span> : null}
+        </label>
+      ) : null}
     </fieldset>
   );
 }
@@ -98,7 +116,7 @@ export function SelectionPanel({
               <NumField label="Height y" value={dd.size[1]} positive placeholder="mm" onCommit={(n) => setSize(1, n)} />
               <NumField label="Depth z" value={dd.size[2]} positive placeholder="mm" onCommit={(n) => setSize(2, n)} />
             </div>
-            <BasisPicker name={`basis-${item.id}`} value={dd.basis} onChange={(b) => onDraft({ basis: b })} />
+            <BasisPicker name={`basis-${item.id}`} value={dd.basis} onChange={(b) => onDraft({ basis: b })} source={dd.basisSource} onSource={(v) => onDraft({ basisSource: v })} />
             <div className="grid grid-cols-3 gap-2">
               <NumField label="Pos x" value={dd.x} onCommit={(n) => onDraft({ x: n })} />
               <NumField label="Pos y" value={dd.y} placeholder="on floor" onCommit={(n) => onDraft({ y: n })} />
@@ -240,7 +258,7 @@ export function SelectionPanel({
         </div>
       )}
 
-      <BasisPicker name={`basis-${item.id}`} value={g.basis} onChange={(b) => set({ basis: b })} />
+      <BasisPicker name={`basis-${item.id}`} value={g.basis} onChange={(b) => set({ basis: b })} source={g.basisSource} onSource={(v) => { const next: PartGeometry = { ...g }; if (v) next.basisSource = v; else delete next.basisSource; onGeometry(next); }} />
 
       {links}
     </div>

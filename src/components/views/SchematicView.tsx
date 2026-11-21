@@ -13,16 +13,17 @@ import { checkCircuit, type Finding } from "@/lib/parts/erc";
 import { usePins } from "@/lib/parts/client";
 import { pinToDef } from "@/lib/parts/pins";
 import { SymbolCanvas } from "@/components/schematic/SymbolCanvas";
-import { buildSymbolGraph, symbolNodeSize, readSymbolPos, SCALE, type SymNode } from "@/components/schematic/symbolGraph";
+import { buildSymbolGraph, symbolNodeSize, readSymbolPos, SCALE, withRoutes, type SymNode } from "@/components/schematic/symbolGraph";
 import { ErcPanel } from "@/components/schematic/ErcPanel";
 import { TitleBlock } from "@/components/schematic/TitleBlock";
-import { elkLayout, type LayoutNode } from "@/lib/graphLayout";
+import { elkLayout, elkLayoutRouted, type LayoutNode } from "@/lib/graphLayout";
 import { symbolLayout } from "@/lib/parts/symbols";
 import "@/components/schematic/print.css";
+import { printSchematic } from "@/components/schematic/printSchematic";
 import { buildGraph, computeChecks, computeNets, nodeId, nodeHeight, NODE_W, HEADER_H, ROW_H, pinsFor, refParts, readWires, type Check, type Part, type XY } from "@/components/schematic/model";
 import { SchematicCanvas, type ConnectRequest } from "@/components/schematic/SchematicCanvas";
 import { SidePanel, type Selection } from "@/components/schematic/SidePanel";
-import { ChecksPanel } from "@/components/schematic/ChecksPanel";
+import { ChecksPanel, rowProblems } from "@/components/schematic/ChecksPanel";
 import { FilesPanel } from "@/components/schematic/FilesPanel";
 import { type WireDraft } from "@/components/schematic/WireDialog";
 
@@ -69,6 +70,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const [layoutMsg, setLayoutMsg] = useState("");
   const [pinsLayout, setPinsLayout] = useState<Record<string, XY>>({});
   const [symLayout, setSymLayout] = useState<Record<string, XY>>({});
+  const [symRoutes, setSymRoutes] = useState<Record<string, XY[]>>({});
   // the canvas mounts once the first layout settles, so its fit uses real positions
   const [laid, setLaid] = useState({ pins: false, sym: false });
   const [revisionPick, setRevisionPick] = useState("");
@@ -106,7 +108,12 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const nextOrder = useMemo(() => wires.reduce((m, w) => Math.max(m, w.order), 0) + 1, [wires]);
   const statuses = section.statuses ?? [];
   const symGraph = useMemo(() => buildSymbolGraph(circuit, symLayout, symOverlay), [circuit, symLayout, symOverlay]);
+  const symEdges = useMemo(() => withRoutes(symGraph.edges, symGraph.nodes, symLayout, symRoutes), [symGraph, symLayout, symRoutes]);
 
+  const pinKind = useCallback(
+    (ref: string, pin: string) => circuit.parts.find((p) => p.ref === ref)?.pins.find((x) => x.name === pin)?.kind ?? null,
+    [circuit]
+  );
   const pinsByRef = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const p of parts) m.set(p.ref, pinsFor(p.ref, wires, p.pins));
@@ -186,8 +193,12 @@ export function SchematicView({ project, section, store }: ViewProps) {
         return net && net.netClass !== "power" && net.netClass !== "ground";
       })
       .map((w) => ({ id: String(w.item.id), source: w.from, sourcePort: `${w.from}\u0000${w.fromPin}`, target: w.to, targetPort: `${w.to}\u0000${w.toPin}` }));
-    elkLayout(nodes, edges, { node: 90, layer: 150 })
-      .then((pos) => live && setSymLayout(pos))
+    elkLayoutRouted(nodes, edges, { node: 90, layer: 150 })
+      .then((out) => {
+        if (!live) return;
+        setSymLayout(out.positions);
+        setSymRoutes(out.routes);
+      })
       .catch(() => undefined)
       .finally(() => live && setLaid((l) => (l.sym ? l : { ...l, sym: true })));
     return () => {
@@ -342,8 +353,8 @@ export function SchematicView({ project, section, store }: ViewProps) {
   const revision = revisionPick && revisions.includes(revisionPick) ? revisionPick : (revisions[0] ?? "Draft: no named build yet");
 
   const fileSpecs = useMemo(
-    () => schematicFileSpecs({ projectName: project.name, wires, parts, nets, graph, circuit, symGraph, revision, date }),
-    [project.name, wires, parts, nets, graph, circuit, symGraph, revision, date]
+    () => schematicFileSpecs({ projectName: project.name, wires, parts, nets, graph, circuit, symGraph, revision, date, bomItems: partsApi.items }),
+    [project.name, wires, parts, nets, graph, circuit, symGraph, revision, date, partsApi.items]
   );
 
   // ───────── render
@@ -365,6 +376,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
       removeWire={removeWire}
       addPin={addPin}
       placePart={placePart}
+      pinKind={pinKind}
     />
   );
 
@@ -375,7 +387,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
 
   const canvasParts = graph.nodes.filter((n) => n.kind === "part" && n.part).map((n) => n.ref);
   const wiredParts = circuit.parts.filter((p) => circuit.wires.some((w) => w.from === p.ref || w.to === p.ref));
-  const described = wiredParts.filter((p) => p.source !== "wires").length;
+  const undescribed = wiredParts.filter((p) => p.source === "wires").map((p) => p.ref);
   const titleBlock = <TitleBlock concept={project.name} revision={revision} revisions={revisions} onRevision={setRevisionPick} date={date} view={view === "symbols" ? "Schematic, symbol view" : "Schematic, pins and wires"} />;
 
   return (
@@ -425,7 +437,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
           <Button size="sm" onClick={saveLayout} disabled={!unsaved.length}>
             <Save className="h-3.5 w-3.5" aria-hidden /> Save layout
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()} title="Print the sheet, or save it as a PDF from the print dialog">
+          <Button variant="outline" size="sm" onClick={() => void printSchematic()} title="Print the sheet, or save it as a PDF from the print dialog">
             <Printer className="h-3.5 w-3.5" aria-hidden /> Print or PDF
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setPanelOpen((o) => !o)} aria-expanded={panelOpen} aria-controls="schematic-panel">
@@ -443,7 +455,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
             ) : view === "symbols" ? (
               <SymbolCanvas
                 nodes={symGraph.nodes}
-                edges={symGraph.edges}
+                edges={symEdges}
                 sel={sel}
                 litPins={litPins}
                 litWires={litWires}
@@ -521,10 +533,16 @@ export function SchematicView({ project, section, store }: ViewProps) {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ErcPanel findings={findings} loading={pinsApi.loading} error={pinsApi.error ? `The pins could not be read: ${pinsApi.error}` : ""} onRetry={() => void pinsApi.reload()} onPick={pickFinding} described={described} partCount={wiredParts.length} />
-        <ChecksPanel checks={checks} wireCount={wires.length} partCount={parts.length} onPick={pickCheck} />
-      </div>
+      <ErcPanel
+        findings={findings}
+        loading={pinsApi.loading}
+        error={pinsApi.error ? `The pins could not be read: ${pinsApi.error}` : ""}
+        onRetry={() => void pinsApi.reload()}
+        onPick={pickFinding}
+        undescribed={undescribed}
+        rowProblems={rowProblems(checks)}
+        rowChecks={<ChecksPanel checks={checks} wireCount={wires.length} partCount={parts.length} onPick={pickCheck} />}
+      />
       <FilesPanel projectId={project.id} specs={fileSpecs} disabled={!wires.length} />
 
       <p className="flex items-center gap-1.5 text-xs text-muted">

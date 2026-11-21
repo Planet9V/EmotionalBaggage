@@ -128,6 +128,8 @@ export type SpecPart = {
    * shell: the existing shell part the envelope is taken from. A part with no box is not in the list at all.
    */
   role: "inside" | "through" | "outside" | "shell";
+  /** the reference of the part that holds this one (data.insideOf on the row): their overlap is not a collision */
+  insideOf?: string;
 };
 
 /** The two in-plane axes of each face, in the concept frame: width runs along the first, height along the second. */

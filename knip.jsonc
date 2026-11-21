@@ -69,5 +69,5 @@
   // Used from CSS (@import / @plugin in globals.css), not from code, or only named in a type comment.
   "ignoreDependencies": ["@fontsource-variable/inter", "@fontsource-variable/jetbrains-mono", "tailwindcss", "tw-animate-css", "postcss-load-config"],
   // Programs the tests call when the machine has them (the test skips when it does not).
-  "ignoreBinaries": ["kicad-cli", "openssl"]
+  "ignoreBinaries": ["kicad-cli", "openssl", "pdfinfo", "pdftotext"]
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { PartGeometry } from "../three/layout";
 import { NumField } from "./NumField";
 import { BasisPicker } from "./SelectionPanel";
-import { BASIS_TEXT, round3 } from "./geom";
+import { basisText, round3 } from "./geom";
 import { Card } from "@/components/ui/Card";
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.2em] text-link";
@@ -18,10 +18,10 @@ export function EnvelopePanel({
   wall: number;
   onWall: (n: number) => void;
   onResize: (size: number[]) => void;
-  onCreate: (size: number[], basis: "doc" | "typical" | "entered") => Promise<void>;
+  onCreate: (size: number[], basis: "doc" | "typical") => Promise<void>;
 }) {
   const [size, setSize] = useState<(number | null)[]>([null, null, null]);
-  const [basis, setBasis] = useState<"doc" | "typical" | "entered" | "">("");
+  const [basis, setBasis] = useState<"doc" | "typical" | "">("");
   const [busy, setBusy] = useState(false);
   const ready = size.every((s) => s !== null && s > 0) && basis !== "";
 
@@ -38,7 +38,7 @@ export function EnvelopePanel({
               <NumField key={l} label={l} value={shell.size[i]} positive onCommit={(n) => onResize(shell.size.map((v, k) => (k === i ? round3(n) : v)))} />
             ))}
           </div>
-          <p className="text-xs text-muted">{BASIS_TEXT[shell.basis]}</p>
+          <p className="text-xs text-muted">{basisText(shell)}</p>
           <NumField label="Wall and floor thickness" value={wall} min={0} onCommit={onWall} />
           <p className="-mt-1 text-xs text-muted">Used by the outside check and by Rest on floor. It is a setting here and is not saved on the part.</p>
         </div>
@@ -50,7 +50,7 @@ export function EnvelopePanel({
             if (!ready) return;
             setBusy(true);
             try {
-              await onCreate(size as number[], basis as "doc" | "typical" | "entered");
+              await onCreate(size as number[], basis as "doc" | "typical");
               setSize([null, null, null]);
               setBasis("");
             } finally {

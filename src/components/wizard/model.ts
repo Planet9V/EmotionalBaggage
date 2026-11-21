@@ -189,7 +189,7 @@ export function buildGroups(a: Answers): Group[] {
       title: boxed ? "Enclosure" : `${t(a.name) || "Printed"} body`.replace(/^(.)/, (c) => c.toUpperCase()),
       data: {
         ref: `P${ref}`, qty: 1, source: "Own printer", search: "", asin: "",
-        geometry: { shape: boxed ? "shell" : "box", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "entered", print: true },
+        geometry: { shape: boxed ? "shell" : "box", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "doc", print: true },
       },
       status: "to print",
     });

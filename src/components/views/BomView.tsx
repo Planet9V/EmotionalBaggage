@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InlineEdit } from "@/components/parts/InlineEdit";
-import { sumLine, toPart, type Part } from "@/lib/domain";
+import { partPrice, sumLine, toPart, type Part } from "@/lib/domain";
 import { money, parseAmount, toCsv, groupParts } from "@/components/parts/bom";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { conceptQueries } from "@/lib/conceptsClient";
@@ -110,8 +110,8 @@ export function BomView({ project, section, store }: ViewProps) {
                 <TableHead className="min-w-56">Specification</TableHead>
                 <TableHead className="w-16 text-right">Qty</TableHead>
                 <TableHead className="w-36">Source</TableHead>
-                <TableHead className="w-28 text-right">Line cost</TableHead>
-                <TableHead className="w-36">Status</TableHead>
+                <TableHead className="min-w-40 text-right">Line cost</TableHead>
+                <TableHead className="min-w-[9.5rem]">Status</TableHead>
                 {electrical && <TableHead className="w-40">Kind and pins</TableHead>}
                 <TableHead className="w-14">3D</TableHead>
                 <TableHead className="w-10">
@@ -145,17 +145,41 @@ export function BomView({ project, section, store }: ViewProps) {
                       <TableCell>
                         <InlineEdit mono numeric align="right" label={`quantity of ${p.item.title}`} value={p.qty === null ? "" : String(p.qty)} onSave={numberSave(p, "qty")} />
                       </TableCell>
-                      <TableCell>
-                        <InlineEdit label={`source of ${p.item.title}`} value={p.source} onSave={(v) => saveOrMessage(setData(p, { source: v.trim() }))} />
-                      </TableCell>
-                      <TableCell>
-                        <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={p.line === null ? "" : money(p.line)} onSave={numberSave(p, "line")} />
-                        {typeof p.item.data.wasLine === "number" && <p className="mt-0.5 text-right font-mono text-[11px] text-muted">was {money(p.item.data.wasLine)}</p>}
-                      </TableCell>
+                      {(() => {
+                        const pr = partPrice(p);
+                        if (pr.basis === "offer")
+                          return (
+                            <>
+                              <TableCell>
+                                <Link href="/s/prototype/sourcing" className="text-sm text-link hover:underline" title="Chosen in Sourcing">{pr.supplier}</Link>
+                                <p className="text-[11px] text-muted">chosen offer</p>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <p className="font-mono text-sm text-primary">{money(pr.line)}</p>
+                                <p className="whitespace-nowrap font-mono text-[11px] text-muted" data-testid={`price-basis-${p.item.id}`}>
+                                  {money(pr.unit)} x {pr.qty}{pr.qtyAssumed ? " (qty not set)" : ""} from {pr.supplier}
+                                  {pr.checkedAt ? <>{" "}<span className="block">checked {pr.checkedAt}</span></> : null}
+                                </p>
+                              </TableCell>
+                            </>
+                          );
+                        return (
+                          <>
+                            <TableCell>
+                              <InlineEdit label={`source of ${p.item.title}`} value={p.source} onSave={(v) => saveOrMessage(setData(p, { source: v.trim() }))} />
+                            </TableCell>
+                            <TableCell>
+                              <InlineEdit mono numeric align="right" label={`line cost of ${p.item.title}`} value={p.line === null ? "" : money(p.line)} onSave={numberSave(p, "line")} />
+                              {pr.basis === "estimate" ? <p className="mt-0.5 text-right font-mono text-[11px] text-muted" data-testid={`price-basis-${p.item.id}`}>entered estimate</p> : null}
+                              {typeof p.item.data.wasLine === "number" && <p className="mt-0.5 text-right font-mono text-[11px] text-muted">was {money(p.item.data.wasLine)}</p>}
+                            </TableCell>
+                          </>
+                        );
+                      })()}
                       <TableCell>
                         <NativeSelect
                           aria-label={`Status of ${p.item.title}`}
-                          className="h-8 min-w-28 text-xs"
+                          className="h-8 min-w-[8.5rem] text-xs"
                           value={p.item.status}
                           onChange={(e) => void patch(p.item.id, { status: e.target.value })}
                         >

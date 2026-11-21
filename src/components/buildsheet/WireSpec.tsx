@@ -84,7 +84,7 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
                       {p ? (
                         <NativeSelect aria-label={`Connection type at ${ref}`} className="h-8 text-xs" value={connectionOf(p)} onChange={(e) => void onPartData(p.item.id, { connection: e.target.value || null })}>
                           <option value="">Not set</option>
-                          {CONNECTIONS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                          {CONNECTIONS.map((c) => <option key={c.key} value={c.key}>{c.label}{c.awg ? ` (${c.awg.thickest} to ${c.awg.thinnest} AWG)` : ""}</option>)}
                         </NativeSelect>
                       ) : <span className="text-muted">n/a</span>}
                     </td>
@@ -97,9 +97,11 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
       </Card>
 
       <p className="text-xs text-secondary">
-        Gauge is the thinnest AWG whose chassis-wiring current limit carries the wire&apos;s current, from the table at{" "}
+        Gauge is the thicker of two rules, and each wire says which decided: the thinnest AWG whose chassis-wiring current limit carries the wire&apos;s current, from the table at{" "}
         <a href={AMPACITY_SOURCE.url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">{AMPACITY_SOURCE.label}</a>
-        . Those limits are for single wires in free air; a tight bundle or a warm enclosure needs a thicker wire. {unknownGauge ? `${unknownGauge} of ${rows.length} wires have no current set, so no gauge is given for them.` : ""}
+        , and the thinnest wire the connector at either end accepts, from the terminal maker&apos;s data sheet ({CONNECTIONS.filter((c) => c.awg).map((c, i) => (
+          <span key={c.key}>{i ? ", " : ""}<a href={c.awg!.source.url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">{c.label}</a></span>
+        ))}; the others are not sourced and not checked). The current limits assume a single wire in free air; a tight bundle or a warm enclosure needs a thicker wire. {unknownGauge ? `${unknownGauge} of ${rows.length} wires have no current set, so no gauge is given for them.` : ""}
       </p>
 
       <Card variant="flat" className="overflow-hidden">
@@ -127,9 +129,11 @@ export function WireSpec({ rows, parts, refs, strips, onStrip, onPartData, onWir
                     {!r.colourSet && <span className="text-muted">suggested</span>}
                   </span>
                 </TableCell>
-                <TableCell className="font-mono" title={r.gauge.why}>
+                <TableCell className="max-w-[16rem] font-mono">
                   <span className={r.gauge.set === "none" ? "text-muted" : "text-primary"}>{r.gauge.label}</span>
                   {r.gauge.set === "user" && <span className="text-muted"> set</span>}
+                  <span className="mt-0.5 block whitespace-normal font-sans text-[11px] leading-snug text-muted" data-testid={`gauge-rule-${r.wire.item.id}`}>{r.gauge.decided}</span>
+                  {r.gauge.warning ? <span role="note" className="mt-0.5 block whitespace-normal font-sans text-[11px] text-warning">{r.gauge.warning}</span> : null}
                 </TableCell>
                 <TableCell className="font-mono">{String(r.step).padStart(2, "0")}</TableCell>
                 <TableCell className="font-mono text-primary">{r.wire.from}.{r.wire.fromPin}</TableCell>

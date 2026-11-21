@@ -58,15 +58,15 @@ export function useProductionSettings(projectId: string) {
   };
 }
 
-const STORES = ["design/bom", STORE_ECONOMICS, STORE_CHANNELS, STORE_METHODS, STORE_BATCHES, STORE_SUPPLIERS, "prototype/tests", STORE_COMPLIANCE] as const;
+const STORES = ["design/bom", STORE_ECONOMICS, STORE_CHANNELS, STORE_METHODS, STORE_BATCHES, STORE_SUPPLIERS, "prototype/tests", STORE_COMPLIANCE, "prototype/printing"] as const;
 
 /** Every row the economics, the batch plan and the readiness panel read, loaded in parallel. */
 export function useEconomicsRows(projectId: string) {
   const results = useQueries({ queries: STORES.map((s) => ({ ...queries.items(projectId, s), enabled: !!projectId })) });
-  const [parts, economics, channels, methods, batches, suppliers, tests, compliance] = results.map((r) => r.data ?? NONE);
+  const [parts, economics, channels, methods, batches, suppliers, tests, compliance, printJobs] = results.map((r) => r.data ?? NONE);
   const rows: ReadinessRows = useMemo(
-    () => ({ parts, economics, channels, methods, batches, suppliers, tests, compliance }),
-    [parts, economics, channels, methods, batches, suppliers, tests, compliance],
+    () => ({ parts, economics, channels, methods, batches, suppliers, tests, compliance, printJobs }),
+    [parts, economics, channels, methods, batches, suppliers, tests, compliance, printJobs],
   );
   const failed = results.find((r) => r.error);
   const refetchAll = () => Promise.all(results.map((r) => r.refetch()));

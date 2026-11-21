@@ -43,6 +43,11 @@ export function ResultPanel({ result, dark, floorY, slug, stale }: { result: Res
     [result]
   );
   const liftId = `lift-${result.key}`;
+  const download3mf = async () => {
+    const { piecesTo3mf } = await import("@/lib/enclosure/printFiles");
+    const bytes = await piecesTo3mf([{ name: "base", mesh: meshOf(result.basePrintStl) }, { name: "lid", mesh: meshOf(result.lidPrintStl) }], `${slug}-${result.key}`);
+    downloadFile(`${slug}-${result.key}-base-and-lid.3mf`, bytes, "model/3mf");
+  };
   const failed = result.checks.filter((c) => !c.ok).length;
   return (
     <Card variant="flat" as="section" aria-labelledby={`res-${result.key}`} className="min-w-0">
@@ -86,17 +91,20 @@ export function ResultPanel({ result, dark, floorY, slug, stale }: { result: Res
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.key}-base.stl`, bytesOf(result.baseStl), "model/stl")}>
+          <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.key}-base.stl`, bytesOf(result.basePrintStl), "model/stl")}>
             <Download aria-hidden className="size-4" /> Base STL
           </Button>
           <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.key}-lid.stl`, bytesOf(result.lidPrintStl), "model/stl")}>
-            <Download aria-hidden className="size-4" /> Lid STL (print side down)
+            <Download aria-hidden className="size-4" /> Lid STL (outer face down)
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void download3mf()}>
+            <Download aria-hidden className="size-4" /> Base and lid 3MF
           </Button>
           <Button variant="outline" size="sm" onClick={() => downloadFile(`${slug}-${result.source.filename}`, result.source.text, "text/plain")}>
             <Download aria-hidden className="size-4" /> Generator source
           </Button>
         </div>
-        <p className="text-xs text-muted">{result.source.note}</p>
+        <p className="text-xs text-muted">The STL and 3MF files are Z up, as slicers read them, each piece on the plate; the lid is turned over. {result.source.note}</p>
       </div>
     </Card>
   );

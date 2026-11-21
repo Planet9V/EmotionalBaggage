@@ -47,7 +47,16 @@ describe("computed report sections", () => {
 
     const r = await get();
     const by = Object.fromEntries(r.body.sections.map((s) => [s.id, s]));
-    expect(Object.keys(by).sort()).toEqual(["computed-builds", "computed-campaigns", "computed-compliance", "computed-economics", "computed-electrical", "computed-launch"].sort());
+    expect(Object.keys(by).sort()).toEqual(["computed-builds", "computed-campaigns", "computed-compliance", "computed-economics", "computed-electrical", "computed-launch", "computed-results"].sort());
+    // leftover: campaign results kept in their own table are in the report, totalled per campaign
+    const results = by["computed-results"].blocks.find((b) => b.t === "table") as { rows: string[][] };
+    expect(results.rows).toEqual([["Spring", "1", "2027-03-02", "2027-03-02", expect.stringContaining("20.00"), "0", "500", "1", expect.stringContaining("0.00")]]);
+    // and tracked links, with their clicks
+    await q("INSERT INTO tracked_links (project_id, campaign_id, creative_label, base_url, destination, utm_source, utm_medium, utm_campaign, code) VALUES ($1,$2,'Ad A','https://example.com','https://example.com/?utm_source=meta','meta','paid','spring','abcdef12')", [P, camp]);
+    const link = (await q<{ id: string }>("SELECT id FROM tracked_links WHERE project_id=$1", [P]))[0].id;
+    await q("INSERT INTO link_clicks (link_id, day, clicks) VALUES ($1,'2027-03-02',7),($1,'2027-03-03',5)", [link]);
+    const again = Object.fromEntries((await get()).body.sections.map((s) => [s.id, s]));
+    expect((again["computed-links"].blocks[0] as { rows: string[][] }).rows).toEqual([["Spring", "Ad A", "/l/abcdef12", "https://example.com/?utm_source=meta", "12"]]);
     // economics: 6.00 board + 10 min x 24.00 / 60 labour = 10.00, in the concept's currency
     const econ = JSON.stringify(by["computed-economics"].blocks);
     expect(econ).toContain("€10.00");

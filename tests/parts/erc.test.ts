@@ -114,6 +114,8 @@ describe("electrical checks, rule by rule", () => {
     const s = part("U2", { library: "gy-521-mpu6050" });
     const bare = electricalFindings({ parts: [mcu, s], wires: [wire("U1", "GP4", "U2", "SDA")], pins: [] });
     expect(bare.find((x) => x.rule === "pull-up")?.text).toMatch(/I2C line SDA/);
+    // D18: the GY-521's makers differ, so the warning says to check the board
+    expect(bare.find((x) => x.rule === "pull-up")?.text).toMatch(/U2 \(GY-521 MPU-6050 breakout\) may carry its own pull-ups: many such boards do and some do not, so check your board\./);
     const r = part("R1", { library: "resistor-axial" });
     const pulled = electricalFindings({ parts: [mcu, s, r], wires: [wire("U1", "GP4", "U2", "SDA"), wire("R1", "1", "U2", "SDA"), wire("R1", "2", "U1", "3V3")], pins: [] });
     expect(rules(pulled)).not.toContain("pull-up");

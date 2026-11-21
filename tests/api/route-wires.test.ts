@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, inject } from "vi
 import { pool, q } from "@/lib/db";
 import { POST as routeWires } from "@/app/api/projects/[id]/route-wires/route";
 import { POST as harness } from "@/app/api/projects/[id]/harness/route";
+import { cutLengthMm } from "@/components/buildsheet/derive";
 import { GET as getItems } from "@/app/api/projects/[id]/items/route";
 import { PUT as setPins } from "@/app/api/items/[id]/pins/route";
 import { routePartsOf } from "@/lib/geometry/pins3d";
@@ -78,7 +79,7 @@ describe("routing against the real planner", () => {
     const r = await read<Outcome & Err>(await post({ cell: 2, wallMm: 2 }));
     expect(r.status).toBe(200);
     expect(r.body.routed).toBe(2);
-    expect(r.body.skipped).toEqual([{ wireId: wireIds[2], name: "To a part with no shape", reason: "X1 is not in the bill of materials" }].map((s) => expect.objectContaining({ wireId: s.wireId, reason: s.reason })));
+    expect(r.body.skipped).toEqual([{ wireId: wireIds[2], name: "To a part with no shape", reason: "X1 has no position in the model; place it in Physical layout" }].map((s) => expect.objectContaining({ wireId: s.wireId, reason: s.reason, fix: { href: "/s/design/layout", label: "Physical layout" } })));
     expect(r.body.failed).toEqual([]);
     expect(r.body.cell).toBe(2);
     expect(r.body.plannerMs).toBeGreaterThanOrEqual(0);
@@ -253,9 +254,15 @@ describe("the harness drawing", () => {
     expect(r.body.withoutLength).toBe(1); // the wire to the part with no shape
     expect(r.body.bom.length).toBeGreaterThan(0);
     expect(r.body.wireviz).toMatch(/^WireViz/);
-    // the routed length of the first wire is in the YAML
+    // the drawing carries the cut length (the routed run plus 20 mm, rounded up to 5 mm), the same as the cut list
     const w1 = toWires(await items("design/wiring")).find((w) => w.item.id === wireIds[0])!;
-    expect(r.body.yaml).toContain(`${w1.routed!.lengthMm} mm`);
+    expect(r.body.yaml).toContain(`length: ${cutLengthMm(w1.routed!.lengthMm, 20).toFixed(1)} mm`);
+    expect(r.body.yaml).not.toContain(`length: ${w1.routed!.lengthMm.toFixed(1)} mm`);
+    expect((r.body as unknown as { allowanceMm: number }).allowanceMm).toBe(20);
+    // with the build sheet's own allowance
+    const r30 = await read<{ yaml: string; allowanceMm: number }>(await harness(json("POST", { allowanceMm: 30 }), ctx(project)));
+    expect(r30.body.allowanceMm).toBe(30);
+    expect(r30.body.yaml).toContain(`length: ${cutLengthMm(w1.routed!.lengthMm, 30).toFixed(1)} mm`);
   });
 
   it("an unrouted wire is drawn with no length", async () => {

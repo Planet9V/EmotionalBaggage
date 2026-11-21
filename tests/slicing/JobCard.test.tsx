@@ -21,14 +21,18 @@ const fullPlan = { status: "sliced", printer: { id: 2, name: "Shop A1", family: 
 const filePlan = { ...fullPlan, capabilities: { ...fullPlan.capabilities, status: false, upload: false, start: false, pause: false, resume: false, cancel: false }, fileOnly: true };
 
 let plan: unknown;
+const READY = { configured: true, ok: true, message: "OrcaSlicer 2.5.0 is ready.", printers: [], materials: [] };
+let slicerState: unknown = READY;
 let posts: { path: string; body: unknown }[] = [];
 beforeEach(() => {
   posts = [];
+  slicerState = READY;
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = new URL(String(input), "http://t.local").pathname;
     const method = (init?.method ?? "GET").toUpperCase();
     const reply = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json" } });
     if (method === "POST") { posts.push({ path, body: init?.body ? JSON.parse(String(init.body)) : undefined }); return reply({ item: {} }); }
+    if (path === "/api/slicer") return reply(slicerState);
     if (path.endsWith("/plan")) return reply(plan);
     if (path.endsWith("/track")) return reply({ job: {}, printer: { state: "printing", progress: 42, secondsLeft: 600 }, message: "" });
     return reply({});
@@ -112,7 +116,7 @@ describe("a queued job", () => {
   it("can be sliced, and shows the last failure in a live alert", async () => {
     plan = fullPlan;
     show(job("queued", { slice: undefined, sliceError: "No 0.05 mm profile" }));
-    expect(screen.getByRole("button", { name: "Slice" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Slice" })).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain("No 0.05 mm profile");
     expect(screen.queryByRole("button", { name: /Send to/ })).toBeNull();
   });
@@ -123,8 +127,40 @@ describe("a queued job that is not ready", () => {
     plan = fullPlan;
     const onEdit = vi.fn();
     render(<QueryClientProvider client={freshClient()}><ul><JobCard projectId="p" job={job("queued", { slice: undefined, fileId: null, printerId: null })} onDelete={() => {}} onEdit={onEdit} onRequeue={async () => {}} /></ul></QueryClientProvider>);
-    expect((screen.getByRole("button", { name: "Slice" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(((await screen.findByRole("button", { name: "Slice" })) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Choose file and printer" }));
     expect(onEdit).toHaveBeenCalled();
+  });
+});
+
+describe("a job with no slicer on this install (D8, D17)", () => {
+  it("offers the model to download and a form to attach the file sliced elsewhere, with no Slice button", async () => {
+    slicerState = { configured: false, ok: false, message: "No slicer service is set up on this install.", printers: [], materials: [] };
+    show(job("queued", { slice: undefined, printerMaker: undefined, printerModel: undefined }));
+    const box = await screen.findByRole("region", { name: "Slice it in your own slicer" });
+    expect(within(box).getByRole("link", { name: "Download the STL/3MF to slice in your own slicer" }).getAttribute("href")).toBe("/api/files/1");
+    fireEvent.click(within(box).getByRole("button", { name: "I have sliced it: attach the file" }));
+    expect(within(box).getByLabelText("Sliced file (G-code or .3mf)")).toBeTruthy();
+    expect(within(box).getByLabelText("Print time (minutes)")).toBeTruthy();
+    expect(within(box).getByLabelText("Filament (grams)")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Slice" })).toBeNull();
+    fireEvent.click(within(box).getByRole("button", { name: "Attach the sliced file" }));
+    expect(await within(box).findByText("Name the slicer the file came from.")).toBeTruthy();
+    expect(posts).toEqual([]);
+  });
+
+  it("labels numbers typed from another slicer as entered by hand, from that slicer", async () => {
+    plan = filePlan;
+    show(job("sliced", { slice: { ...slice, filamentMm: null, orcaVersion: undefined, profile: undefined, byHand: { slicer: "PrusaSlicer" } } }));
+    const box = screen.getByLabelText("What the slicer says");
+    expect(within(box).getByText("Entered by hand, from PrusaSlicer")).toBeTruthy();
+    expect(within(box).getByText("3.7 g")).toBeTruthy();
+  });
+
+  it("says what is not set instead of question marks", () => {
+    show(job("queued", { slice: undefined, fileId: null, fileName: undefined, printerId: null, printerName: undefined, layerHeight: undefined, infill: undefined }));
+    expect(screen.getByText(/File not set · printer not set/)).toBeTruthy();
+    expect(screen.getByText(/layer height not set · infill not set/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/\?\s*mm|\?%/);
   });
 });

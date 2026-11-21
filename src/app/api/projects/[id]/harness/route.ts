@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
+import { z } from "zod";
 import { HttpError, requireProject, route } from "@/lib/api/route";
+import { DEFAULT_ALLOWANCE, cutLengthMm } from "@/components/buildsheet/derive";
 import { plannerUrl } from "@/lib/admin/planner";
 import { STORE, toPart, toWire, type Wire } from "@/lib/domain";
 import { pinNames, routePartsOf } from "@/lib/geometry/pins3d";
@@ -13,13 +15,27 @@ import { safeFetch } from "@/lib/net/outbound";
 type Ctx = { params: Promise<{ id: string }> };
 const SECONDS = 30;
 
+const input = z.object({ allowanceMm: z.number().finite().min(0).max(500).optional() });
+
 /**
  * Draws the harness for a concept's wiring: the planner runs WireViz (a separate program) on the
- * parts and wires. Lengths on the drawing are routed lengths only; a wire that was never routed
- * (or whose route is out of date) is drawn with no length.
+ * parts and wires. Lengths on the drawing are cut lengths, the same as the build sheet's cut list:
+ * the routed run plus the strip and slack allowance (`allowanceMm`, default 20), rounded up to 5 mm.
+ * A wire that was never routed (or whose route is out of date) is drawn with no length.
  */
-export const POST = route(async (_req: Request, { params }: Ctx) => {
+export const POST = route(async (req: Request, { params }: Ctx) => {
   const { id } = await params;
+  // an empty body draws with the default allowance
+  const text = await req.text();
+  let raw: unknown = {};
+  if (text.trim()) {
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      throw new HttpError(400, "The request body must be JSON.");
+    }
+  }
+  const allowance = input.parse(raw).allowanceMm ?? DEFAULT_ALLOWANCE;
   const project = await requireProject(id);
   const rows = await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [id, [STORE.parts, STORE.wiring]]);
   const items = rows.map(toItem);
@@ -33,7 +49,7 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
   const lengths = new Map<number, number>();
   for (const w of wires) {
     const fp = built.fingerprints.get(w.item.id);
-    if (w.routed && fp && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fp) === "current") lengths.set(w.item.id, w.routed.lengthMm);
+    if (w.routed && fp && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fp) === "current") lengths.set(w.item.id, cutLengthMm(w.routed.lengthMm, allowance));
   }
   const byItem = pinsByItem(pins);
   const wireNames = (ref: string) => wires.flatMap((w) => [w.from === ref ? w.fromPin : "", w.to === ref ? w.toPin : ""]).filter(Boolean);
@@ -60,6 +76,6 @@ export const POST = route(async (_req: Request, { params }: Ctx) => {
     throw new HttpError(res.status === 503 || res.status === 504 ? res.status : 502, why || `The planner could not draw the harness (${res.status}).`, { reason: "planner" });
   }
   const out = (await res.json()) as { svg: string; yaml: string; bom: Record<string, string>[]; seconds: number; wireviz: string };
-  const outcome: HarnessOutcome = { ...out, problems, withLength: request.wires.filter((w) => w.lengthMm !== undefined).length, withoutLength: request.wires.filter((w) => w.lengthMm === undefined).length };
+  const outcome: HarnessOutcome = { ...out, problems, allowanceMm: allowance, withLength: request.wires.filter((w) => w.lengthMm !== undefined).length, withoutLength: request.wires.filter((w) => w.lengthMm === undefined).length };
   return NextResponse.json(outcome);
 });

@@ -40,8 +40,10 @@ describe("the new-concept wizard", () => {
     const a = emptyAnswers();
     Object.assign(a, { name: "Box", oneLiner: "A box", printed: "yes", w: "80", h: "40", d: "60" });
     const shell = buildItems(a).find((i) => (i.data as { geometry?: { print?: boolean } } | undefined)?.geometry?.print);
-    expect((shell!.data as { geometry: { basis: string } }).geometry.basis).toBe("entered");
-    const { BASIS_TEXT } = await import("@/components/layout/geom");
-    expect(BASIS_TEXT.entered).toBe("Entered by you");
+    // No document named: the size reads as entered by hand (src/lib/domain/part.ts, basisText), never as stated in a source.
+    const g = (shell!.data as { geometry: { basis: "doc"; basisSource?: string } }).geometry;
+    expect(g.basisSource).toBeUndefined();
+    const { basisText } = await import("@/lib/domain/part");
+    expect(basisText(g)).toBe("Entered by hand; no document is named");
   });
 });

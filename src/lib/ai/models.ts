@@ -439,6 +439,11 @@ export type CompleteJsonOptions<S extends z.ZodType> = Omit<CompleteOptions, "te
    * response format (HTTP 400, 404, 422 or 501) or its answer does not fit the schema, prompted.
    */
   mode?: "auto" | JsonPath;
+  /**
+   * Applied to the parsed JSON of the prompted path before the schema checks it: a caller that knows the
+   * shapes models tend to answer in (a bare array where an envelope was asked for) can put them right.
+   */
+  coerce?: (value: unknown) => unknown;
 };
 
 export type CompleteJsonResult<T> = {
@@ -531,7 +536,7 @@ export async function completeJson<S extends z.ZodType>(o: CompleteJsonOptions<S
   } catch {
     throw new ModelError(502, "The model's answer was not valid JSON (asked for JSON in the instructions).", "invalid-json");
   }
-  const checked = o.schema.safeParse(value);
+  const checked = o.schema.safeParse(o.coerce ? o.coerce(value) : value);
   if (!checked.success) {
     const i = checked.error.issues[0];
     throw new ModelError(

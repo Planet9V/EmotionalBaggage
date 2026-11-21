@@ -127,6 +127,50 @@ export async function sliceJob(id: number) {
   }
 }
 
+// ---------------------------------------------------------------- sliced elsewhere
+
+export type AttachInput = { file: { name: string; bytes: Uint8Array }; slicer: string; seconds: number; filamentG: number };
+
+const GCODE_NAME = /\.(gcode|gco|g|bgcode)$/i;
+const PROJECT_NAME = /\.3mf$/i;
+
+/**
+ * A job sliced in the person's own slicer: the sliced G-code or .3mf is attached and the time and grams that
+ * slicer reported are typed in. The job becomes sliced with `slice.byHand` naming the slicer, so every screen
+ * says those numbers were entered by hand. Send then works for a connected printer and the download path for
+ * the rest. A queued job, or one already sliced this way, can take a file; a file replaces the earlier one.
+ */
+export async function attachSlicedFile(id: number, a: AttachInput) {
+  const isGcode = GCODE_NAME.test(a.file.name);
+  if (!isGcode && !PROJECT_NAME.test(a.file.name)) throw new HttpError(422, "Attach the sliced file: G-code (.gcode, .bgcode) or a sliced .3mf.");
+  if (!a.file.bytes.length) throw new HttpError(422, "The attached file is empty.");
+  return toItem(
+    await tx(async (c) => {
+      let row = await loadJob(id, true, c);
+      const status = normaliseStatus(row.status);
+      if (status === "sliced" && jobData(row).slice?.byHand) {
+        row = await move(c, row, { to: "queued", kind: "print.unsliced", summary: `Took back the sliced file of "${row.title}" to attach another` });
+      } else if (status !== "queued") {
+        throw new HttpError(409, status === "sliced" ? "This job was sliced here. Move it back to queued before attaching a file sliced elsewhere." : `A ${status} job cannot take a sliced file.`);
+      }
+      const d = jobData(row);
+      if (!d.fileId) throw new HttpError(409, "Choose the model this job prints first, so the attached file can be traced to it.");
+      const f = await storeFile(c, row.project_id, a.file.name, isGcode ? "text/plain" : "application/vnd.ms-package.3dmanufacturing-3dmodel+xml", isGcode ? "gcode" : "gcode3mf", a.file.bytes, { jobId: id, slicer: a.slicer, byHand: true, fromFileId: d.fileId });
+      const slice = {
+        seconds: a.seconds, filamentG: a.filamentG, filamentMm: null, supportG: null, layers: null, warnings: [], slicedAt: stamp(),
+        gcodeFileId: isGcode ? f.id : null, projectFileId: isGcode ? null : f.id, gcodeSha256: f.sha, byHand: { slicer: a.slicer },
+      };
+      return move(c, row, {
+        to: "sliced",
+        data: { slice, sliceError: null },
+        kind: "print.sliced-elsewhere",
+        summary: `Attached ${a.file.name} to "${row.title}", sliced in ${a.slicer}: ${Math.round(a.seconds / 60)} min, ${a.filamentG} g, entered by hand`,
+        detail: { fileId: f.id, slicer: a.slicer, seconds: a.seconds, filamentG: a.filamentG, byHand: true },
+      });
+    })
+  );
+}
+
 // ---------------------------------------------------------------- send and start
 
 /** The file a printer gets and what it is called there. The same function names it in the confirm and in the upload. */
@@ -146,10 +190,15 @@ export function planSend(row: ItemRow, port: PrinterPort): { name: string; fileI
   for (const t of types) {
     if (PROJECT.includes(t) && s.projectFileId) return { name: printerFileName(row.title, ".gcode.3mf", row.id), fileId: s.projectFileId, kind: "project" };
     if (GCODE.includes(t)) {
-      if (s.gcodeFileId == null) throw new HttpError(409, "The sliced file is missing. Slice the job again.");
+      if (s.gcodeFileId == null) {
+        // an attached sliced .3mf and no G-code: a later type in the list may still take it
+        if (s.byHand && s.projectFileId) continue;
+        throw new HttpError(409, "The sliced file is missing. Slice the job again.");
+      }
       return { name: printerFileName(row.title, ".gcode", row.id), fileId: s.gcodeFileId, kind: "gcode" };
     }
   }
+  if (s.byHand && s.projectFileId && s.gcodeFileId == null) throw new HttpError(409, "This printer takes G-code, and the file attached to the job is a sliced .3mf. Attach the G-code from your slicer instead.");
   if (types.some((t) => PROJECT.includes(t))) throw new HttpError(409, "This printer takes a sliced project file, and the slice made none. Slice the job again.");
   throw new HttpError(409, "This printer takes neither G-code nor a sliced project file.");
 }
@@ -191,7 +240,7 @@ export async function describePlan(id: number) {
     capabilities: port.capabilities,
     fileOnly: port.capabilities.upload === false || port.capabilities.start === false,
     send,
-    download: d.slice?.gcodeFileId != null ? { gcodeFileId: d.slice.gcodeFileId, projectFileId: d.slice.projectFileId ?? null } : null,
+    download: d.slice && (d.slice.gcodeFileId != null || d.slice.projectFileId != null) ? { gcodeFileId: d.slice.gcodeFileId ?? null, projectFileId: d.slice.projectFileId ?? null } : null,
   };
 }
 

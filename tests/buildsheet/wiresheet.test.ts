@@ -152,3 +152,36 @@ describe("the cut list and strip lengths", () => {
     expect(s.unset).toEqual(["S1"]);
   });
 });
+
+describe("gauge and the connector at each end (D6)", () => {
+  it("the reviewer's case: 500 mA on Dupont crimps is 26 AWG, decided by the connector, not 30 AWG", () => {
+    const { map, wires } = setup([part("BT1", { currentMa: 500, connection: "dupont" }), part("U1", { connection: "dupont" })], [wire("Battery feed", "BT1", "U1", { netClass: "power" })]);
+    const rows = specRows(sequence(wires), map, DEFAULT_ROUTING, DEFAULT_ALLOWANCE);
+    expect(rows[0].gauge).toMatchObject({ awg: 26, set: "connector" });
+    expect(rows[0].gauge.decided).toMatch(/^Connector: Dupont 2\.54 mm crimp at BT1 holds 26 AWG at the thinnest \(Amphenol FCI Mini-PV Basics\+ 48051-000LF data sheet\); the current alone \(500 mA from BT1\) would allow 30 AWG\./);
+    expect(rows[0].gauge.warning).toBeUndefined();
+  });
+
+  it("a current that needs a thicker wire than the connector's thinnest wins, and the assumption is stated", () => {
+    const { map, wires } = setup([part("A", { currentMa: 3000, connection: "jst-xh" }), part("B")], [wire("w", "A", "B")]);
+    const g = specRows(sequence(wires), map, DEFAULT_ROUTING, DEFAULT_ALLOWANCE)[0].gauge;
+    expect(g).toMatchObject({ awg: 24, set: "table" });
+    expect(g.decided).toMatch(/single wire in free air; a tight bundle or a warm enclosure needs a thicker wire/);
+  });
+
+  it("flags a wire too thick for the connector", () => {
+    const { map, wires } = setup([part("A", { currentMa: 3000, connection: "jst-ph" }), part("B")], [wire("w", "A", "B")]);
+    const g = specRows(sequence(wires), map, DEFAULT_ROUTING, DEFAULT_ALLOWANCE)[0].gauge;
+    expect(g.awg).toBe(24);
+    expect(g.warning).toBeUndefined();
+    const { map: m2, wires: w2 } = setup([part("A", { currentMa: 4000, connection: "jst-ph" }), part("B")], [wire("w", "A", "B")]);
+    expect(specRows(sequence(w2), m2, DEFAULT_ROUTING, DEFAULT_ALLOWANCE)[0].gauge.warning).toMatch(/22 AWG is outside what JST PH crimp at A takes \(24 to 32 AWG\)/);
+  });
+
+  it("a connector with no sourced range constrains nothing and says so", () => {
+    const { map, wires } = setup([part("A", { currentMa: 100, connection: "molex-kk" }), part("B")], [wire("w", "A", "B")]);
+    const g = specRows(sequence(wires), map, DEFAULT_ROUTING, DEFAULT_ALLOWANCE)[0].gauge;
+    expect(g.awg).toBe(30);
+    expect(g.decided).toMatch(/Molex KK 2\.54 mm crimp: accepted wire sizes not sourced, so not checked/);
+  });
+});

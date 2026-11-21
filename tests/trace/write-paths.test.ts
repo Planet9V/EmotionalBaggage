@@ -72,6 +72,7 @@ const WRITE_PATHS: Record<string, string> = {
   "items/[id]/pins/route.ts": "self",
   "items/[id]/reason/route.ts": "src/lib/trace/reason.ts",
   "items/[id]/route.ts": "self",
+  "print-jobs/[id]/attach/route.ts": "src/lib/slicing/flow.ts",
   "print-jobs/[id]/control/route.ts": "src/lib/slicing/flow.ts",
   "print-jobs/[id]/result/route.ts": "src/lib/slicing/flow.ts",
   "print-jobs/[id]/send/route.ts": "src/lib/slicing/flow.ts",

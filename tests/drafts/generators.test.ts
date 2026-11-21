@@ -60,6 +60,34 @@ describe("without a model", () => {
   });
 });
 
+describe("a model that drops the rows envelope (leftover: tolerant unwrap)", () => {
+  // these runs leave drafts waiting; the tests below start with none
+  afterAll(() => q("DELETE FROM drafts WHERE project_id=$1", [P]));
+  it("unwrapRows puts a bare array, a single row and a renamed list back into {rows}", async () => {
+    const { unwrapRows } = await import("@/lib/ai/drafts/run");
+    expect(unwrapRows([{ title: "a" }])).toEqual({ rows: [{ title: "a" }] });
+    expect(unwrapRows({ title: "a" })).toEqual({ rows: [{ title: "a" }] });
+    expect(unwrapRows({ requirements: [{ title: "a" }] })).toEqual({ rows: [{ title: "a" }] });
+    expect(unwrapRows({ rows: { title: "a" } })).toEqual({ rows: [{ title: "a" }] });
+    expect(unwrapRows({ rows: [] })).toEqual({ rows: [] });
+    expect(unwrapRows("text")).toBe("text");
+  });
+
+  it("a bare array of rows from the model still becomes drafts", async () => {
+    script.requirements = [{ title: "Dims within 2 minutes", detail: "Dims to 10% when no one is seen for 2 minutes.", basedOn: [brief1] }];
+    const r = await run({ projectId: P, generator: "requirements", supersede: true });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.drafts.map((d) => d.title)).toEqual(["Dims within 2 minutes"]);
+  });
+
+  it("a single row on its own also becomes a draft", async () => {
+    script.requirements = { title: "Runs a week on one charge", detail: "Seven days at one hour of use a day.", basedOn: [brief1] };
+    const r = await run({ projectId: P, generator: "requirements", supersede: true });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.drafts.map((d) => d.title)).toEqual(["Runs a week on one charge"]);
+  });
+});
+
 describe("requirements from a brief", () => {
   it("keeps valid rows as drafts with sources and keys, drops an invalid one, writes nothing to items", async () => {
     script.requirements = {

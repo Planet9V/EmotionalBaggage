@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { NetClass, Wire } from "@/lib/domain";
+import { inferNetClass, type NetClass, type Wire } from "@/lib/domain";
 import { CLASSES, CLASS_LABEL, WIRE_STATUSES, type NetInfo, type Part } from "./model";
 import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
@@ -40,12 +40,14 @@ type Props = {
   onClose: () => void;
   onSave: (draft: WireDraft) => Promise<void>;
   onDelete?: () => Promise<void>;
+  /** the kind of a part's pin (ground, power_in, ...), to work out a new wire's class */
+  pinKind?: (ref: string, pin: string) => string | null;
 };
 
 export const autoName = (d: Pick<WireDraft, "from" | "fromPin" | "to" | "toPin">) => `${d.from}.${d.fromPin || "?"} to ${d.to}.${d.toPin || "?"}`;
 
 /** Create or edit one wire. Opened by dragging pin to pin, or from a selected wire. */
-export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, onClose, onSave, onDelete }: Props) {
+export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, onClose, onSave, onDelete, pinKind }: Props) {
   const uid = useId();
   const editing = mode.kind === "edit";
   const [d, setD] = useState<WireDraft>(() =>
@@ -78,6 +80,12 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
   const statusList = d.status && !statuses.includes(d.status) ? [...statuses, d.status] : statuses.length ? statuses : WIRE_STATUSES;
 
   const set = <K extends keyof WireDraft>(k: K, v: WireDraft[K]) => setD((x) => ({ ...x, [k]: v }));
+  // until the class is chosen by hand, it follows the pins (their kinds, else common names) and the net
+  const auto = useMemo(
+    () => inferNetClass([{ pin: d.fromPin.trim(), kind: pinKind?.(d.from, d.fromPin.trim()) }, { pin: d.toPin.trim(), kind: pinKind?.(d.to, d.toPin.trim()) }], d.net.trim()),
+    [d.from, d.fromPin, d.to, d.toPin, d.net, pinKind]
+  );
+  const netClass: NetClass = classTouched ? d.netClass : (netClassOf.get(d.net.trim()) ?? auto?.netClass ?? d.netClass);
   const setNet = (net: string) => {
     setD((x) => {
       const known = netClassOf.get(net.trim());
@@ -94,7 +102,7 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
     setBusy(true);
     setError("");
     try {
-      await onSave({ ...d, fromPin: d.fromPin.trim(), toPin: d.toPin.trim(), net: d.net.trim(), name: d.name.trim() || autoName({ ...d, fromPin: d.fromPin.trim(), toPin: d.toPin.trim() }) });
+      await onSave({ ...d, netClass, fromPin: d.fromPin.trim(), toPin: d.toPin.trim(), net: d.net.trim(), name: d.name.trim() || autoName({ ...d, fromPin: d.fromPin.trim(), toPin: d.toPin.trim() }) });
       onClose();
     } catch (err) {
       setError((err as Error).message);
@@ -188,9 +196,9 @@ export function WireDialog({ mode, parts, nets, pinsByRef, nextOrder, statuses, 
                 ))}
               </datalist>
             </Field>
-            <Field label="Net class">
+            <Field label="Net class" hint={!classTouched && auto && !netClassOf.get(d.net.trim()) ? `Worked out: ${auto.why}. Change it if that is wrong.` : undefined}>
               <NativeSelect
-                value={d.netClass}
+                value={netClass}
                 onChange={(e) => {
                   setClassTouched(true);
                   set("netClass", e.target.value as NetClass);

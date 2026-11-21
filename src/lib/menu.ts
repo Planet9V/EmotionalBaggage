@@ -278,7 +278,7 @@ export const STAGES: Stage[] = [
       {
         key: "economics",
         label: "Unit economics",
-        blurb: "Unit cost built from the parts and the lines you add, and the margin on each channel. Worked out, never typed.",
+        blurb: "Unit cost built from the parts and the lines you add, and the margin on each channel. Each figure says where it comes from.",
         view: "economics",
         statuses: ["estimate", "quoted", "actual"],
         addLabel: "Add cost line",

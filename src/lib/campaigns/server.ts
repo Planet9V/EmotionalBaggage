@@ -76,9 +76,9 @@ export async function requireCreative(c: Pick<PoolClient, "query"> | null, proje
 
 /** The rows the unit economics are worked from. */
 export async function economicsRowsOf(projectId: string): Promise<EconomicsRows> {
-  const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [projectId, ["design/bom", "production/economics", "sales/channels", "production/methods", "production/batches"]])).map(toItem);
+  const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section = ANY($2) ORDER BY sort, id`, [projectId, ["design/bom", "production/economics", "sales/channels", "production/methods", "production/batches", "prototype/printing"]])).map(toItem);
   const of = (s: string) => rows.filter((i) => i.section === s);
-  return { parts: of("design/bom"), economics: of("production/economics"), channels: of("sales/channels"), methods: of("production/methods"), batches: of("production/batches") };
+  return { parts: of("design/bom"), economics: of("production/economics"), channels: of("sales/channels"), methods: of("production/methods"), batches: of("production/batches"), printJobs: of("prototype/printing") };
 }
 
 /** The hosts the concept's tracked links may open, from its plan row (Marketing budget and rules). */

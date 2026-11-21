@@ -41,8 +41,9 @@ export function PartCard({ part, currency, onSave, onResearch }: {
     setErr("");
     try { await onSave({ ...extra, data: { ...(extra.data ?? {}), sourcing: next } }); } catch (e) { setErr((e as Error).message); }
   };
-  const choose = (o: Offer | null) => save({ ...s, chosen: o?.id }, o ? { data: { unit: pieceUnitPrice(o), supplier: o.supplier } } : {});
-  const removeOffer = (id: string) => save({ ...s, offers: s.offers.filter((o) => o.id !== id), chosen: s.chosen === id ? undefined : s.chosen });
+  // the unit price and supplier follow the choice, and are cleared with it, so no screen keeps an old price
+  const choose = (o: Offer | null) => save({ ...s, chosen: o?.id }, { data: o ? { unit: pieceUnitPrice(o), supplier: o.supplier } : { unit: null, supplier: null } });
+  const removeOffer = (id: string) => save({ ...s, offers: s.offers.filter((o) => o.id !== id), chosen: s.chosen === id ? undefined : s.chosen }, s.chosen === id ? { data: { unit: null, supplier: null } } : {});
   const accept = (d: Draft) => {
     const rest = { ...s, drafts: s.drafts.filter((x) => x.id !== d.id) };
     if (d.offer) return save({ ...rest, offers: [...rest.offers, { ...d.offer, id: newId("o"), source: "research", citation: d.citation }] });

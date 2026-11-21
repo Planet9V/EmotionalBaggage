@@ -15,6 +15,7 @@ import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
+import { COMMON_LAYERS, COMMON_MATERIALS } from "@/lib/slicing/messages";
 
 export type NewJob = { title: string; data: Record<string, unknown> };
 
@@ -23,7 +24,8 @@ const schema = z.object({
   fileId: z.string().min(1, "Choose the file to print."),
   part: z.string(),
   printerId: z.string().min(1, "Choose a printer."),
-  modelKey: z.string().min(1, "Choose the printer model the slicer should use."),
+  /** required only when this install has a slicer with profiles; checked in submit */
+  modelKey: z.string(),
   material: z.string(),
   layer: z.string(),
   infill: z.string().refine((v) => {
@@ -38,7 +40,17 @@ type Values = z.infer<typeof schema>;
 const ENCLOSURE = /enclosure|tray|lid|case|shell|base/i;
 export const isPrintable = (f: FileMeta) => /\.(stl|3mf)$/i.test(f.name) && !/\.gcode\.3mf$/i.test(f.name);
 
-export function NewJobDialog({ open, onOpenChange, files, parts, builds, printers, slicer, onCreate, editing }: {
+/** Enclosure files from the Enclosure page first, newest first; then other files whose names look like a case. */
+export function enclosureFirst(files: FileMeta[]) {
+  const printable = files.filter(isPrintable);
+  const at = (f: FileMeta) => (f.meta?.enclosure === true ? String(f.meta.at ?? "") : "");
+  const fromPage = printable.filter((f) => f.meta?.enclosure === true).sort((a, b) => at(b).localeCompare(at(a)) || b.id - a.id);
+  const named = printable.filter((f) => f.meta?.enclosure !== true && ENCLOSURE.test(f.name));
+  const rest = printable.filter((f) => f.meta?.enclosure !== true && !ENCLOSURE.test(f.name));
+  return { enclosure: [...fromPage, ...named], rest, printable };
+}
+
+export function NewJobDialog({ open, onOpenChange, files, parts, builds, printers, slicer, onCreate, editing, initialFileId }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   files: FileMeta[];
@@ -49,20 +61,21 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   onCreate: (j: NewJob) => Promise<void>;
   /** a queued job to change instead of a new one; the parent gives the dialog a new key per job */
   editing?: Item | null;
+  /** the file to start with, when the dialog is opened for one (Send to printing) */
+  initialFileId?: string;
 }) {
   const was = (editing?.data ?? {}) as Record<string, unknown>;
   const str = (k: string, d = "") => (was[k] == null ? d : String(was[k]));
-  const printable = useMemo(() => files.filter(isPrintable), [files]);
-  const enclosure = printable.filter((f) => ENCLOSURE.test(f.name));
-  const rest = printable.filter((f) => !ENCLOSURE.test(f.name));
+  const { enclosure, rest, printable } = useMemo(() => enclosureFirst(files), [files]);
+  const startFile = editing ? "" : files.find((f) => String(f.id) === initialFileId && isPrintable(f));
   const usable = printers.filter((p) => p.enabled);
   const profiles = (slicer?.printers ?? []).filter((p) => p.available);
 
   const { register, handleSubmit, control, setValue, getValues, setError, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: editing?.title ?? "",
-      fileId: str("fileId"),
+      title: editing?.title ?? (startFile ? startFile.name.replace(/\.(stl|3mf)$/i, "") : ""),
+      fileId: startFile ? String(startFile.id) : str("fileId"),
       part: str("part"),
       printerId: str("printerId"),
       modelKey: was.printerMaker && was.printerModel ? `${str("printerMaker")}|${str("printerModel")}` : "",
@@ -75,8 +88,10 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   });
   const modelKey = useWatch({ control, name: "modelKey" });
   const profile = profiles.find((p) => `${p.maker}|${p.model}` === modelKey) ?? null;
-  const layers = profile?.layerHeights ?? [];
-  const mats = profile?.materials ?? [];
+  /** no slicer here to slice with: the job is queued with its model, and sliced in the person's own slicer */
+  const ownSlicer = !profiles.length;
+  const layers: readonly number[] = profile?.layerHeights ?? (ownSlicer ? COMMON_LAYERS : []);
+  const mats: readonly string[] = profile?.materials ?? (ownSlicer ? COMMON_MATERIALS : []);
 
   // Choosing a printer picks its slicer profile; choosing a profile keeps material and layer height valid for it.
   const pickModel = (key: string) => {
@@ -102,13 +117,13 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   const submit = handleSubmit(async (v) => {
     const f = files.find((x) => String(x.id) === v.fileId)!;
     const p = usable.find((x) => String(x.id) === v.printerId)!;
-    if (!profile) return setError("modelKey", { message: "Choose the printer model the slicer should use." });
+    if (!profile && !ownSlicer) return setError("modelKey", { message: "Choose the printer model the slicer should use." });
     try {
       await onCreate({
         title: v.title.trim(),
         data: {
           fileId: f.id, fileName: f.name, ...(v.part ? { part: v.part } : {}),
-          printerId: p.id, printerName: p.name, printerMaker: profile.maker, printerModel: profile.model, printerFamily: p.family,
+          printerId: p.id, printerName: p.name, ...(profile ? { printerMaker: profile.maker, printerModel: profile.model } : {}), printerFamily: p.family,
           material: v.material, layerHeight: Number(v.layer), infill: Number(v.infill), supports: v.supports, ...(v.buildKey ? { buildKey: v.buildKey } : {}),
         },
       });
@@ -120,17 +135,17 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   });
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title={editing ? "Edit print job" : "New print job"} description="Pick what to print and where. The slicer works out time and material when you slice it." wide>
+    <Modal open={open} onOpenChange={onOpenChange} title={editing ? "Edit print job" : "New print job"} description={ownSlicer ? "Pick what to print and where. With no slicer here, the job keeps its model until you attach the file you slice in your own slicer." : "Pick what to print and where. The slicer works out time and material when you slice it."} wide>
       <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-3 sm:grid-cols-2">
         <Field id="job-file" label="File to print" hint={printable.length ? "Stored .stl and .3mf files of this concept." : undefined} error={errors.fileId?.message} className="sm:col-span-2">
           <NativeSelect id="job-file" aria-invalid={!!errors.fileId} {...register("fileId", { onChange: (e) => pickFile(e.target.value) })}>
             <option value="">Choose a file</option>
-            {enclosure.length > 0 && <optgroup label="Enclosure">{enclosure.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</optgroup>}
+            {enclosure.length > 0 && <optgroup label="Enclosure">{enclosure.map((f, i) => <option key={f.id} value={f.id}>{f.name}{i === 0 && f.meta?.enclosure === true ? " (saved last on the Enclosure page)" : ""}</option>)}</optgroup>}
             {rest.length > 0 && <optgroup label="Other files">{rest.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</optgroup>}
           </NativeSelect>
           {!printable.length && (
             <span className="mt-1 block text-xs text-secondary">
-              No .stl or .3mf file is stored yet. Generate or upload one in <Link href="/s/design/model" className="text-link underline">Design, 3D model</Link>.
+              No .stl or .3mf file is stored yet. Save the enclosure on <Link href="/s/design/enclosure" className="text-link underline">Design, Enclosure</Link>, or upload a file in <Link href="/s/design/model" className="text-link underline">Design, 3D model</Link>.
             </span>
           )}
         </Field>
@@ -148,19 +163,19 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
           </NativeSelect>
           {!usable.length && <span className="mt-1 block text-xs text-secondary">Add one in <Link href="/admin?tab=printers" className="text-link underline">Admin, Printers</Link>.</span>}
         </Field>
-        <Field id="job-model" label="Slicer profile for this printer" hint={slicer && !slicer.ok ? "The slicer is not available." : "The model OrcaSlicer has profiles for."} error={errors.modelKey?.message}>
-          <NativeSelect id="job-model" aria-invalid={!!errors.modelKey} disabled={!profiles.length} {...register("modelKey", { onChange: (e) => pickModel(e.target.value) })}>
-            <option value="">Choose a model</option>
+        <Field id="job-model" label={ownSlicer ? "Slicer profile (not needed)" : "Slicer profile for this printer"} hint={ownSlicer ? "No slicer here, so none is needed. Slice the model in your own slicer and attach the result to the job." : "The model OrcaSlicer has profiles for."} error={errors.modelKey?.message}>
+          <NativeSelect id="job-model" aria-invalid={!!errors.modelKey} disabled={ownSlicer} {...register("modelKey", { onChange: (e) => pickModel(e.target.value) })}>
+            <option value="">{ownSlicer ? "None, sliced elsewhere" : "Choose a model"}</option>
             {profiles.map((p) => <option key={`${p.maker}|${p.model}`} value={`${p.maker}|${p.model}`}>{p.maker} {p.model}</option>)}
           </NativeSelect>
         </Field>
         <Field id="job-material" label="Material">
-          <NativeSelect id="job-material" disabled={!profile} {...register("material")}>
+          <NativeSelect id="job-material" disabled={!profile && !ownSlicer} {...register("material")}>
             {mats.map((m) => <option key={m} value={m}>{m}</option>)}
           </NativeSelect>
         </Field>
         <Field id="job-layer" label="Layer height (mm)">
-          <NativeSelect id="job-layer" disabled={!profile} {...register("layer")}>
+          <NativeSelect id="job-layer" disabled={!profile && !ownSlicer} {...register("layer")}>
             {layers.map((h) => <option key={h} value={h}>{h.toFixed(2)}</option>)}
           </NativeSelect>
         </Field>

@@ -9,11 +9,11 @@ const ends = (a: string, b: string, kind: "passive" = "passive", half = 3) => [
 ];
 
 export const DISCRETE: Entry[] = [
-  { id: "resistor-axial", kind: "resistor", name: "Resistor, through-hole, 1/4 W", description: "Set the value in the part's specification.", size: { w: 6.3, d: 2.5 }, basis: "typical", symbol: "resistor", sources: [], pins: ends("1", "2", "passive", 3.15) },
-  { id: "capacitor-ceramic", kind: "capacitor", name: "Capacitor, ceramic", description: "Not polarised. Set the value in the part's specification.", size: { w: 5, d: 2.5 }, basis: "typical", symbol: "capacitor", sources: [], pins: ends("1", "2", "passive", 2.5) },
-  { id: "capacitor-electrolytic", kind: "capacitor", name: "Capacitor, electrolytic", description: "Polarised: + to the higher voltage.", size: { w: 6.3, d: 6.3 }, basis: "typical", symbol: "capacitor_polarized", sources: [], pins: ends("+", "-", "passive", 1.25) },
-  { id: "led-5mm", kind: "led", name: "LED, 5 mm", description: "Needs a series resistor. The forward voltage depends on the colour, so none is stated.", size: { w: 5.8, d: 5.8 }, basis: "typical", symbol: "led", sources: [], pins: ends("A", "K", "passive", 1.27) },
-  { id: "slide-switch-spst", kind: "switch", name: "Slide switch, SPST", description: "On or off. A closed switch passes the supply on.", size: { w: 9, d: 4 }, basis: "typical", symbol: "switch", sources: [], pins: ends("1", "2", "passive", 2.54) },
+  { id: "resistor-axial", kind: "resistor", name: "Resistor, through-hole, 1/4 W", description: "Set the value in the part's specification.", size: { w: 6.3, d: 2.5 }, basis: "typical", symbol: "resistor", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("1", "2", "passive", 3.15) },
+  { id: "capacitor-ceramic", kind: "capacitor", name: "Capacitor, ceramic", description: "Not polarised. Set the value in the part's specification.", size: { w: 5, d: 2.5 }, basis: "typical", symbol: "capacitor", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("1", "2", "passive", 2.5) },
+  { id: "capacitor-electrolytic", kind: "capacitor", name: "Capacitor, electrolytic", description: "Polarised: + to the higher voltage.", size: { w: 6.3, d: 6.3 }, basis: "typical", symbol: "capacitor_polarized", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("+", "-", "passive", 1.25) },
+  { id: "led-5mm", kind: "led", name: "LED, 5 mm", description: "Needs a series resistor. The forward voltage depends on the colour, so none is stated.", size: { w: 5.8, d: 5.8 }, basis: "typical", symbol: "led", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("A", "K", "passive", 1.27) },
+  { id: "slide-switch-spst", kind: "switch", name: "Slide switch, SPST", description: "On or off. A closed switch passes the supply on.", size: { w: 9, d: 4 }, basis: "typical", symbol: "switch", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("1", "2", "passive", 2.54) },
   {
     id: "slide-switch-spdt",
     kind: "switch",
@@ -23,10 +23,11 @@ export const DISCRETE: Entry[] = [
     basis: "typical",
     symbol: "switch",
     sources: [],
+    note: "A generic part: sizes are typical and makers differ; check the one you buy.",
     pins: row([p("1", "passive"), p("2", "passive"), p("3", "passive")], { pitch: 2.54, axis: "x", at: 0 }),
   },
-  { id: "tactile-button-6mm", kind: "button", name: "Tactile push button, 6 mm", description: "Four legs joined in pairs, shown as two pins.", size: { w: 6, d: 6 }, basis: "typical", symbol: "push_button", sources: [], pins: ends("1", "2", "passive", 3) },
-  { id: "speaker-small", kind: "speaker", name: "Speaker, small, with leads", description: "Either polarity for a single speaker. The impedance and power are in the part's specification.", size: { w: 36, d: 36, h: 5 }, basis: "typical", symbol: "speaker", sources: [], pins: ends("+", "-", "passive", 5) },
+  { id: "tactile-button-6mm", kind: "button", name: "Tactile push button, 6 mm", description: "Four legs joined in pairs, shown as two pins.", size: { w: 6, d: 6 }, basis: "typical", symbol: "push_button", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("1", "2", "passive", 3) },
+  { id: "speaker-small", kind: "speaker", name: "Speaker, small, with leads", description: "Either polarity for a single speaker. The impedance and power are in the part's specification.", size: { w: 36, d: 36, h: 5 }, basis: "typical", symbol: "speaker", sources: [], note: "A generic part: sizes are typical and makers differ; check the one you buy.", pins: ends("+", "-", "passive", 5) },
   {
     id: "sg90-servo",
     kind: "motor",
@@ -36,6 +37,7 @@ export const DISCRETE: Entry[] = [
     basis: "typical",
     symbol: "motor",
     sources: [],
+    note: "A generic part: sizes are typical and makers differ; check the one you buy.",
     pins: row([p("PWM", "input"), p("VCC", "power_in"), p("GND", "ground")], { pitch: 2.54, axis: "x", at: 6 }),
   },
   {
@@ -46,7 +48,8 @@ export const DISCRETE: Entry[] = [
     size: { w: 6, d: 4.5 },
     basis: "typical",
     symbol: "box",
-    sources: [],
+    sources: [{ label: "JST PH connector data sheet", url: "https://www.jst-mfg.com/product/pdf/eng/ePH.pdf" }],
+    note: "The 2.0 mm pitch is from JST's PH data sheet; the outline is typical.",
     pins: row([p("1", "passive"), p("2", "passive")], { pitch: 2, axis: "x", at: 0 }),
   },
   {
@@ -58,6 +61,7 @@ export const DISCRETE: Entry[] = [
     basis: "typical",
     symbol: "box",
     sources: [],
+    note: "A generic part: sizes are typical and makers differ; check the one you buy.",
     pins: row([p("1", "passive"), p("2", "passive"), p("3", "passive"), p("4", "passive")], { pitch: 2.54, axis: "x", at: 0 }),
   },
 ];
