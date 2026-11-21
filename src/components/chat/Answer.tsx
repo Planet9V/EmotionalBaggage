@@ -6,6 +6,7 @@ import { BookOpen, ChevronDown, FlaskConical, Rows3 } from "lucide-react";
 import { InlineCitation, InlineCitationCard, InlineCitationCardBody, InlineCitationSource } from "@/components/ai-elements/inline-citation";
 import { MessageResponse } from "@/components/ai-elements/message";
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources";
+import { SafeImage } from "./safeImage";
 import { HoverCardTrigger } from "@/components/ui/hover-card";
 import { linkCitations, sectionHref, sectionLabel, type ChatMetadata, type ChatSource } from "@/lib/chat/shared";
 
@@ -44,6 +45,8 @@ export function Answer({ text, metadata, streaming }: { text: string; metadata?:
         }
         return <Citation source={source} />;
       },
+      // only same-origin images are drawn; any other is its alt text and a link (robustness review S6)
+      img: SafeImage,
     }),
     [sources]
   );
