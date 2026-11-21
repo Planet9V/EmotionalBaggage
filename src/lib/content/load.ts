@@ -4,6 +4,7 @@ import { ITEM_COLS, q, toItem, type ItemRow } from "@/lib/db";
 import { readKit, findKit } from "@/lib/market/brandKit";
 import { brandVariables } from "@/lib/market/brand";
 import type { Item } from "@/lib/types";
+import { formatMoney } from "@/lib/economics/money";
 import { proofStateOf } from "./claims";
 import { isSourced, renderPage, type Competitor, type LandingSection, type RenderEnv } from "./landing";
 import { CONTENT, LANDING_KINDS } from "./schemas";
@@ -21,11 +22,17 @@ export function toSections(rows: Item[]): LandingSection[] {
 type FileRow = { id: string; name: string; mime: string };
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/svg+xml": "svg" };
 
-const priceText = (r: Item) => {
+/** An approved price as the page shows it, in the concept's currency (projects.currency). A price saved in another currency is not shown. */
+const priceText = (r: Item, currency: string) => {
   const minor = r.data.priceMinor;
   if (typeof minor !== "number") return null;
-  const cur = String(r.data.currency ?? "").toUpperCase();
-  return `${cur ? `${cur} ` : ""}${(minor / 100).toFixed(2)}`;
+  const cur = String(r.data.currency || currency).toUpperCase();
+  if (cur !== currency) return null;
+  try {
+    return formatMoney(minor, cur);
+  } catch {
+    return null;
+  }
 };
 
 export async function landingEnv(projectId: string, name: string, sections: LandingSection[], mode: "preview" | "export", scheme: "light" | "dark" | "auto") {
@@ -33,7 +40,8 @@ export async function landingEnv(projectId: string, name: string, sections: Land
   const primary = kit?.colours?.find((c) => c.role === "primary")?.hex ?? null;
   const comps = (await rowsOf(projectId, "marketing/competitors")).map((r): Competitor => ({ id: r.id, title: r.title, ...(r.data as object) }) as Competitor);
   const pricing = await rowsOf(projectId, "marketing/pricing");
-  const prices = new Map(pricing.filter((p) => p.data.kind === "price" && p.status === "approved").map((p) => [p.id, priceText(p)]));
+  const currency = (await q<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]))[0]?.currency || "USD";
+  const prices = new Map(pricing.filter((p) => p.data.kind === "price" && p.status === "approved").map((p) => [p.id, priceText(p, currency)]));
   const proofIds = new Set<number>();
   const imageIds = new Set<number>();
   for (const s of sections) {

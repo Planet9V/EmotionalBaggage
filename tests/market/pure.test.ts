@@ -2,7 +2,9 @@
 // proof check, the brand kit as text and CSS, and the competitor price reader.
 import { describe, expect, it } from "vitest";
 import { checkColour, contrastRatio, levelFor, parseHex } from "@/lib/market/contrast";
-import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, unitCostForPricing } from "@/lib/market/pricing";
+import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, pricingUnitCost } from "@/lib/market/pricing";
+import { referenceUnitCost } from "@/lib/economics/compute";
+import { readEconomics } from "@/lib/economics/read";
 import { GROUP_ORDER, handleOf, nameChecks, SCREENING_NOTE, screeningProgress } from "@/lib/market/nameChecks";
 import { checkProof, type ProofRow } from "@/lib/market/proof";
 import { brandCssVariables, brandText, findKit, onColour } from "@/lib/market/brandKit";
@@ -123,16 +125,26 @@ describe("pricing arithmetic", () => {
     expect(position(3500, r)).toBe("above all");
     expect(position(2500, null)).toBe("no competitor prices");
   });
-  it("reads the unit cost from the parts list, listing unpriced parts and never counting them as zero cost known", () => {
+  it("reads the unit cost from the economics: price breaks and cost lines count, an unpriced part is named and left out", () => {
     const parts = [
       item({ section: "design/bom", id: 1, title: "Board", data: { line: 12.5 } }),
       item({ section: "design/bom", id: 2, title: "Case", data: {} }),
-      item({ section: "design/bom", id: 3, title: "Cell", data: { line: "3.25" } }),
+      // 2 per unit, 4.00 each, 3.00 each from 100 pieces: a batch of 50 orders 100
+      item({ section: "design/bom", id: 3, title: "Cell", data: { qty: 2, unit: 4, priceBreaks: [{ qty: 100, unit: 3 }] } }),
     ];
-    const u = unitCostForPricing(parts, "USD");
-    expect(u).toEqual({ known: false, minor: 1575, currency: "USD", missing: ["Case"] });
-    expect(unitCostForPricing(parts.filter((p) => p.title !== "Case"), "USD").known).toBe(true);
-    expect(unitCostForPricing([], "USD")).toEqual({ known: false, minor: 0, currency: "USD", missing: [] });
+    const economics = [item({ section: "production/economics", id: 9, title: "Assembly", data: { kind: "labour", labourMinutes: 6, rate: 30 } })];
+    const batches = [item({ section: "production/batches", id: 10, title: "First run", data: { units: 50 } })];
+    const rows = { parts, economics, channels: [], methods: [], batches };
+    const u = pricingUnitCost(referenceUnitCost(readEconomics(rows, "EUR")));
+    // 12.50 board + 2 x 3.00 cells at the break + 6 min x 30.00 / 60 labour = 21.50; the case is named, not counted
+    expect(u).toEqual({ known: false, minor: 2150, currency: "EUR", missing: ["Case: not priced"], batchSize: 50 });
+    const priced = pricingUnitCost(referenceUnitCost(readEconomics({ ...rows, parts: parts.filter((p) => p.title !== "Case") }, "EUR")));
+    expect(priced.known).toBe(true);
+    expect(pricingUnitCost(referenceUnitCost(readEconomics({ parts: [], economics: [], channels: [], methods: [], batches: [] }, "USD")))).toEqual({ known: false, minor: 0, currency: "USD", missing: [], batchSize: 1 });
+  });
+  it("parses typed money in the currency's own minor unit", () => {
+    expect(parseMinor("1500", "JPY")).toBe(1500);
+    expect(formatMoney(1500, "JPY")).toBe("¥1,500");
   });
   it("formats and parses money", () => {
     expect(formatMoney(2495, "USD")).toBe("$24.95");

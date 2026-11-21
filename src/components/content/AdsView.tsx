@@ -6,17 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, ErrorLine, Field, Select, Textarea } from "@/components/parts/controls";
 import { useItems } from "@/lib/client";
+import { useProductionSettings } from "@/lib/economics/client";
+import { minorDigits, toMajor, toMinor as majorToMinor } from "@/lib/economics/money";
 import { AD_CHANNELS, checkChannel, measure, type ChannelSpec, type FieldSpec, type FieldValues } from "@/lib/content/channels";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { asFlags, Count, FlagList, MessageLine, Panel, Problems, SourceLink, StatusPill } from "./shared";
 
 const STATUSES = ["draft", "approved", "running", "paused", "killed"];
-const toMinor = (s: string) => (s.trim() === "" ? undefined : Math.round(Number(s) * 100));
-const fromMinor = (n: unknown) => (typeof n === "number" ? (n / 100).toFixed(2) : "");
+// Money is in the concept's one currency (projects.currency, set on Unit economics), in its own minor unit.
+const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : majorToMinor(Number(s), cur));
+const fromMinor = (n: unknown, cur: string) => (typeof n === "number" ? toMajor(n, cur).toFixed(minorDigits(cur)) : "");
 
 export function AdsView({ project, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);
+  const { currency } = useProductionSettings(project.id);
   const [channelId, setChannelId] = useState(AD_CHANNELS[0].id);
   const spec = AD_CHANNELS.find((c) => c.id === channelId)!;
   const ads = useMemo(() => items.filter((i) => i.data.channel === channelId), [items, channelId]);
@@ -96,7 +100,7 @@ export function AdsView({ project, store }: ViewProps) {
         <ul className="space-y-4">
           {ads.map((a) => (
             <li key={a.id}>
-              <AdCard ad={a} spec={spec} onSave={(c) => patch(a.id, c)} onDelete={() => remove(a.id)} />
+              <AdCard ad={a} spec={spec} cur={currency} onSave={(c) => patch(a.id, c)} onDelete={() => remove(a.id)} />
             </li>
           ))}
         </ul>
@@ -151,18 +155,17 @@ function limitText(f: FieldSpec) {
   return bits.join(", ") || "none";
 }
 
-function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; onSave: (c: { data?: Record<string, unknown>; status?: string; title?: string; body?: string }) => Promise<unknown>; onDelete: () => Promise<unknown> }) {
+function AdCard({ ad, spec, cur, onSave, onDelete }: { ad: Item; spec: ChannelSpec; cur: string; onSave: (c: { data?: Record<string, unknown>; status?: string; title?: string; body?: string }) => Promise<unknown>; onDelete: () => Promise<unknown> }) {
   const saved = (ad.data.fields ?? {}) as FieldValues;
   const [vals, setVals] = useState<FieldValues>(saved);
   const [rule, setRule] = useState(String(ad.data.stopRule ?? ""));
-  const [ceiling, setCeiling] = useState(fromMinor(ad.data.costPerOrderCeilingMinor));
-  const [minSpend, setMinSpend] = useState(fromMinor(ad.data.minSpendBeforeJudgingMinor));
+  const [ceiling, setCeiling] = useState(fromMinor(ad.data.costPerOrderCeilingMinor, cur));
+  const [minSpend, setMinSpend] = useState(fromMinor(ad.data.minSpendBeforeJudgingMinor, cur));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const problems = checkChannel(spec, vals);
   const hard = problems.filter((p) => p.level === "refuse");
-  const dirty = JSON.stringify(vals) !== JSON.stringify(saved) || rule !== String(ad.data.stopRule ?? "") || ceiling !== fromMinor(ad.data.costPerOrderCeilingMinor) || minSpend !== fromMinor(ad.data.minSpendBeforeJudgingMinor);
-  const cur = String(ad.data.currency ?? "");
+  const dirty = JSON.stringify(vals) !== JSON.stringify(saved) || rule !== String(ad.data.stopRule ?? "") || ceiling !== fromMinor(ad.data.costPerOrderCeilingMinor, cur) || minSpend !== fromMinor(ad.data.minSpendBeforeJudgingMinor, cur);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -181,7 +184,7 @@ function AdCard({ ad, spec, onSave, onDelete }: { ad: Item; spec: ChannelSpec; o
       const lead = first ? (Array.isArray(vals[first.key]) ? (vals[first.key] as string[])[0] : String(vals[first.key])) : "new variant";
       return onSave({
         title: `${spec.label}: ${lead}`.slice(0, 120),
-        data: { fields: vals, stopRule: rule, costPerOrderCeilingMinor: toMinor(ceiling), minSpendBeforeJudgingMinor: toMinor(minSpend) },
+        data: { fields: vals, stopRule: rule, costPerOrderCeilingMinor: toMinor(ceiling, cur), minSpendBeforeJudgingMinor: toMinor(minSpend, cur) },
       });
     });
 

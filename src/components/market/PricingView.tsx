@@ -11,35 +11,49 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState, ErrorLine, Field } from "@/components/parts/controls";
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { saveOrMessage, useItems } from "@/lib/client";
-import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, unitCostForPricing, type Competitor } from "@/lib/market/pricing";
+import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, pricingUnitCost, type Competitor } from "@/lib/market/pricing";
+import { useEconomicsRows, useProductionSettings } from "@/lib/economics/client";
+import { referenceUnitCost } from "@/lib/economics/compute";
+import { minorDigits, toMajor } from "@/lib/economics/money";
+import { readEconomics } from "@/lib/economics/read";
 import { pricingData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { PriceStrip, type StripPoint } from "./PriceStrip";
 import { LoadFailed, LoadingBlock, Status } from "./shared";
 
-type PriceRow = { item: Item; priceMinor: number; approach: string; note: string };
+type PriceRow = { item: Item; priceMinor: number; approach: string; note: string; currency: string };
 type ChannelRow = { item: Item; name: string; feePercent: number; fixedFeeMinor: number };
+
+/** An amount as a person types it back, with the currency's own decimals ("25.00", "2500" for yen). */
+const majorText = (minor: number, currency: string) => toMajor(minor, currency).toFixed(minorDigits(currency));
 
 const NO_CHANNEL: ChannelRow["item"] | null = null;
 
 export function PricingView({ project, store }: ViewProps) {
   const pricing = useItems(project.id, store);
-  const parts = useItems(project.id, "design/bom");
+  const settings = useProductionSettings(project.id);
+  const econ = useEconomicsRows(project.id);
+  const parts = { items: econ.rows.parts };
   const comps = useItems(project.id, "marketing/competitors");
   const { items, add, patch, remove } = pricing;
   const [err, setErr] = useState("");
 
   const parsed = useMemo(() => items.map((it) => ({ it, d: (() => { const r = pricingData.safeParse(it.data); return r.success ? r.data : {}; })() })), [items]);
   const assumptions = parsed.find((p) => p.d.kind === "assumptions");
-  const currency = (assumptions?.d.currency || "USD").toUpperCase();
-  const prices: PriceRow[] = parsed.filter((p) => p.d.kind === "price").map((p) => ({ item: p.it, priceMinor: p.d.priceMinor ?? 0, approach: p.d.approach ?? "own", note: p.d.note ?? "" }));
+  // One currency per concept, set on Unit economics (projects.currency). Pricing has no setting of its own.
+  const currency = settings.currency;
+  const allPrices: PriceRow[] = parsed.filter((p) => p.d.kind === "price").map((p) => ({ item: p.it, priceMinor: p.d.priceMinor ?? 0, approach: p.d.approach ?? "own", note: p.d.note ?? "", currency: (p.d.currency || currency).toUpperCase() }));
+  // A price saved before the concept's currency changed is in the old currency: it is listed, not compared.
+  const prices = allPrices.filter((p) => p.currency === currency);
+  const otherPrices = allPrices.filter((p) => p.currency !== currency);
   const channelRows: ChannelRow[] = parsed.filter((p) => p.d.kind === "channel").map((p) => ({ item: p.it, name: p.it.title, feePercent: p.d.feePercent ?? 0, fixedFeeMinor: p.d.fixedFeeMinor ?? 0 }));
   const channels = channelRows.length ? channelRows : null;
   const implicit = [{ item: NO_CHANNEL, name: "No channel fee", feePercent: 0, fixedFeeMinor: 0 }];
   const cols: { name: string; feePercent: number; fixedFeeMinor: number }[] = channels ?? implicit;
 
-  const unit = unitCostForPricing(parts.items, currency);
+  const econUnit = useMemo(() => referenceUnitCost(readEconomics(econ.rows, currency)), [econ.rows, currency]);
+  const unit = pricingUnitCost(econUnit);
   const competitors: (Competitor & { id: number })[] = comps.items.flatMap((c) => {
       const d = c.data as { priceMinor?: unknown; currency?: unknown; basis?: unknown; sourceUrl?: unknown };
       if (typeof d.priceMinor !== "number" || typeof d.currency !== "string") return [];
@@ -50,7 +64,7 @@ export function PricingView({ project, store }: ViewProps) {
   const range = competitorRange(sameCurrency.filter((c) => c.sourced), currency);
   const otherCurrency = competitors.length - sameCurrency.length;
 
-  if (pricing.loading || parts.loading || comps.loading) return <LoadingBlock label="Loading pricing" />;
+  if (pricing.loading || econ.loading || settings.loading || comps.loading) return <LoadingBlock label="Loading pricing" />;
   if (pricing.error && !items.length) return <LoadFailed what="Pricing" message={pricing.error} retry={() => void pricing.reload()} />;
 
   const guard = async (p: Promise<unknown>) => {
@@ -58,7 +72,7 @@ export function PricingView({ project, store }: ViewProps) {
     try { await p; } catch (e) { setErr((e as Error).message); }
   };
   const setAssumption = (data: Record<string, unknown>) =>
-    assumptions ? guard(patch(assumptions.it.id, { data })) : guard(add({ section: store, title: "Pricing assumptions", data: { kind: "assumptions", currency, ...data }, status: "draft" }));
+    assumptions ? guard(patch(assumptions.it.id, { data })) : guard(add({ section: store, title: "Pricing assumptions", data: { kind: "assumptions", ...data }, status: "draft" }));
   const addPrice = (priceMinor: number, approach: PriceRow["approach"], note: string) =>
     guard(add({ section: store, title: `${formatMoney(priceMinor, currency)}${note ? ` (${note})` : ""}`, data: { kind: "price", priceMinor, currency, approach, note }, status: "draft" }));
 
@@ -81,20 +95,18 @@ export function PricingView({ project, store }: ViewProps) {
           ) : (
             <>
               <p className="text-sm text-primary">
-                Parts total for one unit: <span className="font-mono font-medium">{formatMoney(unit.minor, currency)}</span>
+                Unit cost at {unit.batchSize ?? 1} unit{unit.batchSize === 1 ? "" : "s"}: <span className="font-mono font-medium">{formatMoney(unit.minor, currency)}</span>
                 {!unit.known && <StatusBadge tone="warning" className="ml-2">incomplete</StatusBadge>}
               </p>
               {unit.missing.length > 0 && (
                 <p className="text-sm text-warning">
-                  {unit.missing.length} part{unit.missing.length === 1 ? " has" : "s have"} no cost entered and {unit.missing.length === 1 ? "is" : "are"} counted as nothing: {unit.missing.slice(0, 8).join(", ")}{unit.missing.length > 8 ? ` and ${unit.missing.length - 8} more` : ""}. Every margin below is marked until that is fixed.
+                  {unit.missing.length} cost line{unit.missing.length === 1 ? " is" : "s are"} not priced and left out of the total: {unit.missing.slice(0, 8).join(", ")}{unit.missing.length > 8 ? ` and ${unit.missing.length - 8} more` : ""}. Every margin below is marked until that is fixed.
                 </p>
               )}
             </>
           )}
-          <p className="text-xs text-muted">This is the parts list total only. It leaves out labour, packaging, shipping and tooling, and the Unit economics screen will replace it. Costs are read in {currency}; the parts list does not record a currency, so set it here.</p>
-          <div className="max-w-40">
-            <Field label="Currency (3 letters)"><Input value={currency} maxLength={3} onChange={(e) => { const v = e.target.value.toUpperCase(); if (/^[A-Z]{3}$/.test(v)) void setAssumption({ currency: v }); }} aria-label="Currency code" /></Field>
-          </div>
+          <p className="text-xs text-muted">From <Link className="text-link underline" href="/s/production/economics">Unit economics</Link>: parts with their price breaks, plus labour, packaging, print and other cost lines, at the first planned batch size (1 when none is planned). Every amount is in {currency}, the concept&apos;s currency, which is set on Unit economics.</p>
+          {econ.error && <p role="alert" className="text-sm text-danger">The unit cost could not be loaded: {econ.error}</p>}
         </Card>
       </section>
 
@@ -110,14 +122,14 @@ export function PricingView({ project, store }: ViewProps) {
                   <TableRow key={c.item.id}>
                     <TableCell><InlineEdit label="Channel name" value={c.name} onSave={(v) => (v.trim() ? saveOrMessage(patch(c.item.id, { title: v.trim() })) : "A channel needs a name.")} /></TableCell>
                     <TableCell><InlineEdit label="Fee percent" mono value={String(c.feePercent)} onSave={(v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 100 ? saveOrMessage(patch(c.item.id, { data: { feePercent: n } })) : "Enter a percent from 0 to 100."; }} /></TableCell>
-                    <TableCell><InlineEdit label="Fixed fee" mono value={(c.fixedFeeMinor / 100).toFixed(2)} onSave={(v) => { const m = parseMinor(v); return m === null ? "Enter an amount, zero or more." : saveOrMessage(patch(c.item.id, { data: { fixedFeeMinor: m } })); }} /></TableCell>
+                    <TableCell><InlineEdit label="Fixed fee" mono value={majorText(c.fixedFeeMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null ? "Enter an amount, zero or more." : saveOrMessage(patch(c.item.id, { data: { fixedFeeMinor: m } })); }} /></TableCell>
                     <TableCell><Button size="icon-sm" variant="ghost" aria-label={`Remove ${c.name}`} onClick={() => void guard(remove(c.item.id))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
-          <ChannelForm onAdd={(name, fee, fixed) => guard(add({ section: store, title: name, data: { kind: "channel", feePercent: fee, fixedFeeMinor: fixed, currency }, status: "draft" }))} />
+          <ChannelForm currency={currency} onAdd={(name, fee, fixed) => guard(add({ section: store, title: name, data: { kind: "channel", feePercent: fee, fixedFeeMinor: fixed, currency }, status: "draft" }))} />
           {!channelRows.length && <p className="text-xs text-muted">No channels yet. Margins are shown with no channel fee until you add one.</p>}
         </Card>
       </section>
@@ -207,7 +219,7 @@ export function PricingView({ project, store }: ViewProps) {
                 {[...prices].sort((a, b) => a.priceMinor - b.priceMinor).map((p) => (
                   <TableRow key={p.item.id}>
                     <TableCell className="whitespace-nowrap">
-                      <InlineEdit label="Price" mono value={(p.priceMinor / 100).toFixed(2)} onSave={(v) => { const m = parseMinor(v); return m === null || m === 0 ? "Enter a price above zero." : saveOrMessage(patch(p.item.id, { title: `${formatMoney(m, currency)}${p.note ? ` (${p.note})` : ""}`, data: { priceMinor: m } })); }} />
+                      <InlineEdit label="Price" mono value={majorText(p.priceMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null || m === 0 ? "Enter a price above zero." : saveOrMessage(patch(p.item.id, { title: `${formatMoney(m, currency)}${p.note ? ` (${p.note})` : ""}`, data: { priceMinor: m } })); }} />
                       <span className="block text-[11px] text-muted">{p.approach === "own" ? "your own" : p.approach.replace("-", " ")}</span>
                     </TableCell>
                     {cols.map((c) => {
@@ -235,6 +247,7 @@ export function PricingView({ project, store }: ViewProps) {
               </TableBody>
             </Table>
             {!unit.known && <p className="border-t border-hairline px-4 py-2 text-xs text-warning">* The unit cost is incomplete, so these margins are higher than they will be.</p>}
+            {otherPrices.length > 0 && <p className="border-t border-hairline px-4 py-2 text-xs text-muted">{otherPrices.length} candidate price{otherPrices.length === 1 ? " was" : "s were"} saved in another currency ({[...new Set(otherPrices.map((p) => p.currency))].join(", ")}) and {otherPrices.length === 1 ? "is" : "are"} not compared. Nothing is converted.</p>}
           </Card>
         )}
       </section>
@@ -247,14 +260,14 @@ export function PricingView({ project, store }: ViewProps) {
   );
 }
 
-function ChannelForm({ onAdd }: { onAdd: (name: string, fee: number, fixed: number) => Promise<unknown> }) {
+function ChannelForm({ currency, onAdd }: { currency: string; onAdd: (name: string, fee: number, fixed: number) => Promise<unknown> }) {
   const [name, setName] = useState("");
   const [fee, setFee] = useState("");
   const [fixed, setFixed] = useState("");
   const [err, setErr] = useState("");
   const go = async () => {
     const f = fee.trim() ? Number(fee) : 0;
-    const x = fixed.trim() ? parseMinor(fixed) : 0;
+    const x = fixed.trim() ? parseMinor(fixed, currency) : 0;
     if (!name.trim()) return setErr("Name the channel.");
     if (!Number.isFinite(f) || f < 0 || f > 100) return setErr("The fee is a percent from 0 to 100.");
     if (x === null) return setErr("The fixed fee is an amount, zero or more.");
@@ -277,7 +290,7 @@ function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: numbe
   const [v, setV] = useState("");
   const [err, setErr] = useState("");
   const go = async () => {
-    const m = parseMinor(v);
+    const m = parseMinor(v, currency);
     if (m === null || m === 0) return setErr("Enter a price above zero, such as 24.95.");
     setErr("");
     await onAdd(m);
@@ -293,10 +306,10 @@ function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: numbe
 }
 
 function ValueForm({ currency, valueMinor, note, onSave, onAdd }: { currency: string; valueMinor: number | null; note: string; onSave: (minor: number, note: string) => Promise<unknown>; onAdd: (minor: number) => Promise<unknown> }) {
-  const [v, setV] = useState(valueMinor === null ? "" : (valueMinor / 100).toFixed(2));
+  const [v, setV] = useState(valueMinor === null ? "" : majorText(valueMinor, currency));
   const [n, setN] = useState(note);
   const [err, setErr] = useState("");
-  const parsed = parseMinor(v);
+  const parsed = parseMinor(v, currency);
   const save = async () => {
     if (parsed === null || parsed === 0) return setErr("Enter your figure above zero.");
     setErr("");

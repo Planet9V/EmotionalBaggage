@@ -70,7 +70,7 @@ describe("pricing", () => {
     // 25.00 - 10.00 cost - 3.75 fee = 11.25, 45.0 percent
     expect(within(table).getByText("$11.25")).toBeTruthy();
     expect(within(table).getByText("45.0%")).toBeTruthy();
-    expect(screen.getByText(/Parts total for one unit/).textContent).toContain("$10.00");
+    expect(screen.getByText(/Unit cost at 1 unit/).textContent).toContain("$10.00");
     expect(screen.queryByText(/have no cost entered|has no cost entered/)).toBeNull();
     expect(table.textContent).not.toContain("*");
   });
@@ -89,6 +89,31 @@ describe("pricing", () => {
     // with no channel entered, the margin is shown with no fee, and says so
     expect(within(table).getByText(/No channel fee/)).toBeTruthy();
     expect(within(table).getByText("$19.00")).toBeTruthy();
+  });
+
+  it("reads the unit cost and the currency from the unit economics, and has no currency setting of its own", async () => {
+    mockServer(
+      [
+        row(1, "design/bom", { title: "Board", data: { line: 6 } }),
+        row(2, "production/economics", { title: "Assembly", data: { kind: "labour", labourMinutes: 10, rate: 24 } }),
+        row(3, "marketing/pricing", { title: "Pricing assumptions", data: { kind: "assumptions", currency: "GBP" }, status: "draft" }),
+        row(4, "marketing/pricing", { title: "€25.00", data: { kind: "price", priceMinor: 2500, currency: "EUR", approach: "own" }, status: "draft" }),
+        row(5, "marketing/pricing", { title: "$30.00", data: { kind: "price", priceMinor: 3000, currency: "USD", approach: "own" }, status: "draft" }),
+      ],
+      { settings: { currency: "EUR" } },
+    );
+    mount(<PricingView {...propsFor("marketing", "pricing")} />);
+    const table = await screen.findByRole("table", { name: /Margin per unit/ });
+    // 6.00 board + 10 min x 24.00 / 60 labour = 10.00: the labour line counts, as on Unit economics
+    expect(screen.getByText(/Unit cost at 1 unit/).textContent).toContain("€10.00");
+    // 25.00 - 10.00 = 15.00 with no channel fee
+    expect(within(table).getByText("€15.00")).toBeTruthy();
+    // the old assumptions row's GBP is ignored, and there is no currency field
+    expect(screen.queryByLabelText(/Currency code/)).toBeNull();
+    expect(document.body.textContent).not.toContain("GBP");
+    // the dollar price saved before the currency changed is named, not compared
+    expect(table.textContent).not.toContain("30.00");
+    expect(screen.getByText(/saved in another currency \(USD\)/)).toBeTruthy();
   });
 
   it("offers the strip chart and a table of the same prices", async () => {

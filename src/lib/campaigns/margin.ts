@@ -2,7 +2,7 @@
 // typed: price less unit cost, fees, fulfilment and returns on one sales channel, before any
 // advertising. The economics' own margin subtracts an "advertising per order" assumption entered on
 // the channel; it is added back here, because the campaign's job is to say what advertising may cost.
-import { channelResults, fixedCosts, unitCost, wholeBatch, type ChannelResult } from "@/lib/economics/compute";
+import { channelResults, fixedCosts, referenceUnitCost, type ChannelResult } from "@/lib/economics/compute";
 import { formatMoney } from "@/lib/economics/money";
 import { readEconomics, type EconomicsRows } from "@/lib/economics/read";
 
@@ -23,8 +23,8 @@ export type ChannelMargin = {
 /** Margin before ads on every sales channel row, at the first planned batch size (or 1 when none is planned). */
 export function channelMargins(rows: EconomicsRows, currency: string): ChannelMargin[] {
   const inputs = readEconomics(rows, currency);
-  const batchSize = wholeBatch(inputs.batches.find((b) => b.units !== null)?.units ?? 1);
-  const unit = unitCost(inputs, batchSize);
+  const unit = referenceUnitCost(inputs);
+  const batchSize = unit.batchSize;
   const fixed = fixedCosts(inputs);
   return channelResults(inputs.channels, unit, fixed).map((r: ChannelResult): ChannelMargin => {
     const before = r.margin === null ? null : r.margin + r.adCost;

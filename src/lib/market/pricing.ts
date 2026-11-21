@@ -1,24 +1,21 @@
 // Pricing arithmetic (plan 8.4). Everything here is worked out from numbers the user entered or
 // rows of the concept; nothing is typed in as a result. Money is whole minor units (cents).
-import { toPart } from "@/lib/domain/part";
-import type { Item } from "@/lib/types";
-
-/** What one unit costs to make. `known` is false when the number is incomplete: see `missing`. */
-export type UnitCost = { known: boolean; minor: number; currency: string; missing: string[] };
+//
+// The unit cost and the currency are not this module's: both come from the unit economics
+// (src/lib/economics), so pricing, campaigns, content and the report quote one figure.
+import { formatMoney as econFormat, toMinor } from "@/lib/economics/money";
+import type { UnitCost as EconomicsUnitCost } from "@/lib/economics/compute";
 
 /**
- * LEAD: POINT THIS AT THE REAL MODULE. src/lib/economics/compute.ts (another engineer's, plan 3.6)
- * does not exist on this branch. Until it does, the unit cost is the parts list total for one
- * unit, read through the domain reader: a part with no cost entered is listed in `missing`, never
- * counted as zero. It leaves out labour, packaging, shipping, tooling and anything else the
- * parts list does not hold, and the pricing screen says so. When the real module lands, replace
- * the body of this one function; nothing else in the pricing code reads parts.
+ * What one unit costs to make, as pricing reads it. `known` is false when the number is
+ * incomplete: `missing` names every line that is not priced. An unpriced line is left out of
+ * `minor` and named; it is never counted as zero.
  */
-export function unitCostForPricing(partItems: Item[], currency: string): UnitCost {
-  const parts = partItems.map(toPart);
-  const missing = parts.filter((p) => p.line === null).map((p) => p.title);
-  const major = parts.reduce((a, p) => a + (p.line ?? 0), 0);
-  return { known: parts.length > 0 && missing.length === 0, minor: Math.round(major * 100), currency, missing };
+export type UnitCost = { known: boolean; minor: number; currency: string; missing: string[]; batchSize?: number };
+
+/** The economics' unit cost (parts with price breaks plus cost lines) in the shape pricing reads. */
+export function pricingUnitCost(u: EconomicsUnitCost): UnitCost {
+  return { known: u.complete, minor: u.total, currency: u.currency, missing: u.missing.map((m) => m.what), batchSize: u.batchSize };
 }
 
 export type Channel = { name: string; feePercent: number; fixedFeeMinor: number };
@@ -77,20 +74,20 @@ export function position(priceMinor: number, range: CompetitorRange): "below all
   return "within the range";
 }
 
-/** Whole money as text, in the currency given. Falls back to the code when the currency is not one the runtime knows. */
+/** Whole money as text, in the currency given, with the currency's own minor digits (the economics' formatter). Falls back to the code when the runtime does not know the currency. */
 export function formatMoney(minor: number, currency: string): string {
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD" }).format(minor / 100);
+    return econFormat(minor, currency || "USD");
   } catch {
     return `${(minor / 100).toFixed(2)} ${currency}`;
   }
 }
 
-/** Reads what a person types ("24.95", "$24.95", "1,200") as minor units, or null. */
-export function parseMinor(input: string): number | null {
+/** Reads what a person types ("24.95", "$24.95", "1,200") as minor units of the currency, or null. */
+export function parseMinor(input: string, currency = "USD"): number | null {
   const cleaned = input.replace(/[^0-9.\-]/g, "");
   if (!cleaned || cleaned === "." || cleaned === "-") return null;
   const n = Number(cleaned);
   if (!Number.isFinite(n) || n < 0) return null;
-  return Math.round(n * 100);
+  return toMinor(n, currency);
 }
