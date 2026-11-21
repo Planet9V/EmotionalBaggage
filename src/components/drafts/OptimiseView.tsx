@@ -69,6 +69,9 @@ function Action({ projectId, a, configured }: { projectId: string; a: OptimiseSt
   const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(0);
+  // Nothing to optimise: no parts, or no print jobs. Counted from the rows, like the figures.
+  const m = a.now.measure as { parts?: number; rows?: number; jobs?: number };
+  const empty = (m.parts ?? m.rows ?? m.jobs ?? 0) === 0;
 
   const go = (supersede = false) => {
     setError("");
@@ -87,7 +90,7 @@ function Action({ projectId, a, configured }: { projectId: string; a: OptimiseSt
       title={a.label}
       description={WHAT[a.id]}
       actions={
-        <Button size="sm" onClick={() => go(false)} disabled={!configured || optimise.isPending}>
+        <Button size="sm" onClick={() => go(false)} disabled={!configured || empty || optimise.isPending} title={empty ? "Nothing to optimise yet" : undefined}>
           {optimise.isPending ? "Asking the model" : a.action}
         </Button>
       }

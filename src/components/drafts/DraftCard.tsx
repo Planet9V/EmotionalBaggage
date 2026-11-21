@@ -10,7 +10,7 @@ import { TEXTAREA_CLS } from "@/components/items/shared";
 import { storeHref, type Draft } from "@/lib/ai/drafts/shared";
 import type { Item } from "@/lib/types";
 import { messageOf } from "@/lib/queries";
-import { ATTACK_MESSAGE, useChallengeRow, useDraftActions } from "./api";
+import { useDraftActions } from "./api";
 
 /** Fields the card does not offer as text boxes: shapes and positions edited in their own views. */
 const STRUCTURED = new Set(["geometry", "schematic", "pinRoles", "options"]);
@@ -47,7 +47,6 @@ function pinsText(d: Draft) {
 export function DraftCard({ draft, current, decided }: { draft: Draft; current?: Item | null; decided?: boolean }) {
   const base = useId();
   const { approve, reject, edit } = useDraftActions(draft.projectId);
-  const attack = useChallengeRow(draft.projectId);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(draft.title);
   const [body, setBody] = useState(draft.body);
@@ -84,7 +83,12 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
   };
 
   const diff = op === "replace" && current ? changes(current, draft) : [];
-  const fieldList = Object.entries(draft.data).filter(([k, v]) => !STRUCTURED.has(k) && k !== "pins" && v !== "" && v !== null && v !== undefined);
+  // A wire reads as "BT1.+ to U1.VCC" rather than four separate fields.
+  const wire = typeof draft.data.from === "string" && typeof draft.data.to === "string" && draft.data.from && draft.data.to ? `${draft.data.from}.${draft.data.fromPin ?? ""} to ${draft.data.to}.${draft.data.toPin ?? ""}` : "";
+  const WIRE_FIELDS = new Set(["from", "fromPin", "to", "toPin"]);
+  const fieldList = Object.entries(draft.data)
+    .filter(([k, v]) => !STRUCTURED.has(k) && k !== "pins" && !(wire && WIRE_FIELDS.has(k)) && v !== "" && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0))
+    .sort(([a], [b]) => a.localeCompare(b));
   const size = (draft.data.geometry as { size?: number[] } | undefined)?.size;
 
   return (
@@ -160,8 +164,9 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
           ) : (
             <>
               {draft.body && <p className="mt-2 whitespace-pre-wrap text-sm text-secondary wrap-anywhere">{draft.body}</p>}
-              {(fieldList.length > 0 || size) && (
+              {(fieldList.length > 0 || size || wire) && (
                 <dl className="mt-3 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+                  {wire && <div className="flex gap-2 sm:col-span-2"><dt className="font-mono text-muted">wire</dt><dd className="font-mono text-primary">{wire}</dd></div>}
                   {fieldList.map(([k, v]) => (
                     <div key={k} className="flex gap-2"><dt className="font-mono text-muted">{k}</dt><dd className="text-primary wrap-anywhere">{show(v)}</dd></div>
                   ))}
@@ -193,18 +198,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
 
       {draft.status === "draft" && !decided && !editing && (
         <div className="mt-3 flex flex-wrap gap-2 border-t border-hairline pt-3">
-          <Button
-            size="sm"
-            onClick={() =>
-              void decide(async () => {
-                const r = await approve.mutateAsync(draft.id);
-                // A press release or FAQ entry is put to the reviewer once, right after it is approved.
-                const message = ATTACK_MESSAGE[draft.targetStore];
-                if (message && r.item) attack.mutate({ itemId: r.item.id, message });
-              })
-            }
-            disabled={busy || missing}
-          >
+          <Button size="sm" onClick={() => void decide(() => approve.mutateAsync(draft.id))} disabled={busy || missing}>
             <Check className="h-3.5 w-3.5" aria-hidden /> {approve.isPending ? "Approving" : op === "remove" ? "Approve removal" : "Approve"}
           </Button>
           <Button size="sm" variant="outline" onClick={() => void decide(() => reject.mutateAsync({ id: draft.id }))} disabled={busy}>

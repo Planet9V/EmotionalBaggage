@@ -11,7 +11,7 @@ import { ConfirmButton } from "@/components/admin/shared";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
 import type { Draft, GeneratorInfo, RunResult } from "@/lib/ai/drafts/shared";
-import { ApiError, ATTACK_MESSAGE, draftQueries, useChallengeRow, useDraftActions } from "./api";
+import { ApiError, draftQueries, useDraftActions } from "./api";
 import { DraftCard } from "./DraftCard";
 
 export const MODELS_HREF = "/admin?tab=models";
@@ -26,9 +26,8 @@ export function byRun(drafts: Draft[]) {
 }
 
 /** Approve every waiting draft of a run, after a confirm. */
-export function ApproveRunButton({ projectId, runId, count, store }: { projectId: string; runId: string; count: number; store: string }) {
+export function ApproveRunButton({ projectId, runId, count }: { projectId: string; runId: string; count: number }) {
   const { approveRun } = useDraftActions(projectId);
-  const attack = useChallengeRow(projectId);
   const [error, setError] = useState("");
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -40,14 +39,7 @@ export function ApproveRunButton({ projectId, runId, count, store }: { projectId
         disabled={approveRun.isPending}
         onConfirm={() => {
           setError("");
-          approveRun.mutate(runId, {
-            onError: (e) => setError(messageOf(e)),
-            onSuccess: (r) => {
-              const message = ATTACK_MESSAGE[store];
-              if (!message) return;
-              for (const a of r.approved as { item: { id: number } | null }[]) if (a.item) attack.mutate({ itemId: a.item.id, message });
-            },
-          });
+          approveRun.mutate(runId, { onError: (e) => setError(messageOf(e)) });
         }}
       />
       {error && <p role="alert" className="text-sm text-danger wrap-anywhere">{error}</p>}
@@ -66,7 +58,7 @@ export function WaitingDrafts({ projectId, store, drafts }: { projectId: string;
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
               Run of {new Date(r.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · {r.drafts.length} waiting
             </p>
-            {r.drafts.length > 1 && <ApproveRunButton projectId={projectId} runId={r.runId} count={r.drafts.length} store={store} />}
+            {r.drafts.length > 1 && <ApproveRunButton projectId={projectId} runId={r.runId} count={r.drafts.length} />}
           </div>
           {r.drafts.map((d) => <DraftCard key={`${d.id}:${d.title}:${d.body.length}`} draft={d} current={current(d)} />)}
         </section>

@@ -58,7 +58,7 @@ const row = (o: Partial<Item> = {}): Item => ({ id: 40, projectId: P, section: S
 
 const items = on("GET", `/api/projects/${P}/items?section=${encodeURIComponent(STORE)}`, () => ({ body: { items: [row()] } }));
 const listOf = (drafts: Draft[]) => on("GET", `/api/drafts?projectId=${P}&status=draft&store=${encodeURIComponent(STORE)}`, () => ({ body: { drafts, pending: { [STORE]: drafts.length } } }));
-const genRoute = (r: GeneratorsReply) => on("GET", `/api/drafts/generators?projectId=${P}&store=${encodeURIComponent(STORE)}`, () => ({ body: r }));
+const genRoute = (r: GeneratorsReply) => on("GET", `/api/drafts/generators?projectId=${P}&kind=section&store=${encodeURIComponent(STORE)}`, () => ({ body: r }));
 
 /** Waits for the button to finish loading (its hint shows), then opens the panel. */
 async function openPanel() {

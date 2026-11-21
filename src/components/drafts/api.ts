@@ -54,7 +54,7 @@ export const draftQueries = {
   generators: (projectId: string, store: string | null) =>
     queryOptions({
       queryKey: draftKeys.generators(projectId, store),
-      queryFn: ({ signal }) => call<GeneratorsReply>(`/api/drafts/generators?projectId=${enc(projectId)}${store ? `&store=${enc(store)}` : "&kind=section"}`, { signal }),
+      queryFn: ({ signal }) => call<GeneratorsReply>(`/api/drafts/generators?projectId=${enc(projectId)}&kind=section${store ? `&store=${enc(store)}` : ""}`, { signal }),
       enabled: !!projectId,
     }),
   optimise: (projectId: string) =>
@@ -71,6 +71,27 @@ export function refreshAfterDecision(qc: QueryClient, projectId: string, itemsTo
   return Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey })));
 }
 
+type Approved = { draft: Draft; item: Item | null };
+
+/**
+ * An approved press release or FAQ entry is put to the reviewer once, right after approval, through the
+ * one reviewer route. It runs here, at the mutation, not in a component: the card that was approved is
+ * gone from the screen by the time the approval answers. A failure is not an error of the approval;
+ * the section's critique panel then offers "Attack it".
+ */
+function attackApproved(qc: QueryClient, projectId: string, approved: Approved[]) {
+  for (const a of approved) {
+    const message = ATTACK_MESSAGE[a.draft.targetStore];
+    if (!message || !a.item) continue;
+    void call("/api/challenge", { method: "POST", body: JSON.stringify({ projectId, itemId: a.item.id, message }) })
+      .catch(() => undefined)
+      .finally(() => {
+        void qc.invalidateQueries({ queryKey: appKeys.challenge(projectId) });
+        void qc.invalidateQueries({ queryKey: appKeys.events(projectId) });
+      });
+  }
+}
+
 export type RunInput = { generator: string; supersede?: boolean; reviseIds?: number[]; why?: string; critique?: string; signal?: AbortSignal };
 
 export function useDraftActions(projectId: string) {
@@ -81,6 +102,7 @@ export function useDraftActions(projectId: string) {
   });
   const approve = useMutation({
     mutationFn: (id: number) => call<{ draft: Draft; item: Item | null; before: Item | null }>(`/api/drafts/${id}/approve`, { method: "POST" }),
+    onSuccess: (r) => attackApproved(qc, projectId, [r]),
     onSettled: () => refreshAfterDecision(qc, projectId),
   });
   const reject = useMutation({
@@ -101,7 +123,8 @@ export function useDraftActions(projectId: string) {
     onSuccess: ({ draft }) => qc.setQueriesData<DraftList>({ queryKey: draftKeys.all(projectId) }, (l) => (l && Array.isArray(l.drafts) ? { ...l, drafts: l.drafts.map((d) => (d.id === draft.id ? draft : d)) } : l)),
   });
   const approveRun = useMutation({
-    mutationFn: (runId: string) => call<{ approved: unknown[] }>("/api/drafts/approve-run", { method: "POST", body: JSON.stringify({ projectId, runId, confirm: true }) }),
+    mutationFn: (runId: string) => call<{ approved: Approved[] }>("/api/drafts/approve-run", { method: "POST", body: JSON.stringify({ projectId, runId, confirm: true }) }),
+    onSuccess: (r) => attackApproved(qc, projectId, r.approved),
     onSettled: () => refreshAfterDecision(qc, projectId),
   });
   return { run, approve, reject, edit, approveRun };
