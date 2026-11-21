@@ -31,7 +31,7 @@ const BANNED: [RegExp, string][] = [
 describe("copy is in task words", () => {
   it("no field names, keys or store paths in text on screen", () => {
     const offenders: string[] = [];
-    for (const f of [...files("src/components"), ...files("src/lib/enclosure")]) {
+    for (const f of [...files("src/components"), ...files("src/lib/process"), ...files("src/lib/enclosure")]) {
       if (f.includes("ai-elements")) continue;
       for (const t of shownText(readFileSync(f, "utf8"))) for (const [re, what] of BANNED) if (re.test(t)) offenders.push(`${f}: ${what}: ${t.slice(0, 90)}`);
     }

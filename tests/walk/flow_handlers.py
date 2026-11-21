@@ -1,4 +1,4 @@
-@on(r"^Add \d+ more rows? to Brief")
+@on(r"^Add \d+ more brief lines?")
 def brief(pg, label, href):
     n = 3 - len(items("concept/brief"))
     for i in range(n):
@@ -16,13 +16,13 @@ def decide(pg, label, href):
     a.patch(f"/api/items/{ds[0]['id']}", {"data": {"chosen": "yes"}, "status": "decided"}, ok=200)
     log("     (API) decision added and decided")
 
-@on(r"^Settle .* in Open questions")
+@on(r"^Mark .*(in Open questions|open questions?) as")
 def questions(pg, label, href):
     for q in items("concept/questions"):
         if q["status"] in ("open", "blocked"): status(q["id"], "decided")
     log("     (API) questions settled")
 
-@on(r"^Add \d+ more rows? to Claims to verify")
+@on(r"^Add \d+ more claims?")
 def claim(pg, label, href):
     pg.locator("#add-row").click(); pg.wait_for_timeout(500)
     d = pg.get_by_role("dialog")
@@ -46,7 +46,7 @@ def draft(pg, label, href):
     approve_all_dialog(pg, label)
     log("     (UI) Draft with AI, approved all")
 
-@on(r"^Settle .* in Requirements")
+@on(r"^Mark .*(in Requirements|requirements?) as")
 def reqs(pg, label, href):
     for r in items("design/requirements"):
         if r["status"] in ("open", "blocked"): status(r["id"], "done")

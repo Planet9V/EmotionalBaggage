@@ -1,6 +1,7 @@
-import { findSection, STAGES } from "@/lib/menu";
+import { DEFAULT_STATUSES, findSection, STAGES } from "@/lib/menu";
 import { DECISIONS_STORE, UNLOCK_STORES } from "@/lib/plan";
 import { toDecision } from "@/lib/domain/decision";
+import { STORE_NOUN } from "@/lib/ai/drafts/shared";
 import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
 import { buildPassedCheck, campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
@@ -56,6 +57,27 @@ export const stageLabel = (key: string) => STAGES.find((s) => s.key === key)?.la
 function rowsOf(rows: Item[], path: string): Item[] {
   const store = UNLOCK_STORES.get(path) ?? path;
   return rows.filter((r) => r.section === store);
+}
+
+/** "3 wires", "1 requirement": the rows of a section named as what they are, not as rows (U25). */
+function things(path: string, n: number) {
+  const [one, many] = STORE_NOUN[UNLOCK_STORES.get(path) ?? path] ?? ["row", "rows"];
+  return plural(n, one, many);
+}
+/** "wires", "requirements": the plural alone. */
+function thingsWord(path: string) {
+  return (STORE_NOUN[UNLOCK_STORES.get(path) ?? path] ?? ["row", "rows"])[1];
+}
+/** " in Brief" when a section's rows have no name of their own; "" when the noun already says where (U25). */
+function inSection(path: string, label: string) {
+  return STORE_NOUN[UNLOCK_STORES.get(path) ?? path] ? "" : ` in ${label}`;
+}
+/** The statuses that settle a row of a section: every status it has that is not one of `open`. */
+function settledStatuses(path: string, open: string[]): string[] {
+  const [stageKey, sectionKey] = path.split("/");
+  const list = findSection(stageKey, sectionKey)?.section.statuses ?? DEFAULT_STATUSES;
+  const out = list.filter((x) => !open.includes(x));
+  return out.length ? out : ["done"];
 }
 
 const FIELD_NAMES: Record<ConceptField, string> = { name: "a name", oneLiner: "a one-line description" };
@@ -115,20 +137,22 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
           ...base,
           href: fixHref(p.section, { row: waiting }),
           met,
-          detail: `${plural(n, "row")} ${listOr(p.statuses!)}, ${p.min} needed; ${plural(all.length - n, "row")} waiting.`,
+          detail: `${things(p.section, n)} ${listOr(p.statuses!)}, ${p.min} needed; ${things(p.section, all.length - n)} waiting.`,
           action: moveAction(waiting.title, label, p.statuses!),
         };
       }
       return {
         ...base,
         met,
-        detail: met ? `${plural(n, "row")} ${p.statuses ? listOr(p.statuses) : "recorded"}.` : `${plural(n, "row")} ${p.statuses ? listOr(p.statuses) : "recorded"}, ${p.min} needed.`,
+        detail: met ? `${things(p.section, n)} ${p.statuses ? listOr(p.statuses) : "recorded"}.` : `${things(p.section, n)} ${p.statuses ? listOr(p.statuses) : "recorded"}, ${p.min} needed.`,
         action:
           n === 0 && check.todo
             ? check.todo
             : n === 0 && check.anchor === "draft-with-ai"
               ? `Draft ${label} with AI, or add a row by hand`
-              : `Add ${p.min - n > 0 ? plural(p.min - n, "more row") : "rows"} to ${label}`,
+              : p.min - n > 0
+                ? `Add ${p.min - n} more ${p.min - n === 1 ? (STORE_NOUN[UNLOCK_STORES.get(p.section) ?? p.section]?.[0] ?? "row") : thingsWord(p.section)}${inSection(p.section, label)}`
+                : `Add ${thingsWord(p.section)}${inSection(p.section, label)}`,
       };
     }
     case "all-status": {
@@ -140,14 +164,14 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const label = sectionLabel(check.params.section);
       // True of zero rows is not proof: an empty section fails unless the definition allows it.
       if (xs.length === 0 && !check.params.allowEmpty) {
-        return { ...base, met: false, detail: `No rows in ${label} yet, so nothing shows this is ${want}.`, action: check.todo ?? `Add rows to ${label}` };
+        return { ...base, met: false, detail: `No ${thingsWord(check.params.section)}${inSection(check.params.section, label)} yet, so nothing shows this is ${want}.`, action: check.todo ?? `Add ${thingsWord(check.params.section)}${inSection(check.params.section, label)}` };
       }
       return {
         ...base,
         href: badRows[0] ? fixHref(check.params.section, { row: badRows[0] }) : base.href,
         met: bad === 0,
-        detail: xs.length === 0 ? "No rows yet, so nothing is left to move." : bad === 0 ? `All ${plural(xs.length, "row")} are ${want}.` : `${bad} of ${plural(xs.length, "row")} not yet ${want}.`,
-        action: bad === 1 ? `Move "${badRows[0].title}" in ${label} to ${want}` : `Move ${plural(bad, "row")} in ${label} to ${want}, starting with "${badRows[0]?.title ?? ""}"`,
+        detail: xs.length === 0 ? `No ${thingsWord(check.params.section)} yet, so nothing is left to move.` : bad === 0 ? `All ${things(check.params.section, xs.length)} are ${want}.` : `${bad} of ${things(check.params.section, xs.length)} not yet ${want}.`,
+        action: bad === 1 ? `Move "${badRows[0].title}" in ${label} to ${want}` : `Move ${things(check.params.section, bad)}${inSection(check.params.section, label)} to ${want}, starting with "${badRows[0]?.title ?? ""}"`,
       };
     }
     case "no-open": {
@@ -158,14 +182,18 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const n = open.length;
       const label = sectionLabel(check.params.section);
       if (all.length === 0 && !check.params.allowEmpty) {
-        return { ...base, met: false, detail: `No rows in ${label} yet, so nothing shows none is ${listOr(statuses)}.`, action: check.todo ?? `Add rows to ${label}` };
+        return { ...base, met: false, detail: `No ${thingsWord(check.params.section)}${inSection(check.params.section, label)} yet, so nothing shows none is ${listOr(statuses)}.`, action: check.todo ?? `Add ${thingsWord(check.params.section)}${inSection(check.params.section, label)}` };
       }
       return {
         ...base,
         href: open[0] ? fixHref(check.params.section, { row: open[0] }) : base.href,
         met: n === 0,
-        detail: n === 0 ? `Nothing is ${listOr(statuses)}.` : `${plural(n, "row")} ${listOr(statuses)}.`,
-        action: n === 1 ? `Settle "${open[0].title}" in ${label}` : `Settle ${plural(n, "row")} in ${label}, starting with "${open[0]?.title ?? ""}"`,
+        detail: n === 0 ? `Nothing is ${listOr(statuses)}.` : `${things(check.params.section, n)} still ${listOr(statuses)}.`,
+        // "Settle" said nothing about what to do: name the statuses that settle a row (U25).
+        action:
+          n === 1
+            ? `Mark "${open[0].title}" in ${label} as ${listOr(settledStatuses(check.params.section, statuses))}`
+            : `Mark ${things(check.params.section, n)}${inSection(check.params.section, label)} as ${listOr(settledStatuses(check.params.section, statuses))}, starting with "${open[0]?.title ?? ""}"`,
       };
     }
     case "claims-verified": {
@@ -200,12 +228,12 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       let via = "";
       if (!d && check.params.fallback === "root") {
         d = all.find((x) => x.parent === "");
-        if (d) via = ` Read from the first decision in the tree, because none has the key "${key}".`;
+        if (d) via = " The first decision in the tree is read as this one.";
       }
       if (!d) {
         return check.params.fallback === "root"
           ? { ...base, met: false, detail: "The decision tree is empty.", action: "Add the go/no-go question as the first decision" }
-          : { ...base, met: false, detail: `No decision has the key "${key}" yet.`, action: `Add the "${key}" decision to the decision tree` };
+          : { ...base, met: false, detail: "This decision is not in the decision tree yet.", action: "Add the decision to the decision tree" };
       }
       const chosen = d.options.find((o) => o.id === d.chosen);
       return {
