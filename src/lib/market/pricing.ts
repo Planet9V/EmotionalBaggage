@@ -3,7 +3,6 @@
 //
 // The unit cost and the currency are not this module's: both come from the unit economics
 // (src/lib/economics), so pricing, campaigns, content and the report quote one figure.
-import { formatMoney as econFormat, toMinor } from "@/lib/economics/money";
 import type { UnitCost as EconomicsUnitCost } from "@/lib/economics/compute";
 
 /**
@@ -74,20 +73,3 @@ export function position(priceMinor: number, range: CompetitorRange): "below all
   return "within the range";
 }
 
-/** Whole money as text, in the currency given, with the currency's own minor digits (the economics' formatter). Falls back to the code when the runtime does not know the currency. */
-export function formatMoney(minor: number, currency: string): string {
-  try {
-    return econFormat(minor, currency || "USD");
-  } catch {
-    return `${(minor / 100).toFixed(2)} ${currency}`;
-  }
-}
-
-/** Reads what a person types ("24.95", "$24.95", "1,200") as minor units of the currency, or null. */
-export function parseMinor(input: string, currency = "USD"): number | null {
-  const cleaned = input.replace(/[^0-9.\-]/g, "");
-  if (!cleaned || cleaned === "." || cleaned === "-") return null;
-  const n = Number(cleaned);
-  if (!Number.isFinite(n) || n < 0) return null;
-  return toMinor(n, currency);
-}

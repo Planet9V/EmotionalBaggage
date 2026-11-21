@@ -5,6 +5,7 @@
 // The check is a pure function of the copy and the linked rows; the server runs it again on every
 // edit and approval, so a stored flag is never trusted.
 import type { ProofRef } from "@/lib/market/schemas";
+import { toInputText } from "@/lib/economics/money";
 
 export type ProofRow = { id: number; section: string; title: string; body: string; status: string; data: Record<string, unknown> };
 export type Flag = { field: string; text: string; kind: "number" | "superlative"; reason: string };
@@ -29,7 +30,7 @@ export function proofStateOf(r: ProofRow): ProofState {
 const rowText = (r: ProofRow) =>
   `${r.title} ${r.body} ${Object.values(r.data ?? {})
     .filter((v) => typeof v === "string" || typeof v === "number")
-    .join(" ")} ${typeof r.data?.priceMinor === "number" ? (r.data.priceMinor / 100).toFixed(2) : ""}`;
+    .join(" ")} ${typeof r.data?.priceMinor === "number" ? toInputText(r.data.priceMinor, String(r.data.currency || "USD")) : ""}`;
 
 const normNum = (s: string) => s.replace(/,/g, "").replace(/\.0+$/, "");
 

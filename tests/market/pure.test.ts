@@ -2,7 +2,8 @@
 // proof check, the brand kit as text and CSS, and the competitor price reader.
 import { describe, expect, it } from "vitest";
 import { checkColour, contrastRatio, levelFor, parseHex } from "@/lib/market/contrast";
-import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, pricingUnitCost } from "@/lib/market/pricing";
+import { competitorRange, costPlusPrice, margin, position, pricingUnitCost } from "@/lib/market/pricing";
+import { formatMoney, parseMinor } from "@/lib/economics/money";
 import { referenceUnitCost } from "@/lib/economics/compute";
 import { readEconomics } from "@/lib/economics/read";
 import { GROUP_ORDER, handleOf, nameChecks, SCREENING_NOTE, screeningProgress } from "@/lib/market/nameChecks";

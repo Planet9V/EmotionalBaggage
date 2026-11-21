@@ -11,6 +11,7 @@ import { getSecretFor, perplexityBaseUrl } from "@/lib/secretOrigin";
 import { ask, type Source } from "@/lib/research/perplexity";
 import { toStoredSource } from "@/lib/research/schemas";
 import { newId, offerSchema, alternateSchema, type Draft } from "./schemas";
+import { currencyOf } from "@/lib/economics/currency";
 
 export type Kind = "prices" | "alternates";
 
@@ -83,7 +84,7 @@ export async function researchPart(projectId: string, partId: number, kind: Kind
   if (!part) throw notFound("That part");
   const key = await getSecretFor("perplexity", "apiKey", perplexityBaseUrl());
   if (!key) throw new HttpError(503, "Perplexity is not connected. Add a key in Admin, Credentials.");
-  const cur = (await q<{ currency: string }>("SELECT currency FROM projects WHERE id=$1", [projectId]))[0]?.currency ?? "USD";
+  const cur = await currencyOf(projectId);
   const p: Part = { title: part.title, body: part.body, ref: String(part.data.ref ?? ""), partNumber: String((part.data as { partNumber?: string }).partNumber ?? ""), search: String(part.data.search ?? "") };
   const question = questionFor(kind, p, cur);
   const r = await ask({ question, apiKey: key, signal });

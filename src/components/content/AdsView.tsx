@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useItems } from "@/lib/client";
 import { useProductionSettings } from "@/lib/economics/client";
 import { effectiveAdRule, type AdRule } from "@/lib/campaigns/adRule";
-import { formatMoney } from "@/lib/economics/money";
-import { minorDigits, toMajor, toMinor as majorToMinor } from "@/lib/economics/money";
+import { formatMoney, parseMinor, toInputText } from "@/lib/economics/money";
 import { AD_CHANNELS, checkChannel, measure, type ChannelSpec, type FieldSpec, type FieldValues } from "@/lib/content/channels";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
@@ -23,8 +22,8 @@ import { Card } from "@/components/ui/Card";
 
 const STATUSES = ["draft", "approved", "running", "paused", "killed"];
 // Money is in the concept's one currency (projects.currency, set on Unit economics), in its own minor unit.
-const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : majorToMinor(Number(s), cur));
-const fromMinor = (n: unknown, cur: string) => (typeof n === "number" ? toMajor(n, cur).toFixed(minorDigits(cur)) : "");
+const toMinor = (s: string, cur: string) => (s.trim() === "" ? undefined : (parseMinor(s, cur) ?? undefined));
+const fromMinor = (n: unknown, cur: string) => (typeof n === "number" ? toInputText(n, cur) : "");
 
 export function AdsView({ project, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, remove } = useItems(project.id, store);

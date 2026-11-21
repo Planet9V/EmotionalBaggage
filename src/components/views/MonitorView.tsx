@@ -92,7 +92,7 @@ function AmazonPanel({ projectId }: { projectId: string }) {
                 <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Day (UTC)</TableHead><TableHead className="text-right">Orders</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Sales</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {[...a.metrics].reverse().filter((m) => m.orders || m.units).map((m) => (
-                    <TableRow key={m.day}><TableCell className="font-mono text-xs">{m.day}</TableCell><TableCell className="text-right font-mono text-xs">{m.orders}</TableCell><TableCell className="text-right font-mono text-xs">{m.units}</TableCell><TableCell className="text-right font-mono text-xs">{money(m.sales)} {m.currency}</TableCell></TableRow>
+                    <TableRow key={m.day}><TableCell className="font-mono text-xs">{m.day}</TableCell><TableCell className="text-right font-mono text-xs">{m.orders}</TableCell><TableCell className="text-right font-mono text-xs">{m.units}</TableCell><TableCell className="text-right font-mono text-xs">{money(m.sales, m.currency)} {m.currency}</TableCell></TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -151,7 +151,7 @@ function SalesChart({ items }: { items: Item[] }) {
           <TableHeader><TableRow className="hover:bg-transparent"><TableHead scope="col">Day</TableHead><TableHead scope="col">Channel</TableHead><TableHead scope="col" className="text-right">Rows</TableHead><TableHead scope="col" className="text-right">Units</TableHead><TableHead scope="col" className="text-right">Revenue</TableHead></TableRow></TableHeader>
           <TableBody>
             {[...agg.cells].reverse().map((c) => (
-              <TableRow key={`${c.day}-${c.channel}`}><TableCell className="font-mono text-xs">{c.day}</TableCell><TableCell>{c.channel}</TableCell><TableCell className="text-right font-mono text-xs">{c.rows}</TableCell><TableCell className="text-right font-mono text-xs">{c.units}</TableCell><TableCell className="text-right font-mono text-xs">{money(c.revenue)}{agg.currencies[c.channel]?.length === 1 ? ` ${agg.currencies[c.channel][0]}` : ""}</TableCell></TableRow>
+              <TableRow key={`${c.day}-${c.channel}`}><TableCell className="font-mono text-xs">{c.day}</TableCell><TableCell>{c.channel}</TableCell><TableCell className="text-right font-mono text-xs">{c.rows}</TableCell><TableCell className="text-right font-mono text-xs">{c.units}</TableCell><TableCell className="text-right font-mono text-xs">{money(c.revenue, agg.currencies[c.channel]?.length === 1 ? agg.currencies[c.channel][0] : undefined)}{agg.currencies[c.channel]?.length === 1 ? ` ${agg.currencies[c.channel][0]}` : ""}</TableCell></TableRow>
             ))}
           </TableBody>
         </Table>
@@ -202,7 +202,7 @@ export function MonitorView({ project, store }: ViewProps) {
                       <TableCell className="text-primary">{r.channel}</TableCell>
                       <TableCell className="font-mono text-xs text-secondary">{typeof s.data.orderId === "string" ? `${s.data.orderId}${s.data.orderStatus ? ` (${String(s.data.orderStatus).toLowerCase()})` : ""}` : "typed in"}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{r.units}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{money(r.revenue)}{r.currency ? ` ${r.currency}` : ""}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{money(r.revenue, r.currency)}{r.currency ? ` ${r.currency}` : ""}</TableCell>
                       <TableCell><Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete the ${r.channel} row for ${r.date}`} onClick={() => setDel(s)}><Trash2 className="h-4 w-4" aria-hidden /></Button></TableCell>
                     </TableRow>
                   );

@@ -10,10 +10,10 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { saveOrMessage, useItems } from "@/lib/client";
-import { competitorRange, costPlusPrice, formatMoney, margin, parseMinor, position, pricingUnitCost, type Competitor } from "@/lib/market/pricing";
+import { competitorRange, costPlusPrice, margin, position, pricingUnitCost, type Competitor } from "@/lib/market/pricing";
 import { useEconomicsRows, useProductionSettings } from "@/lib/economics/client";
 import { referenceUnitCost } from "@/lib/economics/compute";
-import { minorDigits, toMajor } from "@/lib/economics/money";
+import { formatMoney, parseMinor, toInputText } from "@/lib/economics/money";
 import { readEconomics } from "@/lib/economics/read";
 import { pricingData } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
@@ -25,9 +25,6 @@ import { Field } from "@/components/ui/field";
 
 type PriceRow = { item: Item; priceMinor: number; approach: string; note: string; currency: string };
 type ChannelRow = { item: Item; name: string; feePercent: number; fixedFeeMinor: number };
-
-/** An amount as a person types it back, with the currency's own decimals ("25.00", "2500" for yen). */
-const majorText = (minor: number, currency: string) => toMajor(minor, currency).toFixed(minorDigits(currency));
 
 const NO_CHANNEL: ChannelRow["item"] | null = null;
 
@@ -123,7 +120,7 @@ export function PricingView({ project, store }: ViewProps) {
                   <TableRow key={c.item.id}>
                     <TableCell><InlineEdit label="Channel name" value={c.name} onSave={(v) => (v.trim() ? saveOrMessage(patch(c.item.id, { title: v.trim() })) : "A channel needs a name.")} /></TableCell>
                     <TableCell><InlineEdit label="Fee percent" mono value={String(c.feePercent)} onSave={(v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 100 ? saveOrMessage(patch(c.item.id, { data: { feePercent: n } })) : "Enter a percent from 0 to 100."; }} /></TableCell>
-                    <TableCell><InlineEdit label="Fixed fee" mono value={majorText(c.fixedFeeMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null ? "Enter an amount, zero or more." : saveOrMessage(patch(c.item.id, { data: { fixedFeeMinor: m } })); }} /></TableCell>
+                    <TableCell><InlineEdit label="Fixed fee" mono value={toInputText(c.fixedFeeMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null ? "Enter an amount, zero or more." : saveOrMessage(patch(c.item.id, { data: { fixedFeeMinor: m } })); }} /></TableCell>
                     <TableCell><Button size="icon-sm" variant="ghost" aria-label={`Remove ${c.name}`} onClick={() => void guard(remove(c.item.id))}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button></TableCell>
                   </TableRow>
                 ))}
@@ -220,7 +217,7 @@ export function PricingView({ project, store }: ViewProps) {
                 {[...prices].sort((a, b) => a.priceMinor - b.priceMinor).map((p) => (
                   <TableRow key={p.item.id}>
                     <TableCell className="whitespace-nowrap">
-                      <InlineEdit label="Price" mono value={majorText(p.priceMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null || m === 0 ? "Enter a price above zero." : saveOrMessage(patch(p.item.id, { title: `${formatMoney(m, currency)}${p.note ? ` (${p.note})` : ""}`, data: { priceMinor: m } })); }} />
+                      <InlineEdit label="Price" mono value={toInputText(p.priceMinor, currency)} onSave={(v) => { const m = parseMinor(v, currency); return m === null || m === 0 ? "Enter a price above zero." : saveOrMessage(patch(p.item.id, { title: `${formatMoney(m, currency)}${p.note ? ` (${p.note})` : ""}`, data: { priceMinor: m } })); }} />
                       <span className="block text-[11px] text-muted">{p.approach === "own" ? "your own" : p.approach.replace("-", " ")}</span>
                     </TableCell>
                     {cols.map((c) => {
@@ -307,7 +304,7 @@ function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: numbe
 }
 
 function ValueForm({ currency, valueMinor, note, onSave, onAdd }: { currency: string; valueMinor: number | null; note: string; onSave: (minor: number, note: string) => Promise<unknown>; onAdd: (minor: number) => Promise<unknown> }) {
-  const [v, setV] = useState(valueMinor === null ? "" : majorText(valueMinor, currency));
+  const [v, setV] = useState(valueMinor === null ? "" : toInputText(valueMinor, currency));
   const [n, setN] = useState(note);
   const [err, setErr] = useState("");
   const parsed = parseMinor(v, currency);

@@ -10,6 +10,7 @@ import type { PositioningMessage, ProofRef } from "@/lib/market/schemas";
 import { evaluate, proofStateOf, type Flag, type ProofRow } from "../claims";
 import type { CopyField } from "../claims";
 import { claimFields, type MessageRef } from "../schemas";
+import { toInputText } from "@/lib/economics/money";
 
 /** Stores every content generator reads. */
 export const BASE_FROM = ["marketing/positioning", "marketing/brand", "research/claims", "prototype/tests", "design/requirements", "marketing/pricing", "marketing/personas", "concept/brief"];
@@ -63,7 +64,7 @@ export function proofBlock(ctx: GenContext): string {
   if (!rows.length) return "Proof rows you may link: none. So the copy must not contain any number or superlative (best, fastest, only, most, first, never, always, guaranteed, 100%).";
   return (
     "Proof rows you may link in \"proofIds\" (verified claims, passing tests, requirements, approved prices). A number or a superlative in your copy is allowed only if you link a row that holds that same number or shows that claim; otherwise leave it out:\n" +
-    rows.map((r) => `- #${r.id} ${proofStateOf(r)}: ${r.title}${r.body ? `: ${r.body.slice(0, 300)}` : ""}${typeof r.data.priceMinor === "number" ? ` (price ${(r.data.priceMinor / 100).toFixed(2)} ${String(r.data.currency ?? "")})` : ""}`).join("\n")
+    rows.map((r) => `- #${r.id} ${proofStateOf(r)}: ${r.title}${r.body ? `: ${r.body.slice(0, 300)}` : ""}${typeof r.data.priceMinor === "number" ? ` (price ${toInputText(r.data.priceMinor, String(r.data.currency || "USD"))} ${String(r.data.currency ?? "")})` : ""}`).join("\n")
   );
 }
 

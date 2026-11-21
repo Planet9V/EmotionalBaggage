@@ -1,7 +1,9 @@
 import { sumLine, type Part } from "@/lib/domain";
 import { toCsvText } from "@/lib/csv";
+import { DEFAULT_CURRENCY, majorText } from "@/lib/economics/money";
 
-export const money = (n: number) => n.toFixed(2);
+/** A cost held in major units as fixed text with the currency's own decimals (src/lib/economics/money.ts); two decimals when no currency is given. */
+export const money = (n: number, currency?: string) => majorText(n, currency || DEFAULT_CURRENCY);
 
 /** Parse a money or quantity string. Returns null when it is not a number or is negative. */
 export function parseAmount(s: string): number | null {

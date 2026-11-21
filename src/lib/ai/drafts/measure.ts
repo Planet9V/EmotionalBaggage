@@ -4,6 +4,7 @@
 import { readParts } from "@/lib/domain";
 import type { Item } from "@/lib/types";
 import type { Draft } from "./shared";
+import { DEFAULT_CURRENCY, majorText } from "@/lib/economics/money";
 
 export type CostMeasure = {
   parts: number;
@@ -131,11 +132,11 @@ export function measure(action: OptimiseAction, rows: Item[]): Measure {
   return action === "cost" ? measureCost(rows) : action === "parts" ? measureCount(rows) : measurePrint(rows);
 }
 
-const money = (n: number) => n.toFixed(2);
 const hm = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 
 /** A measurement in words, for the screen and the activity log. */
-export function describe(action: OptimiseAction, m: Measure): string {
+export function describe(action: OptimiseAction, m: Measure, currency: string = DEFAULT_CURRENCY): string {
+  const money = (n: number) => majorText(n, currency);
   if (action === "cost") {
     const c = m as CostMeasure;
     if (!c.parts) return "No parts";

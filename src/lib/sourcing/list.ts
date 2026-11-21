@@ -1,6 +1,7 @@
 // The shopping list: what is still to be bought, grouped by supplier, with totals worked out from the chosen offers.
-// Money is added in minor units (cents) so a total is never off by a rounding crumb. No currency conversion: one currency per concept.
+// Money is added in the currency's minor units (two decimals for dollars, none for yen, three for dinar) so a total is never off by a rounding crumb. No currency conversion: one currency per concept.
 import { toCsvText } from "@/lib/csv";
+import { DEFAULT_CURRENCY, toInputText, toMinor } from "@/lib/economics/money";
 import { readSourcing, type Offer } from "./schemas";
 
 export type ListPart = { id: number; ref: string; title: string; qty: number | null; status: string; data: Record<string, unknown> };
@@ -19,15 +20,12 @@ export type Line = {
   packs: number;
   /** pieces bought beyond the need, because packs are whole */
   spare: number;
-  priceCents: number;
-  totalCents: number;
+  priceMinor: number;
+  totalMinor: number;
 };
 
-export type Group = { supplier: string; lines: Line[]; totalCents: number };
-export type Shopping = { groups: Group[]; unchosen: { partId: number; ref: string; title: string; need: number; offers: number }[]; totalCents: number; excluded: { partId: number; ref: string; title: string; why: string }[] };
-
-export const cents = (price: number) => Math.round(price * 100);
-export const fromCents = (c: number) => c / 100;
+export type Group = { supplier: string; lines: Line[]; totalMinor: number };
+export type Shopping = { groups: Group[]; unchosen: { partId: number; ref: string; title: string; need: number; offers: number }[]; totalMinor: number; excluded: { partId: number; ref: string; title: string; why: string }[] };
 
 /** Printed parts, parts in hand and parts already ordered are not on the list. A part with a received quantity needs only the rest. */
 export function needOf(p: ListPart): { need: number; why?: string } {
@@ -47,7 +45,8 @@ export const chosenOffer = (p: ListPart): Offer | null => {
   return s.offers.find((o) => o.id === s.chosen) ?? null;
 };
 
-export function shoppingList(parts: ListPart[]): Shopping {
+/** `currency` sets the minor unit the totals are added in; an offer's price is in the concept's one currency. */
+export function shoppingList(parts: ListPart[], currency: string = DEFAULT_CURRENCY): Shopping {
   const by = new Map<string, Group>();
   const unchosen: Shopping["unchosen"] = [];
   const excluded: Shopping["excluded"] = [];
@@ -63,33 +62,32 @@ export function shoppingList(parts: ListPart[]): Shopping {
       continue;
     }
     const packs = Math.ceil(need / o.packSize);
-    const price = cents(o.price);
+    const price = toMinor(o.price, currency);
     const line: Line = {
       partId: p.id, ref: p.ref, title: p.title, partNumber: o.partNumber ?? "", supplier: o.supplier, url: o.url ?? "", checkedAt: o.checkedAt,
-      need, packSize: o.packSize, packs, spare: packs * o.packSize - need, priceCents: price, totalCents: packs * price,
+      need, packSize: o.packSize, packs, spare: packs * o.packSize - need, priceMinor: price, totalMinor: packs * price,
     };
-    const g = by.get(o.supplier) ?? { supplier: o.supplier, lines: [], totalCents: 0 };
+    const g = by.get(o.supplier) ?? { supplier: o.supplier, lines: [], totalMinor: 0 };
     g.lines.push(line);
-    g.totalCents += line.totalCents;
+    g.totalMinor += line.totalMinor;
     by.set(o.supplier, g);
   }
   const groups = [...by.values()].sort((a, b) => a.supplier.localeCompare(b.supplier));
   for (const g of groups) g.lines.sort((a, b) => a.ref.localeCompare(b.ref) || a.title.localeCompare(b.title));
-  return { groups, unchosen, excluded, totalCents: groups.reduce((a, g) => a + g.totalCents, 0) };
+  return { groups, unchosen, excluded, totalMinor: groups.reduce((a, g) => a + g.totalMinor, 0) };
 }
-
-const money = (c: number) => (c / 100).toFixed(2);
 
 /** CSV of the list, one row per line, a subtotal row per supplier and a final total. Formula-looking text is neutralised. */
 export function shoppingCsv(s: Shopping, currency: string): string {
+  const money = (minor: number) => toInputText(minor, currency);
   const head = ["Supplier", "Reference", "Part", "Part number", "Needed", "Pack size", "Packs to buy", "Spare pieces", `Price per pack (${currency})`, `Line total (${currency})`, "Link", "Price checked"];
   const rows: (string | number)[][] = [head];
   for (const g of s.groups) {
-    for (const l of g.lines) rows.push([g.supplier, l.ref, l.title, l.partNumber, l.need, l.packSize, l.packs, l.spare, money(l.priceCents), money(l.totalCents), l.url, l.checkedAt]);
-    rows.push([`${g.supplier} subtotal`, "", "", "", "", "", "", "", "", money(g.totalCents), "", ""]);
+    for (const l of g.lines) rows.push([g.supplier, l.ref, l.title, l.partNumber, l.need, l.packSize, l.packs, l.spare, money(l.priceMinor), money(l.totalMinor), l.url, l.checkedAt]);
+    rows.push([`${g.supplier} subtotal`, "", "", "", "", "", "", "", "", money(g.totalMinor), "", ""]);
   }
   for (const u of s.unchosen) rows.push(["No supplier chosen", u.ref, u.title, "", u.need, "", "", "", "", "", "", ""]);
-  rows.push(["Total", "", "", "", "", "", "", "", "", money(s.totalCents), "", ""]);
+  rows.push(["Total", "", "", "", "", "", "", "", "", money(s.totalMinor), "", ""]);
   return toCsvText(rows, { trailingNewline: false });
 }
 

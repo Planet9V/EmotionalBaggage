@@ -12,6 +12,7 @@ import { buildContext, readConcept, runGenerator } from "./run";
 import { listDrafts } from "./store";
 import { readsText, type Draft, type GeneratorInfo, type GeneratorsReply, type RunResult } from "./shared";
 import { safeFetch } from "@/lib/net/outbound";
+import { currencyOf } from "@/lib/economics/currency";
 
 /** The generators for a concept (optionally only those writing one store), with what each would read. */
 export async function generatorsInfo(projectId: string, opts: { store?: string; kind?: "section" | "optimise" } = {}): Promise<GeneratorsReply> {
@@ -141,6 +142,7 @@ export type OptimiseState = {
 
 export async function optimiseState(projectId: string): Promise<OptimiseState[]> {
   await readConcept(projectId);
+  const currency = await currencyOf(projectId);
   const out: OptimiseState[] = [];
   for (const id of OPTIMISE_ACTIONS) {
     const g = findGenerator(OPTIMISE_GENERATOR[id])!;
@@ -159,8 +161,8 @@ export async function optimiseState(projectId: string): Promise<OptimiseState[]>
       last = {
         runId: ev[0].data.runId,
         at: ev[0].created_at instanceof Date ? ev[0].created_at.toISOString() : String(ev[0].created_at),
-        before: { measure: before, text: describe(id, before) },
-        ifApproved: { measure: projected, text: describe(id, projected) },
+        before: { measure: before, text: describe(id, before, currency) },
+        ifApproved: { measure: projected, text: describe(id, projected, currency) },
         drafts: {
           waiting: drafts.filter((d) => d.status === "draft").length,
           approved: drafts.filter((d) => d.status === "approved").length,
@@ -168,7 +170,7 @@ export async function optimiseState(projectId: string): Promise<OptimiseState[]>
         },
       };
     }
-    out.push({ id, generator: g.id, label: g.label, action: g.action, store, now: { measure: m, text: describe(id, m) }, last });
+    out.push({ id, generator: g.id, label: g.label, action: g.action, store, now: { measure: m, text: describe(id, m, currency) }, last });
   }
   return out;
 }
@@ -179,6 +181,7 @@ export async function runOptimise(projectId: string, id: OptimiseAction, superse
   const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, store])).map(toItem);
   if (!rows.length) throw new HttpError(400, store === "prototype/printing" ? "There are no print jobs yet." : "The parts list is empty.");
   const before = measure(id, rows);
+  const currency = await currencyOf(projectId);
   return runGenerator({
     projectId,
     generatorId: g.id,
@@ -186,6 +189,6 @@ export async function runOptimise(projectId: string, id: OptimiseAction, superse
     why: "Propose only changes that serve the goal stated above.",
     supersede,
     signal,
-    record: { optimise: { action: id, before, beforeText: describe(id, before) } },
+    record: { optimise: { action: id, before, beforeText: describe(id, before, currency) } },
   });
 }
