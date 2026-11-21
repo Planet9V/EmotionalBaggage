@@ -74,32 +74,32 @@ Three documents fix the decisions that the rest of the plan builds on. They are 
 
 | Area | Adopt | Replaces | Status |
 |---|---|---|---|
-| Validation and types | zod 4 | no validation; untyped `data` | page read |
-| Data loading | TanStack Query 5 | `useItems`, `usePlan`, `useConcept`, nine ad hoc effects | page read |
-| Forms | react-hook-form with zod | one state variable per field in eight forms | not read this session |
-| UI kit | shadcn/ui blocks and components | six copied primitives, four local kits, 73 hand-written cards | Tailwind 4 per D12 |
-| Tables | TanStack Table (Dice UI data table) | hand-written sorting | page read |
-| Kanban | dnd-kit based kanban (Dice UI or Kibo UI) | HTML5 drag and drop, no touch | licences unverified |
-| Wizard | Stepperize | hand-written steps | licence unverified |
-| Toasts | sonner | 32 separate error states | not read this session |
-| Graph layout | @dagrejs/dagre for trees, elkjs for build order and pins-and-wires | three hand-computed layouts | licences unverified |
-| React Flow chrome | React Flow UI (base node, labelled handle, zoom) | hand-written node boxes | page read |
+| Validation and types | zod 4 | no validation; untyped `data` | in use: zod 4.6 validates every API body and every stored `data` shape |
+| Data loading | TanStack Query 5 | `useItems`, `usePlan`, `useConcept`, nine ad hoc effects | in use in 59 files (`useQuery` or `useMutation`); `useItems` remains and is built on it |
+| Forms | react-hook-form with zod | one state variable per field in eight forms | partly adopted: 9 files use `useForm` (the compliance, plan step, cost line, concept edit, batch, print result, print job, wizard and first-connection forms); 45 files contain a `<form>` or an `onSubmit`, so most forms still keep one state variable per field |
+| UI kit | shadcn/ui blocks and components | six copied primitives, four local kits, 73 hand-written cards | Tailwind 4 per D12; `src/components/ui` holds the shadcn/ui components the CLI wrote plus `calendar` and `chart` (see `docs/third-party.manual.json`) and this project's own `modal`, `confirm-button`, `native-select`, `popover`; twin primitives (modal and dialog, panel and Card, native-select and select) and hand-written error lines, eyebrows, buttons and tables are still being merged into one kit, so this row is not finished |
+| Tables | TanStack Table (Dice UI data table) | hand-written sorting | partly adopted: TanStack Table 9 on one screen (`ItemsTable`, through `ui/data-table.tsx`); other tables are hand-written |
+| Kanban | dnd-kit based kanban (Dice UI or Kibo UI) | HTML5 drag and drop, no touch | in use: `items/Kanban.tsx` is written directly on `@dnd-kit/core` (not Dice UI or Kibo UI); licences of those two were never verified and neither is used |
+| Wizard | Stepperize | hand-written steps | in use: `@stepperize/react` in `WizardView`; licence not verified |
+| Toasts | sonner | 32 separate error states | partly adopted: sonner in 11 files; inline error lines remain in many components |
+| Graph layout | @dagrejs/dagre for trees, elkjs for build order and pins-and-wires | three hand-computed layouts | in use: dagre in the decision tree and schematic model, elkjs in the plan graph, schematic model and symbol graph; licences not verified |
+| React Flow chrome | React Flow UI (base node, labelled handle, zoom) | hand-written node boxes | not adopted: `@xyflow/react` itself is used in 7 files, but none of React Flow UI's components (base node, labelled handle, zoom slider) is in the repository; node boxes are hand-written |
 | Schematic symbols | `schematic-symbols` drawings inside our own nodes (decided after trial 0.3) | plain boxes | MIT licence file read; each symbol's origin checked before it is copied |
 | Model providers | Vercel AI SDK 7 with the OpenAI-compatible provider | one-provider reviewer route | tested here against a stand-in; confirmed on the real host by Admin's Test button; needs Node 22 |
-| Vectors | `pgvector` package on `pg` | nothing fills the column today | page read |
+| Vectors | write the vector literal ourselves (`vectorLiteral` in `src/lib/ai/embeddings.ts`); the `pgvector` npm package is not used | nothing fills the column today | decided 21 Nov 2026: not adopted. The package is not installed, so its source was not read here; from memory its `toSql` joins the numbers in brackets, which is what `vectorLiteral` does, and our function also refuses an empty vector or a non-finite number. Vectors are only written (as text cast to `vector`) and never read back as arrays, so the package's type parser has nothing to do |
 | Vector index at 4,096 | pgvector one-bit HNSW index with a second pass on the full vectors | exact search only | measured on PostgreSQL 19.0, `docs/design/vector-search.md`; pgvectorscale and VectorChord considered and not used (no stated PostgreSQL 19 support; VectorChord's licence needs sign-off) |
 | Sign-in | built in (scrypt from Node, sessions in PostgreSQL); a named exception, because the `demo` default password is below every framework's minimum | none | built and tested, item 2.3 |
-| 3D editing | drei TransformControls, PivotControls, Bounds, Outlines | none | names read only |
-| Solid modelling | manifold-3d | hand-written tray and lid mesh | page read |
-| STL | three.js STLExporter and STLLoader | hand-written writer and parser | page read |
-| 3MF | Manifold `export-3mf` | none | page read |
+| 3D editing | drei TransformControls, PivotControls, Bounds, Outlines | none | partly adopted: TransformControls (move and rotate handles on a part) and Bounds are in use; PivotControls and Outlines are not used anywhere |
+| Solid modelling | manifold-3d | hand-written tray and lid mesh | in use: the enclosure kernel and its closed-solid checks (`src/lib/enclosure/kernel.ts`, `checks.ts`) |
+| STL | three.js STLExporter and STLLoader | hand-written writer and parser | adopted: `geometry/export.ts`, `geometry/meshFile.ts` and (since 21 Nov 2026) `enclosure/stl.ts` all use them under Node and in the browser; the enclosure keeps only its vertex welding and the header name |
+| 3MF | Manifold `export-3mf` | none | not as planned: 3MF is written by `three-3mf-exporter` (`geometry/export.ts`), not by Manifold's exporter |
 | Enclosures | CaseMaker (Apache-2.0) and YAPP_Box (MIT) | hand-written tray and lid | CaseMaker is two stars old: forked, not depended on |
 | Slicing | OrcaSlicer command line in a container | none | licence from memory (AGPL); flags change by version |
 | Wire routing | NetworkX `astar_path` and `steiner_tree` | centre-to-centre length guess | `steiner_tree` page read; speed unmeasured |
 | Harness drawing | WireViz as a separate process | none | GPL-3.0, last release July 2024 |
-| CSV | papaparse | two hand-written escapers | not read this session |
-| Landing sections | Launch UI or Tailark free blocks | none | page read |
-| Tests | Vitest, Playwright | none | page read |
+| CSV | papaparse | two hand-written escapers | adopted: `src/lib/csv.ts` is the one reader and writer (papaparse); the campaign and review imports, the parts-list import and every export go through it |
+| Landing sections | Launch UI or Tailark free blocks | none | not adopted: no Launch UI or Tailark block is in the repository; landing pages are generated by `src/lib/content/landing.ts` |
+| Tests | Vitest, Playwright | none | in use: 143 Vitest test files and 7 Playwright spec files |
 
 Not adopted: Babylon.js (its React bindings have an unresolved React 19 problem; its solid-cutting feature is Manifold, which three.js can use directly), Mantine, HeroUI, Payload, Refine, next-forge, Prisma, LiteLLM, GoJS, JointJS. KiCad's symbol library is not bundled, because redistributing it carries its share-alike licence.
 
