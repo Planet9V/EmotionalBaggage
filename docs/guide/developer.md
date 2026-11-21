@@ -159,6 +159,14 @@ Every AI feature talks to models through `src/lib/ai/models.ts`; no other file b
 
 Embeddings for search are in `src/lib/ai/embeddings.ts`: `indexProject` and `indexItem` embed rows whose text changed (hash in `content_sha256`, per model), and `searchByMeaning` returns rows with cosine similarity; both return `{ ok: false, missing: "pgvector" }` when the database has no pgvector. Each vector width gets its own partial HNSW index the first time it is used; widths above 2,000 are searched exactly. Tests use `tests/standins/openai.ts`; `tests/ai/vector.test.ts` runs only where pgvector is installed, which means in GitHub Actions and not on a machine without it.
 
+## Chat and search by meaning
+
+Each vector width gets one index: `embeddings_hnsw_<d>` (cosine) up to 2,000 numbers, and `embeddings_bq_<d>`, an HNSW index over `binary_quantize(embedding::vector(d))::bit(d)` with `bit_hamming_ops`, from 2,001 to 64,000. `ensureWidthIndex` builds it and raises `maintenance_work_mem` to 1GB for the build when it is lower.
+
+A search first counts the concept's vectors for the model. At or below `EXACT_SEARCH_MAX_ROWS` (5,000) it is exact. Above it, the index runs with `hnsw.ef_search` equal to the candidate count (ten times the rows wanted, between 100 and 1,000) and `hnsw.iterative_scan = relaxed_order`; the one-bit path then orders the candidates by cosine distance on the full vectors. Results say which ran: `exact`, `hnsw` or `binary`. The measurements behind these rules are in `docs/design/vector-search.md`. Research answers are embedded too, as question plus answer.
+
+Chat routes: `GET` and `POST /api/projects/[id]/chats`; `GET` and `DELETE /api/chats/[id]`; `POST /api/chats/[id]/messages { message }`, which returns an AI SDK UI message stream whose metadata carries the numbered sources, how they were found, and the model. It falls back to text search when search by meaning is not ready, and answers 503 with no reasoning model. Tables: `chats` and `chat_messages` (`migrations/0007_chat.sql`). Helpers safe for the browser are in `src/lib/chat/shared.ts`; the prompt and retrieval are in `src/lib/chat/server.ts`; the screen is `src/app/chat/page.tsx` with `src/components/chat/`, built from the AI Elements components.
+
 ## Research
 
 Research talks to Perplexity only through `src/lib/research/perplexity.ts` (`POST {PERPLEXITY_BASE_URL}/v1/agent`; key from `getCredential("perplexity","apiKey")`; effort from the setting `research.model`, default `fast`; 60 second limit). What the interface looks like, page by page, is in `docs/research/perplexity-api.md`, and `tests/standins/perplexity.ts` is written to it.

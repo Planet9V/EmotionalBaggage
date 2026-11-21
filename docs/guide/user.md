@@ -37,6 +37,14 @@ The Concepts page lists every concept with its name, one line, product type, sta
 - **Delete** lists what will go and offers a JSON download first. It needs the concept's exact name typed. The deletion is recorded in the audit log, which is kept. If the deleted concept was open, the app opens another. If it was Admin's default concept, that setting is cleared.
 - **Linking to a concept:** add `?concept=<id>` to any address, for example `/report?concept=baggage-claims`, to open that concept there.
 
+## Chat
+
+Chat (in the sidebar) answers questions about the open concept using only what is recorded for it: its rows and its saved research answers. Each answer cites its sources as small numbers. Point at one to see what it is, and select it to open the section that holds it; the full numbered list is under the answer. If nothing recorded covers your question, the answer says so. Under each answer you can see which model answered, and whether the sources were found by meaning or by matching words. Chats are kept per concept. Start a new one with New chat, and delete one with the bin beside it.
+
+Chat needs a reasoning model chosen in Admin, Models. If the screen says search by meaning is not set up, choose an embedding model in Admin and then "Index this concept". Until then chat still works, but finds sources by matching the words of your question. Index again after adding many rows or research answers.
+
+Not verified: chat has been run against a stand-in model only, so nothing here says how good a real model's answers are.
+
 ## Starting a concept
 
 **New concept** opens a six-step wizard: name and one-line description, who it is for and why, how it works, whether any part is 3D printed and its outer size, the parts you already know, the cheapest test, and the sales channel, price and candidate names. Only the name is required. The wizard saves exactly what you typed and turns blanks into open questions.
