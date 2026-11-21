@@ -25,4 +25,14 @@ describe("the new-concept wizard", () => {
     expect(newProject.safeParse({ name: a.name, items }).success).toBe(true);
     expect(items.filter((i) => i.section === "sales/channels")).toEqual([]);
   });
+
+  it("creates the go or stop decision the Concept gate asks for, with the gate as its context (U15)", () => {
+    const a = emptyAnswers();
+    Object.assign(a, { name: "Comb", oneLiner: "A cable comb", gate: "Ten pre-orders in a week" });
+    const go = buildItems(a).filter((i) => i.section === "concept/decisions");
+    expect(go).toHaveLength(1);
+    expect(go[0].data).toMatchObject({ key: "go", options: [{ id: "go", label: "Go" }, { id: "stop", label: "Stop" }], chosen: "" });
+    expect(go[0].body).toContain("Ten pre-orders in a week");
+    expect(newProject.safeParse({ name: a.name, items: buildItems(a) }).success).toBe(true);
+  });
 });

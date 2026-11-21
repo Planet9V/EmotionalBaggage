@@ -28,6 +28,9 @@ export type Answers = {
   names: NameRow[];
 };
 
+/** The key the Concept gate reads for the go or stop decision (GO_DECISION in src/lib/process/definitions.ts). */
+export const GO_KEY = "go";
+
 export const SOURCES = ["Amazon", "Micro Center", "Own printer", "Other"] as const;
 
 let keySeed = 1;
@@ -131,6 +134,30 @@ export function buildGroups(a: Answers): Group[] {
   if (t(a.gate)) proof.push(`Go/no-go gate: ${t(a.gate)}`);
   brow("The test and the gate", proof.join("\n"));
   if (brief.length) groups.push({ label: "Concept · Brief", step: 1, section: "concept/brief", items: brief });
+
+  // The go or stop decision the Concept gate asks for, made from the gate the person wrote (U15). It starts
+  // undecided: the person chooses Go or Stop once the test has run.
+  groups.push({
+    label: "Concept · Decision tree",
+    step: 4,
+    section: "concept/decisions",
+    items: [
+      {
+        section: "concept/decisions",
+        title: "Go or stop?",
+        body: t(a.gate) ? `Decide once the test has run. The gate: ${t(a.gate)}` : "Decide once the test has run. No gate was written yet: say what result would mean go.",
+        data: {
+          key: GO_KEY,
+          options: [
+            { id: "go", label: "Go", outcome: "Carry on to research and design." },
+            { id: "stop", label: "Stop", outcome: "Stop here, or rework the concept and test again." },
+          ],
+          chosen: "",
+        },
+        status: "open",
+      },
+    ],
+  });
 
   const names: NewItem[] = a.names
     .filter((n) => t(n.text))
