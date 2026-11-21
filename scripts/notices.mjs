@@ -359,7 +359,7 @@ export async function buildNotices(root = ROOT) {
   C.push("The file that references each entry, and the evidence for its licence, are in `THIRD_PARTY_NOTICES.md`.", "");
   C.push("### Planned, not yet included", "");
   C.push(
-    "OrcaSlicer, WireViz, OpenSCAD, CaseMaker and YAPP_Box are planned and are not in the repository yet. Each will be added to this page in the same change that introduces it: OrcaSlicer, WireViz and OpenSCAD run as separate processes, and CaseMaker and YAPP_Box as forked code with the changes listed.",
+    "OrcaSlicer, OpenSCAD, CaseMaker and YAPP_Box are planned and are not in the repository yet. Each will be added to this page in the same change that introduces it: OrcaSlicer and OpenSCAD run as separate processes (WireViz already does, see the table above), and CaseMaker and YAPP_Box as forked code with the changes listed.",
     "",
   );
   C.push("## Development-only tooling", "");

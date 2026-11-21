@@ -12,6 +12,7 @@ import { STORE } from "@/lib/domain";
 import { Checklist } from "@/components/buildsheet/Checklist";
 import { ConnectionsTable } from "@/components/buildsheet/ConnectionsTable";
 import { CutList } from "@/components/buildsheet/CutList";
+import { HarnessPanel } from "@/components/buildsheet/HarnessPanel";
 import { Joints } from "@/components/buildsheet/Joints";
 import { Progress } from "@/components/buildsheet/Progress";
 import { StepCard } from "@/components/buildsheet/StepCard";
@@ -252,6 +253,10 @@ export function BuildSheetView({ project, store }: ViewProps) {
           onRouting={(v) => { const n = parseNum(v); setRouting((r) => ({ text: v, value: n ?? r.value })); }}
           onAllowance={(v) => { const n = parseNum(v); setAllowance((r) => ({ text: v, value: n ?? r.value })); }}
         />
+      </Section>
+
+      <Section n="03a" title="Harness drawing" blurb="The wires drawn as a harness, with WireViz. Lengths are the routed ones; a wire that has not been routed is drawn without one.">
+        <HarnessPanel projectId={project.id} />
       </Section>
 
       <Section n="04" title="Joints and consumables" blurb="Counted from the wires. No solder or flux quantities are given, because they are not derivable.">

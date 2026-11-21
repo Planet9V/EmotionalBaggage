@@ -1,15 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useItems } from "@/lib/client";
+import { api, useItems } from "@/lib/client";
+import { keys } from "@/lib/queries";
 import { STORE, NET_COLOR, toPart, toWire, type NetClass, type Part, type Wire } from "@/lib/domain";
-import type { CanvasPart, CanvasWire, ShellView } from "@/components/three/ModelCanvas";
-import { describeSize, type PartGeometry } from "@/components/three/layout";
+import type { CanvasPart, CanvasWire, CutPlane, Measurement, RoutedDraw, ShellView, TransformMode } from "@/components/three/ModelCanvas";
+import { describeSize, sceneBounds, type PartGeometry } from "@/components/three/layout";
+import { EditBar, ExportBar, MeasureReadout, PartsTable, RoutePanel, SectionPanel, type RouteState } from "@/components/three/ViewTools";
+import { useShapes } from "@/lib/geometry/useShapes";
+import { assembly3mf, assemblyStl, type ExportPart } from "@/lib/geometry/export";
+import { bundleRadius, buildRouteRequest, routeState, type RouteOutcome } from "@/lib/geometry/routing";
+import { snap } from "@/lib/geometry/rotation";
 import { PartPanel, type ConnectionRow } from "@/components/three/PartPanel";
 import { PrintPanel, type LoadedStl } from "@/components/three/PrintPanel";
 import { SHELL_DEFAULTS, type ShellParams } from "@/components/three/stl";
@@ -67,14 +74,29 @@ export function ModelView({ project }: ViewProps) {
   const [classOff, setClassOff] = useState<Set<NetClass>>(() => new Set());
   const [explodeBy, setExplodeBy] = useState("");
   const wiringItems = useItems(project.id, STORE.wiring);
+  const qc = useQueryClient();
+  const [mode, setMode] = useState<TransformMode>("translate");
+  const [measure, setMeasure] = useState(false);
+  const [measurement, setMeasurement] = useState<Measurement>(null);
+  const [cut, setCut] = useState<CutPlane[]>(() => (["x", "y", "z"] as const).map((axis) => ({ axis, on: false, pos: 0, flip: false })));
+  const [routeCell, setRouteCell] = useState(2);
+  const [route, setRoute] = useState<RouteState>({ state: "idle" });
+  const [exportBusy, setExportBusy] = useState("");
+  const [exportError, setExportError] = useState("");
+  // Undo for this session: the geometry a part had before each change.
+  type Step = { id: number; before: PartGeometry; at: number };
+  const undoStack = useRef<Step[]>([]);
+  const redoStack = useRef<Step[]>([]);
+  const [history, setHistory] = useState({ undo: 0, redo: 0 });
 
   const withGeometry = parts.filter((p) => p.geometry);
+  const shapeFiles = useShapes(parts.map((p) => ({ id: p.item.id, geometry: p.geometry })));
   const canvasParts = useMemo<CanvasPart[]>(
     () =>
       parts
         .filter((p) => p.geometry && !hidden.has(p.item.id))
-        .map((p) => ({ id: p.item.id, ref: p.ref, title: p.item.title, geometry: p.geometry as PartGeometry })),
-    [parts, hidden]
+        .map((p) => ({ id: p.item.id, ref: p.ref, title: p.item.title, geometry: p.geometry as PartGeometry, shape: shapeFiles.shapes.get(p.item.id) ?? null })),
+    [parts, hidden, shapeFiles.shapes]
   );
   const selected = parts.find((p) => p.item.id === selectedId) ?? null;
 
@@ -133,12 +155,37 @@ export function ModelView({ project }: ViewProps) {
     return new Map(parts.map((p) => [p.item.id, p.ref && refs.has(p.ref) ? 1 : 0]));
   }, [explodeByValid, explodeBy, wires, parts]);
 
-  // Wires that can be drawn, and why the rest cannot.
+  // Which wires have a current route, and which are out of date.
+  const fingerprints = useMemo(
+    () =>
+      buildRouteRequest(
+        parts.filter((p) => p.geometry && p.ref).map((p) => ({ id: p.item.id, ref: p.ref, geometry: p.geometry as PartGeometry, pins: p.item.data.pins })),
+        wires.map((w) => ({ id: w.item.id, name: w.name, from: w.from, fromPin: w.fromPin, to: w.to, toPin: w.toPin })),
+        { cell: routeCell }
+      ).fingerprints,
+    [parts, wires, routeCell]
+  );
+  const routeCounts = useMemo(() => {
+    let routed = 0;
+    let stale = 0;
+    for (const w of wires) {
+      if (!w.routed) continue;
+      const st = routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fingerprints.get(w.item.id) ?? "");
+      if (st === "current") routed++;
+      else stale++;
+    }
+    return { routed, stale, total: wires.length };
+  }, [wires, fingerprints]);
+
+  // Wires that can be drawn, and why the rest cannot. Routed wires with a current path are tubes
+  // while assembled; the rest (and every wire while exploded) are straight curves between centres.
   const wirePlan = useMemo(() => {
     const draw: CanvasWire[] = [];
+    const routed: RoutedDraw[] = [];
     let noGeometry = 0;
     let unknown = 0;
     let hiddenEnd = 0;
+    const assembled = explodePct === 0;
     for (const w of wires) {
       const a = partByRef.get(w.from);
       const b = partByRef.get(w.to);
@@ -146,17 +193,17 @@ export function ModelView({ project }: ViewProps) {
       else if (!a.geometry || !b.geometry) noGeometry++;
       else if (hidden.has(a.item.id) || hidden.has(b.item.id)) hiddenEnd++;
       else if (!classOff.has(w.netClass)) {
-        draw.push({
-          id: w.item.id,
-          name: w.name || w.net || "Wire",
-          ends: `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}${w.via ? ` via ${w.via}` : ""}`,
-          color: NET_COLOR[w.netClass],
-          a: a.item.id,
-          b: b.item.id,
-          via: w.via,
-        });
+        const ends = `${pin(w.from, w.fromPin)} \u2192 ${pin(w.to, w.toPin)}${w.via ? ` via ${w.via}` : ""}`;
+        const current = w.routed && w.routed.path.length >= 2 && routeState({ routedLengthMm: w.routed.lengthMm, routedFingerprint: w.routed.fingerprint }, fingerprints.get(w.item.id) ?? "") === "current";
+        if (assembled && current && w.routed) {
+          routed.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, length: w.routed.lengthMm, color: NET_COLOR[w.netClass], path: w.routed.path, radius: 0.6 });
+        } else {
+          draw.push({ id: w.item.id, name: w.name || w.net || "Wire", ends, color: NET_COLOR[w.netClass], a: a.item.id, b: b.item.id, via: w.via });
+        }
       }
     }
+    const radii = bundleRadius(new Map(routed.map((r) => [r.id, r.path])));
+    for (const r of routed) r.radius = radii.get(r.id) ?? 0.6;
     const reasons: [number, string][] = [
       [noGeometry, "a part has no geometry"],
       [unknown, "a part is not in the bill of materials"],
@@ -170,8 +217,8 @@ export function ModelView({ project }: ViewProps) {
         : active.length === 1
           ? `${total} wire${total === 1 ? "" : "s"} not drawn: ${active[0][1]}.`
           : `${total} wires not drawn: ${active.map(([n, r]) => `${n} where ${r}`).join(", ")}.`;
-    return { draw, note };
-  }, [wires, partByRef, hidden, classOff]);
+    return { draw, routed, note };
+  }, [wires, partByRef, hidden, classOff, fingerprints, explodePct]);
 
   const connections = useMemo<ConnectionRow[]>(() => {
     if (!focus) return [];
@@ -197,7 +244,158 @@ export function ModelView({ project }: ViewProps) {
   }, [focus, touching, partByRef]);
 
   // A failed save is shown in the error line (writeError) and the part goes back to its saved geometry.
-  const saveGeometry = useCallback((p: Part, geometry: PartGeometry) => patch(p.item.id, { data: { geometry } }).catch(() => undefined), [patch]);
+  // The latest parts, for handlers that run later (key repeats, undo).
+  const partsRef = useRef(parts);
+  useEffect(() => {
+    partsRef.current = parts;
+  }, [parts]);
+
+  /**
+   * Saves a part's geometry and remembers the one it replaced, so Ctrl+Z can bring it back.
+   * Changes to the same part within 600 ms (a held arrow key) count as one step.
+   */
+  const commitGeometry = useCallback(
+    (id: number, geometry: PartGeometry, record = true) => {
+      const current = partsRef.current.find((x) => x.item.id === id)?.geometry;
+      if (record && current) {
+        const top = undoStack.current[undoStack.current.length - 1];
+        const now = Date.now();
+        if (!(top && top.id === id && now - top.at < 600)) undoStack.current.push({ id, before: current, at: now });
+        else top.at = now;
+        if (undoStack.current.length > 100) undoStack.current.shift();
+        redoStack.current = [];
+        setHistory({ undo: undoStack.current.length, redo: redoStack.current.length });
+      }
+      // Later key presses start from this geometry even before the save comes back.
+      const before = partsRef.current;
+      partsRef.current = before.map((x) => (x.item.id === id ? { ...x, geometry } : x));
+      // A failed save is shown in the error line and the part goes back to its saved geometry.
+      return patch(id, { data: { geometry } }).catch(() => {
+        partsRef.current = before;
+      });
+    },
+    [patch]
+  );
+  const saveGeometry = useCallback((p: Part, geometry: PartGeometry) => commitGeometry(p.item.id, geometry), [commitGeometry]);
+
+  const undo = useCallback(() => {
+    const step = undoStack.current.pop();
+    if (!step) return;
+    const now = partsRef.current.find((x) => x.item.id === step.id)?.geometry;
+    if (now) redoStack.current.push({ id: step.id, before: now, at: 0 });
+    setHistory({ undo: undoStack.current.length, redo: redoStack.current.length });
+    void commitGeometry(step.id, step.before, false);
+  }, [commitGeometry]);
+  const redo = useCallback(() => {
+    const step = redoStack.current.pop();
+    if (!step) return;
+    const now = partsRef.current.find((x) => x.item.id === step.id)?.geometry;
+    if (now) undoStack.current.push({ id: step.id, before: now, at: 0 });
+    setHistory({ undo: undoStack.current.length, redo: redoStack.current.length });
+    void commitGeometry(step.id, step.before, false);
+  }, [commitGeometry]);
+
+  /** A drag of a handle ended: the canvas has snapped the numbers; save them. */
+  const onTransform = useCallback(
+    (id: number, change: { pos: [number, number, number]; rotation: [number, number, number] }) => {
+      const g = partsRef.current.find((x) => x.item.id === id)?.geometry;
+      if (!g) return;
+      const next: PartGeometry = { ...g, pos: [...change.pos] };
+      if (change.rotation.some((a) => a !== 0)) next.rotation = [...change.rotation];
+      else delete next.rotation;
+      void commitGeometry(id, next);
+    },
+    [commitGeometry]
+  );
+
+  // Ctrl+Z and Ctrl+Shift+Z, unless the user is typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
+  /** Arrow keys nudge the selected part: 1 mm (10 mm with Shift); Page Up and Down move it up and down; R turns it 15 degrees about y. */
+  const onCanvasKey = (e: React.KeyboardEvent) => {
+    if (e.target !== e.currentTarget || selectedId === null) return;
+    const p = partsRef.current.find((x) => x.item.id === selectedId);
+    const g = p?.geometry;
+    if (!g) return;
+    const step = e.shiftKey ? 10 : 1;
+    const d: [number, number, number] = [0, 0, 0];
+    let turn = 0;
+    switch (e.key) {
+      case "ArrowLeft": d[0] = -step; break;
+      case "ArrowRight": d[0] = step; break;
+      case "ArrowUp": d[2] = -step; break;
+      case "ArrowDown": d[2] = step; break;
+      case "PageUp": d[1] = step; break;
+      case "PageDown": d[1] = -step; break;
+      case "r": case "R": turn = e.shiftKey ? -15 : 15; break;
+      default: return;
+    }
+    e.preventDefault();
+    if (g.shape === "shell" && turn) return;
+    const next: PartGeometry = { ...g, pos: g.pos.map((v, i) => snap(v + d[i], 0.001)) };
+    if (turn) {
+      const r = g.rotation ?? [0, 0, 0];
+      const y = snap(((((r[1] + turn + 180) % 360) + 360) % 360) - 180, 15);
+      next.rotation = [r[0], y, r[2]];
+      if (next.rotation.every((a) => a === 0)) delete next.rotation;
+    }
+    void commitGeometry(selectedId, next);
+  };
+
+  const exportParts = useMemo<ExportPart[]>(
+    () => canvasParts.map((c) => ({ id: c.id, ref: c.ref, title: c.title, geometry: c.geometry, shape: c.shape })),
+    [canvasParts]
+  );
+  const slugOf = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "model";
+  const runExport = async (what: "assembly" | "part", format: "stl" | "3mf") => {
+    setExportError("");
+    const only = what === "part" ? selectedId ?? undefined : undefined;
+    if (what === "part" && only === undefined) return;
+    setExportBusy(`${what === "part" ? "the part" : "the assembly"} as ${format.toUpperCase()}`);
+    try {
+      const buf = format === "stl" ? assemblyStl(exportParts, params, only) : await assembly3mf(exportParts, params, only);
+      const sel = only !== undefined ? parts.find((x) => x.item.id === only) : null;
+      const name = `${slugOf(project.id)}-${sel ? slugOf(sel.ref || sel.item.title) : "assembly"}.${format}`;
+      const url = URL.createObjectURL(new Blob([buf], { type: format === "stl" ? "model/stl" : "model/3mf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setExportError(`Could not write the file: ${(e as Error).message}`);
+    } finally {
+      setExportBusy("");
+    }
+  };
+
+  const doRoute = async () => {
+    setRoute({ state: "running" });
+    const t0 = performance.now();
+    try {
+      const outcome = await api<RouteOutcome>(`/api/projects/${encodeURIComponent(project.id)}/route-wires`, {
+        method: "POST",
+        body: JSON.stringify({ cell: routeCell, wallMm: params.wallMm }),
+      });
+      await Promise.all([qc.invalidateQueries({ queryKey: keys.itemsOf(project.id) }), qc.invalidateQueries({ queryKey: keys.events(project.id) })]);
+      setRoute({ state: "done", outcome, totalMs: performance.now() - t0 });
+      setWiresOn(true);
+    } catch (e) {
+      setRoute({ state: "error", message: (e as Error).message });
+    }
+  };
+  const sceneBox = useMemo(() => sceneBounds(canvasParts.map((c) => c.geometry), false), [canvasParts]);
   const togglePrint = useCallback(
     (p: Part, v: boolean) => {
       if (!p.geometry) return;
@@ -428,8 +626,32 @@ export function ModelView({ project }: ViewProps) {
               </select>
             </label>
           </div>
+          <RoutePanel
+            cell={routeCell}
+            onCell={setRouteCell}
+            onRoute={() => void doRoute()}
+            result={route}
+            canRoute={showCanvas && wires.length > 0 && withGeometry.length > 1}
+            why={wires.length === 0 ? "Wires come from the Schematic. Add some to route them." : withGeometry.length < 2 ? "Give at least two parts a shape and position first." : ""}
+            counts={routeCounts}
+          />
           {!wiringItems.loading && wires.length === 0 && parts.length > 0 && <p className="text-xs text-muted">{NO_WIRES}</p>}
           {wiresOn && wirePlan.note && <p className="text-xs text-warning">{wirePlan.note}</p>}
+          {wiresOn && wirePlan.draw.length > 0 && <p className="text-xs text-muted">{wirePlan.draw.length} wire{wirePlan.draw.length === 1 ? " is" : "s are"} drawn as straight curves between part centres: {explodePct === 0 ? "not routed yet, or the route is out of date." : "the exploded view does not show routes."}</p>}
+          <EditBar
+            mode={mode}
+            onMode={setMode}
+            measure={measure}
+            onMeasure={setMeasure}
+            canUndo={history.undo > 0}
+            canRedo={history.redo > 0}
+            onUndo={undo}
+            onRedo={redo}
+            selectedLabel={selected && selected.geometry ? selected.ref || selected.item.title : ""}
+            disabled={!showCanvas}
+            exploded={explodePct > 0}
+          />
+          <SectionPanel cut={cut} bounds={sceneBox} onChange={setCut} />
 
           {focus && (
             <nav aria-label="Focus" className="flex flex-wrap items-center gap-1 text-sm">
@@ -446,7 +668,15 @@ export function ModelView({ project }: ViewProps) {
             </nav>
           )}
 
-          <div className="relative h-[560px] overflow-hidden rounded-xl border border-hairline bg-subtle">
+          <div
+            className="relative h-[560px] overflow-hidden rounded-xl border border-hairline bg-subtle focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
+            tabIndex={showCanvas ? 0 : -1}
+            role="group"
+            aria-label="3D model"
+            aria-describedby="model-keys"
+            aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown R Control+Z"
+            onKeyDown={onCanvasKey}
+          >
             {showCanvas ? (
               <ModelCanvas
                 parts={canvasParts}
@@ -466,6 +696,12 @@ export function ModelView({ project }: ViewProps) {
                 focusIds={focusIds}
                 onFocusPart={focusOn}
                 onCaptureReady={onCaptureReady}
+                transform={mode}
+                onTransform={onTransform}
+                section={cut}
+                measure={measure}
+                onMeasure={setMeasurement}
+                routed={wirePlan.routed}
               />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
@@ -488,7 +724,7 @@ export function ModelView({ project }: ViewProps) {
             )}
             {showCanvas && (
               <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-2">
-                <p className="font-mono text-[10px] text-muted">mm · grid 10 / 50 · drag to orbit, scroll to zoom, right drag to pan</p>
+                <p className="font-mono text-[10px] text-muted">mm · grid 10 / 50 · drag to orbit, scroll to zoom, right drag to pan · arrow keys nudge the selected part</p>
                 <div className="pointer-events-auto flex gap-1.5">
                   <Button size="chip" variant="outline" onClick={() => setLabels((v) => !v)} aria-pressed={labels}>
                     Labels {labels ? "on" : "off"}
@@ -500,6 +736,17 @@ export function ModelView({ project }: ViewProps) {
               </div>
             )}
           </div>
+          <p id="model-keys" className="sr-only">
+            With a part selected and this area focused: arrow keys move it 1 mm in x and z, Shift for 10 mm, Page Up and Page Down move it in y, R turns it 15 degrees about y, Control Z undoes.
+          </p>
+          <MeasureReadout m={measurement} onClear={() => setMeasure(false)} />
+          {showCanvas && <ExportBar selectedLabel={selected && selected.geometry ? selected.ref || selected.item.title : ""} busy={exportBusy} error={exportError} onExport={(w, f) => void runExport(w, f)} />}
+          {showCanvas && (
+            <PartsTable
+              rows={parts.map((p) => ({ id: p.item.id, ref: p.ref, title: p.item.title, geometry: p.geometry, selected: p.item.id === selectedId }))}
+              onSelect={(id) => choose(id)}
+            />
+          )}
           {showCanvas && <RenderToImagery projectId={project.id} capture={capture} />}
           {canvasParts.length > 0 && hidden.size > 0 && (
             <p className="text-xs text-muted">
@@ -538,6 +785,8 @@ export function ModelView({ project }: ViewProps) {
                     connections,
                     onOpenPart: focusOn,
                   }}
+                  projectId={project.id}
+                  shapeStatus={shapeFiles.status.get(selected.item.id)}
                   onSave={(g) => saveGeometry(selected, g)}
                   onTogglePrint={(v) => togglePrint(selected, v)}
                 />

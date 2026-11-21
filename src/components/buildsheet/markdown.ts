@@ -51,16 +51,17 @@ export function buildMarkdown(opts: {
 
   const cuts = cutList(steps, parts, routing, allowance);
   L.push("## Wire cut list", "");
-  L.push(`Length estimate = straight-line distance between the two parts' assembled centres x ${routing} (routing factor) + ${allowance} mm (strip and slack), rounded up to ${ROUND_TO} mm. Colours are suggested.`, "");
-  L.push(row("Step", "From", "To", "Class", "Suggested colour", "Length (estimate)"));
-  L.push(row("---", "---", "---", "---", "---", "---"));
+  const nRouted = cuts.filter((r) => r.length?.source === "routed").length;
+  L.push(`Routed length = the planner's path through the enclosure + ${allowance} mm (strip and slack), rounded up to ${ROUND_TO} mm. Estimate (fallback where a wire is not routed, or its route is out of date) = straight-line distance between the two parts' assembled centres x ${routing} (routing factor) + ${allowance} mm, rounded up to ${ROUND_TO} mm. ${nRouted} of ${cuts.length} wires are routed. Colours are suggested.`, "");
+  L.push(row("Step", "From", "To", "Class", "Suggested colour", "Length", "Basis"));
+  L.push(row("---", "---", "---", "---", "---", "---", "---"));
   for (const r of cuts) {
     const w = r.wire;
-    L.push(row(r.step, `${w.from}.${w.fromPin}`, `${w.to}.${w.toPin}`, w.netClass, `${r.colour} (suggested)`, r.length ? `${r.length.mm} mm` : "no geometry"));
+    L.push(row(r.step, `${w.from}.${w.fromPin}`, `${w.to}.${w.toPin}`, w.netClass, `${r.colour} (suggested)`, r.length ? `${r.length.mm} mm` : "no geometry", r.length ? (r.length.source === "routed" ? "routed" : r.length.stale ? "estimate (route out of date)" : "estimate") : ""));
   }
   L.push("");
   for (const t of totalsByClass(cuts)) {
-    L.push(`- ${t.netClass}: ${t.mm} mm estimate${t.counted < t.wires ? ` (${t.counted} of ${t.wires} wires have geometry)` : ""}`);
+    L.push(`- ${t.netClass}: ${t.mm} mm (${t.routed} routed, ${t.counted - t.routed} estimated)${t.counted < t.wires ? ` (${t.counted} of ${t.wires} wires have geometry)` : ""}`);
   }
   L.push("");
 

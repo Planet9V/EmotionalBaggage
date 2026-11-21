@@ -33,6 +33,17 @@ export const keyList = z.preprocess(
 
 const vec3 = z.tuple([numeric, numeric, numeric]);
 
+const angle = numeric.refine((n) => Math.abs(n) <= 3600, "must be within 3600 degrees");
+
+/** A file attached as a part's shape. `scale` is a unit choice the user confirmed; 1 means the file is already in millimetres. */
+export const shapeFile = z.object({
+  id: z.number().int().positive(),
+  name: text(200),
+  format: z.enum(["stl", "step"]),
+  scale: numeric.refine((n) => n > 0 && n <= 1e6, "must be above zero").default(1),
+});
+export type ShapeFile = z.infer<typeof shapeFile>;
+
 /** Y up, millimetres, origin at the centre of the enclosure floor. */
 export const geometry = z
   .object({
@@ -46,8 +57,18 @@ export const geometry = z
     print: z.boolean().optional(),
     /** cylinder only: which axis its length runs along */
     axis: z.enum(["x", "y", "z"]).optional(),
+    /** degrees about the scene x, y, then z axes, turning the part about its own centre */
+    rotation: z.tuple([angle, angle, angle]).optional(),
+    /** the part's real shape: an STL or STEP file stored with the concept. `size` is then its bounding box. */
+    file: shapeFile.optional(),
   })
   .superRefine((g, ctx) => {
+    if (g.shape === "shell" && g.rotation && g.rotation.some((a) => a !== 0)) {
+      ctx.addIssue({ code: "custom", path: ["rotation"], message: "an enclosure shell cannot be rotated; rotate the parts inside it" });
+    }
+    if (g.file && g.shape !== "box") {
+      ctx.addIssue({ code: "custom", path: ["file"], message: "an attached file replaces a box; the shape must be box" });
+    }
     const need = g.shape === "cylinder" ? 2 : 3;
     if (g.size.length < need) {
       ctx.addIssue({ code: "custom", path: ["size"], message: `a ${g.shape} needs ${need} sizes` });
@@ -59,10 +80,13 @@ export const geometry = z
     const out: {
       shape: typeof g.shape; size: number[]; pos: number[]; explode: number[]; basis: typeof g.basis;
       count?: number; print?: boolean; axis?: "x" | "y" | "z";
+      rotation?: [number, number, number]; file?: ShapeFile;
     } = { shape: g.shape, size, pos: [...g.pos], explode: [...g.explode], basis: g.basis };
     if (count !== undefined && count > 1) out.count = count;
     if (g.print === true) out.print = true;
     if (g.axis) out.axis = g.axis;
+    if (g.rotation && g.rotation.some((a) => a !== 0)) out.rotation = [...g.rotation];
+    if (g.file) out.file = { ...g.file };
     return out;
   });
 
@@ -114,6 +138,15 @@ export const wireData = z.looseObject({
   via: text(40).optional(),
   /** where a series part on this wire sits on the schematic */
   schematic: xy.nullable().optional(),
+  /** routed length of the path through the enclosure, mm, from the planner (plan 5.12) */
+  routedLengthMm: numeric.refine((n) => n >= 0, "cannot be negative").optional(),
+  /** grid cell the router used, mm, and when it ran */
+  routedCellMm: numeric.optional(),
+  routedAt: text(40).optional(),
+  /** fingerprint of the positions the route was computed from; a different one means out of date */
+  routedFingerprint: text(80).optional(),
+  /** the path as [x, y, z] points in scene millimetres, for drawing */
+  routedPath: z.array(z.tuple([numeric, numeric, numeric])).max(2000).optional(),
 });
 
 export const decisionOption = z.object({ id: text(80).min(1), label: text(200).min(1), outcome: text(2000).default("") });

@@ -14,7 +14,9 @@ import { messageOf, queries } from "@/lib/queries";
 import type { FileMeta } from "@/lib/types";
 import type { Part } from "@/lib/domain";
 import { describeSize, fmt, type PartGeometry } from "./layout";
-import { boxMesh, bounds, cylinderMesh, lidMesh, parseStl, shellDims, trayMesh, writeBinaryStl, type Mesh, type ShellParams } from "./stl";
+import { boxMesh, bounds, cylinderMesh, lidMesh, shellDims, trayMesh, type Mesh, type ShellParams } from "./stl";
+import { parseStl } from "@/lib/geometry/meshFile";
+import { bodies3mf, soupToStl, type PrintBody } from "@/lib/geometry/export";
 
 export type LoadedStl = {
   key: string;
@@ -49,8 +51,8 @@ function bodiesFor(g: PartGeometry, p: ShellParams): { bodies: Body[]; problems:
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "part";
 const kb = (n: number) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 / 1024).toFixed(2)} MB`);
 
-function downloadBytes(buf: ArrayBuffer, name: string) {
-  const url = URL.createObjectURL(new Blob([buf], { type: "model/stl" }));
+function downloadBytes(buf: ArrayBuffer, name: string, type = "model/stl") {
+  const url = URL.createObjectURL(new Blob([buf], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -120,8 +122,32 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
 
   const generate = (p: Part, b: Body) => {
     const name = `${slug(p.ref || p.item.title)}-${b.body}.stl`;
-    return { name, buf: writeBinaryStl(b.mesh, `${p.ref || p.item.title} ${b.body}, parametric envelope body, mm`) };
+    return { name, buf: soupToStl(b.mesh) };
   };
+
+  /** Every printed body as its own object in one 3MF, laid out side by side on the bed. */
+  const printedBodies = (only?: Part): PrintBody[] =>
+    printable
+      .filter((p) => (only ? p.item.id === only.item.id : (p.geometry as PartGeometry).print === true))
+      .flatMap((p) => bodiesFor(p.geometry as PartGeometry, params).bodies.map((b) => ({ name: `${p.ref || slug(p.item.title)} ${b.body}`.trim(), mesh: b.mesh })));
+
+  const download3mf = async (only?: Part) => {
+    const bodies = printedBodies(only);
+    if (!bodies.length) return;
+    setBusy("3mf");
+    setNotice(null);
+    try {
+      const buf = await bodies3mf(bodies);
+      const name = `${only ? slug(only.ref || only.item.title) : slug(projectId)}-printed.3mf`;
+      downloadBytes(buf, name, "model/3mf");
+      setNotice({ tone: "ok", text: `Downloaded ${name}: ${bodies.length} object${bodies.length === 1 ? "" : "s"}, millimetres.` });
+    } catch (e) {
+      setNotice({ tone: "bad", text: `Could not write the 3MF: ${(e as Error).message}` });
+    } finally {
+      setBusy("");
+    }
+  };
+  const anyPrinted = printable.some((p) => (p.geometry as PartGeometry).print === true && bodiesFor(p.geometry as PartGeometry, params).bodies.length > 0);
 
   const saveBody = async (p: Part, b: Body) => {
     const g = p.geometry as PartGeometry;
@@ -156,11 +182,11 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
       const parsed = parseStl(bytes);
       setLoaded({
         key: `${file.name}:${file.size}:${file.lastModified}`,
-        mesh: parsed.mesh,
+        mesh: parsed.soup,
         name: file.name,
-        format: parsed.format,
+        format: parsed.encoding ?? "binary",
         triangles: parsed.triangles,
-        extent: meshExtent(parsed.mesh),
+        extent: parsed.extent,
         bytes,
         savedId: null,
         show: true,
@@ -177,7 +203,7 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
       const res = await fetch(`/api/files/${f.id}`);
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const parsed = parseStl(await res.arrayBuffer());
-      setLoaded({ key: `saved:${f.id}`, mesh: parsed.mesh, name: f.name, format: parsed.format, triangles: parsed.triangles, extent: meshExtent(parsed.mesh), bytes: null, savedId: f.id, show: true });
+      setLoaded({ key: `saved:${f.id}`, mesh: parsed.soup, name: f.name, format: parsed.encoding ?? "binary", triangles: parsed.triangles, extent: parsed.extent, bytes: null, savedId: f.id, show: true });
     } catch (e) {
       setNotice({ tone: "bad", text: `Could not open ${f.name}: ${(e as Error).message}` });
     } finally {
@@ -228,7 +254,13 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
           <NumParam label="Lid clearance, mm" step={0.05} value={params.clearanceMm} onChange={(v) => setParams({ ...params, clearanceMm: v })} />
           <NumParam label="Lip height, mm" step={0.5} value={params.lipMm} onChange={(v) => setParams({ ...params, lipMm: v })} />
         </div>
-        {notice && <p className={`mt-3 text-sm ${notice.tone === "ok" ? "text-success" : "text-danger"}`}>{notice.text}</p>}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" disabled={!anyPrinted || busy === "3mf"} onClick={() => void download3mf()}>
+            <Download className="h-3.5 w-3.5" /> {busy === "3mf" ? "Writing 3MF" : "Download 3MF of all printed parts"}
+          </Button>
+          {!anyPrinted && <span className="text-xs text-muted">Tick Printed on a part to include it.</span>}
+        </div>
+        {notice && <p role={notice.tone === "bad" ? "alert" : "status"} className={`mt-3 text-sm ${notice.tone === "ok" ? "text-success" : "text-danger"}`}>{notice.text}</p>}
         {printable.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No part has geometry yet, so there is nothing to generate.</p>
         ) : (
@@ -276,6 +308,9 @@ export function PrintPanel({ projectId, parts, params, setParams, onTogglePrint,
                                 }}
                               >
                                 <Download className="h-3.5 w-3.5" /> Download STL
+                              </Button>
+                              <Button size="sm" variant="outline" disabled={busy === "3mf"} onClick={() => void download3mf(p)}>
+                                <Download className="h-3.5 w-3.5" /> 3MF
                               </Button>
                               <Button size="sm" variant="outline" disabled={busy === id} onClick={() => void saveBody(p, b)}>
                                 <Save className="h-3.5 w-3.5" /> {busy === id ? "Saving" : "Save to concept"}

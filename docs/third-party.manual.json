@@ -153,6 +153,48 @@
       ],
       "source": "https://github.com/vercel/ai-elements",
       "changes": "None. The files are as the CLI wrote them."
+    },
+    {
+      "name": "Graphviz (apt package graphviz)",
+      "version": "as installed by apt in the planner image (Debian)",
+      "license": "EPL-1.0 (Graphviz; the Debian package also contains libraries under their own licences)",
+      "licenseEvidence": "Graphviz licence page https://graphviz.org/license/ : Graphviz is distributed under the Eclipse Public License 1.0. Debian package copyright file lists the components. Not re-read in this session; check before release.",
+      "use": "separate process",
+      "referencedIn": [
+        "planner/Dockerfile"
+      ],
+      "source": "https://graphviz.org/",
+      "notes": "Installed with apt in the planner image. WireViz runs the dot command as a separate process to draw the harness. Never linked into the app."
+    },
+    {
+      "name": "occt-import-js (OpenCascade STEP reader, WebAssembly)",
+      "version": "as copied from the npm package occt-import-js",
+      "license": "LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it)",
+      "licenseEvidence": "public/vendor/occt/LICENSE.md is the GNU LGPL version 2.1 text shipped in the package. Whether the combined wasm is LGPL-2.1 only or LGPL-2.1 with the OCCT exception was not checked; the owner should confirm.",
+      "use": "copied source",
+      "origin": "npm package occt-import-js, copied into public/vendor/occt so the browser can load it from the same origin",
+      "referencedIn": [
+        "public/vendor/occt/occt-import-js.js",
+        "public/vendor/occt/occt-import-js.wasm",
+        "public/vendor/occt/LICENSE.md",
+        "src/lib/geometry/meshFile.ts"
+      ],
+      "source": "https://github.com/kovacsv/occt-import-js",
+      "changes": "None. The files are as the package ships them (about 7.6 MB of wasm)."
+    },
+    {
+      "name": "WireViz (Python package, run as a command)",
+      "version": "0.4.1",
+      "license": "GPL-3.0",
+      "licenseEvidence": "WireViz repository LICENSE (https://github.com/wireviz/WireViz) is GPL-3.0; not re-read in this session.",
+      "use": "separate process",
+      "referencedIn": [
+        "planner/harness.py",
+        "planner/requirements.txt",
+        "planner/Dockerfile"
+      ],
+      "source": "https://github.com/wireviz/WireViz",
+      "notes": "planner/harness.py starts the wireviz command as a subprocess and reads its svg and bom files. It is never imported, so the GPL-3 code is not linked into the planner or the app."
     }
   ],
   "useOverrides": {

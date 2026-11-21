@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Library code copied in by the shadcn CLI and kept as its makers wrote it, so updates stay a re-run.
     "src/components/ai-elements/**",
     "src/components/ui/carousel.tsx",
+    // The OpenCascade STEP reader, copied from the occt-import-js package as it ships (see public/vendor/occt).
+    "public/vendor/**",
   ]),
 ]);
 

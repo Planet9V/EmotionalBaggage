@@ -15,6 +15,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field, model_validator
 import networkx as nx
 
+from fastapi import HTTPException
+from harness import HarnessError, HarnessRequest, render as render_harness
 from routing import RouteRequest, route as route_wires
 
 app = FastAPI(title="Concept-to-realization planner")
@@ -135,3 +137,12 @@ def plan(g: Graph):
 def route(req: RouteRequest):
     """Routes wires through an enclosure. See routing.py for the method."""
     return route_wires(req)
+
+
+@app.post("/harness")
+def harness(req: HarnessRequest):
+    """Draws a wiring harness. WireViz runs as a separate process with a time limit; see harness.py."""
+    try:
+        return render_harness(req)
+    except HarnessError as e:
+        raise HTTPException(status_code=e.status, detail=e.message)
