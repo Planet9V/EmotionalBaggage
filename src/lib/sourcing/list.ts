@@ -89,7 +89,7 @@ export function shoppingCsv(s: Shopping, currency: string): string {
     rows.push([`${g.supplier} subtotal`, "", "", "", "", "", "", "", "", money(g.totalCents), "", ""]);
   }
   for (const u of s.unchosen) rows.push(["No supplier chosen", u.ref, u.title, "", u.need, "", "", "", "", "", "", ""]);
-  rows.push(["Total", "", "", "", "", "", "", "", "", money(s.totalCents), "", ""]);
+  rows.push(s.groups.length ? ["Total", "", "", "", "", "", "", "", "", money(s.totalCents), "", ""] : ["Total", "Nothing is priced yet", "", "", "", "", "", "", "", "", "", ""]);
   return toCsvText(rows, { trailingNewline: false });
 }
 

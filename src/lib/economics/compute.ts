@@ -96,14 +96,15 @@ export function partLine(p: PartInput, batchSize: number, currency: string): Cos
     }
     const unitMinor = toMinor(unit, currency);
     const amount = roundHalfUp(p.qty * unitMinor);
+    const from = !hit && p.offer ? `, from ${p.offer.supplier}${p.offer.checkedAt ? `, checked ${p.offer.checkedAt}` : ""}` : !hit ? ", unit price entered" : ", price break entered";
     const how = hit
-      ? `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)} (${ordered} pieces ordered reaches the break at ${hit.qty})`
-      : `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)}${p.breaks.length ? ` (${ordered} pieces ordered is below the first break at ${p.breaks[0].qty})` : ""}`;
+      ? `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)} (${ordered} pieces ordered reaches the break at ${hit.qty})${from}`
+      : `${p.qty} x ${fm(unitMinor, currency)} = ${fm(amount, currency)}${p.breaks.length ? ` (${ordered} pieces ordered is below the first break at ${p.breaks[0].qty})` : ""}${from}`;
     return { ...base, amount, how, missing: null };
   }
   if (p.line !== null) {
     const amount = toMinor(p.line, currency);
-    return { ...base, amount, how: `Line cost entered on the parts list: ${fm(amount, currency)}`, missing: null };
+    return { ...base, amount, how: `Entered estimate on the parts list: ${fm(amount, currency)}`, missing: null };
   }
   if (p.unit !== null || p.breaks.length) return miss("quantity is not set. Enter how many go into one unit.");
   return miss("no unit price and no line cost. Enter one on the parts list.");

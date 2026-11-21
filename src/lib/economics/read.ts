@@ -1,6 +1,6 @@
 // Rows read once, for the economics. A number nobody entered is null, never 0.
 import type { Item } from "@/lib/types";
-import { toPart } from "@/lib/domain/part";
+import { partPrice, toPart } from "@/lib/domain/part";
 import { COST_KINDS, METHODS, type CostKind, type Method } from "./schemas";
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -25,6 +25,8 @@ export type PartInput = {
   line: number | null;
   breaks: { qty: number; unit: number }[];
   supplier: string;
+  /** set when the unit price is the chosen offer's (Sourcing): where and when it was checked */
+  offer?: { supplier: string; checkedAt: string } | null;
 };
 
 export function readPartInput(item: Item): PartInput {
@@ -36,7 +38,10 @@ export function readPartInput(item: Item): PartInput {
         .filter((b): b is { qty: number; unit: number } => b.qty !== null && b.qty >= 1 && b.unit !== null && b.unit >= 0)
         .sort((a, b) => a.qty - b.qty)
     : [];
-  return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: num(d.unit), line: p.line, breaks, supplier: str(d.supplier) };
+  // one price per part: a chosen offer's unit price wins over a stored copy, so a stale data.unit is never read
+  const pr = partPrice(p);
+  if (pr.basis === "offer") return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: pr.unit, line: p.line, breaks, supplier: pr.supplier, offer: { supplier: pr.supplier, checkedAt: pr.checkedAt } };
+  return { id: item.id, ref: p.ref, title: item.title, qty: p.qty, unit: num(d.unit), line: p.line, breaks, supplier: str(d.supplier), offer: null };
 }
 
 export type CostRow = {
