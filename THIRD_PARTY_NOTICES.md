@@ -6,7 +6,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 
 ## npm packages (production tree)
 
-548 packages: 40 direct, 508 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
+551 packages: 40 direct, 511 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
 
 | Package | Version | Licence | Repository | Kind |
 | --- | --- | --- | --- | --- |
@@ -75,6 +75,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | @next/swc-linux-x64-musl | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-linux-x64-musl | transitive, platform build |
 | @next/swc-win32-arm64-msvc | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-win32-arm64-msvc | transitive, platform build |
 | @next/swc-win32-x64-msvc | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-win32-x64-msvc | transitive, platform build |
+| @playwright/test | 1.65.1 | Apache-2.0 | https://github.com/microsoft/playwright | transitive |
 | @radix-ui/number | 1.1.3 | MIT | https://github.com/radix-ui/primitives | transitive |
 | @radix-ui/primitive | 1.2.0 | MIT | https://github.com/radix-ui/primitives | transitive |
 | @radix-ui/react-accessible-icon | 1.2.0 | MIT | https://github.com/radix-ui/primitives | transitive |
@@ -452,6 +453,8 @@ Every third-party component this repository uses: the npm packages of the web ap
 | pgpass | 1.0.5 | MIT | https://github.com/hoegaarden/pgpass | transitive |
 | picocolors | 1.1.1 | ISC | https://github.com/alexeyraspopov/picocolors | transitive |
 | pkce-challenge | 5.0.1 | MIT | https://github.com/crouchcd/pkce-challenge | transitive |
+| playwright | 1.65.1 | Apache-2.0 | https://github.com/microsoft/playwright | transitive |
+| playwright-core | 1.65.1 | Apache-2.0 | https://github.com/microsoft/playwright | transitive |
 | points-on-curve | 0.2.0 | MIT | https://github.com/pshihn/bezier-points | transitive |
 | points-on-path | 0.2.1 | MIT | https://github.com/pshihn/points-on-path | transitive |
 | postcss | 8.5.23 | MIT | https://github.com/postcss/postcss | transitive |
@@ -592,7 +595,7 @@ No package installed on every platform ships this licence's text in a licence fi
 
 #### Apache-2.0
 
-Used by: @ai-sdk/gateway@4.0.152, @ai-sdk/mcp@2.0.102, @ai-sdk/openai-compatible@3.0.94, @ai-sdk/provider@4.0.39, @ai-sdk/provider-utils@5.0.83, @ai-sdk/react@4.0.183, @chevrotain/cst-dts-gen@13.2.0, @chevrotain/gast@13.2.0, @chevrotain/regexp-to-ast@13.2.0, @chevrotain/types@11.1.2, @chevrotain/types@13.2.0, @chevrotain/utils@13.2.0, @dimforge/rapier3d-compat@0.12.0, @img/sharp-darwin-arm64@0.35.5, @img/sharp-darwin-x64@0.35.5, @img/sharp-freebsd-wasm32@0.35.5, @img/sharp-linux-arm@0.35.5, @img/sharp-linux-arm64@0.35.5, @img/sharp-linux-ppc64@0.35.5, @img/sharp-linux-riscv64@0.35.5, @img/sharp-linux-s390x@0.35.5, @img/sharp-linux-x64@0.35.5, @img/sharp-linuxmusl-arm64@0.35.5, @img/sharp-linuxmusl-x64@0.35.5, @img/sharp-wasm32@0.35.5, @img/sharp-webcontainers-wasm32@0.35.5, @img/sharp-win32-arm64@0.35.5, @img/sharp-win32-ia32@0.35.5, @img/sharp-win32-x64@0.35.5, @mediapipe/tasks-vision@0.10.17, @streamdown/cjk@1.0.5, @streamdown/code@2.0.1, @streamdown/math@1.0.4, @streamdown/mermaid@1.0.4, @swc/helpers@0.5.23, @vercel/oidc@3.2.0, @workflow/serde@4.1.0, ai@7.0.179, baseline-browser-mapping@2.11.39, chevrotain@13.2.0, class-variance-authority@0.7.1, detect-libc@2.1.2, dompurify@3.4.18, draco3d@1.5.9, hls.js@1.7.4, promise-worker-transferable@1.0.4, remend@1.5.0, sharp@0.35.5, streamdown@2.8.0.
+Used by: @ai-sdk/gateway@4.0.152, @ai-sdk/mcp@2.0.102, @ai-sdk/openai-compatible@3.0.94, @ai-sdk/provider@4.0.39, @ai-sdk/provider-utils@5.0.83, @ai-sdk/react@4.0.183, @chevrotain/cst-dts-gen@13.2.0, @chevrotain/gast@13.2.0, @chevrotain/regexp-to-ast@13.2.0, @chevrotain/types@11.1.2, @chevrotain/types@13.2.0, @chevrotain/utils@13.2.0, @dimforge/rapier3d-compat@0.12.0, @img/sharp-darwin-arm64@0.35.5, @img/sharp-darwin-x64@0.35.5, @img/sharp-freebsd-wasm32@0.35.5, @img/sharp-linux-arm@0.35.5, @img/sharp-linux-arm64@0.35.5, @img/sharp-linux-ppc64@0.35.5, @img/sharp-linux-riscv64@0.35.5, @img/sharp-linux-s390x@0.35.5, @img/sharp-linux-x64@0.35.5, @img/sharp-linuxmusl-arm64@0.35.5, @img/sharp-linuxmusl-x64@0.35.5, @img/sharp-wasm32@0.35.5, @img/sharp-webcontainers-wasm32@0.35.5, @img/sharp-win32-arm64@0.35.5, @img/sharp-win32-ia32@0.35.5, @img/sharp-win32-x64@0.35.5, @mediapipe/tasks-vision@0.10.17, @playwright/test@1.65.1, @streamdown/cjk@1.0.5, @streamdown/code@2.0.1, @streamdown/math@1.0.4, @streamdown/mermaid@1.0.4, @swc/helpers@0.5.23, @vercel/oidc@3.2.0, @workflow/serde@4.1.0, ai@7.0.179, baseline-browser-mapping@2.11.39, chevrotain@13.2.0, class-variance-authority@0.7.1, detect-libc@2.1.2, dompurify@3.4.18, draco3d@1.5.9, hls.js@1.7.4, playwright@1.65.1, playwright-core@1.65.1, promise-worker-transferable@1.0.4, remend@1.5.0, sharp@0.35.5, streamdown@2.8.0.
 
 Text from @chevrotain/cst-dts-gen@13.2.0, LICENSE.txt:
 
