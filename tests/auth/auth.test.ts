@@ -217,6 +217,32 @@ describe("signing in", () => {
 });
 
 describe("sessions", () => {
+  // Robustness review S9: a session used at least once a month lived for ever.
+  it("end 90 days after signing in, however often they are used", async () => {
+    const id = await makeUser(`${PREFIX}absolute`, "pw-absolute-1");
+    const t0 = new Date();
+    const token = await createSession(id, "", { now: t0 });
+    for (const day of [20, 40, 60, 80, 89]) expect(await sessionFromToken(token, { now: new Date(t0.getTime() + day * DAY) }), `day ${day}`).not.toBeNull();
+    const [row] = await q<{ expires_at: Date }>("SELECT expires_at FROM sessions WHERE user_id = $1", [id]);
+    expect(new Date(row.expires_at).getTime()).toBeLessThanOrEqual(t0.getTime() + 90 * DAY);
+    expect(await sessionFromToken(token, { now: new Date(t0.getTime() + 90 * DAY + 1000) })).toBeNull();
+  });
+
+  it("sign out everywhere ends every session of the user, this one included", async () => {
+    const id = await makeUser(`${PREFIX}everywhere`, "pw-everywhere-1");
+    const a = await createSession(id, "browser a");
+    const b = await createSession(id, "browser b");
+    const { POST } = await import("@/app/api/auth/sign-out-everywhere/route");
+    const res = await POST(new Request("http://test.local/api/auth/sign-out-everywhere", { method: "POST", headers: { cookie: `${SESSION_COOKIE}=${a}`, origin: "http://test.local", host: "test.local" } }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, ended: 2 });
+    expect(res.headers.get("set-cookie")).toMatch(/Max-Age=0/);
+    expect(await sessionFromToken(a)).toBeNull();
+    expect(await sessionFromToken(b)).toBeNull();
+    const again = await POST(new Request("http://test.local/api/auth/sign-out-everywhere", { method: "POST", headers: { cookie: `${SESSION_COOKIE}=${b}`, origin: "http://test.local", host: "test.local" } }));
+    expect(again.status).toBe(401);
+  });
+
   it("expire after 30 days unused", async () => {
     const id = await makeUser(`${PREFIX}expiry`, "pw-expiry-1");
     const t0 = new Date();

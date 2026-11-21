@@ -29,6 +29,9 @@ export const MAX_USERNAME_LENGTH = 200;
 
 export const SESSION_DAYS = 30;
 const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
+/** However often it is used, a session ends this long after it began (robustness review S9). */
+export const ABSOLUTE_SESSION_DAYS = 90;
+const ABSOLUTE_MS = ABSOLUTE_SESSION_DAYS * 24 * 60 * 60 * 1000;
 /** A session's expiry moves forward when it is used, but at most once an hour, so reads are not writes. */
 const TOUCH_MS = 60 * 60 * 1000;
 
@@ -225,20 +228,18 @@ export async function sessionFromRequest(req: Request, opts: { now?: Date } = {}
 export async function sessionFromToken(token: string, opts: { now?: Date } = {}): Promise<Session | null> {
   if (!TOKEN.test(token)) return null;
   const now = opts.now ?? new Date();
-  const rows = await q<{ id: string; user_id: string; last_seen_at: Date; username: string; password_changed_at: Date | null }>(
-    `SELECT s.id, s.user_id, s.last_seen_at, u.username, u.password_changed_at
+  const rows = await q<{ id: string; user_id: string; created_at: Date; last_seen_at: Date; username: string; password_changed_at: Date | null }>(
+    `SELECT s.id, s.user_id, s.created_at, s.last_seen_at, u.username, u.password_changed_at
        FROM sessions s JOIN users u ON u.id = s.user_id
-      WHERE s.token_sha256 = $1 AND s.expires_at > $2`,
-    [sha256(token), now]
+      WHERE s.token_sha256 = $1 AND s.expires_at > $2 AND s.created_at > $3`,
+    [sha256(token), now, new Date(now.getTime() - ABSOLUTE_MS)]
   );
   if (!rows.length) return null;
   const r = rows[0];
   if (now.getTime() - new Date(r.last_seen_at).getTime() >= TOUCH_MS) {
-    await q("UPDATE sessions SET last_seen_at = $2, expires_at = $3 WHERE id = $1", [
-      r.id,
-      now,
-      new Date(now.getTime() + SESSION_MS),
-    ]);
+    // sliding 30 days, never past 90 days from the sign-in
+    const end = Math.min(now.getTime() + SESSION_MS, new Date(r.created_at).getTime() + ABSOLUTE_MS);
+    await q("UPDATE sessions SET last_seen_at = $2, expires_at = $3 WHERE id = $1", [r.id, now, new Date(end)]);
   }
   return {
     sessionId: Number(r.id),
@@ -246,6 +247,12 @@ export async function sessionFromToken(token: string, opts: { now?: Date } = {})
     username: r.username,
     usingDefaultPassword: r.password_changed_at === null,
   };
+}
+
+/** Ends every session of a user, this one included ("Sign out everywhere"). Answers how many ended. */
+export async function signOutEverywhere(userId: number): Promise<number> {
+  const rows = await q("DELETE FROM sessions WHERE user_id = $1 RETURNING id", [userId]);
+  return rows.length;
 }
 
 /** Ends the session the token belongs to. An unknown or malformed token is not an error. */
