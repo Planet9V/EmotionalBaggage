@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { mapImport, money, parseAmount, parseCsv, type ImportRow } from "@/components/parts/bom";
+import { mapImport, money, parseAmount, type ImportRow } from "@/components/parts/bom";
+import { parseCsvText } from "@/lib/csv";
 import { statusTone } from "@/lib/statusTones";
 import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
@@ -95,7 +96,7 @@ export function ImportDialog({ open, onOpenChange, defaultStatus, onCreate }: { 
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const mapped = useMemo(() => (text.trim() ? mapImport(parseCsv(text)) : null), [text]);
+  const mapped = useMemo(() => (text.trim() ? mapImport(parseCsvText(text).rows) : null), [text]);
   const good = mapped?.rows.filter((r) => !r.problem) ?? [];
   const bad = (mapped?.rows.length ?? 0) - good.length;
 

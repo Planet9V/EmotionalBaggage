@@ -6,7 +6,7 @@
 // 21 Nov 2026) gives weekly, English-only review *topics* per ASIN or browse node in seven stores, not the
 // reviews themselves. Reviews are typed, pasted or imported here from a CSV the user exported.
 import { createHash } from "node:crypto";
-import Papa from "papaparse";
+import { parseCsvRecords } from "@/lib/csv";
 import { HttpError } from "@/lib/api/route";
 import { currentActor } from "@/lib/actor";
 import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
@@ -50,9 +50,9 @@ export function parseReviews(input: string, defaults: { source?: string; kind?: 
   const rows: ImportRow[] = [];
   const base = (text: string): ImportRow => ({ kind: defaults.kind ?? (/\?\s*$/.test(text.trim()) ? "question" : "review"), title: "", text, rating: null, date: "", source: defaults.source ?? "", productVersion: "", sentiment: "", topic: "" });
   if (looksCsv) {
-    const parsed = Papa.parse<Record<string, string>>(input.trim(), { header: true, skipEmptyLines: "greedy", transformHeader: (h) => h.trim() });
-    for (const e of parsed.errors.slice(0, 5)) problems.push(`Line ${(e.row ?? 0) + 2}: ${e.message}`);
-    const headers = parsed.meta.fields ?? [];
+    const parsed = parseCsvRecords(input.trim());
+    for (const e of parsed.errors.slice(0, 5)) problems.push(`Line ${e.row + 2}: ${e.message}`);
+    const headers = parsed.headers;
     for (const [field, names] of Object.entries(COLUMNS)) {
       const h = headers.find((x) => names.includes(norm(x)));
       if (h) columns[field] = h;
@@ -61,7 +61,7 @@ export function parseReviews(input: string, defaults: { source?: string; kind?: 
       problems.push(`No column holds the review text. Name one of the columns "text", "review", "body" or "question". Columns found: ${headers.join(", ") || "none"}.`);
       return { rows: [], problems, columns };
     }
-    parsed.data.forEach((r, i) => {
+    parsed.records.forEach((r, i) => {
       const text = String(r[columns.text] ?? "").trim();
       if (!text) return;
       const row = base(text);

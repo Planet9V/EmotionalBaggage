@@ -55,43 +55,6 @@ export function toCsv(parts: Part[]): string {
   return toCsvText(rows);
 }
 
-/** RFC 4180 style parser. The delimiter is tab when the first line has a tab, else comma. */
-export function parseCsv(text: string): string[][] {
-  const clean = text.replace(/^﻿/, "");
-  const firstLine = clean.split(/\r?\n/, 1)[0] ?? "";
-  const delim = firstLine.includes("\t") ? "\t" : ",";
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-  for (let i = 0; i < clean.length; i++) {
-    const c = clean[i];
-    if (quoted) {
-      if (c === '"') {
-        if (clean[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else quoted = false;
-      } else cell += c;
-    } else if (c === '"') quoted = true;
-    else if (c === delim) {
-      row.push(cell);
-      cell = "";
-    } else if (c === "\n" || c === "\r") {
-      if (c === "\r" && clean[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += c;
-  }
-  if (cell !== "" || row.length) {
-    row.push(cell);
-    rows.push(row);
-  }
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
-}
-
 const ALIASES: Record<CsvColumn, string[]> = {
   ref: ["ref", "reference", "designator", "refdes"],
   title: ["title", "part", "name", "item"],

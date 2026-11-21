@@ -6,7 +6,7 @@
 // Ads, by the column names each shows. Where a layout is not verified against a real export file it
 // says so (`verified: false`), and in any case the mapping screen shows what was recognised and lets
 // the user correct it: a recognised layout is a suggestion, never a silent decision.
-import Papa from "papaparse";
+import { parseCsvText } from "@/lib/csv";
 import { dayFromNumber, dayNumber, isDay } from "./days";
 import { toMinor } from "@/lib/economics/money";
 
@@ -133,10 +133,9 @@ const ALL_SYNONYMS = new Set(LAYOUTS.flatMap((l) => FIELDS.flatMap((f) => l.syno
 
 /** Reads CSV or tab-separated text. The header is the first of the first ten lines with at least three known column names. */
 export function parseReport(text: string): ParsedFile {
-  const clean = text.replace(/^﻿/, "");
-  const res = Papa.parse<string[]>(clean, { skipEmptyLines: "greedy", delimitersToGuess: [",", "\t", ";", "|"] });
-  const all = res.data.filter((r) => Array.isArray(r));
-  const errors = res.errors.map((e) => `Line ${(e.row ?? 0) + 1}: ${e.message}`);
+  const res = parseCsvText(text, { delimiters: [",", "\t", ";", "|"] });
+  const all = res.rows;
+  const errors = res.errors.map((e) => `Line ${e.row + 1}: ${e.message}`);
   let at = all.slice(0, 10).findIndex((r) => r.filter((c) => ALL_SYNONYMS.has(norm(c))).length >= 3);
   if (at < 0) at = 0;
   const headers = (all[at] ?? []).map((h) => h.trim());
