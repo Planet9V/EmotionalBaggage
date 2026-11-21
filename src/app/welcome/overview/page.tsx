@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/welcome/ThemeToggle";
 import { PrintButton } from "@/components/welcome/PrintButton";
 import { publicPageMetadata } from "@/components/welcome/meta";
-import { FAQ, PRINCIPLES, PROBLEM, PRODUCT, REPO_URL, RUN_COMMANDS, RUNS_ON, STAGES } from "@/components/welcome/content";
+import { FAQ, PRINCIPLES, PROBLEM, PRODUCT, RUN_COMMANDS, RUNS_ON, STAGES } from "@/components/welcome/content";
 
 export const generateMetadata = () =>
   publicPageMetadata({
@@ -34,9 +34,9 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-4xl px-4 py-10 text-[13px] leading-relaxed sm:px-6 print:max-w-none print:p-0 print:text-[8.5pt] print:leading-snug">
+      <main className="mx-auto max-w-4xl px-4 py-10 text-[13px] leading-relaxed sm:px-6 print:max-w-none print:p-0 print:text-[8pt] print:leading-snug">
         {/* One sheet: A4 and Letter both fit with these margins at this size (checked by printing to PDF). */}
-        <style>{"@page { margin: 11mm 12mm; }"}</style>
+        <style>{"@page { margin: 10mm 12mm; }"}</style>
         <header className="border-b border-hairline pb-5 print:pb-3">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">One-page overview · free · self-hosted</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-primary print:text-[16pt]">{PRODUCT}</h1>
@@ -52,10 +52,10 @@ export default function OverviewPage() {
 
         <section aria-labelledby="ov-stages" className="mt-6 print:mt-2">
           <h2 id="ov-stages" className="text-sm font-semibold uppercase tracking-wider text-primary">The seven stages</h2>
-          <ol className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2 print:grid-cols-2">
+          <ol className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2 print:grid-cols-2">
             {STAGES.map((s) => (
               <li key={s.n} className="text-secondary">
-                <span className="font-mono text-link">{s.n}</span> <span className="font-semibold text-primary">{s.name}.</span> {s.text}
+                <span className="font-mono text-link">{s.n}</span> <span className="font-semibold text-primary">{s.name}.</span> {s.short}
               </li>
             ))}
           </ol>
@@ -75,7 +75,7 @@ export default function OverviewPage() {
           <section aria-labelledby="ov-runs">
             <h2 id="ov-runs" className="text-sm font-semibold uppercase tracking-wider text-primary">What it runs on</h2>
             <ul className="mt-2 space-y-1.5">
-              {RUNS_ON.slice(0, 4).map((r) => (
+              {RUNS_ON.slice(0, 3).map((r) => (
                 <li key={r.title} className="text-secondary">
                   <span className="font-semibold text-primary">{r.title}.</span> {r.text}
                 </li>
@@ -90,17 +90,17 @@ export default function OverviewPage() {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-hairline font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
-                  <th scope="col" className="py-1.5 pr-4 print:py-1 font-normal">Question</th>
-                  <th scope="col" className="py-1.5 pr-4 print:py-1 font-normal">Answer</th>
-                  <th scope="col" className="py-1.5 font-normal">Where to see it</th>
+                  <th scope="col" className="py-1.5 pr-4 print:py-0.5 font-normal">Question</th>
+                  <th scope="col" className="py-1.5 pr-4 print:py-0.5 font-normal">Answer</th>
+                  <th scope="col" className="w-[20%] py-1.5 font-normal">Where to see it</th>
                 </tr>
               </thead>
               <tbody>
                 {FAQ.map((f) => (
                   <tr key={f.q} className="border-b border-hairline align-top">
-                    <th scope="row" className="py-1.5 pr-4 print:py-1 font-medium text-primary">{f.q}</th>
-                    <td className="py-1.5 pr-4 print:py-1 text-secondary">{f.short}</td>
-                    <td className="py-1.5 text-muted print:py-1">{f.where}</td>
+                    <th scope="row" className="py-1.5 pr-4 print:py-0.5 font-medium text-primary">{f.q}</th>
+                    <td className="py-1.5 pr-4 print:py-0.5 text-secondary">{f.short}</td>
+                    <td className="py-1.5 text-muted print:py-0.5">{f.where}</td>
                   </tr>
                 ))}
               </tbody>
@@ -110,17 +110,11 @@ export default function OverviewPage() {
 
         <section aria-labelledby="ov-next" className="mt-6 print:mt-2 print:break-inside-avoid">
           <h2 id="ov-next" className="text-sm font-semibold uppercase tracking-wider text-primary">Next step</h2>
-          <ul className="mt-2 space-y-1.5 text-secondary">
-            <li>
-              <span className="font-semibold text-primary">Try the live workbench:</span> open <span className="font-mono">/sign-in</span> on this site and sign in as demo / demo. The account is shared with everyone; keep private ideas out of it.
-            </li>
-            <li>
-              <span className="font-semibold text-primary">Run it yourself:</span> <span className="font-mono">{RUN_COMMANDS.join(" && ")}</span>, then open http://localhost:3000. Source: <span className="font-mono">{REPO_URL}</span>
-            </li>
-            <li>
-              <span className="font-semibold text-primary">Ask for a workspace:</span> the form at <span className="font-mono">/welcome#request</span>. Requests are stored for the owner; no email is sent by the app.
-            </li>
-          </ul>
+          <p className="mt-1 text-secondary">
+            <span className="font-semibold text-primary">Try it:</span> sign in on this site as demo / demo (a shared, public account; keep private ideas out of it).{" "}
+            <span className="font-semibold text-primary">Run it yourself:</span> <span className="font-mono">{RUN_COMMANDS.join(" && ")}</span>, then open http://localhost:3000.{" "}
+            <span className="font-semibold text-primary">Ask for a workspace:</span> the form at <span className="font-mono">/welcome#request</span>; no email is sent by the app.
+          </p>
         </section>
       </main>
     </div>

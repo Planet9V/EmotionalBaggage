@@ -51,14 +51,14 @@ export const PROBLEM = {
   ],
 };
 
-export const STAGES: { n: string; name: string; text: string }[] = [
-  { n: "01", name: "Concept", text: "Write the brief, the launch-day press release and the FAQ before anything is built. Have the AI reviewer argue against them. Lay out the decisions the idea depends on." },
-  { n: "02", name: "Research", text: "Ask questions through Perplexity and keep each answer with its sources. A claim becomes verified or wrong from the sources you judged, not from a guess." },
-  { n: "03", name: "Design", text: "Requirements, the parts list, the physical layout, the 3D model, the schematic with its electrical checks, and a printable enclosure." },
-  { n: "04", name: "Prototype", text: "Sourcing links and offers per part, print jobs sliced by OrcaSlicer, a soldering build sheet, assembly steps, acceptance tests and named builds." },
-  { n: "05", name: "Production", text: "The unit cost from parts and cost lines, batch plans with the cash each needs, suppliers, manufacturing methods and a compliance checklist for your own checking." },
-  { n: "06", name: "Marketing", text: "Personas, competitors, positioning, pricing, a brand kit, ads per channel, a landing page, social posts, campaigns and a dated launch plan." },
-  { n: "07", name: "Sales", text: "The Amazon listing, sales channels with their fees, reviews and questions turned into requirements, and the sales monitor." },
+export const STAGES: { n: string; name: string; text: string; /** one line, for the printed overview */ short: string }[] = [
+  { n: "01", short: "Brief, press release, FAQ, the AI reviewer's challenge, decisions.", name: "Concept", text: "Write the brief, the launch-day press release and the FAQ before anything is built. Have the AI reviewer argue against them. Lay out the decisions the idea depends on." },
+  { n: "02", short: "Questions with sourced answers; claims verified from the sources.", name: "Research", text: "Ask questions through Perplexity and keep each answer with its sources. A claim becomes verified or wrong from the sources you judged, not from a guess." },
+  { n: "03", short: "Requirements, parts list, layout, 3D model, schematic, enclosure.", name: "Design", text: "Requirements, the parts list, the physical layout, the 3D model, the schematic with its electrical checks, and a printable enclosure." },
+  { n: "04", short: "Sourcing, sliced print jobs, build sheet, assembly, tests, builds.", name: "Prototype", text: "Sourcing links and offers per part, print jobs sliced by OrcaSlicer, a soldering build sheet, assembly steps, acceptance tests and named builds." },
+  { n: "05", short: "Unit cost, batch plans, suppliers, methods, compliance checklist.", name: "Production", text: "The unit cost from parts and cost lines, batch plans with the cash each needs, suppliers, manufacturing methods and a compliance checklist for your own checking." },
+  { n: "06", short: "Personas, positioning, pricing, brand kit, ads, posts, launch plan.", name: "Marketing", text: "Personas, competitors, positioning, pricing, a brand kit, ads per channel, a landing page, social posts, campaigns and a dated launch plan." },
+  { n: "07", short: "Amazon listing, channels and fees, reviews, the sales monitor.", name: "Sales", text: "The Amazon listing, sales channels with their fees, reviews and questions turned into requirements, and the sales monitor." },
 ];
 
 export const GATES_NOTE =

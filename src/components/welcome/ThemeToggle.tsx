@@ -1,7 +1,8 @@
 "use client";
 
 // The theme switch for the public pages, which have no app shell. It reads and writes the same stored choice
-// as the sidebar's switch (c2r.theme), so a visitor who signs in keeps the theme they picked here.
+// as the sidebar's switch (c2r.theme), so a visitor who signs in keeps the theme they picked here. Like the
+// sidebar's switch, its label names the theme it switches to.
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
@@ -25,11 +26,10 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={flip}
-      aria-pressed={dark}
       className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-secondary transition-colors duration-150 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
     >
       {dark ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
-      <span>Dark theme</span>
+      <span>{dark ? "Light theme" : "Dark theme"}</span>
     </button>
   );
 }
