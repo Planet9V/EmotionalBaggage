@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -16,6 +16,8 @@ type Props = {
   columns: Column[];
   onOpen: (id: number) => void;
   onStatus: (id: number, status: string) => void | Promise<void>;
+  /** one more column after the data columns, for sections that show more than columns (requirements show their coverage) */
+  extraColumn?: { label: string; render: (item: Item) => ReactNode };
 };
 
 const num = (s: string) => {
@@ -23,7 +25,7 @@ const num = (s: string) => {
   return s.trim() !== "" && Number.isFinite(n) ? n : null;
 };
 
-export function ItemsTable({ items, statuses, columns, onOpen, onStatus }: Props) {
+export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraColumn }: Props) {
   const reduce = useReducedMotion();
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
 
@@ -66,6 +68,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus }: Props
           <TableRow className="hover:bg-transparent">
             {head("title", "Title")}
             {columns.map((c) => head(c.key, c.label))}
+            {extraColumn && <TableHead>{extraColumn.label}</TableHead>}
             {head("status", "Status")}
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -91,6 +94,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus }: Props
                   {prim(it.data[c.key]) || <span className="text-muted">-</span>}
                 </TableCell>
               ))}
+              {extraColumn && <TableCell>{extraColumn.render(it)}</TableCell>}
               <TableCell>
                 <div className="flex items-center gap-2">
                   <StatusBadge tone={statusTone(it.status)}>{it.status}</StatusBadge>

@@ -5,6 +5,7 @@ import { useProject } from "@/lib/client";
 import { findSection, storeKey, type Section } from "@/lib/menu";
 import { BomView } from "./BomView";
 import { BuildSheetView } from "./BuildSheetView";
+import { BuildsView } from "@/components/builds/BuildsView";
 import { DecisionsView } from "./DecisionsView";
 import { LayoutView } from "./LayoutView";
 import { SchematicView } from "./SchematicView";
@@ -32,6 +33,7 @@ const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   schematic: SchematicView,
   layout: LayoutView,
   buildsheet: BuildSheetView,
+  builds: BuildsView,
 };
 
 export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectionKey: string }) {

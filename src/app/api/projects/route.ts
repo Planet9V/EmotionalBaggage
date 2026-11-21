@@ -5,6 +5,7 @@ import { defaultStatus, newProject } from "@/lib/api/schemas";
 import { archivedFilter, CONCEPT_SELECT, insertConcept, loadConcept, productTypeField, toConcept, type ConceptRow } from "@/lib/api/concepts";
 import { DEFAULT_PRODUCT_TYPE } from "@/lib/productTypes";
 import { assertNewClaim } from "@/lib/research/rules";
+import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
 
 const WHERE = {
   active: "WHERE p.archived_at IS NULL",
@@ -36,7 +37,12 @@ export const POST = route(async (req: Request) => {
         [made, it.section, it.title, it.body ?? "", JSON.stringify(it.data ?? {}), it.status ?? defaultStatus(it.section), i]
       );
     }
-    await logEventIn(c, made, "project.created", `Concept "${b.name}" created`, { productType });
+    // Links between the new rows are checked once all of them exist.
+    for (const it of items) {
+      await assertLinks(c, made, it.section, it.data);
+      await assertBuildMayPass(c, made, { section: it.section, title: it.title, status: it.status ?? defaultStatus(it.section), data: it.data ?? {} });
+    }
+    await logEventIn(c, made, "project.created", `Concept "${b.name}" created`, { productType, after: { name: b.name, oneLiner, productType, rows: items.length } });
     return made;
   });
   return NextResponse.json({ project: await loadConcept(id) }, { status: 201 });

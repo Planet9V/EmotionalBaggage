@@ -3,6 +3,8 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, requireProject, route } from "@/lib/api/route";
 import { defaultStatus, newItem, STORE_STATUSES, STORES } from "@/lib/api/schemas";
 import { assertNewClaim } from "@/lib/research/rules";
+import { addedDetail } from "@/lib/trace/changes";
+import { assertBuildMayPass, assertLinks } from "@/lib/trace/links";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -25,13 +27,15 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const b = await body(req, newItem);
   assertNewClaim(b);
   const row = await tx(async (c) => {
+    await assertLinks(c, id, b.section, b.data);
+    await assertBuildMayPass(c, id, { section: b.section, title: b.title, status: b.status ?? defaultStatus(b.section), data: b.data ?? {} });
     const res = await c.query<ItemRow>(
       `INSERT INTO items (project_id, section, title, body, data, status, sort)
        VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort),0)+1 FROM items WHERE project_id=$1))
        RETURNING ${ITEM_COLS}`,
       [id, b.section, b.title, b.body ?? "", JSON.stringify(b.data ?? {}), b.status ?? defaultStatus(b.section)]
     );
-    await logEventIn(c, id, "item.added", `Added "${b.title}" to ${b.section}`, { itemId: res.rows[0].id });
+    await logEventIn(c, id, "item.added", `Added "${b.title}" to ${b.section}`, addedDetail(res.rows[0]));
     return res.rows[0];
   });
   return NextResponse.json({ item: toItem(row) }, { status: 201 });

@@ -56,6 +56,7 @@ export const POST = route(async (req: Request) => {
     researchId: Number(rows[0].id),
     effort: r.effort ?? null,
     costUsd: r.costUsd ?? null,
+    after: { query: b.query, model: r.model, sources: citations.length },
   });
   return NextResponse.json(
     { entry: shape(rows[0]), effort: r.effort ?? null, costUsd: r.costUsd ?? null },

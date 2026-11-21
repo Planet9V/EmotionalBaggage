@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, GitBranch, LayoutList, MessagesSquare, Moon, Plug, Plus, Settings, Sun, BookOpen } from "lucide-react";
+import { Activity, FileText, GitBranch, LayoutList, Link2, MessagesSquare, Moon, Plug, Plus, Settings, Sun, BookOpen } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
 import { STAGES } from "@/lib/menu";
@@ -124,6 +124,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
           <div className="space-y-0.5 border-t border-hairline px-2 py-2">
             <Link href="/chat" className={link("/chat", pathname === "/chat")}><MessagesSquare className="h-3.5 w-3.5" aria-hidden /> Chat</Link>
             <Link href="/plan" className={link("/plan", pathname === "/plan")}><GitBranch className="h-3.5 w-3.5" aria-hidden /> Order of operations</Link>
+            <Link href="/traceability" className={link("/traceability", pathname === "/traceability")}><Link2 className="h-3.5 w-3.5" aria-hidden /> Traceability</Link>
+            <Link href="/activity" className={link("/activity", pathname === "/activity")}><Activity className="h-3.5 w-3.5" aria-hidden /> Activity</Link>
             <Link href="/report" className={link("/report", pathname === "/report")}><FileText className="h-3.5 w-3.5" aria-hidden /> Report</Link>
             <Link href="/integrations" className={link("/integrations", pathname === "/integrations")}><Plug className="h-3.5 w-3.5" aria-hidden /> Integrations</Link>
             <Link href="/admin" className={link("/admin", pathname === "/admin")}><Settings className="h-3.5 w-3.5" aria-hidden /> Admin</Link>

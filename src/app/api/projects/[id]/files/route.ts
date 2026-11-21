@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { logEvent, q } from "@/lib/db";
+import { logEventIn, q, tx } from "@/lib/db";
 import { HttpError, requireProject, route } from "@/lib/api/route";
 import { dataObject } from "@/lib/api/schemas";
 
@@ -35,10 +35,13 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
     throw new HttpError(400, "meta must be JSON.");
   }
   const meta = dataObject.parse(parsed);
-  const rows = await q<Row>(
-    `INSERT INTO files (project_id, name, mime, kind, size, sha256, bytes, meta) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${META}`,
-    [id, file.name, file.type || "application/octet-stream", kind, bytes.length, sha, bytes, JSON.stringify(meta)]
-  );
-  await logEvent(id, "file.stored", `Stored ${file.name} (${kind}, ${bytes.length} bytes)`, { fileId: rows[0].id, sha256: sha });
+  const rows = await tx(async (c) => {
+    const res = await c.query<Row>(
+      `INSERT INTO files (project_id, name, mime, kind, size, sha256, bytes, meta) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${META}`,
+      [id, file.name, file.type || "application/octet-stream", kind, bytes.length, sha, bytes, JSON.stringify(meta)]
+    );
+    await logEventIn(c, id, "file.stored", `Stored ${file.name} (${kind}, ${bytes.length} bytes)`, { fileId: res.rows[0].id, sha256: sha, after: { name: file.name, kind, size: bytes.length, sha256: sha } });
+    return res.rows;
+  });
   return NextResponse.json({ file: shape(rows[0]) }, { status: 201 });
 });

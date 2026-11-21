@@ -4,12 +4,17 @@ import { keys } from "@/lib/domain";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HistoryPanel } from "@/components/trace/HistoryPanel";
+import { useItems } from "@/lib/client";
+import { linkedFrom } from "@/lib/trace/coverage";
 import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { ItemDialogShell } from "./ItemDialogShell";
 import { Field, SELECT_CLS, TEXTAREA_CLS, prim } from "./shared";
 
 type Change = { title: string; body: string; status: string; data: Record<string, unknown> };
+type Restore = (id: number, change: Record<string, unknown>) => Promise<void>;
 
 const afterText = (v: unknown) => keys(v).join(", ");
 
@@ -21,6 +26,7 @@ export function ItemDrawer({
   statuses,
   onSave,
   onDelete,
+  onRestore,
   extra,
 }: {
   item: Item | null;
@@ -30,6 +36,8 @@ export function ItemDrawer({
   statuses: string[];
   onSave: (id: number, c: Change) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  /** puts one earlier value back as an ordinary save; with it the editor has a History tab */
+  onRestore?: Restore;
   /** a section's own panel shown in the editor above the status, with its legend (claims show evidence) */
   extra?: { legend: string; render: (item: Item) => ReactNode };
 }) {
@@ -41,8 +49,56 @@ export function ItemDrawer({
       title={item?.title || "Item"}
       description="Edit the fields and save, or delete the item."
     >
-      {item && <EditForm key={item.id} item={item} columns={columns} statuses={statuses} onClose={onClose} onSave={onSave} onDelete={onDelete} extra={extra} />}
+      {item && <DrawerBody key={item.id} item={item} columns={columns} statuses={statuses} onClose={onClose} onSave={onSave} onDelete={onDelete} onRestore={onRestore} extra={extra} />}
     </ItemDialogShell>
+  );
+}
+
+/** The editor, and beside it the History tab. Both stay mounted once opened, so unsaved edits survive a look at the history. */
+function DrawerBody(props: {
+  item: Item;
+  columns: Column[];
+  statuses: string[];
+  onClose: () => void;
+  onSave: (id: number, c: Change) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+  onRestore?: Restore;
+  extra?: { legend: string; render: (item: Item) => ReactNode };
+}) {
+  const { onRestore, ...form } = props;
+  const [tab, setTab] = useState("edit");
+  const [seenHistory, setSeenHistory] = useState(false);
+  // A restored value must reach the form, or saving the form would put the old value back.
+  const [revision, setRevision] = useState(0);
+  if (!onRestore) return <EditForm {...form} />;
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(v) => {
+        setTab(v);
+        if (v === "history") setSeenHistory(true);
+      }}
+      className="gap-0"
+    >
+      <TabsList variant="line" className="mx-5 mt-3">
+        <TabsTrigger value="edit">Edit</TabsTrigger>
+        <TabsTrigger value="history">History</TabsTrigger>
+      </TabsList>
+      <TabsContent value="edit" forceMount className="data-[state=inactive]:hidden">
+        <EditForm key={revision} {...form} />
+      </TabsContent>
+      <TabsContent value="history" forceMount className="data-[state=inactive]:hidden">
+        {seenHistory && (
+          <HistoryPanel
+            item={props.item}
+            onRestore={async (id, change) => {
+              await onRestore(id, change);
+              setRevision((r) => r + 1);
+            }}
+          />
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -75,6 +131,9 @@ function EditForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
+  // Rows that name this one in a list (a test in a requirement, a part in a requirement): deleting removes those links.
+  const { items: all } = useItems(item.projectId, null);
+  const holders = linkedFrom(all, item);
 
   const editable = (k: string) => {
     const v = item.data[k];
@@ -183,7 +242,15 @@ function EditForm({
 
       {confirming ? (
         <div role="alertdialog" aria-label="Confirm delete" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hairline bg-danger-soft p-3">
-          <p className="text-sm text-danger">Delete this item for good?</p>
+          <p className="text-sm text-danger">
+            Delete this item for good?
+            {holders.length > 0 && (
+              <>
+                {" "}
+                It is linked from {holders.map((h) => `"${h.title}"`).join(", ")}; those links are removed with it.
+              </>
+            )}
+          </p>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setConfirming(false)} disabled={busy} autoFocus>
               Keep it
