@@ -8,18 +8,25 @@ import { complete, getReasoning, type ChatMessage } from "@/lib/ai/models";
 /** Turns of earlier conversation sent with each new message. */
 const HISTORY = 40;
 
-type Msg = { id: string; role: string; content: string; created_at: string; item_id: string | null };
+type Msg = { id: string; role: string; content: string; created_at: string; item_id: string | null; item_section?: string | null; item_title?: string | null };
 
 export const GET = route(async (req: Request) => {
   const projectId = new URL(req.url).searchParams.get("projectId") ?? "";
   await requireProject(projectId);
-  const rows = await q<Msg>("SELECT id, role, content, created_at, item_id FROM messages WHERE project_id=$1 ORDER BY id", [projectId]);
+  // A "Challenge this" exchange names its row, so the screen can link back to it.
+  const rows = await q<Msg>(
+    `SELECT m.id, m.role, m.content, m.created_at, m.item_id, i.section AS item_section, i.title AS item_title
+       FROM messages m LEFT JOIN items i ON i.id = m.item_id WHERE m.project_id=$1 ORDER BY m.id`,
+    [projectId]
+  );
   // Configured: a reasoning model is chosen in Admin and its required key is present.
   const reasoning = await getReasoning();
   return NextResponse.json({
     configured: reasoning.ok,
     model: reasoning.ok ? reasoning.info.model : "",
-    messages: rows.map((m) => ({ id: Number(m.id), role: m.role, content: m.content, createdAt: m.created_at, itemId: m.item_id === null ? null : Number(m.item_id) })),
+    messages: rows.map((m) => ({ id: Number(m.id), role: m.role, content: m.content, createdAt: m.created_at, itemId: m.item_id === null ? null : Number(m.item_id),
+      ...(m.item_id !== null ? { item: { section: m.item_section ?? "", title: m.item_title ?? "" } } : {}),
+    })),
   });
 });
 

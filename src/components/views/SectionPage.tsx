@@ -17,6 +17,8 @@ import { ResearchView } from "./ResearchView";
 import { SocialView } from "./SocialView";
 import { SourcingView } from "./SourcingView";
 import type { ViewProps } from "./types";
+import { DraftButton } from "@/components/drafts/DraftButton";
+import { SectionAssist } from "@/components/drafts/SectionAssist";
 
 const VIEWS: Record<Section["view"], (p: ViewProps) => React.ReactNode> = {
   items: ItemsView,
@@ -46,14 +48,19 @@ export function SectionPage({ stageKey, sectionKey }: { stageKey: string; sectio
         eyebrow={`${String(stage.n).padStart(2, "0")} · ${stage.label}${project ? ` · ${project.name}` : ""}`}
         title={section.label}
         blurb={section.blurb}
-      />
+      >
+        {project && <DraftButton key={`${project.id}:${storeKey(stage, section)}`} projectId={project.id} store={storeKey(stage, section)} sectionLabel={section.label} />}
+      </PageHeader>
       <div className="px-8 py-6">
         {loading ? (
           <p className="text-sm text-secondary">Loading the concept.</p>
         ) : !project ? (
           <p className="text-sm text-secondary">No concept yet. Use New concept to start one.</p>
         ) : (
+          <>
+          <SectionAssist key={`assist:${project.id}`} projectId={project.id} store={storeKey(stage, section)} />
           <View key={`${project.id}:${stage.key}/${section.key}`} project={project} stage={stage} section={section} store={storeKey(stage, section)} />
+          </>
         )}
       </div>
     </>

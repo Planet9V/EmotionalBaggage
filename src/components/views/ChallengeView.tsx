@@ -15,8 +15,9 @@ import type { Item } from "@/lib/types";
 import { areaClass } from "@/components/wizard/fields";
 import { NotConnected, stamp } from "@/components/wizard/shared";
 import type { ViewProps } from "./types";
+import { storeHref } from "@/lib/ai/drafts/shared";
 
-type Msg = { id: number | string; role: string; content: string; createdAt?: string };
+type Msg = { id: number | string; role: string; content: string; createdAt?: string; itemId?: number | null; item?: { section: string; title: string } };
 type Resp = { configured: boolean; model: string; messages: Msg[] };
 
 const STARTERS = ["Attack the weakest assumption", "What would make this fail in the first 90 days?", "Which claim should I verify first?"];
@@ -132,6 +133,9 @@ export function ChallengeView({ project }: ViewProps) {
                   </div>
                   <div className="mt-1 flex items-center gap-3">
                     <span className="font-mono text-[10px] text-muted">{mine ? "You" : "Reviewer"} {stamp(m.createdAt)}</span>
+                    {mine && m.item && typeof m.itemId === "number" && (
+                      <Link href={`${storeHref(m.item.section)}?item=${m.itemId}`} className="max-w-64 truncate text-xs text-link hover:underline">About: {m.item.title}</Link>
+                    )}
                     {!mine && typeof m.id === "number" && (
                       saved.has(m.id) ? (
                         <span className="text-xs text-success">Saved as open question</span>
