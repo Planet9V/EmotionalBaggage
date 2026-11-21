@@ -91,7 +91,7 @@ def printed(pg, label, href):
         st, plan = a.get(f"/api/print-jobs/{jid}/plan", ok=200)
         conf = {"printer": plan["printer"]["name"], "file": plan["send"]["name"]}
         # the printer stand-in keeps its state between walks: make it idle (as finishing the last print would)
-        requests_mod = __import__("requests"); requests_mod.post("http://127.0.0.1:3415/api/job", json={"command": "cancel"})
+        requests_mod = __import__("requests"); requests_mod.post(f"http://127.0.0.1:{PORT_BASE + 5}/api/job", json={"command": "cancel"})
         a.post(f"/api/print-jobs/{jid}/send", {"confirm": conf}, ok=200)
         a.post(f"/api/print-jobs/{jid}/start", {"confirm": conf}, ok=200)
         a.post(f"/api/print-jobs/{jid}/result", {"outcome": "good", "photoFileIds": []}, ok=200)
