@@ -60,7 +60,7 @@ afterAll(async () => {
 describe("upgrading a database from before migrations", () => {
   it("records each migration once, and a second start changes nothing", async () => {
     const first = await db.q<{ name: string }>("SELECT name FROM schema_migrations ORDER BY id");
-    expect(first.map((r) => r.name)).toEqual(["0001_baseline", "0002_integrity", "0003_concepts_and_admin", "0004_sign_in", "0005_audit_log", "0006_research_sources", "0007_chat", "0008_search", "0009_process", "0011_economics", "0012_drafts", "0014_pins", "0018_print_jobs", "0020_campaigns", "0021_channel_external_ids", "0022_chat_retrieval", "0024_hardening", "0026_audit_append_only", "0028_access_requests", "0029_concept_sources", "0030_access_request_level", "0031_claim_verified_rule", "0032_better_auth", "0033_totp_replay_guard", "0034_auth2_settings"]);
+    expect(first.map((r) => r.name)).toEqual(["0001_baseline", "0002_integrity", "0003_concepts_and_admin", "0004_sign_in", "0005_audit_log", "0006_research_sources", "0007_chat", "0008_search", "0009_process", "0011_economics", "0012_drafts", "0014_pins", "0018_print_jobs", "0020_campaigns", "0021_channel_external_ids", "0022_chat_retrieval", "0024_hardening", "0026_audit_append_only", "0028_access_requests", "0029_concept_sources", "0030_access_request_level", "0031_claim_verified_rule", "0032_better_auth", "0033_totp_replay_guard", "0034_auth2_settings", "0035_workspace_invitations"]);
     const g = globalThis as { __c2rReady?: unknown };
     g.__c2rReady = undefined;
     await db.ready();

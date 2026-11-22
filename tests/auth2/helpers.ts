@@ -26,7 +26,7 @@ export async function useAuth2(opts: { rateLimit?: boolean } = {}) {
 
 export const sent: MailMessage[] = [];
 
-const SUBJECT = { "confirm-email": /^Confirm your email address/, "reset-password": /^Choose a new password/ } as const;
+const SUBJECT = { "confirm-email": /^Confirm your email address/, "reset-password": /^Choose a new password/, invitation: / invited you to / } as const;
 
 /** Waits (up to 5 s) until `count` emails of one kind have reached an address; work after a reply is not awaited. */
 export async function waitForMail(kind: keyof typeof SUBJECT, to: string, count: number) {
@@ -101,9 +101,8 @@ export function browser(route: Route, opts: { address?: string; origin?: string 
 }
 export type Browser = ReturnType<typeof browser>;
 
-/** Signs up, follows the link in the confirmation email, and signs in. */
-export async function newAccount(route: Route, who: string) {
-  const address = email(who);
+/** Signs up, follows the link in the confirmation email, and signs in. `address` defaults to a fresh one. */
+export async function newAccount(route: Route, who: string, address = email(who)) {
   const b = browser(route);
   const up = await b.post("/sign-up/email", { name: who, email: address, password: PASSWORD });
   if (up.status !== 200) throw new Error(`sign-up answered ${up.status}: ${JSON.stringify(up.body)}`);

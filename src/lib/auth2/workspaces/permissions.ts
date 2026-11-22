@@ -29,7 +29,11 @@ const ROLES = ["owner", "admin", "member"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const MAX_OWNED_WORKSPACES = 5;
-// MAX_SEATS (50) arrives with invitations.
+export const MAX_SEATS = 50;
+/** Invitations one workspace may make in an hour: each sends an email. */
+export const INVITATIONS_PER_HOUR = 20;
+/** How often one invitation may be sent again. */
+export const MAX_SENDS = 5;
 
 /** A stored role as one of the three. Better Auth stores roles as a comma list; the highest known one counts, and
  *  anything unknown is a plain member (fails closed). */

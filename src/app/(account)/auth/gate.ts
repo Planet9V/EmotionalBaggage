@@ -44,3 +44,9 @@ export async function requireWorkspace(here: string) {
   const all = await membershipsOf(db, s.user.id);
   return { ...s, active, all };
 }
+
+/** Whether mail is sent (false in "no mail" mode: src/lib/auth2/mail.ts, currentMailSender). */
+export async function mailOn() {
+  const { currentMailSender } = await import("@/lib/auth2/mail");
+  return (await currentMailSender()) !== null;
+}

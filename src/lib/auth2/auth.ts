@@ -81,6 +81,10 @@ const THROTTLE = {
   "/change-password": { window: 60, max: 5 },
   "/workspace/create": { window: 60, max: 3 },
   "/workspace/delete": { window: 60, max: 3 },
+  // Each of these sends an email (or makes a link): per network address, besides the per-workspace limits.
+  "/workspace/invite": { window: 60, max: 10 },
+  "/workspace/invitation/resend": { window: 60, max: 5 },
+  "/workspace/invitation/accept": { window: 60, max: 10 },
 } as const;
 
 export type Auth2Options = {

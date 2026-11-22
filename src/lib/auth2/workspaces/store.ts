@@ -23,7 +23,7 @@ import { MAX_OWNED_WORKSPACES, asRole, type Role } from "./permissions";
 
 export type Db = Pool | PoolClient;
 
-const newId = () => randomBytes(18).toString("base64url");
+export const newId = () => randomBytes(18).toString("base64url");
 
 export const refuse = (status: "BAD_REQUEST" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "TOO_MANY_REQUESTS", code: string, message: string) =>
   APIError.from(status, { code, message });
@@ -34,7 +34,7 @@ export const notFound = () => refuse("NOT_FOUND", "WORKSPACE_NOT_FOUND", "That w
 /** The slug of the workspace made at sign-up (./guards.ts renames it by this slug). */
 export const personalSlug = (userId: string) => `ws-${userId.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24)}`;
 
-async function inTx<T>(db: Pool, fn: (c: PoolClient) => Promise<T>): Promise<T> {
+export async function inTx<T>(db: Pool, fn: (c: PoolClient) => Promise<T>): Promise<T> {
   const c = await db.connect();
   try {
     await c.query("BEGIN");
@@ -76,7 +76,7 @@ export async function membershipsOf(db: Db, userId: string): Promise<Membership[
 /** Locks the user's row: every change that could leave them with no workspace takes this first. */
 const lockUser = (c: PoolClient, userId: string) => c.query('SELECT 1 FROM "user" WHERE id = $1 FOR UPDATE', [userId]);
 /** Locks a workspace's row: every change to its owners takes this first. */
-async function lockWorkspace(c: PoolClient, workspaceId: string) {
+export async function lockWorkspace(c: PoolClient, workspaceId: string) {
   const r = await c.query<{ name: string }>("SELECT name FROM organization WHERE id = $1 FOR UPDATE", [workspaceId]);
   if (!r.rowCount) throw notFound();
   return r.rows[0].name;

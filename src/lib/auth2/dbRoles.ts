@@ -41,7 +41,7 @@ export const READ_ONLY: Record<string, readonly string[]> = {
   member: ["id", "organizationId", "userId", "role", "createdAt"],
 };
 /** Nothing at all: passwords, session and reset tokens, second-factor secrets, invitations, throttle counts. */
-export const WITHHELD = ["account", "session", "verification", "twoFactor", "rateLimit", "invitation", "auth2_totp_steps", "auth2_secrets", "schema_migrations"] as const;
+export const WITHHELD = ["account", "session", "verification", "twoFactor", "rateLimit", "invitation", "auth2_totp_steps", "auth2_secrets", "auth2_invitation_tokens", "schema_migrations"] as const;
 
 /** Built-in roles that read or write everything, or reach the server's files: the request role may be in none. */
 const PRIVILEGED_ROLES = ["pg_read_all_data", "pg_write_all_data", "pg_read_server_files", "pg_write_server_files", "pg_execute_server_program", "pg_signal_backend", "pg_monitor", "pg_database_owner"];

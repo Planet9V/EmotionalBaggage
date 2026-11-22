@@ -47,6 +47,7 @@ const PAGES: [string, () => Promise<Page>][] = [
   ["reset/new", () => import("@/app/(account)/auth/reset/new/page")],
   ["password", () => import("@/app/(account)/auth/password/page") as Promise<Page>],
   ["workspaces", () => import("@/app/(account)/auth/workspaces/page") as Promise<Page>],
+  ["invite", () => import("@/app/(account)/auth/invite/page") as Promise<Page>],
 ];
 const params = { searchParams: Promise.resolve({}) };
 
@@ -174,5 +175,51 @@ describe("with AUTH2 on", () => {
     expect(await screen.findByText("That is not your current password.")).toBeTruthy();
     expect(screen.getByLabelText("Current password").getAttribute("aria-invalid")).toBe("true");
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ currentPassword: "wrong one", newPassword: "new password 1", revokeOtherSessions: true });
+  });
+
+  it("in 'no mail' mode, sign-up says an administrator confirms the account, and reset says whom to ask", async () => {
+    const { SignUpForm } = await import("@/app/(account)/auth/sign-up/SignUpForm");
+    render(<SignUpForm mail={false} />);
+    expect(screen.getByText(/An administrator confirms new accounts/)).toBeTruthy();
+    cleanup();
+    const { CheckEmail } = await import("@/app/(account)/auth/check-email/CheckEmail");
+    render(<CheckEmail email="e@example.test" mail={false} />);
+    expect(screen.getByRole("heading", { name: "Account created" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Send the link again/ })).toBeNull();
+    cleanup();
+    const { ResetRequest } = await import("@/app/(account)/auth/reset/ResetRequest");
+    render(<ResetRequest mail={false} />);
+    expect(screen.getByText(/Ask an administrator/)).toBeTruthy();
+    expect(screen.queryByLabelText("Email address")).toBeNull();
+  });
+
+  it("sign-up from an invitation fills the address and comes back to the invitation", async () => {
+    const { SignUpForm } = await import("@/app/(account)/auth/sign-up/SignUpForm");
+    render(<SignUpForm email="inv@example.test" next="/auth/invite?token=abc" />);
+    expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("inv@example.test");
+    fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Ivy" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long enough" } });
+    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "long enough" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/auth/check-email?email=inv%40example.test&next=%2Fauth%2Finvite%3Ftoken%3Dabc"));
+  });
+
+  it("the invitation page: signed out it offers sign-in and sign-up; for another account it says so; for the invitee it joins", async () => {
+    const { InviteView } = await import("@/app/(account)/auth/invite/InviteView");
+    const inv = { workspace: "Bag Lab", inviter: "Ada", email: "ivy@example.test", role: "member" as const, state: "open" as const };
+    render(<InviteView token="tok" invitation={inv} signedInAs={null} />);
+    expect(screen.getByRole("link", { name: "Sign in to accept" }).getAttribute("href")).toBe("/auth/sign-in?next=%2Fauth%2Finvite%3Ftoken%3Dtok");
+    expect(screen.getByRole("link", { name: "Create an account" }).getAttribute("href")).toContain("email=ivy%40example.test");
+    cleanup();
+    render(<InviteView token="tok" invitation={inv} signedInAs="someone@example.test" />);
+    expect(screen.getByText(/This invitation is for another address/)).toBeTruthy();
+    cleanup();
+    render(<InviteView token="tok" invitation={inv} signedInAs="Ivy@example.test" />);
+    replies.push({ status: 200, body: { workspaceId: "w", role: "member" } });
+    fireEvent.click(screen.getByRole("button", { name: "Join Bag Lab" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/workspaces"));
+    cleanup();
+    render(<InviteView token="tok" invitation={{ ...inv, state: "used" }} signedInAs={null} />);
+    expect(screen.getByText(/accepted already/)).toBeTruthy();
   });
 });

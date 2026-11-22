@@ -17,21 +17,26 @@ const schema = z
   .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The two passwords are not the same." });
 type Values = z.infer<typeof schema>;
 
-export function SignUpForm() {
+/** `mail` false is "no mail" mode: nothing is emailed and an administrator confirms the account. */
+export function SignUpForm({ email = "", next = null, mail = true }: { email?: string; next?: string | null; mail?: boolean }) {
   const router = useRouter();
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", password: "", confirm: "" },
+    defaultValues: { name: "", email, password: "", confirm: "" },
   });
 
   const submit = handleSubmit(async (v) => {
     const r = await call("/sign-up/email", { name: v.name, email: v.email, password: v.password });
     if (!r.ok) return setError("root", { message: r.error });
-    router.push(`/auth/check-email?email=${encodeURIComponent(v.email)}`);
+    router.push(`/auth/check-email?email=${encodeURIComponent(v.email)}${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   });
 
   return (
-    <Frame title="Create an account" lead="You get a workspace of your own. We send a link to confirm your email address." footer={<p>Already have an account? <TextLink href="/auth/sign-in">Sign in</TextLink></p>}>
+    <Frame
+      title="Create an account"
+      lead={mail ? "You get a workspace of your own. We send a link to confirm your email address." : "You get a workspace of your own. An administrator confirms new accounts before their first sign-in."}
+      footer={<p>Already have an account? <TextLink href={next ? `/auth/sign-in?next=${encodeURIComponent(next)}` : "/auth/sign-in"}>Sign in</TextLink></p>}
+    >
       <form method="post" onSubmit={(e) => void submit(e)} noValidate className="space-y-4">
         <Message id="sign-up-message" error={errors.root?.message} />
         <Field id="name" label="Your name" error={errors.name?.message}>

@@ -15,7 +15,8 @@ import { emailField } from "../_components/rules";
 const schema = z.object({ email: emailField });
 
 /** Asks for a reset link. The answer is the same whether or not the address has an account. */
-export function ResetRequest() {
+/** `mail` false is "no mail" mode: no link can be sent, so the page says who resets a password instead. */
+export function ResetRequest({ mail = true }: { mail?: boolean }) {
   const [sentTo, setSentTo] = useState("");
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<{ email: string }>({ resolver: zodResolver(schema), defaultValues: { email: "" } });
 
@@ -25,6 +26,13 @@ export function ResetRequest() {
     setSentTo(v.email);
   });
 
+  if (!mail) {
+    return (
+      <Frame title="Reset your password" footer={<p><TextLink href="/auth/sign-in">Back to sign in</TextLink></p>}>
+        <p className="text-sm text-primary">This installation sends no email, so a reset link cannot be sent. Ask an administrator of this installation to set a new password for you.</p>
+      </Frame>
+    );
+  }
   return (
     <Frame title="Reset your password" lead="We email you a link to choose a new one." footer={<p><TextLink href="/auth/sign-in">Back to sign in</TextLink></p>}>
       {sentTo ? (

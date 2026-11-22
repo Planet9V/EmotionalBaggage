@@ -14,11 +14,12 @@ import { z } from "zod";
 import { cleanWorkspaceName } from "../guards";
 import type { MailSender } from "../mail";
 import { isRole, manages, may, mayGrant, type Role } from "./permissions";
+import * as invitations from "./invitations";
 import * as store from "./store";
 
 const id = z.string().min(1).max(100);
 
-type SessionCtx = { context: { session: { session: { id: string; userId: string; activeOrganizationId?: string | null }; user: { id: string; email: string; name: string } } } };
+type SessionCtx = { context: { session: { session: { id: string; userId: string; activeOrganizationId?: string | null }; user: { id: string; email: string; name: string; emailVerified: boolean } } } };
 
 /** The caller and their membership of `workspaceId`, or 404. */
 async function memberOf(db: Pool, ctx: SessionCtx, workspaceId: string) {
@@ -38,7 +39,7 @@ export type WorkspaceDeps = {
   link: (path: string, token: string) => string;
 };
 
-export function workspaces(db: Pool, _deps: WorkspaceDeps) {
+export function workspaces(db: Pool, deps: WorkspaceDeps) {
   return {
     id: "c2r-workspaces",
     endpoints: {
@@ -108,6 +109,45 @@ export function workspaces(db: Pool, _deps: WorkspaceDeps) {
           if (ctx.body.memberId === m.memberId) throw store.refuse("BAD_REQUEST", "USE_LEAVE", "To take yourself out of a workspace, leave it.");
           await store.removeMember(db, user.email, m.workspaceId, ctx.body.memberId, (current: Role) => manages(m.role, current));
           return ctx.json({ removed: ctx.body.memberId });
+        }
+      ),
+
+      // --- invitations (step 2) --------------------------------------------------------------------------------
+
+      inviteToWorkspace: createAuthEndpoint(
+        "/workspace/invite",
+        { method: "POST", body: z.object({ workspaceId: id, email: z.string().max(320), role: z.string().max(20) }), use: [sessionMiddleware] },
+        async (ctx) => {
+          const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
+          return ctx.json(await invitations.invite(db, deps, user, m, ctx.body.email, ctx.body.role));
+        }
+      ),
+
+      resendInvitation: createAuthEndpoint(
+        "/workspace/invitation/resend",
+        { method: "POST", body: z.object({ workspaceId: id, invitationId: id }), use: [sessionMiddleware] },
+        async (ctx) => {
+          const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
+          return ctx.json(await invitations.resend(db, deps, user, m, ctx.body.invitationId));
+        }
+      ),
+
+      revokeInvitation: createAuthEndpoint(
+        "/workspace/invitation/revoke",
+        { method: "POST", body: z.object({ workspaceId: id, invitationId: id }), use: [sessionMiddleware] },
+        async (ctx) => {
+          const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
+          await invitations.revoke(db, user, m, ctx.body.invitationId);
+          return ctx.json({ revoked: ctx.body.invitationId });
+        }
+      ),
+
+      acceptInvitation: createAuthEndpoint(
+        "/workspace/invitation/accept",
+        { method: "POST", body: z.object({ token: z.string().max(200) }), use: [sessionMiddleware] },
+        async (ctx) => {
+          const { session, user } = ctx.context.session;
+          return ctx.json(await invitations.accept(db, user, session.id, ctx.body.token));
         }
       ),
     },
