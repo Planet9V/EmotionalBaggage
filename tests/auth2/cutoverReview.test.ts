@@ -459,3 +459,32 @@ describe("F3: turning the new sign-in on ends the old sign-in's sessions, and do
     }
   });
 });
+
+describe("N4: `sign-in.mjs status` says whether an owner exists and whether a set-up code waits, never the code", () => {
+  it("names both, and prints nothing that looks like a code", async () => {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const status = async () => (await promisify(execFile)("node", ["scripts/sign-in.mjs", "status"], { env: { ...process.env, AUTH2: "" } })).stdout;
+    const admins = await db.query<{ id: string }>('SELECT id FROM "user" WHERE "platformAdmin"');
+    const code = await db.query("SELECT * FROM auth2_setup_code");
+    try {
+      await db.query('UPDATE "user" SET "platformAdmin" = false');
+      await db.query("DELETE FROM auth2_setup_code");
+      expect(await status()).toMatch(/No owner \(platform administrator\) exists yet\.\nNo set-up code is waiting yet/);
+      await db.query("INSERT INTO auth2_setup_code (id, code_hash, created_at, failures, next_allowed_at) VALUES (true, 'x', now(), 0, now())");
+      const waiting = await status();
+      expect(waiting).toMatch(/A set-up code is waiting\. It was printed to the app's standard output/);
+      expect(waiting).not.toMatch(/[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}/);
+      const { admin } = await strangerAndAdmin("n4");
+      expect(admin).toBeTruthy();
+      const owned = await status();
+      expect(owned).toMatch(/An owner \(platform administrator\) exists\./);
+      expect(owned).not.toMatch(/set-up code/);
+    } finally {
+      await db.query('UPDATE "user" SET "platformAdmin" = false');
+      for (const r of admins.rows) await db.query('UPDATE "user" SET "platformAdmin" = true WHERE id = $1', [r.id]);
+      await db.query("DELETE FROM auth2_setup_code");
+      for (const r of code.rows) await db.query("INSERT INTO auth2_setup_code (id, code_hash, created_at, failures, next_allowed_at) VALUES ($1, $2, $3, $4, $5)", [r.id, r.code_hash, r.created_at, r.failures, r.next_allowed_at]);
+    }
+  });
+});

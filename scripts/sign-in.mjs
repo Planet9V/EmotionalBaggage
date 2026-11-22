@@ -33,6 +33,17 @@ try {
   const read = async () => (await client.query("SELECT value FROM auth2_settings WHERE key = 'auth2.enabled'")).rows[0]?.value === true;
   if (cmd === "status") {
     console.log(`The new sign-in is ${(await read()) ? "on" : "off"}.`);
+    // Whether the owner exists and whether a set-up code waits; never the code (only its hash is stored anyway).
+    const owner = (await client.query(`SELECT EXISTS (SELECT 1 FROM "user" WHERE "platformAdmin") AS has`)).rows[0].has;
+    const code = (await client.query("SELECT to_regclass('auth2_setup_code') IS NOT NULL AND EXISTS (SELECT 1 FROM auth2_setup_code) AS has")).rows[0].has;
+    console.log(owner ? "An owner (platform administrator) exists." : "No owner (platform administrator) exists yet.");
+    if (!owner) {
+      console.log(
+        code
+          ? "A set-up code is waiting. It was printed to the app's standard output (the container log on any host) when it was made; a restart of the app makes a new one."
+          : "No set-up code is waiting yet. The app makes one when it starts with the new sign-in on, or when the first-run page is opened, and prints it to its standard output."
+      );
+    }
     if (process.env.AUTH2) console.log(`Note: AUTH2=${process.env.AUTH2} is set in this environment; if the app has it too, it overrides the stored switch.`);
     process.exit(0);
   }
@@ -63,7 +74,7 @@ try {
     console.log("A platform administrator exists: sign in at /auth/sign-in.");
   } else {
     console.log("Next: open the app in a browser. It asks you to create the owner (the platform administrator).");
-    console.log("It also asks for a one-time set-up code. The app prints it to its log when that page is first opened:");
+    console.log("It also asks for a one-time set-up code. The app prints it to its standard output (the container log on any host) when that page is first opened:");
     console.log("  docker compose logs web | grep 'set-up code'");
   }
   process.exit(0);
