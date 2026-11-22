@@ -2,6 +2,9 @@
 
 import { MoneyInput } from "@/components/ui/money-input";
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -21,7 +24,7 @@ import { explain, useMoney, useRemoveResults, useResults, useSaveResults, useSum
 import { ImportPanel } from "./ImportPanel";
 import { ResultsChart } from "./ResultsChart";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { todayUtc } from "@/lib/format";
 
@@ -177,40 +180,66 @@ function RowsTable({ projectId, campaignId, rows, money }: { projectId: string; 
   );
 }
 
+const AMOUNT_MESSAGE = "Spend and revenue must be amounts such as 12.50.";
+const COUNT_MESSAGE = "Impressions, clicks and orders must be whole numbers, zero or more.";
+const isCount = (text: string) => {
+  const n = readNumber(text || "0");
+  return n !== null && !Number.isNaN(n) && n >= 0 && Number.isInteger(n);
+};
+
 function EntryForm({ projectId, campaignId, creatives, money, onDone }: { projectId: string; campaignId: number; creatives: { id: number; title: string }[]; money: ReturnType<typeof useMoney>; onDone: (m: string) => void }) {
   const save = useSaveResults(projectId);
-  const [v, setV] = useState({ day: todayUtc(), creative: "", spend: "", impressions: "", clicks: "", orders: "", revenue: "" });
-  const [err, setErr] = useState("");
-  const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV((x) => ({ ...x, [k]: e.target.value }));
-  const submit = async () => {
-    setErr("");
-    if (!isDay(v.day)) return setErr("Pick the day these numbers are for.");
-    const spend = money.fromInput(v.spend || "0");
-    const revenue = money.fromInput(v.revenue || "0");
-    const nums = [v.impressions, v.clicks, v.orders].map((t) => readNumber(t || "0"));
-    if (spend === null || Number.isNaN(spend) || revenue === null || Number.isNaN(revenue)) return setErr("Spend and revenue must be amounts such as 12.50.");
-    if (nums.some((n) => n === null || Number.isNaN(n) || (n as number) < 0 || !Number.isInteger(n))) return setErr("Impressions, clicks and orders must be whole numbers, zero or more.");
+  const isAmount = (text: string) => {
+    const n = money.fromInput(text || "0");
+    return n !== null && !Number.isNaN(n);
+  };
+  const entrySchema = z.object({
+    day: z.string().refine(isDay, "Pick the day these numbers are for."),
+    creative: z.string(),
+    spend: z.string().refine(isAmount, AMOUNT_MESSAGE),
+    revenue: z.string().refine(isAmount, AMOUNT_MESSAGE),
+    impressions: z.string().refine(isCount, COUNT_MESSAGE),
+    clicks: z.string().refine(isCount, COUNT_MESSAGE),
+    orders: z.string().refine(isCount, COUNT_MESSAGE),
+  });
+  const { register, handleSubmit, setError, formState: { errors } } = useForm<z.infer<typeof entrySchema>>({
+    resolver: zodResolver(entrySchema),
+    defaultValues: { day: todayUtc(), creative: "", spend: "", impressions: "", clicks: "", orders: "", revenue: "" },
+  });
+  const submit = handleSubmit(async (v) => {
     try {
-      const r = await save.mutateAsync({ campaignId, source: "manual", rows: [{ day: v.day, creativeId: v.creative ? Number(v.creative) : null, spend, revenue, impressions: nums[0] as number, clicks: nums[1] as number, orders: nums[2] as number }] });
+      const r = await save.mutateAsync({
+        campaignId,
+        source: "manual",
+        rows: [{
+          day: v.day,
+          creativeId: v.creative ? Number(v.creative) : null,
+          spend: money.fromInput(v.spend || "0") as number,
+          revenue: money.fromInput(v.revenue || "0") as number,
+          impressions: readNumber(v.impressions || "0") as number,
+          clicks: readNumber(v.clicks || "0") as number,
+          orders: readNumber(v.orders || "0") as number,
+        }],
+      });
       onDone(r.replaced ? `Replaced the numbers for ${v.day}.` : `Saved ${v.day}.`);
     } catch (e) {
-      setErr((e as Error).message);
+      setError("root", { message: (e as Error).message });
     }
-  };
+  });
   return (
     <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
-      <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
-        <Field label="Day"><Input type="date" value={v.day} onChange={set("day")} /></Field>
-        <Field label="Creative"><NativeSelect value={v.creative} onChange={set("creative")}><option value="">Whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</NativeSelect></Field>
-        <Field label={`Spend (${money.currency})`}><MoneyInput currency={money.currency} value={v.spend} onChange={set("spend")} /></Field>
-        <Field label={`Revenue (${money.currency})`}><MoneyInput currency={money.currency} value={v.revenue} onChange={set("revenue")} /></Field>
-        <Field label="Impressions"><Input inputMode="numeric" value={v.impressions} onChange={set("impressions")} /></Field>
-        <Field label="Clicks"><Input inputMode="numeric" value={v.clicks} onChange={set("clicks")} /></Field>
-        <Field label="Orders"><Input inputMode="numeric" value={v.orders} onChange={set("orders")} /></Field>
+      <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" noValidate onSubmit={(e) => void submit(e)}>
+        <Field id="entry-day" label="Day" error={errors.day?.message}><Input id="entry-day" type="date" {...describe("entry-day", { error: errors.day?.message })} {...register("day")} /></Field>
+        <Field label="Creative"><NativeSelect {...register("creative")}><option value="">Whole campaign</option>{creatives.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</NativeSelect></Field>
+        <Field id="entry-spend" label={`Spend (${money.currency})`} error={errors.spend?.message}><MoneyInput id="entry-spend" currency={money.currency} {...describe("entry-spend", { error: errors.spend?.message })} {...register("spend")} /></Field>
+        <Field id="entry-revenue" label={`Revenue (${money.currency})`} error={errors.revenue?.message}><MoneyInput id="entry-revenue" currency={money.currency} {...describe("entry-revenue", { error: errors.revenue?.message })} {...register("revenue")} /></Field>
+        <Field id="entry-impressions" label="Impressions" error={errors.impressions?.message}><Input id="entry-impressions" inputMode="numeric" {...describe("entry-impressions", { error: errors.impressions?.message })} {...register("impressions")} /></Field>
+        <Field id="entry-clicks" label="Clicks" error={errors.clicks?.message}><Input id="entry-clicks" inputMode="numeric" {...describe("entry-clicks", { error: errors.clicks?.message })} {...register("clicks")} /></Field>
+        <Field id="entry-orders" label="Orders" error={errors.orders?.message}><Input id="entry-orders" inputMode="numeric" {...describe("entry-orders", { error: errors.orders?.message })} {...register("orders")} /></Field>
         <div className="flex items-end"><Button type="submit" disabled={save.isPending}>{save.isPending ? "Saving" : "Save this day"}</Button></div>
       </form>
       <p className="text-xs text-muted">Entering a day that already has numbers for the same creative replaces them.</p>
-      {err && <ErrorLine>{err}</ErrorLine>}
+      {errors.root?.message && <ErrorLine>{errors.root.message}</ErrorLine>}
     </Card>
   );
 }

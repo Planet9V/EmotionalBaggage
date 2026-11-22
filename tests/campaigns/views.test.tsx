@@ -88,6 +88,31 @@ describe("campaigns view", () => {
   });
 });
 
+describe("marketing budget and rules", () => {
+  it("says what is wrong beside each field, then saves empty fields as not set and numbers as typed", async () => {
+    const srv = install([campaign(1, {}, "planned")]);
+    mount(<CampaignsView {...propsFor("campaigns")} />);
+    const share = await screen.findByLabelText(/Share of the margin/);
+    fireEvent.change(share, { target: { value: "150" } });
+    fireEvent.change(screen.getByLabelText(/Too few clicks/), { target: { value: "2.5" } });
+    fireEvent.change(screen.getByLabelText("Hosts tracked links may open"), { target: { value: "bad_host!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save budget and rules" }));
+    expect((await screen.findByText("The share of the margin must be a number from 0 to 100.")).getAttribute("role")).toBe("alert");
+    expect(share.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("The minimum clicks must be a whole number, zero or more.")).toBeTruthy();
+    expect(screen.getByText(/^Not a host name: bad_host!\./)).toBeTruthy();
+    expect(srv.calls.some((c) => c.method === "POST")).toBe(false);
+    fireEvent.change(share, { target: { value: "30" } });
+    fireEvent.change(screen.getByLabelText(/Too few clicks/), { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText("Hosts tracked links may open"), { target: { value: "shop.example" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save budget and rules" }));
+    await waitFor(() => expect(srv.calls.some((c) => c.method === "POST")).toBe(true));
+    const sent = srv.calls.find((c) => c.method === "POST")?.body as { data: Record<string, unknown> };
+    expect(sent.data).toMatchObject({ kind: "plan", allowableSharePercent: 30, minClicks: 50, linkHosts: ["shop.example"], planTotalMinor: null, judgeAfterOrders: null });
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+  });
+});
+
 describe("results view", () => {
   const rows = [
     { id: 1, campaignId: 1, creativeId: null, creativeLabel: "", day: "2026-12-01", spend: 15000, impressions: 20000, clicks: 400, orders: 12, revenue: 60000, source: "manual" },
@@ -116,6 +141,34 @@ describe("results view", () => {
     await screen.findByText("No results yet for this campaign");
   });
 
+  it("enters a day: says what is wrong beside each field, then sends the numbers in minor units", async () => {
+    const posted: unknown[] = [];
+    install([campaign(1, {}, "running")], { results: { rows: [], linkClicks: [] } });
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (new URL(String(input), "http://test.local").pathname.endsWith("/campaigns/results") && init?.method === "POST") {
+        posted.push(JSON.parse(String(init.body)));
+        return new Response(JSON.stringify({ replaced: false }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return inner(input, init);
+    }));
+    mount(<ResultsView {...propsFor("results")} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Enter a day" }));
+    fireEvent.change(screen.getByLabelText(/Spend/), { target: { value: "lots" } });
+    fireEvent.change(screen.getByLabelText("Clicks"), { target: { value: "2.5" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save this day" }));
+    expect((await screen.findByText("Spend and revenue must be amounts such as 12.50.")).getAttribute("role")).toBe("alert");
+    expect(screen.getByLabelText("Clicks").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Clicks").getAttribute("aria-describedby")).toBe("entry-clicks-error");
+    expect(posted).toHaveLength(0);
+    fireEvent.change(screen.getByLabelText(/Spend/), { target: { value: "12.50" } });
+    fireEvent.change(screen.getByLabelText("Clicks"), { target: { value: "40" } });
+    fireEvent.change(screen.getByLabelText("Day"), { target: { value: "2026-12-02" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save this day" }));
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]).toEqual({ campaignId: 1, source: "manual", rows: [{ day: "2026-12-02", creativeId: null, spend: 1250, revenue: 0, impressions: 0, clicks: 40, orders: 0 }] });
+  });
+
   it("asks to add a campaign first when there is none", async () => {
     install([]);
     mount(<ResultsView {...propsFor("results")} />);
@@ -132,6 +185,26 @@ describe("links view and the QR code", () => {
     await screen.findByText("7 clicks counted");
     fireEvent.click(screen.getByRole("button", { name: "Show a QR code" }));
     await waitFor(() => expect(document.querySelector('[role="img"] svg')).toBeTruthy());
+  });
+
+  it("sends the typed values, and keeps them with the server's reason when the link is refused", async () => {
+    install([campaign(1, {}, "running")]);
+    const inner = globalThis.fetch;
+    const sent: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (new URL(String(input), "http://test.local").pathname.endsWith("/campaigns/links") && init?.method === "POST") {
+        sent.push(JSON.parse(String(init.body)));
+        return new Response(JSON.stringify({ error: "That host is not on the allowed list." }), { status: 400, headers: { "content-type": "application/json" } });
+      }
+      return inner(input, init);
+    }));
+    mount(<LinksView {...propsFor("links")} />);
+    fireEvent.change(await screen.findByLabelText(/Page it goes to/), { target: { value: "https://nope.example/x" } });
+    fireEvent.change(screen.getByLabelText(/Source \(utm_source\)/), { target: { value: "meta" } });
+    fireEvent.click(screen.getByRole("button", { name: "Make the link" }));
+    expect((await screen.findByText("That host is not on the allowed list.")).getAttribute("role")).toBe("alert");
+    expect(sent).toEqual([{ campaignId: 1, creativeId: null, baseUrl: "https://nope.example/x", source: "meta", medium: "cpc", short: true }]);
+    expect((screen.getByLabelText(/Page it goes to/) as HTMLInputElement).value).toBe("https://nope.example/x");
   });
 
   it("QrCode draws an svg for the address it is given", async () => {
