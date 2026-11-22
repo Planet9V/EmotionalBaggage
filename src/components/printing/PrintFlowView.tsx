@@ -11,10 +11,10 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { toPart } from "@/lib/domain";
 import { useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
-import { usePrinters } from "@/lib/admin/client";
 import { keyOf } from "@/lib/trace/spec";
 import { useSlicer } from "@/lib/slicing/queries";
 import { normaliseStatus } from "@/lib/slicing/jobState";
+import { printerFetchers, printerKeys } from "@/lib/printers/client";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { JobCard } from "./JobCard";
@@ -35,7 +35,7 @@ export function PrintFlowView({ project, store }: ViewProps) {
   const bom = useItems(project.id, "design/bom");
   const builds = useItems(project.id, "prototype/builds");
   const slicer = useSlicer();
-  const printers = usePrinters();
+  const printers = useQuery({ queryKey: printerKeys.choices(), queryFn: printerFetchers.choices });
   const filesQ = useQuery(queries.files(project.id));
   const [adding, setAdding] = useState(false);
   /** a file chosen before the dialog opens: "Send to printing" on the Enclosure page arrives with ?newJob=<file id> */

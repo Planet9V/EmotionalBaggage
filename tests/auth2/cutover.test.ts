@@ -50,16 +50,18 @@ describe("item 1: the platform administrator is the new sign-in's own, checked o
       return { status: res.status, body: (await res.json()) as { platformAdmin?: boolean } };
     };
     expect((await access(cookieOf(admin.b))).body.platformAdmin).toBe(true);
-    expect((await access(cookieOf(plain.b))).body.platformAdmin).toBe(false);
+    // Anyone else is refused the whole admin area while the new sign-in is on (cut-over review B3).
+    expect((await access(cookieOf(plain.b))).status).toBe(403);
     // The old sign-in's demo session: not accepted for anything while the new sign-in is on.
     expect((await access(sessionCookieHeader())).status).toBe(401);
     // A made-up header or cookie flag counts for nothing.
     const forged = asBrowser("/api/admin/access", `${cookieOf(plain.b)}; platformAdmin=true`);
     forged.headers.set("x-platform-admin", "1");
-    expect(((await (await accessGet(forged)).json()) as { platformAdmin: boolean }).platformAdmin).toBe(false);
+    expect((await accessGet(forged)).status).toBe(403);
+    expect(await platformAdminFromAuth2(asBrowser("/api/admin/access", `${cookieOf(plain.b)}; platformAdmin=true`))).toBe(false);
     // Removing the flag takes effect on the next request.
     await db.query('UPDATE "user" SET "platformAdmin" = false WHERE id = $1', [admin.userId]);
-    expect((await access(cookieOf(admin.b))).body.platformAdmin).toBe(false);
+    expect((await access(cookieOf(admin.b))).status).toBe(403);
     await db.query('UPDATE "user" SET "platformAdmin" = true, "disabledAt" = now() WHERE id = $1', [admin.userId]);
     expect(await platformAdminFromAuth2(asBrowser("/api/admin/access", cookieOf(admin.b)))).toBe(false);
   });
@@ -83,7 +85,7 @@ describe("item 1: the platform administrator is the new sign-in's own, checked o
 });
 
 describe("item 3: Admin, Sign-in", () => {
-  it("the platform administrator sees and changes the addresses (audited); anyone else sees only that it is on", async () => {
+  it("the platform administrator sees and changes the addresses (audited); anyone else is refused", async () => {
     const admin = await newAccount(route, "si-admin");
     const plain = await newAccount(route, "si-plain");
     await db.query('UPDATE "user" SET "platformAdmin" = true WHERE id = $1', [admin.userId]);
@@ -92,7 +94,7 @@ describe("item 3: Admin, Sign-in", () => {
     expect(mine.on).toBe(true);
     expect(mine.detail?.baseURL).toBe("http://localhost:3322");
     expect(mine.sharedConcepts).toMatch(/every signed-in account sees and changes the same concepts/);
-    expect((await status(cookieOf(plain.b))).detail).toBeNull();
+    expect((await signInGet(asBrowser("/api/admin/sign-in", cookieOf(plain.b)))).status).toBe(403);
     expect((await signInPut(asBrowser("/api/admin/sign-in", cookieOf(plain.b), { method: "PUT", body: { trustedOrigins: ["https://x.example.test"] } }))).status).toBe(403);
     const saved = await signInPut(asBrowser("/api/admin/sign-in", cookieOf(admin.b), { method: "PUT", body: { trustedOrigins: ["https://other.example.test"] } }));
     expect(saved.status).toBe(200);

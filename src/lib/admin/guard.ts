@@ -1,9 +1,15 @@
 // Who may use the platform admin area (/admin and /api/admin/*). Decided only here.
 //
+// With the new sign-in ON (owner's rule, 22 Nov: "We need the admin area, admin only for the application"):
+//  - the whole admin area is the platform administrator's: every /api/admin route (adminRoute below), the /admin page
+//    (src/lib/admin/pageGate.ts) and the routes outside /api/admin that write credentials or install-wide settings
+//    (requirePlatformAdminUnderNewSignIn). Anyone else gets 403, and the page says so with no data. The list of those
+//    routes is in docs/guide/admin.md, "Who may change what". Settings of one concept stay open to signed-in accounts.
+//
+// With the new sign-in OFF (as on main):
 //  - Any signed-in account opens the area, reads it, and changes everything that existed before the platform admin
 //    area (models, existing provider keys, planner and slicer addresses, default concept, printers, the old tests),
-//    exactly as before (owner decision D2). docs/guide/admin.md lists those under "What any signed-in account can
-//    change until the new sign-in is on".
+//    exactly as before (owner decision D2).
 //  - Everything not listed OPEN in GUARD_LISTS needs the platform administrator, who exists only in the new
 //    sign-in (platformAdminFromAuth2 in ./platformAdminHook.ts). Under the old sign-in nobody has them: no password
 //    change, default or not, opens them.
@@ -45,6 +51,9 @@ const OPEN_AUDIT_SUBJECTS = new Set(["planner", "slicer", "database"]);
 
 export const PLATFORM_ADMIN_NOTICE = "These settings are changed by the platform administrator. That account is created when the new sign-in is switched on.";
 
+/** What anyone but the platform administrator is told about the admin area while the new sign-in is on. */
+export const ADMIN_AREA_NOTICE = "This area is for the platform administrator.";
+
 /** Does this provider, settings key or test kind need the platform administrator? Anything not listed open does. */
 export const platformAdminOnly = {
   provider: (id: string) => !OPEN.providers.has(id),
@@ -70,6 +79,14 @@ export async function requirePlatformAdmin(req: Request): Promise<void> {
 }
 
 /**
+ * With the new sign-in on, the platform administrator only (403 for anyone else); with it off, nothing (as on main).
+ * route() has decided the session: a new-sign-in session exists only while the switch is on.
+ */
+export async function requirePlatformAdminUnderNewSignIn(req: Request): Promise<void> {
+  if (sessionOf(req).kind === "auth2" && !(await isPlatformAdmin(req))) throw new HttpError(403, ADMIN_AREA_NOTICE);
+}
+
+/**
  * Access requests hold people's names, emails and companies. With the new sign-in on, sign-up is public, so they are
  * the platform administrator's only (cut-over review B1). With it off, as before: refused while the account still
  * uses the published demo password.
@@ -87,14 +104,15 @@ export async function adminAccess(req: Request) {
 }
 
 /**
- * route() for /api/admin: a signed-in session (any account, as before). `platformAdmin: true` for a route that is a new
- * power as a whole (the plan catalogue, the voice-overs tool: generating, accepting and discarding takes and choosing
- * the cast); the shared settings, credentials and test routes decide per key inside.
+ * route() for /api/admin. With the new sign-in on: the platform administrator only, for every route. With it off: a
+ * signed-in session (any account, as before); `platformAdmin: true` for a route that is a new power as a whole (the
+ * plan catalogue, the voice-overs tool: generating, accepting and discarding takes and choosing the cast); the shared
+ * settings, credentials and test routes decide per key inside.
  */
 export function adminRoute<A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions & { platformAdmin?: boolean }) {
   return route(async (...args: A) => {
     const req = (args as unknown[])[0] as Request;
-    sessionOf(req);
+    await requirePlatformAdminUnderNewSignIn(req);
     if (opts?.platformAdmin) await requirePlatformAdmin(req);
     return handler(...args);
   }, opts);

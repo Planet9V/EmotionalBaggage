@@ -44,6 +44,14 @@ export function valuesOf(row: Pick<PrinterRow, "address" | "access">): Record<st
   return out;
 }
 
+/** What the print flow needs to choose a printer: no address and no access values (cut-over review B3). */
+export type PrinterChoice = Pick<PrinterView, "id" | "name" | "family" | "familyLabel" | "model" | "enabled">;
+
+export function toPrinterChoice(row: PrinterRow): PrinterChoice {
+  const { id, name, family, familyLabel, model, enabled } = toPrinterView(row);
+  return { id, name, family, familyLabel, model, enabled };
+}
+
 export function toPrinterView(row: PrinterRow): PrinterView {
   const fam = printerFamily(row.family);
   const values = valuesOf(row);

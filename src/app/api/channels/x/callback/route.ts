@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requirePlatformAdminUnderNewSignIn } from "@/lib/admin/guard";
 import { HttpError, route, sessionOf } from "@/lib/api/route";
 import { audit } from "@/lib/db";
 import { finishXSignIn, takePending } from "@/lib/channels/x";
@@ -12,6 +13,8 @@ const back = (_req: Request, outcome: string) => new NextResponse(null, { status
  * go to the credentials table; the browser is sent back to Admin with only "connected" or a reason word.
  */
 export const GET = route(async (req: Request) => {
+  // Saves install-wide credentials or settings: the platform administrator's while the new sign-in is on (cut-over B3).
+  await requirePlatformAdminUnderNewSignIn(req);
   const s = sessionOf(req);
   const p = new URL(req.url).searchParams;
   const state = p.get("state") ?? "";

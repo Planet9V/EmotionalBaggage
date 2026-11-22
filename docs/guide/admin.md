@@ -42,7 +42,7 @@ Not verified: none of the connection tests has been pressed against a real OpenR
 
 **Access requests** lists the requests sent from the welcome page, newest first: when, who (name, email, company), the level they chose on the welcome page (Free, Maker, Studio or Self-hosted; "Not chosen" when they left it open) and what they want to build. Set each one to New, Contacted or Declined; the change is saved at once and recorded in the audit log. Download CSV saves every request, and the download is recorded too. The app sends no email: reply from your own mail. While the account still uses the published demo password this tab shows nothing and says why, because anyone could sign in and read names and emails; change the password in Account first. Until then the requests can be read with `docker compose exec db psql -U c2r c2r -c "SELECT * FROM access_requests ORDER BY id DESC;"`. The form is limited per network address with the same growing waits as sign-in.
 
-### What any signed-in account can change until the new sign-in is on
+### What any signed-in account can change while the new sign-in is off
 
 These were open to every signed-in account before the platform admin area, and stay so (owner decision D2). On the public demo, where anyone can sign in as demo / demo, any visitor can:
 
@@ -53,7 +53,36 @@ These were open to every signed-in account before the platform admin area, and s
 - run the old connection tests: model, embedding, Perplexity (billed by Perplexity as one short question each), the three channels, printers, the planner, the slicer and the database;
 - tick the Instagram App Review checklist, acknowledge the X cost statement, choose each concept's Amazon marketplace, and change a concept's campaign CSV mapping.
 
-None of these reaches the platform administrator's powers above. They close when the new sign-in is on and its roles are mapped.
+None of these reaches the platform administrator's powers above.
+
+### Who may change what once the new sign-in is on
+
+With the new sign-in on, the whole admin area is the platform administrator's (owner's rule: "We need the admin area, admin only for the application"). Every account but the platform administrator gets 403 ("This area is for the platform administrator.") from every `/api/admin` route and from each route below, and `/admin` shows only that sentence, with no data. That includes everything in the list above and the access requests. A concept's own settings stay open to any signed-in account. With the new sign-in off, everything is exactly as described above.
+
+Every route that writes the `credentials` table or an install-wide key of the `settings` table, and its guard (switch on):
+
+| Route | Writes | Guard with the switch on |
+|---|---|---|
+| `PUT /api/admin/credentials/[provider]`, `DELETE /api/admin/credentials/[provider]/[field]` | `credentials` (`saveCredentials`, `removeCredential`), the credentials short list and last tests in `settings` | platform administrator (`adminRoute`) |
+| `PUT /api/admin/settings` | model, planner, slicer, default concept, mail and voice settings; removes keys bound to a moved address (`writeAdminSettings`) | platform administrator (`adminRoute`) |
+| `PUT`, `DELETE /api/admin/plans` | the plan catalogue (`savePlanCatalogue`, `resetPlanCatalogue`) | platform administrator (`adminRoute`) |
+| `POST /api/admin/test` | last test results (`recordCheck`, platform administrator's tests only), the credentials short list; the X test updates the connected X account | platform administrator (`adminRoute`) |
+| `POST`, `PATCH`, `DELETE /api/admin/printers...` | printers with their addresses and access codes (table `printers`) | platform administrator (`adminRoute`) |
+| `PUT /api/admin/sign-in` | the switch and addresses (`auth2_settings`) | platform administrator (`adminRoute`) |
+| every other `/api/admin` route (reads, access requests, exports, voice options) | nothing, or `access_requests` | platform administrator (`adminRoute`) |
+| `POST /api/channels/x/connect` | starts X's sign-in (whose answer replaces the saved X tokens) | platform administrator (`requirePlatformAdminUnderNewSignIn`) |
+| `GET /api/channels/x/callback` | the X tokens in `credentials`, the connected X account (`channels.x.account`) | platform administrator |
+| `POST /api/channels/x/ack` | the X cost statement acknowledgement (`channels.x.costAck`, install-wide) | platform administrator |
+| `GET`, `PUT /api/channels/instagram/review` | the Instagram App Review checklist (`channels.instagram.review`, install-wide) | platform administrator |
+| `PUT /api/channels/amazon`, `POST /api/channels/amazon/sync` | the Amazon marketplace and sync state of one concept (`channels.amazon:<concept>`) | any signed-in account (a concept's setting) |
+| `PUT /api/projects/[id]/campaigns/csv-mapping` | one concept's campaign CSV mapping (`campaigns.csv.<concept>.<channel>`) | any signed-in account (a concept's setting) |
+| `DELETE /api/projects/[id]` | clears the default concept only when it is the concept deleted | any signed-in account (part of deleting a concept) |
+| `POST /api/channels/send`, `POST /api/channels/inbox/fetch` | refresh the saved X tokens and the X account's expiry when they have expired (a value X returns, never one the caller chooses) | any signed-in account |
+| any route that reads a key saved before addresses were recorded | binds that key to the provider's built-in address (`boundOrigin`), never to a caller's address | any signed-in account |
+
+The print flow of a concept lists printers through `GET /api/printers` (name, family, model and whether each is on: no address, no access values), which stays open to any signed-in account. Its Test button runs a printer test, which is the platform administrator's.
+
+Ordinary accounts can no longer acknowledge the X cost statement: the platform administrator does it once for the install.
 
 ## What gets installed
 
@@ -160,7 +189,7 @@ The owner has approved the switch-over. It is one action, and it can be undone:
 What changes for people when it is on:
 - Every page and every part of the app needs an account of the new sign-in. The old shared sign-in (`demo`) no longer works anywhere: its sign-in form leads to the new one, its routes answer "not found", and an old session is not accepted.
 - People create an account (or are invited), confirm their address (or, with no mail, an administrator confirms it), and sign in with email and password. A person whose workspace requires two-step sign-in sets up an authenticator app first, before reaching any page.
-- Admin's new sections (payments, pricing, email, voice, sign-in) are changed by the platform administrator only; the sections that existed before stay open to any signed-in account, as before.
+- The whole admin area (`/admin`, every `/api/admin` route, and connecting X, the X cost statement and the Instagram checklist) is the platform administrator's only. Anyone else sees "This area is for the platform administrator." See "Who may change what once the new sign-in is on". A concept's own settings stay open to every signed-in account.
 - **Concepts are not yet kept apart per workspace.** Until that is built (the next step), every signed-in account sees and changes the same concepts, as today. Workspaces, members, invitations and two-step sign-in already work.
 
 To go back: **Admin, Sign-in**, "Turn the new sign-in off" (platform administrator), or `docker compose exec web node scripts/sign-in.mjs off`. Accounts and workspaces are kept. `node scripts/sign-in.mjs status` says which is in force.

@@ -151,3 +151,121 @@ describe("B2: a failed read of the switch never turns the new sign-in off", () =
     });
   });
 });
+
+describe("B3: with the new sign-in on, the admin area is the platform administrator's", () => {
+  type Handler = (req: Request, ctx?: unknown) => Promise<Response>;
+  /** Every /api/admin route file and its handlers, found on disk so a route added later is covered too. */
+  async function adminRoutes() {
+    const { readdirSync } = await import("node:fs");
+    const { join, relative } = await import("node:path");
+    const root = join(process.cwd(), "src/app/api/admin");
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.isDirectory()) walk(join(dir, e.name));
+        else if (e.name === "route.ts") files.push(relative(root, join(dir, e.name)));
+      }
+    };
+    walk(root);
+    return files.sort();
+  }
+  /** A path and context for a route file: [id] is 0 and other parameters "nope", so nothing real is touched. */
+  const pathOf = (file: string) => `/api/admin/${file.replace(/\/?route\.ts$/, "")}`.replace(/\[id\]/g, "0").replace(/\[(\w+)\]/g, "nope");
+  const ctxOf = (file: string) => {
+    const params: Record<string, string> = {};
+    for (const [, name] of file.matchAll(/\[(\w+)\]/g)) params[name] = name === "id" ? "0" : "nope";
+    return { params: Promise.resolve(params) };
+  };
+  const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+  /** A body that no route accepts (strict schemas), so the administrator's calls change nothing. */
+  const PROBE = { __probe: true };
+
+  /** Routes outside /api/admin that write credentials or install-wide settings (docs/guide/admin.md lists them). */
+  const WRITE_ROUTES: [string, string, (typeof METHODS)[number]][] = [
+    ["@/app/api/channels/x/connect/route", "/api/channels/x/connect", "POST"],
+    ["@/app/api/channels/x/callback/route", "/api/channels/x/callback?state=nope&code=nope", "GET"],
+    ["@/app/api/channels/x/ack/route", "/api/channels/x/ack", "POST"],
+    ["@/app/api/channels/instagram/review/route", "/api/channels/instagram/review", "GET"],
+    ["@/app/api/channels/instagram/review/route", "/api/channels/instagram/review", "PUT"],
+  ];
+
+  it("a self-signed-up account gets 403 on every /api/admin route and each listed write route; the platform administrator gets through", async () => {
+    const files = await adminRoutes();
+    expect(files.length).toBeGreaterThan(20);
+    const { pool } = await import("@/lib/db");
+    const plans = await pool().query("SELECT key, value FROM settings WHERE key = 'plans.catalogue'");
+    const { stranger, admin } = await strangerAndAdmin("b3");
+    const seen: string[] = [];
+    const through: Record<string, number> = {};
+    try {
+      const call = async (h: Handler, path: string, method: string, cookie: string, ctx?: unknown) =>
+        h(asBrowser(path, cookie, { method, body: method === "GET" || method === "DELETE" ? undefined : PROBE }), ctx);
+      for (const file of files) {
+        const mod = (await import(`@/app/api/admin/${file.replace(/\.ts$/, "")}`)) as Partial<Record<(typeof METHODS)[number], Handler>>;
+        for (const m of METHODS) {
+          const h = mod[m];
+          if (!h) continue;
+          const r = await call(h, pathOf(file), m, stranger, ctxOf(file));
+          seen.push(`${m} ${file}`);
+          expect(r.status, `${m} ${file} for a stranger`).toBe(403);
+          expect(((await r.json()) as { error: string }).error).toBe("This area is for the platform administrator.");
+          through[`${m} ${file}`] = (await call(h, pathOf(file), m, admin, ctxOf(file))).status;
+        }
+      }
+      for (const [mod, path, m] of WRITE_ROUTES) {
+        const h = ((await import(mod)) as Record<string, Handler>)[m];
+        expect((await call(h, path, m, stranger)).status, `${m} ${path} for a stranger`).toBe(403);
+        through[`${m} ${path}`] = (await call(h, path, m, admin)).status;
+      }
+    } finally {
+      await pool().query("DELETE FROM settings WHERE key = 'plans.catalogue'");
+      for (const r of plans.rows) await pool().query("INSERT INTO settings (key, value) VALUES ($1, $2)", [r.key, JSON.stringify(r.value)]);
+    }
+    // Found on disk, so a handler added later (a DELETE of one access request, say) is in this list by itself.
+    expect(seen).toEqual(expect.arrayContaining(["GET access-requests/route.ts", "PATCH access-requests/[id]/route.ts", "PUT sign-in/route.ts"]));
+    for (const [what, status] of Object.entries(through)) {
+      expect([401, 403], `${what} for the platform administrator answered ${status}`).not.toContain(status);
+    }
+  });
+
+  it("with the switch off, the demo account keeps the old open powers, exactly as before", async () => {
+    const { GET: printers } = await import("@/app/api/admin/printers/route");
+    const { GET: settings } = await import("@/app/api/admin/settings/route");
+    const { GET: review } = await import("@/app/api/channels/instagram/review/route");
+    process.env.AUTH2 = "0";
+    try {
+      for (const r of [printers(asBrowser("/api/admin/printers", sessionCookieHeader())), settings(asBrowser("/api/admin/settings", sessionCookieHeader())), review(asBrowser("/api/channels/instagram/review", sessionCookieHeader()))]) {
+        expect((await r).status).toBe(200);
+      }
+    } finally {
+      process.env.AUTH2 = "1";
+    }
+  });
+
+  it("the /admin page shows the area to the platform administrator only; concept settings and the print flow's printer list stay open", async () => {
+    const { adminPageOpen } = await import("@/lib/admin/pageGate");
+    const { stranger, admin } = await strangerAndAdmin("b3-page");
+    const h = (cookie: string) => new Headers({ host: "localhost:3322", cookie });
+    expect(await adminPageOpen(h(stranger))).toBe(false);
+    expect(await adminPageOpen(h(""))).toBe(false);
+    expect(await adminPageOpen(h(admin))).toBe(true);
+    process.env.AUTH2 = "0";
+    try {
+      expect(await adminPageOpen(h(sessionCookieHeader()))).toBe(true);
+    } finally {
+      process.env.AUTH2 = "1";
+    }
+    // The print flow's list: names and families only, never an address or an access value.
+    const { GET: choices } = await import("@/app/api/printers/route");
+    const r = await choices(asBrowser("/api/printers", stranger));
+    expect(r.status).toBe(200);
+    for (const p of ((await r.json()) as { printers: Record<string, unknown>[] }).printers) {
+      expect(Object.keys(p).sort()).toEqual(["enabled", "family", "familyLabel", "id", "model", "name"]);
+    }
+    // A concept's own campaign CSV mapping stays open to any signed-in account.
+    const proj = await db.query<{ id: string }>("SELECT id FROM projects ORDER BY id LIMIT 1");
+    const { GET: mapping } = await import("@/app/api/projects/[id]/campaigns/csv-mapping/route");
+    const m = await mapping(asBrowser(`/api/projects/${proj.rows[0].id}/campaigns/csv-mapping?channel=x`, stranger), { params: Promise.resolve({ id: proj.rows[0].id }) });
+    expect(m.status).not.toBe(403);
+  });
+});

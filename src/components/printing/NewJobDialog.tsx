@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { matchPrinter } from "@/lib/slicing/match";
 import type { SlicerState } from "@/lib/slicing/queries";
-import type { PrinterView } from "@/lib/admin/printers";
+import type { PrinterChoice } from "@/lib/admin/printers";
 import type { FileMeta, Item } from "@/lib/types";
 import { ErrorLine } from "@/components/ui/states";
 import { Field } from "@/components/ui/field";
@@ -56,7 +56,7 @@ export function NewJobDialog({ open, onOpenChange, files, parts, builds, printer
   files: FileMeta[];
   parts: { ref: string; title: string }[];
   builds: { key: string; title: string }[];
-  printers: PrinterView[];
+  printers: PrinterChoice[];
   slicer: SlicerState | undefined;
   onCreate: (j: NewJob) => Promise<void>;
   /** a queued job to change instead of a new one; the parent gives the dialog a new key per job */

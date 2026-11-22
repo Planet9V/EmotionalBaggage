@@ -3,6 +3,7 @@
 import { api } from "@/lib/client";
 import type { PrinterReading } from "./readings";
 import type { PrinterModel, Fact } from "./models";
+import type { PrinterChoice } from "@/lib/admin/printers";
 
 export type { PrinterReading, PrinterModel };
 
@@ -15,11 +16,14 @@ export type PrinterModelList = {
 export const printerKeys = {
   statuses: () => ["printers", "status"] as const,
   models: () => ["printers", "models"] as const,
+  choices: () => ["printers", "choices"] as const,
 };
 
 export const printerFetchers = {
   statuses: ({ signal }: { signal?: AbortSignal } = {}) => api<{ printers: PrinterReading[] }>("/api/printers/status", { signal }).then((r) => r.printers),
   models: ({ signal }: { signal?: AbortSignal } = {}) => api<PrinterModelList>("/api/printers/models", { signal }),
+  /** the printers a print job may go to (no address, no access values) */
+  choices: ({ signal }: { signal?: AbortSignal } = {}) => api<{ printers: PrinterChoice[] }>("/api/printers", { signal }).then((r) => r.printers),
 };
 
 /** pause or resume a print. No confirm is needed for these. */
