@@ -5,13 +5,13 @@
 // and next, a "3 of 7" counter, and one button per slide. Every slide is in the page from the server, so with no
 // script it is still a row you can scroll through.
 //
-// `auto` advances a slide every few seconds, on wide screens, only while the deck is in view and only until the
-// visitor touches it; then it stops for good. While it runs there is a Pause button (WCAG 2.2.2). Never under
-// reduced motion. `untilWide` makes it a deck on phones and tablets only: from lg up the slides are an ordinary
+// `auto` advances a slide every few seconds while the deck is in view, round and round, until the visitor uses
+// previous, next or a tab; from then on they are steering and it stays where they put it. There is no pause
+// control (owner, 22 Nov). Never under reduced motion. `untilWide` makes it a deck on phones and tablets only: from lg up the slides are an ordinary
 // stacked column and the controls are gone.
 import { Children, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useInView } from "motion/react";
-import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAnimated, useWide } from "./useAnimated";
 
@@ -22,14 +22,12 @@ export function Deck({ label, tabs, auto = false, untilWide = false, children }:
   const root = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [touched, setTouched] = useState(false);
   const animated = useAnimated();
   const wide = useWide();
   const seen = useInView(root, { amount: 0.6 });
   const last = slides.length - 1;
-  const mayRun = auto && animated && wide && !touched && at < last;
-  const running = mayRun && seen && !paused;
+  const running = auto && animated && !touched && seen;
 
   const go = useCallback(
     (i: number) => {
@@ -54,9 +52,9 @@ export function Deck({ label, tabs, auto = false, untilWide = false, children }:
 
   useEffect(() => {
     if (!running) return;
-    const t = window.setTimeout(() => go(at + 1), HOLD_MS);
+    const t = window.setTimeout(() => go(at === last ? 0 : at + 1), HOLD_MS);
     return () => window.clearTimeout(t);
-  }, [running, at, go]);
+  }, [running, at, last, go]);
 
   const stop = () => setTouched(true);
   const step = (i: number) => {
@@ -66,7 +64,7 @@ export function Deck({ label, tabs, auto = false, untilWide = false, children }:
   const hide = untilWide ? "lg:hidden" : "";
 
   return (
-    <div ref={root} role="group" aria-roledescription="carousel" aria-label={label} onPointerDown={stop} onKeyDown={stop} onWheel={stop}>
+    <div ref={root} role="group" aria-roledescription="carousel" aria-label={label}>
       <div className={`mb-4 flex items-center gap-2 ${hide}`}>
         <ol className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-1" aria-label={`${label}: slides`}>
           {tabs.map((t, i) => (
@@ -107,12 +105,6 @@ export function Deck({ label, tabs, auto = false, untilWide = false, children }:
         <p className="font-mono text-xs tabular-nums text-muted" aria-live={running ? "off" : "polite"}>
           {at + 1} of {slides.length}
         </p>
-        {mayRun ? (
-          <button type="button" onClick={() => setPaused((p) => !p)} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 font-mono text-xs text-muted transition-colors duration-150 hover:text-primary">
-            {paused ? <Play className="h-3.5 w-3.5" aria-hidden /> : <Pause className="h-3.5 w-3.5" aria-hidden />}
-            {paused ? "Play the slides" : "Pause the slides"}
-          </button>
-        ) : null}
       </div>
     </div>
   );

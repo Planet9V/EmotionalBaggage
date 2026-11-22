@@ -19,6 +19,7 @@ export type { CanvasPart, CanvasWire, CutPlane, Measurement, RoutedDraw, ShellVi
 import { Animator, CameraRig } from "./canvasRig";
 import { RoutedLayer, WiresLayer } from "./canvasWires";
 import { MeasureLayer, SectionClip } from "./canvasTools";
+import { Showcase } from "./canvasShowcase";
 
 function Scene(props: ModelCanvasProps & { progress: Progress }) {
   const { parts, selectedId, onSelect, explode, labels, shellView, shellParams, resetToken, dark, uploaded, progress, wires, wiresOn, fade, weights, focusIds, onFocusPart, transform, onTransform, section, measure, onMeasure, routed } = props;
@@ -238,7 +239,9 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
       {showHandles && selectedPart && handleObj && (
         <Handles key={`${selectedPart.id}:${transform}`} part={selectedPart} object={handleObj} mode={transform === "rotate" ? "rotate" : "translate"} dragRef={drag} onTransform={onTransform} />
       )}
-      <OrbitControls makeDefault enableDamping dampingFactor={0.12} />
+      {/* with `showcase` (the public welcome page) a plain wheel scrolls the page; Showcase zooms on Ctrl or Cmd + wheel */}
+      <OrbitControls makeDefault enableDamping dampingFactor={0.12} enableZoom={!props.showcase} />
+      {props.showcase && <Showcase {...props.showcase} />}
     </>
   );
 }

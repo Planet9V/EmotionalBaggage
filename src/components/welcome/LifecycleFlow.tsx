@@ -5,44 +5,45 @@
 // Enter or Space) and everything downstream of it lights up, with one line saying what that is.
 //
 // Loaded by LifecycleMap once the page runs (React Flow needs a browser to measure and lay out). The page's scrolling is never taken: no zoom on scroll, and on a phone no pan or zoom at all (a fitted, still
-// layout). The dashes on the lit edges move for a few seconds after a pick, then rest; never under reduced motion.
+// layout). The dashes on the path and on the lit edges keep flowing, and a pick sends a pulse down through
+// everything that depends on it, one step after another; never under reduced motion.
 import "@xyflow/react/dist/style.css";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Handle, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import { useAnimated } from "./useAnimated";
 import { MAP, MAP_LABEL as LABEL } from "./content";
 
 const ORANGE = "#E05A10";
-const FLOW_MS = 4500;
 
 const OWNER = new Map<string, string>(MAP.stages.flatMap((s) => s.makes.map(([id]) => [id, s.key] as [string, string])));
 
-/** Everything fed, directly or through something else, by the node: a stage stands for all it makes. */
-function downstream(id: string): string[] {
+/** Everything fed, directly or through something else, by the node, with how many steps away it is. A stage stands for all it makes. */
+function downstream(id: string): Map<string, number> {
   const start = MAP.stages.find((s) => s.key === id)?.makes.map(([m]) => m) ?? [id];
-  const seen = new Set<string>(start);
+  const steps = new Map<string, number>(start.map((n) => [n, n === id ? 0 : 1]));
   const queue = [...start];
   while (queue.length) {
     const from = queue.shift()!;
     for (const [a, b] of MAP.feeds) {
-      if (a !== from || seen.has(b)) continue;
-      seen.add(b);
+      if (a !== from || steps.has(b)) continue;
+      steps.set(b, steps.get(from)! + 1);
       queue.push(b);
     }
   }
   // picking a stage lights what it makes too; picking one thing lights only what comes after it
-  return [...seen].filter((n) => n !== id);
+  steps.delete(id);
+  return steps;
 }
 
 function caption(id: string | null) {
   if (!id) return MAP.idle;
-  const hit = downstream(id).map((n) => LABEL.get(n)!.toLowerCase());
+  const hit = [...downstream(id).keys()].map((n) => LABEL.get(n)!.toLowerCase());
   const name = LABEL.get(id)!;
   if (!hit.length) return `${name} is the end of the line: nothing else is built from it.`;
   return `Change the ${name.toLowerCase()} and ${hit.length === 1 ? "this depends" : `these ${hit.length} depend`} on it: ${hit.join(", ")}.`;
 }
 
-type Data = { label: string; n?: string; picked: boolean; lit: boolean; tall: boolean; onPick: () => void };
+type Data = { label: string; n?: string; picked: boolean; lit: boolean; tall: boolean; /** steps from the pick, and which pick: the pulse */ step: number; pulse: number; onPick: () => void };
 type MapNode = Node<Data, "stage" | "made">;
 
 const HIDDEN = "!h-px !w-px !min-h-0 !min-w-0 !border-0 !bg-transparent";
@@ -69,12 +70,13 @@ const MadeNode = memo(function MadeNode({ data }: NodeProps<MapNode>) {
       type="button"
       aria-pressed={data.picked}
       onClick={data.onPick}
-      className={`nodrag nopan pointer-events-auto flex h-full w-full items-center rounded-md border px-2.5 text-left text-xs font-medium transition-colors duration-150 ${
+      className={`nodrag nopan pointer-events-auto relative flex h-full w-full items-center rounded-md border px-2.5 text-left text-xs font-medium transition-colors duration-150 ${
         data.picked ? "border-dutchOrange bg-action text-white" : data.lit ? "border-dutchOrange bg-[var(--accent-orange-subtle)] text-primary" : "border-hairline bg-surface text-secondary hover:border-dutchOrange hover:text-primary"
       }`}
     >
       {data.label}
       {data.lit && !data.picked ? <span className="sr-only"> (depends on your pick)</span> : null}
+      {data.lit ? <span key={data.pulse} className="wl-pulse pointer-events-none absolute inset-0 rounded-md border-2 border-dutchOrange" style={{ animationDelay: `${data.step * 260}ms` }} aria-hidden="true" /> : null}
       <Handle type="target" position={Position.Left} id="in" className={HIDDEN} isConnectable={false} />
       <Handle type="target" position={Position.Right} id="inR" className={HIDDEN} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={HIDDEN} isConnectable={false} />
@@ -88,8 +90,8 @@ const nodeTypes = { stage: StageNode, made: MadeNode };
 const WIDE = { stageW: 132, stageH: 40, madeW: 132, madeH: 32, colGap: 34, rowGap: 12, top: 60, stagger: 22 };
 const TALL = { stageW: 116, stageH: 36, madeW: 136, madeH: 30, rowGap: 8, blockGap: 18, left: 132 };
 
-function build(tall: boolean, picked: string | null, flowing: boolean, onPick: (id: string) => void) {
-  const lit = new Set(picked ? downstream(picked) : []);
+function build(tall: boolean, picked: string | null, flowing: boolean, pulse: number, onPick: (id: string) => void) {
+  const lit = picked ? downstream(picked) : new Map<string, number>();
   const nodes: MapNode[] = [];
   let y = 0;
   MAP.stages.forEach((s, i) => {
@@ -101,7 +103,7 @@ function build(tall: boolean, picked: string | null, flowing: boolean, onPick: (
       position: { x: sx, y: tall ? y + (blockH - TALL.stageH) / 2 : 0 },
       width: tall ? TALL.stageW : WIDE.stageW,
       height: tall ? TALL.stageH : WIDE.stageH,
-      data: { label: s.name, n: s.n, picked: picked === s.key, lit: false, tall, onPick: () => onPick(s.key) },
+      data: { label: s.name, n: s.n, picked: picked === s.key, lit: false, tall, step: 0, pulse, onPick: () => onPick(s.key) },
     });
     s.makes.forEach(([id, label], j) => {
       nodes.push({
@@ -111,7 +113,7 @@ function build(tall: boolean, picked: string | null, flowing: boolean, onPick: (
         position: tall ? { x: TALL.left, y: y + j * (TALL.madeH + TALL.rowGap) } : { x: sx, y: WIDE.top + (i % 2) * WIDE.stagger + j * (WIDE.madeH + WIDE.rowGap) },
         width: tall ? TALL.madeW : WIDE.madeW,
         height: tall ? TALL.madeH : WIDE.madeH,
-        data: { label, picked: picked === id, lit: lit.has(id), tall, onPick: () => onPick(id) },
+        data: { label, picked: picked === id, lit: lit.has(id), tall, step: lit.get(id) ?? 0, pulse, onPick: () => onPick(id) },
       });
     });
     y += blockH + TALL.blockGap;
@@ -121,7 +123,7 @@ function build(tall: boolean, picked: string | null, flowing: boolean, onPick: (
     source: MAP.stages[i]!.key,
     target: s.key,
     type: "straight",
-    animated: flowing && !picked,
+    animated: flowing,
     style: { stroke: "var(--text-primary)", strokeWidth: 2 },
   }));
   const feeds: Edge[] = MAP.feeds.map(([a, b]) => {
@@ -144,29 +146,18 @@ function build(tall: boolean, picked: string | null, flowing: boolean, onPick: (
 export default function LifecycleFlow({ tall }: { tall: boolean }) {
   const animated = useAnimated();
   const [picked, setPicked] = useState<string | null>(null);
-  const [flowing, setFlowing] = useState(false);
-  // dashes move for a few seconds after the map appears and after each pick, then rest
   const [pulse, setPulse] = useState(0);
-  useEffect(() => {
-    if (!animated) return;
-    const on = window.setTimeout(() => setFlowing(true), 0);
-    const off = window.setTimeout(() => setFlowing(false), FLOW_MS);
-    return () => {
-      window.clearTimeout(on);
-      window.clearTimeout(off);
-    };
-  }, [animated, pulse]);
   const { nodes, edges } = useMemo(
     () =>
-      build(tall, picked, flowing, (id) => {
+      build(tall, picked, animated, pulse, (id) => {
         setPicked((p) => (p === id ? null : id));
         setPulse((n) => n + 1);
       }),
-    [tall, picked, flowing],
+    [tall, picked, animated, pulse],
   );
   return (
     <>
-      <div className={tall ? "h-[700px]" : "h-[236px]"}>
+      <div className={tall ? "h-[700px]" : "h-[230px]"}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

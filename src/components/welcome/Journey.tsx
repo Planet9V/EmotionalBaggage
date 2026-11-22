@@ -3,24 +3,16 @@
 // The journey: seven panels, one per stage. On a wide screen they are a column with a rail that says where you
 // are: the rail is position: sticky, its line and luggage tag follow scroll progress, and nothing is ever locked
 // or hijacked. On a phone or tablet the same panels are a deck, one stage per slide, swiped sideways (Deck). Everything is in the page from the server and visible without script or motion.
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useInView, useMotionValueEvent, useScroll, useTransform, type MotionValue } from "motion/react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
 import { Check } from "lucide-react";
 import { Shot } from "./Shot";
-import { AdDrafts, CostCount, ExplodedPuck, ListingDraft, PrintLayers, SchematicCorner } from "./StagePieces";
+import { STAGE_PICTURE } from "./StagePieces";
 import { Deck } from "./Deck";
 import { useAnimated, useWide } from "./useAnimated";
-import { BAG_LINES, EXAMPLE, FEATURES, JOURNEY, PROBLEM, type JourneyStage } from "./content";
+import { BAG_LINES, EXAMPLE, FEATURES, JOURNEY, SHOT_PATH, PROBLEM, type JourneyStage } from "./content";
 
 const N = JOURNEY.length;
-const EXTRA: Record<NonNullable<JourneyStage["extras"]>[number], ReactNode> = {
-  exploded: <ExplodedPuck />,
-  schematic: <SchematicCorner />,
-  layers: <PrintLayers />,
-  cost: <CostCount />,
-  ads: <AdDrafts />,
-  listing: <ListingDraft />,
-};
 const altOf = (shot: string) => FEATURES.find((f) => f.shot === shot)?.alt ?? "";
 
 /** Where the tag sits (0 to 1 down the rail) for a scroll position, given where each panel's middle is. */
@@ -64,11 +56,11 @@ function Gate({ checks }: { checks: string[] }) {
   return (
     <>
       <p className="sr-only">Gate checks:</p>
-      <ul ref={ref} className="space-y-2">
+      <ul ref={ref} className="space-y-1.5">
         {checks.map((c, i) => {
           const done = !animated || i < met;
           return (
-            <li key={c} className="flex items-start gap-2.5 text-sm text-secondary">
+            <li key={c} className="flex items-start gap-2.5 text-[13px] leading-snug text-secondary">
               <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${done ? "border-transparent bg-success-soft" : "border-hairline"}`}>
                 {done ? <Check key="met" className={`h-3 w-3 text-success ${animated ? "wl-tick" : ""}`} aria-hidden /> : null}
               </span>
@@ -81,10 +73,19 @@ function Gate({ checks }: { checks: string[] }) {
   );
 }
 
+/** A screenshot in its frame: a plain browser bar with the page's address, a hairline, one shadow. The picture pans slowly inside. */
 function Frame({ shot, y, className = "" }: { shot: string; y?: MotionValue<number>; className?: string }) {
   return (
     <motion.div style={y ? { y } : undefined} className={`overflow-hidden rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)] ${className}`}>
-      <Shot name={shot} alt={altOf(shot)} />
+      <div className="flex h-7 items-center gap-1.5 border-b border-hairline bg-subtle px-3" aria-hidden="true">
+        <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
+        <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
+        <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
+        <span className="ml-2 truncate font-mono text-[11px] text-muted">{SHOT_PATH[shot]}</span>
+      </div>
+      <div className="wl-pan overflow-hidden">
+        <Shot name={shot} alt={altOf(shot)} />
+      </div>
     </motion.div>
   );
 }
@@ -108,18 +109,18 @@ function Panel({ stage, index, active }: { stage: JourneyStage; index: number; a
       ref={ref}
       id={`stage-${stage.key}`}
       aria-labelledby={`stage-${stage.key}-title`}
-      className={`scroll-mt-24 grid items-start gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:py-8 ${index ? "lg:border-t lg:border-hairline" : "lg:pt-0"}`}
+      className={`scroll-mt-24 grid items-start gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:py-7 ${index ? "lg:border-t lg:border-hairline" : "lg:pt-0"}`}
     >
-      <div className="grid gap-5">
+      <div className="grid gap-4">
         <div>
-          <p className={`font-mono text-sm transition-colors duration-300 ${active ? "text-link" : "text-muted"}`}>
+          <p className={`font-mono text-xs transition-colors duration-300 ${active ? "text-link" : "text-muted"}`}>
             Gate {stage.n} of 0{N}
           </p>
-          <h3 id={`stage-${stage.key}-title`} className="mt-1 text-display-3 font-semibold text-primary">{stage.name}</h3>
-          <p className="mt-3 text-base leading-relaxed text-secondary">{stage.does}</p>
-          <p className="mt-2 hidden font-mono text-xs text-muted sm:block">In the app: {stage.inApp}</p>
+          <h3 id={`stage-${stage.key}-title`} className="mt-1 text-[1.375rem] font-semibold leading-tight tracking-tight text-primary">{stage.name}</h3>
+          <p className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-secondary">{stage.does}</p>
+          <p className="mt-2 hidden font-mono text-[11px] text-muted sm:block">In the app: {stage.inApp}</p>
           {pair ? (
-            <dl className="mt-4 hidden gap-x-6 gap-y-2 border-l-2 border-dutchOrange pl-4 text-sm sm:grid sm:grid-cols-2">
+            <dl className="mt-3 hidden gap-x-6 gap-y-2 border-l-2 border-dutchOrange pl-4 text-[13px] leading-relaxed sm:grid sm:grid-cols-2">
               <div>
                 <dt className="font-semibold text-primary">Spread over separate tools</dt>
                 <dd className="mt-0.5 text-secondary">{pair.before}</dd>
@@ -136,35 +137,35 @@ function Panel({ stage, index, active }: { stage: JourneyStage; index: number; a
           <Frame shot={stage.shots[0]!} y={linked ? yMain : undefined} className={stage.shots[1] ? "sm:w-[88%]" : ""} />
           {stage.shots[1] ? <Frame shot={stage.shots[1]} y={linked ? ySecond : undefined} className="hidden sm:absolute sm:bottom-0 sm:right-0 sm:block sm:w-[50%]" /> : null}
         </div>
-        {under.length ? <div className="hidden gap-5 lg:grid">{under.map((e) => <Fragment key={e}>{EXTRA[e]}</Fragment>)}</div> : null}
+        {under.length ? <div className="hidden gap-4 lg:grid">{under.map((e) => <Fragment key={e}>{STAGE_PICTURE[e]}</Fragment>)}</div> : null}
       </div>
 
-      <div className="grid gap-5">
+      <div className="grid gap-4">
         {/* the luggage tag: what Baggage Claims looked like at this gate, and what the bag had to say about it */}
-        <div className="relative rounded-xl border border-hairline bg-surface p-5 pl-7">
-          <span className="absolute inset-y-0 left-0 w-2 rounded-l-xl bg-dutchOrange" aria-hidden />
-          <p className="text-sm font-semibold text-primary">{EXAMPLE.name} at this stage</p>
+        <div className="relative rounded-xl border border-hairline bg-surface p-4 pl-6">
+          <span className="absolute inset-y-0 left-0 w-1.5 rounded-l-xl bg-dutchOrange" aria-hidden />
+          <p className="font-mono text-[11px] text-muted">{EXAMPLE.name} at this stage</p>
           <dl className="mt-3 space-y-2.5">
             {stage.facts.map((f) => (
               <div key={f.label} className="flex items-baseline gap-3">
-                <dt className="order-2 text-sm leading-snug text-secondary">{f.label}</dt>
-                <dd className="order-1 shrink-0 font-mono text-2xl font-semibold tabular-nums tracking-tight text-primary">{f.figure}</dd>
+                <dt className="order-2 text-[13px] leading-snug text-secondary">{f.label}</dt>
+                <dd className="order-1 shrink-0 font-mono text-xl font-semibold tabular-nums tracking-tight text-primary">{f.figure}</dd>
               </div>
             ))}
           </dl>
-          <figure className="mt-4 border-t border-hairline pt-4">
-            <blockquote className="text-lg font-semibold leading-snug tracking-tight text-primary">&ldquo;{said.line}&rdquo;</blockquote>
-            <figcaption className="mt-1.5 flex items-center gap-2 font-mono text-xs text-muted">
+          <figure className="mt-3 border-t border-hairline pt-3">
+            <blockquote className="text-base font-semibold leading-snug tracking-tight text-primary">&ldquo;{said.line}&rdquo;</blockquote>
+            <figcaption className="mt-1.5 flex items-center gap-2 font-mono text-[11px] text-muted">
               <span className="h-3 w-3 shrink-0 rounded-full border-2 border-dutchOrange bg-[#16181d]" aria-hidden />
               The bag, {said.where}
             </figcaption>
           </figure>
-          <div className="mt-4 border-t border-hairline pt-4">
+          <div className="mt-3 border-t border-hairline pt-3">
             <Gate checks={stage.gate} />
           </div>
         </div>
         {/* the drawings are for wide screens; on a phone each slide keeps to one picture, the screenshot */}
-        {beside.length ? <div className="hidden gap-5 lg:grid">{beside.map((e) => <Fragment key={e}>{EXTRA[e]}</Fragment>)}</div> : null}
+        {beside.length ? <div className="hidden gap-4 lg:grid">{beside.map((e) => <Fragment key={e}>{STAGE_PICTURE[e]}</Fragment>)}</div> : null}
       </div>
     </article>
   );
@@ -176,7 +177,8 @@ export function Journey() {
   const [active, setActive] = useState(0);
   const animated = useAnimated();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.5", "end 0.5"] });
-  const along = useTransform(scrollYProgress, (p) => railPosition(p, mids.current));
+  const raw = useTransform(scrollYProgress, (p) => railPosition(p, mids.current));
+  const along = useSpring(raw, { stiffness: 90, damping: 22, mass: 0.6 });
   const tagY = useTransform(along, (v) => `${v * 100}%`);
   useMotionValueEvent(along, "change", (v) => setActive(Math.min(N - 1, Math.max(0, Math.floor(v * N)))));
 
@@ -202,7 +204,7 @@ export function Journey() {
   }, []);
 
   return (
-    <div ref={ref} className="relative lg:grid lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-12">
+    <div ref={ref} className="relative lg:grid lg:grid-cols-[9rem_minmax(0,1fr)] lg:gap-10">
       {/* wide screens: the rail stays beside the panels while they scroll */}
       <nav aria-label="Stages of the journey" className="hidden lg:block">
         <div className="sticky top-24">
@@ -221,7 +223,7 @@ export function Journey() {
                   <a
                     href={`#stage-${s.key}`}
                     aria-current={active === i ? "step" : undefined}
-                    className={`flex h-14 items-center gap-3 pl-10 text-sm transition-colors duration-150 hover:text-primary ${active === i ? "font-semibold text-primary" : "text-secondary"}`}
+                    className={`flex h-11 items-center gap-3 pl-9 text-[13px] transition-colors duration-150 hover:text-primary ${active === i ? "font-semibold text-primary" : "text-secondary"}`}
                   >
                     <span className={`font-mono text-xs ${active === i ? "text-link" : "text-muted"}`}>{s.n}</span>
                     {s.name}

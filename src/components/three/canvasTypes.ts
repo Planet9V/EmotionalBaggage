@@ -1,5 +1,6 @@
 import { type PartGeometry } from "./layout";
 import { type Mesh, type ShellParams } from "./stl";
+import { type ShowcaseOptions } from "./canvasShowcase";
 
 export type CanvasPart = {
   id: number;
@@ -74,4 +75,6 @@ export type ModelCanvasProps = {
   onMeasure: (m: Measurement) => void;
   /** Routed wires; drawn as tubes when assembled. */
   routed: RoutedDraw[];
+  /** Presentation extras for the public welcome page: turntable, wireframe, Ctrl + wheel zoom. Not used by the app's own view. */
+  showcase?: ShowcaseOptions;
 };

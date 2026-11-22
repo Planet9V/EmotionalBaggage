@@ -369,15 +369,35 @@ html.light main {
 /* ==========================================================================
    The public welcome page (/welcome). Every rule here moves transform or opacity only, and every one
    sits inside "no preference", so a visitor who asks for reduced motion gets the still page.
-   Nothing here starts by itself and runs past five seconds: loops are tied to a state that script
-   sets for a moment (speaking, flapping), to hover or focus, or they stop after a set count.
+   The loops run for as long as the page is open (owner, 22 Nov). The visitor's own reduce-motion setting
    ========================================================================== */
 .wl-ring { transform-box: fill-box; transform-origin: center; }
 .wl-dark-on { opacity: 0.62; }
+.wl-wheel, .wl-swing, .wl-grow, .wl-breathe { transform-box: fill-box; transform-origin: center; }
+.wl-swing { transform-origin: 50% 0; }
+.wl-grow { transform-origin: 0 50%; }
+.wl-roll { transform-box: fill-box; transform-origin: 50% 100%; }
+.wl-fan { transform-box: view-box; transform-origin: 160px 300px; transform: rotate(var(--turn)); }
+.wl-pulse { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .wl-ring-on { animation: wl-ring 1.1s ease-out infinite; }
   .wl-ring-brief { animation: wl-ring 1.1s ease-out 3; }
-  .wl-flapping { animation: wl-flap 120ms linear infinite; }
+  /* the bag: wheels turning, a slight lean and bob, the ground sliding past, the tag swinging */
+  .wl-wheel { animation: wl-turn 1.1s linear infinite; }
+  .wl-hurry .wl-wheel { animation-duration: 0.35s; }
+  .wl-roll { animation: wl-roll 0.9s ease-in-out infinite; }
+  .wl-ground { animation: wl-ground 0.55s linear infinite; }
+  .wl-hurry .wl-ground { animation-duration: 0.2s; }
+  .wl-swing { animation: wl-swing 2.6s ease-in-out infinite; }
+  .wl-nod { animation: wl-nod 620ms var(--ease-out-soft) both; }
+  /* the drawings */
+  .wl-caret { animation: wl-blink 1.1s steps(1) infinite; }
+  .wl-grow { animation: wl-grow 5s ease-in-out infinite alternate; }
+  .wl-fan { animation: wl-fan 6s ease-in-out infinite; }
+  .wl-seq { animation: wl-seq 6s ease-in-out infinite; }
+  .wl-breathe { animation: wl-breathe 3s ease-in-out infinite; }
+  .wl-pan img { animation: wl-pan 22s ease-in-out infinite alternate; }
+  .wl-pulse { animation: wl-pulse 900ms ease-out both; }
   .wl-rise { animation: wl-rise 350ms var(--ease-out-soft) both; }
   .wl-weigh { animation: wl-weigh 1s var(--ease-out-soft) both; transform-origin: 50% 100%; }
   .wl-toss { animation: wl-toss 1.1s cubic-bezier(0.3, 0, 0.6, 1) both; transform-origin: 50% 100%; }
@@ -386,17 +406,20 @@ html.light main {
   .wl-zzz > span { animation: wl-zzz 1.8s ease-out 2 both; }
   .wl-zzz > span:nth-child(2) { animation-delay: 300ms; }
   .wl-zzz > span:nth-child(3) { animation-delay: 600ms; }
-  .wl-card:hover .wl-caret, .wl-card:focus-within .wl-caret { animation: wl-blink 1s steps(1) infinite; }
-  .wl-card:hover .wl-bob, .wl-card:focus-within .wl-bob { animation: float 2.4s ease-in-out infinite; }
-  .wl-card:hover .wl-sum > *, .wl-card:focus-within .wl-sum > * { animation: wl-rise 300ms var(--ease-out-soft) both; }
-  .wl-card .wl-sum > :nth-child(2) { animation-delay: 90ms; }
-  .wl-card .wl-sum > :nth-child(3) { animation-delay: 180ms; }
-  .wl-card .wl-sum > :nth-child(4) { animation-delay: 270ms; }
-  .wl-card .wl-sum > :nth-child(5) { animation-delay: 360ms; }
   .wl-tick { animation: wl-tick 300ms var(--ease-out-soft) both; }
 }
+@keyframes wl-turn { to { transform: rotate(360deg); } }
+@keyframes wl-roll { 0%, 100% { transform: rotate(1.6deg) translateY(0); } 50% { transform: rotate(2.2deg) translateY(-2.5px); } }
+@keyframes wl-ground { to { transform: translateX(-24px); } }
+@keyframes wl-swing { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(9deg); } }
+@keyframes wl-nod { 0% { transform: none; } 30% { transform: translateY(-7px) rotate(-2.5deg); } 60% { transform: translateY(1px) rotate(1.5deg); } 100% { transform: none; } }
+@keyframes wl-grow { from { transform: scaleX(0.35); } to { transform: scaleX(1); } }
+@keyframes wl-fan { 0%, 12% { transform: rotate(0deg); } 45%, 80% { transform: rotate(var(--turn)); } 100% { transform: rotate(0deg); } }
+@keyframes wl-seq { 0%, 8% { opacity: 0; transform: translateX(-6px); } 20%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+@keyframes wl-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes wl-pan { from { transform: scale(1.05) translate(-1.6%, -1.2%); } to { transform: scale(1.05) translate(1.6%, 1.2%); } }
+@keyframes wl-pulse { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.35, 1.9); } }
 @keyframes wl-ring { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.45); opacity: 0; } }
-@keyframes wl-flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.72); } }
 @keyframes wl-rise { from { transform: translateY(20px); opacity: 0.35; } to { transform: none; opacity: 1; } }
 @keyframes wl-tick { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes wl-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
@@ -423,3 +446,29 @@ html.light main {
 
 /* The welcome page's drawings: every outline keeps its 2 px width however large the picture is shown. */
 .wl-ill :is(path, rect, circle, ellipse, line, polygon, polyline) { vector-effect: non-scaling-stroke; }
+
+/* The departures board (DeparturesBoard.tsx). Sizes are in em, and the board's font size follows its own width,
+   so the whole grid of cells scales as one piece and always fits: 44 cells across from sm up; on a phone the
+   time column is dropped and the remarks sit on a second line. */
+.wl-board { container-type: inline-size; }
+.wl-board-row { display: flex; flex-wrap: wrap; align-items: center; column-gap: 0.9em; row-gap: 0.35em; padding: 0.42em 0; font-size: clamp(9px, calc((100cqw - 1em) / 33), 15px); }
+.wl-board-row + .wl-board-row { border-top: 1px solid var(--border-hairline); }
+.wl-board-row > span { display: inline-flex; }
+.wl-board-row [data-col="time"] { display: none; }
+.wl-board-row [data-col="remarks"] { flex-basis: 100%; }
+.wl-board-head { padding: 0.2em 0; }
+.wl-board-head [data-col="remarks"] { display: none; }
+@media (min-width: 640px) {
+  .wl-board-row { flex-wrap: nowrap; font-size: clamp(9px, calc(100cqw / 66.8), 17px); }
+  .wl-board-row [data-col="time"], .wl-board-head [data-col="remarks"] { display: inline-flex; }
+  .wl-board-row [data-col="remarks"] { flex-basis: auto; }
+}
+.wl-flap { position: relative; display: inline-block; width: 1.3em; height: 1.8em; margin-right: 0.13em; contain: strict; font-weight: 600; }
+.wl-flap > i { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: #1d2027; font-style: normal; backface-visibility: hidden; }
+.wl-flap > i > b { display: block; height: 200%; line-height: 1.8em; text-align: center; font-weight: inherit; }
+.wl-flap > i:nth-child(1), .wl-flap > i:nth-child(3) { top: 0; border-radius: 0.16em 0.16em 0 0; transform-origin: 50% 100%; }
+.wl-flap > i:nth-child(2), .wl-flap > i:nth-child(4) { bottom: 0; border-radius: 0 0 0.16em 0.16em; background: #181b21; transform-origin: 50% 0; }
+.wl-flap > i:nth-child(2) > b, .wl-flap > i:nth-child(4) > b { transform: translateY(-50%); }
+.wl-flap > i:nth-child(3), .wl-flap > i:nth-child(4) { z-index: 1; }
+/* the hinge, and the shadow it throws on the lower half */
+.wl-flap::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.5px); height: 1px; background: #0b0c0e; box-shadow: 0 1px 2px rgb(0 0 0 / 0.55); z-index: 2; }

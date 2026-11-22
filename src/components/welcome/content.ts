@@ -277,11 +277,48 @@ export type BagLineKey = keyof typeof BAG_LINES;
 /** The order the hero's speech bubble cycles through. */
 export const HERO_LINES: BagLineKey[] = ["scale", "lifted", "impact", "conveyor", "carousel", "hold", "souvenirs"];
 
+/**
+ * The departures board. Each row is a stage: its gate, what it is about before it is called, and one remark that
+ * is a fact about the worked example (the seeded claims are all unverified, so Research is delayed; the rest are
+ * the EXAMPLE figures). The board runs through BOARD_STATES in a loop: nothing called yet, then each gate called
+ * in turn. Everything else on it is a status word.
+ */
 export const BOARD = {
-  title: "Seven gates, one bag",
-  lead: `Today's departure is ${EXAMPLE.name}.`,
+  title: "Seven stages, called in turn",
+  lead: `Seven gates, one bag. The board calls each stage in turn; the remarks are ${EXAMPLE.name}'s own figures.`,
   flight: EXAMPLE.name,
+  columns: { time: "Time", destination: "Destination", gate: "Gate", status: "Status", remarks: "Remarks" },
+  /** how wide each column is, in flap cells */
+  cells: { time: 5, destination: 10, gate: 2, status: 9, remarks: 18 },
+  rows: [
+    { n: "01", name: "Concept", about: "The idea", fact: `${EXAMPLE.documents} source docs` },
+    { n: "02", name: "Research", about: "The sources", fact: "9 claims to verify", delayed: true },
+    { n: "03", name: "Design", about: "The parts", fact: `${EXAMPLE.parts} parts ${EXAMPLE.wires} wires` },
+    { n: "04", name: "Prototype", about: "The build", fact: "Build 7h10" },
+    { n: "05", name: "Production", about: "The cost", fact: `Parts cost ${EXAMPLE.partsCost.toFixed(2)}` },
+    { n: "06", name: "Marketing", about: "The launch", fact: `${EXAMPLE.voicePacks.length} voice packs` },
+    { n: "07", name: "Sales", about: "The listing", fact: "0 live accounts" },
+  ] as { n: string; name: string; about: string; fact: string; delayed?: boolean }[],
 };
+
+type BoardTone = "plain" | "good" | "late";
+export type BoardRow = { time: string; destination: string; gate: string; status: string; remarks: string; tone: BoardTone };
+
+/** The board with gate `called` (1 to 7) boarding and every earlier one gone; 0 is the board before any call. */
+function boardState(called: number): BoardRow[] {
+  return BOARD.rows.map((r, i) => {
+    const at = i + 1;
+    const base = { destination: r.name, gate: r.n };
+    if (at > called) return { ...base, time: at === called + 1 ? "Next" : "Later", status: "Scheduled", remarks: r.about, tone: "plain" };
+    if (r.delayed) return { ...base, time: at === called ? "Now" : "Held", status: "Delayed", remarks: r.fact, tone: "late" };
+    return { ...base, time: at === called ? "Now" : "Gone", status: at === called ? "Boarding" : "Departed", remarks: r.fact, tone: "good" };
+  });
+}
+
+export const BOARD_STATES: BoardRow[][] = Array.from({ length: BOARD.rows.length + 1 }, (_, k) => boardState(k));
+/** What the server sends and what stays put without motion: the last state, where every row shows its fact. */
+export const BOARD_REST = BOARD_STATES.length - 1;
+
 
 export type JourneyStage = {
   key: string;
@@ -301,6 +338,42 @@ export type JourneyStage = {
   /** up to three of this stage's gate checks, worded as src/lib/process/definitions.ts words them */
   gate: string[];
   extras?: ("exploded" | "layers" | "cost" | "ads" | "listing" | "schematic")[];
+};
+
+/** The engineering showcase: the app's own views, live on the page, on the example's own rows. */
+export const ENGINEERING = {
+  title: "The engineering, live",
+  lead: `These are not pictures of the app. They are the app's own views, running here on ${EXAMPLE.name}'s rows: the parts you enter are the model you turn.`,
+  model: {
+    title: "The 3D model",
+    text: "Every part placed from the size you entered, inside the enclosure the app generates around them. Drag to turn it; the wires are the schematic's.",
+    real: "The app's own 3D view, on the example's seeded parts and wires.",
+    illustrative: "As the app says of this example: the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
+    hint: "Drag to turn. Ctrl or Cmd + wheel to zoom.",
+    still: "A still of the 3D view. Motion is reduced on this device, so the live view waits for you.",
+    open: "Open the live 3D view",
+    modes: { solid: "Solid", translucent: "Translucent", wireframe: "Wireframe", exploded: "Exploded" },
+  },
+  bom: {
+    title: "The parts list",
+    text: "Sixteen lines, entered once. This list is what draws the model above, the schematic, the enclosure, the build sheet and the unit cost.",
+    real: "The example's seeded parts list, priced by the app's own price rule. Select a column heading to sort. On a narrow screen the specification and source columns are left out.",
+    columns: { ref: "Ref", title: "Part", spec: "Specification", qty: "Qty", source: "Source", line: "Line cost" },
+    total: "Total",
+  },
+};
+
+/** The page each screenshot is of, as scripts/landing-shots.mjs opens it: shown in the frame's address bar. */
+export const SHOT_PATH: Record<string, string> = {
+  schematic: "/s/design/schematic",
+  model: "/s/design/model",
+  enclosure: "/s/design/enclosure",
+  process: "/process",
+  plan: "/plan",
+  social: "/s/marketing/social",
+  launch: "/s/marketing/launch",
+  wiring: "/s/prototype/wiring",
+  chat: "/chat",
 };
 
 export const JOURNEY_INTRO = {
@@ -459,8 +532,8 @@ export const MAP = {
 export const MAP_LABEL = new Map<string, string>(MAP.stages.flatMap((s) => [[s.key, s.name] as [string, string], ...s.makes]));
 
 export const POKE = {
-  title: "Go on, poke the bag",
-  lead: "The puck reads motion and answers back. This one is a drawing, so it is quiet, but it has the same opinions.",
+  title: "Try the bag",
+  lead: "The puck reads motion and answers back. This one is a drawing, so it is quiet.",
   idle: "Pick something to do to the bag.",
   actions: [
     { key: "weigh", label: "Weigh it", line: "scale" },

@@ -2,7 +2,7 @@
 // colour that keeps its width at any size (the .wl-ill rule in globals.css), fills are the Eigenia tokens, and
 // the one accent is Dutch orange. Nothing here is a photograph or a generated image; the app's own screenshots
 // are the proof, these are the diagrams. All are decorative unless a caller gives them a label.
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { EXAMPLE } from "./content";
 
 const INK = "var(--text-primary)";
@@ -102,11 +102,12 @@ export function IdeaScreen({ className }: { className?: string }) {
       <T x={30} y={68} mono size={10} fill="var(--link)">Pitch</T>
       <T x={30} y={92} size={17} bold fill={INK}>A gadget that gives</T>
       <T x={30} y={114} size={17} bold fill={INK}>a suitcase a voice.</T>
+      <path d="M196 100v17" className="wl-caret" stroke={ORANGE} />
       <path d="M30 136h260" stroke={LINE} />
       <T x={30} y={158} mono size={10}>Origin</T>
-      <path d="M84 154h150" stroke={LINE} strokeWidth="6" />
+      <path d="M84 154h150" className="wl-grow" stroke={LINE} strokeWidth="6" />
       <T x={30} y={178} mono size={10}>Voice</T>
-      <path d="M84 174h110" stroke={LINE} strokeWidth="6" />
+      <path d="M84 174h110" className="wl-grow" style={{ animationDelay: "-2s" }} stroke={LINE} strokeWidth="6" />
       <T x={30} y={198} mono size={10}>Sources</T>
       <rect x="84" y="187" width="92" height="16" rx="8" fill={SHADE} strokeWidth="1.5" />
       <T x={130} y={198.5} mono size={10} anchor="middle" fill={INK}>{EXAMPLE.documents} documents</T>
@@ -115,7 +116,7 @@ export function IdeaScreen({ className }: { className?: string }) {
 }
 
 /** A corner of the schematic: the series resistor, the audio module and the speaker, in the app's net styles. */
-export function SchematicFragment({ className }: { className?: string }) {
+export function SchematicFragment({ className, children }: { className?: string; /** drawn over the nets: the travelling pulse */ children?: ReactNode }) {
   return (
     <Svg viewBox="0 0 360 200" className={className}>
       {/* power in, ground out */}
@@ -146,42 +147,7 @@ export function SchematicFragment({ className }: { className?: string }) {
       <T x={300} y={64} mono size={10}>SPK1</T>
       <T x={258} y={76} mono size={9} fill="var(--net-audio)">SPK_P</T>
       <T x={258} y={134} mono size={9} fill="var(--net-audio)">SPK_N</T>
-    </Svg>
-  );
-}
-
-const STACK_SCALE = 2.5; // px per dollar
-const CALLED_OUT = ["MCU dev board", "Battery holder", "Enclosure"];
-
-/** The parts list as a stack: sixteen slabs, each as tall as its price, adding up to the total. */
-export function CostStack({ className }: { className?: string }) {
-  const slabs = EXAMPLE.partLines.map(([name, price], i) => ({
-    name,
-    price,
-    i,
-    at: EXAMPLE.partLines.slice(0, i).reduce((sum, [, p]) => sum + p * STACK_SCALE, 0),
-  }));
-  return (
-    <Svg viewBox="0 0 300 246" className={className}>
-      <g transform="translate(92 184)">
-        <polygon points={poly(iso(-12, -12), iso(72, -12), iso(72, 72), iso(-12, 72))} fill={SHADE} stroke={LINE} />
-        {slabs.map((s) => {
-          const hot = CALLED_OUT.includes(s.name);
-          return <IsoBox key={s.i} x={0} y={0} z={s.at} w={60} d={60} h={Math.max(1, s.price * STACK_SCALE)} top={hot ? ORANGE : PAPER} left={hot ? ORANGE : PAPER} right={hot ? ORANGE : SHADE} />;
-        })}
-        {slabs
-          .filter((s) => CALLED_OUT.includes(s.name))
-          .map((s) => {
-            const [x, y] = iso(60, 30, s.at + (s.price * STACK_SCALE) / 2);
-            return (
-              <g key={s.i}>
-                <path d={`M${x + 4} ${y}h26`} stroke={LINE} />
-                <T x={x + 36} y={y - 1} size={11} fill={INK}>{s.name}</T>
-                <T x={x + 36} y={y + 12} mono size={10}>${s.price.toFixed(2)}</T>
-              </g>
-            );
-          })}
-      </g>
+      {children}
     </Svg>
   );
 }
@@ -189,14 +155,16 @@ export function CostStack({ className }: { className?: string }) {
 /** Three ad drafts fanned out, one per voice pack, each still waiting for a yes. */
 export function AdFan({ className }: { className?: string }) {
   const card = (name: string, turn: number, front: boolean) => (
-    <g key={name} transform={`rotate(${turn} 160 300)`}>
+    <g key={name} className="wl-fan" style={{ "--turn": `${turn}deg` } as CSSProperties}>
       <rect x="104" y="36" width="112" height="150" rx="10" fill={front ? PAPER : SHADE} />
       <PuckFace cx={128} cy={60} r={11} />
       <T x={146} y={58} size={11} bold fill={INK}>{name}</T>
       <T x={146} y={71} mono size={9}>voice pack</T>
       <path d="M118 96h84M118 110h84M118 124h52" stroke={LINE} strokeWidth="6" />
-      <rect x="118" y="150" width="48" height="20" rx="10" fill={front ? "var(--accent-orange-subtle)" : "none"} stroke={ORANGE} strokeWidth="1.5" />
-      <T x={142} y={164} mono size={10} anchor="middle" fill="var(--link)">Draft</T>
+      <g className={front ? "wl-breathe" : undefined}>
+        <rect x="118" y="150" width="48" height="20" rx="10" fill={front ? "var(--accent-orange-subtle)" : "none"} stroke={ORANGE} strokeWidth="1.5" />
+        <T x={142} y={164} mono size={10} anchor="middle" fill="var(--link)">Draft</T>
+      </g>
     </g>
   );
   const [a, b, c] = EXAMPLE.voicePacks;
@@ -222,14 +190,16 @@ export function ListingCard({ className }: { className?: string }) {
       <T x={156} y={48} size={14} bold fill={INK}>{EXAMPLE.name}</T>
       <T x={156} y={66} size={10}>A puck that straps to a suitcase</T>
       <T x={156} y={79} size={10}>and heckles the trip.</T>
-      {[100, 118, 136].map((y) => (
-        <g key={y}>
+      {[100, 118, 136].map((y, i) => (
+        <g key={y} className="wl-seq" style={{ animationDelay: `${i * 0.5}s` }}>
           <path d={`M157 ${y}l4 4 7-8`} stroke={ORANGE} />
           <path d={`M178 ${y}h${y === 136 ? 70 : 108}`} stroke={LINE} strokeWidth="6" />
         </g>
       ))}
-      <rect x="156" y="154" width="52" height="20" rx="10" fill="var(--accent-orange-subtle)" stroke={ORANGE} strokeWidth="1.5" />
-      <T x={182} y={168} mono size={10} anchor="middle" fill="var(--link)">Draft</T>
+      <g className="wl-breathe">
+        <rect x="156" y="154" width="52" height="20" rx="10" fill="var(--accent-orange-subtle)" stroke={ORANGE} strokeWidth="1.5" />
+        <T x={182} y={168} mono size={10} anchor="middle" fill="var(--link)">Draft</T>
+      </g>
       <T x={218} y={168} mono size={10}>not live yet</T>
     </Svg>
   );
