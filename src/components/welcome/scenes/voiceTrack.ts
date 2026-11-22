@@ -9,7 +9,7 @@ import { decodeEnvelope, levelAt } from "@/lib/voice/envelope";
 import { cueName, type Scene } from "./scenes";
 
 /** One published clip, as the page is given it. */
-export type VoiceClipInfo = { url: string; seconds: number; envelope: string };
+type VoiceClipInfo = { url: string; seconds: number; envelope: string };
 export type VoiceManifest = Record<string, VoiceClipInfo>;
 
 // --- Rules (pure) ------------------------------------------------------------------------------------------

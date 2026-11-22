@@ -12,7 +12,7 @@ import { decodeAudio } from "@/lib/voice/decode";
 import { decodeEnvelope, envelopeOf } from "@/lib/voice/envelope";
 import { SEED_VOICEOVERS_DIR, readVoiceoverManifest, seedVoiceovers } from "@/lib/voice/seedVoiceovers";
 import { VOICEOVERS_KEY, publicVoiceovers, readVoiceovers } from "@/lib/voice/voiceovers";
-import { CAST, VOICE_CUES } from "@/components/welcome/scenes/voiceScript";
+import { CAST, INTRO, INTRO_CUE, VOICE_CUES } from "@/components/welcome/scenes/voiceScript";
 import { GET as serve } from "@/app/api/voiceovers/[cue]/route";
 import { GET as list, POST as act } from "@/app/api/admin/voiceovers/route";
 import { GET as takeGet } from "@/app/api/admin/voiceovers/take/[cue]/route";
@@ -111,6 +111,9 @@ describe("the clips that come with the example", () => {
       if (cue.window !== null) expect(c.seconds, c.cue).toBeLessThanOrEqual(cue.window);
     }
     expect(total).toBeLessThan(1024 * 1024);
+    // the introduction's subtitles are timed to its clip: the last line ends as the clip does
+    const intro = manifest.clips.find((c) => c.cue === INTRO_CUE)!;
+    expect(Math.abs(INTRO.lines.at(-1)!.end - intro.seconds)).toBeLessThan(0.1);
   });
 
   it("are in the files store on a fresh install, in the folder Voice-overs, published, each with its cue, speaker, words, voice, length and envelope", async () => {

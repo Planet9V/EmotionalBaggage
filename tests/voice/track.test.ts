@@ -62,8 +62,9 @@ describe("the cues of the film", () => {
       expect(cue.text).toBe(l.text);
       expect(cue.who).toBe(l.who);
       for (const part of Object.values(cue.direction)) expect(part.length).toBeGreaterThan(10);
-      // what is sent to the voice is the same words: only case, punctuation and spacing may differ
-      const words = (s: string) => s.toLowerCase().replace(/[^a-z' ]+/g, " ").trim().split(/\s+/).join(" ");
+      // what is sent to the voice is the same words: only case, punctuation, spacing and the length of a held
+      // letter may differ ("Wheeee" is sent as "Whee", which the voice reads as one syllable)
+      const words = (s: string) => s.toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/([a-z])\1{2,}/g, "$1$1").trim().split(/\s+/).join(" ");
       expect(words(cue.say), l.key).toBe(words(cue.text));
       expect(cue.window).toBeGreaterThan(1);
     }

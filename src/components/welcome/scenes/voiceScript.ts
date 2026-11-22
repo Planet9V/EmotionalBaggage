@@ -24,7 +24,7 @@ type Direction = {
 /** The text sent to the voice for a cue, and its direction. The key is "<scene>-<line>", as cueName() gives it. */
 const PERFORMANCE: Record<string, { say: string; direction: Direction }> = {
   "handle-dinner": {
-    say: "Whoa, whoa, whoa! Are you gonna buy me dinner first?",
+    say: "Whoa whoa whoa! Are you gonna buy me dinner, first?",
     direction: {
       delivery: "Startled, then affronted: someone has just been picked up without being asked. The three whoas climb.",
       pace: "The whoas quick and even, about a third of a second each; the question slower and pointed.",
@@ -33,7 +33,7 @@ const PERFORMANCE: Record<string, { say: string; direction: Direction }> = {
     },
   },
   "scale-fat": {
-    say: "Are you... calling me fat?!",
+    say: "Are you... calling me, fat?!",
     direction: {
       delivery: "Quiet disbelief turning to outrage. She has seen the number on the scale before anyone else has.",
       pace: "\"Are you\" slow and level; \"calling me\" clipped; \"FAT\" full volume, one syllable held.",
@@ -60,7 +60,7 @@ const PERFORMANCE: Record<string, { say: string; direction: Direction }> = {
     },
   },
   "toss-ow": {
-    say: "Ow! ...I felt that in my flip-flops.",
+    say: "Ow! ...I felt that, in my flip-flops.",
     direction: {
       delivery: "A sharp yelp on impact, then small, wounded dignity from the belt.",
       pace: "\"OW\" instant, on the thud. The second half slow and flat.",
@@ -78,7 +78,7 @@ const PERFORMANCE: Record<string, { say: string; direction: Direction }> = {
     },
   },
   "hold-dark": {
-    say: "In the dark.",
+    say: "In. The. Dark.",
     direction: {
       delivery: "Flat, aimed at whoever left her there. The lowest pitch she has in the film.",
       pace: "Slow, three even words.",
@@ -87,7 +87,7 @@ const PERFORMANCE: Record<string, { say: string; direction: Direction }> = {
     },
   },
   "carousel-whee": {
-    say: "Wheeee! Again! Again!",
+    say: "Whee! Again!! Again!",
     direction: {
       delivery: "Pure delight, a child on a fairground ride; all the dignity of the earlier scenes gone.",
       pace: "\"Wheeee\" long and rising through the bend; the two \"Again\"s fast, the second higher.",
@@ -105,7 +105,7 @@ const PERFORMANCE: Record<string, { say: string; direction: Direction }> = {
     },
   },
   "button-souvenirs": {
-    say: "Sixty-two pounds? That's mostly souvenirs!",
+    say: "Sixty-two pounds?! That's mostly... souvenirs!",
     direction: {
       delivery: "Reading the display in disbelief, then a prepared defence, indignant.",
       pace: "The number slow, each word weighed; the defence quick, with \"SOUVENIRS\" hit hard.",
@@ -150,12 +150,12 @@ export const INTRO_CUE = "intro";
 export const INTRO = {
   title: "Introduction",
   lines: [
-    { at: 0, end: 0, shot: "handle", text: "It started as a joke." },
-    { at: 0, end: 0, shot: "handle", text: "A quick gag: a device that goes on luggage that is the comedic relief of all the airport luggage moments of absurdity." },
-    { at: 0, end: 0, shot: "scale", text: "It knows when it's being weighed." },
-    { at: 0, end: 0, shot: "toss", text: "When it's being thrown." },
-    { at: 0, end: 0, shot: "hold", text: "When it's been upside down in the dark for four hours." },
-    { at: 0, end: 0, shot: "scale", text: "And it is NOT happy about it." },
+    { at: 0, end: 1.84, shot: "handle", text: "It started as a joke." },
+    { at: 2.39, end: 10.23, shot: "handle", text: "A quick gag: a device that goes on luggage that is the comedic relief of all the airport luggage moments of absurdity." },
+    { at: 10.73, end: 12.64, shot: "scale", text: "It knows when it's being weighed." },
+    { at: 12.94, end: 14.35, shot: "toss", text: "When it's being thrown." },
+    { at: 14.65, end: 18.0, shot: "hold", text: "When it's been upside down in the dark for four hours." },
+    { at: 18.8, end: 20.77, shot: "scale", text: "And it is NOT happy about it." },
   ] as { at: number; end: number; shot: SceneId; text: string }[],
   direction: {
     delivery: "A documentary narrator who takes the subject entirely seriously: warm, unhurried, British. He is describing wildlife.",
@@ -187,15 +187,19 @@ export const VOICE_CUES: VoiceCue[] = [
 export const cueOf = (key: string) => VOICE_CUES.find((c) => c.key === key);
 
 /**
+ * "say" above is what Admin, Voice-overs sends when it generates a line in one piece: the spellings that the seeded
+ * clips showed Kokoro reads right ("Whee", not "Wheeee", which it reads as two syllables; "fat", not "FAT", which it
+ * spells out). The seeded clips themselves were assembled phrase by phrase (see the design document).
+ *
  * The cast: one voice of the Kokoro model (v1.0, 82 million parameters, Apache-2.0) per speaker. These are the
  * voices of the clips that come with the example, and what Admin, Voice-overs offers first for each speaker.
  */
 export const CAST: Record<Speaker, { model: string; voice: string; speed: number; why: string }> = {
-  bag: { model: "kokoro", voice: "af_bella", speed: 1, why: "TBD" },
-  agent: { model: "kokoro", voice: "af_sarah", speed: 1.1, why: "TBD" },
-  host: { model: "kokoro", voice: "am_michael", speed: 0.95, why: "TBD" },
-  stranger: { model: "kokoro", voice: "am_puck", speed: 1, why: "TBD" },
-  narrator: { model: "kokoro", voice: "bm_george", speed: 1, why: "TBD" },
+  bag: { model: "kokoro", voice: "af_heart", speed: 1, why: "The widest pitch movement of the five voices tried (8.6 semitones on average), so outrage and delight read; every one of her phrases has a take both recognisers heard right." },
+  agent: { model: "kokoro", voice: "af_sarah", speed: 1.1, why: "Level and businesslike; a touch fast, as someone who has said it all day." },
+  host: { model: "kokoro", voice: "am_michael", speed: 0.95, why: "A low, tired American voice, slowed a little for the resigned lines." },
+  stranger: { model: "kokoro", voice: "am_puck", speed: 1, why: "Bright and quick: a passer-by who has to sound unprompted." },
+  narrator: { model: "kokoro", voice: "bm_george", speed: 1, why: "A grave British documentary voice, which makes the owner's words sound like natural history." },
 };
 
 /** The words of the sound control and the lines beside it. */
@@ -205,7 +209,7 @@ export const SOUND = {
   on: "Sound on",
   off: "Sound off",
   none: "No voice-overs yet: subtitles only",
-  synthetic: "The voices are synthetic: made with Kokoro, an open speech model. No person was recorded.",
+  synthetic: "The voices are synthetic: made with Kokoro, an open speech model (Apache-2.0). No person was recorded.",
   transcript: "Introduction: transcript",
   skip: "Skip the introduction",
 };

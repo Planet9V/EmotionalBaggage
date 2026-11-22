@@ -227,6 +227,19 @@
       "changes": "None. The files are as the package ships them (about 7.6 MB of wasm)."
     },
     {
+      "name": "mpg123 (compiled to WebAssembly inside the npm package mpg123-decoder)",
+      "version": "as carried by mpg123-decoder 1.0.3",
+      "license": "LGPL-2.1 (mpg123); the npm package mpg123-decoder itself declares MIT",
+      "licenseEvidence": "mpg123-decoder's package.json declares MIT and its README says it is 'Based on mpg123'; mpg123 is published under the GNU LGPL 2.1 (https://www.mpg123.de/). The package ships no licence file for the mpg123 part; the owner should confirm that using the unmodified package as a library on the server is acceptable (D13 covers OrcaSlicer and WireViz only).",
+      "use": "linked library",
+      "referencedIn": [
+        "src/lib/voice/decode.ts",
+        "package.json"
+      ],
+      "source": "https://www.mpg123.de/",
+      "changes": "None. Used through the npm package, unmodified, on the server only, to measure the length and loudness of a voice-over clip an administrator accepts."
+    },
+    {
       "name": "WireViz (Python package, run as a command)",
       "version": "0.4.1",
       "license": "GPL-3.0",

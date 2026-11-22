@@ -22,8 +22,8 @@ import { encodeEnvelope, envelopeOf } from "./envelope";
 import { getSpeechSynthesizer, SpeechError } from "./speech";
 
 export const VOICEOVERS_KEY = "voice.overs";
-export const VOICEOVER_KIND = "voiceover";
-export const VOICEOVER_FOLDER = "Voice-overs";
+const VOICEOVER_KIND = "voiceover";
+const VOICEOVER_FOLDER = "Voice-overs";
 /** The longest clip kept: the introduction is about twenty seconds; anything much longer is not a cue of this film. */
 const MAX_SECONDS = 45;
 const MAX_VERSIONS = 20;
