@@ -9,7 +9,7 @@ import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
-import { bump, clamp01, kf } from "./ease";
+import { bump, clamp01, kf, mix } from "./ease";
 import { A, Bag, Built, C, Contact, Figure, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 
 // ---- the dark hold --------------------------------------------------------------------------------------------
@@ -21,27 +21,33 @@ const DECK = 0.5;
 const dark = (t: number) => kf(t, [[DARK_FROM, 0], [DARK, 1, "in"]]);
 
 const HOLD_LOOK: Look = {
-  sky: ["#05080f", "#0a1120"],
-  fog: ["#070b15", 7, 22],
-  floor: "#1b2438",
-  key: { c: "#a9c6ff", i: 1.3, p: [2.2, 5.5, 4.6] },
-  fill: { sky: "#2c3d63", ground: "#080b12", i: 0.5 },
-  rim: { c: "#6d8fd0", i: 0.35, p: [-4, 3, -5] },
-  env: 0.07,
+  sky: ["#020409", "#060a14"],
+  fog: ["#04070e", 5, 17],
+  floor: "#151d30",
+  key: { c: "#7f9de0", i: 0.55, p: [2.2, 5.5, 4.6] },
+  fill: { sky: "#25365c", ground: "#05070c", i: 0.42 },
+  rim: { c: "#6d8fd0", i: 0.45, p: [-4, 3, -5] },
+  env: 0.05,
   reach: 5,
 };
 
+/** The seam the one shaft of light falls through, high on the right, and where it lands: on the bag. */
+const SEAM: V3 = [1.5, 5.4, 0.9];
+const LANDS: V3 = [0, DECK + 0.45, 0];
+
 function holdBag(t: number): BagPose {
   const droop = kf(t, [[8300, 0], [9100, 0.6], [9400, 0.6], [10300, 1]]);
+  // each call goes out with a little lift on its toes; each silence lets it down again
+  const call = bump(t, 4650, 5050) + 0.8 * bump(t, 5750, 6150);
   return {
-    p: [0, DECK, 0],
+    p: [0, DECK + 0.03 * call, 0],
     // it looks one way, then the other, then gives up and slumps
-    yaw: kf(t, [[4650, 0], [5000, 0.4], [5750, 0.4], [6150, -0.45], [6950, -0.45], [7400, 0]]),
-    sy: 1 + 0.035 * bump(t, 4650, 5600) - 0.07 * droop,
-    sx: 1 + 0.03 * droop,
-    pitch: 0.12 * droop,
+    yaw: kf(t, [[4650, 0], [5000, 0.45], [5750, 0.45], [6150, -0.5], [6950, -0.5], [7400, 0]]),
+    sy: 1 + 0.05 * call - 0.08 * droop - 0.03 * bump(t, 7000, 7500),
+    sx: 1 - 0.02 * call + 0.035 * droop,
+    pitch: 0.13 * droop,
     roll: 0.06 * droop,
-    glow: dark(t) * (0.75 + 0.2 * Math.sin(t / 700)),
+    glow: 0.2 + dark(t) * (0.9 + 0.1 * Math.sin(t / 700)),
   };
 }
 
@@ -67,7 +73,7 @@ function zedTexture() {
   return zed;
 }
 let shaft: THREE.CanvasTexture | null = null;
-/** The shaft of light, as a soft-edged wash: brightest down its middle and near the top. */
+/** The shaft of light, as a soft-edged wash: brightest down its middle, fading toward the seam it comes through. */
 function shaftTexture() {
   if (!shaft) {
     const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
@@ -75,14 +81,17 @@ function shaftTexture() {
     if (g) {
       const across = g.createLinearGradient(0, 0, 128, 0);
       across.addColorStop(0, "rgba(255,255,255,0)");
+      across.addColorStop(0.3, "rgba(255,255,255,0.45)");
       across.addColorStop(0.5, "rgba(255,255,255,1)");
+      across.addColorStop(0.7, "rgba(255,255,255,0.45)");
       across.addColorStop(1, "rgba(255,255,255,0)");
       g.fillStyle = across;
       g.fillRect(0, 0, 128, 128);
       g.globalCompositeOperation = "destination-in";
       const down = g.createLinearGradient(0, 0, 0, 128);
-      down.addColorStop(0, "rgba(0,0,0,0.9)");
-      down.addColorStop(0.75, "rgba(0,0,0,0.35)");
+      down.addColorStop(0, "rgba(0,0,0,0.25)");
+      down.addColorStop(0.2, "rgba(0,0,0,0.85)");
+      down.addColorStop(0.85, "rgba(0,0,0,0.75)");
       down.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = down;
       g.fillRect(0, 0, 128, 128);
@@ -91,6 +100,84 @@ function shaftTexture() {
   }
   return shaft;
 }
+let pool: THREE.CanvasTexture | null = null;
+/** Where the shaft lands: a soft round wash. */
+function poolTexture() {
+  if (!pool) {
+    const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
+    const g = c.getContext("2d");
+    if (g) {
+      const r = g.createRadialGradient(64, 64, 2, 64, 64, 63);
+      r.addColorStop(0, "rgba(255,255,255,0.9)");
+      r.addColorStop(0.5, "rgba(255,255,255,0.35)");
+      r.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = r;
+      g.fillRect(0, 0, 128, 128);
+    }
+    pool = new THREE.CanvasTexture(c);
+  }
+  return pool;
+}
+
+/** The shaft as two crossed soft planes along the line from the seam to the bag, so it reads as a beam from any angle. */
+function Shaft() {
+  const { pos, quat, len } = useMemo(() => {
+    const a = new THREE.Vector3(...SEAM);
+    const b = new THREE.Vector3(...LANDS).add(new THREE.Vector3(0, -0.5, 0));
+    const d = b.clone().sub(a);
+    return { pos: a.clone().add(b).multiplyScalar(0.5), quat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), d.clone().normalize()), len: d.length() };
+  }, []);
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  const clock = useClock();
+  useFrame(() => {
+    // the shaft is there from the start, but only reads once the door is shut; it breathes, very slightly
+    if (mat.current) mat.current.opacity = (0.16 + 0.34 * dark(clock.t)) * (1 + 0.05 * Math.sin(clock.t / 900));
+  });
+  return (
+    <group position={pos} quaternion={quat}>
+      {[0, Math.PI / 2].map((r) => (
+        <mesh key={r} rotation={[0, r, 0]}>
+          <planeGeometry args={[1.6, len]} />
+          <meshBasicMaterial ref={r ? undefined : mat} map={shaftTexture()} color="#9db8ff" transparent opacity={0.5} side={THREE.DoubleSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} fog={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** Dust hanging in the shaft, drifting down so slowly it might not be moving: the only thing that does. */
+function Motes() {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const clock = useClock();
+  const N = 26;
+  useFrame(() => {
+    const g = ref.current;
+    if (!g) return;
+    const t = clock.t;
+    for (let i = 0; i < N; i++) {
+      const f = ((i * 0.618 + t / 26000) % 1 + 1) % 1;
+      const along = 0.15 + 0.8 * (1 - f);
+      const spread = 0.12 + 0.3 * along;
+      m.position.set(
+        mix(LANDS[0], SEAM[0], along) + spread * Math.sin(i * 2.4 + t / 3100),
+        mix(LANDS[1], SEAM[1], along),
+        mix(LANDS[2], SEAM[2], along) + spread * Math.cos(i * 1.7 + t / 3700),
+      );
+      m.scale.setScalar(0.6 + (i % 3) * 0.3);
+      m.updateMatrix();
+      g.setMatrixAt(i, m.matrix);
+    }
+    g.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]} frustumCulled={false}>
+      <sphereGeometry args={[0.012, 6, 4]} />
+      <meshBasicMaterial color="#c9d8ff" transparent opacity={0.75} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} fog={false} />
+    </instancedMesh>
+  );
+}
+
 function Z({ i }: { i: number }) {
   const start = 9900 + i * 520;
   const mat = useRef<THREE.MeshBasicMaterial>(null);
@@ -99,8 +186,8 @@ function Z({ i }: { i: number }) {
       f={(g, t) => {
         const p = (t - start) / 1900;
         g.visible = p > 0 && p < 1;
-        g.position.set(0.42 + 0.26 * p + 0.05 * i, DECK + 0.62 + 0.36 * p, 0.25);
-        g.scale.setScalar(0.16 + 0.14 * p + 0.035 * i);
+        g.position.set(0.36 + 0.3 * p + 0.06 * i, DECK + 0.95 + 0.5 * p, 0.2);
+        g.scale.setScalar(0.17 + 0.16 * p + 0.04 * i);
         g.rotation.z = 0.2 * Math.sin(p * 4 + i);
         if (mat.current) mat.current.opacity = Math.min(1, p * 5) * (1 - p) ** 0.8;
       }}
@@ -108,40 +195,41 @@ function Z({ i }: { i: number }) {
     >
       <mesh>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial ref={mat} map={zedTexture()} color="#cfdcf7" transparent opacity={0} depthWrite={false} toneMapped={false} fog={false} />
+        <meshBasicMaterial ref={mat} map={zedTexture()} color="#dfe8ff" transparent opacity={0} depthWrite={false} toneMapped={false} fog={false} />
       </mesh>
     </A>
   );
 }
 
 const DIM = ["#2c3854", "#35304a", "#2a3d44", "#3a3340", "#27324a", "#3a3a30"];
+const BACK = -14;
 function hold(k: Kit) {
-  // floor tracks, with their rollers
+  // floor tracks, with their rollers, running away into the dark
   [-1.9, -0.62, 0.62, 1.9].forEach((x) => {
-    k.box([0.09, 0.03, 16], "#2d3a58", [x, 0.015, -2]);
-    for (let z = -8; z <= 4; z += 0.5) k.cyl(0.035, 0.12, "#40507a", [x, 0.04, z], { rot: [0, 0, Math.PI / 2], seg: 8 });
+    k.box([0.09, 0.03, 20], "#2d3a58", [x, 0.015, -5]);
+    for (let z = BACK; z <= 4; z += 0.6) k.cyl(0.035, 0.12, "#40507a", [x, 0.04, z], { rot: [0, 0, Math.PI / 2], seg: 6 });
   });
-  // the hull: ribs overhead, lining panels along the sides, a bulkhead at the back
-  for (let z = -7; z <= 3; z += 1.5) k.geo(new THREE.TorusGeometry(3.5, 0.09, 6, 28, Math.PI), "#27324c", [0, -0.2, z]);
+  // the hull: ribs overhead, lining panels along the sides, a bulkhead far at the back
+  for (let z = BACK + 1; z <= 3; z += 1.6) k.geo(new THREE.TorusGeometry(3.5, 0.09, 6, 24, Math.PI), "#27324c", [0, -0.2, z]);
   [-1, 1].forEach((s) => {
-    k.box([0.12, 1.7, 14], "#161e30", [s * 3.25, 0.85, -2], { rot: [0, 0, s * -0.16] });
-    k.box([0.1, 0.16, 14], "#33415f", [s * 3.12, 1.72, -2]);
+    k.box([0.12, 1.7, 20], "#161e30", [s * 3.25, 0.85, -5], { rot: [0, 0, s * -0.16] });
+    k.box([0.1, 0.16, 20], "#33415f", [s * 3.12, 1.72, -5]);
+    // a run of tiny amber lamps along each side, all off but one far down, for scale
+    for (let z = BACK + 2; z <= 2; z += 3.2) k.box([0.06, 0.06, 0.06], "#2b2a2a", [s * 3.06, 1.85, z]);
   });
-  k.box([9, 5, 0.2], "#121929", [0, 2.2, -7.2]);
-  // the cargo net across the hold, behind the cart: diamonds of webbing between two posts
-  const NET_Z = -2.6;
+  k.box([9, 5, 0.2], "#0e1422", [0, 2.2, BACK - 0.5]);
+  // the cargo net far behind, and everyone else's luggage strapped down beyond it: the bag is alone on its cart
+  const NET_Z = -6.5;
   for (let i = -8; i <= 8; i++) {
-    k.box([0.03, 4.4, 0.02], "#44557c", [i * 0.42, 1.45, NET_Z], { rot: [0, 0, 0.62] });
-    k.box([0.03, 4.4, 0.02], "#44557c", [i * 0.42, 1.45, NET_Z + 0.02], { rot: [0, 0, -0.62] });
+    k.box([0.03, 4.4, 0.02], "#33436a", [i * 0.42, 1.45, NET_Z], { rot: [0, 0, 0.62] });
+    k.box([0.03, 4.4, 0.02], "#33436a", [i * 0.42, 1.45, NET_Z + 0.02], { rot: [0, 0, -0.62] });
   }
-  k.box([7, 0.06, 0.05], "#55678f", [0, 2.95, NET_Z]);
-  k.box([7, 0.06, 0.05], "#55678f", [0, 0.05, NET_Z]);
-  // other people's bags: stacked behind the net, and strapped down each side
+  k.box([7, 0.06, 0.05], "#44557c", [0, 2.95, NET_Z]);
+  k.box([7, 0.06, 0.05], "#44557c", [0, 0.05, NET_Z]);
   const stack: [BagKind, number, number, number, number][] = [
-    ["case", -2.2, 0, -3.5, 0.2], ["case", -2.15, 0.44, -3.5, -0.1], ["box", -2.2, 0.88, -3.5, 0.1], ["tall", -1.3, 0, -3.6, 0.1], ["duffel", -1.3, 0.72, -3.6, 0.1],
-    ["box", -0.5, 0, -3.5, 0], ["case", -0.45, 0.38, -3.5, 0.15], ["round", 0.3, 0, -3.6, -0.1], ["case", 1.0, 0, -3.5, 0.1], ["duffel", 1.0, 0.44, -3.5, 0],
-    ["tall", 1.8, 0, -3.6, -0.15], ["box", 2.4, 0, -3.4, 0.2], ["case", 2.35, 0.38, -3.4, 0], ["tall", -2.55, 0, -0.9, 0.5], ["case", -2.45, 0, 0.3, 1.2],
-    ["duffel", -2.4, 0.44, 0.3, 1.3], ["round", 2.5, 0, -0.9, -0.4], ["case", 2.45, 0, 0.4, -1.3], ["box", 2.5, 0.44, 0.4, -1.2],
+    ["case", -2.2, 0, -7.4, 0.2], ["case", -2.15, 0.44, -7.4, -0.1], ["box", -2.2, 0.88, -7.4, 0.1], ["tall", -1.3, 0, -7.5, 0.1], ["duffel", -1.3, 0.72, -7.5, 0.1],
+    ["box", -0.5, 0, -7.4, 0], ["case", -0.45, 0.38, -7.4, 0.15], ["round", 0.3, 0, -7.5, -0.1], ["case", 1.0, 0, -7.4, 0.1], ["duffel", 1.0, 0.44, -7.4, 0],
+    ["tall", 1.8, 0, -7.5, -0.15], ["box", 2.4, 0, -7.3, 0.2], ["case", 2.35, 0.38, -7.3, 0],
   ];
   stack.forEach(([kind, x, y, z, yaw], i) => luggage(k, kind, DIM[i % DIM.length]!, [x, y, z], yaw));
   // the black luggage cart
@@ -154,15 +242,24 @@ function hold(k: Kit) {
 }
 
 function HoldSet() {
+  const spot = useRef<THREE.SpotLight>(null);
+  const clock = useClock();
+  useFrame(() => {
+    // the seam's light is the only light left once the door shuts: a cool white, so the shell keeps its cream
+    if (spot.current) spot.current.intensity = 26 + 30 * dark(clock.t);
+  });
   return (
     <>
       {/* before the door shuts there is still daylight in here; after, the look as written */}
-      <Stage look={HOLD_LOOK} level={(t) => ({ key: 1 + 1.3 * (1 - dark(t)), fill: 1 + 4.5 * (1 - dark(t)), env: 1 + 6 * (1 - dark(t)) })} />
+      <Stage look={HOLD_LOOK} level={(t) => ({ key: 1 + 3.5 * (1 - dark(t)), fill: 1 + 5 * (1 - dark(t)), env: 1 + 8 * (1 - dark(t)) })} />
       <Built make={hold} cast={false} />
-      {/* the one cool shaft that is left: a seam of light from above */}
-      <mesh position={[1.05, 2.9, -0.4]} rotation={[0, 0, 0.34]}>
-        <planeGeometry args={[3.4, 6.6]} />
-        <meshBasicMaterial map={shaftTexture()} color="#8fb2ff" transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} fog={false} />
+      <spotLight ref={spot} position={SEAM} angle={0.2} penumbra={0.75} decay={2} distance={0} color="#f1f3ff" intensity={40} />
+      <Shaft />
+      <Motes />
+      {/* where it lands: a pale ellipse on the cart, and a fainter one spilling onto the floor */}
+      <mesh position={[0.05, DECK + 0.004, 0.02]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+        <planeGeometry args={[1.8, 1.3]} />
+        <meshBasicMaterial map={poolTexture()} color="#6f86c4" transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       {/* the door's light, closing */}
       <A f={(g, t) => void g.scale.set(1, 1, Math.max(0.001, 1 - kf(t, [[400, 0], [DARK_FROM + 300, 1]])))} position={[-3.3, 1.25, 2.2]}>
@@ -171,8 +268,8 @@ function HoldSet() {
           <meshBasicMaterial color="#ffe9c4" toneMapped={false} fog={false} />
         </mesh>
       </A>
-      <Contact at={() => ({ p: [0, DECK, 0], w: 0.85, d: 0.55, o: 0.55 })} tint="#000000" />
-      <Bag pose={holdBag} speaking={(t) => bagSpeaking(HOLD, t)} lamp />
+      <Contact at={() => ({ p: [0, DECK, 0], w: 0.85, d: 0.55, o: 0.6 })} tint="#000000" />
+      <Bag pose={holdBag} speaking={(t) => bagSpeaking(HOLD, t)} lamp={0.05} />
       {[0, 1, 2].map((i) => (
         <Z key={i} i={i} />
       ))}
@@ -181,9 +278,14 @@ function HoldSet() {
 }
 
 export const HoldScene: Staged = { Set: HoldSet, shots: [
-  { at: 0, to: 1500, pos: [[1.0, 1.55, 7.4], [0.8, 1.5, 6.8]], look: [0, 1.0, 0], rise: 0.1 },
-  // one very slow push-in, for as long as the scene lasts
-  { at: 1500, pos: [[0.2, 1.3, 6.6], [0, 1.18, 4.1]], look: [[0, 1.0, 0], [0.04, 1.02, 0]], rise: 0.17 },
+  // the door: the last of the daylight going
+  { at: 0, to: 1500, pos: [[1.0, 1.55, 7.4], [0.8, 1.5, 6.8]], look: [0, 1.0, 0], rise: 0.1, ease: "soft" },
+  // high and wide: the long empty hold, and one small bag in one shaft of light
+  { at: 1500, to: 4400, pos: [[2.4, 3.6, 9.6], [2.0, 3.2, 8.6]], look: [[-0.1, 0.6, -2.2], [0, 0.75, -1.4]], rise: 0.08, ease: "soft" },
+  // in close for the calling out
+  { at: 4400, to: 9000, pos: [[0.45, 1.25, 3.9], [0.2, 1.18, 3.3]], look: [0.08, 1.0, 0], rise: 0.17, ease: "soft" },
+  // and slowly away again, up and back, leaving it there
+  { at: 9000, pos: [[0.2, 1.2, 3.35], [0.9, 2.3, 7.6]], look: [[0.08, 1.02, 0], [0.1, 0.95, -0.6]], rise: 0.15, ease: "soft" },
 ] satisfies Shot[] };
 
 // ---- the carousel ---------------------------------------------------------------------------------------------
@@ -198,8 +300,11 @@ const LOOP = 4 * HS + 2 * ARC;
 const TOP = 0.42;
 const LAP = 8400;
 const SPEED = LOOP / LAP;
+/** The cut to the stranger skips ahead (film time, not belt time): the bag is coming round the near bend again. */
+const AGAIN_AT = 6700;
+const AGAIN = 12.1;
 /** Where our bag is along the belt (metres from the start of the back straight): mid-bend as the gadget wakes. */
-const along = (t: number) => 5.0 + (t - 3600) * SPEED;
+const along = (t: number) => 5.0 + (t - 3600) * SPEED + (t >= AGAIN_AT ? AGAIN : 0);
 
 type Spot = { x: number; z: number; nx: number; nz: number; bend: number };
 /** A point on the belt's middle line, the way out from the island there, and how far into a bend it is (0 to 1). */
@@ -233,21 +338,25 @@ const HALL: Look = {
 function rideBag(t: number): BagPose {
   const at = spot(along(t));
   const joy = kf(t, [[CAROUSEL.litAt - 500, 0], [CAROUSEL.litAt + 300, 1]]);
+  // "Again! Again!": a crouch, a hop with a stretch in it, a squash on landing, twice
   const hops = bump(t, 4800, 5120) + bump(t, 5300, 5620);
-  const squat = bump(t, 4700, 4800) + bump(t, 5200, 5300) + bump(t, 5120, 5200) + bump(t, 5620, 5720);
+  const crouch = bump(t, 4660, 4800) + bump(t, 5160, 5300);
+  const land = bump(t, 5120, 5240) + bump(t, 5620, 5740);
+  const air = hops > 0 ? 1 : 0;
   return {
-    p: [at.x, TOP + 0.02 + 0.18 * hops, at.z],
-    yaw: Math.atan2(at.nx, at.nz),
-    // leaning into the turn, like a kid on a ride
-    pitch: -joy * (0.07 + 0.2 * at.bend + 0.04 * Math.sin(t / 210)),
-    roll: joy * (0.1 * Math.sin(t / 290) - 0.1 * at.bend),
-    sy: 1 - 0.1 * squat + 0.06 * hops,
-    sx: 1 + 0.07 * squat,
+    p: [at.x, TOP + 0.02 + 0.24 * hops, at.z],
+    // a happy wiggle as it rides
+    yaw: Math.atan2(at.nx, at.nz) + joy * 0.14 * Math.sin(t / 170),
+    // leaning hard into the bend (toward the island), like a kid on a ride, and rocking on the straights
+    pitch: -joy * (0.06 + 0.32 * at.bend + 0.04 * Math.sin(t / 210)),
+    roll: joy * (0.12 * Math.sin(t / 260) * (1 - at.bend)),
+    sy: 1 - 0.12 * crouch - 0.1 * land + 0.1 * hops * air,
+    sx: 1 + 0.08 * crouch + 0.08 * land - 0.04 * hops * air,
   };
 }
 
-const STRANGER: V3 = [-4.15, 0, 1.0];
-const STRANGER_YAW = 1.75;
+const STRANGER: V3 = [-2.55, 0, 3.0];
+const STRANGER_YAW = 2.35;
 const HOST: V3 = [3.9, 0, -3.4];
 const HOST_YAW = -0.35;
 /** How far a head has to turn, from a body facing `yaw`, to look at the bag. */
@@ -257,15 +366,19 @@ function toward(from: V3, yaw: number, t: number) {
   return Math.max(-1.1, Math.min(1.1, Math.atan2(Math.sin(turn), Math.cos(turn))));
 }
 function stranger(t: number): FigPose {
-  const watching = kf(t, [[6300, 0], [6900, 1]]);
-  const ask = kf(t, [[8100, 0], [8500, 1]]);
+  // watching it come, a lean in as it passes, and a hand that points after it as they ask
+  const watching = kf(t, [[AGAIN_AT - 300, 0], [AGAIN_AT + 300, 1]]);
+  const ask = kf(t, [[8050, 0], [8400, 1, "back"], [9800, 1], [10300, 0.4]]);
+  const lean = 0.14 * ask;
+  const b = rideBag(t).p;
+  const dir = Math.atan2(b[0] - STRANGER[0], b[2] - STRANGER[2]);
   return {
     p: STRANGER,
-    yaw: STRANGER_YAW,
-    head: watching * toward(STRANGER, STRANGER_YAW, t),
-    lean: 0.1 * ask,
-    // one hand comes up, pointing after it
-    handR: ask > 0 ? [STRANGER[0] + 0.5 * ask, 0.8 + 0.42 * ask, STRANGER[2] + 0.3 - 0.45 * ask] : null,
+    yaw: STRANGER_YAW + 0.5 * watching * Math.max(-1, Math.min(1, Math.atan2(Math.sin(dir - STRANGER_YAW), Math.cos(dir - STRANGER_YAW)))),
+    head: watching * 0.5 * toward(STRANGER, STRANGER_YAW, t),
+    lean,
+    nod: 0.1 * ask,
+    handR: ask > 0.01 ? [mix(STRANGER[0] + 0.25, b[0], 0.3 * ask), mix(0.8, 1.25, ask), mix(STRANGER[2] - 0.1, b[2], 0.3 * ask)] : null,
   };
 }
 function host(t: number): FigPose {
@@ -410,21 +523,31 @@ function CarouselSet() {
 
 export const CarouselScene: Staged = { Set: CarouselSet, shots: [
   // wide and high: the hall, the sign, the belt turning, the bag coming out through the flaps
-  { at: 0, to: 3000, pos: [[0.9, 3.3, 11.2], [0.6, 3.0, 10.4]], look: [0.3, 1.55, -0.4], rise: 0.07 },
+  { at: 0, to: 3000, pos: [[0.9, 3.3, 11.2], [0.6, 3.0, 10.4]], look: [0.3, 1.55, -0.4], rise: 0.07, ease: "soft" },
   // travelling with it round the near bend and along the front
   {
     at: 3000,
-    to: 6700,
+    to: AGAIN_AT,
     pos: [0, 0, 0],
     look: [0, 0, 0],
     rise: 0.18,
     follow: (t) => {
       const b = rideBag(t).p;
       // it comes round the bend toward us, then we back away along the front as it passes
-      const ease = kf(t, [[3000, 0], [5600, 1], [6700, 1.25]]);
+      const ease = kf(t, [[3000, 0], [5600, 1], [AGAIN_AT, 1.25]]);
       return { pos: [4.9 - 3.9 * ease, 1.3, 2.8 + 2.9 * Math.min(1, ease)], look: [b[0], 0.98, b[2]] };
     },
   },
-  // past the stranger's shoulder: round it goes again
-  { at: 6700, pos: [[0.5, 1.6, 5.8], [0.2, 1.55, 5.3]], look: [-3.0, 1.12, 0.2], rise: 0.17 },
+  // past the stranger's shoulder: round it comes again, along the front and right past them
+  {
+    at: AGAIN_AT,
+    pos: [0, 0, 0],
+    look: [0, 0, 0],
+    rise: 0.16,
+    follow: (t) => {
+      const b = rideBag(t).p;
+      const p = kf(t, [[AGAIN_AT, 0], [10800, 1, "lin"]]);
+      return { pos: [mix(-1.55, -0.45, p), 1.55, mix(6.7, 6.35, p)], look: [mix(-0.9, b[0], 0.25), 0.95, mix(1.4, b[2], 0.25)] };
+    },
+  },
 ] satisfies Shot[] };

@@ -1,15 +1,16 @@
 "use client";
 
 // The check-in scale, used twice: scene 2 (the agent lifts the bag on, the display climbs to 62 lbs, the bag takes
-// offence) and the closing button (same set, the display still reads 62). Script: 0:45 and 2:10. The place is cool
-// blues and white with one signal colour on the counter fronts; the display is the prop the joke hangs on, so it is
-// large, faces the camera and stays in the shot where the line lands.
+// offence) and the closing button (script 0:45 and 2:10). The place is cool blues and white with one signal colour
+// on the counter fronts; the display is the prop the joke hangs on, so it is large, faces the camera and stays in the
+// shot where the line lands. The button comes back to the same desk at the end of the day: low sun through the high
+// window, the queue packed away, new angles (low, from the bag's side), and the souvenirs themselves.
 import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
 import { E, bump, clamp01, kf, mix } from "./ease";
-import { A, Bag, Built, C, Contact, Dust, Figure, HANDLE_Y, Sign, Stage, useClock, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { A, BAG_TOP, Bag, Built, C, Contact, Figure, HANDLE_Y, Sign, Stage, onBody, useClock, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 
 const PLATE = 0.1;
 const BAG_Z = 0.05;
@@ -26,6 +27,16 @@ const LOOK: Look = {
   fill: { sky: "#dce9ff", ground: "#aab4c4", i: 0.55 },
   rim: { c: "#ffe3c2", i: 0.9, p: [-5, 4, -6] },
   env: 0.34,
+};
+/** The button: the same hall at the end of the day, lit low and warm from the high window, the far side in dusk. */
+const EVENING: Look = {
+  sky: ["#4d5c96", "#f2b48a"],
+  fog: ["#d9b9a8", 9, 30],
+  floor: "#c9c3c8",
+  key: { c: "#ffd2a0", i: 2.9, p: [-6.5, 3.4, 5.5] },
+  fill: { sky: "#9ea3d8", ground: "#8d7f86", i: 0.6 },
+  rim: { c: "#ff9f73", i: 1.1, p: [5, 3, -6] },
+  env: 0.3,
 };
 
 /** What the display reads in scene 2: nothing until the bag is down, then a climb that overshoots and settles. */
@@ -124,6 +135,7 @@ function Display({ read }: { read: (t: number) => { pounds: number; over: boolea
   );
 }
 
+const DESK_X = -1.9;
 function desk(k: Kit, x: number, screen = true, feed = 1.95) {
   k.at([x, 0, -0.55], [0, 0, 0], () => {
     k.box([1.5, 1.0, 0.72], "#f3f6f9", [0, 0.5, 0], { r: 0.06 });
@@ -143,106 +155,300 @@ function desk(k: Kit, x: number, screen = true, feed = 1.95) {
   });
 }
 
-function checkIn(k: Kit) {
-  // the back wall: pale panels, a blue dado, a strip of high window
-  k.box([26, 5.2, 0.3], "#e4eaf2", [0, 2.6, -4.0]);
-  k.box([26, 0.9, 0.34], "#b5c7e0", [0, 0.45, -3.99]);
-  k.box([26, 1.1, 0.32], "#bcd8f4", [0, 3.9, -3.99]);
-  for (let x = -11; x <= 11; x += 2.2) k.box([0.05, 5.2, 0.33], "#dbe3ee", [x, 2.6, -3.99]);
-  // the collector belt along the wall
-  k.box([20, 0.42, 0.95], "#b7c1ce", [0, 0.21, -2.35], { r: 0.03, seg: 1 });
-  k.box([20, 0.03, 0.78], "#3b414b", [0, 0.43, -2.35]);
-  for (let x = -9.6; x <= 9.6; x += 0.4) k.box([0.035, 0.012, 0.78], "#59616f", [x, 0.45, -2.35]);
-  // three desks in a row: the scale's own, and a neighbour each side
-  desk(k, -2.3, true, 2.3);
-  desk(k, -6.2, false);
-  desk(k, 2.3, false);
-  // the platform scale: a low deck with a hazard edge
-  k.box([1.08, 0.085, 0.86], "#aab4c0", [0, 0.0425, BAG_Z], { r: 0.02, seg: 1 });
-  k.box([1.08, 0.03, 0.05], C.yellow, [0, 0.07, BAG_Z + 0.42]);
-  // the display's post and housing
-  k.cyl(0.18, 0.03, "#8f99a6", [DISPLAY[0], 0.015, DISPLAY[2]], { seg: 20 });
-  k.cyl(0.035, SCREEN_Y - 0.2, "#aab4c0", [DISPLAY[0], (SCREEN_Y - 0.2) / 2, DISPLAY[2]], { seg: 12 });
-  k.box([0.98, 0.62, 0.11], "#1c2740", [DISPLAY[0], SCREEN_Y, DISPLAY[2]], { rot: [-0.05, -0.1, 0], r: 0.045 });
-  // the queue: posts joined by a belt ribbon, and the line to wait behind
-  [-4.6, -3.4, -2.2].forEach((x, i) => {
-    k.cyl(0.16, 0.035, "#59616f", [x, 0.018, 2.3], { seg: 18 });
-    k.cyl(0.032, 0.95, "#c9d0d8", [x, 0.5, 2.3], { seg: 10 });
-    k.cyl(0.045, 0.09, "#59616f", [x, 0.97, 2.3], { seg: 10 });
-    if (i) k.box([1.2, 0.07, 0.012], SIGNAL, [x - 0.6, 0.93, 2.3]);
-  });
-  k.box([1.9, 0.004, 0.07], C.yellow, [0, 0.002, 1.25]);
-  // the sign's hangers and frame
-  [-1.1, 1.1].forEach((x) => k.cyl(0.015, 1.6, "#aab4c0", [x - 0.9, 3.9, -1.7], { seg: 6 }));
-  k.box([2.86, 0.66, 0.08], "#16233d", [-0.9, 2.95, -1.7], { r: 0.03, seg: 1 });
+function checkIn(evening: boolean) {
+  return (k: Kit) => {
+    // the back wall: pale panels, a blue dado, a strip of high window (at the end of the day, the sky in it is low sun)
+    k.box([26, 5.2, 0.3], evening ? "#d9dbe6" : "#e4eaf2", [0, 2.6, -4.0]);
+    k.box([26, 0.9, 0.34], "#b5c7e0", [0, 0.45, -3.99]);
+    k.box([26, 1.1, 0.32], evening ? "#f6c08f" : "#bcd8f4", [0, 3.9, -3.99]);
+    for (let x = -11; x <= 11; x += 2.2) k.box([0.05, 5.2, 0.33], "#dbe3ee", [x, 2.6, -3.99]);
+    for (let x = -11; x <= 11; x += 2.2) k.box([0.08, 1.1, 0.36], "#c9d2de", [x, 3.9, -3.98]);
+    // the collector belt along the wall
+    k.box([20, 0.42, 0.95], "#b7c1ce", [0, 0.21, -2.35], { r: 0.03, seg: 1 });
+    k.box([20, 0.03, 0.78], "#3b414b", [0, 0.43, -2.35]);
+    for (let x = -9.6; x <= 9.6; x += 0.4) k.box([0.035, 0.012, 0.78], "#59616f", [x, 0.45, -2.35]);
+    // three desks in a row: the scale's own, and a neighbour each side
+    desk(k, DESK_X, true, -DESK_X);
+    desk(k, -5.8, false);
+    desk(k, 2.3, false);
+    // the platform scale: a low deck with a hazard edge
+    k.box([1.08, 0.085, 0.86], "#aab4c0", [0, 0.0425, BAG_Z], { r: 0.02, seg: 1 });
+    k.box([1.08, 0.03, 0.05], C.yellow, [0, 0.07, BAG_Z + 0.42]);
+    // the display's post and housing
+    k.cyl(0.18, 0.03, "#8f99a6", [DISPLAY[0], 0.015, DISPLAY[2]], { seg: 20 });
+    k.cyl(0.035, SCREEN_Y - 0.2, "#aab4c0", [DISPLAY[0], (SCREEN_Y - 0.2) / 2, DISPLAY[2]], { seg: 12 });
+    k.box([0.98, 0.62, 0.11], "#1c2740", [DISPLAY[0], SCREEN_Y, DISPLAY[2]], { rot: [-0.05, -0.1, 0], r: 0.045 });
+    if (evening) {
+      // closing time: the queue posts gathered in a huddle by the wall, a bin of tags, the floor line alone
+      [[-4.3, -1.3], [-4.05, -1.45], [-4.2, -1.05], [-3.95, -1.2]].forEach(([x, z]) => {
+        k.cyl(0.16, 0.035, "#59616f", [x!, 0.018, z!], { seg: 18 });
+        k.cyl(0.032, 0.95, "#c9d0d8", [x!, 0.5, z!], { seg: 10 });
+        k.cyl(0.045, 0.09, "#59616f", [x!, 0.97, z!], { seg: 10 });
+      });
+      k.box([0.5, 0.4, 0.4], "#59616f", [3.6, 0.2, -1.3], { r: 0.03, seg: 1 });
+    } else {
+      // the queue: posts joined by a belt ribbon, and the line to wait behind
+      [-4.6, -3.4, -2.2].forEach((x, i) => {
+        k.cyl(0.16, 0.035, "#59616f", [x, 0.018, 2.3], { seg: 18 });
+        k.cyl(0.032, 0.95, "#c9d0d8", [x, 0.5, 2.3], { seg: 10 });
+        k.cyl(0.045, 0.09, "#59616f", [x, 0.97, 2.3], { seg: 10 });
+        if (i) k.box([1.2, 0.07, 0.012], SIGNAL, [x - 0.6, 0.93, 2.3]);
+      });
+    }
+    k.box([1.9, 0.004, 0.07], C.yellow, [0, 0.002, 1.25]);
+    // the sign's hangers and frame
+    [-1.1, 1.1].forEach((x) => k.cyl(0.015, 1.6, "#aab4c0", [x - 0.9, 3.9, -1.7], { seg: 6 }));
+    k.box([2.86, 0.66, 0.08], "#16233d", [-0.9, 2.95, -1.7], { r: 0.03, seg: 1 });
+  };
 }
+const DAY_SET = checkIn(false);
+const EVENING_SET = checkIn(true);
 
 /** Small steps: a glide with a hop in it. */
 const hop = (t: number, t0: number, t1: number, steps: number) => (t <= t0 || t >= t1 ? 0 : 0.045 * Math.abs(Math.sin(((t - t0) / (t1 - t0)) * Math.PI * steps)));
 
-const AGENT_BACK: V3 = [-1.95, 0, -1.3];
+const AGENT_BACK: V3 = [-1.6, 0, -1.3];
+const AGENT_YAW = 0.42;
 const HOST: V3 = [3.2, 0, 0.8];
 const HOST_YAW = -2.3;
+/** In the button the owner stands close, beside the scale, facing the bag. */
+const HOST_B: V3 = [1.75, 0, 1.2];
+const HOST_B_YAW = -2.2;
 const TILT = 0.2;
+
+// ---- the huff ---------------------------------------------------------------------------------------------------
+
+const HUFF_AT = 7520;
+const HUFF_MS = 900;
+/** Two jets of steam from the bag's top corners, as a cartoon kettle lets off: white, so the one that crosses the display reads. */
+function Huff({ top }: { top: (t: number) => V3 }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const clock = useClock();
+  const N = 14;
+  useFrame(() => {
+    const g = ref.current;
+    if (!g) return;
+    const t = clock.t;
+    const all = (t - HUFF_AT) / HUFF_MS;
+    g.visible = all > 0 && all < 1;
+    if (!g.visible) return;
+    const at = top(t);
+    for (let i = 0; i < N; i++) {
+      const side = i % 2 ? 1 : -1;
+      const born = HUFF_AT + Math.floor(i / 2) * 55;
+      const q = clamp01((t - born) / 520);
+      const out = E.out(q);
+      m.position.set(at[0] + side * (0.15 + 0.12 * out), at[1] + 0.04 + 0.55 * out + 0.04 * (i % 3), at[2] + 0.06);
+      m.scale.setScalar(q <= 0 ? 0.0001 : (0.45 + 1.1 * out) * (1 - 0.6 * q * q));
+      m.updateMatrix();
+      g.setMatrixAt(i, m.matrix);
+    }
+    g.instanceMatrix.needsUpdate = true;
+    if (mat.current) mat.current.opacity = 0.95 * (1 - all) ** 0.7;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]} visible={false} frustumCulled={false}>
+      <sphereGeometry args={[0.06, 12, 9]} />
+      <meshBasicMaterial ref={mat} color="#ffffff" transparent opacity={0} depthWrite={false} toneMapped={false} fog={false} />
+    </instancedMesh>
+  );
+}
+
+/** Strain marks: three short ink strokes off the bag's top corner, as a comic draws a temper. In the bag's own frame. */
+function strainGeometry() {
+  const v: number[] = [];
+  [2.05, 2.45, 2.85].forEach((a, i) => {
+    const r1 = 0.07;
+    const r2 = 0.2 + (i === 1 ? 0.04 : 0);
+    const w = 0.014;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    v.push(r1 * c - w * sn * 0.4, r1 * sn + w * c * 0.4, 0, r2 * c - w * sn, r2 * sn + w * c, 0, r2 * c + w * sn, r2 * sn - w * c, 0);
+    v.push(r1 * c - w * sn * 0.4, r1 * sn + w * c * 0.4, 0, r2 * c + w * sn, r2 * sn - w * c, 0, r1 * c + w * sn * 0.4, r1 * sn - w * c * 0.4, 0);
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+  return g;
+}
+function Strain() {
+  const ref = useRef<THREE.Mesh>(null);
+  const geo = useMemo(() => strainGeometry(), []);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const clock = useClock();
+  useFrame(() => {
+    const g = ref.current;
+    if (!g) return;
+    const t = clock.t;
+    const on = t > HUFF_AT - 40 && t < HUFF_AT + 1300;
+    g.visible = on;
+    if (!on) return;
+    // they snap out, twitch, and are gone
+    g.scale.setScalar(E.back(clamp01((t - HUFF_AT + 40) / 160)) * (1 + 0.12 * Math.sin(t / 30)) * (1 - E.in(clamp01((t - HUFF_AT - 1050) / 250))));
+  });
+  return (
+    <mesh ref={ref} geometry={geo} position={[-0.22, BAG_TOP + 0.02, 0.15]} visible={false}>
+      <meshBasicMaterial color="#23262d" side={THREE.DoubleSide} toneMapped={false} />
+    </mesh>
+  );
+}
+
+// ---- the souvenirs ----------------------------------------------------------------------------------------------
+
+const POP = 3820;
+/** What "mostly SOUVENIRS" looks like: a snow globe, a little lattice tower and a pennant spring out of the top seam. */
+function globe(k: Kit) {
+  k.cyl(0.055, 0.045, "#3b414b", [0, 0.022, 0], { seg: 14 });
+  k.ball(0.068, "#bfe0ff", [0, 0.1, 0], { seg: 14 });
+  k.ball(0.03, "#f4f5f6", [0, 0.085, 0.01], { seg: 8 });
+}
+function tower(k: Kit) {
+  k.cyl(0.06, 0.2, "#8f99a6", [0, 0.1, 0], { r2: 0.012, seg: 4 });
+  k.box([0.09, 0.012, 0.09], "#6b7584", [0, 0.09, 0]);
+  k.cyl(0.006, 0.06, "#6b7584", [0, 0.23, 0], { seg: 4 });
+}
+function pennant(k: Kit) {
+  k.cyl(0.006, 0.3, "#59616f", [0, 0.15, 0], { seg: 6 });
+  k.geo(new THREE.ConeGeometry(0.05, 0.18, 3), "#d1495b", [0.085, 0.25, 0], { rot: [0, 0, -Math.PI / 2], s: [1, 1, 0.12] });
+}
+const ITEMS: { make: (k: Kit) => void; x: number; delay: number; tilt: number }[] = [
+  { make: tower, x: -0.11, delay: 0, tilt: 0.2 },
+  { make: globe, x: 0.03, delay: 90, tilt: -0.1 },
+  { make: pennant, x: 0.15, delay: 170, tilt: -0.35 },
+];
+function Souvenirs() {
+  return (
+    <>
+      {/* the seam the bag has popped open */}
+      <A f={(g, t) => void g.scale.set(1, 1, Math.max(0.001, kf(t, [[POP - 60, 0], [POP + 60, 1], [POP + 1700, 1], [POP + 2000, 0]])))} position={[0.02, BAG_TOP + 0.003, 0]}>
+        <mesh>
+          <boxGeometry args={[0.38, 0.006, 0.12]} />
+          <meshBasicMaterial color="#15171c" />
+        </mesh>
+      </A>
+      {ITEMS.map((it) => (
+        <A
+          key={it.x}
+          f={(g, t) => {
+            const up = kf(t, [[POP + it.delay, 0], [POP + it.delay + 260, 1, "back"], [POP + 1650, 1], [POP + 1950 + it.delay * 0.5, 0, "in"]]);
+            g.visible = up > 0.001;
+            g.position.set(it.x, BAG_TOP - 0.3 + 0.32 * up, 0);
+            g.rotation.z = it.tilt * up + 0.08 * Math.sin(t / 90 + it.x * 10) * bump(t, POP + 200, POP + 900);
+          }}
+          visible={false}
+        >
+          <Built make={it.make} rough={0.5} receive={false} />
+        </A>
+      ))}
+    </>
+  );
+}
 
 function ScaleSet({ button }: { button: boolean }) {
   const scene = sceneOf(button ? "button" : "scale");
   const bag = (t: number): BagPose => {
     if (button) {
-      const ask = kf(t, [[450, 0], [1150, 1], [2850, 1], [3300, 0]]);
-      const proud = kf(t, [[3750, 0], [4050, 1, "back"]]);
+      // it stares up at the number, recoils, turns to us; crouches, and springs up proud as its souvenirs pop out
+      const read = kf(t, [[200, 0], [800, 1], [1700, 1], [2700, 0]]);
+      const recoil = bump(t, 900, 1500);
+      const crouch = bump(t, 3500, POP);
+      const proud = kf(t, [[POP - 20, 0], [POP + 250, 1, "back"], [6800, 1], [7500, 0.7]]);
       return {
-        p: [0, PLATE + 0.1 * bump(t, 3800, 4120), BAG_Z],
-        // it cranes round to read the display, then draws itself up
-        roll: -0.15 * ask + 0.05 * proud,
-        yaw: 0.22 * ask,
-        sx: 1 + 0.07 * proud - 0.05 * bump(t, 3650, 3800),
-        sy: 1 + 0.045 * proud - 0.06 * bump(t, 3650, 3800) - 0.05 * bump(t, 4120, 4300),
+        p: [0, PLATE + 0.12 * bump(t, POP - 20, POP + 260), BAG_Z],
+        yaw: 0.55 * read,
+        pitch: -0.12 * read + 0.06 * recoil,
+        roll: -0.08 * recoil + 0.05 * proud * Math.sin(t / 380) * kf(t, [[4600, 0], [5000, 1]]),
+        sx: 1 + 0.08 * crouch - 0.06 * bump(t, POP - 20, POP + 260) + 0.04 * proud,
+        sy: 1 - 0.1 * crouch + 0.12 * bump(t, POP - 20, POP + 260) + 0.03 * proud - 0.04 * bump(t, 2100, 2600),
       };
     }
     const carried = 1 - kf(t, [[SET_DOWN - 150, 0], [SET_DOWN, 1]]);
-    // the anticipation, then the slow, offended lean: away from the display
-    const huff = kf(t, [[7300, 0], [7480, -0.16], [8150, 1, "back"]]);
+    // the anticipation (it draws in a breath), then the slow, offended lean away from the display, swelled up
+    const huff = kf(t, [[7250, 0], [7480, -0.2], [8150, 1, "back"]]);
     return {
       p: [kf(t, [[500, -0.3], [1300, 0]]), kf(t, [[0, 0.42], [500, 0.45], [1150, 0.36], [SET_DOWN, PLATE, "in"]]), BAG_Z],
       hang: 0.1 * Math.sin(t / 260) * carried,
-      sy: 1 - 0.07 * bump(t, SET_DOWN, SET_DOWN + 220) + 0.04 * Math.max(0, huff) - 0.03 * bump(t, 7300, 7480),
-      sx: 1 + 0.05 * bump(t, SET_DOWN, SET_DOWN + 220) + 0.08 * Math.max(0, huff),
+      sy: 1 - 0.07 * bump(t, SET_DOWN, SET_DOWN + 220) + 0.06 * Math.max(0, huff) - 0.06 * bump(t, 7250, 7520),
+      sx: 1 + 0.05 * bump(t, SET_DOWN, SET_DOWN + 220) + 0.1 * Math.max(0, huff) - 0.03 * bump(t, 7250, 7520),
       roll: TILT * huff,
-      yaw: 0.2 * kf(t, [[5750, 0], [6300, 1], [7300, 1], [7600, 0]]),
+      // it turns to the display as the number climbs, then back to us for the line
+      yaw: 0.3 * kf(t, [[2900, 0], [3500, 1], [5400, 1], [5900, 0]]) - 0.12 * kf(t, [[5900, 0], [6400, 1], [7300, 1], [7600, 0]]),
     };
   };
   const agent = (t: number): FigPose => {
-    if (button) return { p: AGENT_BACK, yaw: 0.42, head: 0.35 * kf(t, [[4300, 0], [4800, 1]]), nod: 0.2 * kf(t, [[4300, 0], [4800, 1]]) };
+    if (button) {
+      // end of shift: chin on her hand, elbow on the desk, until the souvenirs make her look
+      const look = kf(t, [[POP + 300, 0], [POP + 800, 1]]);
+      const lean = 0.2;
+      return {
+        p: AGENT_BACK,
+        yaw: AGENT_YAW,
+        lean,
+        head: 0.45 * look,
+        nod: 0.15 - 0.2 * look,
+        handR: onBody(AGENT_BACK, AGENT_YAW, lean, [0.02, 1.43, 0.22 - 0.1 * look]),
+        handL: onBody(AGENT_BACK, AGENT_YAW, lean, [-0.26, 1.02, 0.42]),
+      };
+    }
     // she sets it down, then walks round the end of the desk to her place behind it
-    const x = kf(t, [[500, -0.78], [1300, -0.52], [1950, -0.52], [2500, -1.12], [3200, AGENT_BACK[0]]]);
+    const x = kf(t, [[500, -0.78], [1300, -0.52], [1950, -0.52], [2500, -0.8], [3200, AGENT_BACK[0]]]);
     const b = bag(t).p;
     const holding = t < SET_DOWN + 150;
     const letGo = kf(t, [[SET_DOWN + 150, 0], [SET_DOWN + 420, 1]]);
     const hand = (side: number): V3 | null =>
       letGo >= 1 ? null : [mix(b[0], x + 0.06, letGo), mix(b[1] + HANDLE_Y - 0.01, 0.8, letGo), mix(b[2] - 0.03 + side * 0.09, 0.1 + side * 0.3, letGo)];
-    // late, and little: a slow look down at the bag, then up at its owner
+    // taken aback at the word, a beat late: back an inch, hands off the desk; then a slow look down at the bag
+    const aback = kf(t, [[7650, 0], [7850, 1, "out"], [8700, 1], [9200, 0]]);
     const down = kf(t, [[8150, 0], [8650, 1], [9500, 1], [9900, 0]]);
+    const yaw = kf(t, [[1950, Math.PI / 2], [2200, Math.PI + 0.4], [2500, Math.PI * 1.5], [3200, Math.PI * 1.5], [3650, Math.PI * 2 + AGENT_YAW]]);
+    const lean = (holding ? 0.12 : 0.12 * (1 - letGo)) - 0.1 * aback;
+    const p: V3 = [x, hop(t, 1950, 3200, 4), kf(t, [[1950, 0.1], [2500, -1.2], [3200, AGENT_BACK[2]]])];
+    const palms = (side: number): V3 => onBody(p, yaw, lean, [side * 0.24, 1.12 + 0.06 * aback, 0.3]);
     return {
-      p: [x, hop(t, 1950, 3200, 4), kf(t, [[1950, 0.1], [2500, -1.2], [3200, AGENT_BACK[2]]])],
-      yaw: kf(t, [[1950, Math.PI / 2], [2200, Math.PI + 0.4], [2500, Math.PI * 1.5], [3200, Math.PI * 1.5], [3650, Math.PI * 2 + 0.42]]),
-      lean: holding ? 0.12 : 0.12 * (1 - letGo),
+      p,
+      yaw,
+      lean,
       head: 0.5 * down + 0.75 * kf(t, [[9900, 0], [10250, 1]]),
-      nod: 0.3 * down,
-      handL: hand(1),
-      handR: hand(-1),
+      nod: 0.3 * down - 0.08 * aback,
+      handL: aback > 0.01 ? palms(-1) : hand(1),
+      handR: aback > 0.01 ? palms(1) : hand(-1),
     };
   };
-  const host = (t: number): FigPose => ({
-    p: HOST,
-    yaw: HOST_YAW,
-    head: button ? 0.35 * kf(t, [[4500, 0], [5000, 1]]) : 0.55 * kf(t, [[9700, 0], [10150, 1]]),
-    nod: button ? 0.3 * (bump(t, 5600, 5950) + bump(t, 6000, 6350)) : 0.22 * kf(t, [[6200, 0], [6800, 1], [9700, 1], [10150, 0]]),
-  });
+  const host = (t: number): FigPose => {
+    if (button) {
+      // arms folded, watching the bag; at the line, a look straight down the lens and the smallest of shrugs
+      const turn = kf(t, [[5500, 0], [5850, 1]]);
+      const shrug = kf(t, [[5950, 0], [6250, 1, "back"], [7100, 1], [7500, 0.3]]);
+      // he turns from the bag to face us, body and all, so the shrug reads
+      const yaw = mix(HOST_B_YAW, -1.15, turn * 0.85);
+      const fold = (side: number): V3 => onBody(HOST_B, yaw, 0, [-side * 0.13, 1.08 + 0.02 * side, 0.22]);
+      const open = (side: number): V3 => onBody(HOST_B, yaw, 0, [side * 0.46, 0.98, 0.26]);
+      const hand = (side: number): V3 => {
+        const a = fold(side);
+        const b = open(side);
+        return [mix(a[0], b[0], shrug), mix(a[1], b[1], shrug), mix(a[2], b[2], shrug)];
+      };
+      return {
+        p: [HOST_B[0], 0.03 * shrug, HOST_B[2]],
+        yaw,
+        head: 0.2 * turn + 0.15 * kf(t, [[POP, 0], [POP + 300, 1], [5500, 0]]),
+        nod: 0.12 * kf(t, [[POP, 0], [POP + 300, 1]]) * (1 - turn) + 0.12 * bump(t, 6300, 6800),
+        handL: hand(-1),
+        handR: hand(1),
+      };
+    }
+    return {
+      p: HOST,
+      yaw: HOST_YAW,
+      head: 0.55 * kf(t, [[9700, 0], [10150, 1]]),
+      nod: 0.22 * kf(t, [[6200, 0], [6800, 1], [9700, 1], [10150, 0]]),
+    };
+  };
   return (
     <>
-      <Stage look={LOOK} />
-      <Built make={checkIn} />
+      <Stage look={button ? EVENING : LOOK} />
+      <Built make={button ? EVENING_SET : DAY_SET} />
       <Sign text="CHECK-IN" picto="bag" w={2.7} h={0.52} position={[-0.9, 2.95, -1.655]} />
       {/* the steel plate gives a little under the load */}
       <A f={(g, t) => void g.position.set(0, button ? -0.006 : -0.006 * kf(t, [[SET_DOWN, 0], [SET_DOWN + 150, 1.6], [SET_DOWN + 400, 1]]), 0)}>
@@ -259,9 +465,10 @@ function ScaleSet({ button }: { button: boolean }) {
         }
       />
       <Contact at={(t) => ({ p: [bag(t).p[0], PLATE, BAG_Z], w: 0.82, d: 0.55, o: 0.5 * clamp01(1 - (bag(t).p[1] - PLATE) * 3) })} />
-      <Bag pose={bag} speaking={(t) => bagSpeaking(scene, t)} />
-      {/* the small puff of indignation */}
-      {button ? null : <Dust at={[-0.12, PLATE + 0.86, BAG_Z + 0.12]} progress={(t) => (t - 7560) / 800} c="#ffffff" size={0.3} />}
+      <Bag pose={bag} speaking={(t) => bagSpeaking(scene, t)}>
+        {button ? <Souvenirs /> : <Strain />}
+      </Bag>
+      {button ? null : <Huff top={(t) => [bag(t).p[0] - 0.06 * Math.max(0, kf(t, [[7480, 0], [8150, 1]])), PLATE + BAG_TOP, BAG_Z]} />}
       <Figure pose={agent} role="agent" />
       <Figure pose={host} role="owner" tall={1.03} />
     </>
@@ -270,17 +477,20 @@ function ScaleSet({ button }: { button: boolean }) {
 
 export const ScaleScene: Staged = { Set: () => <ScaleSet button={false} />, shots: [
   // wide: the hall, the sign, the agent setting the bag down
-  { at: 0, to: 2600, pos: [[0.7, 1.75, 9.2], [0.55, 1.6, 8.2]], look: [0.25, 1.3, 0], rise: 0.04 },
+  { at: 0, to: 2600, pos: [[0.4, 1.75, 9.2], [0.25, 1.6, 8.2]], look: [-0.1, 1.3, 0], rise: 0.04, ease: "soft" },
   // the push-in on stillness: the bag and the number, climbing
-  { at: 2600, to: 5700, pos: [[0.5, 1.25, 6.6], [0.5, 1.1, 5.5]], look: [0.5, 1.0, 0], rise: 0.19 },
-  // the line: the bag on the left third, the display on the right, 62 and the lamp over its shoulder
-  { at: 5700, to: 8500, pos: [[0.4, 1.08, 5.75], [0.4, 1.08, 5.45]], look: [0.4, 1.02, 0], rise: 0.2 },
+  { at: 2600, to: 5700, pos: [[0.5, 1.15, 5.6], [0.5, 1.08, 4.3]], look: [0.5, 1.04, 0], rise: 0.13, ease: "soft" },
+  // the line: the agent behind her desk, the bag in the middle, the display on the right, all in one frame
+  { at: 5700, to: 8500, pos: [[-0.3, 1.12, 5.05], [-0.28, 1.1, 4.7]], look: [-0.32, 1.0, 0], rise: 0.17, ease: "soft" },
   // everyone, deadpan
-  { at: 8500, pos: [[0.55, 1.3, 7.6], [0.55, 1.28, 7.2]], look: [0.55, 1.05, 0], rise: 0.17 },
+  { at: 8500, pos: [[0.6, 1.35, 8.6], [0.6, 1.33, 8.1]], look: [0.6, 1.05, 0], rise: 0.15, ease: "soft" },
 ] satisfies Shot[] };
 
 export const ButtonScene: Staged = { Set: () => <ScaleSet button />, shots: [
-  { at: 0, to: 2700, pos: [[0.5, 1.05, 5.7], [0.47, 1.05, 5.25]], look: [0.4, 0.95, 0], rise: 0.2 },
-  { at: 2700, to: 5300, pos: [[-0.1, 1.05, 5.3], [0.0, 1.05, 5.0]], look: [0.42, 1.0, 0], rise: 0.2 },
-  { at: 5300, pos: [[-1.0, 1.4, 6.8], [-0.85, 1.4, 6.5]], look: [1.45, 1.05, 0.3], rise: 0.17 },
+  // low, from the bag's side: it looks up at the number looming over it
+  { at: 0, to: 2700, pos: [[-1.0, 0.5, 2.55], [-0.88, 0.55, 2.3]], look: [0.4, 1.0, 0], fov: 34, rise: 0.1, ease: "soft" },
+  // square on and close, for the line and the pop
+  { at: 2700, to: 5300, pos: [[0.22, 0.95, 3.6], [0.22, 0.95, 3.25]], look: [0.28, 1.05, 0], rise: 0.12, ease: "soft" },
+  // from the left: the bag, the display and its owner, who has something to tell us
+  { at: 5300, pos: [[-2.95, 1.35, 3.95], [-2.7, 1.35, 3.65]], look: [0.75, 1.1, 0.45], rise: 0.1, ease: "soft" },
 ] satisfies Shot[] };

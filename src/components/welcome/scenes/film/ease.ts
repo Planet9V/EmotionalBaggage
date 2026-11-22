@@ -10,6 +10,8 @@ export const E = {
   io: (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2),
   /** overshoots, then settles */
   back: (p: number) => 1 + 2.70158 * (p - 1) ** 3 + 1.70158 * (p - 1) ** 2,
+  /** a gentle start and stop, for camera moves */
+  soft: (p: number) => 0.5 - 0.5 * Math.cos(Math.PI * p),
   /** a held value: jumps at the end of its segment */
   hold: (p: number) => (p < 1 ? 0 : 1),
 };

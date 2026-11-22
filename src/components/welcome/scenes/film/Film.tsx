@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { SceneId } from "../scenes";
-import { mix, clamp01 } from "./ease";
+import { E, mix, clamp01 } from "./ease";
 import { ClockProvider, useClock, type Clock, type Shot, type Staged, type V3 } from "./kit";
 import { ButtonScene, ScaleScene } from "./setScale";
 import { HandleScene, TossScene } from "./setTarmac";
@@ -37,7 +37,7 @@ function Camera({ shots, duration, shake }: { shots: Shot[]; duration: number; s
     for (let k = 0; k < shots.length; k++) if (t >= shots[k]!.at) i = k;
     const s = shots[i]!;
     const end = s.to ?? shots[i + 1]?.at ?? duration;
-    const p = clamp01((t - s.at) / (end - s.at || 1));
+    const p = E[s.ease ?? "lin"](clamp01((t - s.at) / (end - s.at || 1)));
     let fov = 30;
     if (s.follow) {
       const f = s.follow(t);

@@ -374,6 +374,8 @@ const BASE = WHEEL * 2 - 0.005;
 export const BAG_MID = BASE + BH / 2;
 export const BAG_HALF = BW / 2;
 export const HANDLE_Y = BASE + BH + 0.155;
+/** The top of the shell, above its base. */
+export const BAG_TOP = BASE + BH;
 const TAG_X = 0.075;
 /**
  * The gadget: a luggage tag that hangs from the handle on a loop. One set of numbers describes it (width, height,
@@ -488,7 +490,7 @@ const PREROLL_MS = 2600;
  * seconds back whenever the film is cut to a new moment, so a held frame shows the same swing the film would).
  * `time` is the scene's own time, for a scene that stops it; `gravity` is how hard the tag is pulled down.
  */
-export function Bag({ pose, speaking, lamp = false, time, gravity = 9.8 }: { pose: (t: number) => BagPose; speaking?: (t: number) => boolean; lamp?: boolean; time?: (t: number) => number; gravity?: number }) {
+export function Bag({ pose, speaking, lamp = 0, time, gravity = 9.8, children }: { pose: (t: number) => BagPose; speaking?: (t: number) => boolean; lamp?: number; time?: (t: number) => number; gravity?: number; children?: ReactNode }) {
   const root = useRef<THREE.Group>(null);
   const tumble = useRef<THREE.Group>(null);
   const hang = useRef<THREE.Group>(null);
@@ -548,7 +550,7 @@ export function Bag({ pose, speaking, lamp = false, time, gravity = 9.8 }: { pos
     if (ringMat.current) ringMat.current.opacity = talk ? 0.9 * (1 - beat) : 0;
     const glow = (q.glow ?? 0) + (talk ? 0.3 : 0);
     if (lid.current) lid.current.emissiveIntensity = 0.06 + glow * 0.75;
-    if (light.current) light.current.intensity = (q.glow ?? 0) * 0.035;
+    if (light.current) light.current.intensity = glow * lamp;
 
     function swingTo(t: number) {
       const dt = (own(t) - own(t - STEP_MS)) / 1000;
@@ -586,6 +588,7 @@ export function Bag({ pose, speaking, lamp = false, time, gravity = 9.8 }: { pos
                   <mesh geometry={body} castShadow receiveShadow>
                     <meshStandardMaterial vertexColors roughness={0.62} metalness={0} />
                   </mesh>
+                  {children}
                   <group ref={anchor} position={[TAG_X, BASE + BH + 0.01, BD / 2 + 0.012]}>
                     <group ref={tag}>
                       <mesh geometry={tagGeo} castShadow>
@@ -602,7 +605,7 @@ export function Bag({ pose, speaking, lamp = false, time, gravity = 9.8 }: { pos
                         <torusGeometry args={[w * 0.3, 0.007, 6, 28]} />
                         <meshBasicMaterial ref={ringMat} color="#ffffff" transparent opacity={0} depthWrite={false} toneMapped={false} />
                       </mesh>
-                      {lamp ? <pointLight ref={light} color="#ff8a3d" intensity={0} distance={1.5} decay={2} position={[0, -loop - h / 2, 0.32]} /> : null}
+                      {lamp > 0 ? <pointLight ref={light} color="#ff8a3d" intensity={0} distance={1.5} decay={2} position={[0, -loop - h / 2, 0.32]} /> : null}
                     </group>
                   </group>
                 </group>
@@ -669,6 +672,16 @@ export type FigPose = {
   handR?: V3 | null;
   handL?: V3 | null;
 };
+
+/**
+ * A point given on a figure's own body (x toward its right hand, y up, z in front of it), turned into the world:
+ * for hands that go to a mouth, a chest or a hip, whichever way the figure faces and leans.
+ */
+export function onBody(p: V3, yaw: number, lean: number, l: V3): V3 {
+  const y = l[1] * Math.cos(lean) - l[2] * Math.sin(lean);
+  const z = l[1] * Math.sin(lean) + l[2] * Math.cos(lean);
+  return [p[0] + l[0] * Math.cos(yaw) + z * Math.sin(yaw), p[1] + y, p[2] - l[0] * Math.sin(yaw) + z * Math.cos(yaw)];
+}
 
 /** Who is who, by silhouette and costume: no faces beyond two dots, no logos. */
 export type Role = "agent" | "handler" | "owner" | "bystander" | "traveller";
@@ -850,7 +863,7 @@ export function Figure({ pose, role, tall = 1, phone = false }: { pose: (t: numb
 }
 
 /** A puff of dust: a ring of pale blobs that swell and fade, drawn as one instanced mesh. `progress` runs 0 to 1. */
-export function Dust({ at, progress, c = "#f1ede4", size = 1 }: { at: V3; progress: (t: number) => number; c?: string; size?: number }) {
+export function Dust({ at, progress, c = "#f1ede4", size = 1, strength = 0.7 }: { at: V3; progress: (t: number) => number; c?: string; size?: number; strength?: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const mat = useRef<THREE.MeshBasicMaterial>(null);
   const m = useMemo(() => new THREE.Object3D(), []);
@@ -872,7 +885,7 @@ export function Dust({ at, progress, c = "#f1ede4", size = 1 }: { at: V3; progre
       g.setMatrixAt(i, m.matrix);
     }
     g.instanceMatrix.needsUpdate = true;
-    if (mat.current) mat.current.opacity = 0.7 * (1 - p) ** 1.3;
+    if (mat.current) mat.current.opacity = strength * (1 - p) ** 1.3;
   });
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, N]} position={at} scale={size} visible={false} frustumCulled={false}>
@@ -885,8 +898,8 @@ export function Dust({ at, progress, c = "#f1ede4", size = 1 }: { at: V3; progre
 /**
  * One shot: where the camera is and what it looks at, from `at` until the next shot. A pair is a slow move.
  * `rise` lifts the picture in the frame (a lens shift, as a fraction of the frame's height), so the subject sits
- * clear of the subtitle band.
+ * clear of the subtitle band. `ease` shapes the move (linear when left out).
  */
-export type Shot = { at: number; to?: number; pos: V3 | [V3, V3]; look: V3 | [V3, V3]; fov?: number | [number, number]; rise?: number; follow?: (t: number) => { pos: V3; look: V3 } };
+export type Shot = { at: number; to?: number; pos: V3 | [V3, V3]; look: V3 | [V3, V3]; fov?: number | [number, number]; rise?: number; ease?: "lin" | "io" | "out" | "soft"; follow?: (t: number) => { pos: V3; look: V3 } };
 /** A scene as the film plays it: its set, its shots, and (for the thud) how hard the camera is shaken at a moment. */
 export type Staged = { Set: () => React.JSX.Element; shots: Shot[]; shake?: (t: number) => number };

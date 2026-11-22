@@ -9,7 +9,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
 import { E, bump, clamp01, kf, mix, swing } from "./ease";
-import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, Figure, HANDLE_Y, Sign, Stage, luggage, trolley, useClock, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, Figure, HANDLE_Y, Sign, Stage, luggage, onBody, trolley, useClock, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 
 // ---- the toss -------------------------------------------------------------------------------------------------
 
@@ -319,8 +319,9 @@ function curbBag(t: number): BagPose {
     hangX: swing(t, LIFT + 80, 0.07, 1100, 1500),
     // turning a shoulder to the hand
     yaw: 0.45 * kf(t, [[7750, 0], [8250, 1, "back"]]) - 0.12 * limp,
-    sx: 1 + 0.05 * kf(t, [[7700, 0], [8050, 1, "back"]]),
-    sy: 1 + 0.03 * limp,
+    // yanked up, it stretches; at each "whoa" it clenches
+    sx: 1 + 0.05 * kf(t, [[7700, 0], [8050, 1, "back"]]) - 0.05 * bump(t, LIFT + 60, LIFT + 520) + 0.04 * (bump(t, 5100, 5300) + bump(t, 5400, 5600) + bump(t, 5700, 5900)),
+    sy: 1 + 0.03 * limp + 0.09 * bump(t, LIFT + 60, LIFT + 520) - 0.05 * (bump(t, 5100, 5300) + bump(t, 5400, 5600) + bump(t, 5700, 5900)),
     // the tag twists on its loop as the hand takes the handle
     tagTwist: swing(t, 2900, 0.9, 900, 1600),
   };
@@ -344,17 +345,30 @@ function owner(t: number): FigPose {
   };
 }
 
-const WATCHER: V3 = [2.0, 0, -0.7];
+const WATCHER: V3 = [1.75, 0, -0.45];
+const WATCHER_YAW = -0.8;
+/**
+ * The bystander, told in silhouette: head down in a phone; the double take at the first "whoa"; the phone up at
+ * arm's length to film it; and at the punchline the other hand flies to the mouth and they fold over, shaking.
+ */
 function bystander(t: number): FigPose {
-  // filming it; the snort is one small shake of the shoulders
-  const snort = bump(t, 8500, 8750) + bump(t, 8800, 9050);
-  const up = kf(t, [[4200, 0], [4900, 1]]);
+  const take = kf(t, [[5080, 0], [5180, 1, "out"]]);
+  const film = kf(t, [[5450, 0], [5900, 1, "back"]]);
+  const laugh = kf(t, [[7850, 0], [8100, 1, "out"]]);
+  const shake = laugh * Math.sin((t - 7850) / 38) * 0.5 + laugh * 0.5;
+  const lean = -0.1 * bump(t, 5080, 5500) + 0.3 * laugh + 0.04 * shake * laugh;
+  const at = (l: V3) => onBody([WATCHER[0], WATCHER[1], WATCHER[2]], WATCHER_YAW, lean, l);
+  // the phone: held low and read, then raised to eye level at arm's length (it dips a little as they laugh)
+  const phone: V3 = [mix(0.06, 0.16, film), mix(1.12, 1.62, film) - 0.12 * laugh + 0.025 * shake * laugh, mix(0.3, 0.62, film)];
   return {
-    p: [WATCHER[0], 0.03 * snort, WATCHER[2]],
-    yaw: -0.75,
-    head: -0.15,
-    lean: 0.06 * snort,
-    handR: up > 0 ? [WATCHER[0] + 0.02, mix(0.8, 1.22, up), WATCHER[2] + 0.56] : null,
+    p: [WATCHER[0], 0.035 * shake * laugh, WATCHER[2]],
+    yaw: WATCHER_YAW + 0.12 * take,
+    lean,
+    // reading, then the snap up toward the noise
+    nod: mix(0.5, -0.12, take) + 0.18 * laugh,
+    head: -0.1 * take,
+    handR: at(phone),
+    handL: laugh > 0 ? at([mix(-0.31, -0.02, laugh), mix(0.8, 1.5, laugh), mix(0.03, 0.22, laugh)]) : null,
   };
 }
 
@@ -423,5 +437,7 @@ export const HandleScene: Staged = { Set: HandleSet, shots: [
   // closer: the hand closes on the handle, and lifts
   { at: 2300, to: 4900, pos: [[0.25, 1.25, 4.5], [0.15, 1.3, 4.15]], look: [[-0.3, 1.0, 0], [-0.3, 1.12, 0]], rise: 0.14 },
   // the line: owner on the left, the bag dangling free at arm's length, the bystander filming on the right
-  { at: 4900, pos: [[0.75, 1.2, 5.6], [0.6, 1.2, 5.2]], look: [0.1, 1.12, 0], rise: 0.17 },
+  { at: 4900, to: 7800, pos: [[0.85, 1.2, 5.7], [0.7, 1.2, 5.35]], look: [0.35, 1.12, 0], rise: 0.17, ease: "soft" },
+  // the laugh: the same two-shot, eased a touch toward the bystander as they fold over
+  { at: 7800, pos: [[0.7, 1.2, 5.35], [0.95, 1.18, 5.0]], look: [[0.35, 1.12, 0], [0.55, 1.1, 0]], rise: 0.17, ease: "soft" },
 ] satisfies Shot[] };
