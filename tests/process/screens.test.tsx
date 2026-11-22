@@ -90,7 +90,9 @@ describe("ProcessStepper", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/At least one claim is recorded/)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Override gate" }));
-    expect(within(dialog).getByRole("alert").textContent).toBe("Type the reason for passing this gate without its checks.");
+    // The form checks the reason before it sends anything (react-hook-form validates asynchronously).
+    expect((await within(dialog).findByRole("alert")).textContent).toBe("Type the reason for passing this gate without its checks.");
+    expect(within(dialog).getByLabelText("Reason").getAttribute("aria-invalid")).toBe("true");
     expect(calls).toHaveLength(0);
     fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "No outside claims in this plan" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Override gate" }));

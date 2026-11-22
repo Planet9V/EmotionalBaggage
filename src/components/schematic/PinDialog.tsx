@@ -1,11 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorLine } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
+
+const PIN_ID = "pin-dialog-name";
+
+const pinSchema = (existing: string[]) =>
+  z.object({
+    pin: z
+      .string()
+      .trim()
+      .min(1, "Type a pin name, as printed on the board or in the datasheet.")
+      .superRefine((name, ctx) => {
+        if (existing.includes(name)) ctx.addIssue({ code: "custom", message: `This part already has a pin called ${name}.` });
+      }),
+  });
+type Values = z.infer<ReturnType<typeof pinSchema>>;
 
 /** Name one pin: used for "Add pin" on a node and for the first pin of a part placed from the palette. */
 export function PinDialog({
@@ -23,39 +39,34 @@ export function PinDialog({
   onClose: () => void;
   onSave: (pin: string) => Promise<void>;
 }) {
-  const [pin, setPin] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({
+    resolver: zodResolver(pinSchema(existing)),
+    defaultValues: { pin: "" },
+  });
+  const hint = existing.length ? `Pins so far: ${existing.join(", ")}` : undefined;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = pin.trim();
-    if (!name) return setError("Type a pin name, as printed on the board or in the datasheet.");
-    if (existing.includes(name)) return setError(`This part already has a pin called ${name}.`);
-    setBusy(true);
-    setError("");
+  const submit = handleSubmit(async ({ pin }) => {
     try {
-      await onSave(name);
+      await onSave(pin);
       onClose();
     } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
+      setError("root", { message: (err as Error).message });
     }
-  };
+  });
 
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={title} description={description} width="420px">
-      <form onSubmit={submit} className="space-y-3">
-        <Field label="Pin name" hint={existing.length ? `Pins so far: ${existing.join(", ")}` : undefined}>
-          <Input value={pin} onChange={(e) => setPin(e.target.value)} autoFocus className="font-mono" placeholder="GPIO5" />
+      <form onSubmit={(e) => void submit(e)} noValidate className="space-y-3">
+        <Field id={PIN_ID} label="Pin name" hint={hint} error={errors.pin?.message}>
+          <Input id={PIN_ID} autoFocus className="font-mono" placeholder="GPIO5" {...describe(PIN_ID, { hint: !!hint, error: errors.pin?.message })} {...register("pin")} />
         </Field>
-        {error && <ErrorLine>{error}</ErrorLine>}
+        {errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy}>
-            {busy ? "Saving" : submitLabel}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving" : submitLabel}
           </Button>
         </div>
       </form>
