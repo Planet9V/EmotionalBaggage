@@ -220,10 +220,60 @@ function sameOrigin(req: Request): boolean {
   return originHost.toLowerCase() === host.toLowerCase();
 }
 
-const sessions = new WeakMap<Request, Session>();
+/**
+ * Who is signed in, for a route. With the new sign-in off: the old sign-in's session (src/lib/auth.ts), exactly as
+ * before. With it on (src/lib/auth2/config.ts auth2Enabled): only the new sign-in's session, checked by Better Auth on
+ * the server for this request; an old session is not accepted for anything, and a person who must set up two-step
+ * sign-in first is refused (403) everywhere but the account screens (cut-over, accounts slice 2).
+ */
+export type AppSession =
+  | (Session & { kind: "old" })
+  | { kind: "auth2"; sessionId: string; userId: string; username: string; usingDefaultPassword: false };
+
+const TWO_FACTOR_FIRST = "A workspace you belong to requires two-step sign-in. Set up an authenticator app first, at /auth/two-factor/setup.";
+
+async function resolveSession(req: Request): Promise<AppSession | null> {
+  const { auth2Enabled } = await import("@/lib/auth2/config");
+  if (!(await auth2Enabled())) {
+    const old = await sessionFromRequest(req);
+    return old ? { ...old, kind: "old" } : null;
+  }
+  const { auth2Session } = await import("@/lib/auth2/server");
+  const s = await auth2Session(req.headers).catch(() => null);
+  if (!s) return null;
+  const { ownerPool } = await import("@/lib/db");
+  const { owed } = await import("@/lib/auth2/workspaces/twoFactor");
+  if (await owed(ownerPool(), s.user.id)) throw new HttpError(403, TWO_FACTOR_FIRST);
+  return { kind: "auth2", sessionId: s.session.id, userId: s.user.id, username: s.user.email, usingDefaultPassword: false };
+}
+
+/** For the old sign-in's open routes (sign-in, sign-out): not found while the new sign-in is on. */
+export async function refuseWhenNewSignIn(): Promise<void> {
+  const { auth2Enabled } = await import("@/lib/auth2/config");
+  if (await auth2Enabled()) throw new HttpError(404, "Not found.");
+}
+
+/** Who is signed in, for "who am I": the new sign-in's session when it is on, else the old one. Never throws. */
+export async function whoIsSignedIn(req: Request): Promise<{ username: string; usingDefaultPassword: boolean } | null> {
+  try {
+    const s = await resolveSession(req);
+    return s ? { username: s.username, usingDefaultPassword: s.usingDefaultPassword } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** For the old sign-in's own routes: not found while the new sign-in is on (they are replaced by /api/auth2). */
+export function oldSessionOf(req: Request): Session {
+  const s = sessionOf(req);
+  if (s.kind !== "old") throw new HttpError(404, "Not found.");
+  return s;
+}
+
+const sessions = new WeakMap<Request, AppSession>();
 
 /** The session route() found for this request. Only for handlers wrapped in route() (not route.open). */
-export function sessionOf(req: Request): Session {
+export function sessionOf(req: Request): AppSession {
   const s = sessions.get(req);
   if (!s) throw new HttpError(401, SIGN_IN_REQUIRED);
   return s;
@@ -246,7 +296,7 @@ function wrap<A extends unknown[]>(handler: (...args: A) => Promise<Response>, o
       }
       await guardRequest(req, opts);
       if (!open) {
-        const session = await sessionFromRequest(req);
+        const session = await resolveSession(req);
         if (!session) throw new HttpError(401, SIGN_IN_REQUIRED);
         sessions.set(req, session);
         // Everything this request changes is recorded in the audit log against this name.

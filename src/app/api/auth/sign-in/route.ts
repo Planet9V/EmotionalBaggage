@@ -1,7 +1,7 @@
 import { audit } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { body, HttpError, route } from "@/lib/api/route";
+import { body, HttpError, refuseWhenNewSignIn, route } from "@/lib/api/route";
 import { clientAddress, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, sessionCookie, signIn, signOut, tokenFromRequest } from "@/lib/auth";
 
 const SignIn = z.object({
@@ -11,6 +11,8 @@ const SignIn = z.object({
 
 /** Open: this is how a session starts. The origin check in route() still applies. */
 export const POST = route.open(async (req: Request) => {
+  // Replaced by /api/auth2 while the new sign-in is on.
+  await refuseWhenNewSignIn();
   const { username, password } = await body(req, SignIn);
   const result = await signIn(username, password, req.headers.get("user-agent") ?? "", { client: clientAddress(req) });
   if (!result.ok) {

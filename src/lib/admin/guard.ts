@@ -31,7 +31,11 @@ export const platformAdminOnly = {
   test: (kind: string) => PLATFORM_ADMIN_ONLY.tests.has(kind),
 };
 
-/** The platform administrator: only through the new sign-in. */
+/**
+ * The platform administrator: only through the new sign-in. route() has already decided who is signed in: with the
+ * new sign-in on that is its session (an old demo session is not accepted there, src/lib/api/route.ts), with it off
+ * the old one, under which nobody is the platform administrator.
+ */
 export async function isPlatformAdmin(req: Request): Promise<boolean> {
   sessionOf(req); // signed in first (route() has answered 401 otherwise)
   return platformAdminFromAuth2(req);
