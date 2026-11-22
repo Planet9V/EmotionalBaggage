@@ -38,7 +38,7 @@ describe("the page proxy", () => {
 });
 
 describe("with AUTH2 off", () => {
-  it("every address under /api/auth2 answers 404, for every method and origin", async () => {
+  it("every address under /api/auth2 answers 404; a cross-site POST meets the app's usual 403 first", async () => {
     const route = await import("@/app/api/auth2/[...all]/route");
     for (const v of ["", "0", "off", "false", "no"]) {
       if (v) process.env.AUTH2 = v;
@@ -46,7 +46,7 @@ describe("with AUTH2 off", () => {
       for (const path of ["/get-session", "/ok", "/anything"]) expect((await route.GET(req("GET", path))).status).toBe(404);
       for (const path of ["/sign-up/email", "/sign-in/email", "/sign-out", "/two-factor/verify-totp", "/request-password-reset"]) {
         expect((await route.POST(req("POST", path, { origin: "http://localhost:3322", body: { email: "a@b.test", password: "x" } }))).status).toBe(404);
-        expect((await route.POST(req("POST", path, { origin: "https://evil.example", body: {} }))).status).toBe(404);
+        expect((await route.POST(req("POST", path, { origin: "https://evil.example", body: {} }))).status).toBe(403);
       }
     }
   });

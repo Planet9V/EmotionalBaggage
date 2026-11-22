@@ -71,8 +71,9 @@ export async function ensureAppRole(owner: Pool, url: string): Promise<void> {
         await c.query(`CREATE ROLE ${role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD ${escapeLiteral(scramVerifier(password))}`);
       } catch (e) {
         throw new Error(
-          `The database role "${name}" named in DATABASE_APP_URL does not exist and the owner could not create it (${(e as Error).message}). ` +
-            "Create it by hand (docs/guide/admin.md, \"Two database roles\") or give the owner the CREATEROLE right."
+          `The database role "${name}" named in DATABASE_APP_URL does not exist and the owner could not create it. ` +
+            "Create it by hand (docs/guide/admin.md, \"Two database roles\") or give the owner the CREATEROLE right.",
+          { cause: e }
         );
       }
     } else if (found.rows[0].rolsuper || found.rows[0].rolbypassrls) {

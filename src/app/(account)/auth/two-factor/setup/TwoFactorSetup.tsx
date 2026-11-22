@@ -137,7 +137,7 @@ function Enrol({ email }: { email: string }) {
           <p role="status" className="text-sm text-secondary">Drawing the QR code…</p>
         )}
         <p className="text-sm text-secondary">Cannot scan? Type this key into the app instead:</p>
-        <p className="break-all font-mono text-sm text-primary" aria-label="Key to type into the app">{secretOf(started.totpURI)}</p>
+        <p className="break-all font-mono text-sm text-primary" data-totp-key>{secretOf(started.totpURI)}</p>
       </section>
       <RecoveryCodes codes={started.backupCodes} />
       <form method="post" onSubmit={(e) => void confirm(e)} noValidate className="space-y-4" aria-labelledby="confirm-h">
