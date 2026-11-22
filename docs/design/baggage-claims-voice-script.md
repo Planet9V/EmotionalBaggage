@@ -243,5 +243,7 @@ After one use it becomes the small Sound on / Sound off switch in the top bar, w
 
 1. The introduction: A (narrator, chosen), B (the bag) or C (the host).
 2. The invitation on the sound control: one of the three wordings.
-3. The cast, and whether it is funny, by listening on the welcome page.
-4. That the speech-level hook (`speechLevelAt`, `currentSpeech`, `useSpeechLevel` in `voiceTrack.ts` and `useSpeechLevel.ts`) is what WS13 wants for the tag's speaker grille.
+3. The cast, and whether it is funny: generate takes of each line in Admin, Voice-overs with an expressive model, listen side by side, star and publish. The seeded clips are Kokoro drafts.
+4. The directions in section 2 (the wording of each, and the character notes), and the pack directions.
+5. When clips other than Kokoro's are published, the line beside the film ("made with Kokoro") must name the model used; it is fixed text today (`SOUND.synthetic` in `voiceScript.ts`).
+6. That the speech-level hook (`speechLevelAt`, `currentSpeech`, `useSpeechLevel` in `voiceTrack.ts` and `useSpeechLevel.ts`) is what WS13 wants for the tag's speaker grille.
