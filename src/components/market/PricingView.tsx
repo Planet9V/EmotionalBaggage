@@ -4,6 +4,9 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +26,7 @@ import type { ViewProps } from "@/components/views/types";
 import { PriceStrip, type StripPoint } from "./PriceStrip";
 import { Status } from "./shared";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 
 type PriceRow = { item: Item; priceMinor: number; approach: string; note: string; currency: string };
 type ChannelCol = ChannelCosts & { id: number | null; name: string };
@@ -263,21 +266,34 @@ export function PricingView({ project, store }: ViewProps) {
 const feeText = (percent: number | null, fixed: number | null, currency: string) =>
   percent === null && fixed === null ? "not entered" : percent === null ? formatMoney(toMinor(fixed ?? 0, currency), currency) : `${percent}%${fixed ? ` + ${formatMoney(toMinor(fixed, currency), currency)}` : ""}`;
 
+const PRICE_ID = "price-to-consider";
+
 function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: number) => Promise<unknown> }) {
-  const [v, setV] = useState("");
-  const [err, setErr] = useState("");
-  const go = async () => {
-    const m = parseMinor(v, currency);
-    if (m === null || m === 0) return setErr("Enter a price above zero, such as 24.95.");
-    setErr("");
-    await onAdd(m);
-    setV("");
-  };
+  const priceSchema = z.object({
+    price: z.string().refine((v) => {
+      const m = parseMinor(v, currency);
+      return m !== null && m !== 0;
+    }, "Enter a price above zero, such as 24.95."),
+  });
+  const { register, handleSubmit, reset, setError, formState: { errors } } = useForm<z.infer<typeof priceSchema>>({
+    resolver: zodResolver(priceSchema),
+    defaultValues: { price: "" },
+  });
+  const go = handleSubmit(async ({ price }) => {
+    try {
+      await onAdd(parseMinor(price, currency) as number);
+      reset({ price: "" });
+    } catch (e) {
+      setError("root", { message: (e as Error).message });
+    }
+  });
   return (
-    <form id="add-price" className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void go(); }}>
-      <Field label={`A price to consider (${currency})`} className="w-56"><MoneyInput currency={currency} value={v} onChange={(e) => setV(e.target.value)} placeholder="24.95" /></Field>
+    <form id="add-price" className="flex flex-wrap items-end gap-3" noValidate onSubmit={(e) => void go(e)}>
+      <Field id={PRICE_ID} label={`A price to consider (${currency})`} className="w-56" error={errors.price?.message}>
+        <MoneyInput id={PRICE_ID} currency={currency} placeholder="24.95" {...describe(PRICE_ID, { error: errors.price?.message })} {...register("price")} />
+      </Field>
       <Button type="submit"><Plus className="h-4 w-4" aria-hidden /> Add price</Button>
-      {err && <p role="alert" className="w-full text-sm text-danger">{err}</p>}
+      {errors.root?.message && <p role="alert" className="w-full text-sm text-danger">{errors.root.message}</p>}
     </form>
   );
 }

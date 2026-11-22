@@ -29,8 +29,8 @@ Where a control is not a plain input (the shared `WhyField`, a picker), it is wi
 | | Before | After |
 |---|---:|---:|
 | Forms (`<form>` elements) | 55 in 51 files | 55 |
-| Conforming | 15 | 29 |
-| Hand-wired | 40 | 26 |
+| Conforming | 15 | 33 |
+| Hand-wired | 40 | 22 |
 
 The earlier audit's "51 forms" counted files.
 
@@ -72,18 +72,18 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | views/SocialView.tsx | compose post | M | converted, batch 3 |
 | campaigns/PlanCard.tsx | launch plan settings | M | hand-wired |
 | campaigns/LinksView.tsx | tracked link | M | hand-wired |
-| campaigns/LaunchView.tsx | start a launch | M | hand-wired |
+| campaigns/LaunchView.tsx | start a launch | M | converted, batch 4 |
 | campaigns/ResultsView.tsx | results import and rule | M | hand-wired |
 | campaigns/CampaignDialog.tsx | campaign | L | hand-wired: nine checks, money inputs |
 | market/PersonasView.tsx | persona | M | converted, batch 3 |
 | market/NamesView.tsx | add a name or tagline | S | converted, batch 3 |
 | market/PositioningView.tsx | positioning line | M | hand-wired |
-| market/PricingView.tsx | price point | M | hand-wired |
+| market/PricingView.tsx | price point | M | converted, batch 4 |
 | market/CompetitorsView.tsx | competitor | L | hand-wired |
-| channels/ReviewsView.tsx | add a review | M | hand-wired |
+| channels/ReviewsView.tsx | add a review | M | converted, batch 4 |
 | channels/ReviewsView.tsx | import reviews | L | hand-wired: file upload with column mapping |
 | views/ResearchView.tsx | ask research | M | hand-wired |
-| views/MonitorView.tsx | sales entry | M | hand-wired |
+| views/MonitorView.tsx | sales entry | M | converted, batch 4 |
 | views/bom/dialogs.tsx | part / import | L | hand-wired |
 | items/ItemDrawer.tsx | edit a row | L | hand-wired: autosave per field |
 | schematic/WireDialog.tsx | wire | L | hand-wired |

@@ -4,6 +4,9 @@
 // and one chart of units or revenue by day and channel, with the same numbers as a table.
 import { MoneyInput } from "@/components/ui/money-input";
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +23,7 @@ import { messageOf } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "./types";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
@@ -227,48 +230,48 @@ export function MonitorView({ project, store }: ViewProps) {
   );
 }
 
+const saleSchema = z.object({
+  date: z.string().min(1, "Pick a date."),
+  channel: z.string().trim().min(1, "Name the channel."),
+  units: z.string().refine((v) => {
+    const n = parseAmount(v);
+    return n !== null && Number.isInteger(n);
+  }, "Units must be a whole number."),
+  revenue: z.string().refine((v) => parseAmount(v) !== null, "Revenue must be a number."),
+});
+
 function AddSale({ channels, onCreate }: { channels: string[]; onCreate: (v: { date: string; channel: string; units: number; revenue: number }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ date: todayLocal(), channel: "", units: "", revenue: "" });
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting: busy } } = useForm<z.infer<typeof saleSchema>>({
+    resolver: zodResolver(saleSchema),
+    defaultValues: { date: todayLocal(), channel: "", units: "", revenue: "" },
+  });
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const units = parseAmount(f.units);
-    const revenue = parseAmount(f.revenue);
-    if (!f.date) return setErr("Pick a date.");
-    if (!f.channel.trim()) return setErr("Name the channel.");
-    if (units === null || !Number.isInteger(units)) return setErr("Units must be a whole number.");
-    if (revenue === null) return setErr("Revenue must be a number.");
-    setBusy(true);
+  const submit = handleSubmit(async (f) => {
     try {
-      await onCreate({ date: f.date, channel: f.channel.trim(), units, revenue });
-      setF({ date: f.date, channel: f.channel, units: "", revenue: "" });
-      setErr("");
+      await onCreate({ date: f.date, channel: f.channel, units: parseAmount(f.units) as number, revenue: parseAmount(f.revenue) as number });
+      reset({ date: f.date, channel: f.channel, units: "", revenue: "" });
       setOpen(false);
     } catch (x) {
-      setErr((x as Error).message);
-    } finally {
-      setBusy(false);
+      setError("root", { message: (x as Error).message });
     }
-  };
+  });
 
   return (
     <>
       <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" aria-hidden /> Add row</Button>
       <Modal open={open} onOpenChange={setOpen} title="Add a sales row" description="Entered by hand. Revenue is in whatever currency you use for this channel.">
-        <form onSubmit={submit} className="space-y-3">
+        <form onSubmit={(e) => void submit(e)} noValidate className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} required /></Field>
-            <Field label="Channel">
-              <Input value={f.channel} onChange={(e) => setF({ ...f, channel: e.target.value })} list="sales-channels" required autoFocus />
+            <Field id="sale-date" label="Date" error={errors.date?.message}><Input id="sale-date" type="date" required {...describe("sale-date", { error: errors.date?.message })} {...register("date")} /></Field>
+            <Field id="sale-channel" label="Channel" error={errors.channel?.message}>
+              <Input id="sale-channel" list="sales-channels" required autoFocus {...describe("sale-channel", { error: errors.channel?.message })} {...register("channel")} />
               <datalist id="sales-channels">{channels.map((c) => <option key={c} value={c} />)}</datalist>
             </Field>
-            <Field label="Units"><Input value={f.units} onChange={(e) => setF({ ...f, units: e.target.value })} inputMode="numeric" className="font-mono" required /></Field>
-            <Field label="Revenue"><MoneyInput value={f.revenue} onChange={(e) => setF({ ...f, revenue: e.target.value })} placeholder="0.00" required /></Field>
+            <Field id="sale-units" label="Units" error={errors.units?.message}><Input id="sale-units" inputMode="numeric" className="font-mono" required {...describe("sale-units", { error: errors.units?.message })} {...register("units")} /></Field>
+            <Field id="sale-revenue" label="Revenue" error={errors.revenue?.message}><MoneyInput id="sale-revenue" placeholder="0.00" required {...describe("sale-revenue", { error: errors.revenue?.message })} {...register("revenue")} /></Field>
           </div>
-          {err ? <ErrorLine>{err}</ErrorLine> : null}
+          {errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={busy}>{busy ? "Adding" : "Add row"}</Button>

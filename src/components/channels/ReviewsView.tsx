@@ -6,14 +6,17 @@
 import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
@@ -184,15 +187,25 @@ function AskedMost({ projectId, count, onTurn }: { projectId: string; count: num
   );
 }
 
+const REVIEW_TEXT_ID = "review-text";
+const reviewSchema = z.object({
+  kind: z.string(),
+  rating: z.string(),
+  source: z.string(),
+  date: z.string(),
+  productVersion: z.string(),
+  sentiment: z.string(),
+  topic: z.string(),
+  text: z.string().refine((v) => v.trim() !== "", "Write or paste what the customer said."),
+});
+
 function AddReview({ onClose, onCreate }: { onClose: () => void; onCreate: (v: { title: string; body: string; data: Record<string, unknown> }) => Promise<void> }) {
-  const [f, setF] = useState({ kind: "review", text: "", rating: "", source: "", date: todayUtc(), productVersion: "", topic: "", sentiment: "" });
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!f.text.trim()) return setErr("Write or paste what the customer said.");
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting: busy } } = useForm<z.infer<typeof reviewSchema>>({
+    resolver: zodResolver(reviewSchema),
+    defaultValues: { kind: "review", text: "", rating: "", source: "", date: todayUtc(), productVersion: "", topic: "", sentiment: "" },
+  });
+  const submit = handleSubmit(async (f) => {
     const rating = f.rating ? Number(f.rating) : null;
-    setBusy(true);
     try {
       await onCreate({
         title: f.text.trim().split("\n")[0].slice(0, 120),
@@ -201,24 +214,23 @@ function AddReview({ onClose, onCreate }: { onClose: () => void; onCreate: (v: {
       });
       onClose();
     } catch (x) {
-      setErr((x as Error).message);
-      setBusy(false);
+      setError("root", { message: (x as Error).message });
     }
-  };
+  });
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Add a review or question" description="As the customer wrote it. Leave out their name and contact details.">
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={(e) => void submit(e)} noValidate className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Kind"><NativeSelect value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="review">Review</option><option value="question">Question</option></NativeSelect></Field>
-          <Field label="Rating (1 to 5)"><NativeSelect value={f.rating} onChange={(e) => setF({ ...f, rating: e.target.value })}><option value="">none</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</NativeSelect></Field>
-          <Field label="Where it was left"><Input value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} placeholder={`${channelName("amazon")}, ${channelName("own-site").toLowerCase()}, e-mail`} /></Field>
-          <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
-          <Field label="Product version"><Input value={f.productVersion} onChange={(e) => setF({ ...f, productVersion: e.target.value })} /></Field>
-          <Field label="Sentiment"><NativeSelect value={f.sentiment} onChange={(e) => setF({ ...f, sentiment: e.target.value })}><option value="">not set</option>{SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}</NativeSelect></Field>
+          <Field label="Kind"><NativeSelect {...register("kind")}><option value="review">Review</option><option value="question">Question</option></NativeSelect></Field>
+          <Field label="Rating (1 to 5)"><NativeSelect {...register("rating")}><option value="">none</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</NativeSelect></Field>
+          <Field label="Where it was left"><Input placeholder={`${channelName("amazon")}, ${channelName("own-site").toLowerCase()}, e-mail`} {...register("source")} /></Field>
+          <Field label="Date"><Input type="date" {...register("date")} /></Field>
+          <Field label="Product version"><Input {...register("productVersion")} /></Field>
+          <Field label="Sentiment"><NativeSelect {...register("sentiment")}><option value="">not set</option>{SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}</NativeSelect></Field>
         </div>
-        <Field label="Topic"><Input value={f.topic} onChange={(e) => setF({ ...f, topic: e.target.value })} placeholder="battery life" /></Field>
-        <Field label="What they wrote"><Textarea rows={5} value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} autoFocus /></Field>
-        {err ? <ErrorLine>{err}</ErrorLine> : null}
+        <Field label="Topic"><Input placeholder="battery life" {...register("topic")} /></Field>
+        <Field id={REVIEW_TEXT_ID} label="What they wrote" error={errors.text?.message}><Textarea id={REVIEW_TEXT_ID} rows={5} autoFocus {...describe(REVIEW_TEXT_ID, { error: errors.text?.message })} {...register("text")} /></Field>
+        {errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>Cancel</Button><Button type="submit" disabled={busy}>{busy ? "Adding" : "Add"}</Button></div>
       </form>
     </Modal>

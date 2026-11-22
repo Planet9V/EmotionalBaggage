@@ -3,6 +3,9 @@
 import { RowActions } from "@/components/drafts/RowActions";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { AlertTriangle, ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +22,15 @@ import { statusTone } from "@/lib/statusTones";
 import type { ViewProps } from "@/components/views/types";
 import { startLaunch } from "./hooks";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { todayUtc } from "@/lib/format";
+
+const LAUNCH_DATE_ID = "launch-start-date";
+const startSchema = z.object({
+  date: z.string().refine(isDay, "Pick the launch date first. Every step's due date is counted back from it."),
+  title: z.string(),
+});
 
 export function LaunchView({ project, section }: ViewProps) {
   const { items, loading, error, reload, patch, remove } = useItems(project.id, LAUNCH_STORE);
@@ -29,10 +38,11 @@ export function LaunchView({ project, section }: ViewProps) {
   const process = useProcess(project.id);
   const qc = useQueryClient();
   const [tpl, setTpl] = useState(TEMPLATES[0].id);
-  const [date, setDate] = useState("");
-  const [title, setTitle] = useState("");
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting: busy } } = useForm<z.infer<typeof startSchema>>({
+    resolver: zodResolver(startSchema),
+    defaultValues: { date: "", title: "" },
+  });
   const statuses = section.statuses ?? [];
 
   const launches = useMemo(() => items.filter(isLaunchRow).map(toLaunch), [items]);
@@ -52,21 +62,16 @@ export function LaunchView({ project, section }: ViewProps) {
   if (error && !items.length) return <LoadError what="The launch plan" message={error} onRetry={() => void reload()} />;
 
   const chosen = TEMPLATES.find((t) => t.id === tpl) ?? TEMPLATES[0];
-  const start = async () => {
+  const start = handleSubmit(async ({ date, title }) => {
     setErr("");
-    if (!isDay(date)) return setErr("Pick the launch date first. Every step's due date is counted back from it.");
-    setBusy(true);
     try {
       await startLaunch(project.id, { template: chosen.id, launchDate: date, title: title.trim() || undefined });
-      setDate("");
-      setTitle("");
+      reset({ date: "", title: "" });
       await qc.invalidateQueries({ queryKey: keys.itemsOf(project.id) });
     } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
+      setError("root", { message: (e as Error).message });
     }
-  };
+  });
 
   const deleteLaunch = async (l: LaunchRow) => {
     if (!window.confirm(`Delete the launch "${l.title}" and its ${steps.filter((s) => s.launch === l.launchKey).length} steps?`)) return;
@@ -102,12 +107,12 @@ export function LaunchView({ project, section }: ViewProps) {
             ))}
           </div>
         </fieldset>
-        <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void start(); }}>
-          <Field label="Launch date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-44" /></Field>
-          <Field label="Name (optional)" className="min-w-56 flex-1"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`${chosen.label} launch`} /></Field>
+        <form className="flex flex-wrap items-end gap-3" noValidate onSubmit={(e) => void start(e)}>
+          <Field id={LAUNCH_DATE_ID} label="Launch date" error={errors.date?.message}><Input id={LAUNCH_DATE_ID} type="date" className="w-44" {...describe(LAUNCH_DATE_ID, { error: errors.date?.message })} {...register("date")} /></Field>
+          <Field label="Name (optional)" className="min-w-56 flex-1"><Input placeholder={`${chosen.label} launch`} {...register("title")} /></Field>
           <Button type="submit" disabled={busy}>{busy ? "Starting" : `Start the ${chosen.label} launch`}</Button>
         </form>
-        {err && <ErrorLine>{err}</ErrorLine>}
+        {(errors.root?.message || err) && <ErrorLine>{errors.root?.message ?? err}</ErrorLine>}
       </Card>
 
       {launches.length === 0 ? (
