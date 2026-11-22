@@ -53,7 +53,7 @@ async function auditSince(action: string) {
 beforeAll(async () => {
   startedAt = new Date(Date.now() - 1000);
   await q("DELETE FROM access_requests");
-  await q("DELETE FROM sign_in_attempts WHERE username_key = ' access-request'");
+  await q("DELETE FROM sign_in_attempts WHERE username_key LIKE ' access-%'");
   await q("DELETE FROM users WHERE username = $1", [OWNER]);
   const u = await q<{ id: string }>("INSERT INTO users (username, password_hash, password_changed_at) VALUES ($1, $2, now()) RETURNING id", [OWNER, await hashPassword("owner-password-1")]);
   ownerCookie = await createSession(Number(u[0]!.id), "vitest-access");
@@ -61,7 +61,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await q("DELETE FROM access_requests");
-  await q("DELETE FROM sign_in_attempts WHERE username_key = ' access-request'");
+  await q("DELETE FROM sign_in_attempts WHERE username_key LIKE ' access-%'");
   await q("DELETE FROM users WHERE username = $1", [OWNER]);
   await pool().end();
 });
@@ -174,9 +174,44 @@ describe("POST /api/access-requests (open)", () => {
     expect((await POST(visitor(good({ name: "Elsewhere" }), "203.0.113.78"))).status).toBe(201);
   });
 
+  it("a flood of refused tries from one address writes a few audit lines that carry the count, not one line each", async () => {
+    const client = "203.0.113.90";
+    for (let i = 0; i < 5; i++) expect((await POST(visitor(good({ name: `Flood ${i}`, email: `flood${i}@example.test` }), client))).status).toBe(201);
+    const before = (await auditSince("access.refused")).length;
+    for (let i = 0; i < 40; i++) expect((await POST(visitor(good({ name: "Flood more" }), client))).status).toBe(429);
+    const lines = (await auditSince("access.refused")).slice(before);
+    // one at the 1st, 2nd, 4th, 8th, 16th and 32nd: six lines for forty refusals
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.length).toBeLessThanOrEqual(6);
+    expect(lines.map((l) => l.detail.count)).toEqual([1, 2, 4, 8, 16, 32]);
+    expect(lines.every((l) => l.detail.reason === "rate-limited")).toBe(true);
+    // the five accepted requests are all still recorded, one line each
+    expect((await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests WHERE name LIKE 'Flood %'"))[0]!.n).toBe(5);
+    expect((await auditSince("access.requested")).filter((l) => l.detail.id !== undefined).length).toBeGreaterThanOrEqual(5);
+    await q("DELETE FROM access_requests WHERE name LIKE 'Flood %'");
+  });
+
+  it("the same request sent again is kept once and answered like the first, and the repeats are counted, not audited each", async () => {
+    const client = "203.0.113.91";
+    const same = good({ name: "Twice Over", email: "twice@example.test" });
+    const first = await POST(visitor(same, client));
+    expect(first.status).toBe(201);
+    const requested = (await auditSince("access.requested")).length;
+    const refused = (await auditSince("access.refused")).length;
+    const again = await read<{ ok: boolean; message: string }>(await POST(visitor(same, client)));
+    expect(again.body).toEqual({ ok: true, message: ACCESS_CONFIRMATION });
+    expect((await POST(visitor(same, client))).status).toBe(200);
+    expect((await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests WHERE email = 'twice@example.test'"))[0]!.n).toBe(1);
+    expect((await auditSince("access.requested")).length).toBe(requested);
+    const lines = (await auditSince("access.refused")).slice(refused);
+    expect(lines.map((l) => [l.detail.reason, l.detail.count])).toEqual([["duplicate", 1], ["duplicate", 2]]);
+    await q("DELETE FROM access_requests WHERE name = 'Twice Over'");
+  });
+
   it("keeps its count apart from sign-in counts: a username can never share the row", async () => {
     const rows = await q<{ username_key: string }>("SELECT username_key FROM sign_in_attempts WHERE client = '203.0.113.77'");
-    expect(rows.map((r) => r.username_key)).toEqual([" access-request"]);
+    // the form's own try count, and the count of its refusals: every key starts with a space, so no username can share a row
+    expect(rows.map((r) => r.username_key).sort()).toEqual([" access-refused rate-limited", " access-request"]);
   });
 });
 

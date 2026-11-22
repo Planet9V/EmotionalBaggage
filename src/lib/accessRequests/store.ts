@@ -4,6 +4,7 @@
  * its number only: the log is kept for ever and cannot be edited, so a person's name and email stay out of it.
  */
 import { audit, auditIn, q, tx } from "@/lib/db";
+import { ATTEMPT_RESET_MS } from "@/lib/auth";
 import { toCsvText } from "@/lib/csv";
 import { HttpError, notFound } from "@/lib/api/route";
 import { ACCESS_LEVEL_LABEL, ACCESS_STATUS_LABEL, type AccessLevel, type AccessRequestRow, type AccessRequestValues, type AccessStatus } from "./shared";
@@ -35,14 +36,52 @@ export async function createAccessRequest(v: Omit<AccessRequestValues, "website"
   });
 }
 
-/** Records a request that was dropped by the honeypot or the rate limit. Nothing the visitor typed is kept. */
-export function auditRefusedRequest(reason: "honeypot" | "rate-limited") {
-  return audit({
-    action: "access.refused",
-    summary: reason === "honeypot" ? "An access request was dropped: the hidden field was filled in" : "An access request was refused: too many from one address",
-    detail: { reason },
-    actor: "",
-  });
+/** Why a try was not stored: the hidden field was filled, the address is waiting, or the same request was already kept. */
+export type RefusalReason = "honeypot" | "rate-limited" | "duplicate";
+
+const REFUSAL_SUMMARY: Record<RefusalReason, string> = {
+  honeypot: "An access request was dropped: the hidden field was filled in",
+  "rate-limited": "An access request was refused: too many from one address",
+  duplicate: "An access request was dropped: the same request was already kept",
+};
+
+/**
+ * Counts one try that was not stored, per reason and network address, forgotten after an hour with none (the same
+ * window as the form's own throttle). The count lives with the throttle's rows in `sign_in_attempts`, under a key
+ * that starts with a space, so no username can share it. Answers the count in this window.
+ */
+async function countRefusal(reason: RefusalReason, client: string, now: Date): Promise<number> {
+  const rows = await q<{ failures: number }>(
+    `INSERT INTO sign_in_attempts AS a (username_key, client, failures, last_attempt_at, next_allowed_at)
+     VALUES ($1, $2, 1, $3::timestamptz, $3::timestamptz)
+     ON CONFLICT (username_key, client) DO UPDATE SET
+       failures = CASE WHEN a.last_attempt_at <= $4::timestamptz THEN 1 ELSE a.failures + 1 END,
+       last_attempt_at = $3::timestamptz,
+       next_allowed_at = $3::timestamptz
+     RETURNING failures`,
+    [` access-refused ${reason}`, (client || "unknown").slice(0, 100), now, new Date(now.getTime() - ATTEMPT_RESET_MS)]
+  );
+  return rows[0]!.failures;
+}
+
+/**
+ * Records a try that was dropped by the honeypot, the rate limit or as a repeat. Nothing the visitor typed and no
+ * address is kept. The log is written to, not edited, so a flood is not one line per try: a line is written at
+ * the 1st, 2nd, 4th, 8th ... try from one address in a window, and says how many there have been.
+ */
+export async function auditRefusedRequest(reason: RefusalReason, client: string, now = new Date()) {
+  const count = await countRefusal(reason, client, now);
+  if (count & (count - 1)) return;
+  await audit({ action: "access.refused", summary: count === 1 ? REFUSAL_SUMMARY[reason] : `${REFUSAL_SUMMARY[reason]} (${count} so far from this address)`, detail: { reason, count }, actor: "" });
+}
+
+/** The id of a request already kept with these very answers in the last day, or null. */
+export async function findRecentDuplicate(v: Omit<AccessRequestValues, "website">): Promise<number | null> {
+  const rows = await q<{ id: string }>(
+    "SELECT id FROM access_requests WHERE email = $1 AND building = $2 AND name = $3 AND company = $4 AND level = $5 AND created_at > now() - interval '1 day' ORDER BY id LIMIT 1",
+    [v.email.toLowerCase(), v.building, v.name, v.company, v.level ?? ""]
+  );
+  return rows[0] ? Number(rows[0].id) : null;
 }
 
 /** Every request, newest first. There is no paging: an install receives a handful, and the cap keeps a flood readable. */
