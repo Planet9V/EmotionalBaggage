@@ -19,7 +19,8 @@ export type { CanvasPart, CanvasWire, CutPlane, Measurement, RoutedDraw, ShellVi
 import { Animator, CameraRig } from "./canvasRig";
 import { RoutedLayer, WiresLayer } from "./canvasWires";
 import { MeasureLayer, SectionClip } from "./canvasTools";
-import { Showcase } from "./canvasShowcase";
+import { Showcase, ShowcaseLook } from "./canvasShowcase";
+import { assemblyTargets, combineFade } from "./showcaseLogic";
 
 function Scene(props: ModelCanvasProps & { progress: Progress }) {
   const { parts, selectedId, onSelect, explode, labels, shellView, shellParams, resetToken, dark, uploaded, progress, wires, wiresOn, fade, weights, focusIds, onFocusPart, transform, onTransform, section, measure, onMeasure, routed } = props;
@@ -68,11 +69,22 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
   const tool = useMemo(() => ({ measuring: measure, cutting: section.some((c) => c.on) }), [measure, section]);
 
   const geoms = useMemo(() => parts.map((p) => p.geometry), [parts]);
+  // The showcase's assembly and hidden layers become fade and explode-weight targets like the view's own.
+  const assembly = props.showcase?.assembly;
+  const hide = props.showcase?.hide;
+  const { fadeTargets, weightTargets } = useMemo(() => {
+    const ids = parts.map((p) => p.id);
+    const asm = assembly ? assemblyTargets(assembly.steps, assembly.done, ids) : null;
+    return { fadeTargets: combineFade(fade, asm?.fade ?? null, hide ?? null, ids), weightTargets: asm?.weights ?? weights };
+  }, [parts, fade, weights, assembly, hide]);
   // Fade and explode-weight targets are handed to the render loop, not rendered by React.
   useEffect(() => {
-    progress.setTargets(parts.map((p) => p.id), fade, weights);
+    progress.setTargets(parts.map((p) => p.id), fadeTargets, weightTargets);
     invalidate();
-  }, [parts, fade, weights, progress, invalidate]);
+  }, [parts, fadeTargets, weightTargets, progress, invalidate]);
+  const xray = props.showcase?.xray ?? 1;
+  const edges = props.showcase?.edges ?? false;
+  const look = useMemo(() => ({ xray, edges }), [xray, edges]);
   const shellLift = useMemo(() => {
     const out = new Map<number, number>();
     for (const p of parts) if (p.geometry.shape === "shell") out.set(p.id, lidLift(p.geometry, geoms.filter((g) => g !== p.geometry)));
@@ -191,6 +203,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
       />
       <SectionClip cut={section} />
       <ToolContext.Provider value={tool}>
+      <ShowcaseLook.Provider value={look}>
       <group onClick={onMeasureClick}>
       {parts.map((p, i) =>
         p.geometry.shape === "shell" ? (
@@ -214,7 +227,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
         labelsOn &&
         parts.map((p) => {
           const info = labelInfo.get(p.id);
-          if (!info || (fade?.get(p.id) ?? 1) < 0.5) return null;
+          if (!info || (fadeTargets?.get(p.id) ?? 1) < 0.5) return null;
           const isShell = p.geometry.shape === "shell";
           return (
             <Leader
@@ -234,6 +247,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
       {wiresOn && explode === 0 && routed.length > 0 && <RoutedLayer wires={routed} />}
       {uploaded && <Uploaded mesh={uploaded.mesh} color={colors.uploaded} />}
       </group>
+      </ShowcaseLook.Provider>
       </ToolContext.Provider>
       <MeasureLayer points={points} dark={dark} />
       {showHandles && selectedPart && handleObj && (
