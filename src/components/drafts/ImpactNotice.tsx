@@ -12,6 +12,7 @@ import { type RunResult } from "@/lib/ai/drafts/shared";
 import { storeLink } from "@/lib/menuLookup";
 import { WATCHED_STORES, type ImpactReply } from "@/lib/ai/drafts/impact";
 import type { Item } from "@/lib/types";
+import { EVIDENCE_WRITE } from "@/lib/research/client";
 import { draftKeys, useImpact } from "./api";
 import { ApiError } from "@/lib/http";
 import { RunSummary } from "./DraftPanel";
@@ -26,12 +27,15 @@ type Change = { title?: string; body?: string; status?: string; sort?: number; d
 export function meaningful(item: Pick<Item, "section">, change: Change) {
   if (!WATCHED_STORES.has(item.section)) return false;
   if (change.title !== undefined || change.body !== undefined) return true;
+  // A claim's status is what makes it proof: verified to unverified takes proof away from what cites it.
+  if (item.section === "research/claims" && change.status !== undefined) return true;
   const data = Object.keys(change.data ?? {}).filter((k) => !COSMETIC.has(k));
   return data.length > 0;
 }
 
 /**
- * After a decision, requirement or part is saved with a change that matters, asks the planner what it
+ * After a decision, requirement, part, claim or positioning is saved with a change that matters
+ * (or a claim's evidence changes), asks the planner what it
  * affects and, when anything is, shows a quiet notice "This affects 7 rows" that opens the Impact panel.
  * It never blocks the save. It listens to the item writes of the shared hooks, so every view that saves
  * through useItems is covered without changing the view.
@@ -49,7 +53,16 @@ export function ImpactNotice({ projectId }: { projectId: string }) {
       qc.getMutationCache().subscribe((ev) => {
         if (ev.type !== "updated" || ev.action.type !== "success") return;
         const key = ev.mutation.options.mutationKey;
-        if (!Array.isArray(key) || key[0] !== "items-write" || key[1] !== projectId) return;
+        if (!Array.isArray(key) || key[1] !== projectId) return;
+        // Evidence added to or removed from a claim: its status may have changed with it.
+        if (key[0] === EVIDENCE_WRITE) {
+          const claim = (ev.action.data as { item?: Item } | undefined)?.item;
+          if (!claim || typeof claim.id !== "number") return;
+          setDismissed(false);
+          check(claim.id, { onSuccess: setReply, onError: () => setReply(null) });
+          return;
+        }
+        if (key[0] !== "items-write") return;
         // Counts on the Draft with AI buttons change with the rows.
         void qc.invalidateQueries({ queryKey: draftKeys.all(projectId) });
         const vars = ev.mutation.state.variables as { id?: number; change?: Change } | undefined;

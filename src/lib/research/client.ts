@@ -12,14 +12,19 @@ import type { EvidenceEntry, Verdict } from "./schemas";
 export type EvidenceInput = { claimId: number; url: string; title?: string; quote?: string; researchId?: number; verdict: Verdict };
 export type EvidenceResult = { item: Item; status: string; disputed: boolean; evidence: EvidenceEntry[] };
 
+/** The mutation key of an evidence change, so the impact notice hears it as it hears a row being saved. */
+export const EVIDENCE_WRITE = "claim-evidence";
+
 export function useEvidence(projectId: string) {
   const qc = useQueryClient();
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: keys.itemsOf(projectId) }), qc.invalidateQueries({ queryKey: keys.events(projectId) })]);
   const add = useMutation({
+    mutationKey: [EVIDENCE_WRITE, projectId],
     mutationFn: (b: EvidenceInput) => api<EvidenceResult>("/api/research/evidence", { method: "POST", body: JSON.stringify(b) }),
     onSettled: refresh,
   });
   const remove = useMutation({
+    mutationKey: [EVIDENCE_WRITE, projectId],
     mutationFn: (b: { claimId: number; url: string }) => api<EvidenceResult>("/api/research/evidence", { method: "DELETE", body: JSON.stringify(b) }),
     onSettled: refresh,
   });
