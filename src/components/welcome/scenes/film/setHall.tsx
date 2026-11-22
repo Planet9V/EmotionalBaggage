@@ -1,10 +1,11 @@
 "use client";
 
-// Two indoor scenes. The dark hold (script 1:10): the one low-key scene. The bag on a black cart among nets and
-// stacked luggage; the door shuts, one cool shaft is left, and the gadget's own glow is the brightest thing there.
-// Nothing moves for longer than is comfortable. The carousel (script 1:20): a warm white hall, a dark oval belt of
-// overlapping slats, the bag coming out through the flaps and round the bend leaning into the turn, and a stranger
-// who wants to know where it came from.
+// Two indoor scenes. The dark hold (script 1:10): the one low-key scene. The bag alone on a black cart in a long,
+// empty hull, everyone else's luggage netted far behind; the door shuts, one cool shaft of light is left (a white
+// spot from a seam, so the shell keeps its cream), and the gadget's own glow is the brightest colour there. Nothing
+// moves but the dust in the light. The carousel (script 1:20): a warm white hall, a dark oval belt of overlapping
+// slats, the bag coming out through the flaps and round the bend leaning into the turn; a cut skips to its next lap,
+// and it comes round again, right past a stranger who wants to know where it came from.
 import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
@@ -547,7 +548,7 @@ export const CarouselScene: Staged = { Set: CarouselSet, shots: [
     follow: (t) => {
       const b = rideBag(t).p;
       const p = kf(t, [[AGAIN_AT, 0], [10800, 1, "lin"]]);
-      return { pos: [mix(-1.55, -0.45, p), 1.55, mix(6.7, 6.35, p)], look: [mix(-0.9, b[0], 0.25), 0.95, mix(1.4, b[2], 0.25)] };
+      return { pos: [mix(-1.45, 0.05, p), 1.55, mix(6.7, 6.3, p)], look: [mix(-0.9, b[0], 0.25), 0.95, mix(1.4, b[2], 0.25)] };
     },
   },
 ] satisfies Shot[] };

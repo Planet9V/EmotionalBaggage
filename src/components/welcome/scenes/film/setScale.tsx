@@ -488,9 +488,9 @@ export const ScaleScene: Staged = { Set: () => <ScaleSet button={false} />, shot
 
 export const ButtonScene: Staged = { Set: () => <ScaleSet button />, shots: [
   // low, from the bag's side: it looks up at the number looming over it
-  { at: 0, to: 2700, pos: [[-1.0, 0.5, 2.55], [-0.88, 0.55, 2.3]], look: [0.4, 1.0, 0], fov: 34, rise: 0.1, ease: "soft" },
+  { at: 0, to: 2700, pos: [[-1.0, 0.5, 2.55], [-0.88, 0.55, 2.3]], look: [0.4, 0.95, 0], fov: 34, rise: 0.17, ease: "soft" },
   // square on and close, for the line and the pop
-  { at: 2700, to: 5300, pos: [[0.22, 0.95, 3.6], [0.22, 0.95, 3.25]], look: [0.28, 1.05, 0], rise: 0.12, ease: "soft" },
+  { at: 2700, to: 5300, pos: [[0.3, 0.9, 3.75], [0.3, 0.9, 3.4]], look: [0.32, 1.0, 0], rise: 0.13, ease: "soft" },
   // from the left: the bag, the display and its owner, who has something to tell us
   { at: 5300, pos: [[-2.95, 1.35, 3.95], [-2.7, 1.35, 3.65]], look: [0.75, 1.1, 0.45], rise: 0.1, ease: "soft" },
 ] satisfies Shot[] };
