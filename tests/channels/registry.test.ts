@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TEMPLATES } from "@/lib/campaigns/templates";
 import { CHANNELS, channelsWith, channelName, findChannel, namesWith } from "@/lib/channels/registry";
 import { AD_CHANNELS, SOCIAL_CHANNELS } from "@/lib/content/channels";
 import { LAYOUTS } from "@/lib/campaigns/csv";
@@ -47,5 +48,10 @@ describe("channel registry", () => {
   });
   it("purchase sources keep their order", () => {
     expect([...PURCHASE_SOURCES]).toEqual(["Amazon", "Micro Center", "Own printer", "Other"]);
+  });
+  it("launch templates for a known channel name it as the registry does", () => {
+    expect(TEMPLATES.map((t) => t.channel)).toEqual(["Kickstarter", "Amazon", "Own site", "Retail or wholesale", "Soft launch"]);
+    for (const t of TEMPLATES) if (findChannel(t.channel)) expect(t.channel).toBe(findChannel(t.channel)!.name);
+    expect(namesWith("sales")).toEqual(["Amazon", "Own site", "Kickstarter"]);
   });
 });

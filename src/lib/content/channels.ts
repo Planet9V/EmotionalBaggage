@@ -150,7 +150,7 @@ const AD_SPECS: Omit<ChannelSpec, "platform">[] = [
   },
   {
     id: "x-ads",
-    label: "X",
+    label: channelName("x"),
     channel: "x",
     summary: "The post text, with an optional video title and description, and a link.",
     fields: [
@@ -193,7 +193,7 @@ const AD_SPECS: Omit<ChannelSpec, "platform">[] = [
   },
   {
     id: "tiktok-ads",
-    label: "TikTok",
+    label: channelName("tiktok"),
     channel: "tiktok",
     summary: "A display name, a caption and a button over your video.",
     fields: [
@@ -212,7 +212,7 @@ const AD_SPECS: Omit<ChannelSpec, "platform">[] = [
   },
   {
     id: "reddit-ads",
-    label: "Reddit",
+    label: channelName("reddit"),
     channel: "reddit",
     summary: "A headline (the post's title), optional text and a button.",
     fields: [
@@ -228,7 +228,7 @@ const AD_SPECS: Omit<ChannelSpec, "platform">[] = [
   },
   {
     id: "pinterest-ads",
-    label: "Pinterest",
+    label: channelName("pinterest"),
     channel: "pinterest",
     summary: "A title and a description on a Pin, and the address it opens.",
     fields: [

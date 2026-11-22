@@ -19,6 +19,7 @@ import { useChannelActions, useChannelStatus } from "@/lib/channels/client";
 import { CHANNEL } from "@/lib/channels/schemas";
 import { messageOf } from "@/lib/queries";
 import { NotConnected, NotRealNote } from "./shared";
+import { channelName } from "@/lib/channels/registry";
 
 export function InboxView({ project, section, store }: ViewProps) {
   const { items, loading, error, writeError, patch, reload } = useItems(project.id, store);
@@ -69,12 +70,12 @@ export function InboxView({ project, section, store }: ViewProps) {
                 <Download className="h-4 w-4" aria-hidden /> Read Instagram comments
               </Button>
             </div>
-            {!s.x.configured ? <NotConnected service="X" what="mentions cannot be read" /> : !s.x.acknowledged ? (
+            {!s.x.configured ? <NotConnected service={channelName("x")} what="mentions cannot be read" /> : !s.x.acknowledged ? (
               <p className="text-sm text-secondary">
                 X bills each mention read. Read X&apos;s cost statement on <Link href="/s/marketing/posting" className="text-link underline">Posting</Link> and tick that you read it first.
               </p>
             ) : null}
-            {!s.instagram.configured ? <NotConnected service="Instagram" what="comments cannot be read" /> : null}
+            {!s.instagram.configured ? <NotConnected service={channelName("instagram")} what="comments cannot be read" /> : null}
           </div>
         ) : null}
         {fetchInbox.isPending ? <p role="status" className="text-sm text-secondary">Reading.</p> : null}

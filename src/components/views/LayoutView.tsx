@@ -40,6 +40,7 @@ import { fileSlug } from "@/lib/format";
 import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 import { PlacedParts } from "@/components/layout/PlacedParts";
 import { Card } from "@/components/ui/Card";
+import { channelName } from "@/lib/channels/registry";
 
 const BOM_STORE = "design/bom";
 const SNAP_STEPS = [0.5, 1, 5];
@@ -209,7 +210,7 @@ export function LayoutView({ project }: ViewProps) {
         section: BOM_STORE,
         title: "Enclosure",
         status: "to print",
-        data: { ref: `ENC${n}`, qty: 1, source: "Own printer", search: "", asin: "", geometry },
+        data: { ref: `ENC${n}`, qty: 1, source: channelName("own-printer"), search: "", asin: "", geometry },
       });
       setNotice(null);
     } catch (e) {

@@ -2,6 +2,7 @@
 // Admin builds one card per provider from this list; the credentials routes refuse anything not in it.
 // Provider ids come from PROVIDERS in src/lib/settings.ts, so the reader and the registry cannot drift apart.
 import { PROVIDERS, type Provider } from "@/lib/settings";
+import { channelName } from "@/lib/channels/registry";
 
 export type CredentialField = {
   /** the field name stored in credentials.field */
@@ -54,7 +55,7 @@ const DEFS: Record<Provider, Omit<ProviderDef, "id">> = {
     ],
   },
   x: {
-    label: "X",
+    label: channelName("x"),
     purpose: "Marketing: send approved posts and replies one at a time, and read mentions. The tokens are filled in by Connect X account.",
     // OAuth 2.0 with PKCE (src/lib/channels/x.ts): the client ID (and secret, for a confidential "Web App"
     // client) come from the X Developer Console; the access and refresh tokens are saved by the callback.
@@ -67,7 +68,7 @@ const DEFS: Record<Provider, Omit<ProviderDef, "id">> = {
     ],
   },
   instagram: {
-    label: "Instagram",
+    label: channelName("instagram"),
     purpose: "Marketing: publish approved posts one at a time and read comments, through the Instagram API with Instagram Login.",
     fields: [
       { name: "accessToken", label: "Instagram user access token (long-lived)", secret: true, required: true },

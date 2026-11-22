@@ -2,6 +2,8 @@
 // Each pattern is the distributor's own public search address as of 21 Nov 2026. None was opened by the program that wrote this
 // list (see the report): if one stops working, only this table changes.
 
+import { channelName } from "@/lib/channels/registry";
+
 export type Distributor = { id: string; label: string; url: (term: string) => string; for: string };
 
 const q = encodeURIComponent;
@@ -12,7 +14,7 @@ export const DISTRIBUTORS: Distributor[] = [
   { id: "lcsc", label: "LCSC", for: "electronic parts, low volume", url: (t) => `https://www.lcsc.com/search?q=${q(t)}` },
   { id: "adafruit", label: "Adafruit", for: "modules and breakouts", url: (t) => `https://www.adafruit.com/search?q=${q(t)}` },
   { id: "sparkfun", label: "SparkFun", for: "modules and breakouts", url: (t) => `https://www.sparkfun.com/search/results?term=${q(t)}` },
-  { id: "amazon", label: "Amazon", for: "anything in small packs", url: (t) => `https://www.amazon.com/s?k=${q(t)}` },
+  { id: "amazon", label: channelName("amazon"), for: "anything in small packs", url: (t) => `https://www.amazon.com/s?k=${q(t)}` },
   { id: "aliexpress", label: "AliExpress", for: "cheap modules, long lead time", url: (t) => `https://www.aliexpress.com/wholesale?SearchText=${q(t)}` },
   { id: "mcmaster", label: "McMaster-Carr", for: "hardware: screws, inserts, springs", url: (t) => `https://www.mcmaster.com/${q(t.toLowerCase().replace(/\s+/g, "-"))}/` },
 ];

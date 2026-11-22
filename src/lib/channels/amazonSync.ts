@@ -15,6 +15,7 @@ import { marketplace, orderMetricsByDay, searchOrders, type CleanOrder } from ".
 import { CHANNEL } from "./schemas";
 import { RateLimited, channelClock } from "./rateLimit";
 import { amazonState, saveAmazonState } from "./state";
+import { channelName } from "./registry";
 
 const FIRST_SYNC_DAYS = 30;
 /** Overlap with the previous sync, so an order updated while it ran is read again. */
@@ -33,7 +34,7 @@ function orderRow(o: CleanOrder) {
     title: `${date} Amazon order ${o.orderId}`,
     data: {
       date,
-      channel: "Amazon",
+      channel: channelName("amazon"),
       units,
       revenue,
       currency: o.currency,

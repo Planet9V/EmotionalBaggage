@@ -50,8 +50,8 @@ export async function fetchInbox(projectId: string, channel: "x" | "instagram"):
     const acct = await xAccount();
     const me = acct?.userId ? { id: acct.userId } : await xMe();
     const newest = await q<{ id: string | null }>(
-      `SELECT max((data->>'replyTo')::numeric)::text AS id FROM items WHERE project_id=$1 AND section=$2 AND data->>'channel'='X' AND data->>'replyTo' ~ '^[0-9]+$'`,
-      [projectId, CHANNEL.inbox]
+      `SELECT max((data->>'replyTo')::numeric)::text AS id FROM items WHERE project_id=$1 AND section=$2 AND data->>'channel'=$3 AND data->>'replyTo' ~ '^[0-9]+$'`,
+      [projectId, CHANNEL.inbox, channelName("x")]
     );
     const mentions = await xMentions(me.id, newest[0]?.id ?? undefined);
     rows = mentions.map((m) => ({ channel: channelName("x"), externalId: `x:${m.id}`, replyTo: m.id, author: m.author, at: m.at, url: m.url, parent: m.conversationId, text: m.text }));

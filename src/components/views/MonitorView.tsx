@@ -25,6 +25,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
 import { fmtDateTime, todayLocal } from "@/lib/format";
+import { channelName } from "@/lib/channels/registry";
 
 const COLOURS = ["var(--color-dutchOrange-500)", "var(--color-charcoal-400)", "var(--color-info)", "var(--color-success)", "var(--color-warning)", "var(--color-dutchOrange-200)"];
 const DAY_MS = 86_400_000;
@@ -48,7 +49,7 @@ function AmazonPanel({ projectId }: { projectId: string }) {
         <LoadError what="The Amazon connection" message={messageOf(status.error)} onRetry={() => void status.refetch()} />
       ) : a ? (
         <div className="space-y-3 text-sm">
-          {!a.configured ? <NotConnected service="Amazon" what="no orders are read" /> : null}
+          {!a.configured ? <NotConnected service={channelName("amazon")} what="no orders are read" /> : null}
           <p className="text-secondary">
             Reads orders and Amazon&apos;s daily totals for one marketplace, read only, when you press Sync now. It needs a Professional selling account and a private SP-API app with the Inventory and Order Tracking role. Nothing about buyers is asked for or kept: each order is stored as its order id, date, items, quantities, amounts and marketplace.
           </p>

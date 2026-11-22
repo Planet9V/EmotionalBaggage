@@ -4,6 +4,7 @@
 import { moneyOrNull } from "@/lib/moneyText";
 import { z } from "zod";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS, type ProductType } from "@/lib/productTypes";
+import { channelName } from "@/lib/channels/registry";
 
 type PartRow = { key: number; name: string; qty: string; source: string; search: string; line: string };
 type NameRow = { key: number; kind: "Name" | "Tagline"; text: string };
@@ -180,7 +181,7 @@ export function buildGroups(a: Answers): Group[] {
   let ref = 0;
   for (const p of namedParts(a)) {
     ref += 1;
-    const own = p.source === "Own printer";
+    const own = p.source === channelName("own-printer");
     const data: Record<string, unknown> = { ref: `P${ref}`, qty: num(p.qty) ?? 1, source: p.source, search: t(p.search), asin: "" };
     const line = cash(p.line);
     if (line !== null) data.line = line;
@@ -198,7 +199,7 @@ export function buildGroups(a: Answers): Group[] {
       section: "design/bom",
       title: boxed ? "Enclosure" : `${t(a.name) || "Printed"} body`.replace(/^(.)/, (c) => c.toUpperCase()),
       data: {
-        ref: `P${ref}`, qty: 1, source: "Own printer", search: "", asin: "",
+        ref: `P${ref}`, qty: 1, source: channelName("own-printer"), search: "", asin: "",
         geometry: { shape: boxed ? "shell" : "box", size: [w, h, d], pos: [0, h / 2, 0], explode: [0, 0, 0], basis: "doc", print: true },
       },
       status: "to print",

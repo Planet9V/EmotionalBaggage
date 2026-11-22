@@ -1,12 +1,13 @@
 import type { LaunchTemplate } from "./types";
+import { channelName } from "@/lib/channels/registry";
 
 const PRELAUNCH = "https://help.kickstarter.com/en-us/articles/16236379-setting-up-your-project-s-pre-launch-page";
 
 /** A crowdfunding launch on Kickstarter. Written for a campaign of 30 days: change the days of the last steps for another length. */
 export const kickstarter: LaunchTemplate = {
   id: "kickstarter",
-  label: "Kickstarter",
-  channel: "Kickstarter",
+  label: channelName("kickstarter"),
+  channel: channelName("kickstarter"),
   blurb: "List building before launch, page review, launch day, the middle of the campaign, the last 48 hours and fulfilment updates. Written for a 30-day campaign.",
   steps: [
     { key: "audience", title: "Name the first people who will back it and where they are", phase: "Pre-launch list building", daysBefore: 60, minutes: 180, why: "The first pledges come from people who already know the project, so they have to be found before launch.", how: "List the communities, forums, newsletters and people you can reach by name. Use the personas on the Personas page for who and where they look." },
