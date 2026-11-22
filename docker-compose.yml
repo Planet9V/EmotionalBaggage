@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
 
   # Plan 6.5: OrcaSlicer behind a small HTTP wrapper, for the print flow. Off by default (the image is large and downloads
-  # OrcaSlicer at build time): `docker compose --profile slicer up -d --build`, then set SLICER_URL=http://slicer:8000 for web.
+  # OrcaSlicer at build time): `docker compose --profile slicer up -d --build`. The web service looks for it at http://slicer:8000 (change it in Admin, Printers).
   slicer:
     profiles: ["slicer"]
     # Built for this machine's architecture: OrcaSlicer 2.5.0 has official x86-64 and aarch64 builds (slicer/Dockerfile).
@@ -83,7 +83,8 @@ services:
       DATABASE_URL: postgresql://c2r:${PGPASSWORD:-c2r}@db:5432/c2r
       DATABASE_APP_URL: postgresql://c2r_app:${PGAPPPASSWORD:-c2r_app}@db:5432/c2r
       PLANNER_URL: http://planner:8000
-      SLICER_URL: ${SLICER_URL:-}
+      # the compose slicer service; without the slicer profile the app reports it as not reachable and print jobs wait
+      SLICER_URL: ${SLICER_URL:-http://slicer:8000}
     # Published on this machine only by default. WEB_BIND=0.0.0.0 opens it to the network: change the demo / demo
     # password first (docs/guide/admin.md, "Opening it to the network").
     ports:
