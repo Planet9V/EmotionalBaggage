@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PART_KIND_IDS, PIN_KIND_LABEL, PIN_KINDS } from "@/lib/parts/kinds";
 import { sectionVisible } from "@/lib/productTypes";
 import { partsByRef, readWires } from "@/lib/domain";
+import { samePartName } from "@/lib/domain/part";
 import { partPins, pinsByItem, type PinRow } from "@/lib/parts/pins";
 import type { Item } from "@/lib/types";
 import type { Generator } from "../types";
@@ -124,6 +125,7 @@ export const parts: Generator<z.infer<typeof partRow>> = {
           : "This product has no electronics: give no pins, and choose mechanical, printed and fastener kinds.",
         "Never give a price or a cost; leave cost out entirely. Say \"typical\" sizes, not a specific supplier's.",
         "Do not reuse a reference that is already in the parts list. Between 3 and 30 rows.",
+        "A part already in the list is never proposed again as a new row. To add its kind, pins, size or requirements, give its id (the number after #) in \"replaces\"; its name, reference, quantity and cost stay as entered.",
         RULES,
       ].join("\n"),
       user: [
@@ -143,11 +145,22 @@ export const parts: Generator<z.infer<typeof partRow>> = {
   toDraft(row, ctx, run) {
     const t = revisionTarget(ctx, row.replaces);
     if (!t.ok) return { ok: false, reason: t.reason };
-    const ref = row.ref.trim();
-    const ownRef = t.item && typeof t.item.data.ref === "string" ? t.item.data.ref : "";
+    const notes: string[] = [];
+    // A part is stored once. Outside a revision, a row that is a part already in the list (named by its id, or
+    // proposed under the same name: the wizard's parts, a part typed by hand) completes that row instead of
+    // adding a second one, and what the person entered there stays.
+    const listed = ctx.revise ? null : ((ctx.rows["design/bom"] ?? []).find((i) => i.id === row.replaces) ?? (ctx.rows["design/bom"] ?? []).find((i) => samePartName(i.title, row.title)) ?? null);
+    if (listed) {
+      if (run.memo.has(`listed:${listed.id}`)) return { ok: false, reason: `"${listed.title}" is already in the parts list and was already proposed in this run` };
+      run.memo.set(`listed:${listed.id}`, true);
+      notes.push(`"${clip(row.title)}" is already in the parts list${listed.title === row.title.trim() ? "" : ` as "${listed.title}"`}: the proposal completes that row and adds no second one.`);
+    }
+    const target = t.item ?? listed;
+    const ownRef = target && typeof target.data.ref === "string" ? target.data.ref.trim() : "";
+    // A listed part keeps its own reference: wires and steps may already name it.
+    const ref = listed && ownRef ? ownRef : row.ref.trim();
     if (ref !== ownRef && run.refs.has(ref)) return { ok: false, reason: `reference ${ref} is already used` };
     run.refs.add(ref);
-    const notes: string[] = [];
     const reqKeys = new Set((ctx.rows["design/requirements"] ?? []).map((i) => i.data.key).filter((k): k is string => typeof k === "string" && k !== ""));
     const named = (row.requirements ?? []).map((k) => k.trim()).filter(Boolean);
     const known = named.filter((k) => reqKeys.has(k));
@@ -155,25 +168,29 @@ export const parts: Generator<z.infer<typeof partRow>> = {
     const electronics = hasElectronics(ctx.concept.productType);
     const pins = electronics ? [...new Map((row.pins ?? []).map((p) => [p.name.trim(), p.role])).entries()].filter(([n]) => n) : [];
     if (!electronics && row.pins?.length) notes.push(`${ref}: pins were left out because this product type has no electronics.`);
+    const kept = listed?.data ?? {};
+    const has = (v: unknown) => (typeof v === "string" ? v.trim() !== "" : v !== undefined && v !== null);
     const data: Record<string, unknown> = {
-      ...(t.item?.data ?? {}),
+      ...(target?.data ?? {}),
       ref,
-      qty: row.qty,
+      // on a listed part the quantity and the supplier search the person entered win
+      qty: has(kept.qty) ? kept.qty : row.qty,
       kind: row.kind,
-      ...(row.search ? { search: row.search.trim() } : {}),
-      ...(known.length ? { requirements: known } : {}),
+      ...(has(kept.search) ? {} : row.search ? { search: row.search.trim() } : {}),
+      ...(known.length ? { requirements: [...new Set([...(Array.isArray(kept.requirements) ? (kept.requirements as string[]) : []), ...known])] } : {}),
     };
     if (pins.length) {
       data.pins = pins.map(([n]) => n);
       data.pinRoles = Object.fromEntries(pins);
     }
-    if (row.size) data.geometry = { shape: "box", size: [row.size.x, row.size.y, row.size.z], basis: "typical" };
+    // a size the person entered or measured is not replaced by a typical one
+    if (row.size && !(listed && has(kept.geometry))) data.geometry = { shape: "box", size: [row.size.x, row.size.y, row.size.z], basis: "typical" };
     // Never a price: cost is the user's to enter.
-    if (!t.item) delete data.line;
+    if (!target) delete data.line;
     return {
       ok: true,
       notes,
-      drafts: [{ title: clip(row.title), body: row.spec.trim(), data, op: t.item ? { op: "replace" } : { op: "add" }, itemId: t.item?.id, basedOn: row.basedOn }],
+      drafts: [{ title: listed ? listed.title : clip(row.title), body: listed?.body.trim() ? listed.body : row.spec.trim(), data, op: target ? { op: "replace" } : { op: "add" }, itemId: target?.id, basedOn: row.basedOn }],
     };
   },
 };

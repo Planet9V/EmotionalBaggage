@@ -60,6 +60,24 @@ export function toPart(item: Item): Part {
 
 export const readParts = (items: Item[]) => items.map(toPart);
 
+const partName = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .map((w) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w))
+    .join(" ");
+
+/**
+ * Whether two names are the same part: the same words whatever the case, punctuation, spacing or a plural s.
+ * A part is stored once, so a part proposed under the name of one already in the list is that part, not a second row.
+ */
+export function samePartName(a: string, b: string): boolean {
+  const x = partName(a);
+  return x !== "" && x === partName(b);
+}
+
 /** Parts that can be wired or placed: the ones with a reference designator. First one wins on a repeat. */
 export function partsByRef(items: Item[]): Map<string, Part> {
   const m = new Map<string, Part>();
