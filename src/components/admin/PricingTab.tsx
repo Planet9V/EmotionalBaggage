@@ -109,7 +109,7 @@ export function PricingTab() {
 function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: "database" | "built-in"; problem?: string }) {
   const save = useSavePlans();
   const reset = useResetPlans();
-  const { canWrite } = useAdminAccess();
+  const canWrite = useAdminAccess().capabilities.plans;
   const [saved, markSaved] = useFlag();
   const form = useForm<Form>({ defaultValues: toForm(initial) });
   const { register, control, handleSubmit, setError, clearErrors, formState, setValue } = form;

@@ -1,80 +1,62 @@
-// Who may use the platform admin area (/admin and /api/admin/*). Two levels, decided only here:
+// Who may use the platform admin area (/admin and /api/admin/*). Decided only here.
 //
-//  - canViewAdmin: open the area and read every section. Under the old sign-in (src/lib/auth.ts) that is any
-//    signed-in account, as before.
-//  - isPlatformAdmin: change a setting or key, and run the tests of the new sections that send a saved secret to an
-//    outside service. Under the old sign-in only an account that no longer uses the published default password
-//    (Session.usingDefaultPassword, the rule behind "Change the default password"): the public demo signs in as
-//    demo / demo, and must not be able to change the prices on the public page or enter payment keys.
-//    Under the new sign-in (AUTH2) it is platformAdminFromAuth2(), which refuses until accounts slice 2 maps it.
-import { cookies } from "next/headers";
-import { SESSION_COOKIE } from "@/app/sign-in/shared";
-import { sessionFromToken, type Session } from "@/lib/auth";
-import { auth2Enabled } from "@/lib/auth2/config";
+//  - Any signed-in account opens the area, reads it, and changes everything that existed before the platform admin
+//    area (models, existing provider keys, planner and slicer addresses, default concept, printers, the old tests),
+//    exactly as before (owner decision D2). docs/guide/admin.md lists those under "What any signed-in account can
+//    change until the new sign-in is on".
+//  - The NEW powers listed in PLATFORM_ADMIN_ONLY need the platform administrator, who exists only in the new
+//    sign-in (platformAdminFromAuth2 in ./platformAdminHook.ts). Under the old sign-in nobody has them: no password
+//    change, default or not, opens them.
+//  - Reads of the new powers by anyone else say only configured or not configured (./credentials.ts, ./settings.ts,
+//    ./overview.ts).
 import { HttpError, route, sessionOf, type RouteOptions } from "@/lib/api/route";
+import { platformAdminFromAuth2 } from "./platformAdminHook";
 
-const NOT_VIEWER = "Only the application's administrator can open the admin area. Sign in with the administrator's account.";
-export const DEMO_REFUSED = "Change the default password before changing settings: this account is the public demo account.";
-const AUTH2_REFUSED = "Settings cannot be changed yet with the new sign-in: its platform administrator role is not connected to Admin.";
+/** The new powers: every provider, settings key and test kind this area added. Everything else is open as before. */
+const PLATFORM_ADMIN_ONLY = {
+  /** credentials providers (src/lib/admin/providers.ts) */
+  providers: new Set<string>(["stripe", "smtp", "voice-openai", "elevenlabs"]),
+  /** keys of PUT /api/admin/settings */
+  settings: new Set<string>(["mail", "voice"]),
+  /** kinds of POST /api/admin/test */
+  tests: new Set<string>(["stripe", "smtp", "mail-message", "voice"]),
+};
 
-/** Open the area and read it. */
-function canViewAdmin(s: Session): boolean {
-  return s.userId > 0;
+export const PLATFORM_ADMIN_NOTICE = "These settings are changed by the platform administrator. That account is created when the new sign-in is switched on.";
+
+/** Is this provider, settings key or test kind one of the new powers? */
+export const platformAdminOnly = {
+  provider: (id: string) => PLATFORM_ADMIN_ONLY.providers.has(id),
+  setting: (key: string) => PLATFORM_ADMIN_ONLY.settings.has(key),
+  test: (kind: string) => PLATFORM_ADMIN_ONLY.tests.has(kind),
+};
+
+/** The platform administrator: only through the new sign-in. */
+export async function isPlatformAdmin(req: Request): Promise<boolean> {
+  sessionOf(req); // signed in first (route() has answered 401 otherwise)
+  return platformAdminFromAuth2(req);
+}
+
+/** A 403 with the plain sentence unless the caller is the platform administrator. */
+export async function requirePlatformAdmin(req: Request): Promise<void> {
+  if (!(await isPlatformAdmin(req))) throw new HttpError(403, PLATFORM_ADMIN_NOTICE);
+}
+
+/** What the screens need, per capability. */
+export async function adminAccess(req: Request) {
+  const admin = await isPlatformAdmin(req);
+  return { platformAdmin: admin, capabilities: { plans: admin, payments: admin, email: admin, voice: admin }, notice: admin ? null : PLATFORM_ADMIN_NOTICE };
 }
 
 /**
- * HOOK for the new sign-in. TODO(accounts slice 2): answer from its `requirePlatformAdmin` (the platform-admin flag
- * of the signed-in Better Auth user). Until then it is false, so nothing is open by accident while AUTH2 is on.
+ * route() for /api/admin: a signed-in session (any account, as before). `platformAdmin: true` for a route that is a new
+ * power as a whole (the plan catalogue); the shared settings, credentials and test routes decide per key inside.
  */
-function platformAdminFromAuth2(s: Session): boolean {
-  void s;
-  return false;
-}
-
-/** Change settings and keys, and run the tests that send a saved secret outward. */
-function isPlatformAdmin(s: Session): boolean {
-  if (!canViewAdmin(s)) return false;
-  if (auth2Enabled()) return platformAdminFromAuth2(s);
-  return !s.usingDefaultPassword;
-}
-
-/** Why this session may not change settings, or null when it may. The sentence the 403 and the screens show. */
-function writeRefusal(s: Session): string | null {
-  if (isPlatformAdmin(s)) return null;
-  return auth2Enabled() ? AUTH2_REFUSED : DEMO_REFUSED;
-}
-
-/** For a handler inside adminRoute(): a 403 with the plain sentence unless this session may change settings. */
-export function requirePlatformAdmin(req: Request): Session {
-  const s = sessionOf(req);
-  const why = writeRefusal(s);
-  if (why) throw new HttpError(403, why);
-  return s;
-}
-
-/** What the screens need: may this session change settings, and if not, why. */
-export function adminAccess(req: Request): { canWrite: boolean; reason: string | null } {
-  const why = writeRefusal(sessionOf(req));
-  return { canWrite: !why, reason: why };
-}
-
-/**
- * route() plus the admin check: every /api/admin handler is wrapped in this. Reads need canViewAdmin; a route that
- * changes settings or keys passes { write: true } and needs isPlatformAdmin.
- */
-export function adminRoute<A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions & { write?: boolean }) {
+export function adminRoute<A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions & { platformAdmin?: boolean }) {
   return route(async (...args: A) => {
     const req = (args as unknown[])[0] as Request;
-    if (!canViewAdmin(sessionOf(req))) throw new HttpError(403, NOT_VIEWER);
-    if (opts?.write) requirePlatformAdmin(req);
+    sessionOf(req);
+    if (opts?.platformAdmin) await requirePlatformAdmin(req);
     return handler(...args);
   }, opts);
-}
-
-/** For the /admin page (a server component): "admin", "signed-out" or "refused". Reads the session cookie. */
-export async function platformAdminPage(): Promise<"admin" | "signed-out" | "refused"> {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const s = token ? await sessionFromToken(token) : null;
-  if (!s) return "signed-out";
-  return canViewAdmin(s) ? "admin" : "refused";
 }

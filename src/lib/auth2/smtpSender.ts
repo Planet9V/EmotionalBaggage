@@ -5,11 +5,10 @@
  * - The server's name is resolved through the app's outbound guard (src/lib/net/outbound.ts, resolveAllowed), and
  *   the connection is made to the checked address, with the name kept for the TLS certificate check.
  * - Every connection has time limits, so a server that never answers cannot hold a request.
- * - Errors are cleaned of the password before anyone sees them; the message itself is never logged here.
+ * - A failure is one fixed sentence per kind (plain below); the server's own text and the password never appear.
  */
 import nodemailer from "nodemailer";
-import { resolveAllowed } from "@/lib/net/outbound";
-import { scrub } from "@/lib/secrets/scrub";
+import { blockedIn, blockedSentence, resolveAllowed } from "@/lib/net/outbound";
 import type { MailMessage, MailSender } from "./mail";
 
 type SmtpSecurity = "starttls" | "tls" | "none";
@@ -32,26 +31,34 @@ export type SmtpSender = MailSender & {
 };
 
 /** An SMTP failure with a sentence safe to show: no password, no message text. */
-class SmtpError extends Error {
+export class SmtpError extends Error {
   constructor(message: string, public code?: string) {
     super(message);
     this.name = "SmtpError";
   }
 }
 
+/**
+ * One fixed sentence per kind of failure. The server's own words (its greeting, its error text) are never repeated:
+ * the address is typed by the admin and whatever answers there may be no mail server at all (review F3). Only the
+ * three-digit SMTP reply code is kept, which is a number.
+ */
 function plain(e: unknown, cfg: SmtpConfig): SmtpError {
   const err = e as { code?: string; responseCode?: number; message?: string; name?: string };
-  const secrets = [cfg.password];
   const code = err?.code;
-  if (code === "EAUTH") return new SmtpError(`The mail server refused the user name or password${err.responseCode ? ` (SMTP ${err.responseCode})` : ""}. Check them in Admin, Email.`, code);
+  const reply = typeof err?.responseCode === "number" && err.responseCode >= 200 && err.responseCode < 600 ? ` (SMTP ${err.responseCode})` : "";
+  const blocked = blockedIn(e);
+  if (blocked) return new SmtpError(blockedSentence(blocked), "EADDRBLOCKED");
+  if (code === "EAUTH") return new SmtpError(`The mail server refused the user name or password${reply}. Check them in Admin, Email.`, code);
   if (code === "ETIMEDOUT" || code === "ETIMEOUT" || err?.name === "TimeoutError") return new SmtpError(`The mail server did not answer within ${Math.round((cfg.timeoutMs ?? 10_000) / 1000)} seconds.`, code);
   if (code === "ECONNREFUSED") return new SmtpError("Nothing answered at that address and port (connection refused). Check the host and port.", code);
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") return new SmtpError("That mail server name could not be found. Check the host.", code);
-  if (code === "EADDRBLOCKED") return new SmtpError(scrub(err.message ?? "That address is not allowed.", secrets), code);
-  if (code === "ETLS" || /certificate|ssl|tls/i.test(err?.message ?? "")) {
-    return new SmtpError(`The secure connection failed: ${scrub(err?.message ?? "", secrets).slice(0, 200)}. Check the security setting: port 465 is usually TLS, 587 STARTTLS.`, code);
-  }
-  return new SmtpError(`The mail server answered with an error: ${scrub(err?.message ?? String(e), secrets).slice(0, 300)}`, code);
+  if (code === "ECONNRESET" || code === "ECONNECTION") return new SmtpError("The connection was dropped before the mail server answered.", code);
+  if (code === "ETLS" || code === "ESOCKET") return new SmtpError("The secure connection could not be made. Check the security setting: port 465 is usually TLS, 587 STARTTLS.", code);
+  if (code === "EPROTOCOL" || code === "EGREETING") return new SmtpError("Something answered at that address, but not as a mail server. Check the host and port.", code);
+  if (code === "EENVELOPE") return new SmtpError(`The mail server refused the sender or recipient address${reply}.`, code);
+  if (code === "EMESSAGE") return new SmtpError(`The mail server refused the message${reply}.`, code);
+  return new SmtpError(`The mail server answered with an error${reply}.`, code);
 }
 
 async function transport(cfg: SmtpConfig) {

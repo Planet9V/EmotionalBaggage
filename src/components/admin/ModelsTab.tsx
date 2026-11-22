@@ -20,7 +20,6 @@ import { messageOf } from "@/lib/queries";
 import { EMBEDDING_PRESETS, type EmbeddingPreset } from "@/lib/ai/presets";
 import { embeddingChoice, httpUrl, reasoningChoice } from "@/lib/admin/schemas";
 import {
-  useAdminAccess,
   useAdminSettings,
   useConnectionTest,
   useCredentials,
@@ -85,7 +84,6 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
   const [confirm, setConfirm] = useState("");
   const save = useSaveSettings();
   const test = useConnectionTest();
-  const { canWrite } = useAdminAccess();
   const creds = useCredentials();
   const key = kind === "embedding" ? "embeddingModel" : "reasoningModel";
   const id = (f: string) => `${kind}-${f}`;
@@ -256,7 +254,7 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
         ) : null}
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
+          <Button type="submit" size="sm" disabled={save.isPending}>
             {save.isPending ? "Saving…" : "Save"}
           </Button>
           <Button type="button" variant="outline" size="sm" disabled={test.isPending} onClick={runTest}>
@@ -268,7 +266,7 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
               title={`Clear the ${title.toLowerCase()}?`}
               body="The features that need it say so again until another one is chosen."
               confirmLabel="Clear"
-              disabled={save.isPending || !canWrite}
+              disabled={save.isPending}
               onConfirm={() => void clear()}
             />
           ) : null}
@@ -329,7 +327,6 @@ export function PlannerSection({ settings }: { settings: AdminSettings }) {
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
   const test = useConnectionTest();
-  const { canWrite } = useAdminAccess();
   const eff = settings.plannerEffective;
 
   const run = async (plannerUrl: string | null) => {
@@ -363,7 +360,7 @@ export function PlannerSection({ settings }: { settings: AdminSettings }) {
         </Field>
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
+          <Button type="submit" size="sm" disabled={save.isPending}>
             {save.isPending ? "Saving…" : "Save"}
           </Button>
           <Button
@@ -381,7 +378,6 @@ export function PlannerSection({ settings }: { settings: AdminSettings }) {
               title="Clear the saved planner address?"
               body="The PLANNER_URL environment variable applies again, if it is set."
               confirmLabel="Clear"
-              disabled={!canWrite}
               onConfirm={() => void run(null)}
             />
           ) : null}

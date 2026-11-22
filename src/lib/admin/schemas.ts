@@ -25,6 +25,9 @@ export const httpUrl = z
   .superRefine((v, ctx) => {
     const p = httpUrlProblem(v);
     if (p) ctx.addIssue({ code: "custom", message: p });
+    // A base address: the app adds its own path (/models, /health, /audio/speech), so a query or fragment would change
+    // what is called (review B4). Printers keep their own check (httpUrlProblem), unchanged.
+    else if (v.includes("?") || v.includes("#")) ctx.addIssue({ code: "custom", message: "must not contain ? or #; give the base address only" });
   })
   .transform((v) => v.replace(/\/+$/, ""));
 
@@ -66,8 +69,20 @@ export const mailSettings = z.discriminatedUnion("mode", [
       security: z.enum(["starttls", "tls", "none"], { error: "must be STARTTLS, TLS or none" }),
       username: z.string().trim().max(254).regex(/^[^\r\n]*$/, "may not contain line breaks").transform((v) => v || null).nullable(),
     })
-    .strict(),
+    .strict()
+    .superRefine((v, ctx) => {
+      // Without security a user name and password cross the network readable: only for a server on this machine (review F4).
+      if (v.security === "none" && v.username && !isLoopback(v.host)) {
+        ctx.addIssue({ code: "custom", path: ["security"], message: "cannot be none when a user name is set, unless the server is on this machine (localhost): the password would cross the network readable. Choose STARTTLS or TLS" });
+      }
+    }),
 ]);
+
+/** localhost, 127.0.0.0/8 or ::1. */
+function isLoopback(host: string): boolean {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  return h === "localhost" || h === "::1" || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h);
+}
 export type MailSettings = z.infer<typeof mailSettings>;
 
 /** Admin, Voice. provider "none" (the default) means no narration; keys are credentials of "voice-openai" / "elevenlabs". */

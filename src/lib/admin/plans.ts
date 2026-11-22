@@ -25,9 +25,19 @@ export async function getPlanCatalogue(): Promise<CatalogueRead> {
   return { catalogue: r.data, source: "database" };
 }
 
-/** What the public welcome page shows in "Your turn". Never throws (getPlanCatalogue falls back to the built-in one). */
+/** How long the public page's levels are kept in memory; a save or reset here clears them at once (review F6). */
+const PUBLIC_LEVELS_MS = 60_000;
+let cached: { at: number; value: PublicLevels } | null = null;
+
+/**
+ * What the public welcome page shows in "Your turn". Never throws (getPlanCatalogue falls back to the built-in one).
+ * Kept for a minute per server process, so a busy public page does not read the database on every visit.
+ */
 export async function publicLevels(): Promise<PublicLevels> {
-  return levelsOf((await getPlanCatalogue()).catalogue);
+  if (cached && Date.now() - cached.at < PUBLIC_LEVELS_MS) return cached.value;
+  const value = levelsOf((await getPlanCatalogue()).catalogue);
+  cached = { at: Date.now(), value };
+  return value;
 }
 
 /** Saves the whole catalogue (already validated) and records before and after in the audit log. */
@@ -43,6 +53,7 @@ export async function savePlanCatalogue(next: PlanCatalogue): Promise<void> {
       detail: { key: SETTING.plans, before, after: next },
     });
   });
+  cached = null;
 }
 
 /** Removes the saved catalogue, so the built-in one applies again. */
@@ -52,5 +63,7 @@ export async function resetPlanCatalogue(): Promise<boolean> {
     if (!gone.rowCount) return false;
     await auditIn(c, { action: "setting.cleared", summary: "Plan catalogue reset to the built-in one", detail: { key: SETTING.plans, before: gone.rows[0].value, after: null } });
     return true;
+  }).finally(() => {
+    cached = null;
   });
 }

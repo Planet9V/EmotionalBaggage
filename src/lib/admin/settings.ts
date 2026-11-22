@@ -23,16 +23,21 @@ export type AdminSettings = {
   slicerEffective: SlicerAddress;
   defaultConcept: string | null;
   /** Admin, Email: mode "none" sends nothing (the password is a credential of "smtp") */
-  mail: MailSettings;
+  mail: MailView;
   /** Admin, Voice: provider "none" means no narration */
-  voice: VoiceSettings;
+  voice: VoiceView;
   /** vectors stored for the saved embedding model; changing its model or width leaves them unused until re-indexed */
   storedVectors: number;
   /** suggested base addresses per provider, for the form */
   defaultBaseUrl: typeof DEFAULT_BASE_URL;
 };
 
-export async function readAdminSettings(): Promise<AdminSettings> {
+/** Mail as a reader sees it: the whole setting for the platform administrator, else only whether one is set (review F5). */
+export type MailView = MailSettings | { mode: "smtp"; hidden: true };
+/** Voice likewise: the provider only, without address, model or voice, for anyone but the platform administrator. */
+export type VoiceView = VoiceSettings | { provider: "openai" | "elevenlabs"; hidden: true };
+
+export async function readAdminSettings(viewer: { platformAdmin: boolean }): Promise<AdminSettings> {
   const [reasoningModel, embeddingModel, plannerUrl, defaultConcept, plannerEffective, slicerUrl, slicerEffective, mail, voice] = await Promise.all([
     getSetting<ModelChoice | null>(SETTING.reasoningModel, null),
     getSetting<ModelChoice | null>(SETTING.embeddingModel, null),
@@ -45,7 +50,9 @@ export async function readAdminSettings(): Promise<AdminSettings> {
     readVoiceSettings(),
   ]);
   const storedVectors = await vectorsFor(embeddingModel);
-  return { reasoningModel, embeddingModel, plannerUrl, plannerEffective, slicerUrl, slicerEffective, defaultConcept, mail, voice, storedVectors, defaultBaseUrl: DEFAULT_BASE_URL };
+  const mailView: MailView = viewer.platformAdmin || mail.mode === "none" ? mail : { mode: "smtp", hidden: true };
+  const voiceView: VoiceView = viewer.platformAdmin || voice.provider === "none" ? voice : { provider: voice.provider, hidden: true };
+  return { reasoningModel, embeddingModel, plannerUrl, plannerEffective, slicerUrl, slicerEffective, defaultConcept, mail: mailView, voice: voiceView, storedVectors, defaultBaseUrl: DEFAULT_BASE_URL };
 }
 
 /** How many stored vectors belong to an embedding choice; 0 without pgvector (no embeddings table). */
@@ -119,11 +126,15 @@ export async function writeAdminSettings(change: AdminSettingsChange): Promise<s
     if (change.voice) moves.push(["voice-openai", "apiKey", change.voice.provider === "openai" ? originOf(change.voice.baseUrl) : null]);
     for (const [provider, field, next] of moves) {
       const cred = await c.query<{ bound_origin: string | null }>("SELECT bound_origin FROM credentials WHERE provider=$1 AND field=$2 FOR UPDATE", [provider, field]);
-      const bound = cred.rows[0]?.bound_origin;
-      if (!bound || !next || bound === next) continue; // nothing saved, or switched off (kept for when it comes back), or same host
+      if (!cred.rowCount || !next) continue; // nothing saved, or switched off (kept for when it comes back)
+      const bound = cred.rows[0].bound_origin;
+      if (bound === next) continue; // same host
+      // Moved to another host; or saved with no address to bind to (review F1): it must not be bound to this one now.
+      const reason = bound ? "address moved to another host" : "saved before any address was set";
       await c.query("DELETE FROM credentials WHERE provider=$1 AND field=$2", [provider, field]);
-      await auditIn(c, { action: "credential.removed", summary: `Credential ${provider} ${field} removed: the address moved to another host`, detail: { provider, field, boundTo: bound, reason: "address moved to another host" } });
-      notices.push(`The saved ${provider === "smtp" ? "mail password" : "speech key"} was removed: it was saved for ${bound}, and the address is now ${next}. Type it again.`);
+      await auditIn(c, { action: "credential.removed", summary: `Credential ${provider} ${field} removed: ${reason}`, detail: { provider, field, ...(bound ? { boundTo: bound } : {}), reason } });
+      const what = provider === "smtp" ? "mail password" : "speech key";
+      notices.push(bound ? `The saved ${what} was removed: it was saved for ${bound}, and the address is now ${next}. Type it again.` : `The saved ${what} was removed: it was saved before any address was set, so it was never bound to one. Type it again.`);
     }
     for (const name of Object.keys(change).filter((k) => k !== "confirmEmbedding") as Stored[]) {
       const value = change[name];

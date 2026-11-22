@@ -47,7 +47,10 @@ function stateOf(configured: boolean, last: LastCheck | null | undefined): Servi
   return last && !last.ok ? "failing" : "configured";
 }
 
-export async function serviceOverview(): Promise<ServiceStatus[]> {
+/** The new powers' lines (src/lib/admin/guard.ts): anyone but the platform administrator sees only configured or not (review F5). */
+const NEW_POWERS = new Set<ServiceStatus["key"]>(["payments", "email", "voice"]);
+
+export async function serviceOverview(viewer: { platformAdmin: boolean }): Promise<ServiceStatus[]> {
   const [checks, first, stripe, stripeSrc, mail, mailSettings, mailPw, voice, amazon, x, instagram, amazonSrc, xSrc, igSrc, planner, health, slicer, db, catalogue] = await Promise.all([
     readChecks(),
     firstRunStatus(),
@@ -57,9 +60,9 @@ export async function serviceOverview(): Promise<ServiceStatus[]> {
     readMailSettings(),
     credentialSource("smtp", "password"),
     getVoiceSettings(),
-    providerView("amazon-sp"),
-    providerView("x"),
-    providerView("instagram"),
+    providerView("amazon-sp", viewer),
+    providerView("x", viewer),
+    providerView("instagram", viewer),
     providerSource("amazon-sp"),
     providerSource("x"),
     providerSource("instagram"),
@@ -74,7 +77,12 @@ export async function serviceOverview(): Promise<ServiceStatus[]> {
   const add = (s: Omit<ServiceStatus, "lastCheck" | "state"> & { configured: boolean; failing?: boolean }) => {
     const lastCheck = s.key === "pricing" ? null : (checks[s.key] ?? null);
     const { configured, failing, ...rest } = s;
-    out.push({ ...rest, lastCheck, state: failing ? "failing" : stateOf(configured, lastCheck) });
+    const state = failing ? "failing" : stateOf(configured, lastCheck);
+    if (!viewer.platformAdmin && NEW_POWERS.has(s.key)) {
+      out.push({ ...rest, summary: configured ? "Set up by the platform administrator." : "Not set up.", lastCheck: null, state });
+      return;
+    }
+    out.push({ ...rest, lastCheck, state });
   };
 
   add({

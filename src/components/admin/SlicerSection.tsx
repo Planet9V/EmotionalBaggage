@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { messageOf } from "@/lib/queries";
 import { httpUrl } from "@/lib/admin/schemas";
-import { useAdminAccess, useAdminSettings, useConnectionTest, useSaveSettings, type AdminSettings } from "@/lib/admin/client";
+import { useAdminSettings, useConnectionTest, useSaveSettings, type AdminSettings } from "@/lib/admin/client";
 import { TestOutcome } from "./shared";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Field, describe } from "@/components/ui/field";
@@ -37,7 +37,6 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
   const test = useConnectionTest();
-  const { canWrite } = useAdminAccess();
   const eff = settings.slicerEffective ?? { url: null, source: null };
 
   const run = async (slicerUrl: string | null) => {
@@ -71,7 +70,7 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
         </Field>
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>{save.isPending ? "Saving…" : "Save"}</Button>
+          <Button type="submit" size="sm" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save"}</Button>
           <Button
             type="button"
             variant="outline"
@@ -82,7 +81,7 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
             Test
           </Button>
           {settings.slicerUrl ? (
-            <ConfirmButton label="Clear" title="Clear the saved slicer address?" body="The SLICER_URL environment variable applies again, if it is set." confirmLabel="Clear" disabled={!canWrite} onConfirm={() => void run(null)} />
+            <ConfirmButton label="Clear" title="Clear the saved slicer address?" body="The SLICER_URL environment variable applies again, if it is set." confirmLabel="Clear" onConfirm={() => void run(null)} />
           ) : null}
           <SavedNote show={justSaved} />
         </div>

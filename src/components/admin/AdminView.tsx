@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ADMIN_TAB_LABEL, ADMIN_TABS, isAdminTab, useAdminAccess, type AdminTab } from "@/lib/admin/client";
-import { NotSetUp } from "@/components/ui/states";
+
 import { SetupTab } from "./SetupTab";
 import { CredentialsTab } from "./CredentialsTab";
 import { ModelsTab } from "./ModelsTab";
@@ -20,6 +20,10 @@ import { EmailTab } from "./EmailTab";
 import { ChannelsTab } from "./ChannelsTab";
 import { VoiceTab } from "./VoiceTab";
 import { ServicesTab } from "./ServicesTab";
+
+/** The sections whose settings are new powers (src/lib/admin/guard.ts): only the platform administrator changes them. */
+const NEW_POWERS = new Set<AdminTab>(["payments", "pricing", "email", "voice"]);
+const PLATFORM_ADMIN_NOTICE = "These settings are changed by the platform administrator. That account is created when the new sign-in is switched on.";
 
 export function AdminView() {
   const params = useSearchParams();
@@ -47,10 +51,10 @@ export function AdminView() {
             ))}
           </TabsList>
           <div className="min-w-0 flex-1 space-y-4">
-            {!access.canWrite && tab !== "audit" && tab !== "access" ? (
-              <NotSetUp href="/account" label="Change the password">
-                {access.reason}
-              </NotSetUp>
+            {!access.platformAdmin && NEW_POWERS.has(tab) ? (
+              <p role="note" className="rounded-xl bg-info-soft px-4 py-3 text-sm text-info" data-testid="platform-admin-notice">
+                {PLATFORM_ADMIN_NOTICE}
+              </p>
             ) : null}
             <TabsContent value="setup" className="max-w-5xl">
               <SetupTab onOpenTab={go} />

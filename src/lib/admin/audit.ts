@@ -1,6 +1,7 @@
 // The credentials audit: the most recent 200 saves, removals and connection tests, newest first.
 // Kept in the settings row "audit.credentials" (there is no install-wide event table). Never holds a value.
 import { audit as auditLine, q } from "@/lib/db";
+import { platformAdminOnly } from "./guard";
 
 const AUDIT_KEY = "audit.credentials";
 export const AUDIT_LIMIT = 200;
@@ -20,7 +21,11 @@ export type AuditEntry = {
 };
 
 /** Prepends entries and trims to the limit in one statement, so two saves at once cannot lose each other. */
-export async function audit(entries: Omit<AuditEntry, "at">[]) {
+/**
+ * `shortList: false` writes the install-wide audit log only: a connection test by anyone but the platform
+ * administrator must not push the owner's lines out of the short list (review B5).
+ */
+export async function audit(entries: Omit<AuditEntry, "at">[], opts: { shortList?: boolean } = {}) {
   if (!entries.length) return;
   const at = new Date().toISOString();
   // The install-wide audit log gets the same lines; this short list is what the Credentials screen shows.
@@ -32,6 +37,7 @@ export async function audit(entries: Omit<AuditEntry, "at">[]) {
       detail: { provider: e.provider, field: e.field, ...(e.result ? { result: e.result } : {}), ...(e.boundTo ? { boundTo: e.boundTo } : {}), ...(e.reason ? { reason: e.reason } : {}) },
     });
   }
+  if (opts.shortList === false) return;
   // newest first: the last entry of a batch goes on top
   const rows = entries.map((e) => ({ at, ...e })).reverse();
   await q(
@@ -45,7 +51,16 @@ export async function audit(entries: Omit<AuditEntry, "at">[]) {
   );
 }
 
-export async function readAudit(): Promise<AuditEntry[]> {
+/** The short list. The addresses the new providers' secrets are bound to are left out for anyone but the platform administrator. */
+export async function readAudit(viewer: { platformAdmin: boolean } = { platformAdmin: false }): Promise<AuditEntry[]> {
   const rows = await q<{ value: AuditEntry[] }>("SELECT value FROM settings WHERE key=$1", [AUDIT_KEY]);
-  return Array.isArray(rows[0]?.value) ? rows[0].value : [];
+  const list = Array.isArray(rows[0]?.value) ? rows[0].value : [];
+  if (viewer.platformAdmin) return list;
+  return list.map((e) => {
+    if (!platformAdminOnly.provider(e.provider)) return e;
+    const { boundTo: _b, result: _r, ...rest } = e;
+    void _b;
+    void _r;
+    return rest;
+  });
 }

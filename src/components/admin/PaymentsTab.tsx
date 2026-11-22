@@ -36,7 +36,9 @@ export function PaymentsTab() {
         title="Payments"
         description="Stripe takes the payments; no card details ever reach this app. Until the keys are saved, nothing can be bought and the public page asks for access instead."
         actions={
-          p.configured ? (
+          p.hidden ? (
+            <StatusBadge tone={p.configured ? "success" : "neutral"} data-testid="stripe-mode">{p.configured ? "Set up" : "Not configured"}</StatusBadge>
+          ) : p.configured ? (
             <StatusBadge tone={p.mode === "live" ? "warning" : "info"} data-testid="stripe-mode">{p.mode === "live" ? "Live mode: real payments" : "Test mode: no real money"}</StatusBadge>
           ) : (
             <StatusBadge tone="neutral" data-testid="stripe-mode">Not configured</StatusBadge>
@@ -45,9 +47,13 @@ export function PaymentsTab() {
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary" role="status">
-            {p.configured
-              ? `The keys are ${p.mode} keys (read from their prefix).${p.webhookSecret ? " A webhook signing secret is saved." : " No webhook signing secret is saved yet, so Stripe's events cannot be checked; add it once the webhook exists."}`
-              : p.reason}
+            {p.hidden
+              ? p.configured
+                ? "Payments are set up. Their details are shown to the platform administrator only."
+                : "Payments are not set up."
+              : p.configured
+                ? `The keys are ${p.mode} keys (read from their prefix).${p.webhookSecret ? " A webhook signing secret is saved." : " No webhook signing secret is saved yet, so Stripe's events cannot be checked; add it once the webhook exists."}`
+                : p.reason}
           </p>
           <Field id="stripe-webhook" label="Webhook address" hint="In the Stripe Dashboard, Developers, Webhooks: add an endpoint with this address, then paste its signing secret below.">
             <div className="flex flex-wrap gap-2">

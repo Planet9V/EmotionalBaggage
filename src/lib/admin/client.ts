@@ -21,13 +21,18 @@ import type { CatalogueRead } from "@/lib/admin/plans";
 import type { PlanCatalogue, LimitKey } from "@/lib/admin/planSchema";
 import type { EnvLine } from "@/lib/admin/environment";
 import type { MailSettings, VoiceSettings } from "@/lib/admin/schemas";
+import type { MailView, VoiceView } from "@/lib/admin/settings";
 import type { AuditRow } from "@/lib/auditLog";
 import type { ModelChoice } from "@/lib/settings";
 import { downloadFile } from "@/lib/download";
 
 export type { ProviderView, AuditEntry, AdminSettings, PrinterView, PrinterFamily, ModelChoice, ServiceStatus, PlanCatalogue, MailSettings, VoiceSettings, EnvLine };
 export type PlansView = CatalogueRead & { limits: { key: LimitKey; label: string }[] };
-export type PaymentsView = { configured: true; mode: "test" | "live"; webhookSecret: boolean; webhookPath: string } | { configured: false; reason: string; webhookPath: string };
+export type PaymentsView =
+  | { configured: true; mode: "test" | "live"; webhookSecret: boolean; webhookPath: string; hidden?: undefined }
+  | { configured: false; reason: string; webhookPath: string; hidden?: undefined }
+  | { configured: boolean; hidden: true; webhookPath: string };
+export type { MailView, VoiceView };
 
 export type AdminStatus = { complete: boolean; items: StatusItem[]; defaultPassword: boolean };
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
@@ -130,13 +135,16 @@ const adminQueries = {
 };
 
 export const useAdminStatus = () => useQuery(adminQueries.status());
+export type AdminAccess = { platformAdmin: boolean; capabilities: { plans: boolean; payments: boolean; email: boolean; voice: boolean }; notice: string | null };
+const NO_ACCESS: AdminAccess = { platformAdmin: false, capabilities: { plans: false, payments: false, email: false, voice: false }, notice: null };
+
 /**
- * May this session change settings (src/lib/admin/guard.ts)? While unknown, or when the answer could not be read,
- * the buttons stay on: the server refuses a write it does not allow, with the same sentence.
+ * Which new powers this session has (src/lib/admin/guard.ts). While unknown, or when the answer could not be read,
+ * the new powers stay off; everything that existed before is not affected by this.
  */
-export function useAdminAccess(): { canWrite: boolean; reason: string | null } {
-  const q = useQuery<{ canWrite: boolean; reason: string | null }>({ queryKey: ["admin", "access"], queryFn: ({ signal }) => api("/api/admin/access", { signal }), staleTime: 60_000 });
-  return q.data ?? { canWrite: true, reason: null };
+export function useAdminAccess(): AdminAccess {
+  const q = useQuery<AdminAccess>({ queryKey: ["admin", "access"], queryFn: ({ signal }) => api("/api/admin/access", { signal }), staleTime: 60_000 });
+  return q.data ?? NO_ACCESS;
 }
 export const useServiceOverview = () => useQuery(queryOptions({ queryKey: adminKeys.overview(), queryFn: ({ signal }) => adminFetchers.overview({ signal }) }));
 export const usePlans = () => useQuery(queryOptions({ queryKey: adminKeys.plans(), queryFn: ({ signal }) => adminFetchers.plans({ signal }) }));

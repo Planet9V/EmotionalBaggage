@@ -3,10 +3,10 @@
 // the SAVED values (save first). Secrets never appear in an answer.
 import { getCredential } from "@/lib/settings";
 import { secretFor, stripeApiBase } from "@/lib/secretOrigin";
-import { scrub } from "@/lib/secrets/scrub";
 import { getSpeechSynthesizer, SpeechError } from "@/lib/voice/speech";
 import { call, httpFailure, readJson, type TestResult } from "./connection";
 import { getMailSender, MailNotConfigured, readMailSettings } from "./mail";
+import { SmtpError } from "@/lib/auth2/smtpSender";
 import { stripeMode } from "./stripe";
 
 /** A harmless read: GET /v1/balance answers for any working secret key and changes nothing. */
@@ -40,7 +40,7 @@ export async function testSmtp(ms: number): Promise<TestResult> {
     const s = await readMailSettings();
     return { ok: true, message: `The mail server at ${setup.server} answered${s.mode === "smtp" && s.username ? " and accepted the user name and password" : ""}. No message was sent.` };
   } catch (e) {
-    return { ok: false, message: (e as Error).message };
+    return { ok: false, message: e instanceof SmtpError ? e.message : "The mail server test failed before an answer came back." };
   }
 }
 
@@ -58,7 +58,7 @@ export async function testMailMessage(to: string, ms: number): Promise<TestResul
     return { ok: true, message: `The mail server accepted a test message to ${to}. Check that inbox, and the spam folder.` };
   } catch (e) {
     if (e instanceof MailNotConfigured) return { ok: false, message: e.reason };
-    return { ok: false, message: (e as Error).message };
+    return { ok: false, message: e instanceof SmtpError ? e.message : "The test message could not be sent." };
   }
 }
 
@@ -80,6 +80,6 @@ export async function testVoice(ms: number): Promise<TestResult> {
       detail: audio.byteLength <= MAX_PLAYBACK_BYTES ? { audio: `data:${contentType.split(";")[0]};base64,${Buffer.from(audio).toString("base64")}` } : {},
     };
   } catch (e) {
-    return { ok: false, message: e instanceof SpeechError ? e.message : scrub((e as Error).message ?? String(e)).slice(0, 300) };
+    return { ok: false, message: e instanceof SpeechError ? e.message : "The voice test failed before an answer came back." };
   }
 }

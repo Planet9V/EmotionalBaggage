@@ -33,6 +33,16 @@ export function EmailTab() {
   if (settings.isPending) return <LoadingBlocks rows={2} label="Reading the email settings" />;
   if (settings.isError) return <LoadError what="The email settings" message={messageOf(settings.error)} onRetry={() => void settings.refetch()} />;
   const saved = settings.data.mail;
+  if ("hidden" in saved) {
+    return (
+      <div className="space-y-4">
+        <Panel title="Email" description="The mail server that sends sign-up confirmations, password resets and invitations." actions={<StatusBadge tone="success">Set up</StatusBadge>}>
+          <p className="text-sm text-secondary">A mail server is set up. Its details are shown to the platform administrator only.</p>
+        </Panel>
+        <CredentialsTab only={["smtp"]} intro={false} />
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <ServerForm saved={saved} />
@@ -52,7 +62,7 @@ function ServerForm({ saved }: { saved: MailSettings }) {
   const [saveError, setSaveError] = useState("");
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
-  const { canWrite } = useAdminAccess();
+  const canWrite = useAdminAccess().capabilities.email;
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const id = (n: string) => `mail-${n}`;
 
@@ -142,7 +152,7 @@ function TestMessage({ defaultTo }: { defaultTo: string }) {
   const [to, setTo] = useState(defaultTo);
   const [error, setError] = useState("");
   const test = useConnectionTest();
-  const { canWrite } = useAdminAccess();
+  const canWrite = useAdminAccess().capabilities.email;
   const send = (e: FormEvent) => {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) {

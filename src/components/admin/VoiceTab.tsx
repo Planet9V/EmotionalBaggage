@@ -32,6 +32,16 @@ export function VoiceTab() {
   if (settings.isPending) return <LoadingBlocks rows={2} label="Reading the voice settings" />;
   if (settings.isError) return <LoadError what="The voice settings" message={messageOf(settings.error)} onRetry={() => void settings.refetch()} />;
   const saved = settings.data.voice;
+  if ("hidden" in saved) {
+    return (
+      <div className="space-y-4">
+        <Panel title="Voice" description="Text to speech, for narration." actions={<StatusBadge tone="success">{saved.provider === "openai" ? "Speech endpoint" : "ElevenLabs"}</StatusBadge>}>
+          <p className="text-sm text-secondary">A voice is set up. Its details are shown to the platform administrator only.</p>
+        </Panel>
+        <CredentialsTab only={[saved.provider === "openai" ? "voice-openai" : "elevenlabs"]} intro={false} />
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <VoiceForm saved={saved} />
@@ -47,7 +57,7 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
   const [saveError, setSaveError] = useState("");
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
-  const { canWrite } = useAdminAccess();
+  const canWrite = useAdminAccess().capabilities.voice;
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const id = (n: string) => `voice-${n}`;
 

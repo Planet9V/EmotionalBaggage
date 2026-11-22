@@ -12,6 +12,8 @@ export type CredentialField = {
   secret: boolean;
   /** every required field must have a value for the provider to count as configured */
   required: boolean;
+  /** a password or signing secret: never shown, not even its last four characters, to anyone */
+  noLast4?: boolean;
   /** the shape a value must have, checked on the server before it is saved */
   pattern?: { re: RegExp; problem: string };
 };
@@ -83,13 +85,13 @@ const DEFS: Record<Provider, Omit<ProviderDef, "id">> = {
     fields: [
       { name: "publishableKey", label: "Publishable key (pk_test_ or pk_live_)", secret: false, required: true, pattern: { re: /^pk_(test|live)_[A-Za-z0-9]+$/, problem: "must be a Stripe publishable key, starting pk_test_ or pk_live_" } },
       { name: "secretKey", label: "Secret key (sk_ or a restricted rk_ key)", secret: true, required: true, pattern: { re: /^(sk|rk)_(test|live)_[A-Za-z0-9]+$/, problem: "must be a Stripe secret or restricted key, starting sk_test_, sk_live_, rk_test_ or rk_live_" } },
-      { name: "webhookSecret", label: "Webhook signing secret (whsec_)", secret: true, required: false, pattern: { re: /^whsec_[A-Za-z0-9+/=]+$/, problem: "must be a Stripe webhook signing secret, starting whsec_" } },
+      { name: "webhookSecret", label: "Webhook signing secret (whsec_)", secret: true, required: false, noLast4: true, pattern: { re: /^whsec_[A-Za-z0-9+/=]+$/, problem: "must be a Stripe webhook signing secret, starting whsec_" } },
     ],
   },
   smtp: {
     label: "Mail server (SMTP)",
     purpose: "Email: confirmations, password resets and invitations. The server address is set in Admin, Email.",
-    fields: [{ name: "password", label: "SMTP password", secret: true, required: false }],
+    fields: [{ name: "password", label: "SMTP password", secret: true, required: false, noLast4: true }],
   },
   "voice-openai": {
     label: "Speech endpoint (OpenAI-compatible)",

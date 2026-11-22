@@ -306,7 +306,8 @@ async function testSlicer(t: Extract<ConnectionTest, { kind: "slicer" }>): Promi
   if (!url) return { ok: false, message: "No slicer address is saved and SLICER_URL is not set." };
   const c = await call(`${url}/health`, {}, []);
   if ("fail" in c) return c.fail;
-  if (c.res.status !== 200) return httpFailure(c.res, "The slicer", []);
+  // echo off, as for the planner: the address is typed by a user, so the remote body is never shown (review B4)
+  if (c.res.status !== 200) return httpFailure(c.res, "The slicer", [], "Check the address.", false);
   const j = (await readJson(c.res)) as { ok?: boolean; slicerInstalled?: boolean; orcaVersion?: string } | undefined;
   if (!j?.ok || j.orcaVersion === undefined) return { ok: false, message: "Something answered, but not the slicer service. Check the address." };
   if (j.slicerInstalled === false) return { ok: false, message: `The slicer service answered, but OrcaSlicer ${j.orcaVersion} is not installed in it.`, detail: { url, orcaVersion: j.orcaVersion } };
@@ -339,7 +340,7 @@ async function testDatabase(): Promise<TestResult> {
 }
 
 /** Runs one test and records it in the credentials audit (the result only, never a value). */
-export async function runConnectionTest(t: ConnectionTest): Promise<TestResult> {
+export async function runConnectionTest(t: ConnectionTest, opts: { record: boolean }): Promise<TestResult> {
   let result: TestResult;
   let provider: string;
   let field: string | null = null;
@@ -402,8 +403,9 @@ export async function runConnectionTest(t: ConnectionTest): Promise<TestResult> 
       provider = "voice";
       break;
   }
-  await audit([{ action: "tested", provider, field, result: { ok: result.ok, message: result.message } }]);
-  // the Overview's "last checked": the sentence only (a voice test's audio is not kept)
-  await recordCheck(serviceOfTest(t), result);
+  // Every test goes to the install-wide audit log. Only the platform administrator's tests are kept in the short list
+  // and as the Overview's "last checked" (the sentence only; a voice test's audio is not kept), review B5.
+  await audit([{ action: "tested", provider, field, result: { ok: result.ok, message: result.message } }], { shortList: opts.record });
+  if (opts.record) await recordCheck(serviceOfTest(t), result);
   return result;
 }

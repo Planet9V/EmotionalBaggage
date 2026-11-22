@@ -12,7 +12,6 @@ import { messageOf } from "@/lib/queries";
 import {
   useAdminSettings,
   useConnectionTest,
-  useAdminAccess,
   useCredentials,
   useCredentialsAudit,
   useRemoveCredential,
@@ -35,6 +34,7 @@ type Field = ProviderView["fields"][number];
 /** What the field holds, in words. Never the value of a secret. */
 function fieldState(f: Field): string {
   if (!f.set) return "Not set.";
+  if (f.masked) return "Set.";
   const where = f.source === "environment" ? " It comes from an environment variable, used only because nothing is saved here." : "";
   const bound = f.secret && f.boundTo ? ` It is only ever sent to ${f.boundTo}, the address it was saved for; moving a model to another host needs the key typed again.` : "";
   if (f.secret) return f.last4 ? `Set, ending in ${f.last4}.${where}${bound}` : `Set. It is too short to show its last characters.${where}${bound}`;
@@ -73,12 +73,11 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
   const save = useSaveCredentials();
   const remove = useRemoveCredential();
   const test = useConnectionTest();
-  const { canWrite } = useAdminAccess();
 
   const typedKey = values.apiKey ?? "";
   const t = testFor(p, typedKey, settings);
-  // the new sections' tests send a saved secret outward: refused like a save (src/app/api/admin/test/route.ts)
-  const testRefused = !canWrite && !!t && (t.kind === "stripe" || t.kind === "smtp" || t.kind === "voice");
+  // a new power (src/lib/admin/guard.ts): only the platform administrator saves, removes and tests it
+  const locked = p.locked;
   const fieldId = (name: string) => `cred-${p.id}-${name}`;
 
   const submit = async (e: FormEvent) => {
@@ -146,7 +145,7 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
                   title={`Remove the saved ${f.label.toLowerCase()} for ${p.label}?`}
                   body={`The saved value is deleted. If an environment variable gives one, that applies again. This cannot be undone; you would need to paste the value again.`}
                   confirmLabel="Remove"
-                  disabled={remove.isPending || !canWrite}
+                  disabled={remove.isPending || locked}
                   onConfirm={() => void doRemove(f.name)}
                 />
               ) : null}
@@ -155,14 +154,14 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
         })}
         <SaveError message={error} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
+          <Button type="submit" size="sm" disabled={save.isPending || locked}>
             {save.isPending ? "Saving…" : "Save"}
           </Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            disabled={!t || test.isPending || testRefused}
+            disabled={!t || test.isPending || locked}
             onClick={() => t && test.mutate(t)}
             aria-describedby={`test-${p.id}-note`}
           >
