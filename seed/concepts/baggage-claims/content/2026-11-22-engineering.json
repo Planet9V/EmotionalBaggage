@@ -1250,7 +1250,7 @@
       "match": {
         "title": "Detect: Carousel"
       },
-      "appendBody": "Ruling of 22 Nov: circular and periodic motion for about 15 s or more, best settings. The turn is measured about the direction of gravity, so the tag's attitude does not matter. A carousel's sideways acceleration is only about 0.02 g, the size of a 1 degree tilt, so it is not used. Turns the other way cancel; turn older than about 40 s fades.",
+      "appendBody": "Ruling of 22 Nov: circular and periodic motion for about 15 s or more, best settings. The turn is measured about the direction of gravity, so the tag's attitude does not matter. A carousel's sideways acceleration is only about 0.02 g, the size of a 1 degree tilt, so it is not used. Turns the other way cancel; turn older than about 40 s fades. After the first report each further 360 degrees of turn in the same ride is reported again, so the lines can count laps.",
       "setData": {
         "trigger": "15 s of quiet transport with 120 degrees of turn one way about the vertical (4 to 60 degrees a second)"
       }
@@ -1292,7 +1292,7 @@
       "match": {
         "title": "Detect: Dark idle"
       },
-      "appendBody": "The controller sleeps and a timer wakes it once, two hours after the motion stopped, to say the line; then it sleeps until moved.",
+      "appendBody": "The controller sleeps and a timer wakes it once, two hours after the motion stopped, to say the line; then it sleeps until moved. Its clip plays 10 dB under the volume step, as the lines ask.",
       "setData": {
         "trigger": "No motion for 2 hours: one timed wake from deep sleep"
       }
@@ -1856,7 +1856,7 @@
       "match": {
         "title": "Content ships independently of firmware"
       },
-      "appendBody": "In the 2 x AA design a pack is a folder (/p1, /p2, /p3) of WAV files in the controller's flash file system, written over USB separately from the firmware. The 5.9 MB set aside hold about 3 minutes of clips at 16 kHz: the ten starter clips in three packs fit; the documents' 128 clips in each of three packs do not, and a pack can no longer be sold as a card. A card socket would bring that back at the cost of sleep current and four more pins."
+      "appendBody": "In the 2 x AA design a pack is a folder (/p1 to /p9) of WAV files in the controller's flash file system, written over USB separately from the firmware. Each moment is a file stem (impact, weigh, ... box, name) with variants _1 to _9 and, for counted moments, _c1 to _c3; a stem a pack lacks falls back to pack 1, so an older pack keeps working when moments are added. A long press cycles through the packs present and plays the pack's name. The 5.9 MB set aside hold about 3 minutes of clips at 16 kHz: three packs of ten to fifteen clips fit; the documents' 128 clips in each of three packs do not, and a pack can no longer be sold as a card. A card socket would bring that back at the cost of sleep current and four more pins."
     },
     {
       "proposal": "E100",
@@ -1889,7 +1889,7 @@
       "match": {
         "title": "Governor"
       },
-      "appendBody": "The Rev B firmware keeps these rules; with no player module, busy is the firmware's own playing state, and the latches survive deep sleep."
+      "appendBody": "The Rev B firmware keeps these rules; with no player module, busy is the firmware's own playing state, and the latches survive deep sleep. One exception, for the running gags of the lines: impacts (a landing counts as one) and carousel laps are counted through the journey phase, played or not, and may play once per count step (the first, the second, and the third or later), each with its own clip when the pack has one. The cooldown and the six-an-hour cap still apply."
     },
     {
       "proposal": "E103",

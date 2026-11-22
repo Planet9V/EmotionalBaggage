@@ -2,7 +2,7 @@
 
 22 November 2026. For whoever keeps `baggage-claims-owner-decisions.md` and its CSV. This file only reports; it changes neither of them.
 
-Scope: rows in the **Design, Prototype and Production** stages that the owner's rulings of 22 Nov settle (two AA cells; a physical off switch; the Adafruit MPU-6050 breakout; free-fall over 0.3 s; carousel about 15 s or more with the best settings; handle grab as tilt and quick motion then sustained tilt and carry; hard impact as in the documents; "what is the best way to detect a throw"; "yes we need the Arduino sketch"; "add up the prototype costs"; do not ask about engineering details, estimate and label). Each was settled by an engineering decision recorded in `docs/design/baggage-claims-device.md` and entered through the batch `seed/concepts/baggage-claims/content/2026-11-22-engineering.json` (rows E001 to E109). Rows in Concept, Research, Marketing and Sales are not touched here, including the conflict rows themselves (P092 to P131), which sit under `concept/questions`: the second table says which of them the rulings answer, for you to close.
+Scope: the 118 rows in the **Design, Prototype and Production** stages, and the 27 device-related Concept rows marked "With engineering (WS14)" in `seed/concepts/baggage-claims/content-proposal-map.json`. For the Design, Prototype and Production rows, the ones that the owner's rulings of 22 Nov settle (two AA cells; a physical off switch; the Adafruit MPU-6050 breakout; free-fall over 0.3 s; carousel about 15 s or more with the best settings; handle grab as tilt and quick motion then sustained tilt and carry; hard impact as in the documents; "what is the best way to detect a throw"; "yes we need the Arduino sketch"; "add up the prototype costs"; do not ask about engineering details, estimate and label). Each was settled by an engineering decision recorded in `docs/design/baggage-claims-device.md` and entered through the batch `seed/concepts/baggage-claims/content/2026-11-22-engineering.json` (rows E001 to E109). Rows in Research, Marketing and Sales are not touched here. The Concept rows are answered in this file (the second and third tables) but not entered: they sit under `concept/brief`, `concept/decisions` and `concept/questions`, and closing them is for whoever keeps the list.
 
 "How" names the app row and the note's section. Nothing was marked passed, done or verified.
 
@@ -32,7 +32,9 @@ Scope: rows in the **Design, Prototype and Production** stages that the owner's 
 | P305 | prototype/tests | Conveyor | Added with a procedure. Not run |
 | P309 | prototype/tests | Loudness | Added as "Loudness at 1 m" with a method and the expected 80 dB. Not run |
 | P310 | prototype/tests | Shock survival and drop tests | Added as "Drop survival": 1.0 m onto concrete, six faces, on a case (an estimate of the requirement). Not run |
-| P221 | design/requirements | Firmware sketch compiles | Rewritten, and moved from blocked to **open**: a Rev B sketch exists, its detection core passes 23 host tests, and it type-checks against the board's core. A full board build is **not** proved. A test "Sketch builds for the board" is linked to it, not run |
+| P221 | design/requirements | Firmware sketch compiles | Rewritten, and moved from blocked to **open**: a Rev B sketch exists, its detection core passes 26 host tests, and arduino-cli compiles and links it for the XIAO ESP32S3 (418,264 bytes, no warning in its files) with a stand-in for Arduino's ctags, which could not be downloaded. Left open for the owner to mark done after a build with the real tools. The test "Sketch builds for the board" is linked to it and left not run, with the agent's result in its text |
+| P239 | design/wiring | Battery negative to ground | Settled: one ground star at the regulator's GND (note 2.8); every ground wire in the batch goes there |
+| P246 | design/wiring | Schematic image: what it shows | Not entered: `schematic.png` draws Rev A (DFPlayer, UART, 4.5 to 4.9 V bus), which the 2 x AA design supersedes. The app's Schematic now holds the 2 x AA wiring (34 wires, no electrical error or warning) |
 | P247 | design/bom | All 16 parts: unit price and speed option | Partly: the parts the 2 x AA design changes or adds carry a unit price and price breaks at 5 and 100 (estimates, labelled). The unchanged lines keep the documents' line cost. "Speed option" not entered |
 | P324 | production/economics | Prototype | The totals were added to the row's text as the owner asked: $64.80 (parts list), $64.34 (PRD table) and $58.80 (PRD cost column), and the 2 x AA design's $72.83 / $72.83 / $62.69. The row's own figure ($64.80) is unchanged |
 | P275 | prototype/assembly | Phase 2, step 11 - Motion sensor on I2C | Covered for the 2 x AA design by the text added to "Phase 2 - Electronics" (pins D5, D4, D1). The Rev A step text itself was not entered |
@@ -61,7 +63,7 @@ These rows are yours; this is only what the engineering work decided, so the "wa
 | P104 Inverted | Up axis within 25 degrees of down, 4 s |
 | P105 Hard impact against the range | Range +/-16 g, threshold 6 g |
 | P091 Motion history buffer | Neither 2 s nor 10 s as such: 0.5 s and 1 s windows, 0.8 s of launch history, a 40 s turn memory |
-| P126 Sketch length | No longer applies: the Rev B sketch is 553 lines plus a 750-line detection core |
+| P126 Sketch length | No longer applies: the Rev B sketch is 590 lines plus an 807-line detection core |
 | P127 Low-battery warning | In the hardware and the sketch |
 | P128 Boot calibration | No boot calibration: gravity and the gyro offset are learnt whenever the tag is at rest |
 | P129 Motion interrupt pin | Active low, push-pull, latched |
@@ -82,6 +84,48 @@ These rows are yours; this is only what the engineering work decided, so the "wa
 | P264, P272, P300, P263, P265 to P269, P282, P283, P285, P301, P220, P255, P260 | The enclosure and the strap: the enclosure agent's rows. The envelope it needs is `docs/design/baggage-claims-device-envelope.json` |
 | P277, P278 Assembly steps 13 and 14 | The button and wire-dressing steps of Rev A; unchanged in substance, not entered |
 | P312 to P316, P325 to P353, P356 to P367 | Builds, batches, suppliers, methods and compliance: no ruling of 22 Nov bears on them |
+| P318 to P323 | The PRD's cost columns by volume (electronics, speaker and storage, holder and hardware, enclosure, strap and packaging, labour). Not entered: the app adds the part prices itself, so the electronics lines would count twice, and the 1,000 and 10,000 figures assume a custom board that is not designed. The 2 x AA module design's own figures at 1, 5 and 100 are in the BOM (note section 5) |
+
+## The device-related Concept rows ("With engineering (WS14)")
+
+The 27 rows of the map whose resolution says "With engineering (WS14): a question about the device, its firmware, its parts or its print". Thirteen are conflicts already answered in the table above (P091, P092, P097, P098, P099, P102, P104, P114, P126, P127, P128, P129, P131); the other fourteen:
+
+| Id | Section | Title | Answer from the engineering work | Settled? |
+|---|---|---|---|---|
+| P009 | concept/brief | How it works | The sheet's added text (+/-8 g, +/-500 dps, 44 Hz, a ten-second history, DFPlayer, three AA) describes Rev A. The 2 x AA design: +/-16 g, +/-2000 dps, 94 Hz filter, 0.5 s and 1 s windows, an I2S amplifier with clips in flash, two AA. Note 3.1 and 2.3. Enter the Rev B wording, not the sheet's | Yes, by the note |
+| P011 | concept/brief | Power strategy | Two AA alkaline cells; deep sleep woken by the motion interrupt or the button; about 0.25 mA asleep (est), not 30 to 60 uA; about 6 months at four travel days a month (est). The "no lithium" argument stands for the device itself (the tracker's coin cell is the tag designer's open point). Note 2.5, 2.6 | Yes, by the note; the figures are estimates |
+| P064 | concept/decisions | Which enclosure build? | The owner ruled an integrated print (another agent's Rev C, a one-piece print-in-place shell). Engineering adds only the inputs (note 6, the envelope file) and the conflicts with Rev C (note 6.6) | By the ruling; the choice of build is the tag designer's |
+| P068 | concept/decisions | Which 3D printer? | Not an engineering question: the tolerances in note 6.5 assume a 0.4 mm nozzle at 0.2 mm layers on PETG, which both the A1 and the A1 mini print | No: a purchase |
+| P069 | concept/decisions | Rev A sleep: light-sleep poll or deep sleep | Deep sleep with wake on the latched motion interrupt or the button, after 45 s without motion; light sleep only between FIFO batches while awake. Note 2.5, sketch `goToDeepSleep` | Yes |
+| P070 | concept/decisions | Audio storage: microSD or SPI flash, and which revision | The controller's own 8 MB flash, in Rev B (the 2 x AA prototype): the DFPlayer and the card are gone because two cells cannot run them (note 2.2). Consequence: packs cannot be sold as a card | Yes for the device; the selling consequence is for Sales |
+| P073 | concept/decisions | Sensor mount: mid-plate on standoffs or printed posts | Printed posts in the shell half that carries the loop, M2 self-tapping screws, flat tops; Rev C's two screws and two pegs are acceptable with tight pegs. Note 6.4, 6.6 | Yes |
+| P076 | concept/decisions | Dark idle: add a light sensor? | No: motion only, one timed wake two hours after motion stops. A light sensor needs a window in the case and a part, and the hold is dark whether or not the bag is in it | Yes, by the note |
+| P081 | concept/questions | How does a unit get its serial number? | Not settled. A proposal: the ESP32-S3's factory MAC (read with `ESP.getEfuseMac()`) printed on the serial log at boot as `BC-` and its last six hex digits, so the card can be printed from the unit itself. Not in the Rev B sketch; the format is the business's to fix | No |
+| P110 | concept/questions | Hinge test coupon: sizes and print time differ | The two coupons test different things and both are useful: the build guide's pins 1.3 / 1.4 / 1.5 in 1.8 bores test the print-in-place hinge; the note's 0.20 to 0.35 clearances test the slip fits. Recommended clearances in note 6.5 (print-in-place 0.40 radial, 0.30 only after a coupon frees). The print time is the slicer's to say | Yes, by the note |
+| P111 | concept/questions | Cost at 1,000 units: under $8, $4-6, or $19.00 | Not settled. The 2 x AA module design is $62.69 a unit at 100 with the kits at their one-off prices, about $44 with per-unit shares of the kits (est). Every 1,000-unit figure in the documents assumes a custom board with bare chips, which is not designed; under $8 is not plausible with modules | No: needs the custom board |
+| P132 | concept/questions | Bambu Lab A1: two Micro Center numbers | Not an engineering question | No |
+| P133 | concept/questions | Enclosure saving "from about $11.50" | Not settled by engineering. In the 2 x AA BOM the printed enclosure stays at the documents' $5.00, and the screws and standoffs kit at $6.99; the integrated print removes most of the screws (two left, for the sensor) | No |
+| P134 | concept/questions | Ingress rating "IP424" | Not settled: no IP rating is claimed by this design, and none is tested. Rev C notes "splash-resistant at best" (hinge gaps, slots, grille without its mesh). Use no IP figure in any copy until a test is run | No; no rating should be claimed |
+
+## Firmware requests from the lines and the voice packs
+
+Listed for WS14 in `docs/design/baggage-claims-lines.md` ("What the lines ask of the firmware") and `docs/research/baggage-claims-voice-packs.md` (six requirements). Implemented in the Rev B sketch and core unless said; detail in note section 4.1.
+
+| Request | Done |
+|---|---|
+| Count impacts in a journey; clips for the first, the second, "too many" | Yes: `impact_c1/_c2/_c3`, each once a journey phase; a landing counts as an impact [host] |
+| Count carousel laps; clips for the second and third | Yes: each further 360 degrees of the same ride is reported; `carousel_c1/_c2/_c3` [host] |
+| Dark-hold clips quieter | Yes: 10 dB under the volume step [host] |
+| Several clips a moment, never the same twice running | Yes (`_1` to `_9`) [host] |
+| A goodbye on mute | **No**: the off switch is a true disconnect; there is no power left to speak with |
+| First-start flag | Yes: `box_1.wav` once, flag in flash |
+| Clip numbers kept apart for later moments | Yes, by file stem instead of number; a missing stem falls back to pack 1, then the related moment |
+| Find packs never seen | Yes, `/p1` to `/p9` |
+| Say which pack is on | Yes: `name_1.wav` after a long press |
+| Fall back to the first pack | Yes |
+| Remember the choice across power-off | Yes (already) |
+| A pack over USB without a card reader | Partly: a LittleFS image over USB with the maker's tools; not a buyer's path |
+| Packs on a card | **No**: no card in the 2 x AA design |
 
 ## Things the engineering work found that someone should know
 
@@ -89,4 +133,5 @@ These rows are yours; this is only what the engineering work decided, so the "wa
 2. **Voice packs on a card** are not possible in this build (P227 above). The Production row "Voice pack (DLC)" still says "sold as a microSD"; it was not changed.
 3. **Sleep current** of 200 uA was never achievable with Rev A's parts (the DFPlayer idles at about 20 mA). The requirement text now says so.
 4. **The Design stage is no longer shown as blocked** on the status page: its one blocked requirement (Firmware sketch compiles) is open.
-5. **The speaker is 20 mm deep**, not 5. The Rev C enclosure's depth stack has to be redone; one packing that closes on paper, with 0.9 mm spare, is in the note (6.2) and the envelope file.
+5. **The speaker is 20 mm deep**, not 5. The redrawn two-cell Rev C keeps a 5 mm speaker in its stack; with it the tag would be about 8 to 10 dB quieter (est). The trade, and the other differences, are in the note (6.6) and the envelope file (`revCConflicts`).
+6. **The governor's "one gag per class per journey phase"** now has one exception, so the score and the laps can run: impacts and carousel laps may play once per count step (one, two, too many). The cooldown and six-an-hour cap still hold.
