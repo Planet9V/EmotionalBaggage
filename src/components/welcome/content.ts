@@ -843,6 +843,6 @@ export const YOUR_TURN = {
   includes: "Includes",
   formTitle: (level: string | null) => (level ? `Request access: ${level}` : "Request access"),
   formLead: (level: string | null) =>
-    `Tell us who you are and what you want to build${level ? `, and mention that ${level} is the level you want: the form has no field for it yet` : ""}. The request is stored here and the owner reads it in Admin. No email is sent yet, so the reply comes by hand.`,
+    `Tell us who you are and what you want to build${level ? `. ${level} is chosen as the level you want; you can change it in the form` : ""}. The request is stored here and the owner reads it in Admin. No email is sent yet, so the reply comes by hand.`,
   demoTitle: "Or try the live demo now",
 };

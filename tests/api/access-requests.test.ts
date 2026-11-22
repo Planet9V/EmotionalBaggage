@@ -1,11 +1,12 @@
 // Access requests from the public welcome page: the open form route (valid, invalid, honeypot, rate limit,
-// audit line) and the Admin routes (refused under the published demo password, list newest first, status
+// audit line, the chosen service level) and the Admin routes (refused under the published demo password, list newest first, status
 // change with before and after, CSV), on the real PostgreSQL.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pool, q } from "@/lib/db";
 import { createSession, hashPassword } from "@/lib/auth";
 import { SESSION_COOKIE } from "@/app/sign-in/shared";
-import { ACCESS_CONFIRMATION } from "@/lib/accessRequests/shared";
+import { ACCESS_CONFIRMATION, ACCESS_LEVELS, ACCESS_LEVEL_LABEL } from "@/lib/accessRequests/shared";
+import { LEVELS } from "@/components/welcome/content";
 import { POST } from "@/app/api/access-requests/route";
 import { GET as LIST } from "@/app/api/admin/access-requests/route";
 import { PATCH } from "@/app/api/admin/access-requests/[id]/route";
@@ -76,6 +77,41 @@ describe("POST /api/access-requests (open)", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]!.actor).toBe("");
     expect(JSON.stringify(lines[0])).not.toMatch(/Ada|example\.test/i);
+  });
+
+  it("stores the chosen level with the request, and '' when none was chosen or the field is absent", async () => {
+    for (const level of ACCESS_LEVELS) expect((await POST(visitor(good({ name: `Level ${level}`, level })))).status, level).toBe(201);
+    expect((await POST(visitor(good({ name: "Level none", level: "" })))).status).toBe(201);
+    // a page loaded before the field existed sends no level
+    expect((await POST(visitor(good({ name: "Level absent" })))).status).toBe(201);
+    const rows = await q<{ name: string; level: string }>("SELECT name, level FROM access_requests WHERE name LIKE 'Level %' ORDER BY id");
+    expect(rows).toEqual([
+      { name: "Level free", level: "free" },
+      { name: "Level maker", level: "maker" },
+      { name: "Level studio", level: "studio" },
+      { name: "Level self", level: "self" },
+      { name: "Level none", level: "" },
+      { name: "Level absent", level: "" },
+    ]);
+    const lines = await auditSince("access.requested");
+    expect(lines.some((l) => l.detail.level === "studio")).toBe(true);
+    await q("DELETE FROM access_requests WHERE name LIKE 'Level %'");
+  });
+
+  it.each([["enterprise"], ["Maker"], ["maker "], ["free'; DROP TABLE access_requests; --"]])("refuses the unknown level %j with a 400 that says why, and stores nothing", async (level) => {
+    const before = await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests");
+    const res = await read<{ error: string }>(await POST(visitor(good({ level }))));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toContain("Choose one of the listed levels.");
+    expect((await POST(visitor({ ...good(), level: 3 }))).status).toBe(400);
+    const after = await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests");
+    expect(after[0]!.n).toBe(before[0]!.n);
+  });
+
+  it("the database refuses a level the app does not know, and the form's levels are the welcome page's cards", async () => {
+    await expect(q("INSERT INTO access_requests (name, email, building, level) VALUES ('X', 'x@y.test', 'Straight into the table', 'gold')")).rejects.toThrow(/access_requests_level_check/);
+    expect(LEVELS.map((l) => l.key)).toEqual([...ACCESS_LEVELS]);
+    expect(LEVELS.map((l) => l.name)).toEqual(ACCESS_LEVELS.map((l) => ACCESS_LEVEL_LABEL[l]));
   });
 
   it("needs no session", async () => {
@@ -156,13 +192,21 @@ describe("Admin: access requests", () => {
   });
 
   it("lists every request newest first for the owner", async () => {
-    const res = await read<{ requests: { id: number; name: string; status: string; createdAt: string }[] }>(await LIST(asOwner("GET", "http://test.local/api/admin/access-requests")));
+    const res = await read<{ requests: { id: number; name: string; status: string; level: string; createdAt: string }[] }>(await LIST(asOwner("GET", "http://test.local/api/admin/access-requests")));
     expect(res.status).toBe(200);
     const ids = res.body.requests.map((r) => r.id);
     expect(ids).toEqual([...ids].sort((a, b) => b - a));
     expect(res.body.requests.at(-1)!.name).toBe("Ada Tester");
     expect(res.body.requests[0]!.name).toBe("Elsewhere");
     expect(res.body.requests.every((r) => r.status === "new")).toBe(true);
+    expect(res.body.requests.every((r) => r.level === "")).toBe(true);
+  });
+
+  it("shows the owner the level each request named", async () => {
+    expect((await POST(visitor(good({ name: "Wants Studio", level: "studio" })))).status).toBe(201);
+    const res = await read<{ requests: { name: string; level: string }[] }>(await LIST(asOwner("GET", "http://test.local/api/admin/access-requests")));
+    expect(res.body.requests[0]).toMatchObject({ name: "Wants Studio", level: "studio" });
+    await q("DELETE FROM access_requests WHERE name = 'Wants Studio'");
   });
 
   it("sets a status, records before and after, and changes nothing when it is the same", async () => {
@@ -189,15 +233,16 @@ describe("Admin: access requests", () => {
   });
 
   it("downloads CSV with a header row, newest first, with formulas neutralised, and records the copy", async () => {
-    await q("INSERT INTO access_requests (name, email, building) VALUES ('=HYPERLINK(\"x\")', 'f@x.test', 'Formula in the name field')");
+    await q("INSERT INTO access_requests (name, email, building, level) VALUES ('=HYPERLINK(\"x\")', 'f@x.test', 'Formula in the name field', 'self')");
     const res = await EXPORT(asOwner("GET", "http://test.local/api/admin/access-requests/export"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toMatch(/^text\/csv/);
     expect(res.headers.get("content-disposition")).toMatch(/^attachment; filename="access-requests-\d{4}-\d{2}-\d{2}\.csv"$/);
     const text = await res.text();
     const lines = text.trimEnd().split("\r\n");
-    expect(lines[0]).toBe("id,received,status,name,email,company,building");
+    expect(lines[0]).toBe("id,received,status,level,name,email,company,building");
     expect(lines[1]).toContain("'=HYPERLINK");
+    expect(lines[1]).toContain(",new,Self-hosted,");
     const n = (await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests"))[0]!.n;
     expect(lines).toHaveLength(n + 1);
     const copies = await auditSince("access.exported");

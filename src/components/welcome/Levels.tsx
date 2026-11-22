@@ -2,13 +2,15 @@
 
 // "Your turn": the four service levels, and the way in that exists today. Accounts and payment are not built, so
 // no card pretends otherwise: Free, Maker and Studio each ask for access, which brings the visitor to the request
-// form with the chosen level named above it (the form has no field for a level, and is used unchanged), and
-// Self-hosted goes to "Run it yourself". Prices are the owner's to confirm: while SHOW_PRICES is false the paid
-// levels read "Price to be announced". The links work without script; script only adds the level to the heading.
+// form with the chosen level named above it and preselected in the form's Level field (changeable there; the
+// level is stored with the request), and Self-hosted goes to "Run it yourself". Prices are the owner's to confirm:
+// while SHOW_PRICES is false the paid levels read "Price to be announced". The links work without script; script
+// adds the level to the heading and the form.
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ACCESS_LEVEL_LABEL, type AccessLevel } from "@/lib/accessRequests/shared";
 import { AccessRequestForm } from "./AccessRequestForm";
 import { DEMO_NOTE, HERO, LEVELS, SHOW_PRICES, YOUR_TURN, type Level } from "./content";
 
@@ -25,12 +27,13 @@ function Price({ level }: { level: Level }) {
 }
 
 export function Levels() {
-  const [level, setLevel] = useState<string | null>(null);
+  const [level, setLevel] = useState<AccessLevel | "">("");
+  const levelName = level ? ACCESS_LEVEL_LABEL[level] : null;
   return (
     <>
       <ul className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {LEVELS.map((l) => (
-          <li key={l.key} className={`flex flex-col rounded-xl border bg-surface p-5 shadow-[var(--shadow-card)] ${level === l.name ? "border-dutchOrange" : "border-hairline"}`}>
+          <li key={l.key} className={`flex flex-col rounded-xl border bg-surface p-5 shadow-[var(--shadow-card)] ${level === l.key ? "border-dutchOrange" : "border-hairline"}`}>
             <h3 className="text-lg font-semibold tracking-tight text-primary">{l.name}</h3>
             <p className="mt-0.5 font-mono text-[11px] text-link">{l.who}</p>
             <div className="mt-3">
@@ -49,7 +52,7 @@ export function Levels() {
             <div className="mt-auto pt-5">
               {l.action === "request" ? (
                 <Button asChild variant={l.key === "maker" ? "primary" : "outline"} className="h-10 w-full rounded-lg">
-                  <a href="#request" onClick={() => setLevel(l.name)} aria-label={`${YOUR_TURN.request}: ${l.name}`}>
+                  <a href="#request" onClick={() => setLevel(l.key)} aria-label={`${YOUR_TURN.request}: ${l.name}`}>
                     {YOUR_TURN.request}
                   </a>
                 </Button>
@@ -69,9 +72,9 @@ export function Levels() {
 
       <div id="request" className="mt-10 grid scroll-mt-6 grid-cols-1 gap-10 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <h3 id="request-title" className="text-lg font-semibold tracking-tight text-primary" aria-live="polite">{YOUR_TURN.formTitle(level)}</h3>
-          <p className="mb-6 mt-2 max-w-2xl text-sm leading-relaxed text-secondary">{YOUR_TURN.formLead(level)}</p>
-          <AccessRequestForm />
+          <h3 id="request-title" className="text-lg font-semibold tracking-tight text-primary" aria-live="polite">{YOUR_TURN.formTitle(levelName)}</h3>
+          <p className="mb-6 mt-2 max-w-2xl text-sm leading-relaxed text-secondary">{YOUR_TURN.formLead(levelName)}</p>
+          <AccessRequestForm level={level} onLevelChange={setLevel} />
         </div>
         <div className="lg:col-span-5">
           <h3 className="text-lg font-semibold tracking-tight text-primary">{YOUR_TURN.demoTitle}</h3>

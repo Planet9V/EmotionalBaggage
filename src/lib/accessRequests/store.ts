@@ -6,9 +6,9 @@
 import { audit, auditIn, q, tx } from "@/lib/db";
 import { toCsvText } from "@/lib/csv";
 import { HttpError, notFound } from "@/lib/api/route";
-import { ACCESS_STATUS_LABEL, type AccessRequestRow, type AccessRequestValues, type AccessStatus } from "./shared";
+import { ACCESS_LEVEL_LABEL, ACCESS_STATUS_LABEL, type AccessLevel, type AccessRequestRow, type AccessRequestValues, type AccessStatus } from "./shared";
 
-type Row = { id: string; created_at: Date; name: string; email: string; building: string; company: string; status: AccessStatus; status_changed_at: Date | null };
+type Row = { id: string; created_at: Date; name: string; email: string; building: string; company: string; level: AccessLevel | ""; status: AccessStatus; status_changed_at: Date | null };
 
 const toRow = (r: Row): AccessRequestRow => ({
   id: Number(r.id),
@@ -17,6 +17,7 @@ const toRow = (r: Row): AccessRequestRow => ({
   email: r.email,
   building: r.building,
   company: r.company,
+  level: r.level,
   status: r.status,
   statusChangedAt: r.status_changed_at ? new Date(r.status_changed_at).toISOString() : null,
 });
@@ -25,11 +26,11 @@ const toRow = (r: Row): AccessRequestRow => ({
 export async function createAccessRequest(v: Omit<AccessRequestValues, "website">): Promise<number> {
   return tx(async (c) => {
     const r = await c.query<{ id: string }>(
-      "INSERT INTO access_requests (name, email, building, company) VALUES ($1, $2, $3, $4) RETURNING id",
-      [v.name, v.email.toLowerCase(), v.building, v.company]
+      "INSERT INTO access_requests (name, email, building, company, level) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [v.name, v.email.toLowerCase(), v.building, v.company, v.level ?? ""]
     );
     const id = Number(r.rows[0]!.id);
-    await auditIn(c, { action: "access.requested", summary: `Access request ${id} was sent from the welcome page`, detail: { id, company: v.company ? true : false }, actor: "" });
+    await auditIn(c, { action: "access.requested", summary: `Access request ${id} was sent from the welcome page`, detail: { id, company: v.company ? true : false, level: v.level ?? "" }, actor: "" });
     return id;
   });
 }
@@ -67,12 +68,12 @@ export async function setAccessStatus(id: number, status: AccessStatus): Promise
   });
 }
 
-const CSV_HEADER = ["id", "received", "status", "name", "email", "company", "building"] as const;
+const CSV_HEADER = ["id", "received", "status", "level", "name", "email", "company", "building"] as const;
 
 /** The requests as CSV, newest first. Taking a copy is recorded, with the number of rows only. */
 export async function accessRequestsCsv(): Promise<{ text: string; rows: number }> {
   const rows = await listAccessRequests(100_000);
-  const text = toCsvText([CSV_HEADER, ...rows.map((r) => [r.id, r.createdAt, r.status, r.name, r.email, r.company, r.building])], { trailingNewline: true });
+  const text = toCsvText([CSV_HEADER, ...rows.map((r) => [r.id, r.createdAt, r.status, r.level ? ACCESS_LEVEL_LABEL[r.level] : "", r.name, r.email, r.company, r.building])], { trailingNewline: true });
   await audit({ action: "access.exported", summary: `Access requests were downloaded as CSV (${rows.length} row${rows.length === 1 ? "" : "s"})`, detail: { rows: rows.length } });
   return { text, rows: rows.length };
 }

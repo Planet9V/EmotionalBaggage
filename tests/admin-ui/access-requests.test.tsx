@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { AccessRequestsTab } from "@/components/admin/AccessRequestsTab";
 import { AccessRequestForm } from "@/components/welcome/AccessRequestForm";
+import { Levels } from "@/components/welcome/Levels";
 import { ACCESS_CONFIRMATION, type AccessRequestRow } from "@/lib/accessRequests/shared";
 import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
 
@@ -22,6 +23,7 @@ const row = (o: Partial<AccessRequestRow>): AccessRequestRow => ({
   email: "ada@example.test",
   building: "A plant sensor.",
   company: "",
+  level: "",
   status: "new",
   statusChangedAt: null,
   ...o,
@@ -29,7 +31,7 @@ const row = (o: Partial<AccessRequestRow>): AccessRequestRow => ({
 
 describe("Admin, Access requests", () => {
   it("lists the requests and saves a status change", async () => {
-    const list = [row({ id: 2, name: "Bea Newer", email: "bea@example.test", company: "Bea Labs" }), row({ id: 1 })];
+    const list = [row({ id: 2, name: "Bea Newer", email: "bea@example.test", company: "Bea Labs", level: "studio" }), row({ id: 1 })];
     const { calls } = adminServer([
       on("GET", "/api/admin/access-requests", () => ({ body: { requests: list } })),
       on("PATCH", "/api/admin/access-requests/1", (c) => ({ body: { request: row({ id: 1, status: (c.body as { status: AccessRequestRow["status"] }).status }) } })),
@@ -39,6 +41,10 @@ describe("Admin, Access requests", () => {
     expect(screen.getByText("Bea Labs")).toBeTruthy();
     expect(screen.getByRole("link", { name: "ada@example.test" }).getAttribute("href")).toBe("mailto:ada@example.test");
     expect(screen.getByText("2 requests.")).toBeTruthy();
+    // the level the visitor chose, and plain words when none was
+    expect(screen.getByRole("columnheader", { name: "Level" })).toBeTruthy();
+    expect(screen.getByTestId("access-level-2").textContent).toBe("Studio");
+    expect(screen.getByTestId("access-level-1").textContent).toBe("Not chosen");
     const select = screen.getByLabelText("Status of request 1 from Ada Tester") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "contacted" } });
     await waitFor(() => expect(calls.some((c) => c.method === "PATCH" && c.path === "/api/admin/access-requests/1")).toBe(true));
@@ -93,7 +99,46 @@ describe("the public request form", () => {
     fill(/What do you want to build/, "A clip-on plant sensor.");
     fireEvent.click(screen.getByRole("button", { name: "Request a workspace" }));
     expect(await screen.findByText(ACCESS_CONFIRMATION)).toBeTruthy();
-    expect(calls[0]!.body).toEqual({ name: "Ada Tester", email: "ada@example.test", building: "A clip-on plant sensor.", company: "", website: "" });
+    expect(calls[0]!.body).toEqual({ name: "Ada Tester", email: "ada@example.test", building: "A clip-on plant sensor.", company: "", level: "", website: "" });
+  });
+
+  it("starts on the level it is given, lets the visitor change it, and sends the one shown", async () => {
+    const { calls } = adminServer([on("POST", "/api/access-requests", () => ({ status: 201, body: { ok: true, message: ACCESS_CONFIRMATION } }))]);
+    const changed: string[] = [];
+    renderWithClient(<AccessRequestForm level="maker" onLevelChange={(l) => changed.push(l)} />);
+    const level = screen.getByLabelText(/^Level/) as HTMLSelectElement;
+    await waitFor(() => expect(level.value).toBe("maker"));
+    expect([...level.options].map((o) => o.textContent)).toEqual(["Not sure yet", "Free", "Maker", "Studio", "Self-hosted"]);
+    fireEvent.change(level, { target: { value: "studio" } });
+    expect(changed).toEqual(["studio"]);
+    fill(/Your name/, "Ada Tester");
+    fill(/^Email/, "ada@example.test");
+    fill(/What do you want to build/, "A clip-on plant sensor.");
+    fireEvent.click(screen.getByRole("button", { name: "Request a workspace" }));
+    expect(await screen.findByText(ACCESS_CONFIRMATION)).toBeTruthy();
+    expect(calls[0]!.body).toMatchObject({ level: "studio" });
+  });
+
+  it("carries the level from a card's Request access to the form, where it can be changed, and sends it", async () => {
+    const { calls } = adminServer([on("POST", "/api/access-requests", () => ({ status: 201, body: { ok: true, message: ACCESS_CONFIRMATION } }))]);
+    renderWithClient(<Levels />);
+    const level = screen.getByLabelText(/^Level/) as HTMLSelectElement;
+    expect(level.value).toBe("");
+    expect(screen.getByRole("heading", { level: 3, name: "Request access" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "Request access: Maker" }));
+    await waitFor(() => expect(level.value).toBe("maker"));
+    expect(screen.getByRole("heading", { level: 3, name: "Request access: Maker" })).toBeTruthy();
+    // changing the field renames the heading too, so the page never names one level and sends another
+    fireEvent.change(level, { target: { value: "free" } });
+    expect(await screen.findByRole("heading", { level: 3, name: "Request access: Free" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "Request access: Studio" }));
+    await waitFor(() => expect(level.value).toBe("studio"));
+    fill(/Your name/, "Ada Tester");
+    fill(/^Email/, "ada@example.test");
+    fill(/What do you want to build/, "A clip-on plant sensor.");
+    fireEvent.click(screen.getByRole("button", { name: "Request a workspace" }));
+    expect(await screen.findByText(ACCESS_CONFIRMATION)).toBeTruthy();
+    expect(calls[0]!.body).toMatchObject({ level: "studio" });
   });
 
   it("keeps what was typed and shows the server's sentence when it refuses", async () => {

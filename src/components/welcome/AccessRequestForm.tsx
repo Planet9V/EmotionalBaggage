@@ -1,29 +1,44 @@
 "use client";
 
 // "Request your own workspace": a real form, stored in PostgreSQL by POST /api/access-requests. The same zod
-// schema checks it here and on the server. No email is sent; the confirmation says so.
+// schema checks it here and on the server. No email is sent; the confirmation says so. The Level field starts on
+// the level whose card brought the visitor here (the `level` prop) and can be changed; the server checks it again.
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, describe } from "@/components/ui/field";
 import { SaveError } from "@/components/ui/states";
 import { useSendAccessRequest } from "@/lib/accessRequests/client";
-import { ACCESS_LIMITS, AccessRequestForm as Schema, type AccessRequestValues } from "@/lib/accessRequests/shared";
+import { ACCESS_LEVELS, ACCESS_LEVEL_LABEL, ACCESS_LIMITS, AccessRequestForm as Schema, isAccessLevel, type AccessLevel, type AccessRequestValues } from "@/lib/accessRequests/shared";
 import { messageOf } from "@/lib/queries";
 
-const EMPTY: AccessRequestValues = { name: "", email: "", building: "", company: "", website: "" };
+const EMPTY: AccessRequestValues = { name: "", email: "", building: "", company: "", level: "", website: "" };
 
-export function AccessRequestForm() {
+type Props = {
+  /** the level chosen on a card above the form; "" for none */
+  level?: AccessLevel | "";
+  /** the visitor changed the Level field */
+  onLevelChange?: (level: AccessLevel | "") => void;
+};
+
+export function AccessRequestForm({ level = "", onLevelChange }: Props = {}) {
   const send = useSendAccessRequest();
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AccessRequestValues>({ resolver: zodResolver(Schema), defaultValues: EMPTY, mode: "onSubmit", reValidateMode: "onChange" });
+
+  // a card's Request access was pressed: the field follows it, and stays changeable
+  useEffect(() => setValue("level", level), [level, setValue]);
+  const levelField = register("level", { onChange: (e: { target: { value: string } }) => onLevelChange?.(isAccessLevel(e.target.value) ? e.target.value : "") });
 
   const submit = handleSubmit(async (v) => {
     try {
@@ -58,9 +73,21 @@ export function AccessRequestForm() {
       <Field id="req-building" label="What do you want to build?" required error={errors.building?.message} hint="A sentence or two is plenty.">
         <Textarea id="req-building" rows={4} maxLength={ACCESS_LIMITS.building} {...describe("req-building", { hint: true, error: errors.building?.message })} {...register("building")} />
       </Field>
-      <Field id="req-company" label="Company (optional)" error={errors.company?.message}>
-        <Input id="req-company" autoComplete="organization" maxLength={ACCESS_LIMITS.company} {...describe("req-company", { error: errors.company?.message })} {...register("company")} />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="req-company" label="Company (optional)" error={errors.company?.message}>
+          <Input id="req-company" autoComplete="organization" maxLength={ACCESS_LIMITS.company} {...describe("req-company", { error: errors.company?.message })} {...register("company")} />
+        </Field>
+        <Field id="req-level" label="Level" error={errors.level?.message} hint="The level you would like. You can change your mind later.">
+          <NativeSelect id="req-level" {...describe("req-level", { hint: true, error: errors.level?.message })} {...levelField}>
+            <option value="">Not sure yet</option>
+            {ACCESS_LEVELS.map((l) => (
+              <option key={l} value={l}>
+                {ACCESS_LEVEL_LABEL[l]}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+      </div>
       {/* A honeypot: hidden from people and out of the tab order. Scripts that fill every box fill this one too. */}
       <div className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
         <label htmlFor="req-website">Leave this field empty</label>

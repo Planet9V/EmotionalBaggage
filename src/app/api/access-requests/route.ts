@@ -31,7 +31,7 @@ export const POST = route.open(
       await auditRefusedRequest("honeypot");
       return NextResponse.json({ ok: true, message: ACCESS_CONFIRMATION }, { headers: { "cache-control": "no-store" } });
     }
-    await createAccessRequest({ name: v.name, email: v.email, building: v.building, company: v.company });
+    await createAccessRequest({ name: v.name, email: v.email, building: v.building, company: v.company, level: v.level });
     return NextResponse.json({ ok: true, message: ACCESS_CONFIRMATION }, { status: 201, headers: { "cache-control": "no-store" } });
   },
   { maxBodyBytes: 16 * 1024, tooLarge: "This request is too large. Keep what you want to build under 2,000 characters." }

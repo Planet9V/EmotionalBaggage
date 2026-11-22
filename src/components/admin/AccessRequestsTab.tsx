@@ -15,7 +15,7 @@ import { ApiError } from "@/lib/http";
 import { messageOf } from "@/lib/queries";
 import { fmtDateTime } from "@/lib/format";
 import { downloadAccessRequests, useAccessRequests, useSetAccessStatus } from "@/lib/accessRequests/client";
-import { ACCESS_STATUSES, ACCESS_STATUS_LABEL, type AccessStatus } from "@/lib/accessRequests/shared";
+import { ACCESS_LEVEL_LABEL, ACCESS_STATUSES, ACCESS_STATUS_LABEL, type AccessStatus } from "@/lib/accessRequests/shared";
 
 export function AccessRequestsTab() {
   const list = useAccessRequests();
@@ -88,6 +88,7 @@ export function AccessRequestsTab() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-36">Received</TableHead>
                   <TableHead>Who</TableHead>
+                  <TableHead className="w-28">Level</TableHead>
                   <TableHead className="min-w-64">Wants to build</TableHead>
                   <TableHead className="w-44">Status</TableHead>
                 </TableRow>
@@ -102,6 +103,9 @@ export function AccessRequestsTab() {
                         {r.email}
                       </a>
                       {r.company ? <span className="block text-xs text-secondary wrap-anywhere">{r.company}</span> : null}
+                    </TableCell>
+                    <TableCell className="align-top text-sm text-secondary" data-testid={`access-level-${r.id}`}>
+                      {r.level ? ACCESS_LEVEL_LABEL[r.level] : <span className="text-muted">Not chosen</span>}
                     </TableCell>
                     <TableCell className="align-top whitespace-pre-wrap text-sm text-secondary wrap-anywhere">{r.building}</TableCell>
                     <TableCell className="align-top">
