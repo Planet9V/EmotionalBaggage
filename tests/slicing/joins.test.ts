@@ -13,10 +13,7 @@ import { POST as testConnection } from "@/app/api/admin/test/route";
 import { GET as listJobs } from "@/app/api/projects/[id]/print-jobs/route";
 import { slicerAddress } from "@/lib/slicing/config";
 import { parseStl } from "@/lib/enclosure/stl";
-import { asAdministrator, ctx, json, read, SEEDED } from "../api/helpers";
-
-// This file changes Admin settings or keys, which the public demo account (default password) may not.
-asAdministrator();
+import { ctx, json, read, SEEDED } from "../api/helpers";
 
 const servers: Server[] = [];
 afterAll(async () => {

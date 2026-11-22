@@ -14,10 +14,7 @@ import * as octoprint from "../standins/octoprint";
 import * as moonraker from "../standins/moonraker";
 import * as perplexity from "../standins/perplexity";
 import { json as reply, startStandIn, type StandIn } from "../standins/core";
-import { asAdministrator, json, read } from "../api/helpers";
-
-// This file changes Admin settings or keys, which the public demo account (default password) may not.
-asAdministrator();
+import { json, read } from "../api/helpers";
 import { clearAdmin, restore, snapshot } from "./fixture";
 
 type Result = { ok: boolean; message: string; detail?: Record<string, unknown>; issues?: { field: string }[]; error?: string };
@@ -418,7 +415,13 @@ describe("kind: database", () => {
 });
 
 describe("audit of tests", () => {
+  // Review B5: a test by anyone but the platform administrator (under the old sign-in: everyone) is written to the
+  // install-wide audit log only. It no longer enters the short credentials list or the Overview's "last checked".
   it("records each test with its result and no values", async () => {
+    const shortBefore = JSON.stringify(await readAudit());
+    const checks = async () => JSON.stringify(await q("SELECT value FROM settings WHERE key = 'admin.checks'"));
+    const checksBefore = await checks();
+    const from = (await q<{ n: string }>("SELECT COALESCE(max(id), 0)::text AS n FROM audit_log"))[0].n;
     const s = await track(perplexity.start({ apiKey: "pplx-the-right-key-0000" }));
     const savedBase = process.env.PERPLEXITY_BASE_URL;
     process.env.PERPLEXITY_BASE_URL = s.url;
@@ -427,12 +430,15 @@ describe("audit of tests", () => {
     else process.env.PERPLEXITY_BASE_URL = savedBase;
     await test({ kind: "database" });
     await test({ kind: "printer", family: "file-only" });
-    const entries = (await readAudit()).slice(0, 3);
-    expect(entries.map((e) => [e.action, e.provider, e.result?.ok])).toEqual([
-      ["tested", "printer:file-only", true],
-      ["tested", "database", true],
-      ["tested", "perplexity", false],
+    const lines = await q<{ action: string; detail: { provider: string; result?: { ok: boolean } } }>("SELECT action, detail FROM audit_log WHERE id > $1 AND action = 'credential.tested' ORDER BY id", [from]);
+    expect(lines.map((l) => [l.action, l.detail.provider, l.detail.result?.ok])).toEqual([
+      ["credential.tested", "perplexity", false],
+      ["credential.tested", "database", true],
+      ["credential.tested", "printer:file-only", true],
     ]);
+    expect(JSON.stringify(lines)).not.toContain("pplx-audit-secret-0000");
+    expect(JSON.stringify(await readAudit())).toBe(shortBefore);
+    expect(await checks()).toBe(checksBefore);
     expect(JSON.stringify(await readAudit())).not.toContain("pplx-audit-secret-0000");
   });
 });
