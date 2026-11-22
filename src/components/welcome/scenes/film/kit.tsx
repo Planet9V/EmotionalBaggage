@@ -36,7 +36,9 @@ export const C = {
 
 // ---- the builder ------------------------------------------------------------------------------------------------
 
-type Opt = { rot?: V3; r?: number; seg?: number; r2?: number; s?: V3 };
+type Opt = { rot?: V3; r?: number; seg?: number; r2?: number; s?: V3; hs?: number };
+/** Which bones a vertex follows, given where it is in the figure: two bones and the weight of the second. */
+export type Skin = (x: number, y: number, z: number) => [a: number, b: number, w: number];
 const ZERO: V3 = [0, 0, 0];
 
 /**
@@ -49,6 +51,7 @@ export class Kit {
   private m = new THREE.Matrix4();
   private q = new THREE.Quaternion();
   private e = new THREE.Euler();
+  private skins: Skin[] = [];
 
   private place(p: V3, rot: V3 = ZERO, s: V3 = [1, 1, 1]) {
     this.q.setFromEuler(this.e.set(rot[0], rot[1], rot[2]));
@@ -61,16 +64,38 @@ export class Kit {
     this.stack.pop();
     return this;
   }
+  /** Everything added inside `inner` is bound to bones by `skin` (for a figure built as one skinned mesh). */
+  bind(skin: Skin | number, inner: () => void) {
+    this.skins.push(typeof skin === "number" ? () => [skin, skin, 0] : skin);
+    inner();
+    this.skins.pop();
+    return this;
+  }
   geo(g: THREE.BufferGeometry, c: string, p: V3 = ZERO, o: Opt = {}) {
     const flat = g.index ? g.toNonIndexed() : g;
     if (flat !== g) g.dispose();
     flat.deleteAttribute("uv");
     flat.applyMatrix4(this.place(p, o.rot, o.s));
-    const n = flat.getAttribute("position").count;
+    const pos = flat.getAttribute("position");
+    const n = pos.count;
     const col = new THREE.Color(c);
     const a = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) a.set([col.r, col.g, col.b], i * 3);
     flat.setAttribute("color", new THREE.BufferAttribute(a, 3));
+    const skin = this.skins[this.skins.length - 1];
+    if (skin) {
+      const idx = new Uint16Array(n * 4);
+      const wt = new Float32Array(n * 4);
+      for (let i = 0; i < n; i++) {
+        const [b0, b1, w] = skin(pos.getX(i), pos.getY(i), pos.getZ(i));
+        idx[i * 4] = b0;
+        idx[i * 4 + 1] = b1;
+        wt[i * 4] = 1 - w;
+        wt[i * 4 + 1] = w;
+      }
+      flat.setAttribute("skinIndex", new THREE.BufferAttribute(idx, 4));
+      flat.setAttribute("skinWeight", new THREE.BufferAttribute(wt, 4));
+    }
     this.parts.push(flat);
     return this;
   }
@@ -81,13 +106,13 @@ export class Kit {
   }
   /** A cylinder standing on its axis (y): radius `r` at the foot, `r2` at the top. */
   cyl(r: number, h: number, c: string, p: V3 = ZERO, o: Opt = {}) {
-    return this.geo(new THREE.CylinderGeometry(o.r2 ?? r, r, h, o.seg ?? 20), c, p, o);
+    return this.geo(new THREE.CylinderGeometry(o.r2 ?? r, r, h, o.seg ?? 20, o.hs ?? 1), c, p, o);
   }
   ball(r: number, c: string, p: V3 = ZERO, o: Opt = {}) {
     return this.geo(new THREE.SphereGeometry(r, o.seg ?? 18, Math.round((o.seg ?? 18) * 0.7)), c, p, o);
   }
   capsule(r: number, len: number, c: string, p: V3 = ZERO, o: Opt = {}) {
-    return this.geo(new THREE.CapsuleGeometry(r, len, 5, o.seg ?? 14), c, p, o);
+    return this.geo(new THREE.CapsuleGeometry(r, len, 5, o.seg ?? 14, o.hs ?? 1), c, p, o);
   }
   build() {
     const g = this.parts.length ? mergeGeometries(this.parts) : new THREE.BufferGeometry();
