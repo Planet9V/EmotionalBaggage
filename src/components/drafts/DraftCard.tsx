@@ -13,21 +13,16 @@ import { messageOf } from "@/lib/queries";
 import { useDraftActions } from "./api";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/Card";
+import { fieldLabel, readableValue } from "@/lib/fieldLabels";
 
 /** Fields the card does not offer as text boxes: shapes and positions edited in their own views. */
 const STRUCTURED = new Set(["geometry", "schematic", "pinRoles", "options"]);
-
-const show = (v: unknown): string => {
-  if (v === null || v === undefined || v === "") return "(empty)";
-  if (Array.isArray(v)) return v.map((x) => (typeof x === "object" ? JSON.stringify(x) : String(x))).join(", ") || "(empty)";
-  if (typeof v === "object") return JSON.stringify(v);
-  return String(v);
-};
 
 const editable = (v: unknown) => typeof v === "string" || typeof v === "number" || (Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number"));
 
 /** One line per changed field, for a draft that would replace a row. */
 export function changes(before: Item, d: Draft): { field: string; was: string; now: string }[] {
+  const show = (v: unknown) => readableValue(d.targetStore, v);
   const out: { field: string; was: string; now: string }[] = [];
   if (before.title !== d.title) out.push({ field: "Title", was: before.title, now: d.title });
   if (before.body !== d.body) out.push({ field: "Details", was: before.body || "(empty)", now: d.body || "(empty)" });
@@ -44,7 +39,7 @@ export function changes(before: Item, d: Draft): { field: string; was: string; n
     }
     const a = show(before.data?.[k]);
     const b = show(d.data?.[k]);
-    if (a !== b) out.push({ field: k, was: a, now: b });
+    if (a !== b) out.push({ field: fieldLabel(d.targetStore, k), was: a, now: b });
   }
   return out;
 }
@@ -93,6 +88,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
     }
   };
 
+  const show = (v: unknown) => readableValue(draft.targetStore, v);
   const diff = op === "replace" && current ? changes(current, draft) : [];
   // A substitute part arrives without a price: approving takes the old price out of the total. Say so first.
   const oldLine = op === "replace" && current && typeof current.data.line === "number" ? current.data.line : null;
@@ -144,7 +140,7 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
             <div className="grid gap-3 sm:grid-cols-2">
               {Object.keys(fields).map((k) => (
                 <div key={k}>
-                  <label htmlFor={`${base}-f-${k}`} className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{k}</label>
+                  <label htmlFor={`${base}-f-${k}`} className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{fieldLabel(draft.targetStore, k)}</label>
                   <Input id={`${base}-f-${k}`} value={fields[k]} onChange={(e) => setFields({ ...fields, [k]: e.target.value })} className="mt-1 font-mono text-xs" />
                 </div>
               ))}
@@ -182,12 +178,12 @@ export function DraftCard({ draft, current, decided }: { draft: Draft; current?:
               {draft.body && <p className="mt-2 whitespace-pre-wrap text-sm text-secondary wrap-anywhere">{draft.body}</p>}
               {(fieldList.length > 0 || size || wire) && (
                 <dl className="mt-3 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
-                  {wire && <div className="flex gap-2 sm:col-span-2"><dt className="font-mono text-muted">wire</dt><dd className="font-mono text-primary">{wire}</dd></div>}
+                  {wire && <div className="flex gap-2 sm:col-span-2"><dt className="font-mono text-muted">Wire</dt><dd className="font-mono text-primary">{wire}</dd></div>}
                   {fieldList.map(([k, v]) => (
-                    <div key={k} className="flex gap-2"><dt className="font-mono text-muted">{k}</dt><dd className="text-primary wrap-anywhere">{show(v)}</dd></div>
+                    <div key={k} className="flex gap-2"><dt className="font-mono text-muted">{fieldLabel(draft.targetStore, k)}</dt><dd className="text-primary wrap-anywhere">{show(v)}</dd></div>
                   ))}
-                  {size && <div className="flex gap-2"><dt className="font-mono text-muted">size</dt><dd className="text-primary">{size.join(" × ")} mm, typical</dd></div>}
-                  {pinsText(draft) && <div className="flex gap-2 sm:col-span-2"><dt className="font-mono text-muted">pins</dt><dd className="text-primary wrap-anywhere">{pinsText(draft)}</dd></div>}
+                  {size && <div className="flex gap-2"><dt className="font-mono text-muted">Size</dt><dd className="text-primary">{size.join(" × ")} mm, typical</dd></div>}
+                  {pinsText(draft) && <div className="flex gap-2 sm:col-span-2"><dt className="font-mono text-muted">Pins</dt><dd className="text-primary wrap-anywhere">{pinsText(draft)}</dd></div>}
                 </dl>
               )}
             </>

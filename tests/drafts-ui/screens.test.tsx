@@ -202,7 +202,7 @@ describe("the review card", () => {
     renderWithClient(<DraftCard draft={draft()} />);
     fireEvent.click(screen.getByRole("button", { name: /Edit the draft/ }));
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Dims within 90 s" } });
-    fireEvent.change(screen.getByLabelText("key"), { target: { value: "req-9" } });
+    fireEvent.change(screen.getByLabelText("Key"), { target: { value: "req-9" } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
     expect(calls.find((c) => c.method === "PATCH")!.body).toEqual({ title: "Dims within 90 s", body: "Test by leaving the room.", data: { key: "req-9" } });
@@ -214,7 +214,7 @@ describe("the review card", () => {
     const table = screen.getByRole("table", { name: "Before and after" });
     expect(within(table).getByText("Old title")).toBeTruthy();
     expect(within(table).getByText("New title")).toBeTruthy();
-    expect(within(table).getByText("pass")).toBeTruthy();
+    expect(within(table).getByText("Pass")).toBeTruthy();
     expect(screen.getByText("The requirement changed")).toBeTruthy();
   });
 
@@ -228,7 +228,7 @@ describe("the review card", () => {
 
 describe("helpers", () => {
   it("changes lists only the fields that differ", () => {
-    expect(changes(row(), draft({ title: "Old title", body: "Old", data: { key: "req-1", extra: 2 } }))).toEqual([{ field: "extra", was: "(empty)", now: "2" }]);
+    expect(changes(row(), draft({ title: "Old title", body: "Old", data: { key: "req-1", extra: 2 } }))).toEqual([{ field: "Extra", was: "(empty)", now: "2" }]);
   });
 
   it("a change worth an impact check: watched sections, and not positions or status alone", () => {
