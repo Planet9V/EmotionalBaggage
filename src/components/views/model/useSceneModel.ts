@@ -3,7 +3,7 @@
 // What the 3D model view works out from the parts and wires: what is drawn, what is faded while a part is in
 // focus, how wires are planned and which routes are current. Pure derivations; nothing here saves or sets state.
 import { useMemo } from "react";
-import { NET_COLOR, toWire, type NetClass, type Part, type Wire } from "@/lib/domain";
+import { NET_CLASSES, NET_COLOR, toWire, type NetClass, type Part, type Wire } from "@/lib/domain";
 import type { Item } from "@/lib/types";
 import type { CanvasPart, CanvasWire, RoutedDraw } from "@/components/three/ModelCanvas";
 import type { PartGeometry } from "@/components/three/layout";
@@ -12,7 +12,6 @@ import { bundleRadius, buildRouteRequest, routeState } from "@/lib/geometry/rout
 import { routePartsOf } from "@/lib/geometry/pins3d";
 import type { PinRow } from "@/lib/parts/pins";
 
-const CLASS_ORDER: NetClass[] = ["power", "ground", "signal", "audio"];
 const FADED = 0.12;
 const NEIGHBOUR = 0.6;
 
@@ -65,7 +64,7 @@ export function useSceneModel({
     for (const p of parts) if (p.ref && !m.has(p.ref)) m.set(p.ref, p);
     return m;
   }, [parts]);
-  const classesPresent = useMemo(() => CLASS_ORDER.filter((c) => wires.some((w) => w.netClass === c)), [wires]);
+  const classesPresent = useMemo(() => NET_CLASSES.filter((c) => wires.some((w) => w.netClass === c)), [wires]);
   const netsPresent = useMemo(() => [...new Set(wires.map((w) => w.net).filter(Boolean))].sort(), [wires]);
 
   const focus = focusId === null ? null : (parts.find((p) => p.item.id === focusId && p.geometry) ?? null);

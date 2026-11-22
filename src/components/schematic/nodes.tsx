@@ -29,9 +29,9 @@ export type CanvasCtx = {
 };
 export const SchematicContext = createContext<CanvasCtx>({ onAddPin: () => {}, highlight: new Set() });
 
-export type PartData = { ref: string; title: string; ghost: boolean; pins: PinRow[] };
+type PartData = { ref: string; title: string; ghost: boolean; pins: PinRow[] };
 export type PartNodeType = Node<PartData, "part">;
-export type WireData = { wire: Wire; label: boolean; dim: boolean; emph: boolean };
+type WireData = { wire: Wire; label: boolean; dim: boolean; emph: boolean };
 export type WireEdgeType = Edge<WireData, "wire">;
 
 const HANDLE = "h-[10px]! w-[10px]! rounded-full! border-2! bg-surface!";

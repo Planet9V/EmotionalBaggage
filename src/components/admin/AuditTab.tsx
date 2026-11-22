@@ -19,10 +19,10 @@ import { Panel } from "@/components/ui/panel";
 
 const ALL = "__all";
 /** The sign-in lines that fill the log; hidden until asked for. Refused attempts stay visible. */
-export const SIGN_IN = "session.started";
+const SIGN_IN = "session.started";
 
 /** Kinds of change, by the start of the action name. */
-export const KINDS: { prefix: string; label: string }[] = [
+const KINDS: { prefix: string; label: string }[] = [
   { prefix: "project.", label: "Concepts" },
   { prefix: "item.", label: "Rows" },
   { prefix: "file.", label: "Files" },
@@ -38,7 +38,7 @@ export const KINDS: { prefix: string; label: string }[] = [
 ];
 
 /** A concept's name in the filter, marked when it has been deleted. */
-export const conceptLabel = (c: AuditConcept) => (c.exists ? c.name : `${c.name} (deleted)`);
+const conceptLabel = (c: AuditConcept) => (c.exists ? c.name : `${c.name} (deleted)`);
 
 function useDebounced<T>(value: T, ms = 300): T {
   const [v, setV] = useState(value);

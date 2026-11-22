@@ -22,8 +22,8 @@ export const COMPACT_H = 15;
 const COMPACT_GAP = 14;
 const COMPACT_STEP = 58;
 
-export const symbolNodeId = (ref: string) => `s:${ref}`;
-export const flagNodeId = (ref: string, pin: string) => `f:${ref}\u0000${pin}`;
+const symbolNodeId = (ref: string) => `s:${ref}`;
+const flagNodeId = (ref: string, pin: string) => `f:${ref}\u0000${pin}`;
 export const symHandle = (pin: string) => `pin:${pin}`;
 
 export type SymNodeData = {

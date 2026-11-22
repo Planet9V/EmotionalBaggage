@@ -5,7 +5,6 @@
  * views agree.
  */
 import { relationOf } from "@/lib/geometry/overlap";
-import type { Geometry } from "@/lib/types";
 import { bodyExtent, bodyOffsets, cylinderAxis, totalExtent, type PartGeometry } from "../three/layout";
 
 export type ViewKey = "top" | "front" | "side";
@@ -97,11 +96,11 @@ export function boxRect(view: ViewDef, b: Box) {
 
 // ───────── checks
 
-export const OVERLAP_TOLERANCE = 0.1;
+const OVERLAP_TOLERANCE = 0.1;
 
 export type Overlap = { a: LayoutPart; b: LayoutPart; depth: [number, number, number] };
-export type Outside = { part: LayoutPart; amounts: { side: string; mm: number }[] };
-export type Floating = { part: LayoutPart; gap: number };
+type Outside = { part: LayoutPart; amounts: { side: string; mm: number }[] };
+type Floating = { part: LayoutPart; gap: number };
 
 export type CheckResult = {
   overlaps: Overlap[];
@@ -112,7 +111,7 @@ export type CheckResult = {
 };
 
 /** Depth of the intersection of two boxes on each axis (negative when apart on that axis). */
-export function overlapDepth(a: Box, b: Box): [number, number, number] {
+function overlapDepth(a: Box, b: Box): [number, number, number] {
   return [0, 1, 2].map((k) => Math.min(a.max[k], b.max[k]) - Math.max(a.min[k], b.min[k])) as [number, number, number];
 }
 
@@ -148,7 +147,7 @@ const SIDE_LOW = ["on the left", "below the floor", "at the back"];
 const SIDE_HIGH = ["on the right", "above the top", "at the front"];
 
 /** Parts whose bounding box leaves the inner volume by more than the tolerance. */
-export function findOutside(parts: LayoutPart[], inner: Box, tol = OVERLAP_TOLERANCE): Outside[] {
+function findOutside(parts: LayoutPart[], inner: Box, tol = OVERLAP_TOLERANCE): Outside[] {
   const out: Outside[] = [];
   for (const p of parts) {
     const b = boxOf(p.geometry);
@@ -173,7 +172,7 @@ export function floorLevel(shell: PartGeometry | null, wall: number) {
  * Parts whose bottom is above the floor with nothing under them. "Under" means another part that
  * overlaps it in plan and whose top is within 1 mm of this part's bottom, or higher.
  */
-export function findFloating(parts: LayoutPart[], floor: number, tol = OVERLAP_TOLERANCE): Floating[] {
+function findFloating(parts: LayoutPart[], floor: number, tol = OVERLAP_TOLERANCE): Floating[] {
   const out: Floating[] = [];
   for (const p of parts) {
     const b = boxOf(p.geometry);
@@ -214,11 +213,6 @@ export function snapTo(v: number, step: number) {
 export function round3(v: number) {
   const s = Number(v.toFixed(3));
   return Object.is(s, -0) ? 0 : s;
-}
-
-/** The whole geometry again with a new position, as the server's shallow merge needs. */
-export function withPos(g: Geometry, pos: number[]): Geometry {
-  return { ...g, pos: pos.map(round3) };
 }
 
 /** A nice ruler step in mm for a zoom, so labels sit at least ~60 px apart. */

@@ -18,28 +18,10 @@
     // HELD, to be removed: the exports below are unused but sit in files another engineer's branch is
     // changing (design tools, process and trace). Pruned after those branches merge; the list may only
     // shrink, and a file leaves it as soon as its unused exports are gone.
-    "src/components/admin/AuditTab.tsx": ["exports", "types"],
-    "src/components/buildsheet/derive.ts": ["exports", "types"],
-    "src/components/buildsheet/wiresheet.ts": ["exports", "types"],
-    "src/components/decisions/DecisionFlow.tsx": ["exports", "types"],
-    "src/components/decisions/model.ts": ["exports", "types"],
-    "src/components/enclosure/EnclosureCanvas.tsx": ["exports", "types"],
-    "src/components/enclosure/ResultPanel.tsx": ["exports", "types"],
     "src/components/enclosure/client.ts": ["exports", "types"],
-    "src/components/layout/geom.ts": ["exports", "types"],
-    "src/components/plan/format.ts": ["exports", "types"],
-    "src/components/plan/useConcept.ts": ["exports", "types"],
-    "src/components/printing/NewJobDialog.tsx": ["exports", "types"],
-    "src/components/schematic/model.ts": ["exports", "types"],
-    "src/components/schematic/nodes.tsx": ["exports", "types"],
-    "src/components/schematic/symbolGraph.ts": ["exports", "types"],
-    "src/components/three/PartPanel.tsx": ["exports", "types"],
-    "src/components/three/PrintPanel.tsx": ["exports", "types"],
-    "src/components/three/ViewTools.tsx": ["exports", "types"],
     "src/lib/enclosure/boxspec.ts": ["exports", "types"],
     "src/lib/enclosure/casemaker.ts": ["exports", "types"],
     "src/lib/enclosure/checks.ts": ["exports", "types"],
-    "src/lib/enclosure/run.ts": ["exports", "types"],
     "src/lib/enclosure/spec.ts": ["exports", "types"],
     "src/lib/enclosure/types.ts": ["exports", "types"],
     "tests/e2e/helpers.ts": ["exports", "types"]

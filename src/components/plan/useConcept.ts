@@ -5,7 +5,6 @@ import { useQueries, useQueryClient, type UseQueryOptions, type UseQueryResult }
 import { messageOf, queries, type ChallengeMessage, type ResearchEntry } from "@/lib/queries";
 import type { EventRow, FileMeta, Item, Plan } from "@/lib/types";
 
-export type { ChallengeMessage, ResearchEntry };
 
 export type ConceptData = {
   items: Item[];

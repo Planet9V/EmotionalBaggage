@@ -33,7 +33,6 @@ import {
   OPT_H,
   OPT_W,
   ancestry,
-  chosenOption,
   layout,
   shownChildren,
   stateOf,
@@ -377,6 +376,3 @@ export function DecisionFlow(props: FlowProps) {
     </div>
   );
 }
-
-/** Used by the caption and the detail: the chosen option's label, or the raw id when the option is gone. */
-export const chosenLabel = (d: Decision) => chosenOption(d)?.label ?? d.chosen;

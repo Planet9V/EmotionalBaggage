@@ -7,7 +7,7 @@ import { NET_CLASSES, partsByRef, pinsOf, toWire, type Geometry, type NetClass, 
 import type { Item } from "@/lib/types";
 import { buildRouteRequest, routeState, type RoutePart } from "@/lib/geometry/routing";
 
-export const CLASS_ORDER: readonly NetClass[] = NET_CLASSES;
+const CLASS_ORDER: readonly NetClass[] = NET_CLASSES;
 export const STATUS_FLOW = ["to solder", "soldered", "tested"] as const;
 
 /** Fixed generic bench practice, one sentence per class. */
@@ -43,7 +43,7 @@ export function toWires(items: Item[]): Wire[] {
 }
 
 export const isSoldered = (s: string) => s === "soldered" || s === "tested";
-export const isTested = (s: string) => s === "tested";
+const isTested = (s: string) => s === "tested";
 
 export type Counts = { total: number; soldered: number; tested: number };
 export function counts(steps: Step[]): Counts {
@@ -91,7 +91,7 @@ export function groupByPart(steps: Step[], hub: string): Group[] {
   return [...groups.values()];
 }
 
-export type ConnRow = {
+type ConnRow = {
   pin: string;
   /** "REF.pin" at the other end */
   to: string;
@@ -105,7 +105,7 @@ export type ConnRow = {
 
 const endKey = (ref: string, pin: string) => `${ref}\u0000${pin}`;
 
-export function jointCounts(wires: Wire[]): Map<string, number> {
+function jointCounts(wires: Wire[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const w of wires) {
     if (w.fromPin) m.set(endKey(w.from, w.fromPin), (m.get(endKey(w.from, w.fromPin)) ?? 0) + 1);
@@ -114,7 +114,7 @@ export function jointCounts(wires: Wire[]): Map<string, number> {
   return m;
 }
 
-export const jointAt = (joints: Map<string, number>, ref: string, pin: string) => joints.get(endKey(ref, pin)) ?? 0;
+const jointAt = (joints: Map<string, number>, ref: string, pin: string) => joints.get(endKey(ref, pin)) ?? 0;
 
 export type PartConn = { ref: string; rows: ConnRow[] };
 
@@ -138,7 +138,7 @@ export function connectionsByPart(steps: Step[]): PartConn[] {
 }
 
 /** Wire colours for signal nets: one per net, taken in order from this fixed list. */
-export const SIGNAL_COLOURS = ["yellow", "green", "blue", "white", "orange", "purple", "brown", "grey"] as const;
+const SIGNAL_COLOURS = ["yellow", "green", "blue", "white", "orange", "purple", "brown", "grey"] as const;
 export const COLOUR_SWATCH: Record<string, string> = {
   red: "#C0392B", black: "#18181B", yellow: "#E5B800", green: "#2E8B57", blue: "#2F6FDB",
   white: "#F4F4F5", orange: "#E07B1A", purple: "#7E57C2", brown: "#7B4B2A", grey: "#8E8E93",

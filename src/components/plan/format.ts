@@ -3,7 +3,7 @@
 export { isStep, stepKeys } from "@/lib/domain";
 
 // The store lookups moved to src/lib/menuLookup.ts (one definition; the drafts and chat code use the same).
-export { STORE_REFS, statusesFor, storeHref, storeLabel, storeRef, type StoreRef } from "@/lib/menuLookup";
+export { STORE_REFS, statusesFor, storeHref, storeLabel } from "@/lib/menuLookup";
 
 /** A short slug from the title, made unique against the keys already in use. */
 export function uniqueKey(title: string, used: Set<string>) {
