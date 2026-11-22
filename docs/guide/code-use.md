@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 9842da3 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit c5fc509 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,13 +16,13 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 710 packages (64 direct, 646 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 714 packages (65 direct, 649 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 568 |
+| MIT | 571 |
 | ISC | 55 |
-| Apache-2.0 | 45 |
+| Apache-2.0 | 46 |
 | LGPL-3.0-or-later | 10 |
 | BSD-3-Clause | 9 |
 | BlueOak-1.0.0 | 5 |
@@ -103,6 +103,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | manifold-3d | 3.5.5 | Apache-2.0 | linked library | yes |
 | mermaid | 12.3.0 | MIT | linked library | yes |
 | motion | 14.14.0 | MIT | linked library | yes |
+| mpg123-decoder | 1.0.3 | MIT | linked library | yes |
 | mqtt | 5.16.1 | MIT | linked library | yes |
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
@@ -155,6 +156,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | JetBrains Mono (typeface) | Fontsource metadata version v24 (2025-09-11), as packaged in @fontsource-variable/jetbrains-mono 5.3.0 | OFL-1.1 | font files | https://github.com/JetBrains/JetBrainsMono |
 | KiCad command-line tool (kicad-cli), CI only | 10.0 (Ubuntu 24.04 package from ppa:kicad/kicad-10.0-releases, pinned to 10.0.*) | GPL-3.0-or-later (KiCad); its libraries are not installed or used | separate process | https://gitlab.com/kicad/code/kicad |
 | KiCad demo schematic complex_hierarchy.kicad_sch (test fixture) | KiCad tag 10.0.8 (commit e432beac2668303194ba2040274f9e5efe773fc0), file version 20260306 | CC-BY-SA-4.0 | copied source | https://gitlab.com/kicad/code/kicad |
+| mpg123 (compiled to WebAssembly inside the npm package mpg123-decoder) | as carried by mpg123-decoder 1.0.3 | LGPL-2.1 (mpg123); the npm package mpg123-decoder itself declares MIT | linked library | https://www.mpg123.de/ |
 | Node.js (official Docker image node) | 22-bookworm-slim | MIT (Node.js; its LICENSE also lists bundled libraries under their own licences); image build files MIT (nodejs/docker-node); the image also contains Debian bookworm packages under their own licences | container image | https://github.com/nodejs/docker-node |
 | occt-import-js (OpenCascade STEP reader, WebAssembly) | as copied from the npm package occt-import-js | LGPL-2.1 (the package and OpenCascade Technology, per the LICENSE.md copied with it) | copied source | https://github.com/kovacsv/occt-import-js |
 | OpenSCAD (Debian package openscad) | 2021.01 in the Debian package the planner image installs | GPL-2.0-or-later with the CGAL exception (as the Debian package states it) | separate process | https://openscad.org |
