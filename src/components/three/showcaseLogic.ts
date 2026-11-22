@@ -143,11 +143,11 @@ export const TAG_GAP = 24;
 
 /**
  * Places a tag for each part: in one column on the side of the model the part is on, never closer than `gap` to
- * the next tag in its column, kept inside the view, and centred on its parts as far as it can be. `previous`
+ * the next tag in its column, kept inside the view (below `top`, clear of a reading laid over the view's corner), and centred on its parts as far as it can be. `previous`
  * (last frame's places) keeps a part on its side until it is well across the middle, and the tags glide toward
  * their new places (`ease` of the way each frame; 1 jumps).
  */
-export function placeTags(at: ReadonlyMap<number, { x: number; y: number }>, previous: ReadonlyMap<number, TagSpot>, size: { width: number; height: number }, ease = 0.18, gap = TAG_GAP): TagLayout {
+export function placeTags(at: ReadonlyMap<number, { x: number; y: number }>, previous: ReadonlyMap<number, TagSpot>, size: { width: number; height: number }, ease = 0.18, gap = TAG_GAP, top = 14): TagLayout {
   let lo = Infinity;
   let hi = -Infinity;
   for (const p of at.values()) {
@@ -174,7 +174,7 @@ export function placeTags(at: ReadonlyMap<number, { x: number; y: number }>, pre
     const drift = col.length ? ys.reduce((a, y, i) => a + (y - col[i]!.y), 0) / col.length : 0;
     const first = (ys[0] ?? 0) - drift;
     const last = (ys[ys.length - 1] ?? 0) - drift;
-    const fit = first < 14 ? 14 - first : last > size.height - 14 ? size.height - 14 - last : 0;
+    const fit = first < top ? top - first : last > size.height - 14 ? size.height - 14 - last : 0;
     col.forEach((c, i) => {
       const to = { x: columns[side], y: ys[i]! - drift + fit };
       const was = previous.get(c.id);

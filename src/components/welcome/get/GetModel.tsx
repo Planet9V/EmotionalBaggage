@@ -85,7 +85,8 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
     const el = box.current;
     if (!el) return;
     const style = getComputedStyle(el);
-    setColors(new Map(parts.map((p) => [p.item.id, style.getPropertyValue(toneOf(typeof p.item.data.kind === "string" ? p.item.data.kind : "", p.ref)).trim()])));
+    // the enclosure keeps the viewer's own neutral shell colour, so the parts inside read through it in theirs
+    setColors(new Map(parts.filter((p) => p.geometry?.shape !== "shell").map((p) => [p.item.id, style.getPropertyValue(toneOf(kindOf(p), p.ref)).trim()])));
     setNarrow(el.clientWidth < 640);
   }, [parts]);
 
@@ -109,7 +110,7 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
       onGrab: () => setHeld(true),
       nudge,
       closer: (motion === "assembly" ? 0.78 : 0.82) * (narrow ? 1.45 : 1),
-      children: tagsOn ? <PartTags parts={tagParts} host={tagHost} shown={shown} /> : null,
+      children: tagsOn ? <PartTags parts={tagParts} host={tagHost} shown={shown} top={78} /> : null,
     }),
     [animated, seen, held, look, hide, assembly, nudge, motion, narrow, tagsOn, tagParts, shown],
   );
@@ -125,6 +126,8 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
     if (motion !== "explode") {
       setMotion("explode");
       setDone(N);
+      // the exploded model is taller than the assembled one: frame it afresh
+      setResetToken((t) => t + 1);
     }
     setExplodePct(v);
   };
@@ -203,8 +206,8 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
         <div className="lg:col-span-2">
           <Layers<Layer> label={c.layersLabel} on={layersOn} onChange={setLayersOn} options={LAYERS.map((l) => ({ value: l, label: c.layers[l], count: counts[l], swatch: SWATCH[l] }))} />
         </div>
-        <Range label={c.assembly} value={motion === "assembly" ? done : N} min={0} max={N} onChange={toAssembly} readout={`${motion === "assembly" ? done : N}/${N}`} valueText={motion === "assembly" ? `${c.stepOf(done, N)}${current ? `: ${current.label}` : ""}` : c.stepOf(N, N)} />
-        <Range label={c.explode} value={motion === "explode" ? explodePct : 0} min={0} max={100} step={5} onChange={toExplode} readout={`${motion === "explode" ? explodePct : 0}%`} valueText={`${motion === "explode" ? explodePct : 0} percent apart`} />
+        <Range onTouch={() => setHeld(true)} label={c.assembly} value={motion === "assembly" ? done : N} min={0} max={N} onChange={toAssembly} readout={`${motion === "assembly" ? done : N}/${N}`} valueText={motion === "assembly" ? `${c.stepOf(done, N)}${current ? `: ${current.label}` : ""}` : c.stepOf(N, N)} />
+        <Range onTouch={() => setHeld(true)} label={c.explode} value={motion === "explode" ? explodePct : 0} min={0} max={100} step={5} onChange={toExplode} readout={`${motion === "explode" ? explodePct : 0}%`} valueText={`${motion === "explode" ? explodePct : 0} percent apart`} />
       </div>
     </div>
   );

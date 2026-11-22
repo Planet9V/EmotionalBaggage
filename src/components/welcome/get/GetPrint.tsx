@@ -161,6 +161,7 @@ export default function GetPrint({ enclosure, get }: { enclosure: ExampleEnclosu
       </div>
       <div className="border-t border-hairline px-3 py-2.5 sm:px-4">
         <Range
+          onTouch={() => setHeld(true)}
           label={c.layer}
           value={layer}
           min={1}

@@ -609,6 +609,7 @@ export const GET = {
   note: `Each output shown is one of ${EXAMPLE.name}'s own rows, the example this page follows.`,
   label: "The seven stages, in two lanes",
   holds: "In the workbench this stage holds",
+  more: (n: number) => `and ${n} more`,
   see: { engineering: "See it running below", market: "See it open below" },
   groups: [
     {

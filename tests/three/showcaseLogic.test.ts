@@ -106,6 +106,11 @@ describe("tag placement", () => {
     expect(first.get(3)!.side).toBe(-1);
     expect(first.get(1)!.x).toBeLessThan(first.get(2)!.x);
   });
+  it("keeps tags below a reading laid over the top of the view", () => {
+    const at = new Map([[1, { x: 300, y: 5 }], [2, { x: 310, y: 8 }]]);
+    const { spots } = placeTags(at, new Map(), size, 1, TAG_GAP, 78);
+    for (const s of spots.values()) expect(s.y).toBeGreaterThanOrEqual(78);
+  });
   it("glides toward the new place and says it is still moving", () => {
     const at = new Map([[1, { x: 300, y: 100 }]]);
     const out = placeTags(at, new Map([[1, { side: -1 as const, x: 0, y: 0 }]]), size, 0.5);
