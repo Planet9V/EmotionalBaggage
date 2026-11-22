@@ -8,6 +8,7 @@ import { CredentialsTab } from "@/components/admin/CredentialsTab";
 import { ModelsTab } from "@/components/admin/ModelsTab";
 import { AuditTab } from "@/components/admin/AuditTab";
 import { PrintersTab } from "@/components/admin/PrintersTab";
+import { SlicerAddress } from "@/components/admin/SlicerSection";
 import { auditQueryString, type AdminSettings, type PrinterFamily, type ProviderView } from "@/lib/admin/client";
 import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
 
@@ -230,5 +231,24 @@ describe("Printers", () => {
     await waitFor(() => expect(within(form).getByText("access.address: must start with http:// or https://")).toBeTruthy());
     expect(server.calls.find((c) => c.method === "POST")!.body).toEqual({ name: "Bench printer", family: "testfam", model: "", access: { address: "http://bench.local", username: "maker" } });
     expect(user.value).toBe("maker");
+  });
+});
+
+describe("Slicer address", () => {
+  it("says what is wrong with the address beside it, sends nothing, then saves it without the trailing slash", async () => {
+    const server = adminServer([
+      on("GET", "/api/admin/settings", () => ({ body: { settings: settingsOf() } })),
+      on("PUT", "/api/admin/settings", (c) => ({ body: { settings: settingsOf({ slicerUrl: (c.body as { slicerUrl: string }).slicerUrl }) } })),
+    ]);
+    renderWithClient(<SlicerAddress />);
+    const input = await screen.findByLabelText("Address");
+    fireEvent.change(input, { target: { value: "ftp://slicer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.getByText("Address must start with http:// or https://.")).toBeTruthy());
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(server.calls.some((c) => c.method === "PUT")).toBe(false);
+    fireEvent.change(input, { target: { value: " http://slicer:8000/ " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(server.calls.find((c) => c.method === "PUT")?.body).toEqual({ slicerUrl: "http://slicer:8000" }));
   });
 });

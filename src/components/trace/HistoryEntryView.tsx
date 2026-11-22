@@ -1,6 +1,9 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fieldValue, sameValue, valueText, type HistoryChange, type HistoryEntry } from "@/lib/trace/history";
@@ -89,13 +92,16 @@ function ReasonLine({ entry }: { entry: Pick<HistoryEntry, "reason" | "reasonLat
   );
 }
 
+const reasonSchema = z.object({ why: z.string().trim().min(1, "Type the reason.") });
+
 /** "Add reason" on a change that has none: a short field, saved as a new line that names this one. */
 function AddReason({ onAdd }: { onAdd: (why: string) => Promise<void> }) {
   const [open, setOpen] = useState(false);
-  const [why, setWhy] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   const fieldId = useId();
+  const { control, handleSubmit, setError, formState: { errors, isSubmitting: busy } } = useForm<z.infer<typeof reasonSchema>>({
+    resolver: zodResolver(reasonSchema),
+    defaultValues: { why: "" },
+  });
   if (!open) {
     return (
       <Button type="button" variant="ghost" size="xs" className="mt-1.5" onClick={() => setOpen(true)}>
@@ -103,25 +109,21 @@ function AddReason({ onAdd }: { onAdd: (why: string) => Promise<void> }) {
       </Button>
     );
   }
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!why.trim()) {
-      setError("Type the reason.");
-      return;
-    }
-    setBusy(true);
-    setError("");
+  const save = handleSubmit(async ({ why }) => {
     try {
-      await onAdd(why.trim());
+      await onAdd(why);
     } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
+      setError("root", { message: (err as Error).message });
     }
-  };
+  });
   return (
-    <form onSubmit={save} className="mt-2 flex flex-wrap items-end gap-2" noValidate>
+    <form onSubmit={(e) => void save(e)} className="mt-2 flex flex-wrap items-end gap-2" noValidate>
       <div className="min-w-[12rem] flex-1">
-        <WhyField id={`add-reason-${fieldId}`} value={why} onChange={setWhy} autoFocus />
+        <Controller
+          control={control}
+          name="why"
+          render={({ field }) => <WhyField id={`add-reason-${fieldId}`} value={field.value} onChange={field.onChange} error={errors.why?.message} autoFocus />}
+        />
       </div>
       <Button type="submit" size="sm" disabled={busy}>
         {busy ? "Saving" : "Save reason"}
@@ -129,9 +131,9 @@ function AddReason({ onAdd }: { onAdd: (why: string) => Promise<void> }) {
       <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
         Cancel
       </Button>
-      {error && (
+      {errors.root?.message && (
         <p role="alert" className="w-full text-xs text-danger wrap-anywhere">
-          {error}
+          {errors.root.message}
         </p>
       )}
     </form>
