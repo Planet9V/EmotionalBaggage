@@ -148,7 +148,7 @@ export default async function WelcomePage() {
             <h2 id="get-title" className={H2}>{GET.title}</h2>
             <p className={LEAD}>{GET.lead}</p>
             <div className="mt-7">
-              <WhatYouGet facts={story.hero} holds={story.holds} />
+              <WhatYouGet holds={story.holds} get={story.get} market={story.market} unit={example.unit} parts={example.parts} wires={example.wires} enclosure={example.enclosure} />
             </div>
             <p className="mt-4 text-xs leading-relaxed text-muted">{GET.note}</p>
           </div>

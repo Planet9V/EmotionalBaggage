@@ -135,6 +135,21 @@
       "changes": "None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css."
     },
     {
+      "name": "shadcn/ui Slider, Toggle and Toggle Group",
+      "version": "shadcn/ui registry, new-york-v4 style, written 22 November 2026",
+      "license": "MIT",
+      "licenseEvidence": "https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md, read 20 November 2026: 'MIT License. Copyright (c) 2023 shadcn'.",
+      "use": "copied source",
+      "origin": "https://ui.shadcn.com registry (the CLI could not reach it from the build machine, so the three files were written out by hand from the registry's published new-york-v4 source; compare with `npx shadcn@latest add slider toggle toggle-group` when the registry is reachable)",
+      "referencedIn": [
+        "src/components/ui/slider.tsx",
+        "src/components/ui/toggle.tsx",
+        "src/components/ui/toggle-group.tsx"
+      ],
+      "source": "https://github.com/shadcn-ui/ui",
+      "changes": "slider.tsx takes two optional props, thumbLabel and thumbValueText, passed to the thumb as aria-label and aria-valuetext (Radix gives a single thumb no name of its own). Colours come from the theme variables in src/app/globals.css."
+    },
+    {
       "name": "shadcn/ui Calendar and Chart",
       "version": "shadcn/ui registry, new-york-v4 style, compared with the files in this repository on 21 November 2026",
       "license": "MIT",

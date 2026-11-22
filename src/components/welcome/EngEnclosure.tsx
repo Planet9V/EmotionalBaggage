@@ -12,8 +12,8 @@ import { useInView } from "motion/react";
 import { Check, Minus, Plus, RotateCcw, X } from "lucide-react";
 import EnclosureCanvas, { type PreviewMesh } from "@/components/enclosure/EnclosureCanvas";
 import { Showcase, type ShowcaseNudge } from "@/components/three/canvasShowcase";
-import type { GeneratedMesh } from "@/lib/enclosure/types";
-import type { ExampleEnclosure, PlainMesh } from "./exampleData";
+import type { ExampleEnclosure } from "./exampleData";
+import { FitBox, mesh, span } from "./bedScene";
 import { TapToExplore } from "./TapToExplore";
 import { useAnimated } from "./useAnimated";
 import { ENGINEERING } from "./content";
@@ -22,22 +22,6 @@ import { CHIP, CHIP_OFF, CHIP_ON, ICON, StageBar, StageFoot, StageView } from ".
 const GAP = 12; // mm between the two pieces on the bed
 const RISE_S = 9; // seconds for the plane to climb
 const HOLD_S = 3.5; // and to rest on the finished pieces
-
-/** The mesh moved by `f`, as the typed arrays the preview takes. */
-function mesh(m: PlainMesh, f: (x: number, y: number, z: number) => [number, number, number]): GeneratedMesh {
-  const positions = new Float32Array(m.positions.length);
-  for (let i = 0; i < m.positions.length; i += 3) positions.set(f(m.positions[i]!, m.positions[i + 1]!, m.positions[i + 2]!), i);
-  return { positions, indices: Uint32Array.from(m.indices) };
-}
-const span = (m: PlainMesh, k: 0 | 1 | 2) => {
-  let lo = Infinity;
-  let hi = -Infinity;
-  for (let i = k; i < m.positions.length; i += 3) {
-    lo = Math.min(lo, m.positions[i]!);
-    hi = Math.max(hi, m.positions[i]!);
-  }
-  return [lo, hi] as const;
-};
 
 // three.js objects and DOM nodes are changed in place, outside React's data flow; these do it by name
 function setClipping(gl: THREE.WebGLRenderer, planes: THREE.Plane[]) {
@@ -71,33 +55,6 @@ function PrintRise({ height, running, readout }: { height: number; running: bool
     setText(readout.current, h.toFixed(1));
     invalidate();
   });
-  return null;
-}
-
-const VIEW_FROM = new THREE.Vector3(0.55, 0.62, 0.86).normalize();
-
-/**
- * Frames the pieces: the camera looks at the middle of their box from a three-quarter view, from just far enough
- * that the whole box is inside the view both ways, whatever the shape of the canvas (wide on a desk, tall on a
- * phone). The preview's own framing leaves them small and, on a wide canvas, cut off at the bottom.
- */
-function Frame({ box }: { box: THREE.Box3 }) {
-  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
-  const controls = useThree((s) => s.controls) as unknown as { target: THREE.Vector3; update: () => void } | null;
-  const size = useThree((s) => s.size);
-  const invalidate = useThree((s) => s.invalidate);
-  useEffect(() => {
-    if (!controls || !size.width || !size.height) return;
-    const centre = box.getCenter(new THREE.Vector3());
-    const radius = box.getSize(new THREE.Vector3()).length() / 2;
-    const vertical = (camera.fov * Math.PI) / 360;
-    const horizontal = Math.atan(Math.tan(vertical) * (size.width / size.height));
-    const distance = (radius / Math.sin(Math.min(vertical, horizontal))) * 1.02;
-    controls.target.copy(centre);
-    camera.position.copy(centre).addScaledVector(VIEW_FROM, distance);
-    controls.update();
-    invalidate();
-  }, [camera, controls, box, size.width, size.height, invalidate]);
   return null;
 }
 
@@ -169,7 +126,7 @@ export default function EngEnclosure({ enclosure }: { enclosure: ExampleEnclosur
           <TapToExplore className="absolute inset-0">
             <EnclosureCanvas key={mode} meshes={meshes} lift={0} dark label={ENGINEERING.enclosure.label} floorY={0} wheelZoom={false}>
               <Showcase turntable={animated && seen && !held} onGrab={() => setHeld(true)} nudge={nudge} />
-              <Frame box={bounds} />
+              <FitBox box={bounds} />
               <PrintRise height={height} running={printing} readout={readout} />
             </EnclosureCanvas>
           </TapToExplore>

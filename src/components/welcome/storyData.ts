@@ -7,7 +7,11 @@
 //   market  the seven tabs of the market stage
 import type { Item } from "@/lib/types";
 import { toPart, partPrice, sumLine } from "@/lib/domain";
-import { toWires } from "@/components/buildsheet/derive";
+import { hubRef, sequence, toWires } from "@/components/buildsheet/derive";
+import { assemblySteps, layerHeightOf, layerOf, type Phase, type SolderStep } from "@/components/three/showcaseLogic";
+import type { PartGeometry } from "@/components/three/layout";
+import { stillOf, type Still } from "./get/projection";
+import { netWheel, printLayers, type PrintLayers, type Wheel } from "./get/heroArt";
 import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningLine } from "@/lib/market/positioning";
 import { findKit, readKit } from "@/lib/market/brandKit";
@@ -38,6 +42,28 @@ export type HeroFacts = {
   cost: { rows: { title: string; volume: string; cogs: string }[]; status: string };
   ad: { text: string; status: string; count: number };
   channel: { title: string; price: string; net: string; status: string; listing: string };
+  /** drawings from real geometry: the model, the netlist wheel and the case's print layers (get/) */
+  still: Still | null;
+  wheel: Wheel;
+  layers: PrintLayers | null;
+};
+
+/** What "What you get" shows of each stage's output, beyond the market's rows: all from the seeded rows. */
+export type GetData = {
+  brief: { title: string; body: string; status: string }[];
+  decisions: number;
+  claims: { title: string; source: string; where: string; status: string }[];
+  /** the assembly phases (prototype/assembly rows with a key) and the build sheet's soldering order */
+  phases: Phase[];
+  solder: SolderStep[];
+  print: { title: string; status: string; material: string; settings: string; estimate: string }[];
+  /** the layer height the main print job names, in mm */
+  layerMm: number | null;
+  volumes: { title: string; volume: string; cogs: string; status: string }[];
+  /** the model as a vector drawing, from the parts' geometry rows (get/projection.ts) */
+  still: Still;
+  /** how many steps the assembly takes, in the build sheet's order (showcaseLogic.ts assemblySteps) */
+  steps: number;
 };
 
 export type ChainStep = { key: string; stage: string; kind: string; title: string; body: string };
@@ -95,6 +121,12 @@ function hero(d: ExampleData): HeroFacts {
     cost: { rows: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).slice(0, 3).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs) })), status: d.economics[0]?.status ?? "" },
     ad: { text: ad?.title ?? "", status: ad?.status ?? "", count: d.ads.length },
     channel: { title: channel?.title ?? "", price: str(channel?.data.price), net: str(channel?.data.net), status: channel?.status ?? "", listing: d.listing[0]?.title ?? "" },
+    still: null,
+    wheel: (() => {
+      const ws = toWires(d.wires);
+      return netWheel(ws, hubRef(ws));
+    })(),
+    layers: d.enclosure ? printLayers(d.enclosure.outer, layerHeightOf(str(print?.data.settings)) ?? 0.2) : null,
   };
 }
 
@@ -115,6 +147,33 @@ function chain(d: ExampleData): ChainStep[] {
     { key: "test", stage: "04 Prototype", kind: "Acceptance test", title: test?.title ?? "", body: str(test?.data.pass) },
     { key: "ad", stage: "06 Marketing", kind: "Ad", title: ad?.title ?? "", body: str(ad?.data.channel) ? `${str(ad?.data.channel)}. ${str(ad?.data.rule)}.` : "" },
   ];
+}
+
+function get(d: ExampleData): GetData {
+  const parts = d.parts.map(toPart);
+  const phases = d.assembly.filter((r) => /^p\d+$/.test(str(r.data.key))).map((r) => ({ key: str(r.data.key), title: r.title }));
+  const solder = sequence(toWires(d.wires)).map((s) => ({ name: s.wire.name, from: s.wire.from, fromPin: s.wire.fromPin, to: s.wire.to, toPin: s.wire.toPin }));
+  const kind = (p: (typeof parts)[number]) => str(p.item.data.kind);
+  const shaped = parts.filter((p) => p.geometry);
+  const steps = assemblySteps(
+    shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, layer: layerOf(kind(p), p.ref, p.title), board: kind(p) === "circuit board", shell: p.geometry!.shape === "shell" })),
+    solder,
+    phases,
+  );
+  const stepOf = (id: number) => Math.max(0, steps.findIndex((s) => s.ids.includes(id)));
+  const main = d.printing[d.printing.length - 1];
+  return {
+    brief: d.brief.map((r) => ({ title: r.title, body: r.body, status: r.status })),
+    decisions: d.decisions.length,
+    claims: d.claims.map((r) => ({ title: r.title, source: str(r.data.source), where: str(r.data.sourceLocation), status: r.status })),
+    phases,
+    solder,
+    print: d.printing.map((r) => ({ title: r.title, status: r.status, material: str(r.data.material), settings: str(r.data.settings), estimate: str(r.data.estimate) })),
+    layerMm: layerHeightOf(str(main?.data.settings)),
+    volumes: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs), status: r.status })),
+    steps: steps.length,
+    still: stillOf(shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, kind: kind(p), geometry: p.geometry as PartGeometry, step: stepOf(p.item.id) }))),
+  };
 }
 
 const CAPABILITY: Record<string, string> = { send: "post and reply", inbox: "read mentions and comments", import: "import performance reports", sales: "read orders" };
@@ -226,8 +285,9 @@ function origin(): { sentences: string[]; idea: string } {
 /** What each stage holds in the workbench: its sections, by the names the menu gives them (src/lib/menu.ts). */
 const holds = (): Record<string, string[]> => Object.fromEntries(STAGES.map((s) => [String(s.n).padStart(2, "0"), [...new Set(s.sections.map((x) => x.label))]]));
 
-export type StoryData = { hero: HeroFacts; chain: ChainStep[]; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]> };
+export type StoryData = { hero: HeroFacts; chain: ChainStep[]; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
 
 export function storyData(d: ExampleData): StoryData {
-  return { hero: hero(d), chain: chain(d), market: market(d), origin: origin(), holds: holds() };
+  const g = get(d);
+  return { hero: { ...hero(d), still: g.still }, chain: chain(d), market: market(d), origin: origin(), holds: holds(), get: g };
 }
