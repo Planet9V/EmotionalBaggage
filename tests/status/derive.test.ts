@@ -118,13 +118,22 @@ describe("Baggage Claims MK1 as seeded", () => {
     expect(m.headline).toBe("At Concept: 4 of 6 checks met");
   });
 
-  it("marks Design blocked by its blocked requirement, and the other stages with rows in progress", () => {
+  it("marks every stage with rows in progress: the firmware requirement is open, no longer blocked, since the Rev B sketch of 22 Nov", () => {
     const by = Object.fromEntries(m.stages.map((s) => [s.key, s.status]));
-    expect(by.design).toBe("blocked");
-    const design = m.stages.find((s) => s.key === "design")!;
+    // until the engineering batch the requirement "Firmware sketch compiles" was blocked and Design with it; a sketch
+    // now exists and type-checks, the board build is not proved, so the requirement is open and nothing is marked blocked
+    expect(rows.find((r) => r.title === "Firmware sketch compiles")!.status).toBe("open");
+    expect(m.stages.find((s) => s.key === "design")!.blockers).toEqual([]);
+    for (const k of ["concept", "research", "design", "prototype", "production", "marketing", "sales"]) expect(by[k]).toBe("in-progress");
+  });
+
+  it("marks a stage blocked by a blocked requirement, with a link to the row", () => {
+    const blocked = rows.map((r) => (r.title === "Firmware sketch compiles" ? { ...r, status: "blocked" } : r));
+    const mb = statusModel(processView(bcState(), blocked), blocked);
+    const design = mb.stages.find((s) => s.key === "design")!;
+    expect(design.status).toBe("blocked");
     expect(design.blockers[0]!.text).toMatch(/in Requirements is marked blocked\.$/);
     expect(design.blockers[0]!.href).toMatch(/^\/s\/design\/requirements\?item=\d+$/);
-    for (const k of ["concept", "research", "prototype", "production", "marketing", "sales"]) expect(by[k]).toBe("in-progress");
   });
 
   it("puts the go/no-go decision first: it clears a Concept check and opens the three sections the decision names", () => {
@@ -143,7 +152,8 @@ describe("Baggage Claims MK1 as seeded", () => {
 
   it("shows the figures the app works out, each linked to its page", () => {
     const f = Object.fromEntries(keyFigures(rows, "USD").map((x) => [x.key, x]));
-    expect(f.parts).toMatchObject({ value: "16", href: "/s/design/bom" });
+    // the 2 x AA design: 16 parts of the documents, less the series resistor and the card, plus seven
+    expect(f.parts).toMatchObject({ value: "21", href: "/s/design/bom" });
     // 9 claims of the first seed, 30 entered from the documents on 22 Nov and 20 more with the owner's rulings of that
     // day (seed/concepts/baggage-claims/content); every one is still unverified
     expect(f.claims).toMatchObject({ value: "0 / 59", detail: "59 unverified" });

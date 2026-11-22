@@ -47,6 +47,36 @@ export const BOARDS: Entry[] = [
     ],
   },
   {
+    id: "xiao-esp32s3-ext-3v3",
+    kind: "microcontroller",
+    name: "Seeed Studio XIAO ESP32S3, fed at its 3V3 pin",
+    description: "Thumb-size ESP32-S3 board with 8 MB of flash, described as a battery design uses it: a regulated 3.3 V goes to the 3V3 pin, and the board's own regulator and USB port are not the supply. Do not connect USB while that supply is on.",
+    size: { w: 17.5, d: 21 },
+    basis: "typical",
+    symbol: "box",
+    sources: [
+      { label: "Arduino-ESP32 core 4.0.0, variants/XIAO_ESP32S3/pins_arduino.h, Espressif", url: "https://github.com/espressif/arduino-esp32/blob/4.0.0/variants/XIAO_ESP32S3/pins_arduino.h" },
+      { label: "Seeed Studio XIAO ESP32S3, a reseller's product page (Core Electronics)", url: "https://core-electronics.com.au/seeed-studio-xiao-esp32s3.html" },
+    ],
+    note: "The 21 by 17.5 mm outline is the maker's figure as the reseller's page gives it. The pad positions are typical of the XIAO form (two rows of seven, 2.54 mm apart) and not from a drawing. D0 to D10 are GPIO 1, 2, 3, 4, 5, 6, 43, 44, 7, 8, 9 in the core's pins file. No supply range is stated: the chip maker's data sheet was not read for this entry.",
+    pins: [
+      ...row(
+        [
+          p("D0", "bidirectional", { optional: true, analog: true }), p("D1", "bidirectional", { optional: true }), p("D2", "bidirectional", { optional: true }), p("D3", "bidirectional", { optional: true }),
+          p("D4", "bidirectional", { optional: true }), p("D5", "bidirectional", { optional: true }), p("D6", "bidirectional", { optional: true }),
+        ],
+        { pitch: 2.54, axis: "y", at: -7.62, reverse: true }
+      ),
+      ...row(
+        [
+          p("5V", "power_in", { optional: true }), p("GND", "ground"), p("3V3", "power_in"),
+          p("D10", "bidirectional", { optional: true }), p("D9", "bidirectional", { optional: true }), p("D8", "bidirectional", { optional: true }), p("D7", "bidirectional", { optional: true }),
+        ],
+        { pitch: 2.54, axis: "y", at: 7.62, reverse: true }
+      ),
+    ],
+  },
+  {
     id: "raspberry-pi-pico",
     kind: "microcontroller",
     name: "Raspberry Pi Pico",

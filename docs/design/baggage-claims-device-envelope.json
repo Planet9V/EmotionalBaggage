@@ -1,0 +1,326 @@
+{
+  "name": "Baggage Claims MK1, 2 x AA design (Rev B): envelope for the enclosure",
+  "date": "2026-11-22",
+  "source": "docs/design/baggage-claims-device.md, section 6",
+  "status": "Nothing here is measured. basis: 'page' = read on a maker's or reseller's page on 22 Nov 2026; 'doc' = the owner's Rev A documents; 'typical' = a common size, unverified; 'calc' = calculated; 'est' = estimate.",
+  "supersedes": "The packing Rev C was drawn around (3 x AA holder 48 x 58 x 17, perfboard 50 x 70, speaker 5 mm deep, DFPlayer). The owner's ruling of 22 Nov is two AA cells; the speaker that gives the loudness in the design note is 20 mm deep.",
+  "units": "mm, grams",
+  "frame": {
+    "x": "width, 60",
+    "y": "height, 80, loop end up",
+    "z": "depth, 42, front face (speaker grille) at z = 0",
+    "envelope": [
+      60,
+      80,
+      42
+    ]
+  },
+  "parts": [
+    {
+      "ref": "BT1",
+      "name": "2 x AA holder, cells in series, with leads",
+      "outline": [
+        32,
+        58,
+        16
+      ],
+      "basis": "typical",
+      "mass": 8,
+      "massBasis": "est",
+      "notes": "Measure the holder bought before fixing its pocket. Alternative: printed bays with spring contacts.",
+      "retention": "Ribs at both ends of each cell so a 40 g shock (0.9 kgf per cell, calc) is taken by plastic, not by the contact springs. The lid opens onto the cells."
+    },
+    {
+      "ref": "BAT",
+      "name": "AA alkaline cell",
+      "count": 2,
+      "shape": "cylinder",
+      "diameterMax": 14.5,
+      "diameterMin": 13.7,
+      "lengthMax": 50.5,
+      "lengthMin": 49.2,
+      "basis": "typical (the AA standard's limits, recalled)",
+      "mass": 23,
+      "massBasis": "recalled"
+    },
+    {
+      "ref": "SPK1",
+      "name": "Speaker, 40 mm, 4 ohm, 3 W, paper cone",
+      "shape": "cylinder",
+      "diameter": 40,
+      "depth": 20,
+      "basis": "page (a reseller's page for a 40 mm 4 ohm speaker)",
+      "magnet": {
+        "diameter": 25,
+        "depth": 12,
+        "basis": "typical"
+      },
+      "mass": 27,
+      "massBasis": "page",
+      "mounting": "Rim clamped against the front skin on a 1 mm foam or TPU gasket ring, 36 inside diameter. The front of the cone must be sealed from the back. Not hot glue alone.",
+      "leads": "about 90 long (page)"
+    },
+    {
+      "ref": "U1",
+      "name": "Seeed Studio XIAO ESP32S3",
+      "outline": [
+        17.5,
+        21,
+        5.5
+      ],
+      "basis": "outline 21 x 17.5 page; height and pads typical",
+      "pads": {
+        "rows": 2,
+        "perRow": 7,
+        "pitch": 2.54,
+        "rowSpacing": 15.24,
+        "basis": "typical"
+      },
+      "connector": {
+        "type": "USB-C",
+        "edge": "one 17.5 mm edge, centred",
+        "keepOut": [
+          10,
+          12,
+          7
+        ],
+        "note": "12 clear beyond the socket for a plug; reachable with the lid open. Used only with the battery switch off."
+      },
+      "mountingHoles": [],
+      "mass": 3,
+      "massBasis": "est"
+    },
+    {
+      "ref": "U2",
+      "name": "Adafruit MPU-6050 breakout, product 3886",
+      "outline": [
+        26.0,
+        17.8,
+        4.6
+      ],
+      "basis": "page",
+      "mass": 1.8,
+      "massBasis": "page",
+      "mountingHoles": {
+        "count": 4,
+        "diameter": 2.5,
+        "diameterBasis": "page",
+        "spacing": [
+          20.32,
+          12.7
+        ],
+        "spacingBasis": "typical of this board family; UNVERIFIED, check the maker's drawing before printing posts"
+      },
+      "mounting": "Four posts, 5.0 across, 1.8 pilot for M2 self-tapping screws, 5 deep, tops level within 0.1. Rigid: no foam, no tape, nothing else touching the board. On the shell half that carries the loop. Not on the skin the speaker is clamped to.",
+      "orientation": "Detection does not depend on orientation, except 'inverted': mount with the long edge across the tag (along x) and record which sensor axis faces the loop; the firmware's upX, upY, upZ are set to match (default +Y). The board's printed axis arrows were not read."
+    },
+    {
+      "ref": "U3",
+      "name": "MAX98357A I2S amplifier breakout",
+      "outline": [
+        19.4,
+        17.8,
+        3.0
+      ],
+      "heightWithTerminalBlock": 7,
+      "basis": "typical, unverified",
+      "mass": 2,
+      "massBasis": "est",
+      "mountingHoles": {
+        "count": 2,
+        "diameter": 2.5,
+        "basis": "typical"
+      }
+    },
+    {
+      "ref": "U4",
+      "name": "3.3 V step-up regulator module (Pololu U1V11F3 class)",
+      "outline": [
+        12,
+        15,
+        3
+      ],
+      "basis": "page",
+      "mass": 0.7,
+      "massBasis": "page",
+      "keepOut": "inductor 5 or more from the speaker magnet (est)"
+    },
+    {
+      "ref": "C1",
+      "name": "470 uF electrolytic",
+      "shape": "cylinder",
+      "diameter": 6.3,
+      "length": 11,
+      "basis": "typical"
+    },
+    {
+      "ref": "Q1",
+      "name": "P-MOSFET on a SOT-23 adapter",
+      "outline": [
+        10,
+        10,
+        2
+      ],
+      "basis": "typical"
+    },
+    {
+      "ref": "PCB1",
+      "name": "Carrier strip of perfboard (optional)",
+      "outline": [
+        22,
+        70,
+        1.6
+      ],
+      "basis": "cut to suit",
+      "notes": "Boards are soldered to it, not socketed. Point-to-point wiring is possible if each board has a pocket."
+    },
+    {
+      "ref": "S1",
+      "name": "Slide switch, 1 A at 6 V DC or better",
+      "outline": [
+        12,
+        6,
+        6
+      ],
+      "sliderTravel": 3.5,
+      "basis": "typical: choose the 1 A part first, then draw the slot",
+      "position": "A side wall. Slider recessed 1.0 below the outer surface so a knock cannot move it. Mark OFF and ON.",
+      "slotClearance": 0.3
+    },
+    {
+      "ref": "S2",
+      "name": "Tactile button, 6 mm",
+      "outline": [
+        6,
+        6,
+        5
+      ],
+      "travel": 0.25,
+      "basis": "typical",
+      "position": "Behind a printed flexure tongue on a side wall, 0.2 gap at rest."
+    },
+    {
+      "ref": "tracker",
+      "name": "Tracker",
+      "shape": "cylinder",
+      "diameter": 31.9,
+      "depth": 8.0,
+      "basis": "the enclosure agent's note"
+    }
+  ],
+  "packing": {
+    "note": "One packing that closes on paper. Arithmetic only, not modelled.",
+    "inside": [
+      56,
+      76,
+      37.5
+    ],
+    "walls": {
+      "front": 2.0,
+      "sides": 2.0,
+      "back": 2.5
+    },
+    "depthStack": [
+      {
+        "from": 0,
+        "to": 2.0,
+        "what": "front skin with the grille"
+      },
+      {
+        "from": 2.0,
+        "to": 22.3,
+        "what": "front layer: speaker at the top (centre 22 below the top inside edge); below it in 56 x 34: tracker, regulator, MOSFET, capacitor"
+      },
+      {
+        "from": 22.3,
+        "to": 38.6,
+        "what": "back layer: holder upright (32 x 58) to one side; beside it a strip 23 x 76 for U1, U2, U3 end to end (66.4 long), switch and button on the side wall"
+      },
+      {
+        "from": 38.6,
+        "to": 39.5,
+        "what": "spare 0.9"
+      },
+      {
+        "from": 39.5,
+        "to": 42.0,
+        "what": "back skin with the card window"
+      }
+    ],
+    "spareDepth": 0.9,
+    "massEstimate": 155
+  },
+  "speakerCavity": {
+    "coneEffectiveDiameter": 32,
+    "coneArea_cm2": 8.0,
+    "grilleOpenAreaMin_cm2": 2.0,
+    "grilleOpenShareOfCone": 0.25,
+    "suggested": "3.0 holes (model 3.2) at 6.0 x 5.2 staggered pitch over a 36 round field: 32 holes, 2.3 cm2 (calc). A 30 field (1.6 cm2) is too small.",
+    "skinOverGrilleMax": 2.0,
+    "gasket": "1 mm closed-cell foam or TPU ring, 36 inside diameter, squeezed 0.3 to 0.5",
+    "backVolumeMin_cm3": 30,
+    "backVent": "none",
+    "mesh": "hydrophobic acoustic mesh behind the grille (doc), about 1 dB (est)",
+    "targetLevel": "about 80 dB at 1 m at 1 W (calc from a data-sheet sensitivity of 80.5 dB at 1 W and 1 m)",
+    "basis": "est, common practice"
+  },
+  "tolerancesPETG": {
+    "process": "0.4 nozzle, 0.2 layers (doc). Per side unless said. Confirm with a coupon on the printer and spool used.",
+    "boardInPocket": 0.3,
+    "aboveTallestComponent": 0.5,
+    "cellBayDiameter": 15.0,
+    "cellBayLength": 51.5,
+    "holderInPocket": 0.4,
+    "speakerRimRadial": 0.2,
+    "slipFit": [
+      0.2,
+      0.25
+    ],
+    "freeFit": 0.4,
+    "pressFitInterferenceOnDiameter": [
+      0.0,
+      0.05
+    ],
+    "printInPlaceHingeRadial": 0.4,
+    "printInPlaceHingeAxial": 0.4,
+    "printInPlaceHingeMinAfterCoupon": 0.3,
+    "clipOnHinge": {
+      "mouthSmallerThanPin": 0.5,
+      "runningClearance": 0.15
+    },
+    "snapLatch": {
+      "maxStrainFrequent": 0.02,
+      "maxStrainRare": 0.03,
+      "engagementClearance": 0.2,
+      "formula": "strain = 1.5 x thickness x deflection / length^2"
+    },
+    "selfTapM2": {
+      "pilot": [
+        1.7,
+        1.8
+      ],
+      "postAcross": 5.0,
+      "engagement": 5.0
+    },
+    "buttonTongueGap": 0.2,
+    "switchSlotPerSide": 0.3,
+    "grilleHoleModelled": 3.2
+  },
+  "walls": {
+    "minimum": 2.0,
+    "corners": 2.4,
+    "aroundLoopSlot": 2.4,
+    "outsideCornerRadiusMin": 3.0,
+    "insideCornerRadiusMin": 1.0,
+    "loopSlotWeb": 6.0,
+    "reason": "Target: tag on a case dropped 1.0 m onto concrete, six faces (est). 2.0 is five solid perimeters with no infill line to split along. Ribs under the cells and beside the speaker magnet; neither may load the latch. A screw as well as the latch. Layers not across the loop's pull or the latch's bend."
+  },
+  "temperature": {
+    "range": [
+      -10,
+      45
+    ],
+    "basis": "doc",
+    "petgSoftens": "75 to 80 deg C (est)"
+  }
+}

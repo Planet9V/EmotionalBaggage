@@ -23,28 +23,34 @@ describe("the seeded example's links", () => {
     expect(checks("Weigh-in")).toEqual(["Detect: Weigh-in"]);
     expect(checks("Carry")).toEqual(["Detect: Handle grab"]);
     expect(checks("Idle")).toEqual(["Detect: Dark idle"]);
-    expect(checks("Sleep current")).toEqual(["Power"]);
-    // the five bench checks entered from the build guide on 22 Nov name no requirement in the documents, so they are linked to none
-    expect(t.orphanTests.map((x) => x.title).sort()).toEqual(["3.3 V rail", "Events appear in the log", "First power-on: no heat", "No shorts on the rails", "Power rail voltage"]);
+    // since the engineering batch of 22 Nov the battery-life estimate also rests on the sleep current
+    expect(checks("Sleep current")).toEqual(["Power", "Battery life"]);
+    // four bench checks entered from the build guide on 22 Nov name no requirement in the documents, so they are linked to
+    // none; the fifth (Power rail voltage) is linked to Power by the engineering batch, with the tests that batch added
+    expect(t.orphanTests.map((x) => x.title).sort()).toEqual(["3.3 V rail", "Events appear in the log", "First power-on: no heat", "No shorts on the rails"]);
   });
 
   it("requirements nobody has written a test for stay untested: the gaps are real", async () => {
     const t = traceOf(await rows());
     expect(t.untested.map((r) => r.title).sort()).toEqual(
       [
-        "Controls", "Detect: Carousel", "Detect: Conveyor", "Detect: Free-fall", "Detect: Inverted", "Enclosure", "Firmware sketch compiles", "Governor",
-        // the eight requirements entered from the documents on 22 Nov: no test is written for any of them
-        "Audio command interface", "Content ships independently of firmware", "Feature extraction", "Idle false positives under one a day", "Loudness limit", "Radios off", "Rigid sensor mount", "Service and debug port",
+        "Controls", "Detect: Inverted", "Enclosure", "Governor",
+        // entered from the documents on 22 Nov, with no test written for them
+        "Audio command interface", "Content ships independently of firmware", "Feature extraction", "Idle false positives under one a day", "Radios off", "Rigid sensor mount", "Service and debug port",
+        // entered with the 2 x AA design on 22 Nov, with no bench test of their own
+        "Logging mode for tuning", "Sensor configuration",
+        // (Free-fall, Carousel, Conveyor, the firmware build and the loudness limit each have a test since that batch)
       ].sort()
     );
   });
 
-  it("parts are needed where the requirement's text names them; three parts stay unneeded", async () => {
+  it("parts are needed where the requirement's text names them; two parts stay unneeded", async () => {
     const t = traceOf(await rows());
-    expect(t.unusedParts.map((p) => p.data.ref).sort()).toEqual(["PCB1", "R1", "W1"]);
+    // (R1, the DFPlayer's series resistor, was the third until the 2 x AA design retired it)
+    expect(t.unusedParts.map((p) => p.data.ref).sort()).toEqual(["PCB1", "W1"]);
     const needs = (ref: string) => t.requirements.filter((r) => t.linksOf(r).parts.includes(String(ref).toLowerCase())).map((r) => r.title);
     expect(needs("S2")).toEqual(["Controls"]);
-    expect(needs("BAT")).toEqual(["Power"]);
+    expect(needs("BAT")).toEqual(["Power", "Battery life"]);
   });
 
   it("the links are written at both ends: tests and parts name their requirements too", async () => {

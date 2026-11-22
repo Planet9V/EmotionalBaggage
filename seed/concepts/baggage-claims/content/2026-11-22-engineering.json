@@ -1,0 +1,1974 @@
+{
+  "batch": "2026-11-22-engineering",
+  "about": "The 2 x AA design that follows from the owner's rulings of 22 Nov 2026 (two AA cells, a physical off switch, the Adafruit MPU-6050 breakout, the detection rules, the Arduino sketch, the prototype costs added up). Every row comes from docs/design/baggage-claims-device.md and names its section. Parts and wires of the 3 x AA design that the rulings supersede are changed or retired only while they still read as seeded; a row a person has changed is left alone. Every figure that is an estimate says so in its text.",
+  "from": "the 2 x AA engineering design (docs/design/baggage-claims-device.md)",
+  "rows": [
+    {
+      "proposal": "E001",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "U1"
+      },
+      "setBody": "Seeed Studio XIAO ESP32S3 (ESP32-S3, 8 MB flash), 21 x 17.5 mm, fed 3.3 V at its 3V3 pin from the boost regulator; radios never started. Replaces the Rev A board (a Waveshare ESP32-S3 Mini on a 4.5-4.9 V bus, which two AA cells cannot supply). Price: an estimate from the maker's list price as recalled, not read on 22 Nov.",
+      "setData": {
+        "source": "Seeed Studio or a distributor",
+        "search": "Seeed Studio XIAO ESP32S3",
+        "library": "xiao-esp32s3-ext-3v3",
+        "qty": 1,
+        "unit": 7.49,
+        "line": 7.49,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 7.49
+          },
+          {
+            "qty": 100,
+            "unit": 6.99
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            17.5,
+            21,
+            5
+          ],
+          "pos": [
+            -26,
+            14,
+            18.7
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical"
+        }
+      }
+    },
+    {
+      "proposal": "E002",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "U2"
+      },
+      "setBody": "Adafruit MPU-6050 6-DoF accelerometer and gyro breakout (product 3886): I2C address 0x68, 3 to 5 V in, own regulator, level shifting and 10 k pull-ups, 26.0 x 17.8 x 4.6 mm, four 2.5 mm mounting holes. The owner's ruling of 22 Nov: this breakout is the base (Rev A: a GY-521 board). Prices read on the maker's page on 22 Nov: 12.95 for 1 to 9, 10.36 for 100 or more.",
+      "setData": {
+        "source": "Adafruit or a distributor",
+        "search": "Adafruit 3886 MPU-6050",
+        "library": "adafruit-mpu6050",
+        "qty": 1,
+        "unit": 12.95,
+        "line": 12.95,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 12.95
+          },
+          {
+            "qty": 100,
+            "unit": 10.36
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            26,
+            17.8,
+            4.6
+          ],
+          "pos": [
+            -2,
+            14,
+            18.9
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "doc",
+          "basisSource": "Outline from the maker's product page (26.0 x 17.8 x 4.6 mm)"
+        }
+      }
+    },
+    {
+      "proposal": "E003",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "U3"
+      },
+      "setBody": "I2S class-D amplifier breakout, MAX98357A, mono, 2.7 to 5.5 V; it drives the speaker directly and is shut down by its SD pin. Replaces the DFPlayer Mini, which needs 3.2 to 5 V, idles at about 20 mA and takes its clips from a microSD card; the clips now live in the controller's flash. Price: an estimate from the maker's list price as recalled.",
+      "setData": {
+        "source": "Adafruit or a distributor",
+        "search": "MAX98357A I2S amplifier breakout",
+        "library": "max98357a-breakout",
+        "qty": 1,
+        "unit": 5.95,
+        "line": 5.95,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 5.95
+          },
+          {
+            "qty": 100,
+            "unit": 4.76
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            19.4,
+            17.8,
+            3
+          ],
+          "pos": [
+            23,
+            14,
+            19.7
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical"
+        }
+      }
+    },
+    {
+      "proposal": "E004",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "SPK1"
+      },
+      "setBody": "40 mm 4 ohm 3 W paper-cone speaker with leads, about 20 mm deep. 4 ohm, not 8: on a 3.3 V rail a 4 ohm speaker takes about 1.0 W where an 8 ohm one takes about 0.6 W (calculated). Sensitivity of this class: 80.5 dB at 1 W and 1 m (one maker's data sheet, read 22 Nov). Price: an estimate.",
+      "setData": {
+        "search": "40mm 4 ohm 3W speaker",
+        "qty": 1,
+        "unit": 4.95,
+        "line": 4.95,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 4.95
+          },
+          {
+            "qty": 100,
+            "unit": 3.5
+          }
+        ],
+        "geometry": {
+          "shape": "cylinder",
+          "size": [
+            40,
+            20
+          ],
+          "pos": [
+            -18,
+            30,
+            -8
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "doc",
+          "basisSource": "40 mm diameter, 20 mm high: a reseller's page for a 40 mm 4 ohm speaker, read 22 Nov"
+        }
+      }
+    },
+    {
+      "proposal": "E005",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "BT1"
+      },
+      "setBody": "2 x AA holder with leads, cells in series. The owner's ruling of 22 Nov: two AA alkaline cells (Rev A: three). Price: an estimate.",
+      "setData": {
+        "search": "2 AA battery holder with wire leads",
+        "library": "battery-holder-2xaa",
+        "qty": 1,
+        "unit": 1.5,
+        "line": 1.5,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 1.5
+          },
+          {
+            "qty": 100,
+            "unit": 0.8
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            58,
+            16,
+            32
+          ],
+          "pos": [
+            -7,
+            10,
+            -12
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical"
+        }
+      }
+    },
+    {
+      "proposal": "E006",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "BAT"
+      },
+      "setBody": "AA alkaline, two cells (no lithium). About 3.2 V new and 2.0 V at the end of their useful life (1.0 V a cell). Price: the documents' $2.50 for three cells, taken per cell.",
+      "setData": {
+        "qty": 2,
+        "unit": 0.83,
+        "line": 1.66,
+        "priceBreaks": [
+          {
+            "qty": 10,
+            "unit": 0.83
+          },
+          {
+            "qty": 200,
+            "unit": 0.45
+          }
+        ],
+        "geometry": {
+          "shape": "cylinder",
+          "size": [
+            14.5,
+            50.5
+          ],
+          "pos": [
+            -7,
+            10,
+            -12
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical",
+          "count": 2
+        }
+      }
+    },
+    {
+      "proposal": "E007",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "S1"
+      },
+      "setBody": "Slide switch, SPST or SPDT used as SPST, rated at least 1 A at 6 V DC, in the battery's positive lead: off is a true disconnect, nothing is powered. The rating matters: the regulator draws up to about 0.8 A from nearly flat cells during a loud clip (calculated).",
+      "setData": {
+        "search": "slide switch 1A SPDT",
+        "qty": 1,
+        "unit": 1.0,
+        "line": 1.0,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 1.0
+          },
+          {
+            "qty": 100,
+            "unit": 0.4
+          }
+        ]
+      }
+    },
+    {
+      "proposal": "E008",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "design/bom",
+      "match": {
+        "ref": "PCB1"
+      },
+      "setBody": "Solderable perfboard cut to a 70 x 22 mm strip: the carrier for the controller, the motion sensor and the amplifier, with the regulator, MOSFET and capacitors beside it. (Rev A: the whole 5 x 7 cm board.)",
+      "setData": {
+        "geometry": {
+          "shape": "box",
+          "size": [
+            70,
+            22,
+            1.6
+          ],
+          "pos": [
+            0,
+            14,
+            22
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical"
+        }
+      }
+    },
+    {
+      "proposal": "E009",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "retire",
+      "section": "design/bom",
+      "match": {
+        "ref": "R1"
+      },
+      "why": "the 1 k series resistor belonged to the DFPlayer's serial line; the 2 x AA design has no DFPlayer"
+    },
+    {
+      "proposal": "E010",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "retire",
+      "section": "design/bom",
+      "match": {
+        "ref": "SD1"
+      },
+      "why": "the microSD card belonged to the DFPlayer; in the 2 x AA design the clips are in the controller's flash"
+    },
+    {
+      "proposal": "E011",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Boost regulator",
+      "body": "3.3 V step-up regulator module, 0.5 to 5.5 V in, of the class of the Pololu U1V11F3 (12 x 15 x 3 mm): makes the regulated 3.3 V rail from two AA cells and keeps it there as they run down. Switch current limit typically 1.2 to 1.5 A (maker's page). Its no-load current sets the sleep current and must be measured: the maker says under 1 mA. Price: an estimate.",
+      "data": {
+        "ref": "U4",
+        "source": "Pololu or a distributor",
+        "search": "3.3V step-up regulator 0.5V input U1V11F3",
+        "asin": "",
+        "kind": "regulator",
+        "library": "boost-3v3-module",
+        "qty": 1,
+        "unit": 5.75,
+        "line": 5.75,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 5.75
+          },
+          {
+            "qty": 100,
+            "unit": 4.5
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            12,
+            3,
+            15
+          ],
+          "pos": [
+            28,
+            30,
+            21
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "doc",
+          "basisSource": "12 x 15 x 3 mm: the maker's product page"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E012",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Reverse-battery MOSFET",
+      "body": "P-channel MOSFET, logic level (fully on at 1.8 V gate drive, about 0.1 ohm), SOT-23 on a small adapter board, in the battery's positive lead after the switch: cells put in backwards cannot reach the regulator. Price: an estimate.",
+      "data": {
+        "ref": "Q1",
+        "source": "Any distributor",
+        "search": "P-channel MOSFET SOT-23 1.8V gate AO3401A",
+        "asin": "",
+        "kind": "generic",
+        "library": "p-mosfet-reverse-battery",
+        "qty": 1,
+        "unit": 1.0,
+        "line": 1.0,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 1.0
+          },
+          {
+            "qty": 100,
+            "unit": 0.3
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            10,
+            2,
+            10
+          ],
+          "pos": [
+            12,
+            30,
+            21
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E013",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Bulk capacitor",
+      "body": "470 uF 6.3 V (or 10 V) low-ESR electrolytic on the 3.3 V rail at the amplifier: it carries the peaks of a clip so the rail does not dip and reset the controller. Price: an estimate.",
+      "data": {
+        "ref": "C1",
+        "source": "Any distributor",
+        "search": "470uF 10V low ESR electrolytic",
+        "asin": "",
+        "kind": "capacitor",
+        "library": "capacitor-electrolytic",
+        "qty": 1,
+        "unit": 0.3,
+        "line": 0.3,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.3
+          },
+          {
+            "qty": 100,
+            "unit": 0.1
+          }
+        ],
+        "geometry": {
+          "shape": "box",
+          "size": [
+            11,
+            6.3,
+            6.3
+          ],
+          "pos": [
+            -4,
+            30,
+            21
+          ],
+          "explode": [
+            0,
+            20,
+            0
+          ],
+          "basis": "typical"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E014",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Battery sense capacitor",
+      "body": "100 nF ceramic from the battery-sense midpoint to ground: the two 1 M resistors are too high a source for the controller's converter without it. Price: an estimate.",
+      "data": {
+        "ref": "C2",
+        "source": "Any distributor",
+        "search": "100nF ceramic capacitor",
+        "asin": "",
+        "kind": "capacitor",
+        "library": "capacitor-ceramic",
+        "qty": 1,
+        "unit": 0.1,
+        "line": 0.1,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.1
+          },
+          {
+            "qty": 100,
+            "unit": 0.02
+          }
+        ]
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E015",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Battery sense resistor, upper",
+      "body": "1 M ohm 1/4 W from the battery side of the regulator to the sense midpoint. With the lower one it halves the battery voltage for the controller and draws 1.5 uA. Price: the documents' figure for a resistor.",
+      "data": {
+        "ref": "R3",
+        "source": "Any distributor",
+        "search": "1M resistor",
+        "asin": "",
+        "kind": "resistor",
+        "library": "resistor-axial",
+        "qty": 1,
+        "unit": 0.05,
+        "line": 0.05,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.05
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ]
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E016",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Battery sense resistor, lower",
+      "body": "1 M ohm 1/4 W from the sense midpoint to ground.",
+      "data": {
+        "ref": "R4",
+        "source": "Any distributor",
+        "search": "1M resistor",
+        "asin": "",
+        "kind": "resistor",
+        "library": "resistor-axial",
+        "qty": 1,
+        "unit": 0.05,
+        "line": 0.05,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.05
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ]
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E017",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "add",
+      "section": "design/bom",
+      "title": "Amplifier shutdown pull-down",
+      "body": "10 k ohm 1/4 W from the amplifier's SD pin to ground: the amplifier stays shut down whenever the controller is asleep or resetting (its board pulls SD up through 1 M).",
+      "data": {
+        "ref": "R5",
+        "source": "Any distributor",
+        "search": "10k resistor",
+        "asin": "",
+        "kind": "resistor",
+        "library": "resistor-axial",
+        "qty": 1,
+        "unit": 0.05,
+        "line": 0.05,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.05
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ]
+      },
+      "status": "to buy"
+    },
+    {
+      "proposal": "E018",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "retire",
+      "section": "design/wiring",
+      "match": {
+        "title": "Switch to VIN"
+      },
+      "why": "the switch now feeds the reverse-battery MOSFET and the regulator; there is no 4.5 V VIN bus"
+    },
+    {
+      "proposal": "E019",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "retire",
+      "section": "design/wiring",
+      "match": {
+        "title": "UART to the series resistor"
+      },
+      "why": "the DFPlayer and its serial line are not in the 2 x AA design"
+    },
+    {
+      "proposal": "E020",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "retire",
+      "section": "design/wiring",
+      "match": {
+        "title": "Series resistor to audio module RX"
+      },
+      "why": "the DFPlayer and its serial line are not in the 2 x AA design"
+    },
+    {
+      "proposal": "E021",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "retire",
+      "section": "design/wiring",
+      "match": {
+        "title": "UART from audio module"
+      },
+      "why": "the DFPlayer and its serial line are not in the 2 x AA design"
+    },
+    {
+      "proposal": "E022",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "retire",
+      "section": "design/wiring",
+      "match": {
+        "title": "Busy line"
+      },
+      "why": "the DFPlayer's BUSY line is not in the 2 x AA design; the firmware knows when it is playing"
+    },
+    {
+      "proposal": "E023",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Sensor power"
+      },
+      "setData": {
+        "toPin": "VIN"
+      },
+      "setBody": "3.3 V from the rail to the breakout's VIN (it accepts 3 to 5 V); its own regulator then drops a little, which the sensor tolerates (2.375 V minimum, data sheet as recalled). Never connect GND to VIN."
+    },
+    {
+      "proposal": "E024",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2C clock"
+      },
+      "setData": {
+        "fromPin": "D5"
+      },
+      "appendBody": "D5 is GPIO6 on the XIAO ESP32S3."
+    },
+    {
+      "proposal": "E025",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2C data"
+      },
+      "setData": {
+        "fromPin": "D4"
+      },
+      "setBody": "10 k pull-ups are on the Adafruit breakout, so none are added. Digital 3.3 V. D4 is GPIO5 on the XIAO ESP32S3."
+    },
+    {
+      "proposal": "E026",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Motion interrupt"
+      },
+      "setData": {
+        "toPin": "D1"
+      },
+      "setBody": "Active low and latched until the firmware reads the sensor's status. D1 (GPIO2) wakes the controller from deep sleep."
+    },
+    {
+      "proposal": "E027",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Audio module power"
+      },
+      "setData": {
+        "from": "U4",
+        "fromPin": "VOUT",
+        "toPin": "Vin",
+        "net": "3V3"
+      },
+      "setBody": "3.3 V straight from the regulator's output, on its own wire, so the amplifier's current does not pass through the controller's pads."
+    },
+    {
+      "proposal": "E028",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Speaker lead 1"
+      },
+      "setData": {
+        "fromPin": "+"
+      },
+      "setBody": "Either polarity. Bridged class-D drive from the amplifier's + and - terminals into 4 ohm, about 1 W at most on the 3.3 V rail; neither lead may touch ground. Keep the leads short and twisted."
+    },
+    {
+      "proposal": "E029",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Speaker lead 2"
+      },
+      "setData": {
+        "fromPin": "-"
+      }
+    },
+    {
+      "proposal": "E030",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Mode button to GPIO"
+      },
+      "setData": {
+        "toPin": "D3"
+      },
+      "appendBody": "D3 is GPIO4; it also wakes the controller from deep sleep."
+    },
+    {
+      "proposal": "E031",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "design/wiring",
+      "match": {
+        "title": "Pull-up to the mode GPIO"
+      },
+      "setData": {
+        "toPin": "D3"
+      }
+    },
+    {
+      "proposal": "E032",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Switch to the reverse-battery MOSFET",
+      "body": "Drain to the switch, source to the regulator, gate to ground.",
+      "data": {
+        "order": 2,
+        "net": "BAT_SW",
+        "netClass": "power",
+        "from": "S1",
+        "fromPin": "2",
+        "to": "Q1",
+        "toPin": "D"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E033",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "MOSFET to the regulator input",
+      "body": "Meter the regulator input with the switch on: 2.0 to 3.2 V with two AA cells. Switch off: 0 V.",
+      "data": {
+        "order": 2,
+        "net": "VBAT",
+        "netClass": "power",
+        "from": "Q1",
+        "fromPin": "S",
+        "to": "U4",
+        "toPin": "VIN"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E034",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "MOSFET gate to ground",
+      "body": "",
+      "data": {
+        "order": 2,
+        "net": "GND",
+        "netClass": "ground",
+        "from": "Q1",
+        "fromPin": "G",
+        "to": "U4",
+        "toPin": "GND"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E035",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Regulator ground",
+      "body": "",
+      "data": {
+        "order": 3,
+        "net": "GND",
+        "netClass": "ground",
+        "from": "U4",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E036",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Regulator output to the controller",
+      "body": "Meter the rail before fitting the controller: 3.17 to 3.43 V (3.3 V, 4 %). Never plug in USB while the switch is on.",
+      "data": {
+        "order": 3,
+        "net": "3V3",
+        "netClass": "power",
+        "from": "U4",
+        "fromPin": "VOUT",
+        "to": "U1",
+        "toPin": "3V3"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E037",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "I2S bit clock",
+      "body": "D8 is GPIO7.",
+      "data": {
+        "order": 19,
+        "net": "I2S_BCLK",
+        "netClass": "signal",
+        "from": "U1",
+        "fromPin": "D8",
+        "to": "U3",
+        "toPin": "BCLK"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E038",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "I2S word select",
+      "body": "D9 is GPIO8.",
+      "data": {
+        "order": 19,
+        "net": "I2S_LRC",
+        "netClass": "signal",
+        "from": "U1",
+        "fromPin": "D9",
+        "to": "U3",
+        "toPin": "LRC"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E039",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "I2S data",
+      "body": "D10 is GPIO9.",
+      "data": {
+        "order": 19,
+        "net": "I2S_DIN",
+        "netClass": "signal",
+        "from": "U1",
+        "fromPin": "D10",
+        "to": "U3",
+        "toPin": "DIN"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E040",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Amplifier enable",
+      "body": "High while a clip plays. D2 is GPIO3.",
+      "data": {
+        "order": 20,
+        "net": "AMP_SD",
+        "netClass": "signal",
+        "from": "U1",
+        "fromPin": "D2",
+        "to": "U3",
+        "toPin": "SD"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E041",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Amplifier enable to its pull-down",
+      "body": "",
+      "data": {
+        "order": 20,
+        "net": "AMP_SD",
+        "netClass": "signal",
+        "from": "U3",
+        "fromPin": "SD",
+        "to": "R5",
+        "toPin": "1"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E042",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Amplifier pull-down to ground",
+      "body": "",
+      "data": {
+        "order": 20,
+        "net": "GND",
+        "netClass": "ground",
+        "from": "R5",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E043",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Battery sense from the regulator input",
+      "body": "",
+      "data": {
+        "order": 21,
+        "net": "VBAT",
+        "netClass": "power",
+        "from": "U4",
+        "fromPin": "VIN",
+        "to": "R3",
+        "toPin": "1"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E044",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Battery sense midpoint",
+      "body": "Half the battery voltage. D0 is GPIO1.",
+      "data": {
+        "order": 21,
+        "net": "BATT_SENSE",
+        "netClass": "signal",
+        "from": "R3",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "D0"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E045",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Battery sense lower resistor",
+      "body": "",
+      "data": {
+        "order": 21,
+        "net": "BATT_SENSE",
+        "netClass": "signal",
+        "from": "R4",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "D0"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E046",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Battery sense lower resistor to ground",
+      "body": "",
+      "data": {
+        "order": 21,
+        "net": "GND",
+        "netClass": "ground",
+        "from": "R4",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E047",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Battery sense capacitor",
+      "body": "",
+      "data": {
+        "order": 21,
+        "net": "BATT_SENSE",
+        "netClass": "signal",
+        "from": "C2",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "D0"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E048",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Battery sense capacitor to ground",
+      "body": "",
+      "data": {
+        "order": 21,
+        "net": "GND",
+        "netClass": "ground",
+        "from": "C2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E049",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Bulk capacitor positive",
+      "body": "Mind the polarity.",
+      "data": {
+        "order": 22,
+        "net": "3V3",
+        "netClass": "power",
+        "from": "C1",
+        "fromPin": "+",
+        "to": "U3",
+        "toPin": "Vin"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E050",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "add",
+      "section": "design/wiring",
+      "title": "Bulk capacitor negative",
+      "body": "",
+      "data": {
+        "order": 22,
+        "net": "GND",
+        "netClass": "ground",
+        "from": "C1",
+        "fromPin": "-",
+        "to": "U3",
+        "toPin": "GND"
+      },
+      "status": "to solder"
+    },
+    {
+      "proposal": "E051",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Hard impact"
+      },
+      "appendBody": "Ruling of 22 Nov: as in the documents. The documents' 8 to 14 g window cannot be measured on a +/-8 g range, so the range is +/-16 g and the filter 94 Hz; the threshold starts at 6 g and is tuned with the logging mode. A bump that ends a flight is that flight's landing, not a second gag.",
+      "setData": {
+        "trigger": "Peak of 6 g or more on the +/-16 g range, not within 1.5 s of a flight; 1 s before the next"
+      }
+    },
+    {
+      "proposal": "E052",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Weigh-in"
+      },
+      "appendBody": "Kept as the documents have it, with one addition: the stillness must follow a lift within 3 s, so a bag that is simply left alone does not qualify. Reported when the stillness ends.",
+      "setData": {
+        "trigger": "A lift (0.25 g or more), then dead still for 3.5 to 6 s, then moved"
+      }
+    },
+    {
+      "proposal": "E053",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Handle grab"
+      },
+      "appendBody": "Ruling of 22 Nov: tilt and quick motion, then sustained tilt plus steady carry accelerations. Quick motion is 0.3 g or 60 degrees a second. Carry is 1 s windows with 0.04 to 0.6 g of bounce in three of every four. The gag comes about 4.5 s after the grab (Rev A: 10 s).",
+      "setData": {
+        "trigger": "From rest: 20 degrees of tilt and quick motion within 1.5 s, then 4 s of carry at 12 degrees of tilt or more"
+      }
+    },
+    {
+      "proposal": "E054",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Free-fall"
+      },
+      "appendBody": "Ruling of 22 Nov: duration over 0.3 s (a fall of 0.44 m). The limit is 0.35 g plus up to 0.45 g for a tumbling bag, because the tag sits up to 0.45 m off the spin axis and then never reads zero. Reported in the air, 0.3 s in; the bump that follows is its landing.",
+      "setData": {
+        "trigger": "In the air for 0.3 s with no launch before it: |a| under 0.35 g plus an allowance for spin"
+      }
+    },
+    {
+      "proposal": "E055",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Carousel"
+      },
+      "appendBody": "Ruling of 22 Nov: circular and periodic motion for about 15 s or more, best settings. The turn is measured about the direction of gravity, so the tag's attitude does not matter. A carousel's sideways acceleration is only about 0.02 g, the size of a 1 degree tilt, so it is not used. Turns the other way cancel; turn older than about 40 s fades.",
+      "setData": {
+        "trigger": "15 s of quiet transport with 120 degrees of turn one way about the vertical (4 to 60 degrees a second)"
+      }
+    },
+    {
+      "proposal": "E056",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Conveyor"
+      },
+      "appendBody": "The documents' 100 to 400 Hz band cannot exist at a 100 Hz sample rate. The rule is the vibration's size and rhythm in 1 s windows; a cart or a car boot reads the same and is the same gag. A ride that is already turning waits for the carousel decision.",
+      "setData": {
+        "trigger": "8 s of steady vibration, 0.03 to 0.30 g, faster than a walking rhythm, turning under 25 degrees a second"
+      }
+    },
+    {
+      "proposal": "E057",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Inverted"
+      },
+      "appendBody": "On a tag that hangs from a loop this says the tag is upside down, which is not always the bag. Kept, with low confidence, until it is tried on a case.",
+      "setData": {
+        "trigger": "The tag's own up axis pointing down (within 25 degrees) for 4 s"
+      }
+    },
+    {
+      "proposal": "E058",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Detect: Dark idle"
+      },
+      "appendBody": "The controller sleeps and a timer wakes it once, two hours after the motion stopped, to say the line; then it sleeps until moved.",
+      "setData": {
+        "trigger": "No motion for 2 hours: one timed wake from deep sleep"
+      }
+    },
+    {
+      "proposal": "E059",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Detect: Throw",
+      "body": "The owner's question of 22 Nov: the best way to detect a throw. A throw is a launch, then a flight, then a landing. Launch: in the 0.6 s before the flight, |a| above 1.15 g adding up to 0.08 g-seconds (about 0.8 m/s), or one sample above 2 g. Flight: 0.3 s in the air by the free-fall rule. Landing: 2.5 g or more within 0.3 s of the flight's end. No launch makes it a drop (free-fall); a set-down never gets under the flight limit for 0.3 s; conveyor vibration swings about 1 g and never stays under it.",
+      "data": {
+        "trigger": "Launch (0.08 g-seconds above 1.15 g, or 2 g, in the 0.6 s before), then 0.3 s in the air, then a landing of 2.5 g",
+        "response": "A thrown-bag line in the air; the landing does not get its own gag"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E060",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 3, detection specification",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Sensor configuration",
+      "body": "MPU-6050 at 100 samples a second, 94 Hz filter, +/-16 g and +/-2000 degrees a second, read in batches from its FIFO. Asleep: accelerometer only, 5 wake-ups a second, motion interrupt at about 80 mg (to be confirmed on the bench). The gyro's zero offset (up to 20 degrees a second) is learnt at rest and never from a steady turn.",
+      "data": {
+        "trigger": "-",
+        "response": "-"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E061",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Logging mode for tuning",
+      "body": "Holding the button while switching on, or sending l over USB, makes the firmware print every sample (time, three accelerations, three rotation rates, tilt, turn, still) and every event at 100 lines a second, and stay awake. Every threshold is a starting value until it has been tuned with recordings from real luggage.",
+      "data": {
+        "trigger": "Button held at switch-on, or l over USB",
+        "response": "CSV on the serial port"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E062",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2, electrical design",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Power"
+      },
+      "setBody": "Two AA alkaline cells in series (the owner's ruling of 22 Nov; Rev A: three), a 3.3 V boost regulator, and a slide switch in the battery lead. Asleep after 45 s without motion; the motion sensor's interrupt or the button wakes it. Sleep current estimated at 0.25 mA at the battery (0.2 to 0.4 mA): above Rev A's 200 uA figure, which Rev A's own parts could not meet either (its audio module idles at about 20 mA).",
+      "setData": {
+        "trigger": "45 s without motion",
+        "response": "Deep sleep; wake on motion or the button"
+      }
+    },
+    {
+      "proposal": "E063",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2, electrical design",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Off switch is a true disconnect",
+      "body": "The owner's ruling of 22 Nov: a physical OFF switch, in case the airport asks for the device to be disabled; with AA cells it need not be off for flight. The switch is in the battery's positive lead, ahead of everything: off, no part of the circuit is powered and the current is zero.",
+      "data": {
+        "trigger": "Switch off",
+        "response": "Nothing is powered"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E064",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.6, battery life",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Battery life",
+      "body": "Estimate, for a stated profile: a travel day is 3 h awake (about 9 mA at the battery), six clips and 21 h asleep (0.25 mA), about 33 mAh; a day at home switched on is about 6 mAh. With 2,000 mAh usable from two AA alkaline cells down to 1.0 V a cell: about 6 months at four travel days a month, about 5 months at eight, about 11 months left switched on and untouched. The documents ask for 3 to 6 months. Every current here is calculated, none measured.",
+      "data": {
+        "trigger": "-",
+        "response": "-"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E065",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.10, audio at low battery",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Low battery",
+      "body": "Battery read through a 1 M / 1 M divider with the device awake and silent. Below 2.4 V (1.2 V a cell): clips 3 dB quieter. Below 2.2 V: 6 dB quieter and the low-battery line once. Below 2.0 V, or 1.8 V under a clip's load, or after two brown-out resets: no clips, sleep only. Rev A's threshold (3.3 V for three cells) is the same 1.1 V a cell as the second step.",
+      "data": {
+        "trigger": "Battery under 2.4 / 2.2 / 2.0 V",
+        "response": "Quieter; the low-battery line once; then silent"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E066",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.4, protection and brown-out",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Reverse battery and brown-out",
+      "body": "Cells fitted backwards must do no harm: a P-channel MOSFET blocks them. A dip of the 3.3 V rail during a clip must not leave the device stuck: the controller's brown-out reset restarts it, the firmware counts such resets and goes quieter after one and silent after two. A 470 uF capacitor at the amplifier carries the peaks.",
+      "data": {
+        "trigger": "Cells reversed; rail dips",
+        "response": "No damage; restart, quieter, then silent"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E067",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 6, mechanical inputs",
+      "op": "add",
+      "section": "design/requirements",
+      "title": "Drop survival",
+      "body": "The tag on a suitcase handle must still work after the case is dropped 1.0 m onto concrete, six times, one on each face (an estimate of rough handling; the documents say shocks to 40 g survival). Inside: cells held against their springs by ribs, the speaker and every board fixed, the sensor screwed down. Enclosure walls 2.4 mm PETG or more at the corners.",
+      "data": {
+        "trigger": "-",
+        "response": "-"
+      },
+      "status": "open"
+    },
+    {
+      "proposal": "E068",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2, electrical design",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Loudness limit"
+      },
+      "appendBody": "For the 2 x AA design: about 1.0 W into a 4 ohm speaker from the 3.3 V rail, about 80 dB at 1 m with a 40 mm speaker of 80.5 dB at 1 W and 1 m (calculated from a data sheet figure, not measured). That is inside the 85 dBA ceiling and about 5 dB short of the documents' \"~85 dBA @1m - loud enough for terminals\". Rev A as drawn (an 8 ohm speaker on about 4.7 V) comes to about 1 W as well."
+    },
+    {
+      "proposal": "E069",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Controls"
+      },
+      "appendBody": "In the Rev B firmware a tap while a clip plays stops the clip; between clips it steps the volume. The button also wakes the device."
+    },
+    {
+      "proposal": "E070",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Firmware sketch compiles"
+      },
+      "setStatus": "open",
+      "setBody": "A new sketch was written for the 2 x AA design on 22 Nov 2026: BaggageClaims_MK1_RevB.ino with bc_detect.h and bc_detect.cpp, in Files. Proved so far: the detection core builds with g++ without a warning and passes 23 host tests on synthetic traces; the sketch type-checks with the ESP32-S3 compiler (xtensa-esp-elf g++ 15.2.0) against the Arduino-ESP32 4.0.0 headers. Not proved: a full build for the board with arduino-cli (its own tools could not be downloaded here), and anything on hardware. The Rev A sketch in the Drive folder still uses gxDump and gzDump before they are declared."
+    },
+    {
+      "proposal": "E071",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Throw",
+      "body": "",
+      "data": {
+        "pass": "Toss a packed case 1.5 m onto a mat, five times: the log shows THROW then LANDING each time, never FREEFALL or IMPACT, and the thrown-bag line starts before the landing"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E072",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Free-fall",
+      "body": "",
+      "data": {
+        "pass": "Let a packed case fall 0.6 m from rest onto a mat, five times: FREEFALL then LANDING each time, never THROW. From 0.2 m: no FREEFALL"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E073",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Carousel",
+      "body": "",
+      "data": {
+        "pass": "On a turntable or a carousel at 5 to 25 degrees a second: CAROUSEL once, between 15 and 25 s after the ride begins. Wheeled in a straight line for 60 s: no CAROUSEL"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E074",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Conveyor",
+      "body": "",
+      "data": {
+        "pass": "On a belt or a vibrating cart for 20 s: CONVEYOR once, 8 to 12 s in; none while the case is carried by hand for 60 s"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E075",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Off switch disconnect",
+      "body": "",
+      "data": {
+        "pass": "Switch off, meter in series with the battery on its most sensitive range: 0 uA (under the meter's resolution), and 0 V at the regulator input"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E076",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Awake current",
+      "body": "",
+      "data": {
+        "pass": "Awake and being moved, no clip: under 15 mA at the battery, averaged over 10 s (estimate 9 mA)"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E077",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Loudness at 1 m",
+      "body": "",
+      "data": {
+        "pass": "Loudest clip at full volume, new cells, sound level meter (A-weighted, fast) at 1 m on the grille's axis: record the peak. Pass under 85 dBA; record the shortfall against the documents' 85 (estimate about 80)"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E078",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Low battery behaviour",
+      "body": "",
+      "data": {
+        "pass": "On a bench supply in place of the cells: at 2.3 V clips are quieter, at 2.1 V the low-battery line plays once, at 1.9 V no clip plays; no reset loop at any voltage from 3.2 V down to 1.5 V"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E079",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Reverse battery",
+      "body": "",
+      "data": {
+        "pass": "Cells fitted backwards for one minute, then correctly: no current over 1 mA while reversed, and the device works afterwards"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E080",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Drop survival",
+      "body": "",
+      "data": {
+        "pass": "Tag on a packed case, dropped 1.0 m onto concrete, once on each of six faces: the tag stays closed, nothing rattles, and it still passes the Drop and Weigh-in tests"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E081",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "add",
+      "section": "prototype/tests",
+      "title": "Sketch builds for the board",
+      "body": "",
+      "data": {
+        "pass": "arduino-cli compile for esp32:esp32:XIAO_ESP32S3 with core 4.0.0 finishes with no error (scripts/firmware-check.sh board), and the binary is under the 2 MB application partition"
+      },
+      "status": "not run"
+    },
+    {
+      "proposal": "E082",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "enrich",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Sleep current"
+      },
+      "appendData": {
+        "pass": "For the 2 x AA design: meter in series with the battery, 5 min after the last motion. Estimate 0.25 mA (0.2 to 0.4 mA); the documents' 200 uA is not expected to be met. Over 0.4 mA: find the cause (the regulator's own current, the sensor board's LED if it has one) before going on."
+      }
+    },
+    {
+      "proposal": "E083",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "enrich",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Power rail voltage"
+      },
+      "appendData": {
+        "pass": "For the 2 x AA design: regulator input 2.0 to 3.2 V with two AA cells in and the switch on, 0 V with it off; the 3.3 V rail reads 3.17 to 3.43 V."
+      }
+    },
+    {
+      "proposal": "E084",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "enrich",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Carry"
+      },
+      "appendData": {
+        "pass": "With the Rev B firmware the gag comes about 5 s after the grab."
+      }
+    },
+    {
+      "proposal": "E085",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Detect: Throw",
+      "tests": [
+        "Throw"
+      ],
+      "parts": [
+        "U2",
+        "U3",
+        "SPK1"
+      ],
+      "because": "the Throw test tosses the case and reads THROW then LANDING in the log; the motion sensor detects it and the amplifier and speaker say the line"
+    },
+    {
+      "proposal": "E086",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Detect: Free-fall",
+      "tests": [
+        "Free-fall"
+      ],
+      "parts": [],
+      "because": "the Free-fall test lets the case fall from rest and reads FREEFALL then LANDING"
+    },
+    {
+      "proposal": "E087",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Detect: Carousel",
+      "tests": [
+        "Carousel"
+      ],
+      "parts": [],
+      "because": "the Carousel test turns the case at carousel rates and reads CAROUSEL once"
+    },
+    {
+      "proposal": "E088",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Detect: Conveyor",
+      "tests": [
+        "Conveyor"
+      ],
+      "parts": [],
+      "because": "the Conveyor test rides a belt or cart and reads CONVEYOR once"
+    },
+    {
+      "proposal": "E089",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Off switch is a true disconnect",
+      "tests": [
+        "Off switch disconnect"
+      ],
+      "parts": [
+        "S1"
+      ],
+      "because": "the test meters zero current with the switch off; the switch is S1 in the battery lead"
+    },
+    {
+      "proposal": "E090",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Battery life",
+      "tests": [
+        "Sleep current",
+        "Awake current"
+      ],
+      "parts": [
+        "BAT",
+        "U4"
+      ],
+      "because": "the estimate rests on the sleep and awake currents, which these two tests measure; the cells are BAT and the regulator U4 sets the losses"
+    },
+    {
+      "proposal": "E091",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Power",
+      "tests": [
+        "Power rail voltage"
+      ],
+      "parts": [
+        "U4",
+        "Q1",
+        "R5"
+      ],
+      "because": "the 2 x AA design's rail is made by the regulator U4 behind the MOSFET Q1, and the Power rail voltage test meters it; R5 keeps the amplifier shut down while the device sleeps"
+    },
+    {
+      "proposal": "E092",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Low battery",
+      "tests": [
+        "Low battery behaviour"
+      ],
+      "parts": [
+        "R3",
+        "R4",
+        "C2"
+      ],
+      "because": "the test steps a bench supply down through the three thresholds; the battery is read through R3, R4 and C2"
+    },
+    {
+      "proposal": "E093",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Reverse battery and brown-out",
+      "tests": [
+        "Reverse battery",
+        "Low battery behaviour"
+      ],
+      "parts": [
+        "Q1",
+        "C1"
+      ],
+      "because": "Q1 blocks reversed cells and C1 carries the peaks; the two tests reverse the cells and run the supply down"
+    },
+    {
+      "proposal": "E094",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Loudness limit",
+      "tests": [
+        "Loudness at 1 m"
+      ],
+      "parts": [
+        "U3",
+        "SPK1"
+      ],
+      "because": "the test measures the level at 1 m; it is set by the amplifier U3 and the speaker SPK1"
+    },
+    {
+      "proposal": "E095",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Drop survival",
+      "tests": [
+        "Drop survival"
+      ],
+      "parts": [
+        "ENC1"
+      ],
+      "because": "the test drops the tag on a case; the enclosure ENC1 has to survive it"
+    },
+    {
+      "proposal": "E096",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Firmware sketch compiles",
+      "tests": [
+        "Sketch builds for the board"
+      ],
+      "parts": [],
+      "because": "the test is the arduino-cli build of the sketch for the board"
+    },
+    {
+      "proposal": "E097",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "link",
+      "section": "design/requirements",
+      "requirement": "Sensor configuration",
+      "tests": [],
+      "parts": [
+        "U2"
+      ],
+      "because": "the configuration is the motion sensor's"
+    },
+    {
+      "proposal": "E098",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Audio command interface"
+      },
+      "appendBody": "That is the Rev A interface. The 2 x AA design has no player module: the controller reads 16-bit mono WAV clips from its own flash and sends them to the amplifier over I2S (bit clock, word select, data), sets the volume as a gain in firmware, and knows itself when a clip is playing."
+    },
+    {
+      "proposal": "E099",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Content ships independently of firmware"
+      },
+      "appendBody": "In the 2 x AA design a pack is a folder (/p1, /p2, /p3) of WAV files in the controller's flash file system, written over USB separately from the firmware. The 5.9 MB set aside hold about 3 minutes of clips at 16 kHz: the ten starter clips in three packs fit; the documents' 128 clips in each of three packs do not, and a pack can no longer be sold as a card. A card socket would bring that back at the cost of sleep current and four more pins."
+    },
+    {
+      "proposal": "E100",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Service and debug port"
+      },
+      "appendBody": "On the 2 x AA design the port is the XIAO's USB-C, used with the battery switch off. The Rev B log prints one EVT line per event with the governor's verdict, and the logging mode prints every sample."
+    },
+    {
+      "proposal": "E101",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 6, mechanical inputs",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Rigid sensor mount"
+      },
+      "appendBody": "The Adafruit breakout has four 2.5 mm holes (the maker's page); screw it down through all four on printed posts, with its long edge square to the tag's long axis. Hole spacing 20.3 x 12.7 mm is typical of this board family and must be checked against the maker's drawing before the posts are printed."
+    },
+    {
+      "proposal": "E102",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "design/requirements",
+      "match": {
+        "title": "Governor"
+      },
+      "appendBody": "The Rev B firmware keeps these rules; with no player module, busy is the firmware's own playing state, and the latches survive deep sleep."
+    },
+    {
+      "proposal": "E103",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 0 — Bench setup"
+      },
+      "appendBody": "For the 2 x AA design the parts list has 21 lines; lay it out against the app's parts list, not the CSV."
+    },
+    {
+      "proposal": "E104",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 2 — Electronics"
+      },
+      "appendBody": "For the 2 x AA design, in this order: (1) power: holder, switch, MOSFET, regulator; meter the rail at 3.17 to 3.43 V before any module is fitted; (2) controller on the rail (3V3 and GND); (3) motion sensor: VIN, GND, SCL to D5, SDA to D4, INT to D1; (4) amplifier: Vin and GND from the regulator, BCLK to D8, LRC to D9, DIN to D10, SD to D2 with 10 k to ground, the 470 uF capacitor across Vin and GND, speaker to + and -; (5) battery sense: 1 M from the regulator input to D0, 1 M and 100 nF from D0 to ground; (6) button from D3 to ground with its 10 k pull-up. Modules are soldered to the strip, not socketed: the 42 mm depth has no room for sockets."
+    },
+    {
+      "proposal": "E105",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 2.8, pin map and wiring",
+      "op": "enrich",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 3 — First power-on"
+      },
+      "appendBody": "For the 2 x AA design: the rail reads 3.17 to 3.43 V; the regulator input reads the battery (2.0 to 3.2 V); nothing warm after 30 s."
+    },
+    {
+      "proposal": "E106",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 4 — Firmware"
+      },
+      "appendBody": "For the 2 x AA design: battery switch off, USB-C in. Arduino-ESP32 core 4.0.0, board XIAO_ESP32S3, no library to install. Put BaggageClaims_MK1_RevB.ino, bc_detect.h, bc_detect.cpp and the partitions file (renamed partitions.csv) in a folder named BaggageClaims_MK1_RevB, build and upload. Expect \"BAGGAGE CLAIMS MK1 Rev B ... MPU OK FS OK\" at 115200 baud; \"FS FAIL\" until the clips are loaded."
+    },
+    {
+      "proposal": "E107",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 4, firmware",
+      "op": "enrich",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 5 — Audio"
+      },
+      "appendBody": "For the 2 x AA design: no card. Save each clip as 16-bit mono WAV at 16 kHz, named by class and number (/p1/impact_1.wav, /p1/impact_2.wav, /p1/weigh_1.wav, /p1/grab_1.wav, /p1/freefall_1.wav, /p1/throw_1.wav, /p1/carousel_1.wav, /p1/conveyor_1.wav, /p1/inverted_1.wav, /p1/idle_1.wav, /p1/lowbatt_1.wav), and write the folder to the controller's LittleFS partition over USB."
+    },
+    {
+      "proposal": "E108",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 7, requirements and tests",
+      "op": "enrich",
+      "section": "prototype/tests",
+      "match": {
+        "title": "3.3 V rail"
+      },
+      "appendData": {
+        "pass": "For the 2 x AA design the regulator's tolerance is 4 %: 3.17 to 3.43 V."
+      }
+    },
+    {
+      "proposal": "E109",
+      "sourceFile": "docs/design/baggage-claims-device.md",
+      "sourceLocation": "section 5, bill of materials",
+      "op": "enrich",
+      "section": "production/economics",
+      "match": {
+        "title": "Prototype"
+      },
+      "appendBody": "Added up on 22 Nov at the owner's request: the 16 lines of the parts list come to $64.80; the PRD's nine-row table comes to $64.34 under a total line of $64.80; the PRD's cost-table column comes to $58.80. The 2 x AA design's parts come to $72.83 for one unit (estimate), $72.83 a unit for five and $62.69 a unit for a hundred, with the kit lines (wire, perfboard, hardware) left at the documents' figures."
+    }
+  ]
+}

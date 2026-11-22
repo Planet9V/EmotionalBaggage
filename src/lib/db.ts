@@ -2,7 +2,7 @@ import { currentActor } from "./actor";
 import { join } from "node:path";
 import { runner } from "node-pg-migrate";
 import { Pool, type PoolClient } from "pg";
-import { SEED_ADDITIONS, SEED_ITEMS, SEED_LINKS, SEED_PROJECT } from "./seed";
+import { SEED_ADDITIONS, SEED_ITEMS, SEED_LINKS, SEED_PROJECT, type SeedLink } from "./seed";
 
 // Two connections, two database roles (docs/guide/admin.md, "Two database roles"):
 // - DATABASE_URL names the owner: the role that owns the tables. Migrations, start-up seeding, the pgvector table and
@@ -245,6 +245,45 @@ async function seedAdditions() {
 }
 
 /**
+ * Links one requirement of the example to tests and parts, at both ends, with a history line that says why. Rows
+ * that are not there are skipped. Returns the number of links written. Used by the first seed (SEED_LINKS) and by
+ * the content batches (src/lib/seedContentDb.ts).
+ */
+export async function linkSeedRows(c: PoolClient, link: SeedLink, origin: string): Promise<number> {
+  const { ensureKey, mirrorLinks } = await import("./trace/mirror");
+  const { changedDetail } = await import("./trace/changes");
+  const find = async (section: string, field: "title" | "ref", value: string) =>
+    (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 AND ${field === "title" ? "title" : "data->>'ref'"} = $3 ORDER BY id LIMIT 1 FOR UPDATE`, [SEED_PROJECT.id, section, value])).rows[0];
+    const req = await find("design/requirements", "title", link.requirement);
+    if (!req) return 0;
+    // One at a time: a pg client runs a single query at a time.
+    const tests: ItemRow[] = [];
+    for (const t of link.tests) { const r = await find("prototype/tests", "title", t); if (r) tests.push(r); }
+    const parts: ItemRow[] = [];
+    for (const p of link.parts) { const r = await find("design/bom", "ref", p); if (r) parts.push(r); }
+    if (!tests.length && !parts.length) return 0;
+    const reqKey = await ensureKey(c, req);
+    const testKeys = [];
+    for (const t of tests) testKeys.push(await ensureKey(c, t));
+    const partKeys = [];
+    for (const p of parts) partKeys.push(await ensureKey(c, p));
+    const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1`, [req.id])).rows[0];
+    const have = (f: string) => (Array.isArray(was.data[f]) ? (was.data[f] as unknown[]).filter((x): x is string => typeof x === "string") : []);
+    const nextTests = [...new Set([...have("tests"), ...testKeys])];
+    const nextParts = [...new Set([...have("parts"), ...partKeys])];
+    const upd = await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [req.id, JSON.stringify({ tests: nextTests, parts: nextParts })]);
+    const now = upd.rows[0];
+    const what = [tests.length ? `${tests.length} test${tests.length === 1 ? "" : "s"}` : "", parts.length ? `${parts.length} part${parts.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ");
+    await logEventIn(c, SEED_PROJECT.id, "item.edited", `"${now.title}": linked to ${what} ${origin} (${reqKey})`, {
+      ...changedDetail(now, { before: { "data.tests": have("tests"), "data.parts": have("parts") }, after: { "data.tests": nextTests, "data.parts": nextParts } }),
+      reason: link.because,
+      seeded: true,
+    });
+    await mirrorLinks(c, { data: { ...was.data, tests: have("tests"), parts: have("parts") } }, now);
+  return tests.length + parts.length;
+}
+
+/**
  * Links the example's requirements, tests and parts where its own texts say they correspond (SEED_LINKS), once per
  * database and only for rows still there. Each link is written at both ends and recorded as a history line that says
  * why, so the Activity page and the traceability matrix of the example are not empty.
@@ -255,8 +294,6 @@ async function seedLinks() {
   if (!has.rowCount) return;
   const done = await db.query("SELECT 1 FROM events WHERE project_id=$1 AND kind='seed.links'", [SEED_PROJECT.id]);
   if (done.rowCount) return;
-  const { ensureKey, mirrorLinks } = await import("./trace/mirror");
-  const { changedDetail } = await import("./trace/changes");
   const c = await db.connect();
   try {
     await c.query("BEGIN");
@@ -266,38 +303,8 @@ async function seedLinks() {
       await c.query("ROLLBACK");
       return;
     }
-    const find = async (section: string, field: "title" | "ref", value: string) =>
-      (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 AND ${field === "title" ? "title" : "data->>'ref'"} = $3 ORDER BY id LIMIT 1 FOR UPDATE`, [SEED_PROJECT.id, section, value])).rows[0];
     let linked = 0;
-    for (const link of SEED_LINKS) {
-      const req = await find("design/requirements", "title", link.requirement);
-      if (!req) continue;
-      // One at a time: a pg client runs a single query at a time.
-      const tests: ItemRow[] = [];
-      for (const t of link.tests) { const r = await find("prototype/tests", "title", t); if (r) tests.push(r); }
-      const parts: ItemRow[] = [];
-      for (const p of link.parts) { const r = await find("design/bom", "ref", p); if (r) parts.push(r); }
-      if (!tests.length && !parts.length) continue;
-      const reqKey = await ensureKey(c, req);
-      const testKeys = [];
-      for (const t of tests) testKeys.push(await ensureKey(c, t));
-      const partKeys = [];
-      for (const p of parts) partKeys.push(await ensureKey(c, p));
-      const was = (await c.query<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE id=$1`, [req.id])).rows[0];
-      const have = (f: string) => (Array.isArray(was.data[f]) ? (was.data[f] as unknown[]).filter((x): x is string => typeof x === "string") : []);
-      const nextTests = [...new Set([...have("tests"), ...testKeys])];
-      const nextParts = [...new Set([...have("parts"), ...partKeys])];
-      const upd = await c.query<ItemRow>(`UPDATE items SET data = data || $2::jsonb, updated_at = now() WHERE id=$1 RETURNING ${ITEM_COLS}`, [req.id, JSON.stringify({ tests: nextTests, parts: nextParts })]);
-      const now = upd.rows[0];
-      const what = [tests.length ? `${tests.length} test${tests.length === 1 ? "" : "s"}` : "", parts.length ? `${parts.length} part${parts.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ");
-      await logEventIn(c, SEED_PROJECT.id, "item.edited", `"${now.title}": linked to ${what} from the source documents (${reqKey})`, {
-        ...changedDetail(now, { before: { "data.tests": have("tests"), "data.parts": have("parts") }, after: { "data.tests": nextTests, "data.parts": nextParts } }),
-        reason: link.because,
-        seeded: true,
-      });
-      await mirrorLinks(c, { data: { ...was.data, tests: have("tests"), parts: have("parts") } }, now);
-      linked += tests.length + parts.length;
-    }
+    for (const link of SEED_LINKS) linked += await linkSeedRows(c, link, "from the source documents");
     await logEventIn(c, SEED_PROJECT.id, "seed.links", `Linked the example's requirements, tests and parts where its own texts say they correspond (${linked} links)`, { links: linked });
     await c.query("COMMIT");
   } catch (e) {

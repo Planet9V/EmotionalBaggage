@@ -32,6 +32,35 @@ export const SENSORS: Entry[] = [
     ),
   },
   {
+    id: "adafruit-mpu6050",
+    kind: "sensor",
+    name: "Adafruit MPU-6050 6-DoF accelerometer and gyro breakout (product 3886)",
+    description: "Six-axis motion sensor board on I2C, address 0x68, with its own 3.3 V regulator, level shifting and pull-ups. 26.0 by 17.8 by 4.6 mm with four 2.5 mm mounting holes (the maker's product page).",
+    size: { w: 26, d: 17.8, h: 4.6 },
+    basis: "typical",
+    symbol: "box",
+    sources: [
+      { label: "Adafruit MPU-6050 6-DoF Accel and Gyro Sensor, product 3886", url: "https://www.adafruit.com/product/3886" },
+      { label: "MPU6050 6-DoF Accelerometer and Gyro, Adafruit learning guide, Pinouts", url: "https://learn.adafruit.com/mpu6050-6-axis-accelerometer-and-gyro/pinouts" },
+    ],
+    figures: "VIN 3 V to 5 V: the guide's pinout page (\"3-5VDC\"). 3Vo is the 3.3 V regulator output, up to 100 mA: the same page. SCL and SDA each have a 10 k pull-up: the same page.",
+    note: "The outline is the maker's figure; the pin positions along the edge are typical (2.54 mm pitch) and not from the drawing.",
+    pins: [
+      ...row(
+        [
+          p("VIN", "power_in", { voltage: { min: 3, max: 5 } }),
+          p("3Vo", "power_out", { voltage: { nominal: 3.3 }, current: { max: 100 }, optional: true }),
+          p("GND", "ground"),
+          p("SCL", "input", { ...i2c("SCL"), pullUp: true }),
+          p("SDA", "bidirectional", { ...i2c("SDA"), pullUp: true }),
+          p("INT", "output"),
+        ],
+        { pitch: 2.54, axis: "x", at: -7.6 }
+      ),
+      { name: "AD0", kind: "input", optional: true, position: { x: -6.35, y: 7.6 } },
+    ],
+  },
+  {
     id: "dht22",
     kind: "sensor",
     name: "DHT22 (AM2302) temperature and humidity sensor",
@@ -118,6 +147,33 @@ export const DISPLAYS: Entry[] = [
 ];
 
 export const MODULES: Entry[] = [
+  {
+    id: "max98357a-breakout",
+    kind: "module",
+    name: "MAX98357A I2S class-D amplifier breakout (mono)",
+    description: "Takes I2S audio (no master clock needed) and drives one speaker directly from + and -. SD low shuts it down; the gain pin sets 3 to 15 dB.",
+    size: { w: 19.4, d: 17.8 },
+    basis: "typical",
+    symbol: "box",
+    sources: [{ label: "Adafruit MAX98357 I2S Class-D Mono Amp, learning guide", url: "https://learn.adafruit.com/adafruit-max98357-i2s-class-d-mono-amp" }],
+    figures: "Vin 2.7 V to 5.5 V: the guide's overview (\"able to run from 2.7V-5.5VDC\").",
+    note: "The outline and pin positions are typical of the breakout and not from a drawing.",
+    pins: [
+      ...row(
+        [
+          p("LRC", "input", { bus: { type: "i2s", line: "WS" } }),
+          p("BCLK", "input", { bus: { type: "i2s", line: "BCLK" } }),
+          p("DIN", "input", { bus: { type: "i2s", line: "SD" } }),
+          p("GAIN", "input", { optional: true }),
+          p("SD", "input", { optional: true }),
+          p("GND", "ground"),
+          p("Vin", "power_in", { voltage: { min: 2.7, max: 5.5 } }),
+        ],
+        { pitch: 2.54, axis: "x", at: -7.6 }
+      ),
+      ...row([p("+", "output", { analog: true }), p("-", "output", { analog: true })], { pitch: 5, axis: "x", at: 7 }),
+    ],
+  },
   {
     id: "dfplayer-mini",
     kind: "module",
