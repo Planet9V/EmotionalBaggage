@@ -2,6 +2,7 @@
 // The API validates writes with these; the readers in this folder parse with them;
 // the TypeScript types are inferred from them. Nothing else describes these shapes.
 import { z } from "zod";
+import { QTY_MESSAGE, quantityProblem } from "@/lib/parts/quantity";
 import { economicsSchemas, partPricingFields } from "@/lib/economics/schemas";
 import { MARKET_SCHEMAS } from "@/lib/market/schemas";
 import { PART_KIND_IDS } from "@/lib/parts/kinds";
@@ -121,7 +122,7 @@ const genericData = z.looseObject(step);
 export const partData = z.looseObject({
   ...step,
   ref: text(40).optional(),
-  qty: numeric.refine((n) => n >= 0, "cannot be negative").optional(),
+  qty: numeric.refine((n) => quantityProblem(n) === null, QTY_MESSAGE).optional(),
   source: text(120).optional(),
   search: text().optional(),
   /** line cost, in the concept's currency */

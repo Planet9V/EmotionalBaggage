@@ -2,6 +2,7 @@ import { partSource, sumLine, type Part } from "@/lib/domain";
 import { readMoney } from "@/lib/moneyText";
 import { toCsvText } from "@/lib/csv";
 import { DEFAULT_CURRENCY, majorText } from "@/lib/economics/money";
+import { quantityProblem } from "@/lib/parts/quantity";
 
 /** A cost held in major units as fixed text with the currency's own decimals (src/lib/economics/money.ts); two decimals when no currency is given. */
 export const money = (n: number, currency?: string) => majorText(n, currency || DEFAULT_CURRENCY);
@@ -91,7 +92,7 @@ export function mapImport(rows: string[][]): { rows: ImportRow[]; usedHeader: bo
       const title = at(r, "title");
       const qty = parseAmount(at(r, "qty") || "1");
       const line = parseAmount(at(r, "line"));
-      const problem = !title ? "No title" : qty === null ? "Qty is not a number" : line === null ? "Line cost is not a number" : "";
+      const problem = !title ? "No title" : qty === null ? "Qty is not a number" : quantityProblem(qty) ?? (line === null ? "Line cost is not a number" : "");
       return { ref: at(r, "ref"), title, spec: at(r, "spec"), qty: qty ?? 0, source: at(r, "source"), search: at(r, "search"), line: line ?? 0, problem };
     }),
   };

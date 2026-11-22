@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { InlineEdit } from "@/components/parts/InlineEdit";
 import { partPrice, sumLine, toPart, type Part } from "@/lib/domain";
 import { money, parseAmount, toCsv, groupParts } from "@/components/parts/bom";
+import { quantityProblem } from "@/lib/parts/quantity";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { conceptQueries } from "@/lib/conceptsClient";
 import { sectionVisible } from "@/lib/productTypes";
@@ -65,6 +66,10 @@ export function BomView({ project, section, store }: ViewProps) {
   const numberSave = (p: Part, key: "qty" | "line") => (v: string) => {
     const n = parseAmount(v);
     if (n === null) return "Enter a number, zero or more.";
+    if (key === "qty") {
+      const bad = quantityProblem(n);
+      if (bad) return bad;
+    }
     return saveOrMessage(setData(p, { [key]: n }));
   };
 
@@ -144,6 +149,7 @@ export function BomView({ project, section, store }: ViewProps) {
                       </TableCell>
                       <TableCell>
                         <InlineEdit mono numeric align="right" label={`quantity of ${p.item.title}`} value={p.qty === null ? "" : String(p.qty)} onSave={numberSave(p, "qty")} />
+                        {quantityProblem(p.qty) ? <p role="alert" className="mt-0.5 text-right text-[11px] text-danger" data-testid={`qty-problem-${p.item.id}`}>{quantityProblem(p.qty)}</p> : null}
                       </TableCell>
                       {(() => {
                         const pr = partPrice(p);

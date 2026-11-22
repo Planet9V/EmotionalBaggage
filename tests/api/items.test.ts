@@ -25,6 +25,15 @@ describe("adding a row", () => {
     expect(r.body.item.data).toEqual({ ref: "T1" });
   });
 
+  it("rejects a part quantity above 100,000, or not a whole number, with a plain message", async () => {
+    for (const qty of [100_001, 0, 2.5]) {
+      const r = await read<ErrBody>(await addItem(json("POST", { section: "design/bom", title: "test: qty", data: { ref: "Q1", qty } }), ctx(SEEDED)));
+      expect(r.status, String(qty)).toBe(400);
+      expect(JSON.stringify(r.body)).toContain("Enter a whole number of pieces from 1 to 100,000.");
+    }
+    expect((await make({ section: "design/bom", data: { ref: "Q2", qty: 100_000 } })).status).toBe(201);
+  });
+
   it("rejects a section the menu does not define", async () => {
     const r = await read<ErrBody>(await addItem(json("POST", { section: "not/a-section", title: "test: x" }), ctx(SEEDED)));
     expect(r.status).toBe(400);

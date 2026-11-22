@@ -1,6 +1,7 @@
 // Wizard answers, the zod schema of each step (what keeps a step from moving on) and the one function that
 // turns the answers into items. Nothing is added that the person did not type, except open questions for
 // decisions they left blank.
+import { quantityProblem } from "@/lib/parts/quantity";
 import { moneyOrNull } from "@/lib/moneyText";
 import { z } from "zod";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPE_KEYS, type ProductType } from "@/lib/productTypes";
@@ -94,7 +95,7 @@ export const STEP_SCHEMAS = {
       v.parts.forEach((p, i) => {
         if (!t(p.name)) return;
         const q = num(p.qty);
-        if (q === null || q < 1 || !Number.isInteger(q)) ctx.addIssue({ code: "custom", path: ["parts", i, "qty"], message: `Part "${t(p.name)}" needs a whole-number quantity.` });
+        if (q === null || quantityProblem(q)) ctx.addIssue({ code: "custom", path: ["parts", i, "qty"], message: `Part "${t(p.name)}" needs a whole-number quantity from 1 to 100,000.` });
         if (t(p.line) && (cash(p.line) === null || (cash(p.line) ?? 0) < 0)) ctx.addIssue({ code: "custom", path: ["parts", i, "line"], message: `Part "${t(p.name)}" has a cost that is not a number.` });
       });
     }),

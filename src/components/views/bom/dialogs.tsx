@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { mapImport, money, parseAmount, type ImportRow } from "@/components/parts/bom";
+import { quantityProblem } from "@/lib/parts/quantity";
 import { parseCsvText } from "@/lib/csv";
 import { statusTone } from "@/lib/statusTones";
 import { ErrorLine } from "@/components/ui/states";
@@ -45,6 +46,8 @@ export function AddPartDialog({ open, onOpenChange, statuses, onCreate }: { open
     const line = parseAmount(f.line);
     if (!f.title.trim()) return setErr("A part needs a name.");
     if (qty === null) return setErr("Qty must be a number.");
+    const qtyBad = quantityProblem(qty);
+    if (qtyBad) return setErr(qtyBad);
     if (line === null) return setErr("Line cost must be a number.");
     setBusy(true);
     try {

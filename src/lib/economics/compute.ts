@@ -71,6 +71,8 @@ export const HREF = {
 
 const fm = (m: number, c: string) => formatMoney(m, c);
 const label = (p: PartInput) => (p.ref ? `${p.ref} ${p.title}` : p.title);
+/** The largest part line held in minor units: far below 2^53, so thousands of lines still add up exactly. */
+const MAX_LINE_MINOR = 1e15;
 const roundHalfUp = (x: number) => Math.round(Number(x.toPrecision(12)));
 
 /** The batch size as a whole number of at least one. */
@@ -111,6 +113,8 @@ export function partLine(p: PartInput, batchSize: number, currency: string): Cos
       return miss(`${ordered} ordered is below the smallest price break (${p.breaks[0].qty}) and there is no single-piece price. Enter a unit price.`);
     }
     const unitMinor = toMinor(unit, currency);
+    // Quantity and price are each capped, but their product can still pass what a minor-unit integer holds exactly: say so, add nothing.
+    if (p.qty * unitMinor > MAX_LINE_MINOR) return miss(`${p.qty} x ${fm(unitMinor, currency)} is too large to add up exactly. Check the quantity and the unit price.`);
     const amount = roundHalfUp(p.qty * unitMinor);
     const from = !hit && p.offer ? `, from ${p.offer.supplier}${p.offer.checkedAt ? `, checked ${p.offer.checkedAt}` : ""}` : !hit ? ", unit price entered" : ", price break entered";
     const how = hit
