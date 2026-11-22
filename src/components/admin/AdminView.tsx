@@ -21,6 +21,7 @@ import { ChannelsTab } from "./ChannelsTab";
 import { VoiceTab } from "./VoiceTab";
 import { VoiceoversTab } from "./VoiceoversTab";
 import { ServicesTab } from "./ServicesTab";
+import { SignInTab } from "./SignInTab";
 
 /** The sections whose settings are new powers (src/lib/admin/guard.ts): only the platform administrator changes them. */
 const NEW_POWERS = new Set<AdminTab>(["payments", "pricing", "email", "voice", "voiceovers"]);
@@ -59,6 +60,9 @@ export function AdminView() {
             ) : null}
             <TabsContent value="setup" className="max-w-5xl">
               <SetupTab onOpenTab={go} />
+            </TabsContent>
+            <TabsContent value="signin" className="max-w-4xl">
+              <SignInTab />
             </TabsContent>
             <TabsContent value="payments" className="max-w-4xl">
               <PaymentsTab />

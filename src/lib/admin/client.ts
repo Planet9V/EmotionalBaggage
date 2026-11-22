@@ -20,6 +20,7 @@ import type { ServiceStatus } from "@/lib/admin/overview";
 import type { CatalogueRead } from "@/lib/admin/plans";
 import type { PlanCatalogue, LimitKey } from "@/lib/admin/planSchema";
 import type { EnvLine } from "@/lib/admin/environment";
+import type { SignInStatus } from "@/lib/admin/signIn";
 import type { MailSettings, VoiceSettings } from "@/lib/admin/schemas";
 
 import type { AuditRow } from "@/lib/auditLog";
@@ -58,10 +59,11 @@ export type PrinterInput = { name?: string; family?: string; model?: string; ena
  * The sections of /admin, in the order of the sub-navigation. The section is kept in the address as ?tab=; the
  * first six keys are the ones links across the app already use, so they never change.
  */
-export const ADMIN_TABS = ["setup", "payments", "pricing", "email", "channels", "models", "voice", "voiceovers", "printers", "services", "credentials", "audit", "access"] as const;
+export const ADMIN_TABS = ["setup", "signin", "payments", "pricing", "email", "channels", "models", "voice", "voiceovers", "printers", "services", "credentials", "audit", "access"] as const;
 export type AdminTab = (typeof ADMIN_TABS)[number];
 export const ADMIN_TAB_LABEL: Record<AdminTab, string> = {
   setup: "Overview",
+  signin: "Sign-in",
   payments: "Payments",
   pricing: "Pricing and tiers",
   email: "Email",
@@ -155,6 +157,17 @@ export const usePayments = () => useQuery(queryOptions({ queryKey: adminKeys.pay
 export const useCredentials = () => useQuery(adminQueries.credentials());
 export const useCredentialsAudit = () => useQuery(adminQueries.credentialsAudit());
 export const useAdminSettings = () => useQuery(adminQueries.settings());
+export const useSignInStatus = () => useQuery<SignInStatus>({ queryKey: ["admin", "sign-in"], queryFn: ({ signal }) => api("/api/admin/sign-in", { signal }) });
+
+/** Changes to Admin, Sign-in (platform administrator only): the switch, or the addresses. */
+export function useSaveSignIn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (change: { enabled?: boolean; baseURL?: string | null; trustedOrigins?: string[] }) =>
+      api<SignInStatus>("/api/admin/sign-in", { method: "PUT", body: JSON.stringify(change) }),
+    onSuccess: (s) => qc.setQueryData(["admin", "sign-in"], s),
+  });
+}
 export const usePrinters = () => useQuery(adminQueries.printers());
 export const usePrinterFamilies = () => useQuery(adminQueries.families());
 

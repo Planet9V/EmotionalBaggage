@@ -4,6 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Pool } from "pg";
 import { GET as accessGet } from "@/app/api/admin/access/route";
+import { GET as signInGet, PUT as signInPut } from "@/app/api/admin/sign-in/route";
 import { platformAdminFromAuth2 } from "@/lib/admin/platformAdminHook";
 import { sessionCookieHeader } from "../api/helpers";
 import { cleanUp, newAccount, useAuth2, type Browser } from "./helpers";
@@ -71,3 +72,25 @@ describe("item 1: the platform administrator is the new sign-in's own, checked o
     }
   });
 });
+
+describe("item 3: Admin, Sign-in", () => {
+  it("the platform administrator sees and changes the addresses (audited); anyone else sees only that it is on", async () => {
+    const admin = await newAccount(route, "si-admin");
+    const plain = await newAccount(route, "si-plain");
+    await db.query('UPDATE "user" SET "platformAdmin" = true WHERE id = $1', [admin.userId]);
+    const status = async (cookie: string) => (await signInGet(asBrowser("/api/admin/sign-in", cookie))).json() as Promise<{ on: boolean; detail: { baseURL: string | null; trustedOrigins: string[] } | null; sharedConcepts: string }>;
+    const mine = await status(cookieOf(admin.b));
+    expect(mine.on).toBe(true);
+    expect(mine.detail?.baseURL).toBe("http://localhost:3322");
+    expect(mine.sharedConcepts).toMatch(/every signed-in account sees and changes the same concepts/);
+    expect((await status(cookieOf(plain.b))).detail).toBeNull();
+    expect((await signInPut(asBrowser("/api/admin/sign-in", cookieOf(plain.b), { method: "PUT", body: { trustedOrigins: ["https://x.example.test"] } }))).status).toBe(403);
+    const saved = await signInPut(asBrowser("/api/admin/sign-in", cookieOf(admin.b), { method: "PUT", body: { trustedOrigins: ["https://other.example.test"] } }));
+    expect(saved.status).toBe(200);
+    expect(((await saved.json()) as { detail: { trustedOrigins: string[] } }).detail.trustedOrigins).toEqual(["https://other.example.test"]);
+    const lines = await db.query<{ action: string }>("SELECT action FROM audit_log WHERE actor = $1 ORDER BY id", [admin.email]);
+    expect(lines.rows.map((r) => r.action)).toContain("platform.addresses_set");
+    await signInPut(asBrowser("/api/admin/sign-in", cookieOf(admin.b), { method: "PUT", body: { trustedOrigins: [] } }));
+  });
+});
+

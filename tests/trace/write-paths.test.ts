@@ -44,6 +44,8 @@ const WRITE_PATHS: Record<string, string> = {
   "admin/printers/route.ts": "self",
   "admin/plans/route.ts": "src/lib/admin/plans.ts",
   "admin/settings/route.ts": "src/lib/admin/settings.ts",
+  // the switch is recorded in the route; the addresses in src/lib/auth2/adminOps.ts setAddresses
+  "admin/sign-in/route.ts": "self",
   "admin/voice/options/route.ts": "none: lists the voices and models a speech server offers; nothing is saved",
   "admin/voiceovers/route.ts": "src/lib/voice/voiceovers.ts",
   "admin/test/route.ts": "src/lib/admin/connection.ts",
