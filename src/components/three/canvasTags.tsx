@@ -23,7 +23,7 @@ function show(el: HTMLElement | SVGElement) {
 }
 
 /** Inside the canvas: places the tags held by `host` (TagLayer) on their parts. */
-export function PartTags({ parts, host, shown }: { parts: TagPart[]; host: RefObject<HTMLDivElement | null>; shown?: ReadonlySet<number> | null }) {
+export function PartTags({ parts, host, shown, top = 14 }: { parts: TagPart[]; host: RefObject<HTMLDivElement | null>; shown?: ReadonlySet<number> | null; /** px kept clear at the top of the view */ top?: number }) {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -43,6 +43,8 @@ export function PartTags({ parts, host, shown }: { parts: TagPart[]; host: RefOb
       let visible = true;
       for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) visible = false;
       if (!visible) return;
+      // a shell is tagged on its tray (the first of its meshes), not halfway to a lifted lid
+      if (o.userData.isShell && sum.has(id)) return;
       o.getWorldPosition(v);
       const s = sum.get(id) ?? { x: 0, y: 0, z: 0, n: 0 };
       sum.set(id, { x: s.x + v.x, y: s.y + v.y, z: s.z + v.z, n: s.n + 1 });
@@ -53,7 +55,7 @@ export function PartTags({ parts, host, shown }: { parts: TagPart[]; host: RefOb
       if (v.z > 1) continue;
       at.set(id, { x: (v.x * 0.5 + 0.5) * size.width, y: (-v.y * 0.5 + 0.5) * size.height });
     }
-    const out = placeTags(at, spots.current, size);
+    const out = placeTags(at, spots.current, size, 0.18, undefined, top);
     spots.current = out.spots;
     for (const p of parts) {
       const el = root.querySelector<HTMLElement>(`[data-tag="${p.id}"]`);

@@ -39,6 +39,7 @@ const EngSchematic = dynamic(() => import("./EngSchematic"), { ssr: false, loadi
 const ITEMS = GET.groups.flatMap((g) => g.items.map((it) => ({ ...it, group: g.key })));
 /** how long the walk stays on each stage: the 3D stages long enough for one assembly or one print */
 const DWELL: Record<string, number> = { "01": 6000, "02": 6500, "03": 16000, "04": 12500, "05": 7000, "06": 8000, "07": 6500 };
+const HOLDS_SHOWN = 6;
 const PATH: Record<string, string> = { "01": GET_VIEWS.brief.path, "02": GET_VIEWS.claim.path, "03": GET_VIEWS.model.path, "04": GET_VIEWS.print.path, "05": GET_VIEWS.cost.path, "06": GET_VIEWS.ad.path, "07": GET_VIEWS.channel.path };
 
 export type GetProps = {
@@ -128,17 +129,19 @@ function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a can
 function Heading({ n, holds }: { n: string; holds: Record<string, string[]> }) {
   const it = ITEMS.find((x) => x.n === n)!;
   return (
-    <div className="lg:min-h-[9.75rem]">
+    <div className="lg:min-h-[8.25rem]">
       <p className="font-mono text-[11px] text-muted">
         <span className="text-link">{it.n}</span> {it.stage}
       </p>
       <h3 className="mt-1 text-xl font-semibold leading-snug tracking-tight text-primary sm:text-[1.375rem]">{it.get}</h3>
       <p className="mt-1.5 max-w-[78ch] text-sm leading-relaxed text-secondary">{it.also}</p>
+      {/* one row on a wide screen: the first sections, then how many more */}
       <p className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <span className="mr-1 font-mono text-[11px] text-muted">{GET.holds}</span>
-        {(holds[n] ?? []).map((s) => (
+        {(holds[n] ?? []).slice(0, HOLDS_SHOWN).map((s) => (
           <span key={s} className="rounded-md border border-hairline bg-subtle px-1.5 py-0.5 text-[11px] text-secondary">{s}</span>
         ))}
+        {(holds[n] ?? []).length > HOLDS_SHOWN ? <span className="font-mono text-[11px] text-muted">{GET.more((holds[n] ?? []).length - HOLDS_SHOWN)}</span> : null}
       </p>
     </div>
   );

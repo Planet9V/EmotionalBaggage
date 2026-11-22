@@ -121,7 +121,7 @@ export function GetBrief({ get }: { get: GetData }) {
 // ---- 02 Claims, and the proof check they feed
 
 // React Flow is loaded with the claims view only
-const ProofFlow = dynamic(() => import("./ProofFlow"), { ssr: false, loading: () => <div className="h-[340px]" /> });
+const ProofFlow = dynamic(() => import("./ProofFlow"), { ssr: false, loading: () => <div className="h-[380px]" /> });
 
 
 export function GetClaim({ get, market }: { get: GetData; market: MarketData }) {
@@ -183,7 +183,7 @@ const cents = (s: string) => {
 function Curve({ rows, at, currency }: { rows: { label: string; size: number; cost: number }[]; at: number; currency: string }) {
   const W = 360;
   const Hh = 150;
-  const pad = { l: 44, r: 14, t: 14, b: 26 };
+  const pad = { l: 44, r: 30, t: 18, b: 26 };
   const xs = rows.map((r) => Math.log10(r.size));
   const [x0, x1] = [Math.min(...xs), Math.max(...xs)];
   const ymax = Math.max(...rows.map((r) => r.cost)) * 1.08;
@@ -207,7 +207,7 @@ function Curve({ rows, at, currency }: { rows: { label: string; size: number; co
           <text x={X(Math.log10(r.size))} y={Hh - 8} textAnchor="middle" className={`font-mono text-[9.5px] ${i === at ? "fill-[#e8eaed]" : "fill-[#8b919b]"}`}>
             {r.label}
           </text>
-          <text x={X(Math.log10(r.size)) + (i === rows.length - 1 ? -6 : 6)} y={Y(r.cost) - 8} textAnchor={i === rows.length - 1 ? "end" : "start"} className="fill-[#e8eaed] font-mono text-[10px]">
+          <text x={X(Math.log10(r.size)) + (i === rows.length - 1 ? 4 : 6)} y={Y(r.cost) - (i === rows.length - 1 ? 10 : 8)} textAnchor={i === rows.length - 1 ? "end" : "start"} className="fill-[#e8eaed] font-mono text-[10px]">
             {formatMoney(r.cost, currency)}
           </text>
         </g>
@@ -350,15 +350,15 @@ export function GetAd({ market, active }: { market: MarketData; active: boolean 
             />
           </div>
           {/* the drafts as a stack of cards, the front one full size; the others sit behind it, in depth */}
-          <div className="relative mt-4 h-[230px] [perspective:1100px] sm:h-[210px]">
+          <div className="relative mt-4 h-[300px] [perspective:1100px] sm:h-[280px]">
             {drafts.map((a, i) => {
               const depth = (i - front + drafts.length) % drafts.length;
               return (
                 <article
                   key={a.text}
                   aria-hidden={depth !== 0}
-                  className="absolute inset-x-0 top-0 rounded-xl border border-white/12 bg-[#15171b] p-4 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)] transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none sm:p-5"
-                  style={{ transform: `translate3d(0, ${depth * 14}px, ${-depth * 60}px) rotateX(${depth ? 4 : 0}deg)`, opacity: depth > 2 ? 0 : 1 - depth * 0.32, zIndex: 10 - depth }}
+                  className="absolute inset-x-0 top-0 min-h-[190px] rounded-xl border border-white/12 bg-[#15171b] p-5 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)] transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none sm:p-5"
+                  style={{ transform: `translate3d(0, ${depth * 34}px, ${-depth * 90}px) rotateX(${depth ? 6 : 0}deg)`, opacity: depth > 2 ? 0 : 1 - depth * 0.3, zIndex: 10 - depth }}
                 >
                   <div className="flex items-center gap-2 font-mono text-[11px] text-muted">
                     <span className="text-dutchOrange-300">{c.of(i + 1, drafts.length)}</span>
@@ -368,7 +368,7 @@ export function GetAd({ market, active }: { market: MarketData; active: boolean 
                       <StatusPill status={a.status} />
                     </span>
                   </div>
-                  <p className="mt-3 text-lg font-semibold leading-snug tracking-tight text-primary sm:text-xl">&ldquo;{a.text}&rdquo;</p>
+                  <p className="mt-4 text-xl font-semibold leading-snug tracking-tight text-primary sm:text-2xl">&ldquo;{a.text}&rdquo;</p>
                   <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-secondary">
                     <span>{a.rule}</span>
                     <span>{a.length} characters</span>

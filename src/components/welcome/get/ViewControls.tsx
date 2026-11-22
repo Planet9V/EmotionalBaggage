@@ -67,7 +67,7 @@ export function Switch({ label, on, onChange, disabled }: { label: string; on: b
 }
 
 /** A value along a range, with its reading beside it in the mono type. */
-export function Range({ label, value, min, max, step = 1, onChange, readout, valueText, className = "" }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; readout: ReactNode; valueText: string; className?: string }) {
+export function Range({ label, value, min, max, step = 1, onChange, onTouch, readout, valueText, className = "" }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; /** the visitor has taken hold of it, even without changing the value */ onTouch?: () => void; readout: ReactNode; valueText: string; className?: string }) {
   return (
     <div className={`flex min-w-0 items-center gap-3 ${className}`}>
       <span className={`${LABEL} shrink-0`} aria-hidden>
@@ -79,6 +79,8 @@ export function Range({ label, value, min, max, step = 1, onChange, readout, val
         max={max}
         step={step}
         onValueChange={(v) => onChange(v[0] ?? min)}
+        onPointerDown={onTouch}
+        onKeyDown={onTouch}
         thumbLabel={label}
         thumbValueText={valueText}
         className="min-w-[7rem] flex-1 py-2 [&_[data-slot=slider-range]]:bg-dutchOrange [&_[data-slot=slider-thumb]]:border-dutchOrange [&_[data-slot=slider-thumb]]:focus-visible:ring-focus [&_[data-slot=slider-track]]:bg-white/12"
