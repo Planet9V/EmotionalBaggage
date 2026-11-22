@@ -7,7 +7,8 @@ import { ITEM_COLS, logEventIn, q, toItem, tx, type ItemRow } from "@/lib/db";
 import { body, HttpError, notFound, requireProject, route } from "@/lib/api/route";
 import { POSITIONING_FOCUS, positioningFingerprint } from "@/lib/market/critique";
 import { positioningLine } from "@/lib/market/positioning";
-import { checkProof, type ProofRow } from "@/lib/market/proof";
+import { checkProof } from "@/lib/market/proof";
+import { loadProofRows } from "@/lib/market/proofRows";
 import { MARKET, positioningData } from "@/lib/market/schemas";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -31,14 +32,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
   const reasoning = await getReasoning();
   if (!reasoning.ok) throw new HttpError(503, reasoning.reason);
 
-  const proofIds = (data.messages ?? []).flatMap((m) => m.proof.map((p) => p.itemId));
-  const proofRows = proofIds.length
-    ? await q<{ id: string; section: string; title: string; status: string; data: Record<string, unknown> }>(
-        "SELECT id, section, title, status, data FROM items WHERE project_id=$1 AND id = ANY($2::bigint[])",
-        [id, proofIds]
-      )
-    : [];
-  const byId = new Map<number, ProofRow>(proofRows.map((r) => [Number(r.id), { id: Number(r.id), section: r.section, title: r.title, status: r.status, data: r.data ?? {} }]));
+  const byId = await loadProofRows(null, id, data);
   const checked = checkProof(data.messages ?? [], byId);
   const shown = [
     `Positioning line: ${positioningLine(data, project.name)}`,

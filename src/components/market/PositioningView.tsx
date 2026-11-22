@@ -14,7 +14,7 @@ import { api, useItems } from "@/lib/client";
 import { keys, messageOf } from "@/lib/queries";
 import { positioningFingerprint } from "@/lib/market/critique";
 import { lineTitle, positioningLine } from "@/lib/market/positioning";
-import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
+import { checkProof, positioningProofGap, PROOF_NEEDED, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningData, type PositioningMessage, type ProofRef } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
@@ -72,7 +72,7 @@ export function PositioningView({ project, store }: ViewProps) {
       <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
         <h2 className="text-sm font-semibold text-primary">Draft the positioning</h2>
         <p className="text-sm text-secondary">
-          Reads your <Link className="text-link underline" href="/s/marketing/personas">personas</Link> and <Link className="text-link underline" href="/s/marketing/competitors">competitors</Link>. Each message is linked to proof the concept already holds: a verified claim, a passing test or a requirement. A message with no proof is flagged. Before you can approve it, the reviewer attacks it once and the critique sits beside it.
+          Reads your <Link className="text-link underline" href="/s/marketing/personas">personas</Link> and <Link className="text-link underline" href="/s/marketing/competitors">competitors</Link>. Each message is linked to proof the concept already holds: a verified claim, a passing test or a requirement. A positioning cannot be approved while a message has no proof. Before you can approve it, the reviewer also attacks it once and the critique sits beside it.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <GenerateButton pending={gen.pending} onClick={() => void draft()} disabled={model.configured === false || !!lacks}>Draft positioning</GenerateButton>
@@ -150,7 +150,8 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
     onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: keys.itemsOf(projectId) }), qc.invalidateQueries({ queryKey: keys.events(projectId) })]),
   });
   const needsReview = !critique || stale;
-  const unproven = proof.filter((p) => !p.hasProof).length;
+  // the server refuses the approval for the same reason (assertMarketChange)
+  const gap = positioningProofGap(d, rows);
 
   return (
     <li id={`positioning-${item.id}`} tabIndex={-1} className="scroll-mt-24">
@@ -189,13 +190,13 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
               <ApproveButton
                 item={item}
                 onSet={onApprove}
-                disabled={needsReview}
-                reason={stale ? "The words changed after the review. Ask the reviewer again." : "Ask the reviewer to attack it once first."}
+                disabled={needsReview || !!gap}
+                reason={!needsReview && gap ? `It cannot be approved: ${gap} ${PROOF_NEEDED}` : stale ? "The words changed after the review. Ask the reviewer again." : "Ask the reviewer to attack it once first."}
               />
               <Button size="sm" variant="outline" onClick={onEdit}><Pencil className="h-3.5 w-3.5" aria-hidden /> Edit</Button>
               <Button size="sm" variant="ghost" onClick={onDelete} aria-label="Delete this positioning"><Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete</Button>
             </div>
-            {unproven > 0 && item.status !== "approved" && <p className="text-xs text-warning">{unproven} of {proof.length} message{proof.length === 1 ? " has" : "s have"} no proof. You can still approve, knowing that.</p>}
+            {gap && <p className="text-xs text-warning">{item.status === "approved" ? "This approval no longer counts towards the Marketing gate" : "It cannot be approved yet"}: {gap} {PROOF_NEEDED}</p>}
           </div>
 
           <aside className="space-y-3 bg-subtle p-5" aria-label="The reviewer's critique">

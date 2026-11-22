@@ -12,6 +12,8 @@ import { keyOf } from "@/lib/trace/spec";
 import { reasonDetail } from "@/lib/trace/why";
 import { mirrorLinks } from "@/lib/trace/mirror";
 import { assertMarketChange } from "@/lib/market/rules";
+import { loadProofRows } from "@/lib/market/proofRows";
+import { MARKET } from "@/lib/market/schemas";
 import { assertAttackUntouched } from "@/lib/ai/drafts/attack";
 import { assertPrintChange } from "@/lib/slicing/rules";
 import { assertSendChange, handMarkedSent } from "@/lib/channels/rules";
@@ -32,8 +34,8 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
     assertStatus(was.section, b.status);
     // Claims: evidence only through /api/research/evidence; a hand-set status the evidence allows.
     assertClaimChange(was, b);
-    // Positioning: approval needs the reviewer's critique, which only its own route writes.
-    assertMarketChange(was, b);
+    // Positioning: approval needs the reviewer's critique, which only its own route writes, and proof for every message.
+    assertMarketChange(was, b, was.section === MARKET.positioning ? await loadProofRows(c, was.project_id, { ...was.data, ...(b.data ?? {}) }) : new Map());
     assertAttackUntouched(was.section, b.data);
     // Print jobs: slicing, sending and starting only through their own routes.
     assertPrintChange(was, b);

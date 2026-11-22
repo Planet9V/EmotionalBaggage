@@ -13,6 +13,7 @@ import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
 import { positioningFingerprint } from "@/lib/market/critique";
+import { positioningProofGap } from "@/lib/market/proof";
 import { effectiveAdRule, ruleComplete } from "@/lib/campaigns/adRule";
 import { buildProgress, EMPTY_EVIDENCE, lostEvidence, PASSED } from "@/lib/trace/builds";
 import { plural } from "@/lib/format";
@@ -142,13 +143,22 @@ export function contentProofCheck(rows: Item[], sections: string[], conceptName 
 export function positioningCheck(rows: Item[]): Computed {
   const base = "/s/marketing/positioning";
   const xs = rows.filter((r) => r.section === "marketing/positioning");
-  if (xs.some((r) => r.status === "approved" || r.status === "done")) return { met: true, detail: "The positioning is approved after the reviewer's attack.", action: "Nothing to do", href: base };
   if (!xs.length) return { met: false, detail: "No positioning yet.", action: "Draft the positioning with AI, from the personas and competitors", href: `${base}#draft-with-ai` };
+  // An approval carries the gate only while the positioning is proven: the same rule that lets it be approved.
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const gap = (r: Item) => positioningProofGap(r.data, byId);
+  const approved = xs.filter((r) => r.status === "approved" || r.status === "done");
+  if (approved.some((r) => !gap(r))) return { met: true, detail: "The positioning is approved after the reviewer's attack, and every message has proof.", action: "Nothing to do", href: base };
+  if (approved.length) {
+    const first = approved[0];
+    return { met: false, detail: `"${first.title}" is approved, but ${gap(first)}`, action: `Link proof to the messages of the positioning "${first.title}"`, href: `${base}#positioning-${first.id}` };
+  }
   const reviewed = (r: Item) => {
     const c = r.data?.critique as { text?: unknown; fingerprint?: unknown } | undefined;
     return !!c && typeof c.text === "string" && c.text.trim() !== "" && (typeof c.fingerprint !== "string" || c.fingerprint === positioningFingerprint(r.data ?? {}));
   };
   const ready = xs.find(reviewed);
+  if (ready && gap(ready)) return { met: false, detail: `The reviewer has attacked it, but ${gap(ready)}`, action: `Link proof to the messages of the positioning "${ready.title}"`, href: `${base}#positioning-${ready.id}` };
   if (ready) return { met: false, detail: "The reviewer has attacked it; it is not approved yet.", action: `Approve the positioning "${ready.title}"`, href: `${base}#positioning-${ready.id}` };
   const first = xs[0];
   return { met: false, detail: "The reviewer has not attacked it on its current words, so it cannot be approved yet.", action: `Ask the reviewer to attack the positioning "${first.title}"`, href: `${base}#positioning-${first.id}` };

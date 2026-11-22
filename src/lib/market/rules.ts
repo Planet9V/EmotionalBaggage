@@ -1,15 +1,19 @@
 // Rules the server enforces when a marketing row's status changes (called from PATCH /api/items/[id]).
 //
 // Positioning cannot be approved until the reviewer has attacked it once: the critique is stored
-// on the row, and the status follows only after it exists. Nothing else here blocks: a message
-// with no proof, or a competitor with no source, is flagged on screen and may still be approved.
+// on the row, and the status follows only after it exists. It also cannot be approved with no proof:
+// it needs a supporting message, and every message a link that counts as proof (positioningProofGap).
+// A competitor with no source is flagged on screen and may still be approved.
 import { HttpError } from "@/lib/api/route";
 import { positioningFingerprint } from "./critique";
+import { positioningProofGap, PROOF_NEEDED, type ProofRow } from "./proof";
 import { MARKET } from "./schemas";
 
 export function assertMarketChange(
   was: { section: string; status: string; data: Record<string, unknown> },
-  change: { data?: Record<string, unknown>; status?: string }
+  change: { data?: Record<string, unknown>; status?: string },
+  /** the rows the positioning's messages link to as proof (loadProofRows) */
+  proofRows: Map<number, ProofRow>
 ) {
   if (was.section !== MARKET.positioning) return;
   // The critique is written by its own route, never by hand: it is the reviewer's, not the author's.
@@ -27,6 +31,8 @@ export function assertMarketChange(
   if (typeof c.fingerprint === "string" && c.fingerprint !== positioningFingerprint(now)) {
     throw new HttpError(409, "The positioning changed after the reviewer attacked it. Ask the reviewer again before approving.");
   }
+  const gap = positioningProofGap(now, proofRows);
+  if (gap) throw new HttpError(409, `This positioning cannot be approved: ${gap} ${PROOF_NEEDED}`);
 }
 
 /** A new positioning row cannot start approved or carry a critique: both come only from the review flow. */

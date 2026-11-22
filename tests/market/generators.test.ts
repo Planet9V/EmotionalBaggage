@@ -296,6 +296,13 @@ describe("positioning (8.3)", () => {
     expect(sent).toContain("NO PROOF");
     expect(sent).toContain("unverified claim");
 
+    // attacked, but two of its three messages have no proof: still refused, naming the first
+    const unproven = await read<{ error: string }>(await approve());
+    expect(unproven.status).toBe(409);
+    expect(unproven.body.error).toMatch(/cannot be approved: 2 of 3 messages have no proof: "It is easy\."/);
+    // the unproven messages are taken out; the words changed, so the reviewer attacks it again
+    expect((await patchItem(json("PATCH", { data: { messages: [c.body.item.data.messages[0]] } }), ctx(String(ids.positioning)))).status).toBe(200);
+    expect((await critique(json("POST", { itemId: ids.positioning }), ctx(P))).status).toBe(200);
     expect((await approve()).status).toBe(200);
     // the words change: the critique no longer matches
     const edit = await patchItem(json("PATCH", { data: { forWhom: "someone else" } }), ctx(String(ids.positioning)));

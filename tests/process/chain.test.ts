@@ -4,9 +4,16 @@ import { describe, expect, it } from "vitest";
 import { processFor } from "@/lib/process/definitions";
 import { nextStep, type ProcessState } from "@/lib/process/evaluate";
 import type { Item } from "@/lib/types";
+import { VERIFIED } from "../research/verified";
 
 let id = 1;
 const row = (section: string, status: string, data: Record<string, unknown> = {}, title = `row ${id}`): Item => ({ id: id++, projectId: "p", section, title, body: "", data, status, sort: id });
+
+/** An approved positioning that carries the gate: one message, linked to a verified claim (the claim row comes with it). */
+const provenPositioning = (): Item[] => {
+  const claim = row("research/claims", "verified", VERIFIED, "Buyers want it");
+  return [claim, row("marketing/positioning", "approved", { messages: [{ text: "Buyers want it", proof: [{ itemId: claim.id, section: claim.section }] }] })];
+};
 
 const walk = (stage: string, type: string, steps: { add: Item[]; expect: { label: RegExp | string; href: RegExp | string } }[], facts: Record<string, unknown> = {}) => {
   const rows: Item[] = [];
@@ -38,10 +45,15 @@ describe("the Marketing chain", () => {
 
   it("an attacked positioning asks for approval, then the chain moves on to pricing and the rest in order", () => {
     const rows: Item[] = [row("marketing/personas", "approved"), row("marketing/competitors", "approved"), row("concept/press", "reviewed")];
-    const pos = row("marketing/positioning", "draft", { forWhom: "a", critique: { text: "Weak." } }, "Line");
+    const claim = row("research/claims", "verified", VERIFIED, "Buyers want it");
+    const unproven = row("marketing/positioning", "draft", { forWhom: "a", critique: { text: "Weak." } }, "Line");
+    const pos = { ...unproven, data: { ...unproven.data, messages: [{ text: "Buyers want it", proof: [{ itemId: claim.id, section: claim.section }] }] } };
     const state: ProcessState = { stage: "marketing", gates: [] };
     const next = () => nextStep(processFor("electronics"), state, rows, { name: "Thing" }, { links: rows.some((r) => r.title === "link") ? 1 : 0, results: rows.some((r) => r.title === "result") ? 1 : 0 });
-    rows.push(pos);
+    // attacked, but with no message tied to proof it cannot be approved: the next step says so
+    rows.push(unproven);
+    expect(next()).toMatchObject({ label: 'Link proof to the messages of the positioning "Line"', href: `/s/marketing/positioning#positioning-${pos.id}` });
+    rows.splice(rows.indexOf(unproven), 1, claim, pos);
     expect(next()).toMatchObject({ label: 'Approve the positioning "Line"', href: `/s/marketing/positioning#positioning-${pos.id}` });
     rows.push({ ...pos, id: id++, status: "approved" });
     const order: [string, string, Item][] = [
@@ -70,7 +82,7 @@ describe("the Marketing chain", () => {
     const rows: Item[] = [];
     const state: ProcessState = { stage: "marketing", gates: [] };
     for (const s of ["marketing/personas", "marketing/competitors", "marketing/pricing", "marketing/brand", "marketing/ads", "marketing/landing", "marketing/social", "marketing/announce"]) rows.push(row(s, "approved"));
-    rows.push(row("marketing/positioning", "approved"), row("concept/names", "chosen"), row("sales/listing", "draft"));
+    rows.push(...provenPositioning(), row("concept/names", "chosen"), row("sales/listing", "draft"));
     rows.push(row("marketing/campaigns", "planned", { kind: "plan", planTotalMinor: 5000 }));
     expect(nextStep(processFor("printed"), state, rows, {}, {})).toMatchObject({ label: "Set the share of the margin a campaign may spend in Campaigns", href: "/s/marketing/campaigns#campaign-budget" });
   });
@@ -123,7 +135,7 @@ describe("the Prototype chain", () => {
 
 describe("content rows: the next step names what stops the first draft", () => {
   const before = () => [
-    row("marketing/personas", "approved"), row("marketing/competitors", "approved"), row("marketing/positioning", "approved"),
+    row("marketing/personas", "approved"), row("marketing/competitors", "approved"), ...provenPositioning(),
     row("marketing/pricing", "approved"), row("concept/names", "chosen"), row("marketing/brand", "approved"),
   ];
   const state: ProcessState = { stage: "marketing", gates: [] };
@@ -148,8 +160,8 @@ describe("content rows: the next step names what stops the first draft", () => {
 describe("a check that needs a row elsewhere first", () => {
   it("the launch email is written from a reviewed press release: with none, the next step is the press release", () => {
     const state: ProcessState = { stage: "marketing", gates: [] };
-    const rows = ["marketing/personas", "marketing/competitors", "marketing/positioning", "marketing/pricing", "marketing/brand", "marketing/ads", "marketing/landing", "marketing/social"].map((s) => row(s, "approved"));
-    rows.push(row("concept/names", "chosen"), row("sales/listing", "draft"));
+    const rows = ["marketing/personas", "marketing/competitors", "marketing/pricing", "marketing/brand", "marketing/ads", "marketing/landing", "marketing/social"].map((s) => row(s, "approved"));
+    rows.push(...provenPositioning(), row("concept/names", "chosen"), row("sales/listing", "draft"));
     expect(nextStep(processFor("printed"), state, rows)).toMatchObject({ label: "Write the press release and mark it reviewed: the launch email is written from it", href: "/s/concept/press#draft-with-ai" });
     const press = row("concept/press", "draft", {}, "Launch");
     rows.push(press);

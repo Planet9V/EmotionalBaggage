@@ -301,20 +301,30 @@ describe("positioning", () => {
 
 describe("approval rules for positioning", () => {
   const was = (data: Record<string, unknown>, status = "draft") => ({ section: "marketing/positioning", status, data });
-  const reviewed = { forWhom: "x", messages: [], critique: { text: "weak", fingerprint: positioningFingerprint({ forWhom: "x", messages: [] }) } };
+  // every message of a positioning needs proof before it can be approved; this one links to a verified claim
+  const proof = new Map<number, ProofRow>([[1, { id: 1, section: "research/claims", title: "Claim A", status: "verified", data: VERIFIED }]]);
+  const words = { forWhom: "x", messages: [{ text: "It does A", proof: [{ itemId: 1, section: "research/claims" }] }] };
+  const reviewed = { ...words, critique: { text: "weak", fingerprint: positioningFingerprint(words) } };
   it("refuses approval without a critique", () => {
-    expect(() => assertMarketChange(was({ forWhom: "x" }), { status: "approved" })).toThrow(/attack this positioning once/);
+    expect(() => assertMarketChange(was({ forWhom: "x" }), { status: "approved" }, proof)).toThrow(/attack this positioning once/);
   });
   it("allows approval with a critique of these words", () => {
-    expect(() => assertMarketChange(was(reviewed), { status: "approved" })).not.toThrow();
+    expect(() => assertMarketChange(was(reviewed), { status: "approved" }, proof)).not.toThrow();
+  });
+  it("refuses approval with no proof: no message, a message with no link, or a link that proves nothing", () => {
+    const bare = { forWhom: "x", messages: [] };
+    expect(() => assertMarketChange(was({ ...bare, critique: { text: "weak", fingerprint: positioningFingerprint(bare) } }), { status: "approved" }, proof)).toThrow(/cannot be approved: it has no supporting message/);
+    expect(() => assertMarketChange(was(reviewed), { status: "approved" }, new Map())).toThrow(/1 of 1 message has no proof: "It does A"/);
+    const unlinked = { forWhom: "x", messages: [{ text: "It does B", proof: [] }] };
+    expect(() => assertMarketChange(was({ ...unlinked, critique: { text: "weak", fingerprint: positioningFingerprint(unlinked) } }), { status: "approved" }, proof)).toThrow(/no proof: "It does B"/);
   });
   it("refuses approval after the words changed, and an edit that leaves it approved", () => {
-    expect(() => assertMarketChange(was(reviewed), { status: "approved", data: { forWhom: "changed" } })).toThrow(/changed after/);
-    expect(() => assertMarketChange(was(reviewed, "approved"), { data: { forWhom: "changed" } })).toThrow(/changed after/);
-    expect(() => assertMarketChange(was(reviewed, "approved"), { data: { forWhom: "changed" }, status: "draft" })).not.toThrow();
+    expect(() => assertMarketChange(was(reviewed), { status: "approved", data: { forWhom: "changed" } }, proof)).toThrow(/changed after/);
+    expect(() => assertMarketChange(was(reviewed, "approved"), { data: { forWhom: "changed" } }, proof)).toThrow(/changed after/);
+    expect(() => assertMarketChange(was(reviewed, "approved"), { data: { forWhom: "changed" }, status: "draft" }, proof)).not.toThrow();
   });
   it("never lets the critique be written by hand", () => {
-    expect(() => assertMarketChange(was({}), { data: { critique: { text: "x" } } })).toThrow(/written by the reviewer/);
+    expect(() => assertMarketChange(was({}), { data: { critique: { text: "x" } } }, proof)).toThrow(/written by the reviewer/);
     expect(() => assertNewMarket({ section: "marketing/positioning", data: { critique: {} } })).toThrow();
     expect(() => assertNewMarket({ section: "marketing/positioning", status: "approved" })).toThrow();
     expect(() => assertNewMarket({ section: "marketing/personas", status: "approved" })).not.toThrow();

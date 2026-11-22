@@ -38,6 +38,8 @@ import { dataSchemaFor, STORE } from "@/lib/domain/schemas";
 import type { Item } from "@/lib/types";
 import { assertDraftAllowed, withFlags } from "@/lib/content/rules";
 import { assertMarketChange, assertNewMarket } from "@/lib/market/rules";
+import { loadProofRows } from "@/lib/market/proofRows";
+import { MARKET } from "@/lib/market/schemas";
 import type { Draft, DraftOp, DraftSource, DraftStatus } from "./shared";
 import { assertRoomFor } from "@/lib/api/limits";
 import { demoteBrokenBuilds, relinkKey } from "@/lib/trace/links";
@@ -229,7 +231,7 @@ async function approveIn(c: PoolClient, d: DraftDbRow, why = ""): Promise<Approv
   // The marketing rules hold on this path too: a drafted positioning cannot arrive approved or carrying a
   // critique (only the reviewer writes one), and a replacement keeps the critique rule.
   if (op.op === "add") assertNewMarket({ section: d.target_store, data: fields.data, status: approvedStatus(d.target_store) });
-  if (op.op === "replace" && before) assertMarketChange({ section: before.section, status: before.status, data: before.data }, { data: fields.data });
+  if (op.op === "replace" && before) assertMarketChange({ section: before.section, status: before.status, data: before.data }, { data: fields.data }, before.section === MARKET.positioning ? await loadProofRows(c, d.project_id, { ...before.data, ...fields.data }) : new Map());
 
   if (op.op === "remove") {
     const gone = await c.query<ItemRow>(`DELETE FROM items WHERE id=$1 RETURNING ${ITEM_COLS}`, [d.item_id]);
