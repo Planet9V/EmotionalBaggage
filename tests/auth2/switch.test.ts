@@ -87,9 +87,7 @@ describe("the switch is a setting in PostgreSQL; AUTH2 in the environment only o
   const setSwitch = async (on: boolean | null) => {
     const { ownerPool, ready } = await import("@/lib/db");
     await ready();
-    if (on === null) await ownerPool().query("DELETE FROM settings WHERE key = 'auth2.enabled'");
-    else await ownerPool().query("INSERT INTO settings (key, value) VALUES ('auth2.enabled', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [JSON.stringify(on)]);
-    (await import("@/lib/auth2/config")).forgetAuth2Switch();
+    await (await import("@/lib/auth2/config")).writeAuth2Setting(ownerPool(), "auth2.enabled", on);
   };
   afterAll(async () => {
     await setSwitch(null);
@@ -128,5 +126,23 @@ describe("the switch is a setting in PostgreSQL; AUTH2 in the environment only o
     expect(await auth2Enabled()).toBe(true);
     delete process.env.AUTH2;
     expect(await auth2Enabled()).toBe(false);
+  });
+
+  it("F6: a value written to the shared settings table cannot turn it on", async () => {
+    delete process.env.AUTH2;
+    await setSwitch(null);
+    const { ownerPool } = await import("@/lib/db");
+    const { setSetting } = await import("@/lib/settings");
+    // What an existing settings route, or the request role, could write: it is not where the switch is read.
+    await setSetting("auth2.enabled", true);
+    await setSetting("auth2.baseUrl", "https://evil.example.test");
+    try {
+      const c = await import("@/lib/auth2/config");
+      c.forgetAuth2Switch();
+      expect(await c.auth2Enabled()).toBe(false);
+      expect((await c.resolveAuth2Config(ownerPool())).baseURL).not.toBe("https://evil.example.test");
+    } finally {
+      await ownerPool().query("DELETE FROM settings WHERE key LIKE 'auth2.%'");
+    }
   });
 });

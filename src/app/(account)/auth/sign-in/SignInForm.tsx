@@ -31,6 +31,7 @@ export function SignInForm({ next }: { next: string }) {
     if (!r.ok) {
       setValue("password", "");
       if (r.code === "EMAIL_NOT_VERIFIED") setUnconfirmed(v.email);
+      if (r.code === "REENROL_PROOF_REQUIRED") return router.push(`/auth/re-enrol?email=${encodeURIComponent(v.email)}`);
       return setError("root", { message: r.error });
     }
     if (r.data?.twoFactorRedirect) return router.push(`/auth/two-factor?next=${encodeURIComponent(next)}`);

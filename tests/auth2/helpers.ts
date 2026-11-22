@@ -17,6 +17,7 @@ export async function useAuth2(opts: { rateLimit?: boolean } = {}) {
   const dbm = await import("@/lib/db");
   await dbm.ready();
   const db = dbm.ownerPool();
+  await installDone(db);
   const { makeAuth } = await import("@/lib/auth2/auth");
   const auth = makeAuth(db, { mail: { send: async (m) => void sent.push(m) }, rateLimit: opts.rateLimit });
   (globalThis as unknown as { __c2rAuth2?: unknown }).__c2rAuth2 = { db, auth };
@@ -160,4 +161,10 @@ export async function addMember(db: Pool, workspaceId: string, userId: string, r
 /** The audit lines written for one actor, newest last. */
 export async function auditOf(db: Pool, actor: string) {
   return (await db.query<{ action: string; summary: string }>("SELECT action, summary FROM audit_log WHERE actor = $1 ORDER BY id", [actor])).rows;
+}
+
+/** Marks the install as set up (its first-run owner made), so sign-up is open; tests/auth2/firstrun.test.ts undoes it. */
+export async function installDone(db: Pool) {
+  await db.query("INSERT INTO auth2_install (id, claimed_at, completed_at) VALUES (true, now(), now()) ON CONFLICT (id) DO UPDATE SET completed_at = COALESCE(auth2_install.completed_at, now())");
+  (await import("@/lib/auth2/firstRun")).forgetFirstRun();
 }

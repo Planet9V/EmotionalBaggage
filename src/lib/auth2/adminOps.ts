@@ -7,9 +7,13 @@
  * Every change writes one audit line naming the administrator and the account or workspace it touched; no line
  * ever holds a password, token or link.
  *
- * Rules that hold here as everywhere: the last platform administrator can never lose the flag, be disabled or be
- * deleted (all administrators' rows are locked before counting, so two administrators removing each other at once
- * leave one); every account keeps a workspace (a person left without one gets a new one of their own); every
+ * The actor is checked twice: before anything (a quick refusal), and again INSIDE the transaction after its locks
+ * (review F7), so an administrator demoted or disabled while a change of theirs waits on a lock does not make it.
+ *
+ * Rules that hold here as everywhere: the last enabled platform administrator can never lose the flag, be disabled
+ * or be deleted (all administrators' rows are locked before counting, so two administrators removing each other at
+ * once leave one; the rule applies only when the target is itself an enabled administrator, review N11); every
+ * account keeps a workspace (a person left without one gets a new one of their own); every
  * workspace keeps an owner.
  */
 import { createHash, randomBytes } from "node:crypto";
@@ -17,10 +21,11 @@ import type { Pool, PoolClient } from "pg";
 import { hashPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { auditIn } from "@/lib/db";
 import type { Auth2 } from "./auth";
-import { AUTH2_PAGES } from "./config";
-import { cleanName, cleanWorkspaceName } from "./guards";
+import { AUTH2_PAGES, AUTH2_SETTING, writeAuth2Setting } from "./config";
+import { resetAndRequireProof } from "./workspaces/twoFactor";
+import { cleanEmail, cleanName, cleanWorkspaceName } from "./guards";
 import { isPlatformAdmin } from "./platformAdmin";
-import { MAX_SEATS, asRole, isRole, type Role } from "./workspaces/permissions";
+import { MAX_SEATS, asRole, isRole } from "./workspaces/permissions";
 import * as store from "./workspaces/store";
 import { inTx, newId, refuse } from "./workspaces/store";
 
@@ -44,12 +49,6 @@ export type UserState = {
  *  links are made with (resolveAuth2Config().baseURL). */
 type Ctx = { db: Pool; auth: Auth2; actorId: string; baseURL: string };
 
-const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/;
-function cleanEmail(raw: unknown): string {
-  const e = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (!e || e.length > 254 || !EMAIL.test(e)) throw refuse("BAD_REQUEST", "INVALID_EMAIL", "Enter a whole email address, such as name@example.com.");
-  return e;
-}
 function checkPassword(p: unknown): string {
   if (typeof p !== "string" || p.length < MIN_PASSWORD_LENGTH) throw refuse("BAD_REQUEST", "PASSWORD_TOO_SHORT", `The password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
   if (p.length > MAX_PASSWORD) throw refuse("BAD_REQUEST", "PASSWORD_TOO_LONG", `The password must be at most ${MAX_PASSWORD} characters.`);
@@ -64,15 +63,15 @@ async function admin(ctx: Ctx): Promise<string> {
 
 async function userRow(c: Pool | PoolClient, userId: unknown, lock = false) {
   if (typeof userId !== "string" || !userId || userId.length > 100) throw refuse("NOT_FOUND", "USER_NOT_FOUND", "That account was not found.");
-  const r = await c.query<{ id: string; email: string; name: string; platformAdmin: boolean }>(
-    `SELECT id, email, name, "platformAdmin" FROM "user" WHERE id = $1${lock ? " FOR UPDATE" : ""}`,
+  const r = await c.query<{ id: string; email: string; name: string; platformAdmin: boolean; enabledAdmin: boolean }>(
+    `SELECT id, email, name, "platformAdmin", "platformAdmin" AND "disabledAt" IS NULL AS "enabledAdmin" FROM "user" WHERE id = $1${lock ? " FOR UPDATE" : ""}`,
     [userId]
   );
   if (!r.rows[0]) throw refuse("NOT_FOUND", "USER_NOT_FOUND", "That account was not found.");
   return r.rows[0];
 }
 
-/** Locks every platform administrator's row and answers how many there are (not disabled). */
+/** Locks every platform administrator's row (in id order) and answers how many are enabled. */
 async function lockAdmins(c: PoolClient): Promise<number> {
   const r = await c.query<{ id: string; disabledAt: Date | null }>(`SELECT id, "disabledAt" FROM "user" WHERE "platformAdmin" ORDER BY id FOR UPDATE`);
   return r.rows.filter((x) => !x.disabledAt).length;
@@ -88,6 +87,17 @@ async function endSessions(c: PoolClient, userId: string) {
 
 export function adminOps(ctx: Ctx) {
   const { db } = ctx;
+  /** The actor, checked again inside the transaction after its locks (review F7). */
+  const still = (c: PoolClient) => store.forPlatformAdmin(ctx.actorId)(c, "");
+  const guard = store.forPlatformAdmin(ctx.actorId);
+  /** A transaction that starts by locking the actor's row and re-checking it. */
+  // Platform administration is rare: one change at a time across the install, so two administrators acting on each
+  // other's rows cannot deadlock.
+  const tx = <T>(fn: (c: PoolClient) => Promise<T>) => inTx(db, async (c) => {
+    await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
+    await still(c);
+    return fn(c);
+  });
   const audit = (c: PoolClient, actor: string, action: string, summary: string, detail: Record<string, unknown>) => auditIn(c, { actor, action: `platform.${action}`, summary, detail });
 
   return {
@@ -114,19 +124,23 @@ export function adminOps(ctx: Ctx) {
       const email = cleanEmail(input.email);
       const name = cleanName(input.name);
       const password = input.password === undefined ? null : checkPassword(input.password);
-      const taken = await db.query('SELECT 1 FROM "user" WHERE lower(email) = $1', [email]);
-      if (taken.rowCount) throw refuse("CONFLICT", "USER_EXISTS", "An account with that address exists already.");
-      const ac = await ctx.auth.$context;
-      const user = await ac.internalAdapter.createUser({ email, name, emailVerified: input.confirmed === true }, { method: "email-password" });
-      if (password) await ac.internalAdapter.linkAccount({ userId: user.id, providerId: "credential", accountId: user.id, password: await hashPassword(password) });
-      await inTx(db, (c) => audit(c, actor, "user_created", `Created the account ${email}${input.confirmed ? ", confirmed" : ""}${password ? ", with a password" : ", without a password"}`, { userId: user.id }));
-      return { id: user.id };
+      const hash = password ? await hashPassword(password) : null;
+      return tx(async (c) => {
+        const taken = await c.query('SELECT 1 FROM "user" WHERE lower(email) = $1', [email]);
+        if (taken.rowCount) throw refuse("CONFLICT", "USER_EXISTS", "An account with that address exists already.");
+        const id = newId();
+        await c.query(`INSERT INTO "user" (id, name, email, "emailVerified", "createdAt", "updatedAt", "twoFactorEnabled") VALUES ($1, $2, $3, $4, now(), now(), false)`, [id, name, email, input.confirmed === true]);
+        if (hash) await c.query(`INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt") VALUES ($1, $2, 'credential', $2, $3, now(), now())`, [newId(), id, hash]);
+        await store.createPersonal(c, { id, name, email });
+        await audit(c, actor, "user_created", `Created the account ${email}${input.confirmed ? ", confirmed" : ""}${password ? ", with a password" : ", without a password"}`, { userId: id });
+        return { id };
+      });
     },
 
     /** Confirms an address without sending anything (for "no mail" mode, or a person who cannot receive mail). */
     async confirmEmail(userId: unknown) {
       const actor = await admin(ctx);
-      await inTx(db, async (c) => {
+      await tx(async (c) => {
         const u = await userRow(c, userId, true);
         await c.query('UPDATE "user" SET "emailVerified" = true, "updatedAt" = now() WHERE id = $1', [u.id]);
         await audit(c, actor, "email_confirmed", `Confirmed the address of ${u.email} (no email sent)`, { userId: u.id });
@@ -138,7 +152,7 @@ export function adminOps(ctx: Ctx) {
       const actor = await admin(ctx);
       const p = checkPassword(password);
       const hash = await hashPassword(p);
-      await inTx(db, async (c) => {
+      await tx(async (c) => {
         const u = await userRow(c, userId, true);
         const r = await c.query(`UPDATE account SET password = $2, "updatedAt" = now() WHERE "userId" = $1 AND "providerId" = 'credential'`, [u.id, hash]);
         if (!r.rowCount) {
@@ -152,21 +166,25 @@ export function adminOps(ctx: Ctx) {
     /** Requires two-factor of one person, whatever their workspaces say (or stops requiring it at this level). */
     async setTwoFactorRequired(userId: unknown, required: boolean) {
       const actor = await admin(ctx);
-      await inTx(db, async (c) => {
+      await tx(async (c) => {
         const u = await userRow(c, userId, true);
         await c.query('UPDATE "user" SET "twoFactorRequired" = $2 WHERE id = $1', [u.id, required]);
         await audit(c, actor, required ? "two_factor_required" : "two_factor_not_required", `${required ? "Required" : "Stopped requiring"} two-step sign-in of ${u.email}`, { userId: u.id });
       });
     },
 
-    /** Removes the authenticator app and recovery codes and ends every session; set up again if still required. */
-    async resetTwoFactor(userId: unknown) {
+    /**
+     * Removes the authenticator app and recovery codes and ends every session. As after any reset by someone else
+     * (review B4), the password alone then starts no session: answers a one-time code, shown only now, for the
+     * administrator to hand to the person, who enters it with their password at /auth/re-enrol.
+     */
+    async resetTwoFactor(userId: unknown): Promise<{ code: string }> {
       const actor = await admin(ctx);
-      await inTx(db, async (c) => {
+      return tx(async (c) => {
         const u = await userRow(c, userId, true);
-        await clearTwoFactor(c, u.id);
-        await endSessions(c, u.id);
-        await audit(c, actor, "two_factor_reset", `Reset the two-step sign-in of ${u.email}: authenticator app and recovery codes removed, sessions ended`, { userId: u.id });
+        const code = await resetAndRequireProof(c, u.id, actor, "code");
+        await audit(c, actor, "two_factor_reset", `Reset the two-step sign-in of ${u.email}: authenticator app and recovery codes removed, sessions ended, a one-time code handed to the administrator`, { userId: u.id });
+        return { code };
       });
     },
 
@@ -174,7 +192,7 @@ export function adminOps(ctx: Ctx) {
      *  A workspace that requires it will still ask for it at the next sign-in. */
     async disableTwoFactor(userId: unknown) {
       const actor = await admin(ctx);
-      await inTx(db, async (c) => {
+      await tx(async (c) => {
         const u = await userRow(c, userId, true);
         await clearTwoFactor(c, u.id);
         await c.query('UPDATE "user" SET "twoFactorRequired" = false WHERE id = $1', [u.id]);
@@ -187,9 +205,12 @@ export function adminOps(ctx: Ctx) {
     async setDisabled(userId: unknown, disabled: boolean) {
       const actor = await admin(ctx);
       await inTx(db, async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
+        // All administrators' rows (in id order), then the actor again.
         const n = await lockAdmins(c);
+        await still(c);
         const u = await userRow(c, userId, true);
-        if (disabled && u.platformAdmin && n <= 1) throw lastAdmin();
+        if (disabled && u.enabledAdmin && n <= 1) throw lastAdmin();
         await c.query(`UPDATE "user" SET "disabledAt" = ${disabled ? "COALESCE(\"disabledAt\", now())" : "NULL"} WHERE id = $1`, [u.id]);
         if (disabled) await endSessions(c, u.id);
         await audit(c, actor, disabled ? "user_disabled" : "user_enabled", `${disabled ? "Disabled" : "Enabled again"} the account ${u.email}`, { userId: u.id });
@@ -200,9 +221,12 @@ export function adminOps(ctx: Ctx) {
     async setPlatformAdmin(userId: unknown, on: boolean) {
       const actor = await admin(ctx);
       await inTx(db, async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
+        // All administrators' rows (in id order), then the actor again.
         const n = await lockAdmins(c);
+        await still(c);
         const u = await userRow(c, userId, true);
-        if (!on && u.platformAdmin && n <= 1) throw lastAdmin();
+        if (!on && u.enabledAdmin && n <= 1) throw lastAdmin();
         await c.query('UPDATE "user" SET "platformAdmin" = $2 WHERE id = $1', [u.id, on]);
         await audit(c, actor, on ? "admin_granted" : "admin_removed", `${on ? "Made" : "Stopped"} ${u.email} ${on ? "a" : "being a"} platform administrator`, { userId: u.id });
       });
@@ -216,9 +240,12 @@ export function adminOps(ctx: Ctx) {
     async deleteUser(userId: unknown, opts: { transfer?: Record<string, string>; deleteWorkspaces?: boolean } = {}) {
       const actor = await admin(ctx);
       await inTx(db, async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
+        // All administrators' rows (in id order), then the actor again.
         const n = await lockAdmins(c);
+        await still(c);
         const u = await userRow(c, userId, true);
-        if (u.platformAdmin && n <= 1) throw lastAdmin();
+        if (u.enabledAdmin && n <= 1) throw lastAdmin();
         const sole = await c.query<{ id: string; name: string }>(
           `SELECT o.id, o.name FROM member m JOIN organization o ON o.id = m."organizationId"
             WHERE m."userId" = $1 AND m.role LIKE '%owner%'
@@ -266,31 +293,57 @@ export function adminOps(ctx: Ctx) {
       });
     },
 
+    /**
+     * The address people open the installation at, and other addresses forms may come from (review B1): stored in
+     * the owner-only settings, used at once. null clears the base address (production then waits for the first-run
+     * page again only if no owner exists; otherwise sign-in answers 503 until it is set again).
+     */
+    async setAddresses(input: { baseURL?: unknown; trustedOrigins?: unknown }) {
+      const actor = await admin(ctx);
+      const origin = (v: unknown, what: string) => {
+        try {
+          if (typeof v !== "string" || !v.isWellFormed()) throw new Error("text");
+          const u = new URL(v);
+          if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("scheme");
+          return u.origin;
+        } catch {
+          throw refuse("BAD_REQUEST", "INVALID_ADDRESS", `${what} is not an address, for example https://app.example.com.`);
+        }
+      };
+      const base = input.baseURL === undefined ? undefined : input.baseURL === null ? null : origin(input.baseURL, "The address");
+      const more = input.trustedOrigins === undefined ? undefined : Array.isArray(input.trustedOrigins) ? input.trustedOrigins.slice(0, 20).map((o) => origin(o, "An other address")) : [];
+      await tx(async (c) => {
+        if (base !== undefined) await writeAuth2Setting(c, AUTH2_SETTING.baseUrl, base, actor);
+        if (more !== undefined) await writeAuth2Setting(c, AUTH2_SETTING.trustedOrigins, more.length ? [...new Set(more)] : null, actor);
+        await audit(c, actor, "addresses_set", `Set the installation's address${base !== undefined ? ` to ${base ?? "(none)"}` : ""}${more !== undefined ? `; other addresses: ${more.join(", ") || "(none)"}` : ""}`, { baseURL: base, trustedOrigins: more });
+      });
+    },
+
     // --- workspaces ----------------------------------------------------------------------------------------------
 
     async createOrganization(name: unknown, ownerUserId: unknown): Promise<{ id: string }> {
       const actor = await admin(ctx);
       const clean = cleanWorkspaceName(name);
       const owner = await userRow(db, ownerUserId);
-      return { id: await store.createWorkspaceFor(db, actor, owner, clean) };
+      return { id: await store.createWorkspaceFor(db, actor, owner, clean, guard) };
     },
 
     async renameOrganization(workspaceId: string, name: unknown) {
       const actor = await admin(ctx);
       await existing(db, workspaceId);
-      await store.renameWorkspace(db, actor, workspaceId, cleanWorkspaceName(name));
+      await store.renameWorkspace(db, actor, workspaceId, cleanWorkspaceName(name), guard);
     },
 
     async deleteOrganization(workspaceId: string) {
       const actor = await admin(ctx);
       await existing(db, workspaceId);
-      await store.deleteWorkspace(db, { id: ctx.actorId, email: actor }, workspaceId, { platformAdmin: true });
+      await store.deleteWorkspace(db, { id: ctx.actorId, email: actor }, workspaceId, guard, { platformAdmin: true });
     },
 
     async setOrganizationTwoFactor(workspaceId: string, required: boolean) {
       const actor = await admin(ctx);
       const name = await existing(db, workspaceId);
-      await inTx(db, async (c) => {
+      await tx(async (c) => {
         await c.query(
           `INSERT INTO auth2_workspace_policy (organization_id, two_factor_required, updated_at, updated_by) VALUES ($1, $2, now(), $3)
            ON CONFLICT (organization_id) DO UPDATE SET two_factor_required = EXCLUDED.two_factor_required, updated_at = now(), updated_by = EXCLUDED.updated_by`,
@@ -304,7 +357,7 @@ export function adminOps(ctx: Ctx) {
     async addMember(workspaceId: string, userId: unknown, role: unknown): Promise<{ memberId: string }> {
       const actor = await admin(ctx);
       if (!isRole(role)) throw refuse("BAD_REQUEST", "INVALID_ROLE", "Choose owner, admin or member.");
-      return inTx(db, async (c) => {
+      return tx(async (c) => {
         const name = await store.lockWorkspace(c, workspaceId);
         const u = await userRow(c, userId);
         const already = await c.query('SELECT 1 FROM member WHERE "organizationId" = $1 AND "userId" = $2', [workspaceId, u.id]);
@@ -322,13 +375,13 @@ export function adminOps(ctx: Ctx) {
       const actor = await admin(ctx);
       if (!isRole(role)) throw refuse("BAD_REQUEST", "INVALID_ROLE", "Choose owner, admin or member.");
       await existing(db, workspaceId);
-      await store.changeRole(db, actor, workspaceId, memberId, role as Role, () => true);
+      await store.changeRole(db, actor, workspaceId, memberId, role, guard);
     },
 
     async removeMember(workspaceId: string, memberId: string) {
       const actor = await admin(ctx);
       await existing(db, workspaceId);
-      await store.removeMember(db, actor, workspaceId, memberId, () => true);
+      await store.removeMember(db, actor, workspaceId, memberId, guard);
     },
 
     /**
@@ -340,7 +393,7 @@ export function adminOps(ctx: Ctx) {
       const to = cleanEmail(email);
       if (!isRole(role)) throw refuse("BAD_REQUEST", "INVALID_ROLE", "Choose owner, admin or member.");
       const token = randomBytes(32).toString("base64url");
-      const id = await inTx(db, async (c) => {
+      const id = await tx(async (c) => {
         const name = await store.lockWorkspace(c, workspaceId);
         const member = await c.query(`SELECT 1 FROM member m JOIN "user" u ON u.id = m."userId" WHERE m."organizationId" = $1 AND lower(u.email) = $2`, [workspaceId, to]);
         if (member.rowCount) throw refuse("CONFLICT", "ALREADY_MEMBER", "That person is a member of this workspace already.");
@@ -351,7 +404,7 @@ export function adminOps(ctx: Ctx) {
           `INSERT INTO invitation (id, "organizationId", email, role, status, "expiresAt", "createdAt", "inviterId") VALUES ($1, $2, $3, $4, 'pending', now() + make_interval(hours => $5), now(), $6)`,
           [id, workspaceId, to, asRole(role), INVITATION_HOURS, ctx.actorId]
         );
-        await c.query("INSERT INTO auth2_invitation_tokens (invitation_id, token_hash) VALUES ($1, $2)", [id, createHash("sha256").update(token, "utf8").digest("base64url")]);
+        await c.query("INSERT INTO auth2_invitation_tokens (invitation_id, token_hash, by_platform_admin) VALUES ($1, $2, true)", [id, createHash("sha256").update(token, "utf8").digest("base64url")]);
         await audit(c, actor, "invitation_created", `Made an invitation for ${to} to "${name}" as ${role}; the link was handed to the administrator`, { workspaceId, invitationId: id });
         return id;
       });

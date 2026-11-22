@@ -54,9 +54,30 @@ export function auth2ClientAddress(req: Request, proxies: BlockList = trustedPro
   return isIP(own) ? own : "";
 }
 
-/** The same request, with the address above as the only one Better Auth may read. */
+/**
+ * The address as it is counted (review B5): an IPv4 address as it is; an IPv6 address by its /64 network (written as
+ * that network's first address, so it is still a valid address), because one subscriber is usually given a whole
+ * /64 and could otherwise count as billions of clients.
+ */
+export function clientBucket(addr: string): string {
+  if (isIP(addr) !== 6) return addr;
+  let a = addr.toLowerCase().split("%")[0];
+  // An IPv4 tail (::ffff:1.2.3.4 and the like) as two groups.
+  const v4 = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(a);
+  if (v4) {
+    const [x, y, z, w] = v4.slice(1).map(Number);
+    a = a.slice(0, v4.index) + `${((x << 8) | y).toString(16)}:${((z << 8) | w).toString(16)}`;
+  }
+  const [head, tail] = a.split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail ? tail.split(":") : [];
+  const groups = tail === undefined ? h : [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
+  return `${groups.slice(0, 4).map((g) => parseInt(g || "0", 16).toString(16)).join(":")}::`;
+}
+
+/** The same request, with the address above (by its /64 for IPv6) as the only one Better Auth and the waits read. */
 export function withClientAddress(req: Request): Request {
   const headers = new Headers(req.headers);
-  headers.set(CLIENT_ADDRESS_HEADER, auth2ClientAddress(req));
+  headers.set(CLIENT_ADDRESS_HEADER, clientBucket(auth2ClientAddress(req)));
   return new Request(req, { headers });
 }

@@ -13,20 +13,29 @@ import { NextResponse } from "next/server";
 import { route } from "@/lib/api/route";
 import { withClientAddress } from "@/lib/auth2/clientAddress";
 import { auth2Enabled } from "@/lib/auth2/config";
-import { createOwner } from "@/lib/auth2/firstRun";
+import { createOwner, firstRunOpen } from "@/lib/auth2/firstRun";
 import { auth2, SetupRequired } from "@/lib/auth2/server";
 import { ownerPool, ready } from "@/lib/db";
 
 const FIRST_RUN = "/api/auth2/first-run/owner";
+/** Ways in that wait until the owner exists (review B3): nobody slips in before the first-run step. */
+const AFTER_SET_UP = new Set(["/sign-up/email", "/request-password-reset", "/reset-password", "/send-verification-email", "/workspace/invitation/accept"].map((p) => `/api/auth2${p}`));
+const notSetUp = () =>
+  NextResponse.json({ code: "SETUP_REQUIRED", error: "This installation is not set up yet: its owner has to be created first, on the first-run page." }, { status: 503 });
 
 const handle = route.open(
   async (req: Request) => {
     if (!(await auth2Enabled())) return NextResponse.json({ error: "Not found." }, { status: 404 });
     // The first-run owner (src/lib/auth2/firstRun.ts) is answered before the instance is built: in production it
     // stores the base address the instance needs.
-    if (req.method === "POST" && new URL(req.url).pathname === FIRST_RUN) {
+    const path = new URL(req.url).pathname;
+    if (req.method === "POST" && path === FIRST_RUN) {
       await ready();
       return createOwner(ownerPool(), withClientAddress(req), { build: auth2 });
+    }
+    if (AFTER_SET_UP.has(path)) {
+      await ready();
+      if (await firstRunOpen(ownerPool())) return notSetUp();
     }
     try {
       return (await auth2()).handler(withClientAddress(req));

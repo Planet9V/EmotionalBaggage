@@ -11,6 +11,10 @@
  * Each change locks the rows it reasons about (the user, or the workspace) first, so two requests at once cannot
  * both pass a check that only one of them may pass.
  *
+ * The actor is checked again INSIDE each transaction, after the locks (review F7, N10): every change that can alter
+ * a role takes the workspace's row lock first, so the role re-read there (a Guard) is the one in force when the
+ * change commits. A demoted or removed actor's change in flight is refused.
+ *
  * A session's active workspace is fixed wherever it could go stale: after a removal, a departure or a deletion,
  * every session that named that workspace is moved to the person's first remaining one, and activeWorkspace()
  * repairs a session that names none (the trial found a refused switch cleared it).
@@ -19,7 +23,7 @@ import { randomBytes } from "node:crypto";
 import { APIError } from "better-auth/api";
 import type { Pool, PoolClient } from "pg";
 import { auditIn } from "@/lib/db";
-import { MAX_OWNED_WORKSPACES, asRole, type Role } from "./permissions";
+import { MAX_OWNED_WORKSPACES, asRole, manages, may, mayGrant, type Role } from "./permissions";
 
 export type Db = Pool | PoolClient;
 
@@ -114,9 +118,10 @@ export async function createWorkspace(db: Pool, user: { id: string; email: strin
 }
 
 /** A workspace made by a platform administrator for a named owner: no per-person limit. */
-export async function createWorkspaceFor(db: Pool, actor: string, owner: { id: string; email: string }, name: string): Promise<string> {
+export async function createWorkspaceFor(db: Pool, actor: string, owner: { id: string; email: string }, name: string, guard: Guard): Promise<string> {
   return inTx(db, async (c) => {
     await lockUser(c, owner.id);
+    await guard(c, "");
     const id = await insertWorkspace(c, name, `ws-${newId().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24)}`, owner.id);
     await auditIn(c, { actor, action: "workspace.created", summary: `As platform administrator, created the workspace "${name}" with ${owner.email} as owner`, detail: { workspaceId: id } });
     return id;
@@ -176,9 +181,49 @@ export async function setActive(db: Pool, sessionId: string, userId: string, wor
   return m;
 }
 
-export async function renameWorkspace(db: Pool, actor: string, workspaceId: string, name: string) {
+/**
+ * Answers the actor's role in force, read inside the transaction after the workspace's lock: a workspace member's
+ * own role (forRole), or "owner" for a platform administrator still enabled (forPlatformAdmin). Throws when gone.
+ */
+export type Guard = (c: PoolClient, workspaceId: string) => Promise<Role>;
+
+const notAllowed = () => refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
+
+/** The guard for a workspace member acting through the workspace endpoints. */
+export const forRole = (userId: string): Guard => async (c, workspaceId) => {
+  const r = await c.query<{ role: string }>('SELECT role FROM member WHERE "organizationId" = $1 AND "userId" = $2', [workspaceId, userId]);
+  if (!r.rows[0]) throw notFound();
+  return asRole(r.rows[0].role);
+};
+
+/** The guard for a platform administrator (../adminOps.ts): full power while still an enabled administrator. */
+export const forPlatformAdmin = (userId: string): Guard => async (c) => {
+  const r = await c.query<{ ok: boolean }>('SELECT "platformAdmin" AND "disabledAt" IS NULL AS ok FROM "user" WHERE id = $1 FOR SHARE', [userId]);
+  if (!r.rows[0]?.ok) throw refuse("FORBIDDEN", "NOT_PLATFORM_ADMIN", "Only a platform administrator may do this.");
+  return "owner";
+};
+
+/**
+ * Cancels the invitations someone made in a workspace that they may no longer give (review N8): all of them when
+ * they left or were removed (`role` null), else those for a role above what `role` may grant.
+ */
+async function cancelInvitationsBy(c: PoolClient, workspaceId: string, userId: string, role: Role | null) {
+  const pending = await c.query<{ id: string; role: string | null }>(
+    `SELECT i.id, i.role FROM invitation i LEFT JOIN auth2_invitation_tokens t ON t.invitation_id = i.id
+      WHERE i."organizationId" = $1 AND i."inviterId" = $2 AND i.status = 'pending' AND NOT COALESCE(t.by_platform_admin, false)`,
+    [workspaceId, userId]
+  );
+  for (const i of pending.rows) {
+    if (role && role !== "member" && mayGrant(role, asRole(i.role))) continue;
+    await c.query("UPDATE invitation SET status = 'canceled' WHERE id = $1", [i.id]);
+    await c.query("DELETE FROM auth2_invitation_tokens WHERE invitation_id = $1", [i.id]);
+  }
+}
+
+export async function renameWorkspace(db: Pool, actor: string, workspaceId: string, name: string, guard: Guard) {
   await inTx(db, async (c) => {
     const old = await lockWorkspace(c, workspaceId);
+    if (!may(await guard(c, workspaceId), "rename")) throw notAllowed();
     await c.query("UPDATE organization SET name = $2 WHERE id = $1", [workspaceId, name]);
     await auditIn(c, { actor, action: "workspace.renamed", summary: `Renamed the workspace "${old}" to "${name}"`, detail: { workspaceId } });
   });
@@ -188,12 +233,13 @@ export async function renameWorkspace(db: Pool, actor: string, workspaceId: stri
  * Deletes a workspace: its memberships and invitations go with it. Refused when it is the deleting owner's only
  * workspace. Anyone for whom it was the last workspace gets a new one of their own.
  */
-export async function deleteWorkspace(db: Pool, actor: { id: string; email: string }, workspaceId: string, opts: { platformAdmin?: boolean } = {}) {
+export async function deleteWorkspace(db: Pool, actor: { id: string; email: string }, workspaceId: string, guard: Guard, opts: { platformAdmin?: boolean } = {}) {
   await inTx(db, async (c) => {
     // Users first, then the workspace (the order every change here takes), sorted so two deletions agree.
     const before = (await c.query<{ userId: string }>('SELECT "userId" FROM member WHERE "organizationId" = $1', [workspaceId])).rows.map((r) => r.userId);
     for (const u of [...new Set([actor.id, ...before])].sort()) await lockUser(c, u);
     const name = await lockWorkspace(c, workspaceId);
+    if (!may(await guard(c, workspaceId), "delete")) throw notAllowed();
     // A platform administrator may delete any workspace: whoever is left without one gets a new one below.
     if (!opts.platformAdmin) {
       const mine = await c.query<{ n: number }>('SELECT count(*)::int AS n FROM member WHERE "userId" = $1', [actor.id]);
@@ -222,6 +268,7 @@ export async function leaveWorkspace(db: Pool, user: { id: string; email: string
       throw refuse("FORBIDDEN", "LAST_OWNER", "You are the only owner. Make someone else an owner first, or delete the workspace.");
     }
     await c.query("DELETE FROM member WHERE id = $1", [m.memberId]);
+    await cancelInvitationsBy(c, workspaceId, user.id, null);
     await repointSessions(c, user.id, workspaceId);
     await auditIn(c, { actor: user.email, action: "workspace.left", summary: `Left the workspace "${name}"`, detail: { workspaceId } });
   });
@@ -244,33 +291,37 @@ async function targetOf(db: Db, workspaceId: string, memberId: unknown): Promise
  * Changes a member's role, after ./plugin.ts has checked that the actor may. Refused when it would leave the
  * workspace with no owner.
  */
-export async function changeRole(db: Pool, actor: string, workspaceId: string, memberId: string, role: Role, allowed: (current: Role) => boolean) {
+export async function changeRole(db: Pool, actor: string, workspaceId: string, memberId: string, role: Role, guard: Guard) {
   await inTx(db, async (c) => {
     const name = await lockWorkspace(c, workspaceId);
+    const mine = await guard(c, workspaceId);
     const t = await targetOf(c, workspaceId, memberId);
     if (!t) throw refuse("NOT_FOUND", "MEMBER_NOT_FOUND", "That person is not a member of this workspace.");
-    if (!allowed(t.role)) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
+    if (!manages(mine, t.role) || !mayGrant(mine, role)) throw notAllowed();
     if (t.role === role) return;
     if (t.role === "owner" && (await ownerCount(c, workspaceId)) <= 1) {
       throw refuse("FORBIDDEN", "LAST_OWNER", "This is the only owner. Make someone else an owner first.");
     }
     await c.query("UPDATE member SET role = $2 WHERE id = $1", [memberId, role]);
+    await cancelInvitationsBy(c, workspaceId, t.userId, role);
     await auditIn(c, { actor, action: "workspace.role_changed", summary: `Changed ${t.email} from ${t.role} to ${role} in "${name}"`, detail: { workspaceId, memberId, from: t.role, to: role } });
   });
 }
 
 /** Removes a member, after ./plugin.ts has checked that the actor may. The last owner cannot be removed. */
-export async function removeMember(db: Pool, actor: string, workspaceId: string, memberId: string, allowed: (current: Role) => boolean) {
+export async function removeMember(db: Pool, actor: string, workspaceId: string, memberId: string, guard: Guard) {
   await inTx(db, async (c) => {
     // The person first, then the workspace: the same order as leaving and deleting, so they cannot deadlock.
     const seen = await targetOf(c, workspaceId, memberId);
     if (seen) await lockUser(c, seen.userId);
     const name = await lockWorkspace(c, workspaceId);
+    const mine = await guard(c, workspaceId);
     const t = await targetOf(c, workspaceId, memberId);
     if (!t) throw refuse("NOT_FOUND", "MEMBER_NOT_FOUND", "That person is not a member of this workspace.");
-    if (!allowed(t.role)) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
+    if (!manages(mine, t.role)) throw notAllowed();
     if (t.role === "owner" && (await ownerCount(c, workspaceId)) <= 1) throw refuse("FORBIDDEN", "LAST_OWNER", "This is the only owner, who cannot be removed.");
     await c.query("DELETE FROM member WHERE id = $1", [memberId]);
+    await cancelInvitationsBy(c, workspaceId, t.userId, null);
     await afterLoss(c, t.userId, workspaceId);
     await auditIn(c, { actor, action: "workspace.member_removed", summary: `Removed ${t.email} (${t.role}) from "${name}"`, detail: { workspaceId, memberId } });
   });

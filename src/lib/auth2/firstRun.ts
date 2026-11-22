@@ -1,108 +1,196 @@
 /**
  * The first-run "create the owner" step for a self-hosted install (accounts slice 2, step 6; owner's rulings of
- * 22 Nov). While the new sign-in is on and no account exists, / and /welcome lead to /auth/first-run (src/proxy.ts);
- * once any account exists the page is not found and the endpoint refuses, for good.
+ * 22 Nov; hardened after the review of slice 2, items B1 to B3).
  *
- * The person there chooses the owner's name, address and password (the address is prefilled from the setting
- * `auth2.platformAdminAddress`, seeded to admin@oxot.nl, and may be changed there). The account is created
- * confirmed (no mail is needed), is a platform administrator, gets its own workspace, and is signed in. No password
- * is ever generated, logged or shown.
+ * Open means: no platform administrator exists and the install has not been completed (auth2_install.completed_at).
+ * An ordinary account made earlier does not close it. While it is open, / and /welcome lead to /auth/first-run
+ * (src/proxy.ts), and sign-up, password reset and accepting invitations answer 503 SETUP_REQUIRED (the catch-all
+ * route), so nobody can slip in before the owner. Once the owner exists it is closed for good.
  *
- * In production with no base address stored yet, the page shows the address the browser is using and the owner
- * confirms it; it must be the origin the form was sent from. It is stored as `auth2.baseUrl`.
+ * A set-up code guards it (B2): whoever reaches a fresh install first must also be able to read its server log. At
+ * start while first run is open (and on the first visit to the page if the switch was turned on later), the app makes
+ * a random code, keeps only its SHA-256 (auth2_setup_code, owner-only), and prints the code once to the server log
+ * (`docker compose logs web`). It is the only secret ever logged. A restart while still open makes a new one; the
+ * owner's creation deletes it. A wrong code earns a growing wait (1 s, 2 s, 4 s ... up to 15 minutes); codes are
+ * compared in constant time.
  *
- * Two submissions at once create one owner: the first takes the claim row (auth2_install) under an advisory lock;
- * the other finds it taken and is refused. A claim left by a crash with no owner is taken again after five minutes.
+ * Everything is checked before anything is written (B1): name and email (well-formed text), password, set-up code,
+ * and, in production with no base address yet, the address, which must be the scheme and host the form was sent
+ * from (Origin and Host). Then one transaction creates the account (confirmed, platform administrator), its
+ * workspace, the stored address and administrator address, and marks the install complete: all of it, or nothing.
+ * Two submissions at once create one owner (an advisory lock around that transaction).
  */
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import type { Pool } from "pg";
 import { hashPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
-import { audit } from "@/lib/db";
-import { AUTH2_SETTING, resolveAuth2Config } from "./config";
-import { cleanName } from "./guards";
+import { auditIn } from "@/lib/db";
+import { AUTH2_PAGES, AUTH2_SETTING, readAuth2Setting, resolveAuth2Config, writeAuth2Setting } from "./config";
+import { cleanEmail, cleanName } from "./guards";
+import { createPersonal, newId } from "./workspaces/store";
 
-const STALE_CLAIM = "5 minutes";
-const g = globalThis as unknown as { __c2rFirstRunClosed?: boolean };
+const g = globalThis as unknown as { __c2rFirstRunClosed?: boolean; __c2rSetupCodeIssued?: Pool };
 
-const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store", ...headers } });
 const closed = () => json(404, { code: "FIRST_RUN_CLOSED", message: "This installation has its owner already. Sign in instead." });
 const bad = (code: string, message: string) => json(400, { code, message });
 
-/** Whether the first-run step is open: no account, and no claim being worked on. Once closed it stays closed. */
+const OPEN_SQL = `NOT EXISTS (SELECT 1 FROM "user" WHERE "platformAdmin") AND NOT EXISTS (SELECT 1 FROM auth2_install WHERE completed_at IS NOT NULL)`;
+
+/** Whether the first-run step is open (see the top). Cached as closed only once an owner exists. */
 export async function firstRunOpen(db: Pool): Promise<boolean> {
   if (g.__c2rFirstRunClosed) return false;
-  const r = await db.query<{ open: boolean }>(
-    `SELECT NOT EXISTS (SELECT 1 FROM "user") AND NOT EXISTS (SELECT 1 FROM auth2_install WHERE owner_user_id IS NOT NULL OR claimed_at > now() - interval '${STALE_CLAIM}') AS open`
-  );
-  if (!r.rows[0].open) g.__c2rFirstRunClosed = true;
-  return r.rows[0].open;
+  const open = (await db.query<{ open: boolean }>(`SELECT ${OPEN_SQL} AS open`)).rows[0].open;
+  // Closed here means an administrator exists or the install was completed: it cannot open again (review N12).
+  if (!open) g.__c2rFirstRunClosed = true;
+  return open;
 }
 
-/** Forgets the cached answer (tests that empty the accounts table). */
+/** Forgets the cached answer (tests that empty the install). */
 export function forgetFirstRun() {
   g.__c2rFirstRunClosed = undefined;
 }
 
-/** What the page needs: the address to offer, and whether the base address still has to be confirmed. */
-export async function firstRunForm(db: Pool): Promise<{ email: string; needsAddress: boolean }> {
-  const r = await db.query<{ value: unknown }>("SELECT value FROM settings WHERE key = $1", [AUTH2_SETTING.platformAdminAddress]);
-  const email = typeof r.rows[0]?.value === "string" ? r.rows[0].value : "";
-  return { email, needsAddress: !(await resolveAuth2Config(db)).baseURL };
+/** As if the process restarted: the next ensureSetupCode makes a new code (tests). */
+export function forgetSetupCode() {
+  g.__c2rSetupCodeIssued = undefined;
 }
 
-const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/;
+// --- the set-up code (B2) ------------------------------------------------------------------------------------------
+
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O or 1/I
+const codeHash = (code: string) => createHash("sha256").update(code.replace(/[\s-]+/g, "").toUpperCase(), "utf8").digest();
+const MAX_WAIT_S = 15 * 60;
+
+/** Makes a new set-up code, keeps its hash, and prints the code once to the server log. */
+async function issueSetupCode(db: Pool): Promise<void> {
+  const raw = Array.from({ length: 16 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
+  const code = raw.match(/.{4}/g)!.join("-");
+  await db.query(
+    `INSERT INTO auth2_setup_code (id, code_hash, created_at, failures, next_allowed_at) VALUES (true, $1, now(), 0, now())
+     ON CONFLICT (id) DO UPDATE SET code_hash = EXCLUDED.code_hash, created_at = now(), failures = 0, next_allowed_at = now()`,
+    [codeHash(code).toString("base64url")]
+  );
+  g.__c2rSetupCodeIssued = db;
+  console.info(
+    `[auth2] This installation has no owner yet. Open ${AUTH2_PAGES}/first-run in the browser and enter this set-up code: ${code}\n` +
+      "[auth2] The code works until the owner is created, and a restart replaces it. Anyone who can read this log can use it."
+  );
+}
+
+/** Makes sure this process has issued a code while first run is open (at start, or on the first visit later). */
+export async function ensureSetupCode(db: Pool): Promise<void> {
+  if (g.__c2rSetupCodeIssued === db) return;
+  if (await firstRunOpen(db)) await issueSetupCode(db);
+}
+
+// --- the page and the endpoint ---------------------------------------------------------------------------------------
+
+/** What the page needs: the address to offer, and whether the base address still has to be confirmed. */
+export async function firstRunForm(db: Pool): Promise<{ email: string; needsAddress: boolean }> {
+  await ensureSetupCode(db);
+  const email = await readAuth2Setting<unknown>(db, AUTH2_SETTING.platformAdminAddress);
+  return { email: typeof email === "string" ? email : "", needsAddress: !(await resolveAuth2Config(db)).baseURL };
+}
+
+/** The sign-in instance's parts this needs (src/lib/auth2/server.ts builds it). */
+type OwnerAuth = { api: { signInEmail: (a: { body: { email: string; password: string; rememberMe: boolean }; headers: Headers; asResponse: true }) => Promise<Response> } };
 
 /**
- * POST /api/auth2/first-run/owner, answered by the catch-all route before the sign-in instance is built (it may
- * not exist yet). `signIn` is given the finished account and answers the sign-in response (cookies set).
+ * POST /api/auth2/first-run/owner, answered by the catch-all route before the sign-in instance is built (it may not
+ * exist yet). Body: name, email, password, setupCode, and address when the install has no base address.
  */
 export async function createOwner(db: Pool, req: Request, deps: { build: () => Promise<OwnerAuth> }): Promise<Response> {
   let body: Record<string, unknown>;
   try {
     body = (await req.json()) as Record<string, unknown>;
   } catch {
-    return bad("INVALID_BODY", "Send the name, email address and password.");
+    return bad("INVALID_BODY", "Send the name, email address, password and set-up code.");
   }
-  if (!(await firstRunOpen(db))) return closed();
+  if (!body || typeof body !== "object" || !(await firstRunOpen(db))) return closed();
+  await ensureSetupCode(db);
+
+  // 1. Everything is checked before anything is written.
   let name: string;
+  let email: string;
   try {
     name = cleanName(body.name);
+    email = cleanEmail(body.email);
   } catch (e) {
     const err = e as { body?: { code?: string; message?: string } };
-    return bad(err.body?.code ?? "INVALID_NAME", err.body?.message ?? "Enter your name.");
+    return bad(err.body?.code ?? "INVALID_BODY", err.body?.message ?? "Check the name and email address.");
   }
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  if (!email || email.length > 254 || !EMAIL.test(email)) return bad("INVALID_EMAIL", "Enter a whole email address, such as name@example.com.");
   const password = body.password;
-  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) return bad("PASSWORD_TOO_SHORT", `The password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+  if (typeof password !== "string" || !password.isWellFormed() || password.length < MIN_PASSWORD_LENGTH) return bad("PASSWORD_TOO_SHORT", `The password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
   if (password.length > 128) return bad("PASSWORD_TOO_LONG", "The password must be at most 128 characters.");
+  const code = typeof body.setupCode === "string" && body.setupCode.isWellFormed() ? body.setupCode : "";
+  if (!code || code.length > 40) return bad("SETUP_CODE_WRONG", "Enter the set-up code from the server log.");
 
-  // The base address, when none is stored yet: the one the owner confirmed, which must be where the form came from.
   let confirmedOrigin: string | null = null;
   if (!(await resolveAuth2Config(db)).baseURL) {
-    let given: string;
+    let given: URL;
     try {
-      given = new URL(String(body.address ?? "")).origin;
+      given = new URL(String(body.address ?? ""));
+      if (given.protocol !== "https:" && given.protocol !== "http:") throw new Error("scheme");
     } catch {
       return bad("INVALID_ADDRESS", "Confirm the address this installation is opened at, for example https://app.example.com.");
     }
-    if (given !== req.headers.get("origin")) return bad("ADDRESS_MISMATCH", "The address must be the one this page is open at. Open the page at the address people will use, then try again.");
-    confirmedOrigin = given;
+    // Scheme and host both: the address must be exactly where this form was sent from.
+    if (given.origin !== req.headers.get("origin") || given.host !== req.headers.get("host")) {
+      return bad("ADDRESS_MISMATCH", "The address must be the one this page is open at. Open the page at the address people will use, then try again.");
+    }
+    confirmedOrigin = given.origin;
   }
+  const hash = await hashPassword(password);
 
-  // The claim: one request wins; any other, now or later, is refused.
+  // 2. One transaction: the code, then the owner, the workspace, the stored addresses and the completed install.
   const c = await db.connect();
+  let userId = "";
   try {
     await c.query("BEGIN");
     await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.first_run'))");
-    const open = await c.query<{ open: boolean }>(
-      `SELECT NOT EXISTS (SELECT 1 FROM "user") AND NOT EXISTS (SELECT 1 FROM auth2_install WHERE owner_user_id IS NOT NULL OR claimed_at > now() - interval '${STALE_CLAIM}') AS open`
-    );
-    if (!open.rows[0].open) {
+    if (!(await c.query<{ open: boolean }>(`SELECT ${OPEN_SQL} AS open`)).rows[0].open) {
       await c.query("ROLLBACK");
       g.__c2rFirstRunClosed = true;
       return closed();
     }
-    await c.query("INSERT INTO auth2_install (id, claimed_at, owner_user_id) VALUES (true, now(), NULL) ON CONFLICT (id) DO UPDATE SET claimed_at = now(), owner_user_id = NULL");
+    const row = (await c.query<{ code_hash: string; failures: number; wait: number }>(
+      "SELECT code_hash, failures, GREATEST(0, ceil(extract(epoch FROM next_allowed_at - now())))::int AS wait FROM auth2_setup_code WHERE id FOR UPDATE"
+    )).rows[0];
+    if (row && row.wait > 0) {
+      await c.query("ROLLBACK");
+      return json(429, { code: "SETUP_CODE_WAIT", message: `Too many wrong set-up codes. Wait ${row.wait} seconds, then try again.` }, { "Retry-After": String(row.wait) });
+    }
+    const stored = row ? Buffer.from(row.code_hash, "base64url") : Buffer.alloc(32);
+    const ok = !!row && timingSafeEqual(codeHash(code), stored);
+    if (!ok) {
+      if (row) {
+        await c.query(`UPDATE auth2_setup_code SET failures = failures + 1, next_allowed_at = now() + make_interval(secs => LEAST($1, power(2, LEAST(failures, 20)))) WHERE id`, [MAX_WAIT_S]);
+      }
+      await c.query("COMMIT");
+      return bad("SETUP_CODE_WRONG", "That set-up code is not right. It is in the server log, on the line that starts \"[auth2] This installation has no owner yet\".");
+    }
+    const taken = await c.query('SELECT 1 FROM "user" WHERE lower(email) = $1', [email]);
+    if (taken.rowCount) {
+      await c.query("ROLLBACK");
+      return json(409, { code: "USER_EXISTS", message: "An account with that address exists already. Choose another address for the owner." });
+    }
+    userId = newId();
+    await c.query(
+      `INSERT INTO "user" (id, name, email, "emailVerified", "createdAt", "updatedAt", "twoFactorEnabled", "platformAdmin") VALUES ($1, $2, $3, true, now(), now(), false, true)`,
+      [userId, name, email]
+    );
+    await c.query(`INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt") VALUES ($1, $2, 'credential', $2, $3, now(), now())`, [newId(), userId, hash]);
+    await createPersonal(c, { id: userId, name, email });
+    if (confirmedOrigin) await writeAuth2Setting(c, AUTH2_SETTING.baseUrl, confirmedOrigin, email);
+    await writeAuth2Setting(c, AUTH2_SETTING.platformAdminAddress, email, email);
+    await c.query(
+      `INSERT INTO auth2_install (id, claimed_at, owner_user_id, completed_at) VALUES (true, now(), $1, now())
+       ON CONFLICT (id) DO UPDATE SET owner_user_id = EXCLUDED.owner_user_id, completed_at = now()`,
+      [userId]
+    );
+    await c.query("DELETE FROM auth2_setup_code");
+    await auditIn(c, { actor: email, action: "platform.owner_created", summary: "Created the owner of this installation on the first-run page (confirmed, platform administrator)", detail: { userId, address: confirmedOrigin } });
     await c.query("COMMIT");
   } catch (e) {
     await c.query("ROLLBACK").catch(() => undefined);
@@ -110,38 +198,7 @@ export async function createOwner(db: Pool, req: Request, deps: { build: () => P
   } finally {
     c.release();
   }
-
-  let userId: string | null = null;
-  try {
-    const upsert = "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()";
-    if (confirmedOrigin) await db.query(upsert, [AUTH2_SETTING.baseUrl, JSON.stringify(confirmedOrigin)]);
-    await db.query(upsert, [AUTH2_SETTING.platformAdminAddress, JSON.stringify(email)]);
-    const auth = await deps.build();
-    const ac = await auth.$context;
-    // The user-created hook (./auth.ts) gives the account its workspace and writes the sign-up line.
-    const user = await ac.internalAdapter.createUser({ email, name, emailVerified: true }, { method: "email-password" });
-    userId = user.id;
-    await ac.internalAdapter.linkAccount({ userId: user.id, providerId: "credential", accountId: user.id, password: await hashPassword(password) });
-    await db.query('UPDATE "user" SET "platformAdmin" = true WHERE id = $1', [user.id]);
-    await db.query("UPDATE auth2_install SET owner_user_id = $1", [user.id]);
-    g.__c2rFirstRunClosed = true;
-    await audit({ actor: email, action: "platform.owner_created", summary: "Created the owner of this installation on the first-run page (confirmed, platform administrator)", detail: { userId: user.id } });
-    return await auth.api.signInEmail({ body: { email, password, rememberMe: true }, headers: req.headers, asResponse: true });
-  } catch (e) {
-    // Leave the step open again, as if nothing had happened.
-    if (userId) await db.query('DELETE FROM "user" WHERE id = $1', [userId]).catch(() => undefined);
-    await db.query("DELETE FROM auth2_install WHERE owner_user_id IS NULL").catch(() => undefined);
-    throw e;
-  }
+  g.__c2rFirstRunClosed = true;
+  const auth = await deps.build();
+  return auth.api.signInEmail({ body: { email, password, rememberMe: true }, headers: req.headers, asResponse: true });
 }
-
-/** The parts of the sign-in instance this needs (src/lib/auth2/server.ts builds it). */
-type OwnerAuth = {
-  $context: Promise<{
-    internalAdapter: {
-      createUser: (u: { email: string; name: string; emailVerified: boolean }, source: { method: "email-password" }) => Promise<{ id: string }>;
-      linkAccount: (a: { userId: string; providerId: string; accountId: string; password: string }) => Promise<unknown>;
-    };
-  }>;
-  api: { signInEmail: (a: { body: { email: string; password: string; rememberMe: boolean }; headers: Headers; asResponse: true }) => Promise<Response> };
-};

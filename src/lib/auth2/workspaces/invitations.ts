@@ -17,9 +17,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { auditIn } from "@/lib/db";
+import { cleanEmail } from "../guards";
 import { render, type MailSender } from "../mail";
 import { INVITATIONS_PER_HOUR, MAX_SEATS, MAX_SENDS, asRole, mayGrant, type Role } from "./permissions";
-import { inTx, lockWorkspace, newId, refuse, type Membership } from "./store";
+import { forRole, inTx, lockWorkspace, newId, refuse, type Membership } from "./store";
 
 const INVITATION_HOURS = 48;
 const RESEND_AFTER_S = 60;
@@ -31,12 +32,6 @@ export type Sent = { invitationId: string; email: string; role: Role; mailed: bo
 type Deps = { mailer: () => Promise<MailSender | null>; link: (path: string, token: string) => string };
 type Actor = { id: string; email: string; name: string };
 
-const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/;
-function cleanEmail(raw: unknown): string {
-  const e = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (!e || e.length > 254 || !EMAIL.test(e)) throw refuse("BAD_REQUEST", "INVALID_EMAIL", "Enter a whole email address, such as name@example.com.");
-  return e;
-}
 
 /** Sends the invitation, or hands its link back when there is no mail service or sending failed. */
 async function deliver(deps: Deps, to: string, token: string, workspace: string, inviter: string): Promise<{ mailed: boolean; link?: string }> {
@@ -62,6 +57,9 @@ export async function invite(db: Pool, deps: Deps, actor: Actor, m: Membership, 
   const token = newToken();
   const { id, name } = await inTx(db, async (c) => {
     const name = await lockWorkspace(c, m.workspaceId);
+    // The actor's role in force now, after the lock (review F7/N10).
+    const now = await forRole(actor.id)(c, m.workspaceId);
+    if (now === "member" || !mayGrant(now, role)) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
     const member = await c.query(`SELECT 1 FROM member mm JOIN "user" u ON u.id = mm."userId" WHERE mm."organizationId" = $1 AND lower(u.email) = $2`, [m.workspaceId, email]);
     if (member.rowCount) throw refuse("CONFLICT", "ALREADY_MEMBER", "That person is a member of this workspace already.");
     const pending = await c.query(`SELECT 1 FROM invitation i WHERE i."organizationId" = $1 AND lower(i.email) = $2 AND ${PENDING}`, [m.workspaceId, email]);
@@ -108,7 +106,8 @@ export async function resend(db: Pool, deps: Deps, actor: Actor, m: Membership, 
   const { row, name } = await inTx(db, async (c) => {
     const name = await lockWorkspace(c, m.workspaceId);
     const row = await pendingOf(c, m.workspaceId, invitationId);
-    if (m.role === "member" || !mayGrant(m.role, asRole(row.role))) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
+    const now = await forRole(actor.id)(c, m.workspaceId);
+    if (now === "member" || !mayGrant(now, asRole(row.role))) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
     const t = await c.query<{ age: number; send_count: number }>("SELECT extract(epoch FROM now() - sent_at)::int AS age, send_count FROM auth2_invitation_tokens WHERE invitation_id = $1", [row.id]);
     const tok = t.rows[0];
     if (tok && tok.age < RESEND_AFTER_S) throw refuse("TOO_MANY_REQUESTS", "RESENT_TOO_SOON", "This invitation was sent less than a minute ago. Wait a minute before sending it again.");
@@ -131,7 +130,8 @@ export async function revoke(db: Pool, actor: Actor, m: Membership, invitationId
   await inTx(db, async (c) => {
     const name = await lockWorkspace(c, m.workspaceId);
     const row = await pendingOf(c, m.workspaceId, invitationId);
-    if (m.role === "member" || !mayGrant(m.role, asRole(row.role))) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
+    const now = await forRole(actor.id)(c, m.workspaceId);
+    if (now === "member" || !mayGrant(now, asRole(row.role))) throw refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
     await c.query("UPDATE invitation SET status = 'canceled' WHERE id = $1", [row.id]);
     await c.query("DELETE FROM auth2_invitation_tokens WHERE invitation_id = $1", [row.id]);
     await auditIn(c, { actor: actor.email, action: "workspace.invitation_revoked", summary: `Revoked the invitation for ${row.email} to "${name}"`, detail: { workspaceId: m.workspaceId, invitationId: row.id } });
@@ -176,8 +176,8 @@ export async function invitationByToken(db: Pool, token: unknown): Promise<Invit
 export async function accept(db: Pool, user: { id: string; email: string; emailVerified: boolean }, sessionId: string, token: unknown) {
   if (typeof token !== "string" || token.length < 20 || token.length > 100) throw NOT_VALID();
   return inTx(db, async (c) => {
-    const r = await c.query<Row & { used_at: Date | null; workspace: string }>(
-      `SELECT i.id, i.email, i.role, i.status, i."expiresAt", i."organizationId", t.used_at, o.name AS workspace
+    const r = await c.query<Row & { used_at: Date | null; workspace: string; inviterId: string; by_platform_admin: boolean }>(
+      `SELECT i.id, i.email, i.role, i.status, i."expiresAt", i."organizationId", t.used_at, o.name AS workspace, i."inviterId", t.by_platform_admin
          FROM auth2_invitation_tokens t JOIN invitation i ON i.id = t.invitation_id JOIN organization o ON o.id = i."organizationId"
         WHERE t.token_hash = $1 FOR UPDATE OF t, i`,
       [hashOf(token)]
@@ -190,6 +190,20 @@ export async function accept(db: Pool, user: { id: string; email: string; emailV
     }
     if (!user.emailVerified) throw refuse("FORBIDDEN", "EMAIL_NOT_VERIFIED", "Confirm your email address first: follow the link in the email we sent you.");
     const role = asRole(row.role);
+    // Whoever invited must still be allowed to give this role (review N8); otherwise the invitation lapses.
+    await lockWorkspace(c, row.organizationId);
+    const inviter = await c.query<{ role: string | null; admin: boolean }>(
+      `SELECT (SELECT m.role FROM member m WHERE m."organizationId" = $1 AND m."userId" = $2) AS role,
+              COALESCE((SELECT "platformAdmin" AND "disabledAt" IS NULL FROM "user" WHERE id = $2), false) AS admin`,
+      [row.organizationId, row.inviterId]
+    );
+    const inv = inviter.rows[0];
+    const stillMay = row.by_platform_admin ? inv.admin : inv.role !== null && asRole(inv.role) !== "member" && mayGrant(asRole(inv.role), role);
+    if (!stillMay) {
+      await c.query("UPDATE invitation SET status = 'canceled' WHERE id = $1", [row.id]);
+      await c.query("DELETE FROM auth2_invitation_tokens WHERE invitation_id = $1", [row.id]);
+      return { withdrawn: true as const };
+    }
     const already = await c.query('SELECT 1 FROM member WHERE "organizationId" = $1 AND "userId" = $2', [row.organizationId, user.id]);
     if (!already.rowCount) {
       await c.query(`INSERT INTO member (id, "organizationId", "userId", role, "createdAt") VALUES ($1, $2, $3, $4, now())`, [newId(), row.organizationId, user.id, role]);
@@ -199,5 +213,8 @@ export async function accept(db: Pool, user: { id: string; email: string; emailV
     await c.query('UPDATE "session" SET "activeOrganizationId" = $2 WHERE id = $1', [sessionId, row.organizationId]);
     await auditIn(c, { actor: user.email, action: "workspace.joined", summary: `Accepted the invitation to "${row.workspace}" as ${role}`, detail: { workspaceId: row.organizationId, invitationId: row.id, role } });
     return { workspaceId: row.organizationId, name: row.workspace, role };
+  }).then((r) => {
+    if ("withdrawn" in r) throw refuse("NOT_FOUND", "INVITATION_WITHDRAWN", "This invitation no longer holds: whoever sent it may no longer give that role. Ask for a new one.");
+    return r;
   });
 }

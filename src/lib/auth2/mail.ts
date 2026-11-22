@@ -78,10 +78,10 @@ function template(r: MailRequest): Template {
         subject: `Your two-step sign-in on ${PRODUCT} was reset`,
         lines: [
           `${r.by}, who manages ${r.workspace}, removed the authenticator app and the recovery codes from your account. Every browser signed in to it has been signed out.`,
-          "Next time you sign in with your password, you will be asked to set up an authenticator app again.",
+          "To sign in again, follow this link, enter your password, and set up an authenticator app again. Your password alone is not enough until you do.",
         ],
-        action: "Sign in",
-        after: ["If you did not ask for this, tell the owner of the workspace and change your password."],
+        action: "Set up two-step sign-in again",
+        after: ["The link works once, for 24 hours.", "If you did not ask for this, tell the owner of the workspace and change your password."],
       };
     case "invitation":
       return {

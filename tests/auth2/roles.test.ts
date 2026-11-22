@@ -133,6 +133,29 @@ describe("two roles (DATABASE_APP_URL set)", () => {
     await expect(db.ownerPool().query('SELECT 1 FROM "session" LIMIT 1')).resolves.toBeDefined();
   });
 
+  it("F6: the request role can neither read nor write the sign-in's settings, set-up code or reset proofs", async () => {
+    process.env.DATABASE_APP_URL = APP_URL;
+    const db = await import("@/lib/db");
+    await db.ready();
+    for (const t of ["auth2_settings", "auth2_secrets", "auth2_setup_code", "auth2_reenrol", "auth2_two_factor_resets", "auth2_install"]) {
+      await expect(db.q(`SELECT 1 FROM ${t} LIMIT 1`), t).rejects.toMatchObject({ code: "42501" });
+    }
+    await expect(db.q("INSERT INTO auth2_settings (key, value) VALUES ('auth2.enabled', 'true')")).rejects.toMatchObject({ code: "42501" });
+    await expect(db.q("UPDATE auth2_settings SET value = '\"https://evil.example.test\"' WHERE key = 'auth2.baseUrl'")).rejects.toMatchObject({ code: "42501" });
+    // And nothing it may write in `settings` is read as one of them.
+    const { forgetAuth2Switch, auth2Enabled } = await import("@/lib/auth2/config");
+    await db.q("INSERT INTO settings (key, value) VALUES ('auth2.enabled', 'true') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value");
+    try {
+      const keep = process.env.AUTH2;
+      delete process.env.AUTH2;
+      forgetAuth2Switch();
+      expect(await auth2Enabled()).toBe(false);
+      if (keep !== undefined) process.env.AUTH2 = keep;
+    } finally {
+      await db.ownerPool().query("DELETE FROM settings WHERE key = 'auth2.enabled'");
+    }
+  });
+
   it("a second start keeps the role's password and grants", async () => {
     process.env.DATABASE_APP_URL = APP_URL;
     const db = await import("@/lib/db");

@@ -51,6 +51,7 @@ const PAGES: [string, () => Promise<Page>][] = [
   ["invite", () => import("@/app/(account)/auth/invite/page") as Promise<Page>],
   ["workspace", () => import("@/app/(account)/auth/workspace/page") as Promise<Page>],
   ["first-run", () => import("@/app/(account)/auth/first-run/page") as Promise<Page>],
+  ["re-enrol", () => import("@/app/(account)/auth/re-enrol/page")],
 ];
 const params = { searchParams: Promise.resolve({}) };
 
@@ -292,10 +293,38 @@ describe("with AUTH2 on", () => {
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long enough" } });
     fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "long enough" } });
     fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
+    // The set-up code is asked for, and where to find it is said.
+    expect(await screen.findByText("Enter the set-up code from the server log.")).toBeTruthy();
+    expect(screen.getByText(/docker compose logs web/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Set-up code"), { target: { value: "ABCD-EFGH-JKLM-NPQR" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/account"));
-    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "Olive", email: "admin@oxot.nl", password: "long enough" });
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "Olive", email: "admin@oxot.nl", password: "long enough", setupCode: "ABCD-EFGH-JKLM-NPQR" });
     cleanup();
     render(<FirstRun email="admin@oxot.nl" address="https://app.example.test" idea={story.origin.idea} facts={story.hero} />);
     expect((screen.getByLabelText("Address of this installation") as HTMLInputElement).value).toBe("https://app.example.test");
+  });
+
+  it("sign-in after a reset by someone else goes to 'set up again', which asks for the code when there is no link", async () => {
+    const { SignInForm } = await import("@/app/(account)/auth/sign-in/SignInForm");
+    render(<SignInForm next="/auth/account" />);
+    replies.push({ status: 403, body: { code: "REENROL_PROOF_REQUIRED" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "r@example.test" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "whatever1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/auth/re-enrol?email=r%40example.test"));
+    cleanup();
+    const { Reenrol } = await import("@/app/(account)/auth/re-enrol/Reenrol");
+    render(<Reenrol token={null} email="r@example.test" />);
+    expect(screen.getByLabelText("Code")).toBeTruthy();
+    replies.push({ status: 200, body: { proved: true } }, { status: 200, body: {} });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "whatever1" } });
+    fireEvent.change(screen.getByLabelText("Code"), { target: { value: "AAAA-BBBB-CCCC-DDDD" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/two-factor/setup"));
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({ email: "r@example.test", password: "whatever1", proof: "AAAA-BBBB-CCCC-DDDD" });
+    cleanup();
+    render(<Reenrol token="tok" email="" />);
+    expect(screen.queryByLabelText("Code")).toBeNull();
   });
 });

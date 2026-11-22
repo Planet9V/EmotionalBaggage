@@ -25,22 +25,27 @@ import { emailField } from "../_components/rules";
 const ROLE_WORDS: Record<Role, string> = { owner: "Owner", admin: "Admin", member: "Member" };
 const date = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
-/** A link handed back in "no mail" mode (or when sending failed), to pass on by hand. Shown once. */
-function HandOver({ link, onDone }: { link: string; onDone: () => void }) {
+/** A link or code handed back in "no mail" mode (or when sending failed), to pass on by hand. Shown once. */
+function HandOver({ link, code, onDone }: { link?: string; code?: string; onDone: () => void }) {
+  const value = link ?? code ?? "";
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(link);
-      toast.success("The link is copied.");
+      await navigator.clipboard.writeText(value);
+      toast.success(link ? "The link is copied." : "The code is copied.");
     } catch {
-      toast.error("The link could not be copied here. Select it and copy it.");
+      toast.error("It could not be copied here. Select it and copy it.");
     }
   };
   return (
     <div role="status" className="space-y-2 rounded-md border border-hairline bg-canvas p-3">
-      <p className="text-sm text-primary">No email was sent. Give this link to the person you invited; it works once, for 48 hours, and is shown only now.</p>
-      <p className="break-all font-mono text-xs text-primary" data-invite-link>{link}</p>
+      <p className="text-sm text-primary">
+        {link
+          ? "No email was sent. Give this link to the person you invited; it works once, for 48 hours, and is shown only now."
+          : "No email was sent. Give this code to the person, in person or by phone: with their password it lets them set up two-step sign-in again, at /auth/re-enrol. It works once, for 24 hours, and is shown only now."}
+      </p>
+      <p className="break-all font-mono text-xs text-primary" data-invite-link={link ? "" : undefined} data-reenrol-code={code ? "" : undefined}>{value}</p>
       <div className="flex gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={() => void copy()}>Copy the link</Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => void copy()}>{link ? "Copy the link" : "Copy the code"}</Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>Done</Button>
       </div>
     </div>
@@ -61,15 +66,16 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
   const me = ws.role;
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [handOver, setHandOver] = useState<string | null>(null);
+  const [handOver, setHandOver] = useState<{ link?: string; code?: string } | null>(null);
 
   const act = async (key: string, path: string, body: Record<string, unknown>, done: string) => {
     setBusy(key);
     setError("");
-    const r = await call<{ link?: string; mailed?: boolean }>(path, { workspaceId: ws.id, ...body });
+    const r = await call<{ link?: string; code?: string; mailed?: boolean }>(path, { workspaceId: ws.id, ...body });
     setBusy("");
     if (!r.ok) return setError(r.error);
-    if (r.data?.link) setHandOver(r.data.link);
+    if (r.data?.link) setHandOver({ link: r.data.link });
+    if (r.data?.code) setHandOver({ code: r.data.code });
     toast.success(done);
     router.refresh();
   };
@@ -79,7 +85,7 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
     const r = await call<{ link?: string; mailed: boolean }>("/workspace/invite", { workspaceId: ws.id, email: v.email, role: v.role });
     if (!r.ok) return invite.setError("root", { message: r.error });
     invite.reset({ email: "", role: v.role });
-    if (r.data.link) setHandOver(r.data.link);
+    if (r.data.link) setHandOver({ link: r.data.link });
     toast.success(r.data.mailed ? `Invitation sent to ${v.email}.` : `Invitation made for ${v.email}.`);
     router.refresh();
   });
@@ -103,7 +109,7 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
       </PageHeader>
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-8">
         <Message id="members-message" error={error} />
-        {handOver && <HandOver link={handOver} onDone={() => setHandOver(null)} />}
+        {handOver && <HandOver {...handOver} onDone={() => setHandOver(null)} />}
 
         <Panel title="Members" description={admin ? "Roles, and whether each person signs in with an authenticator app." : "Who works in this workspace."}>
           <Table aria-label="List of members">
@@ -162,7 +168,7 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
                               size="xs"
                               label={<>Reset two-step{" "}<span className="sr-only">of {m.name}</span></>}
                               title={`Reset two-step sign-in of ${m.name}?`}
-                              body={`This removes ${m.email}'s authenticator app and recovery codes and signs them out everywhere. At their next sign-in they set up an app again. Use it when they have lost their phone.`}
+                              body={`This removes ${m.email}'s authenticator app and recovery codes and signs them out everywhere. Their password alone will not sign them in: ${mail ? "we email them a link" : "you get a one-time code to give them"} to set up an app again. Use it when they have lost their phone.`}
                               confirmLabel="Reset two-step sign-in"
                               disabled={!!busy}
                               onConfirm={() => void act(`reset-${m.memberId}`, "/workspace/member/reset-two-factor", { memberId: m.memberId }, `Two-step sign-in of ${m.name} is reset.`)}

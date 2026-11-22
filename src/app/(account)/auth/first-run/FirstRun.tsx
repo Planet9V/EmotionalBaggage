@@ -19,6 +19,7 @@ const base = z.object({
   password: newPasswordField,
   confirm: z.string(),
   address: z.string().optional(),
+  setupCode: z.string().trim().min(1, "Enter the set-up code from the server log.").max(40, "That is longer than a set-up code."),
 });
 type Values = z.infer<typeof base>;
 
@@ -31,10 +32,10 @@ export function FirstRun({ email, address, idea, facts }: { email: string; addre
   const schema = base.refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The two passwords are not the same." });
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email, password: "", confirm: "", address: address ?? undefined },
+    defaultValues: { name: "", email, password: "", confirm: "", address: address ?? undefined, setupCode: "" },
   });
   const submit = handleSubmit(async (v) => {
-    const r = await call("/first-run/owner", { name: v.name, email: v.email, password: v.password, ...(address ? { address: v.address } : {}) });
+    const r = await call("/first-run/owner", { name: v.name, email: v.email, password: v.password, setupCode: v.setupCode, ...(address ? { address: v.address } : {}) });
     if (!r.ok) return setError("root", { message: r.error });
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full load, signed in
     window.location.assign("/auth/account");
@@ -54,9 +55,17 @@ export function FirstRun({ email, address, idea, facts }: { email: string; addre
         </section>
         <section aria-labelledby="owner-h" className="rounded-xl border border-hairline bg-surface p-5">
           <h2 id="owner-h" className="text-lg font-semibold tracking-tight text-primary">Create the owner</h2>
-          <p className="mt-1 text-sm text-secondary">This account administers the installation and gets a workspace of its own. It is ready at once: no confirmation email is needed.</p>
+          <p className="mt-1 text-sm text-secondary">This account administers the installation and gets a workspace of its own. It is ready at once: no confirmation email is needed. The set-up code proves you run this installation.</p>
           <form method="post" onSubmit={(e) => void submit(e)} noValidate className="mt-4 space-y-4">
             <Message id="first-run-message" error={errors.root?.message} />
+            <Field
+              id="fr-code"
+              label="Set-up code"
+              hint={<>Printed in the server log when the app started, on the line beginning &ldquo;[auth2] This installation has no owner yet&rdquo;. With Docker: <code className="font-mono">docker compose logs web</code>.</>}
+              error={errors.setupCode?.message}
+            >
+              <Input id="fr-code" autoComplete="off" autoCapitalize="characters" spellCheck={false} className="font-mono tracking-widest" {...register("setupCode")} {...describe("fr-code", { hint: true, error: errors.setupCode?.message })} />
+            </Field>
             <Field id="fr-name" label="Your name" error={errors.name?.message}>
               <Input id="fr-name" autoComplete="name" autoFocus {...register("name")} {...describe("fr-name", { error: errors.name?.message })} />
             </Field>

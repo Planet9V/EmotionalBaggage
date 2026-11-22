@@ -217,46 +217,67 @@ describe("F4 and F5: settings checked at start", () => {
     await dbm.ready();
   });
 
+  /** The settings as resolved now (the five-second cache forgotten, review N15). */
+  const fresh = async () => {
+    const c = await import("@/lib/auth2/config");
+    c.forgetAuth2Switch();
+    return c.resolveAuth2Config(db);
+  };
+  const saveBase = async (v: string | null) => (await import("@/lib/auth2/config")).writeAuth2Setting(db, "auth2.baseUrl", v);
+
   it("with no secret set, one is made, stored where requests cannot read it, and kept", async () => {
-    const { resolveAuth2Config } = await import("@/lib/auth2/config");
     const keep = env.BETTER_AUTH_SECRET;
     delete env.BETTER_AUTH_SECRET;
     try {
-      const first = await resolveAuth2Config(db);
+      const first = await fresh();
       expect(secretProblem(first.secret)).toBeNull();
-      expect((await resolveAuth2Config(db)).secret).toBe(first.secret);
+      expect((await fresh()).secret).toBe(first.secret);
       const { WITHHELD } = await import("@/lib/auth2/dbRoles");
       expect(WITHHELD).toContain("auth2_secrets");
       // An environment value still wins.
       env.BETTER_AUTH_SECRET = keep;
-      expect((await resolveAuth2Config(db)).secret).toBe(keep);
+      expect((await fresh()).secret).toBe(keep);
     } finally {
       env.BETTER_AUTH_SECRET = keep;
     }
   });
 
   it("in production a missing or http address is a warning, never a refusal", async () => {
-    const { resolveAuth2Config } = await import("@/lib/auth2/config");
     env.NODE_ENV = "production";
     delete env.BETTER_AUTH_URL;
-    await db.query("DELETE FROM settings WHERE key = 'auth2.baseUrl'");
-    const none = await resolveAuth2Config(db);
+    await saveBase(null);
+    const none = await fresh();
     expect(none.baseURL).toBeNull();
     expect(none.warnings.join(" ")).toMatch(/not set yet/);
     env.BETTER_AUTH_URL = "http://app.example.test";
-    const http = await resolveAuth2Config(db);
+    const http = await fresh();
     expect(http.baseURL).toBe("http://app.example.test");
     expect(http.warnings.join(" ")).toMatch(/not https/);
     delete env.BETTER_AUTH_URL;
-    await db.query(`INSERT INTO settings (key, value) VALUES ('auth2.baseUrl', '"https://saved.example.test/"')`);
+    await saveBase("https://saved.example.test/");
     try {
-      const saved = await resolveAuth2Config(db);
+      const saved = await fresh();
       expect(saved.baseURL).toBe("https://saved.example.test");
       expect(saved.warnings).toEqual([]);
       env.BETTER_AUTH_URL = "https://env.example.test";
-      expect((await resolveAuth2Config(db)).baseURL).toBe("https://env.example.test");
+      expect((await fresh()).baseURL).toBe("https://env.example.test");
     } finally {
-      await db.query("DELETE FROM settings WHERE key = 'auth2.baseUrl'");
+      await saveBase(null);
+    }
+  });
+
+  it("N15: the resolved settings are kept for a few seconds, and a stored change is seen at once", async () => {
+    const c = await import("@/lib/auth2/config");
+    const before = await fresh();
+    await db.query(`INSERT INTO auth2_settings (key, value) VALUES ('auth2.trustedOrigins', '["https://other.example.test"]') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`);
+    try {
+      // Written behind its back: the cached answer stands for now...
+      expect((await c.resolveAuth2Config(db)).trustedOrigins).toEqual(before.trustedOrigins);
+      // ...and a change through writeAuth2Setting is seen at once.
+      await c.writeAuth2Setting(db, "auth2.trustedOrigins", ["https://third.example.test"]);
+      expect((await c.resolveAuth2Config(db)).trustedOrigins).toContain("https://third.example.test");
+    } finally {
+      await c.writeAuth2Setting(db, "auth2.trustedOrigins", null);
     }
   });
 });

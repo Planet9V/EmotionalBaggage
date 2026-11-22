@@ -7,17 +7,21 @@
  *
  * | Value              | 1. environment (optional override)  | 2. PostgreSQL                                      | 3. otherwise                         |
  * |--------------------|-------------------------------------|----------------------------------------------------|--------------------------------------|
- * | the switch         | AUTH2 (1/on/true/yes or 0/off/...)  | setting `auth2.enabled` (src/lib/settings.ts)      | off                                  |
+ * | the switch         | AUTH2 (1/on/true/yes or 0/off/...)  | auth2_settings `auth2.enabled`                     | off                                  |
  * | signing secret     | BETTER_AUTH_SECRET                  | table auth2_secrets, made on first use             | (always made)                        |
- * | base address       | BETTER_AUTH_URL                     | setting `auth2.baseUrl`                            | http://localhost:PORT outside production; in production none until the first-run page stores the address the owner confirms |
- * | other addresses    | AUTH2_TRUSTED_ORIGINS               | setting `auth2.trustedOrigins`                     | none                                 |
+ * | base address       | BETTER_AUTH_URL                     | auth2_settings `auth2.baseUrl`                     | http://localhost:PORT outside production; in production none until the first-run page stores the address the owner confirms |
+ * | other addresses    | AUTH2_TRUSTED_ORIGINS               | auth2_settings `auth2.trustedOrigins`              | none                                 |
+ *
+ * auth2_settings and auth2_secrets are read and written on the owner's connection only, through the functions
+ * here; the request role can neither read nor write them (review F6: they used to be in `settings`, which it can
+ * write). A platform administrator changes the addresses with adminOps().setAddresses.
  *
  * The environment wins where both exist, so tests and development can force a value; nobody has to set one. A
  * base address that is not https in production is a warning shown to the platform administrator, not a refusal.
  * The secret lives in a table the request role cannot read (src/lib/auth2/dbRoles.ts, WITHHELD).
  */
 import { randomBytes } from "node:crypto";
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 
 const ON = /^(1|true|yes|on)$/i;
 const OFF = /^(0|false|no|off)$/i;
@@ -37,7 +41,7 @@ export const AUTH2_SETTING = {
 const isProduction = () => process.env.NODE_ENV === "production";
 
 /** The AUTH2 environment override: true or false when set to a known word, null when not set. */
-function override(): boolean | null {
+export function override(): boolean | null {
   const v = process.env.AUTH2?.trim() ?? "";
   if (ON.test(v)) return true;
   if (OFF.test(v)) return false;
@@ -45,7 +49,7 @@ function override(): boolean | null {
 }
 
 const CACHE_MS = 5_000;
-const g = globalThis as unknown as { __c2rAuth2Switch?: { value: boolean; at: number } };
+const g = globalThis as unknown as { __c2rAuth2Switch?: { value: boolean; at: number }; __c2rAuth2Config?: { db: unknown; at: number; config: Auth2Config } };
 
 /**
  * Whether the new sign-in is on: the AUTH2 override, else the stored setting (read at most every five seconds),
@@ -58,8 +62,9 @@ export async function auth2Enabled(): Promise<boolean> {
   if (c && Date.now() - c.at < CACHE_MS) return c.value;
   let value = false;
   try {
-    const { getSetting } = await import("@/lib/settings");
-    value = (await getSetting<unknown>(AUTH2_SETTING.enabled, false)) === true;
+    const { ownerPool, ready } = await import("@/lib/db");
+    await ready();
+    value = await storedSwitch(ownerPool());
   } catch (e) {
     console.error(`[auth2] the switch could not be read, so the new sign-in is off: ${(e as Error).message}`);
   }
@@ -74,9 +79,37 @@ export async function auth2Enabled(): Promise<boolean> {
  */
 export const auth2EnabledNow = (): boolean => override() ?? g.__c2rAuth2Switch?.value ?? false;
 
-/** Forgets the cached switch, after the setting changes. */
+/** The stored switch, read straight from auth2_settings (ready() uses this after the migrations: review N13). */
+export async function storedSwitch(db: Queryable): Promise<boolean> {
+  return (await readAuth2Setting<unknown>(db, AUTH2_SETTING.enabled)) === true;
+}
+
+/** Forgets the cached switch and settings, after one of them changes. */
 export function forgetAuth2Switch() {
   g.__c2rAuth2Switch = undefined;
+  g.__c2rAuth2Config = undefined;
+}
+
+type Queryable = Pick<Pool, "query"> | PoolClient;
+type Auth2SettingKey = (typeof AUTH2_SETTING)[keyof typeof AUTH2_SETTING];
+
+/** One of the new sign-in's settings, or null. `db` must be the owner's connection. */
+export async function readAuth2Setting<T>(db: Queryable, key: Auth2SettingKey): Promise<T | null> {
+  const r = await db.query<{ value: T }>("SELECT value FROM auth2_settings WHERE key = $1", [key]);
+  return r.rows[0]?.value ?? null;
+}
+
+/** Stores one of the new sign-in's settings (null removes it). `db` must be the owner's connection. */
+export async function writeAuth2Setting(db: Queryable, key: Auth2SettingKey, value: unknown, by = ""): Promise<void> {
+  if (value === null) await db.query("DELETE FROM auth2_settings WHERE key = $1", [key]);
+  else {
+    await db.query(
+      `INSERT INTO auth2_settings (key, value, updated_at, updated_by) VALUES ($1, $2, now(), $3)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now(), updated_by = EXCLUDED.updated_by`,
+      [key, JSON.stringify(value), by]
+    );
+  }
+  forgetAuth2Switch();
 }
 
 const SECRET_HELP = "(for example: openssl rand -base64 48), or leave it out and the app keeps its own";
@@ -155,12 +188,20 @@ async function storedSecret(db: Pool): Promise<string> {
   return r.rows[0].value;
 }
 
-/** Everything the new sign-in needs, resolved as in the table at the top. `db` is the owner's pool. */
+/**
+ * Everything the new sign-in needs, resolved as in the table at the top. `db` is the owner's pool. Kept for five
+ * seconds, as the switch is (review N15); a change through writeAuth2Setting is seen at once.
+ */
 export async function resolveAuth2Config(db: Pool): Promise<Auth2Config> {
-  const setting = async <T>(key: string): Promise<T | null> => {
-    const r = await db.query<{ value: T }>("SELECT value FROM settings WHERE key = $1", [key]);
-    return r.rows[0]?.value ?? null;
-  };
+  const held = g.__c2rAuth2Config;
+  if (held && held.db === db && Date.now() - held.at < CACHE_MS) return held.config;
+  const config = await resolveNow(db);
+  g.__c2rAuth2Config = { db, at: Date.now(), config };
+  return config;
+}
+
+async function resolveNow(db: Pool): Promise<Auth2Config> {
+  const setting = <T>(key: Auth2SettingKey) => readAuth2Setting<T>(db, key);
   const secret = await storedSecret(db);
   const envURL = process.env.BETTER_AUTH_URL?.trim();
   const savedURL = await setting<string>(AUTH2_SETTING.baseUrl);

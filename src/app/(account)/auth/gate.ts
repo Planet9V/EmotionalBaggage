@@ -57,3 +57,9 @@ export async function mailOn() {
   const { currentMailSender } = await import("@/lib/auth2/mail");
   return (await currentMailSender()) !== null;
 }
+
+/** Whether the install still waits for its first-run owner (src/lib/auth2/firstRun.ts): sign-up, reset and invitations wait too. */
+export async function setupPending() {
+  const { firstRunOpen } = await import("@/lib/auth2/firstRun");
+  return firstRunOpen(ownerPool());
+}

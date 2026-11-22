@@ -9,13 +9,19 @@
  *   never more than NAME_MAX_MS (one minute). This is what slows guessing spread over many addresses: at most
  *   about one guess a minute at any one account.
  *
- * A delay, never a lock: whatever anyone else does, the account's owner waits at most NAME_MAX_MS from an address
- * that has not itself been failing, and a correct password is accepted as soon as the wait has passed. A try made
- * during a wait is refused without checking the password and without counting (429, SIGN_IN_WAIT, Retry-After). A
- * correct password clears both rows. Counts are forgotten after an hour with no try. Names are stored as their
- * SHA-256; unknown names are counted the same as real ones, so the answers do not tell them apart.
+ * The name-wide wait alone could be held by a patient attacker for as long as they keep trying from new addresses
+ * (review B5: about 75 tries an hour from rotating addresses kept a name waiting all the time). So it is not applied
+ * to a browser that has signed in to this account before: a successful sign-in leaves a cookie holding a tag for
+ * the account, made with the sign-in secret (knownDeviceTag), and a browser that shows the tag skips the name-wide
+ * wait and count; the per-address wait still applies to it. A browser new to the account may be held while such an
+ * attack lasts: that is the cost, and it is a delay of at most NAME_MAX_MS per try, never a refusal of a right
+ * password once the wait has passed. Addresses are counted by /64 for IPv6 (./clientAddress.ts).
+ *
+ * A try made during a wait is refused without checking the password and without counting (429, SIGN_IN_WAIT,
+ * Retry-After). A correct password clears both rows. Counts are forgotten after an hour with no try. Names are
+ * stored as their SHA-256; unknown names are counted the same as real ones, so the answers do not tell them apart.
  */
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { APIError } from "better-auth/api";
 import type { Pool } from "pg";
 
@@ -36,7 +42,7 @@ const delaySql = (free: number, capMs: number, f: string) =>
  * Claims one try for (name, client): answers null when it may go ahead (it is then counted in both rows), or the
  * seconds to wait. Both rows are checked and counted in one transaction, so parallel tries cannot slip past.
  */
-export async function claimTry(db: Pool, email: string, client: string, now = new Date()): Promise<number | null> {
+export async function claimTry(db: Pool, email: string, client: string, now = new Date(), opts: { knownDevice?: boolean } = {}): Promise<number | null> {
   const key = nameKey(email);
   const addr = (client || "unknown").slice(0, 100);
   const resetBefore = new Date(now.getTime() - RESET_MS);
@@ -45,15 +51,16 @@ export async function claimTry(db: Pool, email: string, client: string, now = ne
     await c.query("BEGIN");
     await c.query("DELETE FROM auth2_sign_in_waits WHERE last_attempt_at <= $1 AND next_allowed_at <= $2", [resetBefore, now]);
     // Lock both rows (made if missing) in a fixed order: the name across addresses first.
-    for (const cl of [ALL, addr]) {
+    const clients = opts.knownDevice ? [addr] : [ALL, addr];
+    for (const cl of clients) {
       await c.query(
         `INSERT INTO auth2_sign_in_waits (name_key, client, failures, last_attempt_at, next_allowed_at) VALUES ($1, $2, 0, $3, $3) ON CONFLICT DO NOTHING`,
         [key, cl, now]
       );
     }
     const rows = await c.query<{ client: string; next_allowed_at: Date }>(
-      "SELECT client, next_allowed_at FROM auth2_sign_in_waits WHERE name_key = $1 AND client IN ($2, $3) ORDER BY client FOR UPDATE",
-      [key, ALL, addr]
+      "SELECT client, next_allowed_at FROM auth2_sign_in_waits WHERE name_key = $1 AND client = ANY($2::text[]) ORDER BY client FOR UPDATE",
+      [key, clients]
     );
     const until = Math.max(...rows.rows.map((r) => new Date(r.next_allowed_at).getTime()));
     if (until > now.getTime()) {
@@ -61,7 +68,7 @@ export async function claimTry(db: Pool, email: string, client: string, now = ne
       return Math.max(1, Math.ceil((until - now.getTime()) / 1000));
     }
     const counted = "(CASE WHEN last_attempt_at <= $4::timestamptz THEN 1 ELSE failures + 1 END)";
-    await c.query(
+    if (!opts.knownDevice) await c.query(
       `UPDATE auth2_sign_in_waits SET failures = ${counted}, last_attempt_at = $3::timestamptz, next_allowed_at = $3::timestamptz + ${delaySql(NAME_FREE, NAME_MAX_MS, counted)}
         WHERE name_key = $1 AND client = $2`,
       [key, ALL, now, resetBefore]
@@ -85,6 +92,22 @@ export async function claimTry(db: Pool, email: string, client: string, now = ne
 export async function clearTries(db: Pool, email: string) {
   await db.query("DELETE FROM auth2_sign_in_waits WHERE name_key = $1", [nameKey(email)]);
 }
+
+/** The cookie that marks a browser as having signed in to an account before; one tag per account, at most ten. */
+export const KNOWN_DEVICE_COOKIE = "c2r2_known";
+const MAX_TAGS = 10;
+
+/** The tag for one account in that cookie: an HMAC with the sign-in secret, so it cannot be made without it. */
+const knownDeviceTag = (secret: string, email: string) => createHmac("sha256", secret).update(`known-device:${nameKey(email)}`).digest("base64url").slice(0, 22);
+
+/** Whether a cookie value holds the tag for this account. */
+export const hasTag = (cookie: string | null | undefined, secret: string, email: string) => !!cookie && cookie.split(".").includes(knownDeviceTag(secret, email));
+
+/** The cookie value with this account's tag added (newest first, at most MAX_TAGS). */
+export const withTag = (cookie: string | null | undefined, secret: string, email: string) => {
+  const tag = knownDeviceTag(secret, email);
+  return [tag, ...(cookie ?? "").split(".").filter((t) => /^[\w-]{22}$/.test(t) && t !== tag)].slice(0, MAX_TAGS).join(".");
+};
 
 export function waitRefusal(seconds: number) {
   return new APIError(

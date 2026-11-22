@@ -38,12 +38,31 @@ export function cleanWorkspaceName(raw: unknown): string {
 
 type Refusals = { empty: [string, string]; long: [string, string]; link: [string, string] };
 function cleanLabel(raw: unknown, max: number, r: Refusals): string {
-  if (typeof raw !== "string") throw refuse(...r.empty);
+  // A lone surrogate is valid JSON text but not a string PostgreSQL will store (review B1): refused up front.
+  if (typeof raw !== "string" || !raw.isWellFormed()) throw refuse(...r.empty);
   const name = raw.replace(CONTROL, " ").replace(/\s+/g, " ").trim();
   if (!name) throw refuse(...r.empty);
   if ([...name].length > max) throw refuse(...r.long);
   if (LINKISH.test(name)) throw refuse(...r.link);
   return name;
+}
+
+const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/;
+
+/**
+ * An email address as this app accepts it from anyone: well-formed text (no lone surrogate), trimmed, lower case,
+ * at most 254 characters, one @ and a dot after it. The one check for invitations, platform administration and the
+ * first-run page; Better Auth's own endpoints get the well-formed check in ./auth.ts.
+ */
+export function cleanEmail(raw: unknown): string {
+  const e = typeof raw === "string" && raw.isWellFormed() ? raw.trim().toLowerCase() : "";
+  if (!e || e.length > 254 || !EMAIL.test(e)) throw refuse("INVALID_EMAIL", "Enter a whole email address, such as name@example.com.");
+  return e;
+}
+
+/** Any text field from a request: refused when it holds a lone surrogate. */
+export function wellFormed(v: unknown): boolean {
+  return typeof v !== "string" || v.isWellFormed();
 }
 
 /** A picture address: empty, or https and at most 2,048 characters. */

@@ -13,7 +13,9 @@ import type { Pool } from "pg";
 import { z } from "zod";
 import { cleanWorkspaceName } from "../guards";
 import type { MailSender } from "../mail";
-import { isRole, manages, may, mayGrant, type Role } from "./permissions";
+import { CLIENT_ADDRESS_HEADER, hashPassword, verifyPassword } from "@/lib/auth";
+import { claimTry, clearTries, waitRefusal } from "../signInWait";
+import { isRole, manages, may, mayGrant } from "./permissions";
 import * as invitations from "./invitations";
 import * as store from "./store";
 import * as twoFactor from "./twoFactor";
@@ -36,6 +38,9 @@ async function memberOf(db: Pool, ctx: SessionCtx, workspaceId: string) {
   if (!m) throw store.notFound();
   return { user, m };
 }
+
+let dummyHash: Promise<string> | undefined;
+const dummy = () => (dummyHash ??= hashPassword(`dummy-${Math.random()}`));
 
 const notAllowed = () => store.refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
 
@@ -79,14 +84,14 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
         const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
         if (!may(m.role, "rename")) throw notAllowed();
         const name = cleanWorkspaceName(ctx.body.name);
-        await store.renameWorkspace(db, user.email, m.workspaceId, name);
+        await store.renameWorkspace(db, user.email, m.workspaceId, name, store.forRole(user.id));
         return ctx.json({ id: m.workspaceId, name });
       }),
 
       deleteWorkspace: createAuthEndpoint("/workspace/delete", { method: "POST", body: z.object({ workspaceId: id }), use: [sessionMiddleware] }, async (ctx) => {
         const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
         if (!may(m.role, "delete")) throw notAllowed();
-        await store.deleteWorkspace(db, user, m.workspaceId);
+        await store.deleteWorkspace(db, user, m.workspaceId, store.forRole(user.id));
         const active = await store.activeWorkspace(db, ctx.context.session.session);
         return ctx.json({ deleted: m.workspaceId, active: active.workspaceId });
       }),
@@ -106,7 +111,7 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
           const role = ctx.body.role;
           if (!isRole(role)) throw store.refuse("BAD_REQUEST", "INVALID_ROLE", "Choose owner, admin or member.");
           if (!manages(m.role, "member") || !mayGrant(m.role, role)) throw notAllowed();
-          await store.changeRole(db, user.email, m.workspaceId, ctx.body.memberId, role, (current: Role) => manages(m.role, current));
+          await store.changeRole(db, user.email, m.workspaceId, ctx.body.memberId, role, store.forRole(user.id));
           return ctx.json({ memberId: ctx.body.memberId, role });
         }
       ),
@@ -118,7 +123,7 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
           const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
           if (!manages(m.role, "member")) throw notAllowed();
           if (ctx.body.memberId === m.memberId) throw store.refuse("BAD_REQUEST", "USE_LEAVE", "To take yourself out of a workspace, leave it.");
-          await store.removeMember(db, user.email, m.workspaceId, ctx.body.memberId, (current: Role) => manages(m.role, current));
+          await store.removeMember(db, user.email, m.workspaceId, ctx.body.memberId, store.forRole(user.id));
           return ctx.json({ removed: ctx.body.memberId });
         }
       ),
@@ -135,7 +140,7 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
         { method: "POST", body: z.object({ workspaceId: id, required: z.boolean() }), use: [sessionMiddleware] },
         async (ctx) => {
           const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
-          await twoFactor.setPolicy(db, user.email, m, ctx.body.required);
+          await twoFactor.setPolicy(db, user, m, ctx.body.required);
           return ctx.json({ workspaceId: m.workspaceId, required: ctx.body.required });
         }
       ),
@@ -145,7 +150,7 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
         { method: "POST", body: z.object({ workspaceId: id, memberId: id, required: z.boolean() }), use: [sessionMiddleware] },
         async (ctx) => {
           const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
-          await twoFactor.setMemberRequired(db, user.email, m, ctx.body.memberId, ctx.body.required);
+          await twoFactor.setMemberRequired(db, user, m, ctx.body.memberId, ctx.body.required);
           return ctx.json({ memberId: ctx.body.memberId, required: ctx.body.required });
         }
       ),
@@ -155,8 +160,35 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
         { method: "POST", body: z.object({ workspaceId: id, memberId: id }), use: [sessionMiddleware] },
         async (ctx) => {
           const { user, m } = await memberOf(db, ctx, ctx.body.workspaceId);
-          await twoFactor.resetMemberTwoFactor(db, deps, user, m, ctx.body.memberId);
-          return ctx.json({ reset: ctx.body.memberId });
+          const r = await twoFactor.resetMemberTwoFactor(db, deps, user, m, ctx.body.memberId);
+          // `code`: only in "no mail" mode, shown once to whoever reset it, to hand over.
+          return ctx.json({ reset: ctx.body.memberId, ...r });
+        }
+      ),
+
+      /**
+       * Setting two-factor up again after someone else reset it (review B4): the address, the password and the proof
+       * (the emailed link's token, or the handed-over code). One answer for anything wrong. On success, the password
+       * alone starts a session for the next 15 minutes, to set the app up again.
+       */
+      giveReenrolProof: createAuthEndpoint(
+        "/re-enrol",
+        { method: "POST", body: z.object({ email: z.string().max(320), password: z.string().max(200), proof: z.string().max(200) }) },
+        async (ctx) => {
+          const email = ctx.body.email.trim().toLowerCase();
+          const wait = await claimTry(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
+          if (wait !== null) throw waitRefusal(wait);
+          const u = await db.query<{ id: string; password: string | null }>(
+            `SELECT u.id, a.password FROM "user" u LEFT JOIN account a ON a."userId" = u.id AND a."providerId" = 'credential' WHERE lower(u.email) = $1`,
+            [email]
+          );
+          const row = u.rows[0];
+          // The same work whether or not the account exists.
+          const pwOk = await verifyPassword(ctx.body.password, row?.password ?? (await dummy()));
+          const ok = !!row && pwOk && (await twoFactor.giveProof(db, row.id, ctx.body.proof));
+          if (!ok) throw store.refuse("BAD_REQUEST", "REENROL_INVALID", "That address, password and code or link do not match. Check them, or ask for a new reset.");
+          await clearTries(db, email);
+          return ctx.json({ proved: true });
         }
       ),
 
@@ -194,6 +226,8 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
         "/workspace/invitation/accept",
         { method: "POST", body: z.object({ token: z.string().max(200) }), use: [sessionMiddleware] },
         async (ctx) => {
+          // A person who owes two-factor reaches no workspace, a new one included (review N9).
+          await enrolled(db, ctx);
           const { session, user } = ctx.context.session;
           return ctx.json(await invitations.accept(db, user, session.id, ctx.body.token));
         }

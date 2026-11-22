@@ -147,8 +147,13 @@ export function ready() {
     g.__c2rReady = (async () => {
       // The new sign-in's settings, checked before anything else when it is on (src/lib/auth2/config.ts).
       const auth2 = await import("./auth2/config");
-      if (auth2.auth2EnabledNow()) await auth2.checkAuth2Settings();
       await migrate();
+      // After the migrations, so the stored switch can be read (review N13); the override counts as well.
+      if (auth2.override() ?? (await auth2.storedSwitch(ownerPool()).catch(() => false))) {
+        await auth2.checkAuth2Settings();
+        // A fresh install: a new set-up code for the first-run page, printed to the log (review B2).
+        await (await import("./auth2/firstRun")).ensureSetupCode(ownerPool());
+      }
       await (await import("./auth")).ensureDefaultUser(ownerPool());
       const vector = await vectorSupport();
       await seedOnce();
