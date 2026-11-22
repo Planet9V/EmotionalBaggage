@@ -84,12 +84,9 @@ describe("Baggage Claims MK1 as seeded", () => {
     for (const k of ["concept", "research", "prototype", "production", "marketing", "sales"]) expect(by[k]).toBe("in-progress");
   });
 
-  it("puts the go/no-go decision first: it clears a Concept check and opens the sections its banners name", () => {
+  it("puts the go/no-go decision first: it clears a Concept check and opens the three sections the decision names", () => {
     expect(m.actions[0]!.label).toBe('Decide "Spend about $750 on the validation batch?"');
-    expect(m.actions[0]!.why).toBe(
-      // it unlocks Sourcing, 3D printing and Assembly; Sourcing shows the parts list, so every section showing it is opened too
-      "Clears 1 of the 2 checks left at the Concept gate. Opens 6 sections: Physical layout, Bill of materials, Sourcing, 3D printing, Assembly, Part prices."
-    );
+    expect(m.actions[0]!.why).toBe("Clears 1 of the 2 checks left at the Concept gate. Opens 3 sections: Sourcing, 3D printing, Assembly.");
     expect(m.actions[1]!.stage).toBe("concept");
     expect(m.actions).toHaveLength(3);
   });

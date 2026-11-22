@@ -136,22 +136,18 @@ export function nextActions(view: ProcessView, rows: Item[], limit = 3): Action[
     if (s.passed) continue;
     for (const c of s.result.checks) if (!c.met) add({ label: c.action, href: c.href, tier: TIER[s.position], checks: [{ stage: s.key, id: c.id }], opens: [], stage: s.key });
   }
-  const visible = sectionsFor(view.state.productType);
   for (const d of decisionsOf(rows)) {
     if (d.chosen) continue;
-    // the sections it opens, as the section banners name them (a decision that opens Sourcing opens the parts list too)
-    const opens: string[] = [];
+    // the sections it opens, as the decision tree names them; it counts at the earliest stage among them
+    const opens = unlockLabels(d);
+    if (!opens.length) continue;
     let tier = 3;
     let stage = "";
-    for (const st of visible) {
-      const sv = view.stages.find((x) => x.key === st.key);
-      for (const sec of st.sections) {
-        if (!lockingDecisions(rows, st.key, sec.key).some((x) => x.key === d.key)) continue;
-        opens.push(sec.label);
-        if (sv && TIER[sv.position] < tier) [tier, stage] = [TIER[sv.position], st.key];
-      }
+    for (const u of d.unlocks) {
+      const sv = view.stages.find((x) => x.key === stageOfPath(u));
+      if (sv && TIER[sv.position] < tier) [tier, stage] = [TIER[sv.position], sv.key];
     }
-    if (!opens.length) continue;
+    if (!stage) continue;
     add({ label: `Decide "${d.question}"`, href: "/s/concept/decisions", tier, checks: [], opens, stage });
   }
 
@@ -187,6 +183,9 @@ export function nextActions(view: ProcessView, rows: Item[], limit = 3): Action[
   });
 }
 
+/** A decision's `unlocks` as section names; an entry that is not a section path is left out (the planner ignores it too). */
+const unlockLabels = (d: Decision) => d.unlocks.filter((u) => u.includes("/")).map((u) => sectionLabel(u));
+
 function decisionsOf(rows: Item[]): Decision[] {
   return rows.filter((r) => r.section === DECISIONS_STORE).map(toDecision).filter((d): d is Decision => !!d);
 }
@@ -201,7 +200,7 @@ export function openDecisions(rows: Item[]): OpenDecision[] {
       key: d.key,
       question: d.question,
       href: `/s/concept/decisions?item=${d.item.id}`,
-      opens: d.unlocks.map((u) => (u.includes("/") ? sectionLabel(u) : u)),
+      opens: unlockLabels(d),
       ready: decisionReady(d, all),
       waitsFor: d.dependsOn.filter((k) => !byKey.get(k)?.chosen).map((k) => byKey.get(k)?.question ?? k),
     }));

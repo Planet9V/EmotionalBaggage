@@ -289,7 +289,7 @@ function Decisions({ decisions }: { decisions: OpenDecision[] }) {
               <Link href={d.href} className="text-sm font-medium text-primary hover:text-link hover:underline">{d.question}</Link>
               <p className="mt-0.5 text-[11px] leading-snug text-secondary">
                 {d.opens.length ? `Opens ${d.opens.join(", ")}.` : "Opens no section."}
-                {d.ready ? "" : ` Waits for: ${d.waitsFor.join("; ")}.`}
+                {d.ready ? "" : ` Waits for: ${d.waitsFor.join("; ")}${/[?.!]$/.test(d.waitsFor[d.waitsFor.length - 1] ?? "") ? "" : "."}`}
               </p>
             </li>
           ))}
