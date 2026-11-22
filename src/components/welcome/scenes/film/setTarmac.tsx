@@ -98,6 +98,11 @@ function handler(t: number): FigPose {
     head: s > 5150 ? 0.85 * Math.sin((s - 5150) / 430) * clamp01((s - 5150) / 300) : 0,
     handL: hand(1),
     handR: hand(-1),
+    // gripping the handle until it goes, then open hands following through
+    shapeL: s < RELEASE + 60 ? "grip" : "open",
+    shapeR: s < RELEASE + 60 ? "grip" : "open",
+    aimL: s < RELEASE + 60 ? [Math.sin(b.tumble ?? 0), -Math.cos(b.tumble ?? 0), 0] : undefined,
+    aimR: s < RELEASE + 60 ? [Math.sin(b.tumble ?? 0), -Math.cos(b.tumble ?? 0), 0] : undefined,
   };
 }
 
@@ -341,7 +346,8 @@ function owner(t: number): FigPose {
   const b = curbBag(t);
   const x = kf(t, [[0, -3.6], [1900, OWNER_X, "out"]]);
   const reach = kf(t, [[2350, 0], [2900, 1]]);
-  const grip: V3 = [b.p[0], b.p[1] + HANDLE_Y - 0.005, b.p[2] - 0.03];
+  // the hand closes round the bar from above: knuckles to us, fingers wrapped under it
+  const grip: V3 = [b.p[0], b.p[1] + HANDLE_Y + 0.03, b.p[2] + 0.012];
   const glance = kf(t, [[7950, 0], [8400, 1]]);
   // the first "whoa" makes him start; at the punchline, the slow deadpan look down at it
   const start = kf(t, [[5120, 0], [5230, 1, "out"], [6000, 0.6], [7000, 0.2], [7900, 0]]);
@@ -359,6 +365,9 @@ function owner(t: number): FigPose {
     head: 0.3 * reach + 0.5 * glance,
     nod: 0.2 * reach * (1 - kf(t, [[LIFT + 600, 0], [LIFT + 1100, 1]])) + 0.36 * glance,
     handR: reach > 0 ? [mix(x + 0.3, grip[0], reach), mix(0.8, grip[1], reach), mix(0.0, grip[2], reach)] : null,
+    shapeR: reach > 0.85 ? "grip" : reach > 0 ? "open" : undefined,
+    aimR: reach > 0.3 ? [0.15, -1, 0.1] : undefined,
+    palmR: reach > 0.3 ? [0, -0.2, -1] : undefined,
   };
 }
 
@@ -394,6 +403,11 @@ function bystander(t: number): FigPose {
     nod: mix(0.5, -0.12, take) + 0.18 * laugh,
     head: -0.1 * take,
     handR: phoneAt,
+    // the phone: tipped up to read, then upright to film, its screen (and the palm behind it) toward the face
+    aimR: onBody([0, 0, 0], WATCHER_YAW, 0, [0, mix(0.55, 1, film), mix(0.85, -0.1, film)]),
+    palmR: onBody([0, 0, 0], WATCHER_YAW, 0, [0, mix(0.85, 0.05, film), mix(-0.55, -1, film)]),
+    elbowR: [0.4, -1, -0.2],
+    shapeL: laugh > 0.5 ? "fist" : undefined,
     handL: laugh > 0 ? at([mix(-0.31, -0.02, laugh), mix(0.8, 1.5, laugh), mix(0.03, 0.22, laugh)]) : null,
   };
 }

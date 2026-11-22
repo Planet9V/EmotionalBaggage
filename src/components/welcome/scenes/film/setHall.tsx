@@ -389,6 +389,9 @@ function stranger(t: number): FigPose {
     lean,
     nod: 0.1 * ask,
     handR: ask > 0.01 ? [mix(STRANGER[0] + 0.25, b[0], 0.3 * ask), mix(0.8, 1.25, ask), mix(STRANGER[2] - 0.1, b[2], 0.3 * ask)] : null,
+    // pointing after it
+    shapeR: ask > 0.3 ? "point" : undefined,
+    aimR: ask > 0.3 ? [b[0] - STRANGER[0], 0.1, b[2] - STRANGER[2]] : undefined,
   };
 }
 function host(t: number): FigPose {
@@ -397,7 +400,7 @@ function host(t: number): FigPose {
   const a = HOST_YAW + turn * 0.6;
   const b = rideBag(t).p;
   // proud of it: filming, and grinning once it starts shouting "Wheee"
-  return { look: [b[0], b[1] + BAG_MID, b[2]], mouth: t > 3900 ? "grin" : "smile", brow: 0.4 * kf(t, [[3800, 0], [4200, 1]]), p: HOST, yaw: HOST_YAW, head: turn * 0.8, handR: [HOST[0] + 0.42 * Math.sin(a), 1.52, HOST[2] + 0.42 * Math.cos(a)] };
+  return { look: [b[0], b[1] + BAG_MID, b[2]], mouth: t > 3900 ? "grin" : "smile", brow: 0.4 * kf(t, [[3800, 0], [4200, 1]]), p: HOST, yaw: HOST_YAW, head: turn * 0.8, handR: [HOST[0] + 0.42 * Math.sin(a), 1.52, HOST[2] + 0.42 * Math.cos(a)], aimR: [0, 1, 0], palmR: [-Math.sin(a), 0, -Math.cos(a)], elbowR: [0.5, -1, 0] };
 }
 
 /** A stadium-shaped slab: half the straight is `HS`, the ends have radius `r`. */

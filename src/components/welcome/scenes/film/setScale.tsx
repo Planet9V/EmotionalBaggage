@@ -402,6 +402,14 @@ function ScaleSet({ button }: { button: boolean }) {
         nod: 0.15 - 0.2 * look,
         handR: onBody(AGENT_BACK, AGENT_YAW, lean, [0.02, 1.43, 0.22 - 0.1 * look]),
         handL: onBody(AGENT_BACK, AGENT_YAW, lean, [-0.26, 1.02, 0.42]),
+        // chin on her knuckles, the other hand flat on the desk
+        shapeR: "fist",
+        aimR: onBody([0, 0, 0], AGENT_YAW, 0, [0, 1, 0.3]),
+        palmR: onBody([0, 0, 0], AGENT_YAW, 0, [-1, 0, 0]),
+        elbowR: [0.2, -1, 0.3],
+        shapeL: "open",
+        aimL: onBody([0, 0, 0], AGENT_YAW, 0, [0.2, 0, 1]),
+        palmL: [0, -1, 0],
       };
     }
     // she sets it down, then walks round the end of the desk to her place behind it
@@ -435,6 +443,12 @@ function ScaleSet({ button }: { button: boolean }) {
       nod: 0.3 * down - 0.08 * aback,
       handL: aback > 0.01 ? palms(-1) : hand(1),
       handR: aback > 0.01 ? palms(1) : hand(-1),
+      shapeL: aback > 0.01 ? "open" : letGo < 0.5 ? "grip" : undefined,
+      shapeR: aback > 0.01 ? "open" : letGo < 0.5 ? "grip" : undefined,
+      aimL: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, 0.3, 1]) : letGo < 0.5 ? [0, -1, 0] : undefined,
+      aimR: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, 0.3, 1]) : letGo < 0.5 ? [0, -1, 0] : undefined,
+      palmL: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, -0.3, 1]) : undefined,
+      palmR: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, -0.3, 1]) : undefined,
     };
   };
   const host = (t: number): FigPose => {
@@ -464,6 +478,14 @@ function ScaleSet({ button }: { button: boolean }) {
         nod: 0.12 * kf(t, [[POP, 0], [POP + 300, 1]]) * (1 - turn) + 0.12 * bump(t, 6300, 6800),
         handL: hand(-1),
         handR: hand(1),
+        // folded arms open into a shrug, palms up
+        shapeL: shrug > 0.4 ? "open" : undefined,
+        shapeR: shrug > 0.4 ? "open" : undefined,
+        palmL: shrug > 0.4 ? [0, 1, 0] : undefined,
+        palmR: shrug > 0.4 ? [0, 1, 0] : undefined,
+        aimL: shrug > 0.4 ? onBody([0, 0, 0], yaw, 0, [-0.6, 0, 1]) : undefined,
+        aimR: shrug > 0.4 ? onBody([0, 0, 0], yaw, 0, [0.6, 0, 1]) : undefined,
+        shrug: 0.7 * bump(t, 5950, 7300),
       };
     }
     // a beat after the agent, a flicker of the brows at "FAT?"; then the line, to her

@@ -1,13 +1,30 @@
 "use client";
 
-// The people: deliberately abstract, told apart at a glance by silhouette and costume, and now given a face that
-// acts (eyes that blink and look, brows, a mouth). Each figure's pose is a function of the scene's clock.
+// The people: deliberately abstract, told apart at a glance by silhouette and costume, with a face that acts, arms
+// that bend at the elbow and hands that grip and point. Each figure is one skinned mesh (one draw call, and one for
+// its shadow) and a face drawn on a canvas; every joint is a bone moved by transforms, never by rebuilding geometry.
+// The pose is a function of the scene's clock; the arms are solved to the hand targets the pose names.
 import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { C, useBuilt, useClock, type Kit, type V3 } from "./kit";
+import { useBuilt, useClock, type V3 } from "./kit";
 import { blinkAt, mouthFor, pupilFor, type FaceState, type Mouth } from "./face";
 import { FACE_ACROSS, FACE_H, FACE_UPDOWN, FACE_W, drawFace, faceKey } from "./faceDraw";
+import { BONE, BONES, FORE, HAND_C, HEAD_C, HEAD_R, NECK, UPPER, WEAR, figureMaker, lr, skeletonOf, type Role } from "./body";
+import { aimDown, twoBone, type Limb } from "./rig";
+
+export type { Role } from "./body";
+
+/** What a hand is doing: its fingers' curl and the thumb's. */
+type HandShape = "relax" | "open" | "grip" | "fist" | "point" | "hold";
+const CURL: Record<HandShape, [fingers: number, index: number, thumb: number]> = {
+  relax: [0.5, 0.5, 0.2],
+  open: [0.05, 0, -0.15],
+  grip: [1.55, 1.55, 0.95],
+  fist: [2.0, 2.0, 1.2],
+  point: [1.95, 0.0, 1.05],
+  hold: [1.25, 1.15, 0.75],
+};
 
 export type FigPose = {
   p: V3;
@@ -21,6 +38,19 @@ export type FigPose = {
   /** where each hand is, in the world; left out, the arm hangs */
   handR?: V3 | null;
   handL?: V3 | null;
+  /** the shape of each hand; left out, relaxed (holding, for a phone hand) */
+  shapeR?: HandShape;
+  shapeL?: HandShape;
+  /** which way each hand's fingers point, and which way its palm faces, in the world; left out, they follow the arm */
+  aimR?: V3;
+  aimL?: V3;
+  palmR?: V3;
+  palmL?: V3;
+  /** which way each elbow points, on the body (x to its right hand, y up, z in front); left out, down and back */
+  elbowR?: V3;
+  elbowL?: V3;
+  /** both shoulders up, 0 to 1 */
+  shrug?: number;
   /** what the eyes look at, in the world; left out, straight ahead */
   look?: V3 | null;
   /** brows up (positive) or down, and knitted at the middle (positive) or lifted there, worried (negative) */
@@ -47,101 +77,8 @@ export function onBody(p: V3, yaw: number, lean: number, l: V3): V3 {
   return [p[0] + l[0] * Math.cos(yaw) + z * Math.sin(yaw), p[1] + y, p[2] - l[0] * Math.sin(yaw) + z * Math.cos(yaw)];
 }
 
-/** Who is who, by silhouette and costume: no logos. */
-export type Role = "agent" | "handler" | "owner" | "bystander" | "traveller";
-type Costume = { coat: string; legs: string; skin: string; hair: string; sleeve: string };
-const WEAR: Record<Role, Costume> = {
-  agent: { coat: "#2b4a8a", legs: "#1f2f4f", skin: "#c99a78", hair: "#2a2320", sleeve: "#2b4a8a" },
-  handler: { coat: "#d9e021", legs: "#2c3a52", skin: "#e2bd98", hair: "#39414f", sleeve: "#39414f" },
-  owner: { coat: "#2f6b62", legs: "#39414f", skin: "#e6c3a0", hair: "#5a3d2b", sleeve: "#2f6b62" },
-  bystander: { coat: "#8a4a6c", legs: "#3b4660", skin: "#8f6247", hair: "#1e1b1c", sleeve: "#8a4a6c" },
-  traveller: { coat: "#c9b6d6", legs: "#56617a", skin: "#d9ad88", hair: "#7a5a3a", sleeve: "#c9b6d6" },
-};
 const ROLES = Object.keys(WEAR) as Role[];
-const ZERO: V3 = [0, 0, 0];
-const HIP = 0.8;
-const SHOULDER = 1.3;
-const HEAD = 1.6;
-const HEAD_R = 0.185;
-
-function figureBody(role: Role) {
-  const w = WEAR[role];
-  return (k: Kit) => {
-    // legs and shoes
-    [-0.105, 0.105].forEach((x) => {
-      k.box([0.16, HIP, 0.19], w.legs, [x, HIP / 2 + 0.03, 0], { r: 0.06, seg: 2 });
-      k.box([0.17, 0.08, 0.27], "#2a2e36", [x, 0.04, 0.035], { r: 0.035, seg: 2 });
-    });
-    const long = role === "owner" ? 0.32 : 0;
-    // the torso: a coat for the owner, a jacket or vest for the rest
-    k.box([0.46, 0.64 + long, 0.28], w.coat, [0, 1.07 - long / 2, 0], { r: 0.12, seg: 4 });
-    k.cyl(0.07, 0.1, w.skin, [0, 1.42, 0], { seg: 12 });
-    if (role === "agent") {
-      // a neck scarf, knotted to one side, and a lanyard with its card
-      k.box([0.24, 0.07, 0.24], C.yellow, [0, 1.385, 0.005], { r: 0.035, seg: 2 });
-      k.box([0.07, 0.15, 0.03], C.yellow, [0.07, 1.3, 0.145], { rot: [0, 0, -0.35], r: 0.012, seg: 1 });
-      k.box([0.012, 0.3, 0.012], "#e9edf2", [-0.07, 1.2, 0.143], { rot: [0, 0, 0.12] });
-      k.box([0.08, 0.1, 0.012], "#e9edf2", [-0.09, 1.02, 0.146], { r: 0.008, seg: 1 });
-      k.box([0.47, 0.05, 0.285], "#1f2f4f", [0, 0.8, 0]);
-    } else if (role === "handler") {
-      // hi-vis: reflective bands round the middle and over the shoulders
-      k.box([0.47, 0.06, 0.29], "#eef1f4", [0, 0.95, 0]);
-      [-0.13, 0.13].forEach((x) => k.box([0.06, 0.5, 0.29], "#eef1f4", [x, 1.13, 0]));
-    } else if (role === "owner") {
-      // a backpack, and the coat's collar and front
-      k.box([0.36, 0.46, 0.2], "#d9a441", [0, 1.12, -0.21], { r: 0.07 });
-      k.box([0.22, 0.14, 0.04], "#b98428", [0, 1.02, -0.315], { r: 0.02, seg: 1 });
-      [-0.15, 0.15].forEach((x) => k.box([0.05, 0.4, 0.3], "#b98428", [x, 1.18, -0.03], { r: 0.02, seg: 1 }));
-      k.box([0.02, 0.86, 0.01], "#234f48", [0, 0.92, 0.142]);
-      k.box([0.3, 0.07, 0.3], "#234f48", [0, 1.385, 0], { r: 0.03, seg: 2 });
-    } else if (role === "bystander") {
-      k.box([0.3, 0.06, 0.29], "#f1e6d2", [0, 1.375, 0], { r: 0.03, seg: 2 });
-    } else {
-      k.box([0.36, 0.1, 0.33], "#7fa3c7", [0, 1.36, 0], { r: 0.05, seg: 2 });
-    }
-  };
-}
-function figureHead(role: Role) {
-  const w = WEAR[role];
-  return (k: Kit) => {
-    k.ball(HEAD_R, w.skin, ZERO, { seg: 22 });
-    // the nose: a small bump, so a turned head reads as turned
-    k.ball(0.03, w.skin, [0, -0.035, 0.178], { seg: 8, s: [1, 1.1, 0.9] });
-    if (role === "handler") {
-      // a cap, and ear defenders on a band
-      k.geo(new THREE.SphereGeometry(0.195, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), w.hair, [0, 0.07, 0]);
-      k.box([0.22, 0.022, 0.14], w.hair, [0, 0.085, 0.2], { r: 0.01, seg: 1 });
-      [-0.19, 0.19].forEach((x) => k.cyl(0.075, 0.07, C.cone, [x, -0.01, 0], { rot: [0, 0, Math.PI / 2], seg: 14 }));
-      k.geo(new THREE.TorusGeometry(0.2, 0.016, 6, 20, Math.PI), "#2a2e36", [0, 0, 0]);
-    } else if (role === "agent") {
-      // hair pulled back into a bun
-      k.geo(new THREE.SphereGeometry(0.195, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), w.hair, [0, 0.012, -0.022], { rot: [-0.5, 0, 0] });
-      k.ball(0.085, w.hair, [0, 0.11, -0.18], { seg: 12 });
-    } else if (role === "bystander") {
-      k.ball(0.2, w.hair, [0, 0.045, -0.035], { seg: 18, s: [1, 0.92, 1] });
-    } else if (role === "traveller") {
-      k.geo(new THREE.SphereGeometry(0.2, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), w.hair, [0, 0.01, -0.03], { rot: [-0.45, 0, 0] });
-      k.box([0.3, 0.3, 0.1], w.hair, [0, -0.1, -0.15], { r: 0.05, seg: 2 });
-    } else {
-      k.geo(new THREE.SphereGeometry(0.196, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), w.hair, [0, 0.015, -0.02], { rot: [-0.4, 0, 0] });
-    }
-  };
-}
-function armGeometry(k: Kit) {
-  // a unit arm along +y: stretched to reach, so the sleeve is one tapered piece
-  k.cyl(0.062, 1, "#ffffff", [0, 0.5, 0], { r2: 0.052, seg: 10 });
-}
-function mitten(phone: boolean) {
-  return (k: Kit) => {
-    k.ball(0.07, "#ffffff", ZERO, { seg: 12, s: [1, 1.15, 0.9] });
-    // a phone, held up to film it
-    if (phone) k.box([0.085, 0.165, 0.014], "#1d1f24", [0, 0.1, 0.04], { r: 0.006, seg: 1 });
-  };
-}
-
-const UP = new THREE.Vector3(0, 1, 0);
-const BODIES = Object.fromEntries(ROLES.map((r) => [r, { body: figureBody(r), head: figureHead(r) }])) as Record<Role, { body: (k: Kit) => void; head: (k: Kit) => void }>;
-const HAND = { plain: mitten(false), phone: mitten(true) };
+const MAKERS = Object.fromEntries(ROLES.map((r) => [r, [figureMaker(r, false), figureMaker(r, true)]])) as Record<Role, [ReturnType<typeof figureMaker>, ReturnType<typeof figureMaker>]>;
 
 // the canvas and its texture are changed in place, outside React's data flow; this does it by name
 function repaint(canvas: HTMLCanvasElement, texture: THREE.CanvasTexture, f: FaceState, skin: string) {
@@ -151,36 +88,167 @@ function repaint(canvas: HTMLCanvasElement, texture: THREE.CanvasTexture, f: Fac
   texture.needsUpdate = true;
 }
 
-/** The face's canvas and texture, one per figure, redrawn only when the face changes. */
+/** The face's canvas, texture and mesh, one per figure; the canvas is redrawn only when the face changes. */
 function useFace(skin: string) {
   const canvas = useMemo(() => Object.assign(document.createElement("canvas"), { width: FACE_W, height: FACE_H }), []);
-  const texture = useMemo(() => {
-    const t = new THREE.CanvasTexture(canvas);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 4;
-    return t;
+  const parts = useMemo(() => {
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    const geo = new THREE.SphereGeometry(HEAD_R + 0.004, 24, 16, Math.PI / 2 - FACE_ACROSS, 2 * FACE_ACROSS, Math.PI / 2 - FACE_UPDOWN, 2 * FACE_UPDOWN);
+    const mat = new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.04, depthWrite: false, roughness: 0.8, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(0, HEAD_C - NECK, 0);
+    mesh.renderOrder = 1;
+    return { texture, geo, mat, mesh };
   }, [canvas]);
-  const geo = useMemo(() => new THREE.SphereGeometry(HEAD_R + 0.004, 24, 16, Math.PI / 2 - FACE_ACROSS, 2 * FACE_ACROSS, Math.PI / 2 - FACE_UPDOWN, 2 * FACE_UPDOWN), []);
   useEffect(
     () => () => {
-      texture.dispose();
-      geo.dispose();
+      parts.texture.dispose();
+      parts.geo.dispose();
+      parts.mat.dispose();
     },
-    [texture, geo],
+    [parts],
   );
   const shown = useRef("");
   const paint = (f: FaceState) => {
     const key = faceKey(f);
     if (key === shown.current) return;
     shown.current = key;
-    repaint(canvas, texture, f, skin);
+    repaint(canvas, parts.texture, f, skin);
   };
-  return { texture, geo, paint };
+  return { mesh: parts.mesh, paint };
 }
 
-/** The face at one moment, from the pose and the figure's own blinking. `local` is the look target in the head's frame. */
-function faceOf(q: FigPose, t: number, seed: number, local: THREE.Vector3 | null): FaceState {
-  const [lookX, lookY] = local ? pupilFor(local.x, local.y, local.z) : [0, 0];
+/** The skinned body: its bones in their rest pose, bound once. */
+function useRig(role: Role, phone: boolean) {
+  const geo = useBuilt(MAKERS[role][phone ? 1 : 0]);
+  const rig = useMemo(() => {
+    const defs = skeletonOf(role);
+    const bones = defs.map(() => new THREE.Bone());
+    const rest = defs.map((d) => {
+      const p = d.parent < 0 ? [0, 0, 0] : defs[d.parent]!.at;
+      return new THREE.Vector3(d.at[0] - p[0]!, d.at[1] - p[1]!, d.at[2] - p[2]!);
+    });
+    defs.forEach((d, i) => {
+      bones[i]!.position.copy(rest[i]!);
+      if (d.parent >= 0) bones[d.parent]!.add(bones[i]!);
+    });
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.84, metalness: 0 });
+    const mesh = new THREE.SkinnedMesh(geo, mat);
+    mesh.add(bones[BONE.root]!);
+    mesh.bind(new THREE.Skeleton(bones));
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    return { mesh, bones, rest, mat };
+  }, [geo, role]);
+  useEffect(() => () => rig.mat.dispose(), [rig]);
+  return rig;
+}
+
+type Scratch = {
+  s: THREE.Vector3;
+  t: THREE.Vector3;
+  w: THREE.Vector3;
+  f: THREE.Vector3;
+  p: THREE.Vector3;
+  pole: THREE.Vector3;
+  v: THREE.Vector3;
+  q: THREE.Quaternion;
+  qp: THREE.Quaternion;
+  qu: THREE.Quaternion;
+  qf: THREE.Quaternion;
+  qh: THREE.Quaternion;
+  limb: Limb;
+  curl: number[][];
+  last: number;
+};
+const scratch = (): Scratch => ({
+  s: new THREE.Vector3(),
+  t: new THREE.Vector3(),
+  w: new THREE.Vector3(),
+  f: new THREE.Vector3(),
+  p: new THREE.Vector3(),
+  pole: new THREE.Vector3(),
+  v: new THREE.Vector3(),
+  q: new THREE.Quaternion(),
+  qp: new THREE.Quaternion(),
+  qu: new THREE.Quaternion(),
+  qf: new THREE.Quaternion(),
+  qh: new THREE.Quaternion(),
+  limb: { mid: new THREE.Vector3(), end: new THREE.Vector3(), stretch: 1, hinge: new THREE.Vector3() },
+  curl: [[...CURL.relax], [...CURL.relax]],
+  last: NaN,
+});
+
+/** The bones back to their rest pose, before a pose is applied. */
+function toRest(bones: THREE.Bone[], rest: THREE.Vector3[]) {
+  for (let i = 0; i < BONES; i++) {
+    bones[i]!.position.copy(rest[i]!);
+    bones[i]!.quaternion.identity();
+    bones[i]!.scale.set(1, 1, 1);
+  }
+}
+
+/** Sets a bone's own rotation so that its rotation in the world is `world`. */
+function setWorld(bone: THREE.Bone, world: THREE.Quaternion, sc: Scratch) {
+  bone.parent!.getWorldQuaternion(sc.qp);
+  bone.quaternion.copy(sc.qp.invert().multiply(world));
+}
+
+/** One arm, solved to its target: the shoulder lifts toward a high hand, the elbow bends, the wrist turns the hand. */
+function poseArm(bones: THREE.Bone[], rest: THREE.Vector3[], q: FigPose, s: number, tall: number, phone: boolean, sc: Scratch, dt: number) {
+  const right = s > 0;
+  const target = right ? q.handR : q.handL;
+  const root = bones[BONE.root]!;
+  if (target) sc.t.set(target[0], target[1], target[2]);
+  else root.localToWorld(sc.t.set(s * 0.31, 0.79, 0.04));
+  // the shoulder: lifted for a hand above it, and by a shrug
+  const clav = bones[lr(BONE.clav, s)]!;
+  const upper = bones[lr(BONE.uarm, s)]!;
+  upper.getWorldPosition(sc.s);
+  const lift = Math.max(0, Math.min(1, (sc.t.y - sc.s.y) / (0.45 * tall))) * 0.22 + (q.shrug ?? 0) * 0.32;
+  clav.rotation.set(0, 0, s * lift);
+  clav.updateMatrixWorld(true);
+  upper.getWorldPosition(sc.s);
+  // the fingers' direction: as posed, or along the reach
+  const aim = right ? q.aimR : q.aimL;
+  if (aim) sc.f.set(aim[0], aim[1], aim[2]).normalize();
+  else sc.f.subVectors(sc.t, sc.s).normalize().lerp(sc.v.set(0, -1, 0), target ? 0.15 : 0.6).normalize();
+  // the palm: as posed, or toward the body's middle
+  const palm = right ? q.palmR : q.palmL;
+  if (palm) sc.p.set(palm[0], palm[1], palm[2]);
+  else sc.p.set(-s, 0, 0.15).applyQuaternion(root.getWorldQuaternion(sc.q));
+  // the wrist sits behind the hand's middle, along the fingers
+  sc.w.copy(sc.t).addScaledVector(sc.f, -HAND_C * tall);
+  const hint = right ? q.elbowR : q.elbowL;
+  sc.pole.set(hint ? hint[0] : s * 0.3, hint ? hint[1] : -1, hint ? hint[2] : -0.5).applyQuaternion(bones[BONE.chest]!.getWorldQuaternion(sc.q));
+  const limb = twoBone(sc.s, sc.w, UPPER * tall, FORE * tall, sc.pole, 1.3, sc.limb);
+  // the upper arm, the forearm (lengthened with the reach), the hand
+  aimDown(sc.v.subVectors(limb.mid, sc.s), limb.hinge, sc.qu);
+  setWorld(upper, sc.qu, sc);
+  const fore = bones[lr(BONE.farm, s)]!;
+  fore.position.copy(rest[lr(BONE.farm, s)]!).multiplyScalar(limb.stretch);
+  aimDown(sc.v.subVectors(limb.end, limb.mid), limb.hinge, sc.qf);
+  fore.quaternion.copy(sc.qp.copy(sc.qu).invert().multiply(sc.qf));
+  const hand = bones[lr(BONE.hand, s)]!;
+  hand.position.copy(rest[lr(BONE.hand, s)]!).multiplyScalar(limb.stretch);
+  aimDown(sc.f, sc.v.copy(sc.p).multiplyScalar(-s), sc.qh);
+  hand.quaternion.copy(sc.qf.invert().multiply(sc.qh));
+  // the fingers ease into their shape
+  const want = CURL[(right ? q.shapeR : q.shapeL) ?? (phone && right ? "hold" : "relax")];
+  const c = sc.curl[right ? 1 : 0]!;
+  const k = dt > 0 && dt < 200 ? 1 - Math.exp(-dt / 70) : 1;
+  for (let j = 0; j < 3; j++) c[j] = c[j]! + (want[j]! - c[j]!) * k;
+  bones[lr(BONE.fing, s)]!.rotation.set(0, 0, -s * c[0]!);
+  bones[lr(BONE.index, s)]!.rotation.set(0, 0, -s * c[1]!);
+  bones[lr(BONE.thumb, s)]!.rotation.set(0.5 * c[2]!, -s * 0.9 * c[2]!, -s * 0.35 * c[2]!);
+}
+
+/** The face at one moment, from the pose and the figure's own blinking. `aim` is the look target in the head's frame. */
+function faceOf(q: FigPose, t: number, seed: number, aim: THREE.Vector3 | null): FaceState {
+  const [lookX, lookY] = aim ? pupilFor(aim.x, aim.y, aim.z) : [0, 0];
   const m = mouthFor(q.mouth, q.talk ?? 0);
   const lid = Math.max(q.lids ?? 0, blinkAt(t, seed), q.blink ?? 0);
   return { lookX, lookY, lid: Math.min(1, lid), squint: q.squint ?? 0, brow: q.brow ?? 0, browIn: q.browIn ?? 0, mouth: m.mouth, open: m.open };
@@ -188,93 +256,49 @@ function faceOf(q: FigPose, t: number, seed: number, local: THREE.Vector3 | null
 
 /**
  * A person, kept abstract on purpose but told apart at a glance: a rounded body on two legs, a face that blinks,
- * looks and reacts, mitten hands that reach where they are told, and a costume (the agent's scarf and lanyard, the
- * handler's hi-vis and ear defenders, the owner's coat and backpack, a phone in a bystander's hand).
+ * looks and reacts, arms that bend and hands that grip, point and hold a phone, and a costume (the agent's scarf
+ * and lanyard, the handler's hi-vis and ear defenders, the owner's coat and backpack). `time` is the scene's own
+ * time, for a scene that stops it.
  */
 export function Figure({ pose, role, tall = 1, phone = false, seed, time }: { pose: (t: number) => FigPose; role: Role; tall?: number; phone?: boolean; seed?: number; time?: (t: number) => number }) {
   const root = useRef<THREE.Group>(null);
-  const body = useRef<THREE.Group>(null);
-  const head = useRef<THREE.Group>(null);
-  const arms = useRef<(THREE.Mesh | null)[]>([null, null]);
-  const hands = useRef<(THREE.Mesh | null)[]>([null, null]);
-  const tmp = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), d: new THREE.Vector3(), l: new THREE.Vector3() }), []);
   const clock = useClock();
-  const bodyGeo = useBuilt(BODIES[role].body);
-  const headGeo = useBuilt(BODIES[role].head);
-  const armGeo = useBuilt(armGeometry);
-  const handGeo = useBuilt(HAND.plain);
-  const phoneGeo = useBuilt(HAND.phone);
-  const w = WEAR[role];
-  const face = useFace(w.skin);
+  const rig = useRig(role, phone);
+  const face = useFace(WEAR[role].skin);
+  const scr = useRef<Scratch | null>(null);
   const own = seed ?? ROLES.indexOf(role) * 7.3 + tall * 3.1;
+  useEffect(() => {
+    const head = rig.bones[BONE.head]!;
+    head.add(face.mesh);
+    return () => void head.remove(face.mesh);
+  }, [rig, face.mesh]);
   useFrame(() => {
-    const q = pose(clock.t);
     const g = root.current;
     if (!g) return;
+    const sc = (scr.current ??= scratch());
+    const now = time ? time(clock.t) : clock.t;
+    const dt = now - sc.last;
+    sc.last = now;
+    const q = pose(clock.t);
+    const { bones, rest } = rig;
     g.position.set(q.p[0], q.p[1], q.p[2]);
     g.rotation.set(0, q.yaw ?? 0, 0);
-    body.current?.rotation.set(q.lean ?? 0, 0, 0);
-    head.current?.rotation.set(q.nod ?? 0, q.head ?? 0, 0);
-    g.updateMatrixWorld();
-    let local: THREE.Vector3 | null = null;
-    if (q.look && head.current) local = head.current.worldToLocal(tmp.l.set(q.look[0], q.look[1], q.look[2]));
-    face.paint(faceOf(q, time ? time(clock.t) : clock.t, own, local));
-    [q.handL, q.handR].forEach((target, i) => {
-      const side = i === 0 ? -1 : 1;
-      const lean = q.lean ?? 0;
-      tmp.a.set(side * 0.27, SHOULDER * Math.cos(lean), SHOULDER * Math.sin(lean));
-      if (target) g.worldToLocal(tmp.b.set(target[0], target[1], target[2]));
-      else tmp.b.set(side * 0.31, 0.78, 0.03 + 0.78 * Math.sin(lean));
-      const arm = arms.current[i];
-      const hand = hands.current[i];
-      if (!arm || !hand) return;
-      tmp.d.subVectors(tmp.b, tmp.a);
-      const len = tmp.d.length();
-      arm.position.copy(tmp.a);
-      arm.quaternion.setFromUnitVectors(UP, tmp.d.normalize());
-      arm.scale.set(1, len, 1);
-      hand.position.copy(tmp.b);
-      hand.quaternion.copy(arm.quaternion);
-      if (!target) hand.rotation.set(0, 0, 0);
-    });
+    toRest(bones, rest);
+    bones[BONE.root]!.rotation.set(q.lean ?? 0, 0, 0);
+    bones[BONE.head]!.rotation.set(q.nod ?? 0, q.head ?? 0, 0);
+    g.updateMatrixWorld(true);
+    poseArm(bones, rest, q, -1, tall, phone, sc, dt);
+    poseArm(bones, rest, q, 1, tall, phone, sc, dt);
+    // the phone shows only in a phone hand
+    bones[BONE.prop]!.scale.setScalar(phone ? 1 : 0.0001);
+    g.updateMatrixWorld(true);
+    let aim: THREE.Vector3 | null = null;
+    if (q.look) aim = face.mesh.worldToLocal(sc.v.set(q.look[0], q.look[1], q.look[2]));
+    face.paint(faceOf(q, now, own, aim));
   });
   return (
     <group ref={root} scale={tall}>
-      <group ref={body}>
-        <mesh geometry={bodyGeo} castShadow receiveShadow>
-          <meshStandardMaterial vertexColors roughness={0.86} metalness={0} />
-        </mesh>
-        <group ref={head} position={[0, HEAD, 0]}>
-          <mesh geometry={headGeo} castShadow>
-            <meshStandardMaterial vertexColors roughness={0.8} metalness={0} />
-          </mesh>
-          <mesh geometry={face.geo} renderOrder={1}>
-            <meshStandardMaterial map={face.texture} transparent alphaTest={0.04} depthWrite={false} roughness={0.8} metalness={0} polygonOffset polygonOffsetFactor={-2} />
-          </mesh>
-        </group>
-      </group>
-      {[0, 1].map((i) => (
-        <group key={i}>
-          <mesh
-            ref={(m) => {
-              arms.current[i] = m;
-            }}
-            geometry={armGeo}
-            castShadow
-          >
-            <meshStandardMaterial color={w.sleeve} roughness={0.86} metalness={0} />
-          </mesh>
-          <mesh
-            ref={(m) => {
-              hands.current[i] = m;
-            }}
-            geometry={phone && i === 1 ? phoneGeo : handGeo}
-            castShadow
-          >
-            <meshStandardMaterial vertexColors color={w.skin} roughness={0.8} metalness={0} />
-          </mesh>
-        </group>
-      ))}
+      <primitive object={rig.mesh} />
     </group>
   );
 }
