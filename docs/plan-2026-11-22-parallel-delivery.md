@@ -77,9 +77,11 @@ The owner gets a report when each workstream lands on the live site, and a combi
 
 | # | State |
 |---|---|
-| WS1 | started 22 Nov |
-| WS2 | started 22 Nov (slice 1) |
-| WS3 | started 22 Nov |
-| WS4 | done 22 Nov: contrast fix, request form records the level (migration 0030), five owner files seeded, unused bag removed |
-| WS5 to WS7 | queued |
+| WS1 | done 22 Nov, live: third pass on five scenes; slow-device fallback fixed and tested |
+| WS2 | slice 1 merged 22 Nov behind `AUTH2` (off in production): two database roles, Better Auth, mail interface, screens, tests; independent security review done and its 12 findings fixed. Slice 2 started. Turning it on needs a mail service, `BETTER_AUTH_URL`, a secret and the owner's go-ahead |
+| WS3 | done 22 Nov, live: all eight wiring faults confirmed and fixed, each with a test (migration 0031) |
+| WS4 | done 22 Nov, live: contrast fix, request form records the level (migration 0030), five owner files seeded, unused bag removed |
+| WS5 | done 22 Nov, live at `/status` |
+| WS6 | queued behind WS2 slice 2 and the owner's prices and Stripe keys |
+| WS7 | started 22 Nov |
 | WS8, WS9 | held for owner |
