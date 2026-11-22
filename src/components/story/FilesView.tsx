@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -327,7 +328,8 @@ function FileDetails({ projectId, entry, folders, onClose }: { projectId: string
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={item.title} description={item.body || `${SOURCE_KIND_LABEL[d.kind ?? "other"] ?? "File"}${folderOf(entry) ? ` in ${folderOf(entry)}` : ""}`} width="60rem">
       <div className="max-h-[78vh] space-y-5 overflow-y-auto px-5 py-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <RowActions item={item} />
           {hasFile && (
             <Button size="sm" variant="outline" asChild>
               <a href={`/api/files/${d.fileId}`} download><Download className="h-3.5 w-3.5" aria-hidden /> Download</a>

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { HREF, type CostLine, type UnitCost } from "@/lib/economics/compute";
 import { formatMoney } from "@/lib/economics/money";
 import { HowThisIsWorkedOut } from "./shared";
+import { RowActions } from "@/components/drafts/RowActions";
 
 const GROUPS: { key: CostLine["group"]; title: string }[] = [
   { key: "part", title: "Parts" },
@@ -26,8 +27,11 @@ export function BuildUpTable({
   onRemove,
   printedRows,
   readOnly = false,
+  projectId,
 }: {
   unit: UnitCost;
+  /** the concept the lines belong to; with it, a cost line also offers the assistant menu */
+  projectId?: string;
   /** no edit, remove or fix links: the public welcome page shows the build-up only */
   readOnly?: boolean;
   onEdit?: (rowId: number) => void;
@@ -66,7 +70,7 @@ export function BuildUpTable({
         </TableHeader>
         <TableBody>
           {GROUPS.filter((g) => unit.lines.some((l) => l.group === g.key)).map((g) => (
-            <GroupRows key={g.key} title={g.title} subtotal={fm(sub[g.key])} lines={unit.lines.filter((l) => l.group === g.key)} fm={fm} editable={readOnly ? () => false : editable} readOnly={readOnly} onEdit={onEdit} onRemove={onRemove} printedRows={printedRows} />
+            <GroupRows key={g.key} title={g.title} subtotal={fm(sub[g.key])} lines={unit.lines.filter((l) => l.group === g.key)} fm={fm} editable={readOnly ? () => false : editable} readOnly={readOnly} onEdit={onEdit} onRemove={onRemove} printedRows={printedRows} projectId={projectId} />
           ))}
           <TableRow className="border-t-2 border-hairline bg-subtle">
             <TableCell className="font-semibold text-primary">
@@ -93,7 +97,9 @@ function GroupRows({
   onRemove,
   printedRows,
   readOnly,
+  projectId,
 }: {
+  projectId?: string;
   readOnly: boolean;
   title: string;
   subtotal: string;
@@ -130,6 +136,7 @@ function GroupRows({
           <TableCell className="text-right">
             {editable(l) && l.rowId !== null && l.key.startsWith("cost:") ? (
               <span className="inline-flex gap-1">
+                {projectId ? <RowActions item={{ id: l.rowId, projectId, section: "production/economics", title: l.label, body: "" }} /> : null}
                 <Button variant="ghost" size="icon-sm" aria-label={`Edit ${l.label}`} onClick={() => onEdit?.(l.rowId!)}>
                   <Pencil className="h-3.5 w-3.5" aria-hidden />
                 </Button>

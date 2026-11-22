@@ -5,6 +5,9 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { RowActions } from "@/components/drafts/RowActions";
+import { ItemsTable } from "@/components/items/ItemsTable";
+import { Kanban } from "@/components/items/Kanban";
+import type { Item } from "@/lib/types";
 import { adminServer, on, renderWithClient, shimBrowser } from "../admin-ui/harness";
 
 beforeEach(shimBrowser);
@@ -64,9 +67,35 @@ describe("every dedicated view has the menu", () => {
     reviews: "src/components/channels/ReviewsView.tsx",
     batches: "src/components/production/BatchesView.tsx",
     compliance: "src/components/compliance/ComplianceView.tsx",
+    // wherever a row can be opened: the generic list and board, and the rows and cards of the other views
+    "list rows": "src/components/items/ItemsTable.tsx",
+    "board cards": "src/components/items/Kanban.tsx",
+    "print jobs": "src/components/printing/JobCard.tsx",
+    "mentions and comments": "src/components/channels/InboxView.tsx",
+    replies: "src/components/channels/RepliesView.tsx",
+    "plan step": "src/components/plan/StepDetail.tsx",
+    "file entry": "src/components/story/FilesView.tsx",
+    "cost lines": "src/components/economics/BuildUpTable.tsx",
   };
   for (const [what, file] of Object.entries(VIEWS))
     it(what, () => {
       expect(readFileSync(file, "utf8")).toMatch(/<RowActions\b/);
     });
+});
+
+describe("the menu is on the generic list and board, where any row can be opened", () => {
+  const item = (id: number, title: string): Item => ({ id, projectId: "p1", section: "concept/questions", title, body: "", data: {}, status: "open", sort: id });
+  const props = { items: [item(1, "Which name ships?"), item(2, "Primary channel")], statuses: ["open", "decided"], columns: [], onOpen: () => {} };
+
+  it("every table row has it, named with the row's title", () => {
+    adminServer([]);
+    renderWithClient(<ItemsTable {...props} onStatus={() => {}} />);
+    for (const t of ["Which name ships?", "Primary channel"]) expect(screen.getByRole("button", { name: `Ask the assistant about ${t}` })).toBeTruthy();
+  });
+
+  it("every board card has it, named with the card's title", () => {
+    adminServer([]);
+    renderWithClient(<Kanban {...props} onMove={() => {}} />);
+    for (const t of ["Which name ships?", "Primary channel"]) expect(screen.getByRole("button", { name: `Ask the assistant about ${t}` })).toBeTruthy();
+  });
 });

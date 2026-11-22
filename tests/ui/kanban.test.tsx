@@ -2,7 +2,8 @@
 // The board (src/components/items/Kanban.tsx): what a screen reader is told is what happened. A refused move
 // says so with the server's reason and where the card stays; an accepted one says it moved after the answer.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { renderWithClient as render } from "../admin-ui/harness";
 
 const toastError = vi.fn();
 vi.mock("sonner", () => ({ toast: { error: (m: string) => toastError(m) } }));

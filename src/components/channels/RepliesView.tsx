@@ -4,6 +4,7 @@
 // at a time by their own button and confirmation; replies to reviews (Amazon and elsewhere) are never
 // sent by this app: copy them and post them yourself, then mark them sent.
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
+import { RowActions } from "@/components/drafts/RowActions";
 import { useState } from "react";
 import { Check, Copy, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ export function RepliesView({ project, section, store }: ViewProps) {
                     {sent?.url ? <a href={sent.url} target="_blank" rel="noreferrer" className="text-xs text-link underline">open on {sendName(ch)}</a> : null}
                   </span>
                   <span className="flex flex-wrap items-center gap-1">
+                    <RowActions item={r} />
                     {ch && r.status === "approved" && !sent ? (
                       <Button size="sm" onClick={() => setSending(r.id)} aria-label={`Send the reply "${r.title}"`}>
                         <Send className="h-4 w-4" aria-hidden /> Send to {sendName(ch)}

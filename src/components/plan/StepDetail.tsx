@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useState } from "react";
 import { X } from "lucide-react";
@@ -59,9 +60,12 @@ export function StepDetail({
           </p>
           <h2 className="mt-1 text-base font-semibold tracking-tight text-primary">{step.title}</h2>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close step detail">
-          <X className="h-4 w-4" aria-hidden />
-        </Button>
+        <div className="flex items-center gap-1">
+          {item ? <RowActions item={item} label={step.title} /> : null}
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close step detail">
+            <X className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
       </div>
 
       {item?.body ? (

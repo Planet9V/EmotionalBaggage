@@ -1,5 +1,6 @@
 "use client";
 
+import { RowActions } from "@/components/drafts/RowActions";
 import { useState } from "react";
 import { Download, Pause, Play, Printer, Scissors, Send, Square, Trash2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -76,6 +77,7 @@ export function JobCard({ projectId, job, buildTitle, onDelete, onEdit, onRequeu
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge tone={statusTone(status)}>{status}</StatusBadge>
+          <RowActions item={job} />
           <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete ${job.title}`} onClick={onDelete}><Trash2 className="h-4 w-4" aria-hidden /></Button>
         </div>
       </div>

@@ -150,7 +150,7 @@ export function EconomicsView({ project }: ViewProps) {
 
       <Panel compact id="build-up" title="Unit cost build-up" description="Worked out from the parts list, the chosen offers, the slices of printed parts and the lines below. Under each part it says where its figure comes from: a chosen offer with the day it was checked, a slice, or an estimate typed on the parts list.">
         <div className="space-y-3">
-          <BuildUpTable unit={unit} onEdit={setEditing} onRemove={(id) => void remove(id)} printedRows={printedRows} />
+          <BuildUpTable unit={unit} projectId={project.id} onEdit={setEditing} onRemove={(id) => void remove(id)} printedRows={printedRows} />
           <MissingList items={unit.missing} />
         </div>
       </Panel>

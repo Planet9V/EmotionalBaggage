@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // The items table on TanStack Table: sorting with aria-sort, column visibility, arrow-key movement between rows.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { renderWithClient as render } from "../admin-ui/harness";
 import { ItemsTable } from "@/components/items/ItemsTable";
 import type { Item } from "@/lib/types";
 

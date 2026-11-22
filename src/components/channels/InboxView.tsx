@@ -3,6 +3,7 @@
 // Marketing, Replies and comments (plan 8.18, 8.19): mentions on X and comments on Instagram, read when
 // the user asks. Replies are drafted by the reasoning model in the brand voice as drafts; an approved
 // reply goes to Replies to send, and is sent from there one at a time.
+import { RowActions } from "@/components/drafts/RowActions";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Download, ExternalLink } from "lucide-react";
@@ -118,6 +119,7 @@ export function InboxView({ project, section, store }: ViewProps) {
                       {r ? <StatusBadge tone={r.sent ? "success" : "info"}>{r.sent ? "reply sent" : "reply approved"}</StatusBadge> : null}
                     </span>
                     <span className="flex items-center gap-2">
+                      <RowActions item={m} />
                       {m.data.url ? (
                         <a href={String(m.data.url)} target="_blank" rel="noreferrer" className="text-xs text-link underline">
                           Open <ExternalLink className="inline h-3 w-3" aria-hidden />

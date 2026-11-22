@@ -28,6 +28,7 @@ import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { prim } from "./shared";
+import { RowActions } from "@/components/drafts/RowActions";
 
 type Props = {
   items: Item[];
@@ -284,6 +285,7 @@ function BoardCard({
           >
             {item.title}
           </button>
+          <RowActions item={item} />
         </div>
         {item.body && <p className="mt-1.5 line-clamp-2 pl-5 text-xs leading-snug text-secondary">{item.body}</p>}
         {pairs.length > 0 && (

@@ -19,6 +19,7 @@ import { statusTone } from "@/lib/statusTones";
 import type { Column } from "@/lib/menu";
 import type { Item } from "@/lib/types";
 import { prim } from "./shared";
+import { RowActions } from "@/components/drafts/RowActions";
 
 type Props = {
   items: Item[];
@@ -147,6 +148,8 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
                     </TableCell>
                   )}
                   <TableCell className="text-right">
+                    <span className="inline-flex items-center gap-1">
+                    <RowActions item={it} />
                     <button
                       type="button"
                       data-nav="open"
@@ -156,6 +159,7 @@ export function ItemsTable({ items, statuses, columns, onOpen, onStatus, extraCo
                     >
                       Open
                     </button>
+                    </span>
                   </TableCell>
                 </tr>
               );
