@@ -9,7 +9,7 @@
  * past this redirect but not past the API.
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { pageGate, SESSION_COOKIE } from "@/app/sign-in/shared";
+import { isPublicPath, pageGate, safeNext, SESSION_COOKIE } from "@/app/sign-in/shared";
 import { AUTH2_PAGES, auth2Enabled } from "@/lib/auth2/config";
 
 export async function proxy(request: NextRequest) {
@@ -22,9 +22,41 @@ export async function proxy(request: NextRequest) {
   // A self-hosted install with no account yet: the front door leads to "create the owner" (src/lib/auth2/firstRun.ts).
   // The answer is cached once an account exists, so this costs nothing afterwards.
   if (on && (pathname === "/" || pathname === "/welcome") && (await firstRunOpenNow())) return NextResponse.redirect(new URL(`${AUTH2_PAGES}/first-run`, request.url));
+  if (on) {
+    // The cut-over: every page is reached through the new sign-in's session only; the old cookie means nothing.
+    const target = await newSignInPageGate(request);
+    return target ? NextResponse.redirect(new URL(target, request.url)) : NextResponse.next();
+  }
   const target = pageGate(pathname, search, request.cookies.has(SESSION_COOKIE));
   if (!target) return NextResponse.next();
   return NextResponse.redirect(new URL(target, request.url));
+}
+
+/**
+ * Where a page request goes while the new sign-in is on, or null to let it through. The old sign-in's pages lead to
+ * the new ones; a public page (the welcome page, short links, files) is open; any other page needs a session the
+ * new sign-in accepts, checked here on the server (not only a cookie being present), and a person who owes two-step
+ * sign-in is sent to set it up first.
+ */
+async function newSignInPageGate(request: NextRequest): Promise<string | null> {
+  const { pathname, search } = request.nextUrl;
+  const back = encodeURIComponent(safeNext(pathname + (search ?? "")));
+  if (pathname === "/sign-in" || pathname.startsWith("/sign-in/")) {
+    const next = request.nextUrl.searchParams.get("next");
+    return `${AUTH2_PAGES}/sign-in${next ? `?next=${encodeURIComponent(safeNext(next))}` : ""}`;
+  }
+  if (pathname === "/account" || pathname.startsWith("/account/")) return `${AUTH2_PAGES}/account`;
+  if (isPublicPath(pathname)) return null;
+  try {
+    const [{ auth2Session }, { ownerPool }, { owed }] = await Promise.all([import("@/lib/auth2/server"), import("@/lib/db"), import("@/lib/auth2/workspaces/twoFactor")]);
+    const s = await auth2Session(request.headers);
+    if (!s) return pathname === "/" ? "/welcome" : `${AUTH2_PAGES}/sign-in?next=${back}`;
+    if (await owed(ownerPool(), s.user.id)) return `${AUTH2_PAGES}/two-factor/setup`;
+    return null;
+  } catch {
+    // Fails closed: anything that goes wrong reading the session is treated as signed out.
+    return `${AUTH2_PAGES}/sign-in?next=${back}`;
+  }
 }
 
 async function firstRunOpenNow(): Promise<boolean> {

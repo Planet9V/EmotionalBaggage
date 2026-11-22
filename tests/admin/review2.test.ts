@@ -106,8 +106,9 @@ describe("S8 and S10", () => {
 
 describe("S5 and S6: everything not listed open needs the platform administrator", () => {
   it("an unknown or new provider, settings key or test kind is refused to anyone else", async () => {
-    expect((await credPut(json("PUT", { fields: { apiKey: "x-0000000000" } }, U("/api/admin/credentials/voice")), { params: Promise.resolve({ provider: "voice" }) })).status).toBe(403);
-    expect((await credPut(json("PUT", { fields: { apiKey: "x-0000000000" } }, U("/api/admin/credentials/brand-new")), { params: Promise.resolve({ provider: "brand-new" }) })).status).toBe(403);
+    // A provider the app does not know cannot be saved by anyone (400); every known one is placed (guardLists.test).
+    for (const p of ["voice", "brand-new"]) expect((await credPut(json("PUT", { fields: { apiKey: "x-0000000000" } }, U(`/api/admin/credentials/${p}`)), { params: Promise.resolve({ provider: p }) })).status).toBe(400);
+    expect((await credPut(json("PUT", { fields: { secretKey: "sk_test_" + "s5000000000000" } }, U("/api/admin/credentials/stripe")), { params: Promise.resolve({ provider: "stripe" }) })).status).toBe(403);
     expect((await settingsPut(json("PUT", { mail: { mode: "none" } }, U("/api/admin/settings")))).status).toBe(403);
     // A key the schema does not know is refused before the guard (400); once added to the schema it needs placing.
     expect((await settingsPut(json("PUT", { somethingNew: 1 }, U("/api/admin/settings")))).status).toBe(400);

@@ -49,7 +49,7 @@ export function override(): boolean | null {
 }
 
 const CACHE_MS = 5_000;
-const g = globalThis as unknown as { __c2rAuth2Switch?: { value: boolean; at: number }; __c2rAuth2Config?: { db: unknown; at: number; config: Auth2Config } };
+const g = globalThis as unknown as { __c2rAuth2Switch?: { value: boolean; at: number }; __c2rAuth2Config?: { db: unknown; env: string; at: number; config: Auth2Config } };
 
 /**
  * Whether the new sign-in is on: the AUTH2 override, else the stored setting (read at most every five seconds),
@@ -193,10 +193,12 @@ async function storedSecret(db: Pool): Promise<string> {
  * seconds, as the switch is (review N15); a change through writeAuth2Setting is seen at once.
  */
 export async function resolveAuth2Config(db: Pool): Promise<Auth2Config> {
+  // The environment overrides are part of what is cached against: a changed one is read at once.
+  const env = [process.env.BETTER_AUTH_SECRET, process.env.BETTER_AUTH_URL, process.env.AUTH2_TRUSTED_ORIGINS, process.env.NODE_ENV].join("\u0000");
   const held = g.__c2rAuth2Config;
-  if (held && held.db === db && Date.now() - held.at < CACHE_MS) return held.config;
+  if (held && held.db === db && held.env === env && Date.now() - held.at < CACHE_MS) return held.config;
   const config = await resolveNow(db);
-  g.__c2rAuth2Config = { db, at: Date.now(), config };
+  g.__c2rAuth2Config = { db, env, at: Date.now(), config };
   return config;
 }
 

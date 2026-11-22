@@ -29,10 +29,10 @@ describe("the page proxy", () => {
     expect(await page("/auth/sign-up")).toBe("http://localhost:3322/sign-in?next=%2Fauth%2Fsign-up");
   });
 
-  it("with AUTH2 on, lets a signed-out visitor reach /auth/... and nothing else changes", async () => {
+  it("with AUTH2 on, lets a signed-out visitor reach /auth/..., and sends any other page to the new sign-in (the cut-over)", async () => {
     process.env.AUTH2 = "1";
     expect(await page("/auth/sign-up")).toBeNull();
-    expect(await page("/concepts")).toBe("http://localhost:3322/sign-in?next=%2Fconcepts");
+    expect(await page("/concepts")).toBe("http://localhost:3322/auth/sign-in?next=%2Fconcepts");
     delete process.env.AUTH2;
   });
 });

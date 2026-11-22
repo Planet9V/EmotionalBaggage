@@ -1,3 +1,4 @@
+import { isProvider } from "@/lib/admin/providers";
 import { adminRoute, isPlatformAdmin, platformAdminOnly, requirePlatformAdmin } from "@/lib/admin/guard";
 import { NextResponse } from "next/server";
 import { body } from "@/lib/api/route";
@@ -10,7 +11,8 @@ type Ctx = { params: Promise<{ provider: string }> };
 /** { fields: { name: value }, address? }. Absent or empty fields are left as they are; values are trimmed. Saved values are bound to `address` (model hosts) or the address in use. */
 export const PUT = adminRoute(async (req: Request, { params }: Ctx) => {
   const { provider } = await params;
-  if (platformAdminOnly.provider(provider)) await requirePlatformAdmin(req);
+  // A provider the app does not know is refused below (400/404, nothing to save); a known one is open only if listed (S5).
+  if (isProvider(provider) && platformAdminOnly.provider(provider)) await requirePlatformAdmin(req);
   const b = await body(req, credentialsPut);
   const { def, values } = checkCredentialFields(provider, b.fields);
   if (b.address && !isModelProvider(def.id)) throw invalid(["address"], `applies to the model hosts only; ${def.label} keys go to its own address`);

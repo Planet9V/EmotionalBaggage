@@ -17,6 +17,8 @@ COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 # Gives sign-in throttling the connection's own address (X-Forwarded-For is trusted only with TRUST_PROXY=1).
 COPY --from=build /app/scripts/client-address.cjs ./client-address.cjs
+# Turns the new sign-in on or off from inside the container: docker compose exec web node scripts/sign-in.mjs on
+COPY --from=build /app/scripts/sign-in.mjs ./scripts/sign-in.mjs
 USER node
 EXPOSE 3000
 CMD ["node", "-r", "./client-address.cjs", "server.js"]

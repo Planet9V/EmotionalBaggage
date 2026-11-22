@@ -145,7 +145,25 @@ Every setting is optional except the database password. Keys, models, the planne
 
 Accounts for more than one person are being built beside the current sign-in. With `docker compose up` and nothing else it is ready to switch on: everything it needs is kept in PostgreSQL, and no key, secret or address has to be set on the host.
 
-**The switch** is the setting `auth2.enabled`, off until changed. It is kept, with the other settings of the new sign-in, in the table `auth2_settings`, which only the app's owner connection can read or write (not the request role, and not any settings screen). A platform administrator will change it in Admin; until that screen exists: `INSERT INTO auth2_settings (key, value) VALUES ('auth2.enabled', 'true') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;`. The app reads it at most every five seconds. While it is off, nothing of the new sign-in answers: `/api/auth2/...` is not found, the screens under `/auth/...` are not found, and signing in works exactly as described above. While it is on, people can create an account at `/auth/sign-up`, confirm their email address, sign in at `/auth/sign-in`, set up an authenticator app with recovery codes, change or reset their password, and work in workspaces (below). The current sign-in and `demo` keep working beside it; the switch-over is a later step.
+**The switch** is the setting `auth2.enabled`, off until changed. It is kept, with the other settings of the new sign-in, in the table `auth2_settings`, which only the app's owner connection can read or write (not the request role, and not any settings screen). It is first turned on with `docker compose exec web node scripts/sign-in.mjs on` (see the cut-over below); after that the platform administrator turns it off or on in **Admin, Sign-in**. The app reads it at most every five seconds. While it is off, nothing of the new sign-in answers: `/api/auth2/...` is not found, the screens under `/auth/...` are not found, and signing in works exactly as described above. While it is on, people can create an account at `/auth/sign-up`, confirm their email address, sign in at `/auth/sign-in`, set up an authenticator app with recovery codes, change or reset their password, and work in workspaces (below). The current sign-in and `demo` keep working beside it; the switch-over is a later step.
+
+### Switching to the new sign-in (the cut-over)
+
+The owner has approved the switch-over. It is one action, and it can be undone:
+
+1. Bring the stack up as usual: `docker compose up -d`. Wait until `docker compose ps` shows `web` healthy (the database is brought up to date on start).
+2. Turn the new sign-in on from inside the app's container: `docker compose exec web node scripts/sign-in.mjs on`. Nobody is the platform administrator yet, so this is the only way to do it the first time. It writes the stored switch with the container's own database connection, and records the change in the audit log. No restart is needed: the app reads the switch within a few seconds. (On a platform without a shell, run the same command as a one-off command of the web service.)
+3. Open the app in a browser. It shows **Create the owner**.
+4. Read the one-time set-up code from the app's log: `docker compose logs web | grep 'set-up code'`. Enter it on the page with the owner's name, email address (prefilled with `admin@oxot.nl`) and a password you choose. If the installation has no address yet, confirm the address the page is open at.
+5. You are signed in as the owner, the **platform administrator**. Check **Admin, Sign-in** (addresses, the https warning, mail) and **Admin, Email**. Then invite people from your workspace (**Workspaces**, then **Members and settings**).
+
+What changes for people when it is on:
+- Every page and every part of the app needs an account of the new sign-in. The old shared sign-in (`demo`) no longer works anywhere: its sign-in form leads to the new one, its routes answer "not found", and an old session is not accepted.
+- People create an account (or are invited), confirm their address (or, with no mail, an administrator confirms it), and sign in with email and password. A person whose workspace requires two-step sign-in sets up an authenticator app first, before reaching any page.
+- Admin's new sections (payments, pricing, email, voice, sign-in) are changed by the platform administrator only; the sections that existed before stay open to any signed-in account, as before.
+- **Concepts are not yet kept apart per workspace.** Until that is built (the next step), every signed-in account sees and changes the same concepts, as today. Workspaces, members, invitations and two-step sign-in already work.
+
+To go back: **Admin, Sign-in**, "Turn the new sign-in off" (platform administrator), or `docker compose exec web node scripts/sign-in.mjs off`. Accounts and workspaces are kept. `node scripts/sign-in.mjs status` says which is in force.
 
 **The secret** that signs its cookies and encrypts authenticator secrets is made by the app on first use and kept in the table `auth2_secrets`, which the request role cannot read. Back it up with the database (it is in the backup below). Losing it signs everyone out and makes enrolled authenticator apps unusable.
 
