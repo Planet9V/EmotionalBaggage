@@ -52,6 +52,9 @@ export class Kit {
   private q = new THREE.Quaternion();
   private e = new THREE.Euler();
   private skins: Skin[] = [];
+  private surfaces: number[] = [];
+  private surfaced = false;
+  private shading: ((x: number, y: number, z: number) => number) | null = null;
 
   private place(p: V3, rot: V3 = ZERO, s: V3 = [1, 1, 1]) {
     this.q.setFromEuler(this.e.set(rot[0], rot[1], rot[2]));
@@ -71,6 +74,22 @@ export class Kit {
     this.skins.pop();
     return this;
   }
+  /**
+   * Tags everything added inside `inner` as a kind of surface (0 cloth, 1 skin, 2 hard), written per vertex for a
+   * shader to tell them apart. Once used, every part of the build carries the tag (cloth unless said otherwise).
+   */
+  surface(kind: number, inner: () => void) {
+    this.surfaced = true;
+    this.surfaces.push(kind);
+    inner();
+    this.surfaces.pop();
+    return this;
+  }
+  /** Darkens every vertex added from now on by `f` of where it is (1 leaves it), for soft shading baked in creases. */
+  shade(f: (x: number, y: number, z: number) => number) {
+    this.shading = f;
+    return this;
+  }
   geo(g: THREE.BufferGeometry, c: string, p: V3 = ZERO, o: Opt = {}) {
     const flat = g.index ? g.toNonIndexed() : g;
     if (flat !== g) g.dispose();
@@ -80,8 +99,13 @@ export class Kit {
     const n = pos.count;
     const col = new THREE.Color(c);
     const a = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) a.set([col.r, col.g, col.b], i * 3);
+    const shade = this.shading;
+    for (let i = 0; i < n; i++) {
+      const f = shade ? shade(pos.getX(i), pos.getY(i), pos.getZ(i)) : 1;
+      a.set([col.r * f, col.g * f, col.b * f], i * 3);
+    }
     flat.setAttribute("color", new THREE.BufferAttribute(a, 3));
+    if (this.surfaced) flat.setAttribute("surface", new THREE.BufferAttribute(new Float32Array(n).fill(this.surfaces[this.surfaces.length - 1] ?? 0), 1));
     const skin = this.skins[this.skins.length - 1];
     if (skin) {
       const idx = new Uint16Array(n * 4);
@@ -212,7 +236,7 @@ export function Stage({ look, level, floor = true }: { look: Look; level?: (t: n
     if (key.current) key.current.intensity = look.key.i * l.key;
     if (rim.current) rim.current.intensity = look.rim.i * l.key;
     if (fill.current) fill.current.intensity = look.fill.i * l.fill;
-    setEnvironment(scene, look.env * l.env);
+    setEnvironment(scene, look.env * l.env, { c: look.rim.c, i: look.rim.i * l.key });
   });
   const reach = look.reach ?? 6.5;
   return (
@@ -244,8 +268,10 @@ export function Stage({ look, level, floor = true }: { look: Look; level?: (t: n
   );
 }
 // the scene belongs to three, not to React: this changes it by name
-function setEnvironment(scene: THREE.Scene, intensity: number) {
+function setEnvironment(scene: THREE.Scene, intensity: number, rim?: { c: string; i: number }) {
   scene.environmentIntensity = intensity;
+  // the people's rim light takes the set's rim colour and strength from here
+  if (rim) scene.userData.rim = rim;
 }
 
 let blob: THREE.CanvasTexture | null = null;

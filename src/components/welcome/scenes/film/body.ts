@@ -57,7 +57,7 @@ const SPRINGS: Record<Role, [BoneDef, BoneDef, BoneDef]> = {
 export const SPRING_DEFS: Record<Role, [SpringDef | null, SpringDef | null, SpringDef | null]> = {
   agent: [{ rest: [0.03, -0.15, 0.01], k: 70, c: 5, max: 0.7 }, { rest: [-0.02, -0.32, 0.005], k: 45, c: 3.5, max: 0.55 }, { rest: [0, 0.05, -0.1], k: 240, c: 12, max: 0.22 }],
   handler: [{ rest: [0, -0.14, 0], k: 260, c: 13, max: 0.14 }, null, null],
-  owner: [{ rest: [0, -0.26, -0.08], k: 60, c: 5, max: 0.32 }, { rest: [0, -0.36, 0], k: 110, c: 8, max: 0.22 }, null],
+  owner: [{ rest: [0, -0.26, -0.08], k: 60, c: 5, max: 0.32 }, { rest: [0, -0.36, 0], k: 160, c: 12, max: 0.08 }, null],
   bystander: [{ rest: [0, -0.06, -0.05], k: 300, c: 16, max: 0.1 }, null, null],
   traveller: [{ rest: [0, -0.26, -0.04], k: 70, c: 5.5, max: 0.4 }, null, null],
 };
@@ -116,6 +116,9 @@ const coatSkin: Skin = (x, y, z) => (y > 0.86 ? torsoSkin(x, y, z) : fall(BONE.h
 
 /** A hand, in its rest pose at its side: palm toward the body, fingers down, thumb forward. */
 function hand(k: Kit, s: number, skin: string) {
+  k.surface(1, () => handParts(k, s, skin));
+}
+function handParts(k: Kit, s: number, skin: string) {
   const x = s * ARM_X;
   k.bind(lr(BONE.hand, s), () => {
     k.box([0.062, 0.11, 0.104], skin, [x, WRIST - 0.048, 0.005], { r: 0.027, seg: 2 });
@@ -138,7 +141,7 @@ function frame(k: Kit, w: Costume) {
       const len = HIP_J + 0.02 - ANKLE - 0.02;
       k.capsule(0.079, len - 0.158, w.legs, [s * LEG_X, (HIP_J + 0.02 + ANKLE + 0.02) / 2, 0], { seg: 12, hs: 14, s: [1, 1, 1.15] });
     });
-    k.bind(lr(BONE.foot, s), () => k.box([0.17, 0.08, 0.27], "#2a2e36", [s * LEG_X, 0.04, 0.035], { r: 0.035, seg: 2 }));
+    k.surface(2, () => k.bind(lr(BONE.foot, s), () => k.box([0.17, 0.08, 0.27], "#2a2e36", [s * LEG_X, 0.04, 0.035], { r: 0.035, seg: 2 })));
     k.bind(armSkin(s), () => {
       const top = SHOULDER_Y + 0.05;
       const bot = WRIST - 0.005;
@@ -146,7 +149,7 @@ function frame(k: Kit, w: Costume) {
     });
     hand(k, s, w.skin);
   });
-  k.bind(fall(BONE.chest, BONE.head, NECK - 0.04, NECK + 0.04), () => k.cyl(0.07, 0.12, w.skin, [0, 1.43, 0], { seg: 12 }));
+  k.surface(1, () => k.bind(fall(BONE.chest, BONE.head, NECK - 0.04, NECK + 0.04), () => k.cyl(0.07, 0.12, w.skin, [0, 1.43, 0], { seg: 12 })));
 }
 
 function costume(role: Role, k: Kit) {
@@ -154,6 +157,12 @@ function costume(role: Role, k: Kit) {
   const long = role === "owner" ? 0.32 : 0;
   // the torso: a coat for the owner, a jacket or vest for the rest
   k.bind(role === "owner" ? coatSkin : torsoSkin, () => k.box([0.46, 0.64 + long, 0.28], w.coat, [0, 1.07 - long / 2, 0], { r: 0.12, seg: 4 }));
+  // the long coat's skirt: squarer at the hem than the torso's rounding, so the legs stay inside it as they move
+  if (role === "owner")
+    k.bind(coatSkin, () => {
+      k.cyl(0.258, 0.47, w.coat, [0, 0.65, 0.005], { r2: 0.228, s: [1, 1, 0.78], seg: 28, hs: 4 });
+      k.box([0.02, 0.47, 0.01], "#234f48", [0, 0.65, 0.19], { rot: [-0.06, 0, 0] });
+    });
   if (role === "agent") {
     // a neck scarf, its knotted end loose, and a lanyard with its card
     k.bind(BONE.breath, () => k.box([0.24, 0.07, 0.24], C.yellow, [0, 1.385, 0.005], { r: 0.035, seg: 2 }));
@@ -188,9 +197,11 @@ function head(role: Role, k: Kit) {
   const H: V3 = [0, HEAD_C, 0];
   const at = (x: number, y: number, z: number): V3 => [x, HEAD_C + y, z];
   k.bind(BONE.head, () => {
-    k.ball(HEAD_R, w.skin, H, { seg: 22 });
-    // the nose: a small bump, so a turned head reads as turned
-    k.ball(0.03, w.skin, at(0, -0.035, 0.178), { seg: 8, s: [1, 1.1, 0.9] });
+    k.surface(1, () => {
+      k.ball(HEAD_R, w.skin, H, { seg: 22 });
+      // the nose: a small bump, so a turned head reads as turned
+      k.ball(0.03, w.skin, at(0, -0.035, 0.178), { seg: 8, s: [1, 1.1, 0.9] });
+    });
     if (role === "handler") {
       // a cap; the ear defenders are on a spring below
       k.geo(new THREE.SphereGeometry(0.195, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), w.hair, at(0, 0.07, 0));
@@ -221,6 +232,9 @@ function head(role: Role, k: Kit) {
 
 /** A phone, in the right hand's palm: its screen faces the way the palm does. */
 function phone(k: Kit) {
+  k.surface(2, () => phoneParts(k));
+}
+function phoneParts(k: Kit) {
   k.bind(BONE.prop, () => {
     // longer than the hand is wide and held up past the fingertips, so it shows round a hand seen from behind
     k.box([0.016, 0.2, 0.1], "#1d1f24", [ARM_X - 0.042, WRIST - 0.15, 0.004], { r: 0.008, seg: 1 });
@@ -229,12 +243,30 @@ function phone(k: Kit) {
   });
 }
 
+const bell = (v: number, at: number, w: number) => Math.exp(-(((v - at) / w) ** 2));
+/**
+ * Soft shading baked where parts of a body meet, in the rest pose: under the arms (the torso's sides and the arms'
+ * inner faces), under the chin, between the legs, under the coat's hem. A darkening of a sixth at most.
+ */
+function crease(x: number, y: number, z: number): number {
+  const side = Math.abs(x);
+  let k = 1;
+  k -= 0.17 * bell(side, 0.222, 0.03) * bell(y, 1.08, 0.2);
+  k -= 0.2 * bell(y, 1.4, 0.04) * (side < 0.09 ? 1 : 0);
+  k -= 0.12 * bell(y, HEAD_C - 0.17, 0.03) * (z > -0.05 ? 1 : 0);
+  k -= 0.14 * bell(side, 0.03, 0.03) * (y < HIP_J + 0.04 ? 1 : 0) * bell(y, 0.7, 0.25);
+  k -= 0.1 * bell(y, HIP_J + 0.02, 0.05) * (side < 0.2 ? 1 : 0) * (side > 0.06 ? 1 : 0) * (z > 0.06 ? 1 : 0);
+  return k;
+}
+
 /** The whole figure, bound to its bones. */
 export function figureMaker(role: Role, withPhone: boolean) {
-  return (k: Kit) => {
-    frame(k, WEAR[role]);
-    costume(role, k);
-    head(role, k);
-    if (withPhone) phone(k);
-  };
+  return (k: Kit) =>
+    k.surface(0, () => {
+      k.shade(crease);
+      frame(k, WEAR[role]);
+      costume(role, k);
+      head(role, k);
+      if (withPhone) phone(k);
+    });
 }

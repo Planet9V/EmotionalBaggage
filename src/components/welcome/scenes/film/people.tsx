@@ -6,12 +6,16 @@
 // The pose is a function of the scene's clock; the arms are solved to the hand targets the pose names.
 import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useBuilt, useClock, type V3 } from "./kit";
 import type { Mouth } from "./face";
 import { faceOf, useFace } from "./faceMesh";
 import { ANKLE, BONE, BONES, FORE, HAND_C, HIP_J, KNEE, LEG_X, SPRING_DEFS, UPPER, WEAR, figureMaker, lr, skeletonOf, type Role } from "./body";
 import { settle, springTurn, stepSpring, type SpringState } from "./springs";
+import { figureMaterial, outlineMaterial, takeRim } from "./figureLook";
+
+/** Whether the people are drawn with an ink outline (one more draw call each). */
+const OUTLINE = false;
 import { aimDown, twoBone, type Limb } from "./rig";
 
 export type { Role } from "./body";
@@ -125,16 +129,31 @@ function useRig(role: Role, phone: boolean) {
       bones[i]!.position.copy(rest[i]!);
       if (d.parent >= 0) bones[d.parent]!.add(bones[i]!);
     });
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.84, metalness: 0 });
+    const { mat, rim } = figureMaterial();
     const mesh = new THREE.SkinnedMesh(geo, mat);
     mesh.add(bones[BONE.root]!);
-    mesh.bind(new THREE.Skeleton(bones));
+    const skeleton = new THREE.Skeleton(bones);
+    mesh.bind(skeleton);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.frustumCulled = false;
-    return { mesh, bones, rest, mat };
+    // the outline, when used: the same body on the same bones, drawn inside out
+    const ink = OUTLINE ? outlineMaterial() : null;
+    if (ink) {
+      const hull = new THREE.SkinnedMesh(geo, ink);
+      hull.bind(skeleton, mesh.bindMatrix);
+      hull.frustumCulled = false;
+      mesh.add(hull);
+    }
+    return { mesh, bones, rest, mat, rim, ink };
   }, [geo, role]);
-  useEffect(() => () => rig.mat.dispose(), [rig]);
+  useEffect(
+    () => () => {
+      rig.mat.dispose();
+      rig.ink?.dispose();
+    },
+    [rig],
+  );
   return rig;
 }
 
@@ -257,7 +276,7 @@ function poseLeg(bones: THREE.Bone[], rest: THREE.Vector3[], g: THREE.Group, q: 
   thigh.getWorldPosition(sc.s);
   const yaw = foot?.yaw ?? q.yaw ?? 0;
   // the knee points the way the foot does, a touch outward
-  sc.pole.set(Math.sin(yaw) + s * 0.12 * Math.cos(yaw), 0, Math.cos(yaw) - s * 0.12 * Math.sin(yaw));
+  sc.pole.set(Math.sin(yaw) + s * 0.05 * Math.cos(yaw), 0, Math.cos(yaw) - s * 0.05 * Math.sin(yaw));
   const limb = twoBone(sc.s, sc.t, THIGH * tall, SHIN * tall, sc.pole, 1.04, sc.limb);
   sc.v.copy(limb.hinge).negate();
   aimDown(sc.w.subVectors(limb.mid, sc.s), sc.v, sc.qu);
@@ -346,6 +365,7 @@ function runSprings(g: THREE.Group, bones: THREE.Bone[], rest: THREE.Vector3[], 
 export function Figure({ pose, role, tall = 1, phone = false, seed, time }: { pose: (t: number) => FigPose; role: Role; tall?: number; phone?: boolean; seed?: number; time?: (t: number) => number }) {
   const root = useRef<THREE.Group>(null);
   const clock = useClock();
+  const scene = useThree((s) => s.scene);
   const rig = useRig(role, phone);
   const face = useFace(WEAR[role].skin);
   const scr = useRef<Scratch | null>(null);
@@ -364,6 +384,7 @@ export function Figure({ pose, role, tall = 1, phone = false, seed, time }: { po
     const dt = now - sc.last;
     sc.last = now;
     const { bones, rest } = rig;
+    takeRim(rig.rim, scene);
     runSprings(g, bones, rest, role, pose, clock.t, clockOf, own, tall, sc);
     const q = pose(clock.t);
     placeBody(g, bones, rest, q, now, own, sc);
