@@ -21,6 +21,7 @@
  *   and workspaces, members and invitations are changed through ./workspaces/plugin.ts, which holds its own
  *   permission rules (./workspaces/permissions.ts).
  * - Sign-up, sign-in, sign-out, password and two-factor changes are written to the audit log.
+ * - Besides the per-address throttle, every password try earns a growing wait per account (./signInWait.ts).
  *
  * The owner's database connection is used (src/lib/db.ts ownerPool): the request role cannot read these tables.
  */
@@ -38,6 +39,7 @@ import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims
 import { workspaces } from "./workspaces/plugin";
 import { createPersonal } from "./workspaces/store";
 import { requiredFor } from "./workspaces/twoFactor";
+import { claimTry, clearTries, waitRefusal } from "./signInWait";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { hashSessionTokens } from "./tokenHash";
@@ -212,6 +214,12 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
           if (ctx.path === "/sign-up/email" || "name" in body) return { context: { body: { ...body, name: cleanName(body.name) } } };
           return;
         }
+        if (ctx.path === "/sign-in/email" && typeof body.email === "string") {
+          // Per account, before the password is checked (./signInWait.ts, review N4). Better Auth's per-address
+          // throttle has already run.
+          const wait = await claimTry(db, body.email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
+          if (wait !== null) throw waitRefusal(wait);
+        }
         if (ctx.path === "/verify-email") await confirmedBefore(db, (ctx.query as { token?: unknown } | undefined)?.token);
         if (ctx.path === "/two-factor/disable") {
           // Required by a workspace: it cannot be turned off (slice 2, step 4). An owner or admin can reset it instead.
@@ -237,6 +245,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         }
       }),
       after: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === "/sign-in/email") {
+          const r = ctx.context.returned;
+          const email = (ctx.body as { email?: unknown } | undefined)?.email;
+          if (typeof email === "string" && !(r instanceof Error) && !(r instanceof Response && !r.ok)) await clearTries(db, email);
+        }
         // Sign-up is recorded by the user-created database hook instead (review F2).
         if (!AUDITED[ctx.path] || ctx.path === "/sign-up/email") return;
         const returned = ctx.context.returned;
