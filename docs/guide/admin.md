@@ -100,11 +100,21 @@ Every setting is optional except the database password. Keys, models, the planne
 | `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
 | `WEB_BIND` | The address the app is published on. Default `127.0.0.1`: this machine only. See "Opening it to the network". |
 | `TRUST_PROXY` | `1` only behind a reverse proxy that appends `X-Forwarded-For`. See "Behind a reverse proxy" under Signing in. |
+| `AUTH2` | Off unless `1`. Switches on the new sign-in with accounts (email and password, email confirmation, authenticator-app codes) beside the current one. See "The new sign-in (being built)". |
+| `BETTER_AUTH_SECRET` | Needed only with `AUTH2=1`: at least 32 random characters (`openssl rand -base64 48`). Signs the new sign-in's cookies and encrypts authenticator secrets; changing it signs everyone out and makes enrolled authenticator apps unusable. |
+| `BETTER_AUTH_URL` | With `AUTH2=1`: the address people open the app at, for example `https://app.example.com`. Links in emails point there, and cookies are marked Secure when it starts with `https://`. |
+| `AUTH2_TRUSTED_ORIGINS` | With `AUTH2=1`, optional: other addresses the app is opened at, comma-separated. A form sent from any other address is refused. |
 | `PERPLEXITY_API_KEY`, `OPENROUTER_API_KEY` | Fallbacks only. A key saved in Admin is used first. A key from the environment is only ever sent to the provider's own address (`https://openrouter.ai`, `https://api.perplexity.ai` or `PERPLEXITY_BASE_URL`); to use a key with another model address, save it in Admin. |
 | `PRINTER_KIND`, `PRINTER_URL`, `PRINTER_API_KEY` | Printer status in Prototype, 3D printing. `PRINTER_KIND` is `octoprint` or `moonraker`. |
 | `AMAZON_SP_REFRESH_TOKEN`, `AMAZON_SP_CLIENT_ID`, `AMAZON_SP_CLIENT_SECRET`, `X_ACCESS_TOKEN`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID` | Fallbacks for the channel credentials (Amazon orders, X, Instagram). Saving them in Admin, Credentials is the usual way. |
 
 **Keys stay with their host.** Every key saved in Admin is recorded with the address (scheme, host and port) it was saved for, and is only ever sent there. A model key is saved for the model address in use at the time (Admin, Models). If you move a model to another host, the key is removed when no model uses the old host any more, and Admin says so; type the key again for the new address. A connection test at another address does not use the saved key: type the key in the test form (it is used for that test only and not saved). A printer whose address moves to another host needs its key, password or access code typed again in the same change.
+
+## The new sign-in (being built)
+
+Accounts for more than one person are being built beside the current sign-in. While `AUTH2` is not set, nothing of it answers: `/api/auth2/...` is not found, the screens under `/auth/...` are not found, and signing in works exactly as described above. With `AUTH2=1` (and `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` set), people can create an account at `/auth/sign-up`, confirm their email address, sign in at `/auth/sign-in`, set up an authenticator app with recovery codes, and change or reset their password. The current sign-in and `demo` keep working beside it; the switch-over is a later step.
+
+No mail service is connected yet: confirmation and reset emails are written to the server log (lines starting `[auth2 mail, not sent]`) instead of being sent. Anyone who can read the log can follow those links, so keep `AUTH2` off on an install others can reach until a mail service is set up.
 
 ## Two database roles
 

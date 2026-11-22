@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit a0f6e3e by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 3bfa6de by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,11 +16,11 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 690 packages (60 direct, 630 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 709 packages (63 direct, 646 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
-| MIT | 549 |
+| MIT | 568 |
 | ISC | 55 |
 | Apache-2.0 | 45 |
 | LGPL-3.0-or-later | 10 |
@@ -65,6 +65,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | --- | --- | --- | --- | --- |
 | @ai-sdk/openai-compatible | 3.0.94 | Apache-2.0 | linked library | yes |
 | @ai-sdk/react | 4.0.183 | Apache-2.0 | linked library | yes |
+| @better-auth/kysely-adapter | 1.7.27 | MIT | linked library | yes |
 | @dagrejs/dagre | 3.1.3 | MIT | linked library | yes |
 | @dnd-kit/core | 6.3.1 | MIT | linked library | yes |
 | @fontsource-variable/inter | 5.3.0 | OFL-1.1 | font files | yes |
@@ -89,12 +90,14 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | @xyflow/react | 13.0.2 | MIT | linked library | yes |
 | ai | 7.0.179 | Apache-2.0 | linked library | yes |
 | basic-ftp | 6.2.6 | MIT | linked library | yes |
+| better-auth | 1.7.27 | MIT | linked library | yes |
 | class-variance-authority | 0.7.1 | Apache-2.0 | linked library | yes |
 | clsx | 2.1.1 | MIT | linked library | yes |
 | cmdk | 1.1.1 | MIT | linked library | yes |
 | elkjs | 0.12.1 | EPL-2.0 OR GPL-3.0-or-later | linked library | yes |
 | embla-carousel-react | 8.6.0 | MIT | linked library | yes |
 | fflate | 0.8.3 | MIT | linked library | yes |
+| kysely | 0.29.9 | MIT | linked library | yes |
 | lucide-react | 1.77.0 | ISC | linked library | yes |
 | manifold-3d | 3.5.5 | Apache-2.0 | linked library | yes |
 | mermaid | 12.3.0 | MIT | linked library | yes |

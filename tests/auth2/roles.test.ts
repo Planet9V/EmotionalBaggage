@@ -114,13 +114,12 @@ describe("two roles (DATABASE_APP_URL set)", () => {
     const db = await import("@/lib/db");
     await db.ready();
     for (const t of ["account", "session", "verification", '"twoFactor"', '"rateLimit"', "invitation", "auth2_totp_steps", "schema_migrations"]) {
-      if (!(await db.ownerPool().query("SELECT to_regclass($1) IS NOT NULL AS ok", [t])).rows[0].ok) continue;
       await expect(db.q(`SELECT 1 FROM ${t} LIMIT 1`), t).rejects.toMatchObject({ code: "42501" });
     }
     await expect(db.q("UPDATE audit_log SET summary = summary WHERE false")).rejects.toMatchObject({ code: "42501" });
     await expect(db.q("CREATE TABLE zz_roles_should_fail (x int)")).rejects.toMatchObject({ code: "42501" });
     // The owner still reads them.
-    await expect(db.ownerPool().query("SELECT 1 FROM schema_migrations LIMIT 1")).resolves.toBeDefined();
+    await expect(db.ownerPool().query('SELECT 1 FROM "session" LIMIT 1')).resolves.toBeDefined();
   });
 
   it("a second start keeps the role's password and grants", async () => {
