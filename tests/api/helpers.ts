@@ -7,6 +7,7 @@
  * that match the URL, as a browser on this site would. anonymous() builds the same request with
  * no cookie.
  */
+import { afterAll, beforeAll } from "vitest";
 import { SESSION_COOKIE } from "@/app/sign-in/shared";
 
 export const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -54,3 +55,30 @@ export async function read<T = Record<string, unknown>>(res: Response) {
 }
 
 export const SEEDED = "baggage-claims";
+
+/**
+ * For a test file that changes Admin settings or keys. src/lib/admin/guard.ts refuses those writes while the signed-in
+ * account still uses the published default password (the public demo account), so for this file the demo account
+ * counts as having changed it, and is put back as it was afterwards. Uses its own short-lived connection, so it does
+ * not depend on the order of the file's own hooks or on the app's pool.
+ */
+export function asAdministrator() {
+  let before: Date | null = null;
+  const run = async <T,>(fn: (c: import("pg").Client) => Promise<T>): Promise<T> => {
+    const { Client } = await import("pg");
+    const c = new Client({ connectionString: process.env.DATABASE_URL ?? "postgresql://c2r:c2r@localhost:5432/c2r" });
+    await c.connect();
+    try {
+      return await fn(c);
+    } finally {
+      await c.end();
+    }
+  };
+  beforeAll(() =>
+    run(async (c) => {
+      before = (await c.query<{ at: Date | null }>("SELECT password_changed_at AS at FROM users WHERE username = 'demo'")).rows[0]?.at ?? null;
+      await c.query("UPDATE users SET password_changed_at = now() WHERE username = 'demo'");
+    })
+  );
+  afterAll(() => run((c) => c.query("UPDATE users SET password_changed_at = $1 WHERE username = 'demo'", [before]).then(() => undefined)));
+}

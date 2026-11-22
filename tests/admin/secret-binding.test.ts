@@ -17,7 +17,10 @@ import { setConnectionTestLimit } from "@/lib/admin/connection";
 import { json as reply, startStandIn, type StandIn } from "../standins/core";
 import * as openai from "../standins/openai";
 import * as octoprint from "../standins/octoprint";
-import { json, read } from "../api/helpers";
+import { asAdministrator, json, read } from "../api/helpers";
+
+// This file changes Admin settings or keys, which the public demo account (default password) may not.
+asAdministrator();
 import { clearAdmin, restore, snapshot } from "./fixture";
 
 type Result = { ok: boolean; message: string; detail?: Record<string, unknown>; error?: string; issues?: { field: string; problem: string }[] };

@@ -26,7 +26,10 @@ import * as octoprint from "../standins/octoprint";
 import * as moonraker from "../standins/moonraker";
 import type { StandIn } from "../standins/core";
 import { clearAdmin, restore, snapshot } from "../admin/fixture";
-import { ctx, json, read, SEEDED } from "./helpers";
+import { asAdministrator, ctx, json, read, SEEDED } from "./helpers";
+
+// This file changes Admin settings or keys, which the public demo account (default password) may not.
+asAdministrator();
 
 type Snap = Awaited<ReturnType<typeof snapshot>>;
 let snap: Snap;

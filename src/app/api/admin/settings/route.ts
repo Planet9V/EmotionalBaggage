@@ -11,4 +11,4 @@ export const PUT = adminRoute(async (req: Request) => {
   const b = await body(req, adminSettingsPut);
   const notices = await writeAdminSettings(b);
   return NextResponse.json({ settings: await readAdminSettings(), notices });
-});
+}, { write: true });

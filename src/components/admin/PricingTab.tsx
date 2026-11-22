@@ -22,7 +22,7 @@ import { LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/compo
 import { messageOf } from "@/lib/queries";
 import { moneyOrNull, readMoney } from "@/lib/moneyText";
 import { LIMIT_KEYS, LIMIT_LABEL, planCatalogue, type LimitKey, type PlanCatalogue, type PlanTier } from "@/lib/admin/planSchema";
-import { usePlans, useResetPlans, useSavePlans } from "@/lib/admin/client";
+import { useAdminAccess, usePlans, useResetPlans, useSavePlans } from "@/lib/admin/client";
 
 type TierForm = {
   key: string;
@@ -109,6 +109,7 @@ export function PricingTab() {
 function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: "database" | "built-in"; problem?: string }) {
   const save = useSavePlans();
   const reset = useResetPlans();
+  const { canWrite } = useAdminAccess();
   const [saved, markSaved] = useFlag();
   const form = useForm<Form>({ defaultValues: toForm(initial) });
   const { register, control, handleSubmit, setError, clearErrors, formState, setValue } = form;
@@ -154,7 +155,7 @@ function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: 
           </div>
           <p id="show-prices-hint" className="text-xs text-muted">
             {showPrices ? "Prices show on the public page once saved." : "Off: paid tiers read “Price to be announced” and free tiers “Free”, as today."}{" "}
-            <a href="/welcome#levels" target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-link underline-offset-4 hover:underline">
+            <a href="/welcome#levels" target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-link underline underline-offset-2">
               Open the public page <ExternalLink className="h-3 w-3" aria-hidden />
             </a>
           </p>
@@ -250,7 +251,7 @@ function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: 
 
       <SaveError message={formState.errors.root?.message ?? ""} />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" disabled={save.isPending}>
+        <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
           {save.isPending ? "Saving…" : "Save the catalogue"}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => tiers.append({ ...BLANK })} disabled={tiers.fields.length >= 12}>
@@ -262,7 +263,7 @@ function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: 
             title="Go back to the built-in catalogue?"
             body="The saved catalogue is removed and the four built-in levels apply again, with prices hidden. The change is recorded in the audit log."
             confirmLabel="Reset"
-            disabled={reset.isPending}
+            disabled={reset.isPending || !canWrite}
             onConfirm={() => reset.mutate(undefined, { onError: (e) => toast.error(messageOf(e)) })}
           />
         ) : null}

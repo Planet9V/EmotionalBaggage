@@ -24,7 +24,14 @@ import { publicLevels } from "@/lib/admin/plans";
 import { builtInCatalogue } from "@/lib/admin/planSchema";
 import { setServiceBaseForTests } from "@/lib/secretOrigin";
 import { setConnectionTestLimit } from "@/lib/admin/connection";
-import { anonymous, json, read } from "../api/helpers";
+import { DELETE as credDelete } from "@/app/api/admin/credentials/[provider]/[field]/route";
+import { GET as accessGet } from "@/app/api/admin/access/route";
+import { DEMO_REFUSED } from "@/lib/admin/guard";
+import { anonymous, asAdministrator, json, read } from "../api/helpers";
+
+// Most of this file changes settings, as the administrator; "the public demo account" below puts the default
+// password back for its own tests.
+asAdministrator();
 
 // The welcome page asks Next.js for a request (connection()); a test has no request scope, so only that call is stubbed.
 vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), connection: async () => undefined }));
@@ -139,6 +146,77 @@ describe("with empty settings and credentials tables, nothing is a blocker", () 
 
   it("a session is required, and the admin guard runs on the new routes", async () => {
     for (const h of [overviewGet, plansGet, paymentsGet, envGet]) expect((await h(anonymous("GET"))).status).toBe(401);
+  });
+});
+
+describe("the public demo account (still on the default password)", () => {
+  beforeAll(() => q("UPDATE users SET password_changed_at = NULL WHERE username = 'demo'"));
+  afterAll(() => q("UPDATE users SET password_changed_at = now() WHERE username = 'demo'"));
+
+  const state = async () => ({
+    settings: await q("SELECT key, value FROM settings ORDER BY key"),
+    credentials: await q("SELECT provider, field, value FROM credentials ORDER BY provider, field"),
+    audit: (await q<{ n: string }>("SELECT max(id)::text AS n FROM audit_log"))[0].n,
+  });
+  const writes = (): [string, () => Promise<Response>][] => {
+    const c = builtInCatalogue();
+    c.showPrices = true;
+    c.tiers[1].priceMonthly = 1;
+    return [
+      ["PUT settings (mail)", () => call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "X", fromAddress: "x@example.test", host: "127.0.0.1", port: 2525, security: "none", username: null } })],
+      ["PUT settings (models)", () => call(settingsPut, "PUT", "/api/admin/settings", { plannerUrl: "http://127.0.0.1:1" })],
+      ["PUT credentials (stripe)", () => call(credPut, "PUT", "/api/admin/credentials/stripe", { fields: { publishableKey: PUB_TEST, secretKey: KEY_TEST } }, provider("stripe"))],
+      ["PUT credentials (openrouter)", () => call(credPut, "PUT", "/api/admin/credentials/openrouter", { fields: { apiKey: "sk-or-v1-demo-attempt-0000" } }, provider("openrouter"))],
+      ["DELETE credentials", () => call(credDelete, "DELETE", "/api/admin/credentials/stripe/secretKey", undefined, { params: Promise.resolve({ provider: "stripe", field: "secretKey" }) })],
+      ["PUT plans", () => call(plansPut, "PUT", "/api/admin/plans", c)],
+      ["DELETE plans", () => call(plansDelete, "DELETE", "/api/admin/plans")],
+      ["test stripe", () => call(testPost, "POST", "/api/admin/test", { kind: "stripe" })],
+      ["test smtp", () => call(testPost, "POST", "/api/admin/test", { kind: "smtp" })],
+      ["test mail-message", () => call(testPost, "POST", "/api/admin/test", { kind: "mail-message", to: "x@example.test" })],
+      ["test voice", () => call(testPost, "POST", "/api/admin/test", { kind: "voice" })],
+    ];
+  };
+
+  it("can read every section, and is told it may not change them", async () => {
+    for (const [h, p] of [[overviewGet, "/api/admin/overview"], [statusGet, "/api/admin/status"], [plansGet, "/api/admin/plans"], [paymentsGet, "/api/admin/payments"], [settingsGet, "/api/admin/settings"], [credsGet, "/api/admin/credentials"], [envGet, "/api/admin/environment"]] as const) {
+      expect((await get(h as (r: Request) => Promise<Response>, p)).status, p).toBe(200);
+    }
+    expect(await read(await get(accessGet, "/api/admin/access"))).toEqual({ status: 200, body: { canWrite: false, reason: DEMO_REFUSED } });
+  });
+
+  it("every write and every test that sends a secret answers 403 with the one sentence, and changes nothing", async () => {
+    // something saved first, so a refused DELETE has something it could have removed
+    await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', $1)", [JSON.stringify(builtInCatalogue())]);
+    await q("INSERT INTO credentials (provider, field, value) VALUES ('stripe', 'secretKey', $1)", [KEY_TEST]);
+    const levels = await publicLevels();
+    const before = await state();
+    for (const [name, send] of writes()) {
+      const r = await read<{ error: string }>(await send());
+      expect({ name, ...r }).toEqual({ name, status: 403, body: { error: DEMO_REFUSED } });
+    }
+    expect(await state()).toEqual(before);
+    expect(await publicLevels()).toEqual(levels);
+  });
+
+  it("the welcome page is unaffected by the refused calls", async () => {
+    for (const [, send] of writes()) await send();
+    const l = await publicLevels();
+    expect(l.showPrices).toBe(false);
+    expect(l.levels.map((x) => x.price)).not.toContain("$1");
+  });
+
+  it("a test that sends no secret still runs (the database)", async () => {
+    expect((await call(testPost, "POST", "/api/admin/test", { kind: "database" })).status).toBe(200);
+  });
+
+  it("once the password is changed, the same calls go through", async () => {
+    await q("UPDATE users SET password_changed_at = now() WHERE username = 'demo'");
+    try {
+      expect(await read(await get(accessGet, "/api/admin/access"))).toEqual({ status: 200, body: { canWrite: true, reason: null } });
+      for (const [name, send] of writes()) expect({ name, status: (await send()).status }).toEqual({ name, status: 200 });
+    } finally {
+      await q("UPDATE users SET password_changed_at = NULL WHERE username = 'demo'");
+    }
   });
 });
 

@@ -13,10 +13,10 @@ export const PUT = adminRoute(async (req: Request) => {
   const next = await body(req, planCatalogue);
   await savePlanCatalogue(next);
   return NextResponse.json(await view());
-});
+}, { write: true });
 
 /** Back to the built-in catalogue (content.ts, prices hidden). */
 export const DELETE = adminRoute(async () => {
   await resetPlanCatalogue();
   return NextResponse.json(await view());
-});
+}, { write: true });

@@ -14,7 +14,10 @@ import * as octoprint from "../standins/octoprint";
 import * as moonraker from "../standins/moonraker";
 import * as perplexity from "../standins/perplexity";
 import { json as reply, startStandIn, type StandIn } from "../standins/core";
-import { json, read } from "../api/helpers";
+import { asAdministrator, json, read } from "../api/helpers";
+
+// This file changes Admin settings or keys, which the public demo account (default password) may not.
+asAdministrator();
 import { clearAdmin, restore, snapshot } from "./fixture";
 
 type Result = { ok: boolean; message: string; detail?: Record<string, unknown>; issues?: { field: string }[]; error?: string };

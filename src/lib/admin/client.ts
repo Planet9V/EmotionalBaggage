@@ -130,6 +130,14 @@ const adminQueries = {
 };
 
 export const useAdminStatus = () => useQuery(adminQueries.status());
+/**
+ * May this session change settings (src/lib/admin/guard.ts)? While unknown, or when the answer could not be read,
+ * the buttons stay on: the server refuses a write it does not allow, with the same sentence.
+ */
+export function useAdminAccess(): { canWrite: boolean; reason: string | null } {
+  const q = useQuery<{ canWrite: boolean; reason: string | null }>({ queryKey: ["admin", "access"], queryFn: ({ signal }) => api("/api/admin/access", { signal }), staleTime: 60_000 });
+  return q.data ?? { canWrite: true, reason: null };
+}
 export const useServiceOverview = () => useQuery(queryOptions({ queryKey: adminKeys.overview(), queryFn: ({ signal }) => adminFetchers.overview({ signal }) }));
 export const usePlans = () => useQuery(queryOptions({ queryKey: adminKeys.plans(), queryFn: ({ signal }) => adminFetchers.plans({ signal }) }));
 export const useEnvironment = () =>

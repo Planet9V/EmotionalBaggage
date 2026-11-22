@@ -12,6 +12,7 @@ import { messageOf } from "@/lib/queries";
 import {
   useAdminSettings,
   useConnectionTest,
+  useAdminAccess,
   useCredentials,
   useCredentialsAudit,
   useRemoveCredential,
@@ -72,9 +73,12 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
   const save = useSaveCredentials();
   const remove = useRemoveCredential();
   const test = useConnectionTest();
+  const { canWrite } = useAdminAccess();
 
   const typedKey = values.apiKey ?? "";
   const t = testFor(p, typedKey, settings);
+  // the new sections' tests send a saved secret outward: refused like a save (src/app/api/admin/test/route.ts)
+  const testRefused = !canWrite && !!t && (t.kind === "stripe" || t.kind === "smtp" || t.kind === "voice");
   const fieldId = (name: string) => `cred-${p.id}-${name}`;
 
   const submit = async (e: FormEvent) => {
@@ -142,7 +146,7 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
                   title={`Remove the saved ${f.label.toLowerCase()} for ${p.label}?`}
                   body={`The saved value is deleted. If an environment variable gives one, that applies again. This cannot be undone; you would need to paste the value again.`}
                   confirmLabel="Remove"
-                  disabled={remove.isPending}
+                  disabled={remove.isPending || !canWrite}
                   onConfirm={() => void doRemove(f.name)}
                 />
               ) : null}
@@ -151,14 +155,14 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
         })}
         <SaveError message={error} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending}>
+          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
             {save.isPending ? "Saving…" : "Save"}
           </Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            disabled={!t || test.isPending}
+            disabled={!t || test.isPending || testRefused}
             onClick={() => t && test.mutate(t)}
             aria-describedby={`test-${p.id}-note`}
           >

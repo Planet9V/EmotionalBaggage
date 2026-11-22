@@ -14,7 +14,7 @@ import { Panel } from "@/components/ui/panel";
 import { LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
 import { messageOf } from "@/lib/queries";
 import { mailSettings } from "@/lib/admin/schemas";
-import { useAdminSettings, useConnectionTest, useSaveSettings, type MailSettings } from "@/lib/admin/client";
+import { useAdminAccess, useAdminSettings, useConnectionTest, useSaveSettings, type MailSettings } from "@/lib/admin/client";
 import { CredentialsTab } from "./CredentialsTab";
 import { TestOutcome } from "./shared";
 
@@ -52,6 +52,7 @@ function ServerForm({ saved }: { saved: MailSettings }) {
   const [saveError, setSaveError] = useState("");
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
+  const { canWrite } = useAdminAccess();
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const id = (n: string) => `mail-${n}`;
 
@@ -126,7 +127,7 @@ function ServerForm({ saved }: { saved: MailSettings }) {
         {form.mode === "smtp" && form.security === "none" ? <p className="text-xs text-warning">Without security the password and every message cross the network readable. Use it only for a server inside your own network.</p> : null}
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending}>
+          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
             {save.isPending ? "Saving…" : "Save"}
           </Button>
           <SavedNote show={justSaved} />
@@ -141,6 +142,7 @@ function TestMessage({ defaultTo }: { defaultTo: string }) {
   const [to, setTo] = useState(defaultTo);
   const [error, setError] = useState("");
   const test = useConnectionTest();
+  const { canWrite } = useAdminAccess();
   const send = (e: FormEvent) => {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) {
@@ -157,7 +159,7 @@ function TestMessage({ defaultTo }: { defaultTo: string }) {
           <Field id="mail-test-to" label="Send to" error={error}>
             <Input id="mail-test-to" type="email" value={to} onChange={(e) => setTo(e.target.value)} {...describe("mail-test-to", { error })} />
           </Field>
-          <Button type="submit" variant="outline" size="sm" disabled={test.isPending}>
+          <Button type="submit" variant="outline" size="sm" disabled={test.isPending || !canWrite}>
             Send test message
           </Button>
         </div>

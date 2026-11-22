@@ -14,7 +14,7 @@ import { Panel } from "@/components/ui/panel";
 import { LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
 import { messageOf } from "@/lib/queries";
 import { voiceSettings } from "@/lib/admin/schemas";
-import { useAdminSettings, useSaveSettings, type VoiceSettings } from "@/lib/admin/client";
+import { useAdminAccess, useAdminSettings, useSaveSettings, type VoiceSettings } from "@/lib/admin/client";
 import { CredentialsTab } from "./CredentialsTab";
 
 type Form = { provider: "none" | "openai" | "elevenlabs"; baseUrl: string; model: string; voice: string; speed: string };
@@ -47,6 +47,7 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
   const [saveError, setSaveError] = useState("");
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
+  const { canWrite } = useAdminAccess();
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const id = (n: string) => `voice-${n}`;
 
@@ -115,7 +116,7 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
         ) : null}
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={save.isPending}>
+          <Button type="submit" size="sm" disabled={save.isPending || !canWrite}>
             {save.isPending ? "Saving…" : "Save"}
           </Button>
           <SavedNote show={justSaved} />

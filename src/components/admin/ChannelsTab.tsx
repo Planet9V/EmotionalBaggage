@@ -15,7 +15,7 @@ export function ChannelsTab() {
       <p className="max-w-3xl text-sm text-secondary">
         Where the app sells and posts. Each channel is optional: without it, its screens say it is not connected and you can still work by hand. What is
         connected is also listed, read only, on{" "}
-        <Link href="/integrations" className="text-link underline-offset-4 hover:underline">
+        <Link href="/integrations" className="text-link underline underline-offset-2">
           Integrations
         </Link>
         .

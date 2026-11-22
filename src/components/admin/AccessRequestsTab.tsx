@@ -51,7 +51,7 @@ export function AccessRequestsTab() {
       title="Access requests"
       description={
         <>
-          Requests sent from the public <Link href="/welcome" className="text-link underline-offset-2 hover:underline">welcome page</Link> for a workspace of one&apos;s own, newest first. No email is sent by the app: reply from your own mail, then set the status here.
+          Requests sent from the public <Link href="/welcome" className="text-link underline underline-offset-2">welcome page</Link> for a workspace of one&apos;s own, newest first. No email is sent by the app: reply from your own mail, then set the status here.
         </>
       }
       actions={

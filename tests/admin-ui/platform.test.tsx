@@ -9,7 +9,14 @@ import { PricingTab } from "@/components/admin/PricingTab";
 import { EmailTab } from "@/components/admin/EmailTab";
 import { builtInCatalogue } from "@/lib/admin/planSchema";
 import type { AdminSettings, ProviderView, ServiceStatus } from "@/lib/admin/client";
+import { AdminView } from "@/components/admin/AdminView";
 import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
+
+// AdminView reads ?tab= from the address.
+const nav = vi.hoisted(() => ({ tab: "payments" }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(`tab=${nav.tab}`), useRouter: () => ({ replace: () => undefined }), usePathname: () => "/admin" }));
+
+const DEMO = "Change the default password before changing settings: this account is the public demo account.";
 
 beforeEach(shimBrowser);
 afterEach(() => {
@@ -115,5 +122,36 @@ describe("Email", () => {
     fireEvent.click(within(screen.getByRole("form", { name: "Mail server" })).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(calls.find((c) => c.method === "PUT")).toBeTruthy());
     expect(calls.find((c) => c.method === "PUT")!.body).toEqual({ mail: { mode: "smtp", fromName: "C2R", fromAddress: "noreply@example.test", host: "smtp.example.test", port: 2525, security: "starttls", username: "c2r" } });
+  });
+});
+
+describe("the public demo account", () => {
+  const server = () =>
+    adminServer([
+      on("GET", "/api/admin/access", () => ({ body: { canWrite: false, reason: DEMO } })),
+      on("GET", "/api/admin/payments", () => ({ body: { configured: true, mode: "test", webhookSecret: false, webhookPath: "/api/billing/stripe/webhook" } })),
+      on("GET", "/api/admin/credentials", () => ({ body: { providers: [stripe()] } })),
+      on("GET", "/api/admin/settings", () => ({ body: { settings: {} } })),
+      on("GET", "/api/admin/plans", () => ({ body: { catalogue: builtInCatalogue(), source: "built-in", limits: [] } })),
+    ]);
+
+  it("sees the sentence at the top of the section, with a link to change the password, and Save, Remove and Test are off", async () => {
+    server();
+    nav.tab = "payments";
+    renderWithClient(<AdminView />);
+    expect(await screen.findByText(DEMO)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Change the password" }).getAttribute("href")).toBe("/account");
+    await screen.findByTestId("state-stripe-secretKey");
+    await waitFor(() => expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true));
+    expect((screen.getByRole("button", { name: "Test connection" }) as HTMLButtonElement).disabled).toBe(true);
+    for (const b of screen.getAllByRole("button", { name: "Remove" })) expect((b as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("cannot save the plan catalogue", async () => {
+    server();
+    nav.tab = "pricing";
+    renderWithClient(<AdminView />);
+    expect(await screen.findByText(DEMO)).toBeTruthy();
+    await waitFor(() => expect((screen.getByRole("button", { name: "Save the catalogue" }) as HTMLButtonElement).disabled).toBe(true));
   });
 });

@@ -15,4 +15,4 @@ export const PUT = adminRoute(async (req: Request, { params }: Ctx) => {
   if (b.address && !isModelProvider(def.id)) throw invalid(["address"], `applies to the model hosts only; ${def.label} keys go to its own address`);
   await saveCredentials(def, values, b.address);
   return NextResponse.json({ provider: await providerView(def.id) });
-});
+}, { write: true });

@@ -12,7 +12,10 @@ import { POST as addItem } from "@/app/api/projects/[id]/items/route";
 import { PATCH as patchItem } from "@/app/api/items/[id]/route";
 import { SEED_PROJECT } from "@/lib/seed";
 import { GET as getSettings, PUT as putSettings } from "@/app/api/admin/settings/route";
-import { ctx, json, read, SEEDED, sessionCookieHeader } from "./helpers";
+import { asAdministrator, ctx, json, read, SEEDED, sessionCookieHeader } from "./helpers";
+
+// This file changes Admin settings or keys, which the public demo account (default password) may not.
+asAdministrator();
 
 type Concept = {
   id: string;

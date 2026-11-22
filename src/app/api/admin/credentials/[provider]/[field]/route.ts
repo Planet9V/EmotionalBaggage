@@ -13,4 +13,4 @@ export const DELETE = adminRoute(async (_req: Request, { params }: Ctx) => {
   if (!fieldDef(provider, field)) throw notFound("That field");
   if (!(await removeCredential(provider, field))) throw new HttpError(404, "Nothing is saved for that field.");
   return NextResponse.json({ provider: await providerView(provider) });
-});
+}, { write: true });

@@ -6,7 +6,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ADMIN_TAB_LABEL, ADMIN_TABS, isAdminTab, type AdminTab } from "@/lib/admin/client";
+import { ADMIN_TAB_LABEL, ADMIN_TABS, isAdminTab, useAdminAccess, type AdminTab } from "@/lib/admin/client";
+import { NotSetUp } from "@/components/ui/states";
 import { SetupTab } from "./SetupTab";
 import { CredentialsTab } from "./CredentialsTab";
 import { ModelsTab } from "./ModelsTab";
@@ -25,6 +26,7 @@ export function AdminView() {
   const router = useRouter();
   const raw = params.get("tab");
   const tab: AdminTab = isAdminTab(raw) ? raw : "setup";
+  const access = useAdminAccess();
   const go = (t: AdminTab) => router.replace(t === "setup" ? "/admin" : `/admin?tab=${t}`, { scroll: false });
 
   return (
@@ -44,7 +46,12 @@ export function AdminView() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 space-y-4">
+            {!access.canWrite && tab !== "audit" && tab !== "access" ? (
+              <NotSetUp href="/account" label="Change the password">
+                {access.reason}
+              </NotSetUp>
+            ) : null}
             <TabsContent value="setup" className="max-w-5xl">
               <SetupTab onOpenTab={go} />
             </TabsContent>
