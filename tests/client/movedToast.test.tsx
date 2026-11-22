@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Process review 3: dropping a card on another status says so in a toast that offers "Add a reason".
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Toaster } from "@/components/ui/sonner";
 import { announceMove } from "@/components/trace/movedToast";
 
@@ -36,6 +36,19 @@ describe("the moved toast", () => {
     render(<Toaster />);
     act(() => announceMove({ id: 8, title: "Another card" }, "blocked"));
     await screen.findByTestId("moved-toast");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("asks for the reason before it sends one", async () => {
+    render(<Toaster />);
+    act(() => announceMove({ id: 9, title: "Third card" }, "done"));
+    // Toasts from the tests above can still be on screen: work inside this one.
+    await waitFor(() => expect(screen.getAllByTestId("moved-toast").some((t) => t.textContent?.includes("Third card"))).toBe(true));
+    const mine = within(screen.getAllByTestId("moved-toast").find((t) => t.textContent?.includes("Third card"))!);
+    fireEvent.click(mine.getByRole("button", { name: "Add a reason" }));
+    fireEvent.click(mine.getByRole("button", { name: "Save" }));
+    expect((await mine.findByRole("alert")).textContent).toBe("Type the reason.");
+    expect(mine.getByLabelText("Why (kept in the history)").getAttribute("aria-invalid")).toBe("true");
     expect(calls).toHaveLength(0);
   });
 });

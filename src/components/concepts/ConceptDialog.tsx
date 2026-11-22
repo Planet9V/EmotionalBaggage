@@ -66,10 +66,10 @@ export function ConceptDialog({
 }
 
 /** A refused action: the server's sentence, announced to screen readers. */
-export function FormError({ message }: { message: string }) {
+export function FormError({ message, id }: { message: string; id?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="mt-3 rounded-md border border-hairline bg-danger-soft px-3 py-2 text-sm text-danger">
+    <p id={id} role="alert" className="mt-3 rounded-md border border-hairline bg-danger-soft px-3 py-2 text-sm text-danger">
       {message}
     </p>
   );
