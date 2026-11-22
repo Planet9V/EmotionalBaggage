@@ -4,6 +4,7 @@
 // drawn in its rest pose: standing at the origin facing +z, arms hanging, x toward its right hand.
 import * as THREE from "three";
 import { C, type Kit, type Skin, type V3 } from "./kit";
+import type { SpringDef } from "./springs";
 
 export type Role = "agent" | "handler" | "owner" | "bystander" | "traveller";
 type Costume = { coat: string; legs: string; skin: string; hair: string; sleeve: string };
@@ -50,6 +51,15 @@ const SPRINGS: Record<Role, [BoneDef, BoneDef, BoneDef]> = {
   owner: [{ parent: BONE.chest, at: [0, 1.34, -0.14] }, { parent: BONE.hips, at: [0, 0.9, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
   bystander: [{ parent: BONE.head, at: [0, HEAD_C + 0.05, -0.05] }, { parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
   traveller: [{ parent: BONE.head, at: [0, HEAD_C + 0.02, -0.15] }, { parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
+};
+
+/** How each role's loose parts swing: a scarf end and lanyard that flick, a heavy backpack, a stiff bun, a hem. */
+export const SPRING_DEFS: Record<Role, [SpringDef | null, SpringDef | null, SpringDef | null]> = {
+  agent: [{ rest: [0.03, -0.15, 0.01], k: 70, c: 5, max: 0.7 }, { rest: [-0.02, -0.32, 0.005], k: 45, c: 3.5, max: 0.55 }, { rest: [0, 0.05, -0.1], k: 240, c: 12, max: 0.22 }],
+  handler: [{ rest: [0, -0.14, 0], k: 260, c: 13, max: 0.14 }, null, null],
+  owner: [{ rest: [0, -0.26, -0.08], k: 60, c: 5, max: 0.32 }, { rest: [0, -0.36, 0], k: 110, c: 8, max: 0.22 }, null],
+  bystander: [{ rest: [0, -0.06, -0.05], k: 300, c: 16, max: 0.1 }, null, null],
+  traveller: [{ rest: [0, -0.26, -0.04], k: 70, c: 5.5, max: 0.4 }, null, null],
 };
 
 /** The rest pose of every bone, for one role: its parent and where it is in the figure. */

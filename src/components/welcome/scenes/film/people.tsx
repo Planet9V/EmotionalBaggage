@@ -8,9 +8,10 @@ import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useBuilt, useClock, type V3 } from "./kit";
-import { blinkAt, mouthFor, pupilFor, type FaceState, type Mouth } from "./face";
-import { FACE_ACROSS, FACE_H, FACE_UPDOWN, FACE_W, drawFace, faceKey } from "./faceDraw";
-import { ANKLE, BONE, BONES, FORE, HAND_C, HEAD_C, HEAD_R, HIP_J, KNEE, LEG_X, NECK, UPPER, WEAR, figureMaker, lr, skeletonOf, type Role } from "./body";
+import type { Mouth } from "./face";
+import { faceOf, useFace } from "./faceMesh";
+import { ANKLE, BONE, BONES, FORE, HAND_C, HIP_J, KNEE, LEG_X, SPRING_DEFS, UPPER, WEAR, figureMaker, lr, skeletonOf, type Role } from "./body";
+import { settle, springTurn, stepSpring, type SpringState } from "./springs";
 import { aimDown, twoBone, type Limb } from "./rig";
 
 export type { Role } from "./body";
@@ -40,11 +41,18 @@ export type FigPose = {
   hipZ?: number;
   /** turn about the vertical; 0 faces the camera side (+z) */
   yaw?: number;
-  /** lean forward (positive) or back, about the feet */
+  /** lean forward (positive) or back: a third of it from the ankles, the rest at the waist */
   lean?: number;
-  /** head turn and nod, relative to the body */
+  /** at the waist only: a bend forward, a twist (toward the left hand is positive), a bend to the side */
+  bend?: number;
+  twist?: number;
+  side?: number;
+  /** squash (positive) or stretch (negative) of the body above the hips, as on a take */
+  squash?: number;
+  /** head turn, nod and tilt, relative to the body */
   head?: number;
   nod?: number;
+  tilt?: number;
   /** where each hand is, in the world; left out, the arm hangs */
   handR?: V3 | null;
   handL?: V3 | null;
@@ -82,53 +90,26 @@ export type FigPose = {
  * for hands that go to a mouth, a chest or a hip, whichever way the figure faces and leans.
  */
 export function onBody(p: V3, yaw: number, lean: number, l: V3): V3 {
-  const y = l[1] * Math.cos(lean) - l[2] * Math.sin(lean);
-  const z = l[1] * Math.sin(lean) + l[2] * Math.cos(lean);
+  let y = l[1];
+  let z = l[2];
+  // above the waist the body bends there too, as the figure does
+  if (y > WAIST) {
+    const a = lean * (1 - FROM_FEET);
+    const h = y - WAIST;
+    y = WAIST + h * Math.cos(a) - z * Math.sin(a);
+    z = h * Math.sin(a) + z * Math.cos(a);
+  }
+  const a = lean * FROM_FEET;
+  [y, z] = [y * Math.cos(a) - z * Math.sin(a), y * Math.sin(a) + z * Math.cos(a)];
   return [p[0] + l[0] * Math.cos(yaw) + z * Math.sin(yaw), p[1] + y, p[2] - l[0] * Math.sin(yaw) + z * Math.cos(yaw)];
 }
 
+/** How much of a lean comes from the ankles; the rest is at the waist, which is this high. */
+const FROM_FEET = 0.3;
+const WAIST = 0.98;
+
 const ROLES = Object.keys(WEAR) as Role[];
 const MAKERS = Object.fromEntries(ROLES.map((r) => [r, [figureMaker(r, false), figureMaker(r, true)]])) as Record<Role, [ReturnType<typeof figureMaker>, ReturnType<typeof figureMaker>]>;
-
-// the canvas and its texture are changed in place, outside React's data flow; this does it by name
-function repaint(canvas: HTMLCanvasElement, texture: THREE.CanvasTexture, f: FaceState, skin: string) {
-  const g = canvas.getContext("2d");
-  if (!g) return;
-  drawFace(g, f, skin);
-  texture.needsUpdate = true;
-}
-
-/** The face's canvas, texture and mesh, one per figure; the canvas is redrawn only when the face changes. */
-function useFace(skin: string) {
-  const canvas = useMemo(() => Object.assign(document.createElement("canvas"), { width: FACE_W, height: FACE_H }), []);
-  const parts = useMemo(() => {
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 4;
-    const geo = new THREE.SphereGeometry(HEAD_R + 0.004, 24, 16, Math.PI / 2 - FACE_ACROSS, 2 * FACE_ACROSS, Math.PI / 2 - FACE_UPDOWN, 2 * FACE_UPDOWN);
-    const mat = new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.04, depthWrite: false, roughness: 0.8, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(0, HEAD_C - NECK, 0);
-    mesh.renderOrder = 1;
-    return { texture, geo, mat, mesh };
-  }, [canvas]);
-  useEffect(
-    () => () => {
-      parts.texture.dispose();
-      parts.geo.dispose();
-      parts.mat.dispose();
-    },
-    [parts],
-  );
-  const shown = useRef("");
-  const paint = (f: FaceState) => {
-    const key = faceKey(f);
-    if (key === shown.current) return;
-    shown.current = key;
-    repaint(canvas, parts.texture, f, skin);
-  };
-  return { mesh: parts.mesh, paint };
-}
 
 /** The skinned body: its bones in their rest pose, bound once. */
 function useRig(role: Role, phone: boolean) {
@@ -174,6 +155,10 @@ type Scratch = {
   limb: Limb;
   curl: number[][];
   last: number;
+  breath: number;
+  springs: SpringState[];
+  /** the springs' own clock: the moment they were last stepped to */
+  st: number;
 };
 const scratch = (): Scratch => ({
   s: new THREE.Vector3(),
@@ -192,6 +177,9 @@ const scratch = (): Scratch => ({
   limb: { mid: new THREE.Vector3(), end: new THREE.Vector3(), stretch: 1, hinge: new THREE.Vector3() },
   curl: [[...CURL.relax], [...CURL.relax]],
   last: NaN,
+  breath: 0,
+  springs: [0, 1, 2].map(() => ({ tip: new THREE.Vector3(), vel: new THREE.Vector3() })),
+  st: NaN,
 });
 
 /** The bones back to their rest pose, before a pose is applied. */
@@ -220,7 +208,7 @@ function poseArm(bones: THREE.Bone[], rest: THREE.Vector3[], q: FigPose, s: numb
   const clav = bones[lr(BONE.clav, s)]!;
   const upper = bones[lr(BONE.uarm, s)]!;
   upper.getWorldPosition(sc.s);
-  const lift = Math.max(0, Math.min(1, (sc.t.y - sc.s.y) / (0.45 * tall))) * 0.22 + (q.shrug ?? 0) * 0.32;
+  const lift = Math.max(0, Math.min(1, (sc.t.y - sc.s.y) / (0.45 * tall))) * 0.22 + (q.shrug ?? 0) * 0.32 + 0.012 * sc.breath;
   clav.rotation.set(0, 0, s * lift);
   clav.updateMatrixWorld(true);
   upper.getWorldPosition(sc.s);
@@ -284,12 +272,69 @@ function poseLeg(bones: THREE.Bone[], rest: THREE.Vector3[], g: THREE.Group, q: 
   ft.quaternion.copy(sc.qf.invert().multiply(sc.qh));
 }
 
-/** The face at one moment, from the pose and the figure's own blinking. `aim` is the look target in the head's frame. */
-function faceOf(q: FigPose, t: number, seed: number, aim: THREE.Vector3 | null): FaceState {
-  const [lookX, lookY] = aim ? pupilFor(aim.x, aim.y, aim.z) : [0, 0];
-  const m = mouthFor(q.mouth, q.talk ?? 0);
-  const lid = Math.max(q.lids ?? 0, blinkAt(t, seed), q.blink ?? 0);
-  return { lookX, lookY, lid: Math.min(1, lid), squint: q.squint ?? 0, brow: q.brow ?? 0, browIn: q.browIn ?? 0, mouth: m.mouth, open: m.open };
+/**
+ * The body without its limbs: where it stands and faces, the lean shared between ankles and waist, the hips, the
+ * waist's twist and bend, a squash, the head, and the life underneath every pose: breathing, and a slow sway of
+ * the weight and the shoulders, so nobody is ever perfectly still.
+ */
+function placeBody(g: THREE.Group, bones: THREE.Bone[], rest: THREE.Vector3[], q: FigPose, now: number, seed: number, sc: Scratch) {
+  g.position.set(q.p[0], q.p[1], q.p[2]);
+  g.rotation.set(0, q.yaw ?? 0, 0);
+  toRest(bones, rest);
+  const lean = q.lean ?? 0;
+  const b = Math.sin((now / 3400) * Math.PI * 2 + seed);
+  sc.breath = b;
+  const drift = Math.sin(now / 2700 + seed * 3);
+  bones[BONE.root]!.rotation.set(lean * FROM_FEET, 0, 0);
+  // soft knees by default: the hips sit a centimetre below a straight leg
+  bones[BONE.hips]!.position.add(sc.v.set((q.hipX ?? 0) + 0.008 * drift, q.hipY ?? -0.012, q.hipZ ?? 0));
+  const spine = bones[BONE.spine]!;
+  spine.rotation.set(lean * (1 - FROM_FEET) + (q.bend ?? 0), (q.twist ?? 0) + 0.02 * Math.sin(now / 3900 + seed), (q.side ?? 0) - 0.012 * drift, "YXZ");
+  const sq = q.squash ?? 0;
+  spine.scale.set(1 + 0.5 * sq, 1 - sq, 1 + 0.5 * sq);
+  // a breath fills the chest, lifts it a touch, and the head rides it
+  bones[BONE.breath]!.scale.set(1 + 0.016 * b, 1 + 0.008 * b, 1 + 0.024 * b);
+  bones[BONE.chest]!.rotation.set(-0.012 * b, 0, 0);
+  bones[BONE.head]!.rotation.set((q.nod ?? 0) + 0.01 * b, q.head ?? 0, q.tilt ?? 0, "YXZ");
+  g.updateMatrixWorld(true);
+}
+
+const SPRING_MS = 1000 / 90;
+const SPRING_PREROLL = 1200;
+const SPRING_BONES = [BONE.sA, BONE.sB, BONE.sC];
+/** Each loose part's pivot, its parent's turn, and the figure's scale, read from the placed body. */
+function springFrame(bones: THREE.Bone[], i: number, sc: Scratch) {
+  const bone = bones[SPRING_BONES[i]!]!;
+  bone.getWorldPosition(sc.s);
+  bone.parent!.getWorldQuaternion(sc.q);
+}
+
+/**
+ * Steps the springs up to the scene's time `t`: at a fixed rate, and from a little before `t` when the film has been
+ * cut or held, so a held frame shows the swing the film would. `own` is the scene's own clock (stopped in a freeze).
+ */
+function runSprings(g: THREE.Group, bones: THREE.Bone[], rest: THREE.Vector3[], role: Role, pose: (t: number) => FigPose, t: number, own: (t: number) => number, seed: number, tall: number, sc: Scratch) {
+  const defs = SPRING_DEFS[role];
+  let from = sc.st;
+  if (!(t >= from) || t - from > 300) {
+    from = t - SPRING_PREROLL;
+    placeBody(g, bones, rest, pose(from), own(from), seed, sc);
+    defs.forEach((d, i) => {
+      if (!d) return;
+      springFrame(bones, i, sc);
+      settle(sc.springs[i]!, d, sc.s, sc.q, tall);
+    });
+  }
+  for (let at = from + SPRING_MS; at <= t; at += SPRING_MS) {
+    const dt = (own(at) - own(at - SPRING_MS)) / 1000;
+    placeBody(g, bones, rest, pose(at), own(at), seed, sc);
+    defs.forEach((d, i) => {
+      if (!d) return;
+      springFrame(bones, i, sc);
+      stepSpring(sc.springs[i]!, d, sc.s, sc.q, tall, dt);
+    });
+    sc.st = at;
+  }
 }
 
 /**
@@ -314,25 +359,26 @@ export function Figure({ pose, role, tall = 1, phone = false, seed, time }: { po
     const g = root.current;
     if (!g) return;
     const sc = (scr.current ??= scratch());
-    const now = time ? time(clock.t) : clock.t;
+    const clockOf = time ?? ((t: number) => t);
+    const now = clockOf(clock.t);
     const dt = now - sc.last;
     sc.last = now;
-    const q = pose(clock.t);
     const { bones, rest } = rig;
-    g.position.set(q.p[0], q.p[1], q.p[2]);
-    g.rotation.set(0, q.yaw ?? 0, 0);
-    toRest(bones, rest);
-    bones[BONE.root]!.rotation.set(q.lean ?? 0, 0, 0);
-    // soft knees by default: the hips sit a centimetre below a straight leg
-    bones[BONE.hips]!.position.add(sc.v.set(q.hipX ?? 0, q.hipY ?? -0.012, q.hipZ ?? 0));
-    bones[BONE.head]!.rotation.set(q.nod ?? 0, q.head ?? 0, 0);
-    g.updateMatrixWorld(true);
+    runSprings(g, bones, rest, role, pose, clock.t, clockOf, own, tall, sc);
+    const q = pose(clock.t);
+    placeBody(g, bones, rest, q, now, own, sc);
     poseLeg(bones, rest, g, q, -1, tall, sc);
     poseLeg(bones, rest, g, q, 1, tall, sc);
     poseArm(bones, rest, q, -1, tall, phone, sc, dt);
     poseArm(bones, rest, q, 1, tall, phone, sc, dt);
     // the phone shows only in a phone hand
     bones[BONE.prop]!.scale.setScalar(phone ? 1 : 0.0001);
+    // the loose parts hang where their springs have swung them
+    SPRING_DEFS[role].forEach((d, i) => {
+      if (!d) return;
+      springFrame(bones, i, sc);
+      bones[SPRING_BONES[i]!]!.quaternion.copy(springTurn(sc.springs[i]!, d, sc.s, sc.q, sc.qh));
+    });
     g.updateMatrixWorld(true);
     let aim: THREE.Vector3 | null = null;
     if (q.look) aim = face.mesh.worldToLocal(sc.v.set(q.look[0], q.look[1], q.look[2]));
