@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
 import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
 import { SOURCES_STORE, STORY_STORE, storyPart } from "@/lib/story/parts";
+import { readManifest } from "@/lib/story/seedFiles";
 import { processView } from "@/lib/process/client";
 import type { ProcessResponse } from "@/lib/process/state";
 import type { Item } from "@/lib/types";
@@ -16,12 +17,22 @@ function state(over: Partial<ProcessResponse> = {}): ProcessResponse {
   return { projectId: "p", name: "New", oneLiner: "", productType: "electronics", stage: "concept", gates: [], history: [], facts: FACTS, skipped: [], ...over };
 }
 
-/** Baggage Claims' rows as a fresh install holds them (the seed modules, in the order the seeding writes them). */
-function seedRows(): Item[] {
+/**
+ * Baggage Claims' rows as a fresh install holds them (the seed modules, in the order the seeding writes them). As in
+ * the welcome page's exampleData: a document the seed manifest stores is a Files row holding a file ("stored"); one
+ * it does not have is only listed ("not uploaded"), and the Concept gate does not count it.
+ */
+function seedRows(manifest: { title: string; what: string; kind: string }[]): Item[] {
+  const stored = new Set(manifest.map((e) => e.title));
   const out: Item[] = [];
   const add = (section: string, title: string, body: string, data: Record<string, unknown>, status: string) =>
     out.push({ id: out.length + 1, projectId: SEED_PROJECT.id, section, title, body, data, status, sort: out.length });
-  for (const s of SEED_SOURCES) add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title }, "stored");
+  SEED_SOURCES.forEach((s, i) =>
+    stored.has(s.title) ? add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title, fileId: i + 1 }, "stored") : add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title }, "not uploaded"),
+  );
+  // the files the owner supplied later (addedOn in the manifest) are stored as Files rows of their own
+  const listed = new Set(SEED_SOURCES.map((s) => s.title));
+  manifest.filter((e) => !listed.has(e.title)).forEach((e, i) => add(SOURCES_STORE, e.title, e.what, { kind: e.kind, fileName: e.title, fileId: 500 + i }, "stored"));
   for (const p of SEED_STORY) add(STORY_STORE, storyPart(p.part)?.heading ?? p.part, p.body, { part: p.part }, p.status);
   for (const s of SEED_ITEMS) add(s.section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
   for (const [section, items] of Object.entries(SEED_ADDITIONS)) for (const s of items) add(section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
@@ -62,8 +73,10 @@ describe("an empty concept", () => {
   });
 });
 
+const manifest = await readManifest();
+
 describe("Baggage Claims MK1 as seeded", () => {
-  const rows = seedRows();
+  const rows = seedRows(manifest ?? []);
   const view = processView(bcState(), rows);
   const m = statusModel(view, rows);
 
@@ -104,7 +117,9 @@ describe("Baggage Claims MK1 as seeded", () => {
     expect(f.claims).toMatchObject({ value: "0 / 9", detail: "9 unverified" });
     expect(f.questions).toMatchObject({ value: "5", detail: "of 5 recorded" });
     expect(f["print-jobs"]).toMatchObject({ value: "2", detail: "0 printed" });
-    expect(f.files).toMatchObject({ value: "21", href: "/files" });
+    // every document in the seed manifest is stored on a fresh install (26 on the dev server, 22 Nov)
+    expect(manifest?.length).toBeGreaterThan(0);
+    expect(f.files).toMatchObject({ value: String(manifest!.length), detail: "stored", href: "/files" });
     expect(f["unit-cost"]!.value).toMatch(/^\$[\d,]+\.\d\d$/);
     expect(f["unit-cost"]!.href).toBe("/s/production/economics");
   });
@@ -148,12 +163,28 @@ describe("stage status", () => {
 
 describe("next actions", () => {
   it("merges the same action from two checks and ranks the one that passes a gate first", () => {
-    const rows = [row("concept/story", "written"), row("concept/files", "stored"), row("concept/brief", "done"), row("concept/brief", "done"), row("concept/brief", "done")];
+    const rows = [{ ...row("concept/story", "written", "Pitch", { part: "pitch" }), body: "A tag that heckles." }, row("concept/files", "stored", "notes.md", { fileId: 1 }), row("concept/brief", "done"), row("concept/brief", "done"), row("concept/brief", "done")];
     const v = processView(state({ oneLiner: "x" }), rows);
     const a = nextActions(v, rows);
     // only the go decision is left at Concept: deciding it passes the gate
     expect(a[0]!.label).toBe("Add the go/no-go question as the first decision");
     expect(a[0]!.why).toBe("Passes the Concept gate.");
     expect(new Set(a.map((x) => x.label)).size).toBe(a.length);
+  });
+});
+
+describe("key figures read the rows as the gates do", () => {
+  it("counts a Files row only when it holds a file, and says how many are only listed", () => {
+    const rows = [row("concept/files", "stored", "a.md", { fileId: 1 }), row("concept/files", "not uploaded", "b.md", {})];
+    expect(keyFigures(rows, "USD").find((f) => f.key === "files")).toMatchObject({ value: "1", detail: "stored; 1 listed, not uploaded" });
+  });
+
+  it("counts a claim verified only as the Research gate does, not on its status alone", () => {
+    const rows = [row("research/claims", "verified", "Market is big", {})];
+    const v = processView(state(), rows);
+    const gate = v.stages[1]!.result.checks.find((c) => c.id === "research.verified")!;
+    const fig = keyFigures(rows, "USD").find((f) => f.key === "claims")!;
+    expect(fig.value).toBe(`${gate.met ? 1 : 0} / 1`);
+    expect(gate.detail.startsWith(`${fig.value.split(" / ")[0]} of 1 claim verified`)).toBe(true);
   });
 });

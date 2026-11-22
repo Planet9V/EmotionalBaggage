@@ -20,6 +20,8 @@ import { STORE_BATCHES, STORE_CHANNELS, STORE_ECONOMICS, STORE_METHODS } from "@
 import { sectionLabel } from "@/lib/menuLookup";
 import { sectionsFor } from "@/lib/productTypes";
 import { plural } from "@/lib/format";
+import { hasSubstance } from "@/lib/process/substance";
+import { isVerifiedClaim } from "@/lib/research/status";
 import type { Item } from "@/lib/types";
 
 /** The four states a stage can be in on the dashboard. */
@@ -249,7 +251,8 @@ export function keyFigures(rows: Item[], currency: string): Figure[] {
   }
   const claims = of("research/claims");
   if (claims.length) {
-    const verified = claims.filter((c) => c.status === "verified").length;
+    // verified as the Research gate counts it: a saved answer with a quote from a named source, not the status alone
+    const verified = claims.filter(isVerifiedClaim).length;
     out.push({ key: "claims", label: "Claims verified", value: `${verified} / ${claims.length}`, detail: `${claims.length - verified} unverified`, href: "/s/research/claims" });
   }
   const jobs = of("prototype/printing");
@@ -257,8 +260,12 @@ export function keyFigures(rows: Item[], currency: string): Figure[] {
     const done = jobs.filter((j) => j.status === "done").length;
     out.push({ key: "print-jobs", label: "Print jobs", value: String(jobs.length), detail: `${done} printed`, href: "/s/prototype/printing" });
   }
+  // a Files row counts as a file only when it holds one, as the Concept gate counts it; a document only listed does not
   const files = of("concept/files");
-  if (files.length) out.push({ key: "files", label: "Files", value: String(files.length), detail: "source documents", href: "/files" });
+  if (files.length) {
+    const stored = files.filter(hasSubstance).length;
+    out.push({ key: "files", label: "Files", value: String(stored), detail: stored === files.length ? "stored" : `stored; ${files.length - stored} listed, not uploaded`, href: "/files" });
+  }
   return out;
 }
 
