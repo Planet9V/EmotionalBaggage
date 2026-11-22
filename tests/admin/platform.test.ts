@@ -1,7 +1,7 @@
 // The platform admin area (WS10a): nothing in it may block the app. With the settings and credentials tables
 // empty, the overview, every section's read and the public welcome page's levels still load; every accessor
 // answers a typed "not configured". Then each section's store and test, against small stand-ins on 127.0.0.1:
-// Stripe (GET /v1/balance), an SMTP server, an OpenAI-compatible speech endpoint and ElevenLabs. No real service
+// Stripe (GET /v1/balance), an SMTP server, and a Kokoro speech server (its OpenAI-compatible speech interface). No real service
 // is called and no real secret is used.
 import { createServer as httpServer, type Server } from "node:http";
 import { createServer as tcpServer, type Server as TcpServer, type Socket } from "node:net";
@@ -29,6 +29,7 @@ import { GET as accessGet } from "@/app/api/admin/access/route";
 import { PLATFORM_ADMIN_NOTICE } from "@/lib/admin/guard";
 import { POST as passwordPost } from "@/app/api/auth/password/route";
 import { readAudit } from "@/lib/admin/audit";
+import { POST as voiceOptions } from "@/app/api/admin/voice/options/route";
 import { anonymous, json, read } from "../api/helpers";
 
 // The platform administrator exists only in the new sign-in (src/lib/admin/platformAdminHook.ts, false until accounts
@@ -70,7 +71,6 @@ afterAll(async () => {
   vi.useRealTimers();
   setConnectionTestLimit(null);
   setServiceBaseForTests("stripe", null);
-  setServiceBaseForTests("elevenlabs", null);
   await emptyStores();
   for (const r of savedSettings) await q("INSERT INTO settings (key, value) VALUES ($1, $2)", [r.key, JSON.stringify(r.value)]);
   for (const c of savedCreds) await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ($1,$2,$3,$4)", [c.provider, c.field, c.value, c.bound_origin]);
@@ -184,12 +184,12 @@ describe("anyone but the platform administrator (every account of the old sign-i
       ["PUT plans", () => call(plansPut, "PUT", "/api/admin/plans", c)],
       ["DELETE plans", () => call(plansDelete, "DELETE", "/api/admin/plans")],
       ["PUT settings mail", () => call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "X", fromAddress: "x@example.test", host: "127.0.0.1", port: 2525, security: "none", username: null } })],
-      ["PUT settings voice", () => call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "elevenlabs", model: "m", voice: "abc", speed: 1 } })],
+      ["PUT settings voice", () => call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "kokoro", baseUrl: "http://127.0.0.1:1/v1", model: "kokoro", voice: "af_heart", speed: 1 } })],
+      ["POST voice options", () => call(voiceOptions, "POST", "/api/admin/voice/options", { baseUrl: "http://127.0.0.1:1/v1" })],
       ["PUT settings mail with a model", () => call(settingsPut, "PUT", "/api/admin/settings", { plannerUrl: "http://127.0.0.1:1", mail: { mode: "none" } })],
       ["PUT stripe", () => call(credPut, "PUT", "/api/admin/credentials/stripe", { fields: { publishableKey: PUB_TEST, secretKey: KEY_TEST } }, provider("stripe"))],
       ["PUT smtp", () => call(credPut, "PUT", "/api/admin/credentials/smtp", { fields: { password: "visitor-password-1" } }, provider("smtp"))],
-      ["PUT voice-openai", () => call(credPut, "PUT", "/api/admin/credentials/voice-openai", { fields: { apiKey: "visitor-key-123456" } }, provider("voice-openai"))],
-      ["PUT elevenlabs", () => call(credPut, "PUT", "/api/admin/credentials/elevenlabs", { fields: { apiKey: "visitor-key-123456" } }, provider("elevenlabs"))],
+      ["PUT kokoro", () => call(credPut, "PUT", "/api/admin/credentials/kokoro", { fields: { apiKey: "visitor-key-123456" } }, provider("kokoro"))],
       ["DELETE stripe secretKey", () => call(credDelete, "DELETE", "/api/admin/credentials/stripe/secretKey", undefined, { params: Promise.resolve({ provider: "stripe", field: "secretKey" }) })],
       ["test stripe", () => call(testPost, "POST", "/api/admin/test", { kind: "stripe" })],
       ["test smtp", () => call(testPost, "POST", "/api/admin/test", { kind: "smtp" })],
@@ -207,7 +207,7 @@ describe("anyone but the platform administrator (every account of the old sign-i
     await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', $1)", [JSON.stringify(builtInCatalogue())]);
     await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ('stripe','secretKey',$1,NULL),('stripe','publishableKey',$2,NULL),('stripe','webhookSecret','whsec_abcdefghijklmnop9876',NULL),('smtp','password','Tr0ub4dor-and-3xy','smtp://mail.internal.example:587')", [KEY_TEST, PUB_TEST]);
     await q("INSERT INTO settings (key, value) VALUES ('mail.smtp', $1)", [JSON.stringify({ mode: "smtp", fromName: "Owner", fromAddress: "owner@example.com", host: "mail.internal.example", port: 587, security: "starttls", username: "smtp-user@example.com" })]);
-    await q("INSERT INTO settings (key, value) VALUES ('voice.tts', $1)", [JSON.stringify({ provider: "openai", baseUrl: "http://speech.internal.example/v1", model: "tts-1", voice: "alloy", speed: 1 })]);
+    await q("INSERT INTO settings (key, value) VALUES ('voice.tts', $1)", [JSON.stringify({ provider: "kokoro", baseUrl: "http://speech.internal.example/v1", model: "kokoro", voice: "af_heart", speed: 1 })]);
   };
 
   it("is told per capability that the new powers are the platform administrator's", async () => {
@@ -223,7 +223,7 @@ describe("anyone but the platform administrator (every account of the old sign-i
       expect((await get(h as (r: Request) => Promise<Response>, p)).status, p).toBe(200);
     }
     const creds = await read<{ providers: { id: string; locked?: boolean; fields: { name: string; set: boolean; last4: string | null; value: string | null; boundTo?: string | null; masked?: boolean }[] }[] }>(await get(credsGet, "/api/admin/credentials"));
-    for (const p of creds.body.providers.filter((x) => ["stripe", "smtp", "voice-openai", "elevenlabs"].includes(x.id))) {
+    for (const p of creds.body.providers.filter((x) => ["stripe", "smtp", "kokoro"].includes(x.id))) {
       expect(p.locked, p.id).toBe(true);
       for (const f of p.fields.filter((x) => x.set)) expect({ id: `${p.id}.${f.name}`, last4: f.last4, value: f.value, boundTo: f.boundTo, masked: f.masked }).toEqual({ id: `${p.id}.${f.name}`, last4: null, value: null, boundTo: null, masked: true });
     }
@@ -231,10 +231,10 @@ describe("anyone but the platform administrator (every account of the old sign-i
     for (const leak of ["zzzz", "9876", "mail.internal.example", PUB_TEST]) expect(text, leak).not.toContain(leak);
     const settings = await read<{ settings: { mail: unknown; voice: unknown } }>(await get(settingsGet, "/api/admin/settings"));
     expect(settings.body.settings.mail).toEqual({ mode: "smtp", hidden: true });
-    expect(settings.body.settings.voice).toEqual({ provider: "openai", hidden: true });
+    expect(settings.body.settings.voice).toEqual({ provider: "kokoro", hidden: true });
     expect(await read(await get(paymentsGet, "/api/admin/payments"))).toMatchObject({ body: { configured: true, hidden: true } });
     const ov = await (await get(overviewGet, "/api/admin/overview")).text();
-    for (const leak of ["mail.internal.example", "owner@example.com", "speech.internal.example", "alloy", " test keys"]) expect(ov, leak).not.toContain(leak);
+    for (const leak of ["mail.internal.example", "owner@example.com", "speech.internal.example", "af_heart", " test keys"]) expect(ov, leak).not.toContain(leak);
   });
 
   it("every new-power write and test answers 403 with the one sentence, and changes nothing; /welcome is unchanged", async () => {
@@ -480,43 +480,59 @@ describe("Email", () => {
   });
 });
 
-describe("Voice", () => {
+describe("Voice (Kokoro)", () => {
   let speech: Awaited<ReturnType<typeof standIn>>;
   const AUDIO = Buffer.from("ID3-fake-mp3-bytes");
+  let lists = true;
   beforeAll(async () => {
-    speech = await standIn((s) =>
-      s.url.startsWith("/v1/audio/speech") || s.url.startsWith("/v1/text-to-speech/")
-        ? s.headers.authorization === "Bearer voice-key-123456789" || s.headers["xi-api-key"] === "eleven-key-123456789"
-          ? { status: 200, type: "audio/mpeg", body: AUDIO }
-          : { status: 401, body: JSON.stringify({ detail: { message: "invalid key" } }) }
-        : { status: 404, body: "{}" }
-    );
+    speech = await standIn((s) => {
+      if (s.url.startsWith("/v1/audio/speech")) return !s.headers.authorization || s.headers.authorization === "Bearer voice-key-123456789" ? { status: 200, type: "audio/mpeg", body: AUDIO } : { status: 401, body: "{}" };
+      if (!lists) return { status: 404, body: "INTERNAL-ONLY" };
+      if (s.url === "/v1/audio/voices") return { status: 200, body: JSON.stringify({ voices: ["af_heart", "bm_george", "<script>"] }) };
+      if (s.url === "/v1/models") return { status: 200, body: JSON.stringify({ data: [{ id: "kokoro" }, { id: "tts-1" }] }) };
+      return { status: 404, body: "{}" };
+    });
   });
   afterAll(() => speech.close());
-  afterEach(() => setServiceBaseForTests("elevenlabs", null));
+  const kokoro = () => ({ voice: { provider: "kokoro", baseUrl: `${speech.url}/v1`, model: "kokoro", voice: "af_heart", speed: 1 } });
 
-  it("an OpenAI-compatible endpoint speaks the test sentence; the audio comes back to play and is not stored", async () => {
-    await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openai", baseUrl: `${speech.url}/v1`, model: "tts-1", voice: "alloy", speed: 1 } });
-    expect((await call(credPut, "PUT", "/api/admin/credentials/voice-openai", { fields: { apiKey: "voice-key-123456789" } }, provider("voice-openai"))).status).toBe(200);
-    expect(await getVoiceSettings()).toMatchObject({ configured: true, provider: "openai", voice: "alloy" });
+  it("speaks the test sentence; synthesize answers bytes and a content type; the audio is not stored", async () => {
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", kokoro())).status).toBe(200);
+    expect((await call(credPut, "PUT", "/api/admin/credentials/kokoro", { fields: { apiKey: "voice-key-123456789" } }, provider("kokoro"))).status).toBe(200);
+    expect(await getVoiceSettings()).toMatchObject({ configured: true, provider: "kokoro", voice: "af_heart" });
+    const s = await getSpeechSynthesizer();
+    if (!s.configured) throw new Error(s.reason);
+    expect(await s.synth.synthesize("Hello.")).toEqual({ audio: new Uint8Array(AUDIO), contentType: "audio/mpeg" });
     const t = await read<{ ok: boolean; detail: { audio?: string } }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }));
     expect(t.body.ok).toBe(true);
     expect(t.body.detail.audio).toBe(`data:audio/mpeg;base64,${AUDIO.toString("base64")}`);
-    expect(JSON.parse(speech.seen.at(-1)!.body)).toMatchObject({ model: "tts-1", voice: "alloy", input: "This is a test of the narration voice.", speed: 1 });
-    const stored = JSON.stringify(await q("SELECT value FROM settings"));
-    expect(stored).not.toContain(AUDIO.toString("base64"));
+    expect(JSON.parse(speech.seen.at(-1)!.body)).toMatchObject({ model: "kokoro", voice: "af_heart", input: "This is a test of the narration voice.", speed: 1 });
+    expect(JSON.stringify(await q("SELECT value FROM settings"))).not.toContain(AUDIO.toString("base64"));
   });
 
-  it("ElevenLabs needs its key; with it, the test speaks; the speed range is checked", async () => {
-    setServiceBaseForTests("elevenlabs", speech.url);
-    const bad = await read<{ issues: { field: string }[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "elevenlabs", model: "eleven_multilingual_v2", voice: "abc123", speed: 2 } }));
-    expect(bad.body.issues[0].field).toBe("voice.speed");
-    await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "elevenlabs", model: "eleven_multilingual_v2", voice: "abc123", speed: 1.1 } });
-    expect(await getVoiceSettings()).toMatchObject({ configured: false, reason: expect.stringMatching(/no ElevenLabs key/) });
-    await call(credPut, "PUT", "/api/admin/credentials/elevenlabs", { fields: { apiKey: "eleven-key-123456789" } }, provider("elevenlabs"));
-    const t = await read<{ ok: boolean }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }));
-    expect(t.body.ok).toBe(true);
-    expect(speech.seen.at(-1)!.url).toMatch(/^\/v1\/text-to-speech\/abc123\?/);
+  it("lists the server's voices and models for the pickers, dropping names that are not plain names", async () => {
+    lists = true;
+    const r = await read<{ voices: { ok: boolean; items: string[] }; models: { ok: boolean; items: string[] } }>(await call(voiceOptions, "POST", "/api/admin/voice/options", { baseUrl: `${speech.url}/v1` }));
+    expect(r.body).toEqual({ voices: { ok: true, items: ["af_heart", "bm_george"] }, models: { ok: true, items: ["kokoro", "tts-1"] } });
+  });
+
+  it("a server that lists nothing leaves free text, in a fixed sentence that repeats nothing it sent", async () => {
+    lists = false;
+    try {
+      const r = await read<{ voices: { ok: boolean; reason: string }; models: { ok: boolean; reason: string } }>(await call(voiceOptions, "POST", "/api/admin/voice/options", { baseUrl: `${speech.url}/v1` }));
+      expect(r.body.voices).toEqual({ ok: false, reason: "The server does not list its voices (HTTP 404). Type the name instead." });
+      expect(JSON.stringify(r.body)).not.toContain("INTERNAL-ONLY");
+    } finally {
+      lists = true;
+    }
+  });
+
+  it("OpenRouter and ElevenLabs cannot be saved as a voice provider", async () => {
+    for (const p of ["openrouter", "elevenlabs", "openai"]) {
+      const r = await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: p, model: "m", voice: "v", speed: 1 } });
+      expect({ p, status: r.status }).toEqual({ p, status: 400 });
+    }
+    expect((await call(credPut, "PUT", "/api/admin/credentials/elevenlabs", { fields: { apiKey: "x".repeat(20) } }, provider("elevenlabs"))).status).toBe(400);
   });
 });
 
@@ -550,7 +566,7 @@ describe("review items", () => {
       const r = await read<{ issues: { problem: string }[] }>(await call(testPost, "POST", "/api/admin/test", body));
       expect({ kind, status: r.status, problem: r.body.issues?.[0]?.problem }).toEqual({ kind, status: 400, problem: "must not contain ? or #; give the base address only" });
     }
-    const v = await read<{ issues: { field: string }[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openai", baseUrl: "http://127.0.0.1:1/v1?x=1", model: "m", voice: "v", speed: 1 } }));
+    const v = await read<{ issues: { field: string }[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "kokoro", baseUrl: "http://127.0.0.1:1/v1?x=1", model: "m", voice: "v", speed: 1 } }));
     expect(v.body.issues[0].field).toBe("voice.baseUrl");
   });
 
@@ -558,14 +574,14 @@ describe("review items", () => {
     const m = await read<{ issues: { problem: string }[] }>(await call(credPut, "PUT", "/api/admin/credentials/smtp", { fields: { password: "early-password-123" } }, provider("smtp")));
     expect(m.status).toBe(400);
     expect(m.body.issues[0].problem).toMatch(/save the mail server in Admin, Email first/);
-    const v = await read<{ issues: { problem: string }[] }>(await call(credPut, "PUT", "/api/admin/credentials/voice-openai", { fields: { apiKey: "early-key-1234567" } }, provider("voice-openai")));
+    const v = await read<{ issues: { problem: string }[] }>(await call(credPut, "PUT", "/api/admin/credentials/kokoro", { fields: { apiKey: "early-key-1234567" } }, provider("kokoro")));
     expect(v.status).toBe(400);
     expect(await q("SELECT 1 FROM credentials")).toHaveLength(0);
   });
 
   it("F1: an unbound one saved earlier is removed when the address is first set, not bound to it", async () => {
-    await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ('smtp','password','legacy-unbound-pass',NULL),('voice-openai','apiKey','legacy-unbound-key',NULL)");
-    const r = await read<{ notices: string[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "O", fromAddress: "o@example.com", host: "127.0.0.1", port: 2525, security: "none", username: null }, voice: { provider: "openai", baseUrl: "http://127.0.0.1:1/v1", model: "m", voice: "v", speed: 1 } }));
+    await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ('smtp','password','legacy-unbound-pass',NULL),('kokoro','apiKey','legacy-unbound-key',NULL)");
+    const r = await read<{ notices: string[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "O", fromAddress: "o@example.com", host: "127.0.0.1", port: 2525, security: "none", username: null }, voice: { provider: "kokoro", baseUrl: "http://127.0.0.1:1/v1", model: "m", voice: "v", speed: 1 } }));
     expect(r.status).toBe(200);
     expect(r.body.notices.join(" ")).toMatch(/saved before any address was set/);
     expect(await q("SELECT 1 FROM credentials")).toHaveLength(0);
@@ -575,7 +591,7 @@ describe("review items", () => {
     let answer: { status: number; type?: string; body: string | Buffer } = { status: 200, type: "audio/mpeg", body: Buffer.alloc(3 * 1024 * 1024, 1) };
     const s = await standIn(() => answer);
     try {
-      await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openai", baseUrl: `${s.url}/v1`, model: "m", voice: "v", speed: 1 } });
+      await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "kokoro", baseUrl: `${s.url}/v1`, model: "m", voice: "v", speed: 1 } });
       const test = async () => (await read<{ ok: boolean; message: string; detail?: { audio?: string } }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }))).body;
       let t = await test();
       expect(t.ok).toBe(false);
@@ -586,7 +602,7 @@ describe("review items", () => {
       expect(t.message).not.toContain("INTERNAL-PAGE");
       answer = { status: 500, body: JSON.stringify({ error: { message: "INTERNAL-ONLY admin_note=hunter2" } }) };
       t = await test();
-      expect(t.message).toBe("The speech endpoint answered with a server error (HTTP 500).");
+      expect(t.message).toBe("The Kokoro server answered with a server error (HTTP 500).");
       answer = { status: 200, type: "audio/wav", body: Buffer.from("RIFF-small") };
       t = await test();
       expect(t.ok).toBe(true);
