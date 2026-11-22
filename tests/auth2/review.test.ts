@@ -225,6 +225,30 @@ describe("F4 and F5: settings checked at start", () => {
   };
   const saveBase = async (v: string | null) => (await import("@/lib/auth2/config")).writeAuth2Setting(db, "auth2.baseUrl", v);
 
+  it("N13: ready() runs the checks when the switch is on in the database, with no AUTH2 in the environment", async () => {
+    const dbm = await import("@/lib/db");
+    const c = await import("@/lib/auth2/config");
+    const g = globalThis as unknown as { __c2rReady?: unknown };
+    const keep = { secret: env.BETTER_AUTH_SECRET, auth2: env.AUTH2 };
+    await c.writeAuth2Setting(db, "auth2.enabled", true);
+    delete env.AUTH2;
+    env.BETTER_AUTH_SECRET = "x".repeat(40);
+    try {
+      delete g.__c2rReady;
+      await expect(dbm.ready()).rejects.toThrow(/not random enough/);
+      // Off in the database: a weak value nobody uses does not stop the app.
+      await c.writeAuth2Setting(db, "auth2.enabled", null);
+      delete g.__c2rReady;
+      await expect(dbm.ready()).resolves.not.toThrow();
+    } finally {
+      env.BETTER_AUTH_SECRET = keep.secret;
+      env.AUTH2 = keep.auth2;
+      await c.writeAuth2Setting(db, "auth2.enabled", null);
+      delete g.__c2rReady;
+      await dbm.ready();
+    }
+  });
+
   it("with no secret set, one is made, stored where requests cannot read it, and kept", async () => {
     const keep = env.BETTER_AUTH_SECRET;
     delete env.BETTER_AUTH_SECRET;
