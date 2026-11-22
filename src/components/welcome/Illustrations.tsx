@@ -82,7 +82,7 @@ export function IsoRing({ cx = 0, cy = 0, z = 0, r, fill = "none", ...rest }: { 
  * The gadget seen from the front, as it sits on its straps: the real case is a box 80 by 60 mm (42 mm deep) with a
  * round speaker opening in the lid. Drawn upright, 1.5 r wide and 2 r tall, in the accent, with the dark grille.
  */
-export function DeviceFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
+function DeviceFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
   const w = r * 1.5;
   const h = r * 2;
   return (

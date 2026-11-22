@@ -277,10 +277,7 @@ export const BAG_LINES = {
   souvenirs: { line: "Sixty-two pounds? That's mostly SOUVENIRS.", where: "back at the scale" },
 } as const;
 
-export type BagLineKey = keyof typeof BAG_LINES;
-
-/** The order the hero's speech bubble cycles through. */
-export const HERO_LINES: BagLineKey[] = ["scale", "lifted", "impact", "conveyor", "carousel", "hold", "souvenirs"];
+type BagLineKey = keyof typeof BAG_LINES;
 
 /**
  * The departures board: where the worked example stands today. Each row is a stage and its gate. The status and
@@ -580,18 +577,6 @@ export const MAP = {
 
 /** Every node of the map by id: the stage names and what each stage makes. */
 export const MAP_LABEL = new Map<string, string>(MAP.stages.flatMap((s) => [[s.key, s.name] as [string, string], ...s.makes]));
-
-export const POKE = {
-  title: "Try the bag",
-  lead: "The gadget reads motion and answers back. This one is a drawing, so it is quiet.",
-  idle: "Pick something to do to the bag.",
-  actions: [
-    { key: "weigh", label: "Weigh it", line: "scale" },
-    { key: "toss", label: "Toss it on the belt", line: "impact" },
-    { key: "spin", label: "Send it round the carousel", line: "carousel" },
-    { key: "dark", label: "Leave it in the dark", line: "hold" },
-  ] as { key: "weigh" | "toss" | "spin" | "dark"; label: string; line: BagLineKey }[],
-};
 
 /** The header's links, in the page's order. */
 export const NAV: { href: string; label: string }[] = [
