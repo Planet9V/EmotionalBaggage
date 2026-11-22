@@ -1,11 +1,15 @@
 // The stage outputs as small artefacts: a brief line, a claim with its source, the top of the parts list with its
-// total, a corner of the schematic, the enclosure as a 3D box, the print, the unit cost, an ad draft and a sales
-// channel. Each is drawn in markup or SVG from the worked example's seeded rows (HeroFacts, storyData.ts): the
-// words and numbers are the example's own, as they stand, so a draft reads "draft" and a plan reads "planned".
-// Used by the hero's idea-in, outputs-out visual and by "What you get". No script; the hero adds the motion.
-import type { ReactNode } from "react";
+// total, the netlist as a wheel, the 3D model, the printed case, the unit cost and its fall with volume, an ad draft
+// and a sales channel. Each is drawn in markup or vector SVG from the worked example's seeded rows (HeroFacts,
+// storyData.ts): the words and numbers are the example's own, and the drawings come from its real geometry (the
+// parts' sizes and places, the wires, the enclosure's outer size and the print job's layer height), so they are
+// sharp at any pixel density. Used by the hero's idea-in, outputs-out visual. No script; the model assembles and
+// the print rises in CSS, and both stand finished under reduced motion.
+import type { CSSProperties, ReactNode } from "react";
 import { TONE_CLASS, approvalStatusTone } from "@/lib/statusTones";
 import type { HeroFacts } from "./storyData";
+import { ModelStill } from "./get/ModelStill";
+import type { NetClassName, PrintLayers, Wheel } from "./get/heroArt";
 
 export const ARTEFACT_KEYS = ["brief", "claim", "parts", "schematic", "model", "print", "cost", "ad", "channel"] as const;
 export type ArtefactKey = (typeof ARTEFACT_KEYS)[number];
@@ -31,55 +35,68 @@ function Frame({ stage, kind, status, children }: { stage: string; kind: string;
 const BODY = "text-[11px] leading-snug text-primary";
 const FOOT = "mt-1 truncate font-mono text-[10px] text-muted";
 
-/** A corner of the schematic: the audio module, its series resistor and the speaker, in the app's net colours. */
-function SchematicCorner() {
+const NET_STYLE: Record<NetClassName, { stroke: string; width: number; dash?: string }> = {
+  power: { stroke: "var(--net-power)", width: 1.6 },
+  ground: { stroke: "var(--net-ground)", width: 1.1, dash: "3 2" },
+  signal: { stroke: "var(--net-signal)", width: 1 },
+  audio: { stroke: "var(--net-audio)", width: 1.1, dash: "1 2" },
+};
+
+/** The netlist as a wheel: every wire of the example, the hub part in the middle, by net class (colour and line). */
+function NetWheel({ wheel }: { wheel: Wheel }) {
   return (
-    <svg viewBox="0 0 168 58" className="h-auto w-full" role="img" aria-label="A corner of the schematic: the MCU board, a series resistor, the audio module and the speaker, joined by wires.">
-      <g fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M34 20h18M74 20h16M34 38h56" stroke="var(--net-signal, #4f9cf9)" />
-        <path d="M124 22h18M124 36h18" stroke="var(--net-audio, #c084fc)" />
-        <rect x="4" y="10" width="30" height="38" rx="3" stroke="currentColor" className="text-secondary" />
-        <rect x="52" y="15" width="22" height="10" rx="2" stroke="currentColor" className="text-secondary" />
-        <rect x="90" y="10" width="34" height="38" rx="3" stroke="currentColor" className="text-secondary" />
-        <path d="M142 18h8l10-8v38l-10-8h-8z" stroke="var(--accent-orange)" />
-      </g>
-      <g className="fill-current text-muted" fontSize="7" fontFamily="var(--font-mono, monospace)">
-        <text x="19" y="32" textAnchor="middle">U1</text>
-        <text x="63" y="11" textAnchor="middle">R1</text>
-        <text x="107" y="32" textAnchor="middle">U3</text>
-        <text x="151" y="56" textAnchor="middle">SPK1</text>
+    <svg viewBox={`0 0 ${wheel.size} ${wheel.size}`} className="mx-auto h-auto w-full max-w-[150px]" role="img" aria-label={`The example's ${wheel.links.length} wires, part to part, by net class.`}>
+      {wheel.links.map((l, i) => {
+        const st = NET_STYLE[l.netClass] ?? NET_STYLE.signal;
+        return <path key={i} d={l.d} fill="none" stroke={st.stroke} strokeWidth={st.width} strokeDasharray={st.dash} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9} />;
+      })}
+      {wheel.nodes.map((n) => (
+        <g key={n.ref}>
+          <rect x={n.x - (n.hub ? 12 : 9)} y={n.y - 5} width={n.hub ? 24 : 18} height={10} rx={2} fill="var(--bg-surface, #131519)" stroke={n.hub ? "var(--accent-orange)" : "currentColor"} className="text-secondary" strokeWidth={0.8} vectorEffect="non-scaling-stroke" />
+          <text x={n.x} y={n.y + 2.4} textAnchor="middle" fontSize="6.2" fontFamily="var(--font-mono, monospace)" className="fill-current text-primary">
+            {n.ref}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** The case on the print bed: its outline, and every tenth printed layer rising through it (CSS only). */
+function PrintedCase({ layers }: { layers: PrintLayers }) {
+  const [x, y, w, h] = layers.box;
+  return (
+    <svg viewBox={`${x} ${y} ${w} ${h}`} className="mx-auto h-auto w-full max-w-[150px]" aria-hidden="true">
+      <defs>
+        <clipPath id="wl-print-clip">
+          <rect className="wl-layers" style={{ transformBox: "view-box", "--asm-lap": "7s" } as CSSProperties} x={x} y={y} width={w} height={h} />
+        </clipPath>
+      </defs>
+      <path d={layers.outline} fill="none" stroke="currentColor" className="text-muted" strokeWidth={0.8} strokeDasharray="2 2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <g clipPath="url(#wl-print-clip)">
+        <path d={layers.outline} fill="var(--accent-orange)" fillOpacity={0.12} stroke="var(--accent-orange)" strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        {layers.levels.map((d, i) => (
+          <path key={i} d={d} fill="none" stroke="var(--accent-orange)" strokeOpacity={0.55} strokeWidth={0.7} vectorEffect="non-scaling-stroke" />
+        ))}
       </g>
     </svg>
   );
 }
 
-/** The enclosure as a box in three faces, to the example's own outer size. */
-function CaseBox({ lid = true }: { lid?: boolean }) {
+/** The unit cost at each volume as a falling line, its points the example's own estimates. */
+function CostLine({ rows }: { rows: { volume: string; cogs: string }[] }) {
+  const pts = rows.map((r) => ({ v: Number(r.volume.replace(/,/g, "")), c: Number((/[\d.]+/.exec(r.cogs.replace(/,/g, "")) ?? ["0"])[0]) })).filter((p) => p.v > 0 && p.c > 0);
+  if (pts.length < 2) return null;
+  const lx = pts.map((p) => Math.log10(p.v));
+  const max = Math.max(...pts.map((p) => p.c));
+  const X = (i: number) => 4 + ((lx[i]! - lx[0]!) / Math.max(1e-6, lx[lx.length - 1]! - lx[0]!)) * 112;
+  const Y = (c: number) => 4 + (1 - c / max) * 22;
   return (
-    <svg viewBox="0 0 120 62" className="h-auto w-full" aria-hidden="true">
-      <g strokeWidth="1.5" strokeLinejoin="round" stroke="var(--accent-orange)">
-        <path d="M22 26 62 12l40 12-40 14z" fill="var(--accent-orange-subtle)" opacity={lid ? 1 : 0.35} />
-        <path d="M22 26v20l40 14V38z" fill="none" stroke="currentColor" className="text-secondary" />
-        <path d="M62 38v22l40-14V24z" fill="none" stroke="currentColor" className="text-secondary" />
-        <path d="M22 26 62 12l40 12-40 14z" fill="none" />
-      </g>
-      <circle cx="74" cy="25" r="5" fill="none" stroke="var(--accent-orange)" strokeWidth="1.2" />
-      <path d="M71 25h6M74 22v6" stroke="var(--accent-orange)" strokeWidth="1" />
-    </svg>
-  );
-}
-
-/** The base on the printer's bed, part way up: laid lines below, the outline still to print above. */
-function PrintLayers() {
-  return (
-    <svg viewBox="0 0 120 62" className="h-auto w-full" aria-hidden="true">
-      <path d="M10 56h100" stroke="currentColor" className="text-muted" strokeWidth="2" strokeLinecap="round" />
-      <path d="M28 52V18h64v34" fill="none" stroke="currentColor" className="text-muted" strokeWidth="1.2" strokeDasharray="3 3" />
-      <g stroke="var(--accent-orange)" strokeWidth="2.4" strokeLinecap="round">
-        <path d="M28 52h64M28 47.5h64M28 43h64M28 38.5h64M28 34h64" />
-        <path d="M28 29.5h34" />
-      </g>
-      <path d="M62 14v11m-5 0h10l-5 5z" fill="currentColor" stroke="currentColor" className="text-secondary" strokeWidth="1.2" strokeLinejoin="round" />
+    <svg viewBox="0 0 120 30" className="mt-1 h-auto w-full" aria-hidden="true">
+      <path d={pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(p.c).toFixed(1)}`).join("")} fill="none" stroke="var(--accent-orange)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      {pts.map((p, i) => (
+        <circle key={i} cx={X(i)} cy={Y(p.c)} r={1.8} fill="var(--accent-orange)" />
+      ))}
     </svg>
   );
 }
@@ -121,21 +138,21 @@ export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFac
     case "schematic":
       return (
         <Frame stage="03" kind="Schematic">
-          <SchematicCorner />
+          <NetWheel wheel={f.wheel} />
           <p className={FOOT}>{f.wires} wires, checked</p>
         </Frame>
       );
     case "model":
       return (
         <Frame stage="03" kind="3D model">
-          <CaseBox />
+          {f.still ? <ModelStill still={f.still} assemble className="mx-auto max-h-[78px]" /> : null}
           <p className={FOOT}>{f.case ? `${f.case.w} × ${f.case.d} × ${f.case.h} mm` : "Enclosure"}</p>
         </Frame>
       );
     case "print":
       return (
         <Frame stage="04" kind="Printed part" status="queued">
-          <PrintLayers />
+          {f.layers ? <PrintedCase layers={f.layers} /> : null}
           <p className={FOOT}>{[f.print.material, f.print.settings].filter(Boolean).join(", ")}</p>
         </Frame>
       );
@@ -150,6 +167,7 @@ export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFac
               </li>
             ))}
           </ul>
+          <CostLine rows={f.cost.rows} />
         </Frame>
       );
     case "ad":

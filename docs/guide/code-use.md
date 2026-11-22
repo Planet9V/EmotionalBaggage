@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit ca56bc5 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 9842da3 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -167,6 +167,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | schematic-symbols drawings | 0.0.251 | MIT | copied source | https://github.com/tscircuit/schematic-symbols |
 | shadcn/ui Calendar and Chart | shadcn/ui registry, new-york-v4 style, compared with the files in this repository on 21 November 2026 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
+| shadcn/ui Slider, Toggle and Toggle Group | shadcn/ui registry, new-york-v4 style, written 22 November 2026 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | Ubuntu (official Docker image ubuntu) | 24.04 | Debian-style per-package licences (the image holds many packages, each under its own licence) | container image | https://hub.docker.com/_/ubuntu |
 | UI components (Button, Dialog, Input, Table, Card, StatusBadge) | as committed in eb362b6 (2026-11-20) | owner's own work (Planet9V/eigenia); four files follow shadcn/ui's structure (MIT) | copied source | https://github.com/shadcn-ui/ui |
 | WireViz (Python package, run as a command) | 0.4.1 | GPL-3.0 | separate process | https://github.com/wireviz/WireViz |
@@ -189,6 +190,8 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 **shadcn/ui Calendar and Chart**: origin https://ui.shadcn.com registry (calendar and chart). calendar.tsx first appears in 6206f41 (21 November 2026) and chart.tsx in 141cf7e (20 November 2026).. chart.tsx: the cn import points at @/lib/utils instead of the package 'cn' (the only difference from the registry file). calendar.tsx: the same import change, the Button import points at @/components/ui/button, and a labels prop gives each day button an accessible name that starts with the day number.
 
 **shadcn/ui components added by its CLI**: origin https://ui.shadcn.com registry, written into this repository by the shadcn CLI. None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css.
+
+**shadcn/ui Slider, Toggle and Toggle Group**: origin https://ui.shadcn.com registry (the CLI could not reach it from the build machine, so the three files were written out by hand from the registry's published new-york-v4 source; compare with `npx shadcn@latest add slider toggle toggle-group` when the registry is reachable). slider.tsx takes two optional props, thumbLabel and thumbValueText, passed to the thumb as aria-label and aria-valuetext (Radix gives a single thumb no name of its own). Colours come from the theme variables in src/app/globals.css.
 
 **UI components (Button, Dialog, Input, Table, Card, StatusBadge)**: origin Planet9V/eigenia, the owner's own project (owner's statement, 20 November 2026). Re-themed to Eigenia design tokens (per the file headers). On 20 November 2026 button.tsx gained the variant and size names shadcn/ui components pass, and dialog.tsx gained DialogHeader.
 

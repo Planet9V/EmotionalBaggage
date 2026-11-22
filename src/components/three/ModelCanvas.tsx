@@ -106,6 +106,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
     return out;
   }, [parts, geoms]);
 
+  const frameAssembled = !!props.showcase?.assembly;
   const uploadedBounds = useMemo(() => {
     if (!uploaded) return null;
     const b = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
@@ -132,7 +133,8 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
 
   const boundsOf = useMemo(
     () => () => {
-      const exploded = progress.target > 0.5;
+      // the showcase's assembly keeps the model framed as it will stand once together
+      const exploded = progress.target > 0.5 && !frameAssembled;
       const b = sceneBounds(geoms, exploded);
       if (exploded) {
         for (const p of parts) {
@@ -149,7 +151,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
       }
       return b;
     },
-    [geoms, parts, shellLift, uploadedBounds, progress]
+    [geoms, parts, shellLift, uploadedBounds, progress, frameAssembled]
   );
 
   const focusKey = focusIds && focusIds.length ? focusIds.join(",") : "";

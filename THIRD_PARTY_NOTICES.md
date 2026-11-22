@@ -1,6 +1,6 @@
 # Third-party notices
 
-Generated from package-lock.json at commit ca56bc5 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit 9842da3 by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
@@ -3416,6 +3416,17 @@ Listed by hand in `docs/third-party.manual.json`.
 - Origin: https://ui.shadcn.com registry, written into this repository by the shadcn CLI
 - Changes: None. The files are as the CLI wrote them; colours come from the theme variables in src/app/globals.css.
 - Referenced in: `src/components/ui/badge.tsx`, `src/components/ui/button-group.tsx`, `src/components/ui/carousel.tsx`, `src/components/ui/collapsible.tsx`, `src/components/ui/command.tsx`, `src/components/ui/dropdown-menu.tsx`, `src/components/ui/hover-card.tsx`, `src/components/ui/input-group.tsx`, `src/components/ui/label.tsx`, `src/components/ui/scroll-area.tsx`, `src/components/ui/select.tsx`, `src/components/ui/separator.tsx`, `src/components/ui/skeleton.tsx`, `src/components/ui/sonner.tsx`, `src/components/ui/spinner.tsx`, `src/components/ui/switch.tsx`, `src/components/ui/tabs.tsx`, `src/components/ui/textarea.tsx`, `src/components/ui/tooltip.tsx`
+- Source: https://github.com/shadcn-ui/ui
+- Licence evidence: https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md, read 20 November 2026: 'MIT License. Copyright (c) 2023 shadcn'.
+
+### shadcn/ui Slider, Toggle and Toggle Group
+
+- Version or tag: shadcn/ui registry, new-york-v4 style, written 22 November 2026
+- Licence: MIT
+- How it is used: copied source
+- Origin: https://ui.shadcn.com registry (the CLI could not reach it from the build machine, so the three files were written out by hand from the registry's published new-york-v4 source; compare with `npx shadcn@latest add slider toggle toggle-group` when the registry is reachable)
+- Changes: slider.tsx takes two optional props, thumbLabel and thumbValueText, passed to the thumb as aria-label and aria-valuetext (Radix gives a single thumb no name of its own). Colours come from the theme variables in src/app/globals.css.
+- Referenced in: `src/components/ui/slider.tsx`, `src/components/ui/toggle.tsx`, `src/components/ui/toggle-group.tsx`
 - Source: https://github.com/shadcn-ui/ui
 - Licence evidence: https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md, read 20 November 2026: 'MIT License. Copyright (c) 2023 shadcn'.
 
