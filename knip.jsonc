@@ -15,9 +15,9 @@
   // use it without re-running the CLI; their exports and types are not reported.
   "ignoreIssues": {
     "src/components/ui/**": ["exports", "types"],
-    // HELD, to be removed: the exports below are unused but sit in files another engineer's branch is
-    // changing (design tools, process and trace). Pruned after those branches merge; the list may only
-    // shrink, and a file leaves it as soon as its unused exports are gone.
+    // HELD, to be removed: the exports below are unused but sit in files other work owns: the enclosure
+    // generator (left to its own workstream) and the browser-test helpers (changed by the accounts and
+    // status branches). The list may only shrink; a file leaves it as soon as its unused exports are gone.
     "src/components/enclosure/client.ts": ["exports", "types"],
     "src/lib/enclosure/boxspec.ts": ["exports", "types"],
     "src/lib/enclosure/casemaker.ts": ["exports", "types"],
