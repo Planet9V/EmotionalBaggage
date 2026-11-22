@@ -7,7 +7,8 @@
  * The three messages are built here from plain sentences, so every sender sends the same words:
  * - confirm-email: the link to confirm the address given at sign-up;
  * - reset-password: the link to choose a new password;
- * - invitation: the link to join a workspace (used from slice 2).
+ * - invitation: the link to join a workspace;
+ * - two-factor-reset: a notice that an owner or admin reset the person's two-step sign-in.
  * Each says what to do if the reader did not ask for it, and how long the link works.
  */
 import { esc } from "@/lib/html";
@@ -50,7 +51,8 @@ type Template = { subject: string; lines: string[]; action: string; after: strin
 export type MailRequest =
   | { kind: "confirm-email"; to: string; name?: string; link: string }
   | { kind: "reset-password"; to: string; name?: string; link: string }
-  | { kind: "invitation"; to: string; link: string; workspace: string; inviter: string };
+  | { kind: "invitation"; to: string; link: string; workspace: string; inviter: string }
+  | { kind: "two-factor-reset"; to: string; name?: string; link: string; workspace: string; by: string };
 
 function template(r: MailRequest): Template {
   switch (r.kind) {
@@ -70,6 +72,16 @@ function template(r: MailRequest): Template {
           "The link works once, for one hour. Choosing a new password signs this account out everywhere.",
           "If you did not ask for this, ignore this email: your password stays as it is.",
         ],
+      };
+    case "two-factor-reset":
+      return {
+        subject: `Your two-step sign-in on ${PRODUCT} was reset`,
+        lines: [
+          `${r.by}, who manages ${r.workspace}, removed the authenticator app and the recovery codes from your account. Every browser signed in to it has been signed out.`,
+          "Next time you sign in with your password, you will be asked to set up an authenticator app again.",
+        ],
+        action: "Sign in",
+        after: ["If you did not ask for this, tell the owner of the workspace and change your password."],
       };
     case "invitation":
       return {

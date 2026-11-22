@@ -25,7 +25,7 @@
  * The owner's database connection is used (src/lib/db.ts ownerPool): the request role cannot read these tables.
  */
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { organization, twoFactor } from "better-auth/plugins";
 import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { Kysely, PostgresDialect } from "kysely";
@@ -37,6 +37,7 @@ import { currentMailSender, render, type MailSender } from "./mail";
 import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims } from "./guards";
 import { workspaces } from "./workspaces/plugin";
 import { createPersonal } from "./workspaces/store";
+import { requiredFor } from "./workspaces/twoFactor";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { hashSessionTokens } from "./tokenHash";
@@ -81,6 +82,7 @@ const THROTTLE = {
   "/change-password": { window: 60, max: 5 },
   "/workspace/create": { window: 60, max: 3 },
   "/workspace/delete": { window: 60, max: 3 },
+  "/workspace/member/reset-two-factor": { window: 60, max: 5 },
   // Each of these sends an email (or makes a link): per network address, besides the per-workspace limits.
   "/workspace/invite": { window: 60, max: 10 },
   "/workspace/invitation/resend": { window: 60, max: 5 },
@@ -211,6 +213,13 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
           return;
         }
         if (ctx.path === "/verify-email") await confirmedBefore(db, (ctx.query as { token?: unknown } | undefined)?.token);
+        if (ctx.path === "/two-factor/disable") {
+          // Required by a workspace: it cannot be turned off (slice 2, step 4). An owner or admin can reset it instead.
+          const s = await getSessionFromCtx(ctx);
+          if (s && (await requiredFor(db, s.user.id))) {
+            throw APIError.from("FORBIDDEN", { code: "TWO_FACTOR_REQUIRED_BY_WORKSPACE", message: "A workspace you belong to requires two-step sign-in, so it cannot be turned off." });
+          }
+        }
         if (ctx.path === TOTP_PATH || ctx.path === "/two-factor/verify-backup-code") {
           if (ctx.path === TOTP_PATH) await guardTotp(db, ctx as never);
           // No "trust this device": not decided by the owner, so never set (review F7).

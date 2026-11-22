@@ -138,10 +138,10 @@ export async function revoke(db: Pool, actor: Actor, m: Membership, invitationId
   });
 }
 
-type Pending = { id: string; email: string; role: Role; expiresAt: Date; invitedBy: string; sentAt: Date | null; sends: number };
+export type Pending = { id: string; email: string; role: Role; expiresAt: Date; invitedBy: string; sentAt: Date | null; sends: number };
 
 /** The workspace's invitations not yet accepted, revoked or expired, newest first. */
-async function pendingInvitations(db: Pool, workspaceId: string): Promise<Pending[]> {
+export async function pendingInvitations(db: Pool, workspaceId: string): Promise<Pending[]> {
   const r = await db.query<{ id: string; email: string; role: string | null; expiresAt: Date; invitedBy: string; sent_at: Date | null; send_count: number | null }>(
     `SELECT i.id, i.email, i.role, i."expiresAt", u.name AS "invitedBy", t.sent_at, t.send_count
        FROM invitation i JOIN "user" u ON u.id = i."inviterId" LEFT JOIN auth2_invitation_tokens t ON t.invitation_id = i.id

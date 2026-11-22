@@ -77,7 +77,9 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
   );
 }
 
-function Enrol({ email }: { email: string }) {
+const REQUIRED_NOTE = "A workspace you belong to requires two-step sign-in. Set it up to continue.";
+
+function Enrol({ email, required }: { email: string; required: boolean }) {
   const [started, setStarted] = useState<Started | null>(null);
   const [qr, setQr] = useState("");
   const [on, setOn] = useState(false);
@@ -110,7 +112,7 @@ function Enrol({ email }: { email: string }) {
 
   if (on) {
     return (
-      <Frame title="Two-step sign-in is on" footer={<p><TextLink href="/auth/account">Back to your account</TextLink></p>}>
+      <Frame title="Two-step sign-in is on" footer={<p><TextLink href="/auth/account">{required ? "Continue" : "Back to your account"}</TextLink></p>}>
         <Message id="setup-done" done="From now on, signing in asks for a code from your authenticator app after your password." />
       </Frame>
     );
@@ -118,7 +120,12 @@ function Enrol({ email }: { email: string }) {
 
   if (!started) {
     return (
-      <Frame title="Set up an authenticator app" lead="After your password, signing in will also ask for a six-digit code from an app on your phone." footer={<p><TextLink href="/auth/account">Back to your account</TextLink></p>}>
+      <Frame
+        title="Set up an authenticator app"
+        lead="After your password, signing in will also ask for a six-digit code from an app on your phone."
+        footer={required ? undefined : <p><TextLink href="/auth/account">Back to your account</TextLink></p>}
+      >
+        {required && <p role="status" className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">{REQUIRED_NOTE}</p>}
         <PasswordStep id="password" label="Your password" action="Continue" busyLabel="Checking…" onPassword={begin} />
       </Frame>
     );
@@ -152,7 +159,7 @@ function Enrol({ email }: { email: string }) {
   );
 }
 
-function Manage() {
+function Manage({ required }: { required: boolean }) {
   const [codes, setCodes] = useState<string[] | null>(null);
   const [off, setOff] = useState(false);
 
@@ -192,14 +199,20 @@ function Manage() {
       </section>
       <section aria-labelledby="off-h" className="space-y-3 border-t border-hairline pt-4">
         <h2 id="off-h" className={EYEBROW}>Turn off</h2>
-        <p className="text-sm text-primary">Signing in will ask only for your password.</p>
-        <PasswordStep id="password-off" label="Your password" action="Turn off two-step sign-in" busyLabel="Turning off…" onPassword={turnOff} />
+        {required ? (
+          <p className="text-sm text-primary">A workspace you belong to requires two-step sign-in, so it cannot be turned off. If you lose your phone, use a recovery code, or ask an owner or admin of that workspace to reset it.</p>
+        ) : (
+          <>
+            <p className="text-sm text-primary">Signing in will ask only for your password.</p>
+            <PasswordStep id="password-off" label="Your password" action="Turn off two-step sign-in" busyLabel="Turning off…" onPassword={turnOff} />
+          </>
+        )}
       </section>
     </Frame>
   );
 }
 
 /** Enrol an authenticator app (QR code, key, recovery codes, first code), or manage one already on. */
-export function TwoFactorSetup({ enabled, email }: { enabled: boolean; email: string }) {
-  return enabled ? <Manage /> : <Enrol email={email} />;
+export function TwoFactorSetup({ enabled, email, required = false }: { enabled: boolean; email: string; required?: boolean }) {
+  return enabled ? <Manage required={required} /> : <Enrol email={email} required={required} />;
 }

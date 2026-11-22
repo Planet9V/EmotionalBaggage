@@ -56,15 +56,15 @@ export function WorkspaceList({ active, workspaces }: { active: string; workspac
               </p>
             </div>
             {w.id === active ? (
-              w.role !== "member" && <TextLink href="/auth/workspace">Members and settings</TextLink>
+              <TextLink href="/auth/workspace">{w.role === "member" ? "Members" : "Members and settings"}</TextLink>
             ) : (
               <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => void act(`switch-${w.id}`, "/workspace/set-active", { workspaceId: w.id })}>
-                {busy === `switch-${w.id}` ? "Switching…" : <>Switch<span className="sr-only"> to {w.name}</span></>}
+                {busy === `switch-${w.id}` ? "Switching…" : <>Switch{" "}<span className="sr-only">to {w.name}</span></>}
               </Button>
             )}
             {!only && (
               <Button type="button" size="sm" variant="ghost" disabled={!!busy} onClick={() => void act(`leave-${w.id}`, "/workspace/leave", { workspaceId: w.id })}>
-                {busy === `leave-${w.id}` ? "Leaving…" : <>Leave<span className="sr-only"> {w.name}</span></>}
+                {busy === `leave-${w.id}` ? "Leaving…" : <>Leave{" "}<span className="sr-only">{w.name}</span></>}
               </Button>
             )}
           </li>

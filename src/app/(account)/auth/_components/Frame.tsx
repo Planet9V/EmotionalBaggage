@@ -10,10 +10,15 @@ import { prefersDark } from "@/lib/theme";
  * (src/app/sign-in/SignInForm.tsx). These pages have no app shell, so the stored theme is applied here. `wide` is
  * for the workspace screens, which hold lists.
  */
-export function Frame({ title, lead, children, footer, wide = false }: { title: string; lead?: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+/** These pages have no app shell: the stored light or dark theme is applied by the page itself. */
+export function useStoredTheme() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", prefersDark());
   }, []);
+}
+
+export function Frame({ title, lead, children, footer, wide = false }: { title: string; lead?: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+  useStoredTheme();
   return (
     <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10 text-primary">
       <div className={wide ? "w-full max-w-3xl" : "w-full max-w-sm"}>

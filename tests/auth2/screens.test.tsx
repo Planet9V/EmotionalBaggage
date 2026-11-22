@@ -6,7 +6,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { plainError } from "@/lib/auth2/errors";
 
 const push = vi.fn();
-vi.mock("next/navigation", async (orig) => ({ ...(await orig<typeof import("next/navigation")>()), useRouter: () => ({ push, replace: vi.fn() }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", async (orig) => ({ ...(await orig<typeof import("next/navigation")>()), useRouter: () => ({ push, replace: vi.fn(), refresh }) }));
 // The pages call connection() to read AUTH2 per request; outside a request it would throw.
 vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), connection: async () => undefined }));
 
@@ -48,6 +49,7 @@ const PAGES: [string, () => Promise<Page>][] = [
   ["password", () => import("@/app/(account)/auth/password/page") as Promise<Page>],
   ["workspaces", () => import("@/app/(account)/auth/workspaces/page") as Promise<Page>],
   ["invite", () => import("@/app/(account)/auth/invite/page") as Promise<Page>],
+  ["workspace", () => import("@/app/(account)/auth/workspace/page") as Promise<Page>],
 ];
 const params = { searchParams: Promise.resolve({}) };
 
@@ -221,5 +223,55 @@ describe("with AUTH2 on", () => {
     cleanup();
     render(<InviteView token="tok" invitation={{ ...inv, state: "used" }} signedInAs={null} />);
     expect(screen.getByText(/accepted already/)).toBeTruthy();
+  });
+
+  it("while a workspace requires two-step sign-in, the set-up page says so and offers no way to turn it off", async () => {
+    const { TwoFactorSetup } = await import("@/app/(account)/auth/two-factor/setup/TwoFactorSetup");
+    render(<TwoFactorSetup enabled={false} email="r@example.test" required />);
+    expect(screen.getByRole("status").textContent).toMatch(/requires two-step sign-in/);
+    expect(screen.queryByRole("link", { name: "Back to your account" })).toBeNull();
+    cleanup();
+    render(<TwoFactorSetup enabled email="r@example.test" required />);
+    expect(screen.queryByRole("button", { name: "Turn off two-step sign-in" })).toBeNull();
+    expect(screen.getByText(/cannot be turned off/)).toBeTruthy();
+  });
+
+  const view = (role: "owner" | "admin" | "member") => ({
+    workspace: { id: "w1", name: "Bag Lab", role },
+    members: [
+      { memberId: "m1", name: "Olive", email: "o@example.test", role: "owner" as const, joinedAt: "2026-11-01T00:00:00Z", you: role === "owner", ...(role !== "member" ? { twoFactor: true, required: false, manageable: false } : {}) },
+      { memberId: "m2", name: "Max", email: "m@example.test", role: "member" as const, joinedAt: "2026-11-02T00:00:00Z", you: role === "member", ...(role !== "member" ? { twoFactor: false, required: true, manageable: true } : {}) },
+    ],
+    ...(role !== "member" ? { admin: { twoFactorRequired: false, invitations: [{ id: "i1", email: "new@example.test", role: "admin" as const, expiresAt: "2026-11-24T00:00:00Z", invitedBy: "Olive", sentAt: null, sends: 1 }] } } : {}),
+  });
+
+  it("the members screen: an owner sees two-step state, invitations, the policy and delete; a member only the list", async () => {
+    const { MembersScreen } = await import("@/app/(account)/auth/workspace/MembersScreen");
+    render(<MembersScreen view={view("owner")} mail />);
+    expect(screen.getByRole("heading", { name: "Bag Lab" })).toBeTruthy();
+    expect(screen.getByText("Not set up")).toBeTruthy();
+    expect(screen.getByText("Required of them")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Role of Max" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Revoke the invitation to new@example.test" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete the workspace" })).toBeTruthy();
+    expect(screen.getByLabelText("Two-step sign-in")).toBeTruthy();
+    cleanup();
+    render(<MembersScreen view={view("member")} mail />);
+    expect(screen.getAllByRole("row")).toHaveLength(3);
+    expect(screen.queryByText("Two-step sign-in")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Invite someone" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Delete/ })).toBeNull();
+  });
+
+  it("inviting in 'no mail' mode shows the link to hand over", async () => {
+    const { MembersScreen } = await import("@/app/(account)/auth/workspace/MembersScreen");
+    render(<MembersScreen view={view("admin")} mail={false} />);
+    // An admin cannot give the owner role.
+    expect([...(screen.getByLabelText("Role") as HTMLSelectElement).options].map((o) => o.value)).toEqual(["admin", "member"]);
+    replies.push({ status: 200, body: { invitationId: "i2", email: "x@example.test", role: "member", mailed: false, link: "http://localhost:3322/auth/invite?token=abc" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "x@example.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
+    expect((await screen.findByText("http://localhost:3322/auth/invite?token=abc")).getAttribute("data-invite-link")).not.toBeNull();
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ workspaceId: "w1", email: "x@example.test", role: "member" });
   });
 });

@@ -25,7 +25,7 @@
  * their only workspace; a person owns at most MAX_OWNED_WORKSPACES workspaces; a workspace holds at most
  * MAX_SEATS people, counting pending invitations.
  */
-const ROLES = ["owner", "admin", "member"] as const;
+export const ROLES = ["owner", "admin", "member"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const MAX_OWNED_WORKSPACES = 5;

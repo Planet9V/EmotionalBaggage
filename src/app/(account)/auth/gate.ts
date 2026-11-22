@@ -10,6 +10,7 @@ import { safeNext } from "@/app/sign-in/shared";
 import { auth2Enabled } from "@/lib/auth2/config";
 import { auth2Session } from "@/lib/auth2/server";
 import { activeWorkspace, membershipsOf } from "@/lib/auth2/workspaces/store";
+import { owed } from "@/lib/auth2/workspaces/twoFactor";
 import { ownerPool } from "@/lib/db";
 
 export async function gate() {
@@ -18,12 +19,18 @@ export async function gate() {
   if (!(await auth2Enabled())) notFound();
 }
 
-/** The signed-in account (new sign-in), or a redirect to /auth/sign-in that comes back to `here`. */
-export async function requireAccount(here: string) {
+/**
+ * The signed-in account (new sign-in), or a redirect to /auth/sign-in that comes back to `here`. A person a workspace
+ * requires two-factor of, who has not set it up, is sent to set it up first (slice 2, step 4), except on the pages
+ * that pass `owedOk` (the set-up page itself, the password page).
+ */
+export async function requireAccount(here: string, opts: { owedOk?: boolean } = {}) {
   await gate();
   const s = await auth2Session(await headers());
   if (!s) redirect(`/auth/sign-in?next=${encodeURIComponent(here)}`);
-  return s;
+  const mustEnrol = await owed(ownerPool(), s.user.id);
+  if (mustEnrol && !opts.owedOk) redirect("/auth/two-factor/setup");
+  return { ...s, mustEnrol };
 }
 
 /** The `next` parameter of a page, as a string or null. */
