@@ -59,6 +59,7 @@
     "nanoid": "^6.0.2",
     "next": "16.4.6",
     "node-pg-migrate": "^9.0.0",
+    "nodemailer": "10.6.1",
     "occt-import-js": "^0.0.23",
     "papaparse": "^5.7.1",
     "pg": "^8.23.1",

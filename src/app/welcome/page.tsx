@@ -10,7 +10,9 @@ import { DeparturesBoard } from "@/components/welcome/DeparturesBoard";
 import { Journey } from "@/components/welcome/Journey";
 import { Engineering } from "@/components/welcome/Engineering";
 import { Market } from "@/components/welcome/Market";
+import { connection } from "next/server";
 import { Levels } from "@/components/welcome/Levels";
+import { publicLevels } from "@/lib/admin/plans";
 import { exampleData } from "@/components/welcome/exampleData";
 import { storyData } from "@/components/welcome/storyData";
 import { LifecycleMap } from "@/components/welcome/LifecycleMap";
@@ -42,7 +44,9 @@ export const generateMetadata = () => publicPageMetadata({ title: META.title, de
  *  8. Your turn: the four service levels and the request form (Levels).
  *  9. Who it is for, run it yourself, questions, and the same primary action again.
  * Accounts and payment are not built, and the page says so: the levels ask for access, and prices stay off the
- * page until the owner confirms them (SHOW_PRICES in content.ts). No customers, counts or logos appear, because
+ * page until the owner turns them on in Admin, Pricing and tiers. The levels are read from that catalogue on each
+ * request (connection() below), so a change there shows without a deploy; with nothing saved, or the database
+ * unreachable, the built-in levels of content.ts show, prices hidden. No customers, counts or logos appear, because
  * none exist; the worked example is the proof.
  */
 
@@ -80,7 +84,8 @@ const faqSchema = {
 const SECTION = "border-b border-hairline py-9 sm:py-11";
 
 export default async function WelcomePage() {
-  const example = await exampleData();
+  await connection(); // the plan catalogue is read per request, not frozen at build time
+  const [example, levels] = await Promise.all([exampleData(), publicLevels()]);
   const story = storyData(example);
   return (
     <div className="min-h-[100dvh] bg-canvas text-primary">
@@ -249,7 +254,7 @@ export default async function WelcomePage() {
             <p className={EYEBROW}>{YOUR_TURN.eyebrow}</p>
             <h2 id="levels-title" className={H2}>{YOUR_TURN.title}</h2>
             <p className={LEAD}>{YOUR_TURN.lead}</p>
-            <Levels />
+            <Levels levels={levels.levels} showPrices={levels.showPrices} />
           </div>
         </section>
 

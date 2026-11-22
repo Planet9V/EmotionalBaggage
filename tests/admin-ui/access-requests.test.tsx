@@ -7,6 +7,7 @@ import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { AccessRequestsTab } from "@/components/admin/AccessRequestsTab";
 import { AccessRequestForm } from "@/components/welcome/AccessRequestForm";
 import { Levels } from "@/components/welcome/Levels";
+import { builtInCatalogue, levelsOf } from "@/lib/admin/planSchema";
 import { ACCESS_CONFIRMATION, type AccessRequestRow } from "@/lib/accessRequests/shared";
 import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
 
@@ -121,7 +122,7 @@ describe("the public request form", () => {
 
   it("carries the level from a card's Request access to the form, where it can be changed, and sends it", async () => {
     const { calls } = adminServer([on("POST", "/api/access-requests", () => ({ status: 201, body: { ok: true, message: ACCESS_CONFIRMATION } }))]);
-    renderWithClient(<Levels />);
+    renderWithClient(<Levels {...levelsOf(builtInCatalogue())} />);
     const level = screen.getByLabelText(/^Level/) as HTMLSelectElement;
     expect(level.value).toBe("");
     expect(screen.getByRole("heading", { level: 3, name: "Request access" })).toBeTruthy();

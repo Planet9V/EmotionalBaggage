@@ -1,14 +1,15 @@
+import { adminRoute } from "@/lib/admin/guard";
 import { auditIn } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { tx } from "@/lib/db";
-import { body, notFound, recordId, route } from "@/lib/api/route";
+import { body, notFound, recordId } from "@/lib/api/route";
 import { PRINTER_COLS, requireFamily, resolveAccess, toPrinterView, valuesOf, type PrinterRow } from "@/lib/admin/printers";
 import { printerPatch } from "@/lib/admin/schemas";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /** Changes any of name, family, model, enabled, access. Blank access values are unchanged; null removes one. */
-export const PATCH = route(async (req: Request, { params }: Ctx) => {
+export const PATCH = adminRoute(async (req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That printer");
   const b = await body(req, printerPatch);
   const row = await tx(async (c) => {
@@ -27,7 +28,7 @@ export const PATCH = route(async (req: Request, { params }: Ctx) => {
   return NextResponse.json({ printer: toPrinterView(row) });
 });
 
-export const DELETE = route(async (_req: Request, { params }: Ctx) => {
+export const DELETE = adminRoute(async (_req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That printer");
   const rows = await tx(async (c) => {
     const gone = (await c.query<{ id: string; name: string }>("DELETE FROM printers WHERE id=$1 RETURNING id, name", [id])).rows;

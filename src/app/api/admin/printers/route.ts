@@ -1,16 +1,17 @@
+import { adminRoute } from "@/lib/admin/guard";
 import { audit } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { q } from "@/lib/db";
-import { body, route } from "@/lib/api/route";
+import { body } from "@/lib/api/route";
 import { PRINTER_COLS, requireFamily, resolveAccess, toPrinterView, type PrinterRow } from "@/lib/admin/printers";
 import { printerPost } from "@/lib/admin/schemas";
 
-export const GET = route(async () => {
+export const GET = adminRoute(async () => {
   const rows = await q<PrinterRow>(`SELECT ${PRINTER_COLS} FROM printers ORDER BY id`);
   return NextResponse.json({ printers: rows.map(toPrinterView) });
 });
 
-export const POST = route(async (req: Request) => {
+export const POST = adminRoute(async (req: Request) => {
   const b = await body(req, printerPost);
   const fam = requireFamily(b.family);
   const { address, access } = resolveAccess(fam, b.access);

@@ -1,12 +1,12 @@
 # Third-party notices
 
-Generated from package-lock.json at commit 3bfa6de by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit ca56bc5 by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
 ## npm packages (production tree)
 
-709 packages: 63 direct, 646 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
+710 packages: 64 direct, 646 transitive. 33 of them are platform-specific builds (marked "platform build"); npm installs only the ones matching the machine, and their licence is taken from package-lock.json and their link is the npm page. All other licences are read from the installed packages by license-checker-rseidelsohn.
 
 | Package | Version | Licence | Repository | Kind |
 | --- | --- | --- | --- | --- |
@@ -536,6 +536,7 @@ Every third-party component this repository uses: the npm packages of the web ap
 | ndarray-pixels | 5.2.0 | MIT | https://github.com/donmccurdy/ndarray-pixels | transitive |
 | next | 16.4.6 | MIT | https://github.com/vercel/next.js | direct |
 | node-pg-migrate | 9.0.0 | MIT | https://github.com/salsita/node-pg-migrate | direct |
+| nodemailer | 10.6.1 | MIT-0 | https://github.com/nodemailer/nodemailer | direct |
 | occt-import-js | 0.0.23 | LGPL-2.1 | https://github.com/kovacsv/occt-import-js | direct |
 | oniguruma-parser | 0.12.2 | MIT | https://github.com/slevithan/oniguruma-parser | transitive |
 | oniguruma-to-es | 4.3.6 | MIT | https://github.com/slevithan/oniguruma-to-es | transitive |
@@ -2989,6 +2990,31 @@ furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+#### MIT-0
+
+Used by: nodemailer@10.6.1.
+
+Text from nodemailer@10.6.1, LICENSE:
+
+```text
+Copyright (c) 2011-2023 Andris Reinman
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

@@ -5,6 +5,7 @@ import { credentialSource, getCredential, type Provider } from "@/lib/settings";
 import { audit, type AuditEntry } from "./audit";
 import { lastFour, PROVIDER_DEFS, providerDef, type ProviderDef } from "./providers";
 import { invalid } from "./schemas";
+import { forgetChecks } from "./checks";
 import { boundOrigin, currentOrigin, originOf } from "@/lib/secretOrigin";
 
 type CredentialFieldView = {
@@ -84,6 +85,8 @@ export function checkCredentialFields(provider: string, fields: Record<string, s
     if (raw === "") continue; // blank leaves the saved value as it is
     const v = raw.trim();
     if (!v) throw invalid(["fields", name], "is only spaces; leave it empty to keep the saved value");
+    const pattern = def.fields.find((f) => f.name === name)?.pattern;
+    if (pattern && !pattern.re.test(v)) throw invalid(["fields", name], pattern.problem);
     values.push([name, v]);
   }
   return { def, values };
@@ -108,6 +111,7 @@ export async function saveCredentials(def: ProviderDef, values: [string, string]
     }
   });
   await audit(entries);
+  await forgetChecks({ provider: def.id });
 }
 
 /** Removes one saved value. Answers false when nothing was saved. */
@@ -115,5 +119,6 @@ export async function removeCredential(provider: Provider, field: string): Promi
   const rows = await q("DELETE FROM credentials WHERE provider=$1 AND field=$2 RETURNING 1", [provider, field]);
   if (!rows.length) return false;
   await audit([{ action: "removed", provider, field }]);
+  await forgetChecks({ provider });
   return true;
 }

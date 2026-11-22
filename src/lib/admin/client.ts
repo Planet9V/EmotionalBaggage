@@ -16,11 +16,18 @@ import type { AdminSettings } from "@/lib/admin/settings";
 import type { PrinterView } from "@/lib/admin/printers";
 import type { PrinterFamily } from "@/lib/admin/printerFamilies";
 import type { StatusItem } from "@/lib/admin/status";
+import type { ServiceStatus } from "@/lib/admin/overview";
+import type { CatalogueRead } from "@/lib/admin/plans";
+import type { PlanCatalogue, LimitKey } from "@/lib/admin/planSchema";
+import type { EnvLine } from "@/lib/admin/environment";
+import type { MailSettings, VoiceSettings } from "@/lib/admin/schemas";
 import type { AuditRow } from "@/lib/auditLog";
 import type { ModelChoice } from "@/lib/settings";
 import { downloadFile } from "@/lib/download";
 
-export type { ProviderView, AuditEntry, AdminSettings, PrinterView, PrinterFamily, ModelChoice };
+export type { ProviderView, AuditEntry, AdminSettings, PrinterView, PrinterFamily, ModelChoice, ServiceStatus, PlanCatalogue, MailSettings, VoiceSettings, EnvLine };
+export type PlansView = CatalogueRead & { limits: { key: LimitKey; label: string }[] };
+export type PaymentsView = { configured: true; mode: "test" | "live"; webhookSecret: boolean; webhookPath: string } | { configured: false; reason: string; webhookPath: string };
 
 export type AdminStatus = { complete: boolean; items: StatusItem[]; defaultPassword: boolean };
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
@@ -35,14 +42,33 @@ export type ConnectionTest =
   | { kind: "planner"; url?: string }
   | { kind: "slicer"; url?: string }
   | { kind: "database" }
-  | { kind: "amazon-sp" | "x" | "instagram" };
+  | { kind: "amazon-sp" | "x" | "instagram" }
+  | { kind: "stripe" | "smtp" | "voice" }
+  | { kind: "mail-message"; to: string };
 export type IndexResult = { ok: true; indexed: number; skipped: number; failed: number; model: string; dims: number; search: string; error?: string };
-export type SettingsChange = Partial<Pick<AdminSettings, "reasoningModel" | "embeddingModel" | "plannerUrl" | "slicerUrl">>;
+export type SettingsChange = Partial<Pick<AdminSettings, "reasoningModel" | "embeddingModel" | "plannerUrl" | "slicerUrl" | "mail" | "voice">> & { confirmEmbedding?: string };
 export type PrinterInput = { name?: string; family?: string; model?: string; enabled?: boolean; access?: Record<string, string | null> };
 
-/** The tabs of /admin, in order. The tab is kept in the address as ?tab=. */
-export const ADMIN_TABS = ["setup", "credentials", "models", "printers", "audit", "access"] as const;
+/**
+ * The sections of /admin, in the order of the sub-navigation. The section is kept in the address as ?tab=; the
+ * first six keys are the ones links across the app already use, so they never change.
+ */
+export const ADMIN_TABS = ["setup", "payments", "pricing", "email", "channels", "models", "voice", "printers", "services", "credentials", "audit", "access"] as const;
 export type AdminTab = (typeof ADMIN_TABS)[number];
+export const ADMIN_TAB_LABEL: Record<AdminTab, string> = {
+  setup: "Overview",
+  payments: "Payments",
+  pricing: "Pricing and tiers",
+  email: "Email",
+  channels: "Sales channels",
+  models: "AI models",
+  voice: "Voice",
+  printers: "Printers",
+  services: "Other services",
+  credentials: "All keys",
+  audit: "Audit log",
+  access: "Access requests",
+};
 export const isAdminTab = (v: string | null | undefined): v is AdminTab => !!v && (ADMIN_TABS as readonly string[]).includes(v);
 
 /** Where each part of Admin named by the API lives. The API says "settings" for the models and the planner. */
@@ -72,6 +98,9 @@ const adminKeys = {
   settings: () => ["admin", "settings"] as const,
   printers: () => ["admin", "printers"] as const,
   families: () => ["admin", "printer-families"] as const,
+  overview: () => ["admin", "overview"] as const,
+  plans: () => ["admin", "plans"] as const,
+  payments: () => ["admin", "payments"] as const,
   audit: (f: AuditFilters) => ["admin", "audit", f.project ?? "", f.action ?? "", f.hide ?? "", f.q?.trim() ?? ""] as const,
 };
 
@@ -84,6 +113,9 @@ const adminFetchers = {
   settings: ({ signal }: Ctx = {}) => api<{ settings: AdminSettings }>("/api/admin/settings", { signal }).then((r) => r.settings),
   printers: ({ signal }: Ctx = {}) => api<{ printers: PrinterView[] }>("/api/admin/printers", { signal }).then((r) => r.printers),
   families: ({ signal }: Ctx = {}) => api<{ families: PrinterFamily[] }>("/api/admin/printer-families", { signal }).then((r) => r.families),
+  overview: ({ signal }: Ctx = {}) => api<{ services: ServiceStatus[] }>("/api/admin/overview", { signal }).then((r) => r.services),
+  plans: ({ signal }: Ctx = {}) => api<PlansView>("/api/admin/plans", { signal }),
+  payments: ({ signal }: Ctx = {}) => api<PaymentsView>("/api/admin/payments", { signal }),
   audit: (f: AuditFilters, before: number | null, { signal }: Ctx = {}) =>
     api<AuditPage>(`/api/admin/audit${auditQueryString(f, { before, limit: PAGE })}`, { signal }),
 };
@@ -98,6 +130,11 @@ const adminQueries = {
 };
 
 export const useAdminStatus = () => useQuery(adminQueries.status());
+export const useServiceOverview = () => useQuery(queryOptions({ queryKey: adminKeys.overview(), queryFn: ({ signal }) => adminFetchers.overview({ signal }) }));
+export const usePlans = () => useQuery(queryOptions({ queryKey: adminKeys.plans(), queryFn: ({ signal }) => adminFetchers.plans({ signal }) }));
+export const useEnvironment = () =>
+  useQuery<EnvLine[]>({ queryKey: ["admin", "environment"], queryFn: ({ signal }) => api<{ variables: EnvLine[] }>("/api/admin/environment", { signal }).then((r) => r.variables), staleTime: Infinity });
+export const usePayments = () => useQuery(queryOptions({ queryKey: adminKeys.payments(), queryFn: ({ signal }) => adminFetchers.payments({ signal }) }));
 export const useCredentials = () => useQuery(adminQueries.credentials());
 export const useCredentialsAudit = () => useQuery(adminQueries.credentialsAudit());
 export const useAdminSettings = () => useQuery(adminQueries.settings());
@@ -109,6 +146,8 @@ function useRefreshDerived() {
   const qc = useQueryClient();
   return () => {
     void qc.invalidateQueries({ queryKey: adminKeys.status() });
+    void qc.invalidateQueries({ queryKey: adminKeys.overview() });
+    void qc.invalidateQueries({ queryKey: adminKeys.payments() });
     void qc.invalidateQueries({ queryKey: ["integrations"] });
   };
 }
@@ -255,7 +294,30 @@ export function useConnectionTest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (t: ConnectionTest) => api<TestResult>("/api/admin/test", { method: "POST", body: JSON.stringify(t) }),
-    onSettled: () => void qc.invalidateQueries({ queryKey: adminKeys.credentialsAudit() }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: adminKeys.credentialsAudit() });
+      void qc.invalidateQueries({ queryKey: adminKeys.overview() });
+    },
+  });
+}
+
+/** Saves the whole plan catalogue; the server validates it. Not optimistic: the public page reads what is saved. */
+export function useSavePlans() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (c: PlanCatalogue) => api<PlansView>("/api/admin/plans", { method: "PUT", body: JSON.stringify(c) }),
+    onSuccess: (v) => qc.setQueryData(adminKeys.plans(), v),
+    onSettled: () => void qc.invalidateQueries({ queryKey: adminKeys.overview() }),
+  });
+}
+
+/** Back to the built-in catalogue. */
+export function useResetPlans() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<PlansView>("/api/admin/plans", { method: "DELETE" }),
+    onSuccess: (v) => qc.setQueryData(adminKeys.plans(), v),
+    onSettled: () => void qc.invalidateQueries({ queryKey: adminKeys.overview() }),
   });
 }
 

@@ -53,6 +53,46 @@ export const embeddingChoice = z
   })
   .strict();
 
+/** Admin, Email. mode "none" (the default) sends nothing; the password is a credential of "smtp". */
+export const mailSettings = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("none") }).strict(),
+  z
+    .object({
+      mode: z.literal("smtp"),
+      fromName: z.string().trim().min(1, "is required").max(120).regex(/^[^\r\n<>"]+$/, "may not contain line breaks, quotes or angle brackets"),
+      fromAddress: z.string().trim().max(254).pipe(z.email("must be an email address")),
+      host: hostName,
+      port: z.number({ error: "is required" }).int("must be a whole number").min(1, "must be 1 to 65535").max(65535, "must be 1 to 65535"),
+      security: z.enum(["starttls", "tls", "none"], { error: "must be STARTTLS, TLS or none" }),
+      username: z.string().trim().max(254).regex(/^[^\r\n]*$/, "may not contain line breaks").transform((v) => v || null).nullable(),
+    })
+    .strict(),
+]);
+export type MailSettings = z.infer<typeof mailSettings>;
+
+/** Admin, Voice. provider "none" (the default) means no narration; keys are credentials of "voice-openai" / "elevenlabs". */
+export const voiceSettings = z.discriminatedUnion("provider", [
+  z.object({ provider: z.literal("none") }).strict(),
+  z
+    .object({
+      provider: z.literal("openai"),
+      baseUrl: httpUrl,
+      model: z.string().trim().min(1, "is required").max(200),
+      voice: z.string().trim().min(1, "is required").max(200),
+      speed: z.number().min(0.25, "must be 0.25 to 4").max(4, "must be 0.25 to 4"),
+    })
+    .strict(),
+  z
+    .object({
+      provider: z.literal("elevenlabs"),
+      model: z.string().trim().min(1, "is required").max(200),
+      voice: z.string().trim().min(1, "is required: the ElevenLabs voice ID").max(200).regex(/^[A-Za-z0-9]+$/, "must be an ElevenLabs voice ID (letters and digits)"),
+      speed: z.number().min(0.7, "must be 0.7 to 1.2 for ElevenLabs").max(1.2, "must be 0.7 to 1.2 for ElevenLabs"),
+    })
+    .strict(),
+]);
+export type VoiceSettings = z.infer<typeof voiceSettings>;
+
 export const adminSettingsPut = z
   .object({
     reasoningModel: reasoningChoice.nullable().optional(),
@@ -60,9 +100,13 @@ export const adminSettingsPut = z
     plannerUrl: httpUrl.nullable().optional(),
     slicerUrl: httpUrl.nullable().optional(),
     defaultConcept: z.string().trim().min(1, "cannot be empty; send null to clear it").max(80).nullable().optional(),
+    mail: mailSettings.optional(),
+    voice: voiceSettings.optional(),
+    /** typed to confirm an embedding change that leaves the stored vectors behind (see writeAdminSettings) */
+    confirmEmbedding: z.string().max(200).optional(),
   })
   .strict()
-  .refine((v) => Object.keys(v).length > 0, { message: "nothing to change" });
+  .refine((v) => Object.keys(v).some((k) => k !== "confirmEmbedding"), { message: "nothing to change" });
 
 export const credentialsPut = z
   .object({
@@ -129,6 +173,11 @@ export const connectionTest = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("instagram") }).strict(),
   z.object({ kind: z.literal("slicer"), url: httpUrl.optional() }).strict(),
   z.object({ kind: z.literal("database") }).strict(),
+  // the saved values; Payments, Email and Voice test what is saved, so save first
+  z.object({ kind: z.literal("stripe") }).strict(),
+  z.object({ kind: z.literal("smtp") }).strict(),
+  z.object({ kind: z.literal("mail-message"), to: z.string().trim().max(254).pipe(z.email("must be an email address")) }).strict(),
+  z.object({ kind: z.literal("voice") }).strict(),
 ]);
 
 export type ConnectionTest = z.infer<typeof connectionTest>;

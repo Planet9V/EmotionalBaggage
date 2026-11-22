@@ -1,7 +1,9 @@
 "use client";
 
-// Models: the reasoning model, the embedding model (with presets) and the planner address. Nothing is
-// saved until Save. Test uses the values in the form, saved or not.
+// AI models: the reasoning model, the embedding model (with presets), the platform's model and research keys (the
+// shared key cards of All keys), and the planner address. Nothing is saved until Save. Test uses the values in the
+// form, saved or not. Changing the embedding model or its width while vectors are stored asks for the new width to
+// be typed, because those vectors stop being used until every concept is indexed again.
 import { useState, type FormEvent } from "react";
 import { ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -33,6 +35,7 @@ import { Field, describe } from "@/components/ui/field";
 import { LoadError, LoadingBlocks, NotSetUp, SaveError, SavedNote, useFlag } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { Card } from "@/components/ui/Card";
+import { CredentialsTab } from "./CredentialsTab";
 
 type ProviderId = ModelChoice["provider"];
 const PROVIDER_LABEL: Record<ProviderId, string> = { ollama: "Ollama", lmstudio: "LM Studio", openrouter: "OpenRouter" };
@@ -78,6 +81,7 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
   const [preset, setPreset] = useState<EmbeddingPreset | null>(null);
   const [justSaved, markSaved] = useFlag();
   const [reindex, setReindex] = useState(false);
+  const [confirm, setConfirm] = useState("");
   const save = useSaveSettings();
   const test = useConnectionTest();
   const creds = useCredentials();
@@ -102,10 +106,15 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
     }
     setErrors({});
     setSaveError("");
+    if (leavesVectors && confirm.trim() !== String(c.choice.dims)) {
+      setSaveError(`Type ${c.choice.dims} in the confirmation box to change the embedding model.`);
+      return;
+    }
     try {
-      await save.mutateAsync({ [key]: c.choice });
+      await save.mutateAsync({ [key]: c.choice, ...(leavesVectors ? { confirmEmbedding: confirm.trim() } : {}) });
       markSaved();
       setPreset(null);
+      setConfirm("");
       if (kind === "embedding") setReindex(true);
     } catch (err) {
       const m = messageOf(err);
@@ -144,6 +153,8 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
 
   const openrouterKey = creds.data?.find((p) => p.id === "openrouter")?.configured;
   const dims = Number(form.dims);
+  // the stored vectors belong to the saved model at its width: another model or width leaves them unused
+  const leavesVectors = kind === "embedding" && !!saved && settings.storedVectors > 0 && (form.model.trim() !== saved.model || dims !== saved.dims);
 
   return (
     <Panel
@@ -225,6 +236,17 @@ function ModelSection({ kind, saved, settings }: { kind: Kind; saved: ModelChoic
             {dims > 2000 ? " This width is one of them." : ""}
           </p>
         ) : null}
+        {leavesVectors ? (
+          <div className="space-y-2 rounded-md border border-warning/40 bg-warning-soft px-3 py-3">
+            <p className="text-sm text-warning" id={id("confirm-why")}>
+              {saved!.dims !== dims ? `This changes the vector width from ${saved!.dims} to ${form.dims || "?"}.` : `This changes the embedding model from ${saved!.model} to ${form.model}.`}{" "}
+              The {settings.storedVectors.toLocaleString("en")} stored vectors of {saved!.model} stop being used: search by meaning finds nothing until every concept is indexed again, and each re-index calls the model for every row.
+            </p>
+            <Field id={id("confirm")} label={`Type ${form.dims || "the new width"} to confirm`} required>
+              <Input id={id("confirm")} inputMode="numeric" autoComplete="off" value={confirm} onChange={(e) => setConfirm(e.target.value)} aria-describedby={id("confirm-why")} />
+            </Field>
+          </div>
+        ) : null}
         {form.provider === "openrouter" && creds.data && !openrouterKey ? (
           <NotSetUp href="/admin?tab=credentials" label="Open Credentials">
             OpenRouter needs a key, and none is saved.
@@ -295,7 +317,7 @@ function Reindex({ onDone }: { onDone: () => void }) {
 
 const plannerSchema = z.object({ url: httpUrl });
 
-function PlannerSection({ settings }: { settings: AdminSettings }) {
+export function PlannerSection({ settings }: { settings: AdminSettings }) {
   const { register, handleSubmit, trigger, getValues, setValue, formState: { errors } } = useForm<z.input<typeof plannerSchema>, unknown, z.output<typeof plannerSchema>>({
     resolver: zodResolver(plannerSchema),
     defaultValues: { url: settings.plannerUrl ?? "" },
@@ -331,9 +353,9 @@ function PlannerSection({ settings }: { settings: AdminSettings }) {
         <p className="text-sm text-secondary">
           {eff.url
             ? `In use: ${eff.url}, ${eff.source === "admin" ? "saved here" : "from the PLANNER_URL environment variable (a fallback)"}.`
-            : "No address is saved here and PLANNER_URL is not set, so the plan page lists the steps without an order."}
+            : "No address is saved here and none comes from the environment, so the plan page lists the steps without an order. Docker Compose gives http://planner:8000."}
         </p>
-        <Field id="planner-url" label="Address" error={error} hint="For example http://planner:8811 inside Docker Compose.">
+        <Field id="planner-url" label="Address" error={error} hint="For example http://planner:8000, the planner service of Docker Compose.">
           <Input id="planner-url" spellCheck={false} {...describe("planner-url", { hint: true, error })} {...register("url")} />
         </Field>
         <SaveError message={saveError} />
@@ -375,11 +397,18 @@ export function ModelsTab() {
   return (
     <div className="space-y-4">
       <p className="max-w-3xl text-sm text-secondary">
-        Each model is served by Ollama, LM Studio or OpenRouter. Keys for them are in Credentials. Test checks the values in the form, saved or not.
+        Each model is served by Ollama, LM Studio or OpenRouter. Their keys are under Platform keys below. Test checks the values in the form, saved or not.
       </p>
       {/* Each form starts from the saved values once and then keeps what is typed, so a refused save never empties it. */}
       <ModelSection kind="reasoning" saved={s.reasoningModel} settings={s} />
       <ModelSection kind="embedding" saved={s.embeddingModel} settings={s} />
+      <section aria-labelledby="platform-keys" className="space-y-3">
+        <h2 id="platform-keys" className="text-sm font-semibold text-primary">Platform keys</h2>
+        <p className="max-w-3xl text-sm text-secondary">
+          The keys this install uses for every workspace: the model hosts and Perplexity for research. A saved key is never shown again, only its last four characters.
+        </p>
+        <CredentialsTab only={["openrouter", "ollama", "lmstudio", "perplexity"]} intro={false} />
+      </section>
       <PlannerSection settings={s} />
     </div>
   );

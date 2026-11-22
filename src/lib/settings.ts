@@ -4,14 +4,14 @@
 import { q } from "@/lib/db";
 
 /** Outside services that can hold credentials. */
-export const PROVIDERS = ["ollama", "lmstudio", "openrouter", "perplexity", "amazon-sp", "x", "instagram"] as const;
+export const PROVIDERS = ["ollama", "lmstudio", "openrouter", "perplexity", "amazon-sp", "x", "instagram", "stripe", "smtp", "voice-openai", "elevenlabs"] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 /**
  * Environment variables still honoured when Admin has no value saved, so an install
  * configured through .env keeps working. Admin always wins.
  */
-const ENV_FALLBACK: Record<string, string> = {
+export const ENV_FALLBACK: Record<string, string> = {
   "openrouter.apiKey": "OPENROUTER_API_KEY",
   "perplexity.apiKey": "PERPLEXITY_API_KEY",
   "amazon-sp.refreshToken": "AMAZON_SP_REFRESH_TOKEN",
@@ -67,6 +67,14 @@ export const SETTING = {
   plannerUrl: "planner.url",
   slicerUrl: "slicer.url",
   defaultConcept: "concepts.default",
+  /** mail server: sender, host, port, security, user name (the password is a credential of "smtp") */
+  mail: "mail.smtp",
+  /** narration: provider, address, model, voice, speed (keys are credentials of "voice-openai" and "elevenlabs") */
+  voice: "voice.tts",
+  /** the plan catalogue: one validated JSON document (src/lib/admin/plans.ts) */
+  plans: "plans.catalogue",
+  /** the last result of each service's connection test, for the Overview */
+  checks: "admin.checks",
 } as const;
 
 export const DEFAULT_BASE_URL: Record<ModelChoice["provider"], string> = {

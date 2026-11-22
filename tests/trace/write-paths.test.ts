@@ -42,6 +42,7 @@ const WRITE_PATHS: Record<string, string> = {
   "admin/credentials/[provider]/route.ts": "src/lib/admin/credentials.ts",
   "admin/printers/[id]/route.ts": "self",
   "admin/printers/route.ts": "self",
+  "admin/plans/route.ts": "src/lib/admin/plans.ts",
   "admin/settings/route.ts": "src/lib/admin/settings.ts",
   "admin/test/route.ts": "src/lib/admin/connection.ts",
   "auth/password/route.ts": "self",

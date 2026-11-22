@@ -1,12 +1,13 @@
+import { adminRoute } from "@/lib/admin/guard";
 import { NextResponse } from "next/server";
-import { HttpError, notFound, route } from "@/lib/api/route";
+import { HttpError, notFound } from "@/lib/api/route";
 import { providerView, removeCredential } from "@/lib/admin/credentials";
 import { fieldDef, isProvider } from "@/lib/admin/providers";
 
 type Ctx = { params: Promise<{ provider: string; field: string }> };
 
 /** Removes one saved value; an environment variable for the same field, if any, applies again. */
-export const DELETE = route(async (_req: Request, { params }: Ctx) => {
+export const DELETE = adminRoute(async (_req: Request, { params }: Ctx) => {
   const { provider, field } = await params;
   if (!isProvider(provider)) throw notFound("That provider");
   if (!fieldDef(provider, field)) throw notFound("That field");

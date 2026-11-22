@@ -63,7 +63,7 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
         <p className="text-sm text-secondary">
           {eff.url
             ? `In use: ${eff.url}, ${eff.source === "admin" ? "saved here" : "from the SLICER_URL environment variable (a fallback)"}.`
-            : "No address is saved here and SLICER_URL is not set, so print jobs can be queued but not sliced."}
+            : "No address is saved here and none comes from the environment, so print jobs can be queued but not sliced."}
         </p>
         <Field id="slicer-url" label="Address" error={error} hint="For example http://slicer:8000 inside Docker Compose.">
           <Input id="slicer-url" spellCheck={false} {...describe("slicer-url", { hint: true, error })} {...register("url")} />

@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit 3bfa6de by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit ca56bc5 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -16,7 +16,7 @@ How a component can be used here:
 
 ## Summary by licence
 
-Web app, npm production tree: 709 packages (63 direct, 646 transitive, of which 33 are platform-specific builds).
+Web app, npm production tree: 710 packages (64 direct, 646 transitive, of which 33 are platform-specific builds).
 
 | Licence | npm packages |
 | --- | --- |
@@ -39,6 +39,7 @@ Web app, npm production tree: 709 packages (63 direct, 646 transitive, of which 
 | EPL-2.0 OR GPL-3.0-or-later | 1 |
 | LGPL-2.1 | 1 |
 | MIT AND ISC AND BSD-3-Clause | 1 |
+| MIT-0 | 1 |
 | Unlicense | 1 |
 
 [//]: # (python:start)
@@ -106,6 +107,7 @@ From `package.json` "dependencies", at the versions installed by package-lock.js
 | nanoid | 6.0.2 | MIT | linked library | yes |
 | next | 16.4.6 | MIT | linked library | yes |
 | node-pg-migrate | 9.0.0 | MIT | linked library | yes |
+| nodemailer | 10.6.1 | MIT-0 | linked library | yes |
 | occt-import-js | 0.0.23 | LGPL-2.1 | linked library | no |
 | papaparse | 5.7.1 | MIT | linked library | yes |
 | pg | 8.23.1 | MIT | linked library | yes |

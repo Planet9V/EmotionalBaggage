@@ -3,19 +3,21 @@
 // "Your turn": the four service levels, and the way in that exists today. Accounts and payment are not built, so
 // no card pretends otherwise: Free, Maker and Studio each ask for access, which brings the visitor to the request
 // form with the chosen level named above it and preselected in the form's Level field (changeable there; the
-// level is stored with the request), and Self-hosted goes to "Run it yourself". Prices are the owner's to confirm:
-// while SHOW_PRICES is false the paid levels read "Price to be announced". The links work without script; script
+// level is stored with the request), and Self-hosted goes to "Run it yourself". The levels and whether prices show
+// come from the plan catalogue (Admin, Pricing and tiers; src/lib/admin/plans.ts, publicLevels), handed in by the
+// page: while prices are off the paid levels read "Price to be announced". The links work without script; script
 // adds the level to the heading and the form.
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ACCESS_LEVEL_LABEL, type AccessLevel } from "@/lib/accessRequests/shared";
+import { ACCESS_LEVEL_LABEL, isAccessLevel, type AccessLevel } from "@/lib/accessRequests/shared";
+import type { PublicLevel } from "@/lib/admin/planSchema";
 import { AccessRequestForm } from "./AccessRequestForm";
-import { DEMO_NOTE, HERO, LEVELS, SHOW_PRICES, YOUR_TURN, type Level } from "./content";
+import { DEMO_NOTE, HERO, YOUR_TURN } from "./content";
 
-function Price({ level }: { level: Level }) {
-  if (SHOW_PRICES) {
+function Price({ level, showPrices }: { level: PublicLevel; showPrices: boolean }) {
+  if (showPrices && level.price) {
     return (
       <p className="flex h-12 items-baseline gap-1.5">
         <span className="text-[1.75rem] font-semibold tracking-tight text-primary">{level.price}</span>
@@ -26,18 +28,18 @@ function Price({ level }: { level: Level }) {
   return <p className={`flex h-12 items-center ${level.paid ? "text-[15px] font-medium text-secondary" : "text-[1.75rem] font-semibold tracking-tight text-primary"}`}>{level.paid ? YOUR_TURN.tba : "Free"}</p>;
 }
 
-export function Levels() {
+export function Levels({ levels, showPrices }: { levels: PublicLevel[]; showPrices: boolean }) {
   const [level, setLevel] = useState<AccessLevel | "">("");
   const levelName = level ? ACCESS_LEVEL_LABEL[level] : null;
   return (
     <>
       <ul className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {LEVELS.map((l) => (
+        {levels.map((l) => (
           <li key={l.key} className={`flex flex-col rounded-xl border bg-surface p-5 shadow-[var(--shadow-card)] ${level === l.key ? "border-dutchOrange" : "border-hairline"}`}>
             <h3 className="text-lg font-semibold tracking-tight text-primary">{l.name}</h3>
             <p className="mt-0.5 font-mono text-[11px] text-link">{l.who}</p>
             <div className="mt-3">
-              <Price level={l} />
+              <Price level={l} showPrices={showPrices} />
             </div>
             <p className="mt-2 min-h-[4rem] text-sm leading-snug text-secondary">{l.what}</p>
             <p className="mt-4 font-mono text-[11px] text-muted">{YOUR_TURN.includes}</p>
@@ -52,7 +54,7 @@ export function Levels() {
             <div className="mt-auto pt-5">
               {l.action === "request" ? (
                 <Button asChild variant={l.key === "maker" ? "primary" : "outline"} className="h-10 w-full rounded-lg">
-                  <a href="#request" onClick={() => setLevel(l.key)} aria-label={`${YOUR_TURN.request}: ${l.name}`}>
+                  <a href="#request" onClick={() => setLevel(isAccessLevel(l.key) ? l.key : "")} aria-label={`${YOUR_TURN.request}: ${l.name}`}>
                     {YOUR_TURN.request}
                   </a>
                 </Button>

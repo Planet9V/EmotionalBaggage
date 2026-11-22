@@ -27,6 +27,9 @@ const settingsOf = (o: Partial<AdminSettings> = {}): AdminSettings => ({
   slicerUrl: null,
   slicerEffective: { url: null, source: null },
   defaultConcept: null,
+  mail: { mode: "none" },
+  voice: { provider: "none" },
+  storedVectors: 0,
   defaultBaseUrl: DEFAULTS,
   ...o,
 });

@@ -26,6 +26,7 @@ const TONES: Record<string, StatusTone> = {
   written: "info", final: "success", stored: "success", "not uploaded": "warning", unreadable: "danger",
   unverified: "warning", "waiting on file": "warning", queued: "warning", slicing: "info", sliced: "info", sent: "info", cancelled: "neutral", "not run": "warning", "to buy": "warning", "to print": "warning",
   waiting: "warning",
+  configured: "success", "not configured": "neutral", failing: "danger",
 };
 
 /**

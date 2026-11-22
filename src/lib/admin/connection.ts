@@ -14,6 +14,8 @@ import type { ConnectionTest } from "./schemas";
 import { testChannel } from "@/lib/channels/connection";
 import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 import { scrub } from "@/lib/secrets/scrub";
+import { testMailMessage, testSmtp, testStripe, testVoice } from "./serviceTests";
+import { recordCheck, serviceOfTest } from "./checks";
 
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
 
@@ -63,7 +65,7 @@ async function upstreamSays(res: Response, secrets: (string | null | undefined)[
  * signed-in user can type) gives only the status and our own sentence: the remote body is never shown, so the
  * test cannot be used to read an internal service (robustness review S3).
  */
-async function httpFailure(res: Response, who: string, secrets: (string | null | undefined)[], notFoundHint = "Check the address.", echo = true): Promise<TestResult> {
+export async function httpFailure(res: Response, who: string, secrets: (string | null | undefined)[], notFoundHint = "Check the address.", echo = true): Promise<TestResult> {
   const says = echo ? await upstreamSays(res, secrets) : (await res.body?.cancel().catch(() => undefined), undefined);
   const detail = { status: res.status, ...(says ? { says } : {}) };
   if (res.status === 401 || res.status === 403) return { ok: false, message: `${who} refused the key (HTTP ${res.status}). Check the key.`, detail };
@@ -74,7 +76,7 @@ async function httpFailure(res: Response, who: string, secrets: (string | null |
 
 type Call = { res: Response } | { fail: TestResult };
 
-async function call(url: string, init: RequestInit, secrets: (string | null | undefined)[], ms = limitMs): Promise<Call> {
+export async function call(url: string, init: RequestInit, secrets: (string | null | undefined)[], ms = limitMs): Promise<Call> {
   try {
     return { res: await safeFetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(ms) }) };
   } catch (e) {
@@ -82,7 +84,7 @@ async function call(url: string, init: RequestInit, secrets: (string | null | un
   }
 }
 
-async function readJson(res: Response): Promise<unknown> {
+export async function readJson(res: Response): Promise<unknown> {
   try {
     return await res.json();
   } catch {
@@ -382,7 +384,26 @@ export async function runConnectionTest(t: ConnectionTest): Promise<TestResult> 
       result = await testChannel(t.kind);
       provider = t.kind;
       break;
+    case "stripe":
+      result = await testStripe(limitMs);
+      provider = "stripe";
+      break;
+    case "smtp":
+      result = await testSmtp(limitMs);
+      provider = "smtp";
+      break;
+    case "mail-message":
+      result = await testMailMessage(t.to, limitMs);
+      provider = "smtp";
+      field = "message";
+      break;
+    case "voice":
+      result = await testVoice(limitMs === DEFAULT_LIMIT_MS ? 30_000 : limitMs);
+      provider = "voice";
+      break;
   }
   await audit([{ action: "tested", provider, field, result: { ok: result.ok, message: result.message } }]);
+  // the Overview's "last checked": the sentence only (a voice test's audio is not kept)
+  await recordCheck(serviceOfTest(t), result);
   return result;
 }

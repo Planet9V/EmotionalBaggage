@@ -48,6 +48,8 @@ function testFor(p: ProviderView, typed: string, settings: AdminSettings | undef
   if (p.id === "perplexity") return { kind: "perplexity", ...(apiKey ? { apiKey } : {}) };
   // the channel connections test the saved values (src/lib/channels/connection.ts)
   if (p.id === "amazon-sp" || p.id === "x" || p.id === "instagram") return { kind: p.id };
+  if (p.id === "stripe" || p.id === "smtp") return { kind: p.id };
+  if (p.id === "voice-openai" || p.id === "elevenlabs") return { kind: "voice" };
   if (MODEL_PROVIDERS.has(p.id)) {
     const id = p.id as "ollama" | "lmstudio" | "openrouter";
     const saved = [settings?.reasoningModel, settings?.embeddingModel].find((m) => m?.provider === id);
@@ -57,6 +59,11 @@ function testFor(p: ProviderView, typed: string, settings: AdminSettings | undef
   }
   return null;
 }
+
+const SAVED_ONLY = new Set<ConnectionTest["kind"]>(["amazon-sp", "x", "instagram", "stripe", "smtp", "voice"]);
+
+/** The answer's audio, when a voice test hands one back (held in memory only). */
+const audioOf = (r: { detail?: Record<string, unknown> } | undefined) => (typeof r?.detail?.audio === "string" && r.detail.audio.startsWith("data:audio/") ? r.detail.audio : null);
 
 function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSettings | undefined }) {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -163,12 +170,15 @@ function ProviderCard({ p, settings }: { p: ProviderView; settings: AdminSetting
           {t
             ? t.kind === "model"
               ? `Tests the key typed above, or the saved one, at ${t.baseUrl}.`
-              : t.kind === "amazon-sp" || t.kind === "x" || t.kind === "instagram"
-                ? "Tests the saved values: save first."
+              : SAVED_ONLY.has(t.kind)
+                ? t.kind === "voice"
+                  ? "Speaks one short sentence with the saved settings (save first). The audio is played here and not kept."
+                  : "Tests the saved values: save first."
                 : "Tests the key typed above, or the saved one."
             : `There is no connection test for ${p.label} yet.`}
         </p>
         <TestOutcome result={test.data} error={test.isError ? messageOf(test.error) : ""} pending={test.isPending} />
+        {audioOf(test.data) ? <audio controls src={audioOf(test.data)!} className="w-full max-w-md" aria-label="The test sentence, as spoken" /> : null}
         <ChannelProviderNotes id={p.id} />
       </form>
     </Panel>
@@ -211,24 +221,31 @@ function Activity() {
   );
 }
 
-export function CredentialsTab() {
+/**
+ * The key cards. Every Admin section that holds keys shows its own providers through this (`only`); the All keys
+ * section shows every provider and the recent activity.
+ */
+export function CredentialsTab({ only, activity = !only, intro = true }: { only?: readonly ProviderView["id"][]; activity?: boolean; intro?: boolean } = {}) {
   const creds = useCredentials();
   const settings = useAdminSettings();
-  if (creds.isPending) return <LoadingBlocks rows={3} label="Reading the credentials" />;
+  if (creds.isPending) return <LoadingBlocks rows={only?.length ?? 3} label="Reading the credentials" />;
   if (creds.isError) return <LoadError message={messageOf(creds.error)} onRetry={() => void creds.refetch()} />;
+  const shown = only ? only.map((id) => creds.data.find((p) => p.id === id)).filter((p): p is ProviderView => !!p) : creds.data;
   return (
     <div className="space-y-4">
-      <p className="max-w-3xl text-sm text-secondary">
-        Keys are saved in this install&apos;s database. The app never shows a saved key again: at most its last four characters. A key saved here is used before any
-        environment variable.
-      </p>
-      {creds.data.length === 0 ? <EmptyState>No providers are defined.</EmptyState> : null}
-      <div className="grid gap-4 xl:grid-cols-2">
-        {creds.data.map((p) => (
+      {intro ? (
+        <p className="max-w-3xl text-sm text-secondary">
+          Keys are saved in this install&apos;s database. The app never shows a saved key again: at most its last four characters. A key saved here is used before any
+          environment variable.
+        </p>
+      ) : null}
+      {shown.length === 0 ? <EmptyState>No providers are defined.</EmptyState> : null}
+      <div className={`grid gap-4 ${shown.length > 1 ? "xl:grid-cols-2" : ""}`}>
+        {shown.map((p) => (
           <ProviderCard key={p.id} p={p} settings={settings.data} />
         ))}
       </div>
-      <Activity />
+      {activity ? <Activity /> : null}
     </div>
   );
 }

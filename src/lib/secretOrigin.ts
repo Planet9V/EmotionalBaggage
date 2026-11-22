@@ -17,7 +17,27 @@
 // row: src/lib/admin/printers.ts (resolveAccess) refuses to carry a saved secret to a new host.
 import { q } from "@/lib/db";
 import { lwaTokenUrl, igGraphBase, xApiBase } from "@/lib/channels/http";
-import { DEFAULT_BASE_URL, embeddingModel, getCredential, reasoningModel, type ModelChoice, type Provider } from "@/lib/settings";
+import { DEFAULT_BASE_URL, embeddingModel, getCredential, getSetting, reasoningModel, SETTING, type ModelChoice, type Provider } from "@/lib/settings";
+
+/** Fixed API addresses of the hosted services. Only tests change them (setServiceBaseForTests), to reach a stand-in. */
+const SERVICE_BASE = { stripe: "https://api.stripe.com", elevenlabs: "https://api.elevenlabs.io" };
+const serviceBase = { ...SERVICE_BASE };
+export function setServiceBaseForTests(name: keyof typeof SERVICE_BASE, url: string | null) {
+  serviceBase[name] = url ?? SERVICE_BASE[name];
+}
+/** Stripe's API, where its secret key is sent. */
+export const stripeApiBase = () => serviceBase.stripe;
+/** ElevenLabs' API, where its key is sent. */
+export const elevenLabsApiBase = () => serviceBase.elevenlabs;
+
+/** The binding of an SMTP password: smtp://host:port of the mail server it was saved for (not a web address). */
+export function smtpOrigin(host: string | null | undefined, port: number | null | undefined): string | null {
+  const h = host?.trim().toLowerCase();
+  return h && port ? `smtp://${h}:${port}` : null;
+}
+
+/** originOf for a web address, or the smtp:// binding as it is. */
+const targetOf = (url: string) => (/^smtp:\/\//i.test(url) ? url.toLowerCase() : originOf(url));
 
 /** Address of the Perplexity API; tests point it at the stand-in with PERPLEXITY_BASE_URL. */
 const PERPLEXITY_DEFAULT_BASE_URL = "https://api.perplexity.ai";
@@ -46,6 +66,9 @@ function builtInOrigin(provider: Provider): string | null {
   if (provider === "amazon-sp") return originOf(lwaTokenUrl());
   if (provider === "x") return originOf(xApiBase());
   if (provider === "instagram") return originOf(igGraphBase());
+  if (provider === "stripe") return originOf(stripeApiBase());
+  if (provider === "elevenlabs") return originOf(elevenLabsApiBase());
+  // voice-openai and smtp have no built-in address: the one saved in Admin (currentOrigin)
   return null;
 }
 
@@ -65,6 +88,14 @@ export async function currentOrigin(provider: Provider): Promise<string | null> 
       const o = originOf(c.baseUrl || DEFAULT_BASE_URL[provider]);
       if (o) return o;
     }
+  }
+  if (provider === "voice-openai") {
+    const v = await getSetting<{ baseUrl?: string } | null>(SETTING.voice, null);
+    return originOf(v?.baseUrl);
+  }
+  if (provider === "smtp") {
+    const m = await getSetting<{ host?: string; port?: number } | null>(SETTING.mail, null);
+    return smtpOrigin(m?.host, m?.port);
   }
   return builtInOrigin(provider);
 }
@@ -92,7 +123,7 @@ export async function secretFor(provider: Provider, field: string, url: string):
   const value = await getCredential(provider, field);
   if (!value) return { value: null, boundTo: null, refused: false };
   const boundTo = await boundOrigin(provider, field);
-  const target = originOf(url);
+  const target = targetOf(url);
   if (!boundTo || !target || boundTo !== target) return { value: null, boundTo, refused: true };
   return { value, boundTo, refused: false };
 }
@@ -104,5 +135,5 @@ export async function getSecretFor(provider: Provider, field: string, url: strin
 
 /** A sentence for the screen when a saved key was not sent because the address is on another host. */
 export function boundElsewhere(label: string, boundTo: string | null, url: string): string {
-  return `The saved ${label} key was not sent: it is only sent to ${boundTo ?? "the address it was saved for"}, and ${originOf(url) ?? url} is a different host. Type the key again for this address (saving it binds it to the new host).`;
+  return `The saved ${label} key was not sent: it is only sent to ${boundTo ?? "the address it was saved for"}, and ${targetOf(url) ?? url} is a different host. Type the key again for this address (saving it binds it to the new host).`;
 }
