@@ -110,10 +110,12 @@ describe("files", () => {
 
 describe("search, plan and the assistants", () => {
   it("treats % and _ as text, not wildcards", async () => {
-    const all = await read<{ items: unknown[] }>(await search(json("GET", undefined, `http://t/api/search?projectId=${SEEDED}&q=%25`)));
+    // "%_%_" as wildcards would match every row (the cap of 50); as text it matches none. (A search for "%" alone
+    // cannot tell the two apart once 50 rows hold a literal percent sign, as the example's files and sketch do.)
+    const all = await read<{ items: unknown[] }>(await search(json("GET", undefined, `http://t/api/search?projectId=${SEEDED}&q=${encodeURIComponent("%_%_")}`)));
     const word = await read<{ items: unknown[] }>(await search(json("GET", undefined, `http://t/api/search?projectId=${SEEDED}&q=speaker`)));
     expect(word.body.items.length).toBeGreaterThan(0);
-    expect(all.body.items.length).toBeLessThan(50);
+    expect(all.body.items).toHaveLength(0);
   });
 
   describe("plan", () => {
