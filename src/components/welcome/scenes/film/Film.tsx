@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { SceneId } from "../scenes";
+import { measure, newMeter, type PaceMeter } from "../pace";
 import { E, mix, clamp01 } from "./ease";
 import { ClockProvider, useClock, type Clock, type Shot, type Staged, type V3 } from "./kit";
 import { ButtonScene, ScaleScene } from "./setScale";
@@ -77,22 +78,20 @@ function Camera({ shots, duration, shake }: { shots: Shot[]; duration: number; s
  * Measures the film on the visitor's own device: the average frame time over each two seconds of playing, and what
  * the renderer drew (draw calls and triangles, shadow pass included) for the report.
  */
-function Meter({ playing, onPace, onInfo }: { playing: boolean; onPace: (ms: number) => void; onInfo: (calls: number, triangles: number) => void }) {
-  const acc = useRef({ frames: 0, time: 0 });
+function Meter({ scene, playing, onPace, onInfo }: { scene: SceneId; playing: boolean; onPace: (ms: number) => void; onInfo: (calls: number, triangles: number) => void }) {
+  const acc = useRef<PaceMeter>(newMeter());
+  // a new scene, or the film starting again: start a fresh measure, and leave out the hitch while shaders compile
+  useEffect(() => {
+    acc.current = newMeter();
+  }, [scene, playing]);
   useFrame(({ gl }, delta) => {
     // everything drawn since the last frame, shadow pass included (the count is reset here, not by the renderer)
     if (gl.info.render.calls) onInfo(gl.info.render.calls, gl.info.render.triangles);
     gl.info.reset();
-    // a held frame is not a measure of pace, and neither is the hitch while a scene's shaders compile
-    if (!playing || delta > 0.3) return;
-    const a = acc.current;
-    a.frames += 1;
-    a.time += delta;
-    if (a.time >= 2) {
-      onPace((a.time / a.frames) * 1000);
-      a.frames = 0;
-      a.time = 0;
-    }
+    // a held frame is not a measure of pace
+    if (!playing) return;
+    const ms = measure(acc.current, delta);
+    if (ms !== null) onPace(ms);
   });
   return null;
 }
@@ -134,7 +133,7 @@ export default function Film({ scene, duration, clock, playing, sharp, stamp, on
       <ClockProvider value={clock}>
         <Set key={scene} />
         <Camera shots={shots} duration={duration} shake={shake} />
-        <Meter playing={playing} onPace={onPace} onInfo={onInfo} />
+        <Meter scene={scene} playing={playing} onPace={onPace} onInfo={onInfo} />
         <Redraw stamp={stamp} />
       </ClockProvider>
     </Canvas>

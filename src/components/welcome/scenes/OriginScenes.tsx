@@ -14,6 +14,7 @@ import { useAnimated, useHydrated } from "../useAnimated";
 import { ORIGIN, RECORDED, SCENES, SLATE_MS, SPEAKER, cueName, lineAt, lineText, saidAt, type SceneId } from "./scenes";
 import { Still } from "./Still";
 import { Slate } from "./Slate";
+import { filmMode, paceVerdict } from "./pace";
 
 const Film = dynamic(() => import("./film/Film"), { ssr: false });
 
@@ -42,8 +43,6 @@ function hasWebGl() {
   }
 }
 const TICK = 40;
-/** The slowest the film may run, as the average time of a frame over two seconds: past this it is not a film. */
-const SLOW_MS = 40;
 /** Dispatched by other parts of the page (the toy) to cut the film to a scene. */
 const PLAY_EVENT = "c2r:origin-scene";
 
@@ -63,7 +62,7 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
   const [frozen, setFrozen] = useState(false);
   const [sound, setSound] = useState(false);
   const capable = useMemo(() => hydrated && hasWebGl(), [hydrated]);
-  const forced = useMemo(() => hydrated && new URLSearchParams(window.location.search).get("film") === "force", [hydrated]);
+  const mode = useMemo(() => (hydrated ? filmMode(window.location.search) : "normal"), [hydrated]);
 
   const scene = SCENES[cut.idx]!;
   // reduced motion gets the drawn frames, not a held picture of the film
@@ -153,9 +152,9 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
   // gives up sharpness, and if that is not enough gives up the film for the drawn frames
   const onPace = (ms: number) => {
     count(store, "pace", ms);
-    if (forced || ms <= SLOW_MS) return;
-    if (sharp) setSharp(false);
-    else setSlow(true);
+    const verdict = paceVerdict(ms, sharp, mode);
+    if (verdict === "soften") setSharp(false);
+    else if (verdict === "stills") setSlow(true);
   };
   const onInfo = (calls: number, triangles: number) => {
     count(store, "calls", calls);
@@ -199,7 +198,7 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
           {/* the stage: its own colours, whatever the page's theme */}
           <div className="dark lg:col-span-12">
             <p className="sr-only">{ORIGIN.stageLabel}</p>
-            <div ref={frame} id="origin-stage" className="sc-stage relative mx-auto aspect-[4/3] w-full max-w-[1040px] scroll-mt-6 overflow-hidden rounded-xl bg-black ring-1 ring-hairline sm:aspect-video">
+            <div ref={frame} id="origin-stage" data-film={film ? "film" : "stills"} className="sc-stage relative mx-auto aspect-[4/3] w-full max-w-[1040px] scroll-mt-6 overflow-hidden rounded-xl bg-black ring-1 ring-hairline sm:aspect-video">
               <Still scene={scene.id} n={cut.idx + 1} />
               {film ? (
                 <div className={`absolute inset-0 motion-safe:transition-opacity motion-safe:duration-500 ${ready ? "opacity-100" : "opacity-0"}`}>
