@@ -33,6 +33,17 @@ Kept by the project manager; updated at every merge. Plan: `docs/plan-2026-11-22
 - Tag: 80 x 60 x 42 mm from the documentation. Rev C in design: three directions with colourways, name and tagline as multi-material inlays in one print; the owner chooses.
 - Voice: an option set in Admin; voice-overs generated through Kokoro or OpenRouter with a choice of model and voice.
 
+## Owner rulings on Baggage Claims, 22 Nov (11:15)
+
+Standing rule: do not ask the owner about things already decided or that engineering can settle. Unknown numbers are estimated with reasonable figures and labelled as estimates. Most effort goes into the design, printing and BOM of the device; marketing and sales stay general (outlets, channels, enabling steps).
+
+- Stack settled: Next.js, React, Tailwind, PostgreSQL with pgvector, PostgreSQL for files and embeddings. No Shopify: Stripe and Amazon marketplace. Own mail server, set by the admin. Referral engine built in.
+- Device: 2 x AA; Adafruit MPU6050 breakout; an off switch; an Arduino sketch is needed; integrated print with minimal user intervention; prototype costs are added up as estimates.
+- Detection: free-fall over 0.3 s; carousel = circular, periodic motion for about 15 s or more; handle grab = tilt and quick motion, then sustained tilt and steady carry; hard impact as documented; the best way to detect a throw is to be worked out.
+- Marketing budget 5,000 USD. Voice packs and holiday packs to be evaluated, including a "New Yorker" pack. The funniest lines and new circumstances to be proposed.
+
+Running from these: WS14 device engineering and firmware (`ws14-device`), WS15 rulings, lines, packs and channels (`ws15-rulings`), WS13 character animation (`ws13-characters`).
+
 ## Held for the owner
 
 | Task | Needs |
