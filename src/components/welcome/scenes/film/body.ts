@@ -222,8 +222,10 @@ function head(role: Role, k: Kit) {
 /** A phone, in the right hand's palm: its screen faces the way the palm does. */
 function phone(k: Kit) {
   k.bind(BONE.prop, () => {
-    k.box([0.016, 0.17, 0.088], "#1d1f24", [ARM_X - 0.042, WRIST - 0.075, 0.004], { r: 0.006, seg: 1 });
-    k.box([0.004, 0.145, 0.072], "#3d4a5e", [ARM_X - 0.051, WRIST - 0.075, 0.004]);
+    // longer than the hand is wide and held up past the fingertips, so it shows round a hand seen from behind
+    k.box([0.016, 0.2, 0.1], "#1d1f24", [ARM_X - 0.042, WRIST - 0.15, 0.004], { r: 0.008, seg: 1 });
+    k.box([0.004, 0.17, 0.082], "#3d4a5e", [ARM_X - 0.051, WRIST - 0.15, 0.004]);
+    k.cyl(0.011, 0.006, "#3d4a5e", [ARM_X - 0.032, WRIST - 0.215, 0.03], { rot: [0, 0, Math.PI / 2], seg: 10 });
   });
 }
 
