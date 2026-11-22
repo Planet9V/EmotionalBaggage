@@ -20,7 +20,7 @@
 // searched exactly, without an index.
 import { plainMessage } from "@/lib/net/plain";
 import { sha256 } from "@/lib/hash";
-import { ITEM_COLS, q, ready, toItem, tx, type ItemRow } from "@/lib/db";
+import { ITEM_COLS, ownerTx, q, ready, toItem, tx, type ItemRow } from "@/lib/db";
 import { STAGES, storeKey } from "@/lib/menu";
 import { embed, getEmbedding, ModelError, type EmbeddingInfo, type NotConfigured, type ReadyEmbedding } from "./models";
 
@@ -282,7 +282,8 @@ async function ensureWidthIndex(dims: number): Promise<SearchKind> {
   const known = g.__c2rWidthIndex.get(dims);
   if (known) return known;
   try {
-    await tx(async (c) => {
+    // Only the table's owner may add an index; with two database roles that is not the request's role.
+    await ownerTx(async (c) => {
       // A server that refuses the setting still builds the index, only slower.
       await c.query("SAVEPOINT build_memory");
       try {

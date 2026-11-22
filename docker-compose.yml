@@ -77,7 +77,11 @@ services:
       - path: .env
         required: false
     environment:
+      # The owner (migrations, seeding, sign-in tables) and the request role, which owns nothing and cannot read
+      # passwords or tokens. The app creates the request role with this password on its first start if it is missing
+      # (docs/guide/admin.md, "Two database roles"). Leave DATABASE_APP_URL out to run everything as the owner.
       DATABASE_URL: postgresql://c2r:${PGPASSWORD:-c2r}@db:5432/c2r
+      DATABASE_APP_URL: postgresql://c2r_app:${PGAPPPASSWORD:-c2r_app}@db:5432/c2r
       PLANNER_URL: http://planner:8000
       SLICER_URL: ${SLICER_URL:-}
     # Published on this machine only by default. WEB_BIND=0.0.0.0 opens it to the network: change the demo / demo

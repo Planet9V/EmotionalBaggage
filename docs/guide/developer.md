@@ -37,6 +37,8 @@ DATABASE_URL=postgresql://localhost/c2r_test npm test
 
 The API tests call the route handlers directly against a real PostgreSQL, so point `DATABASE_URL` at a database you can throw away. Component tests are `*.test.tsx` under `tests/` and run in jsdom. `npm run typecheck` and `npm run lint` must also pass.
 
+The suite runs as one database role. `tests/auth2/roles.test.ts` covers the two-role arrangement (`DATABASE_APP_URL`, Admin guide "Two database roles"): it creates a throw-away request role, so the role in `DATABASE_URL` must be allowed to create roles (a superuser is, as in the compose file).
+
 **Browser smoke test (Playwright).** `tests/e2e/` opens the production build in Chromium and checks every screen. Build first, then run it:
 
 ```

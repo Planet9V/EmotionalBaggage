@@ -4,27 +4,54 @@ import { runner } from "node-pg-migrate";
 import { Pool, type PoolClient } from "pg";
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_LINKS, SEED_PROJECT } from "./seed";
 
-// One pool per process. DATABASE_URL points at PostgreSQL (pgvector image in Docker).
-const g = globalThis as unknown as { __c2rPool?: Pool; __c2rReady?: Promise<{ vector: boolean; vectorProblem: string | null }> };
+// Two connections, two database roles (docs/guide/admin.md, "Two database roles"):
+// - DATABASE_URL names the owner: the role that owns the tables. Migrations, start-up seeding, the pgvector table and
+//   the new sign-in (src/lib/auth2/) use it.
+// - DATABASE_APP_URL, when set, names a second role that owns nothing. Every request's queries (q(), tx(), pool())
+//   use it, so row-level security can apply to them later (PostgreSQL never applies it to a superuser, and not to a
+//   table's owner unless forced). The owner creates that role on start if it is missing and grants it the tables it
+//   needs, never the ones holding passwords, session tokens, reset tokens or second-factor secrets.
+// Without DATABASE_APP_URL there is one pool for everything, as before.
+const g = globalThis as unknown as {
+  __c2rPool?: Pool;
+  __c2rOwnerPool?: Pool;
+  __c2rReady?: Promise<{ vector: boolean; vectorProblem: string | null }>;
+};
 
+const DEFAULT_URL = "postgresql://c2r:c2r@localhost:5432/c2r";
+const ownerUrl = () => process.env.DATABASE_URL ?? DEFAULT_URL;
+/** The request role's address, or null when this install uses one role for everything. */
+export const appUrl = () => {
+  const u = process.env.DATABASE_APP_URL?.trim();
+  return u && u !== ownerUrl() ? u : null;
+};
+
+function newPool(connectionString: string) {
+  const p = new Pool({ connectionString, max: 10 });
+  // An idle connection reports an error when the database restarts or drops it. Without a listener
+  // Node treats that as fatal and the app stops; the pool replaces the connection by itself.
+  p.on("error", (e) => console.error(`database connection dropped: ${e.message}`));
+  return p;
+}
+
+/** The pool requests use: the request role when DATABASE_APP_URL is set, otherwise the one role. */
 export function pool() {
-  if (!g.__c2rPool) {
-    g.__c2rPool = new Pool({
-      connectionString: process.env.DATABASE_URL ?? "postgresql://c2r:c2r@localhost:5432/c2r",
-      max: 10,
-    });
-    // An idle connection reports an error when the database restarts or drops it. Without a listener
-    // Node treats that as fatal and the app stops; the pool replaces the connection by itself.
-    g.__c2rPool.on("error", (e) => console.error(`database connection dropped: ${e.message}`));
-  }
+  g.__c2rPool ??= newPool(appUrl() ?? ownerUrl());
   return g.__c2rPool;
+}
+
+/** The owner's pool: migrations, seeding, the pgvector table, the new sign-in. The same pool as pool() with one role. */
+export function ownerPool() {
+  if (!appUrl()) return pool();
+  g.__c2rOwnerPool ??= newPool(ownerUrl());
+  return g.__c2rOwnerPool;
 }
 
 const MIGRATIONS_DIR = join(process.cwd(), "migrations");
 
 /** Applies every migration in ./migrations that this database has not seen. Safe to call on every start. */
 async function migrate() {
-  const c = await pool().connect();
+  const c = await ownerPool().connect();
   try {
     await runner({
       dbClient: c,
@@ -47,7 +74,7 @@ async function migrate() {
 export type VectorState = { vector: boolean; vectorProblem: string | null };
 
 async function vectorSupport(): Promise<VectorState> {
-  const db = pool();
+  const db = ownerPool();
   try {
     await db.query("CREATE EXTENSION IF NOT EXISTS vector");
   } catch (e) {
@@ -119,16 +146,19 @@ export function ready() {
   if (!g.__c2rReady) {
     g.__c2rReady = (async () => {
       await migrate();
-      await (await import("./auth")).ensureDefaultUser(pool());
+      await (await import("./auth")).ensureDefaultUser(ownerPool());
       const vector = await vectorSupport();
       await seedOnce();
       await seedAdditions();
       await seedLinks();
-      await (await import("./story/seed")).seedStory(pool());
-      await (await import("./story/seedFiles")).seedFiles(pool());
-      await (await import("./story/seedFiles")).upgradeSeedFiles(pool());
-      await (await import("./story/seedFiles")).addSeedFiles(pool());
-      await (await import("./economics/movePricingChannels")).movePricingChannels(pool());
+      await (await import("./story/seed")).seedStory(ownerPool());
+      await (await import("./story/seedFiles")).seedFiles(ownerPool());
+      await (await import("./story/seedFiles")).upgradeSeedFiles(ownerPool());
+      await (await import("./story/seedFiles")).addSeedFiles(ownerPool());
+      await (await import("./economics/movePricingChannels")).movePricingChannels(ownerPool());
+      // Last, so the tables made above are included. Only with two roles.
+      const app = appUrl();
+      if (app) await (await import("./auth2/dbRoles")).ensureAppRole(ownerPool(), app);
       return vector;
     })().catch((e) => {
       g.__c2rReady = undefined;
@@ -143,7 +173,7 @@ export function ready() {
  * Deleting it later does not bring it back on the next start.
  */
 async function seedOnce() {
-  const db = pool();
+  const db = ownerPool();
   const done = await db.query("SELECT 1 FROM settings WHERE key = 'seed.example'");
   if (done.rowCount) return;
   const { rows } = await db.query("SELECT count(*)::int AS n FROM projects");
@@ -155,7 +185,7 @@ async function seedOnce() {
 }
 
 async function seed() {
-  const c = await pool().connect();
+  const c = await ownerPool().connect();
   try {
     await c.query("BEGIN");
     await c.query("INSERT INTO projects (id, name, one_liner) VALUES ($1,$2,$3)", [
@@ -185,7 +215,7 @@ async function seed() {
 
 /** Fills stores that were added later, only for the example concept and only when the store is empty. */
 async function seedAdditions() {
-  const db = pool();
+  const db = ownerPool();
   const has = await db.query("SELECT 1 FROM projects WHERE id=$1", [SEED_PROJECT.id]);
   if (!has.rowCount) return;
   for (const [store, items] of Object.entries(SEED_ADDITIONS)) {
@@ -213,7 +243,7 @@ async function seedAdditions() {
  * why, so the Activity page and the traceability matrix of the example are not empty.
  */
 async function seedLinks() {
-  const db = pool();
+  const db = ownerPool();
   const has = await db.query("SELECT 1 FROM projects WHERE id=$1", [SEED_PROJECT.id]);
   if (!has.rowCount) return;
   const done = await db.query("SELECT 1 FROM events WHERE project_id=$1 AND kind='seed.links'", [SEED_PROJECT.id]);
@@ -280,7 +310,20 @@ export async function q<T = Record<string, unknown>>(text: string, params: unkno
 /** Runs several statements as one unit: all of them land, or none do. */
 export async function tx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
   await ready();
-  const c = await pool().connect();
+  return inTransaction(pool(), fn);
+}
+
+/**
+ * tx() on the owner's connection, for the few things a request does that only a table's owner may: making a
+ * per-width vector index the first time a width is used (src/lib/ai/embeddings.ts). Nothing else should use it.
+ */
+export async function ownerTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
+  await ready();
+  return inTransaction(ownerPool(), fn);
+}
+
+async function inTransaction<T>(p: Pool, fn: (c: PoolClient) => Promise<T>): Promise<T> {
+  const c = await p.connect();
   try {
     await c.query("BEGIN");
     const out = await fn(c);

@@ -96,6 +96,7 @@ Every setting is optional except the database password. Keys, models, the planne
 | Setting | Used for |
 |---|---|
 | `PGPASSWORD` | The database password. It applies when the database is first created; changing it later does not change an existing database. |
+| `PGAPPPASSWORD` | The password of the request role `c2r_app` (see "Two database roles"). It applies when the app first creates the role. |
 | `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
 | `WEB_BIND` | The address the app is published on. Default `127.0.0.1`: this machine only. See "Opening it to the network". |
 | `TRUST_PROXY` | `1` only behind a reverse proxy that appends `X-Forwarded-For`. See "Behind a reverse proxy" under Signing in. |
@@ -104,6 +105,25 @@ Every setting is optional except the database password. Keys, models, the planne
 | `AMAZON_SP_REFRESH_TOKEN`, `AMAZON_SP_CLIENT_ID`, `AMAZON_SP_CLIENT_SECRET`, `X_ACCESS_TOKEN`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID` | Fallbacks for the channel credentials (Amazon orders, X, Instagram). Saving them in Admin, Credentials is the usual way. |
 
 **Keys stay with their host.** Every key saved in Admin is recorded with the address (scheme, host and port) it was saved for, and is only ever sent there. A model key is saved for the model address in use at the time (Admin, Models). If you move a model to another host, the key is removed when no model uses the old host any more, and Admin says so; type the key again for the new address. A connection test at another address does not use the saved key: type the key in the test form (it is used for that test only and not saved). A printer whose address moves to another host needs its key, password or access code typed again in the same change.
+
+## Two database roles
+
+The app can connect to PostgreSQL as two roles:
+
+- **The owner**, `DATABASE_URL`: owns the tables. Migrations, loading the example concept, the vector search table and the sign-in tables use it.
+- **The request role**, `DATABASE_APP_URL`: owns nothing. Every page and API request runs its queries as this role. It may read and write the app's tables, but not the tables that hold passwords, session tokens, reset tokens and second-factor secrets, and it may only add lines to the audit log. This is what will let row-level security keep one workspace's data from another's: PostgreSQL never applies it to a superuser or a table's owner.
+
+`docker-compose.yml` sets both. On its first start the app creates the request role with the password in `DATABASE_APP_URL` (from `PGAPPPASSWORD`, default `c2r_app`), and on every start it brings that role's grants up to date. It refuses to start if the request role is a superuser, may bypass row-level security, or owns a table, and says which.
+
+Leave `DATABASE_APP_URL` out (or set it equal to `DATABASE_URL`) and everything runs as one role, as before. Installs that set only `DATABASE_URL` keep working unchanged.
+
+If the owner may not create roles (some hosted databases), create the request role by hand, then set `DATABASE_APP_URL`:
+
+```sql
+CREATE ROLE c2r_app LOGIN PASSWORD 'a long random password';
+```
+
+The app adds the grants itself on its next start.
 
 ## Opening it to the network
 

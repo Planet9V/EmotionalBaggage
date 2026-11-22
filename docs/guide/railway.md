@@ -27,6 +27,7 @@ Railway can read a `docker-compose.yml` dropped onto a project canvas and turn i
 | Variable | Value |
 |---|---|
 | `DATABASE_URL` | `postgresql://c2r:${{pgvector.POSTGRES_PASSWORD}}@pgvector.railway.internal:5432/c2r` with the database service named `pgvector` (the reference variable keeps the password the same as the database's; this is the form that was deployed) |
+| `DATABASE_APP_URL` | optional, not yet deployed: `postgresql://c2r_app:<a long random password>@pgvector.railway.internal:5432/c2r`. Requests then run as a role that owns nothing (Admin guide, "Two database roles"); the app creates it on its first start. Without it everything runs as `c2r`, as deployed |
 | `PLANNER_URL` | `http://planner.railway.internal:8000` with the planner service named `planner` (deployed) |
 | `PORT` | `3000` (deployed; the image listens there) |
 | `SLICER_URL` | `http://<slicer service>.railway.internal:8000`, or leave it out with no slicer |
