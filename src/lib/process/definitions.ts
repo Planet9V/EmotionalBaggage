@@ -52,9 +52,11 @@ type Base = { id: string; label: string; anchor?: string; todo?: string; needs?:
 export type Check =
   /**
    * `statuses`: count only rows at one of these statuses ("approved"). `except`: leave out rows whose
-   * data field has this value (the campaigns section's one budget row, kind "plan").
+   * data field has this value (the campaigns section's one budget row, kind "plan"). `only`: count only
+   * rows whose data field has this value (the concept story's pitch); `none` is the sentence when there is none.
+   * A row with nothing in it is never counted (src/lib/process/substance.ts).
    */
-  | (Base & { kind: "min-rows"; params: { section: string; min: number; statuses?: string[]; except?: { field: string; value: string } } })
+  | (Base & { kind: "min-rows"; params: { section: string; min: number; statuses?: string[]; except?: { field: string; value: string }; only?: { field: string; value: string; none: string } } })
   /**
    * `allowEmpty`: an empty section meets the check. Without it an empty section fails: "every row is X" and "no row is
    * open" are true of zero rows, and a gate must not pass on rows that do not exist.
@@ -105,7 +107,7 @@ export const GO_DECISION = "go";
 const conceptGate: Check[] = [
   { id: "concept.one-liner", label: "The concept has a one-line description", kind: "field-set", params: { field: "oneLiner" } },
   // The story and its sources come first: everything later is written from them.
-  { id: "concept.story", label: "The concept story has its pitch", kind: "min-rows", anchor: "story-pitch", todo: "Write the pitch in the concept story, or draft the story with AI", params: { section: "concept/story", min: 1 } },
+  { id: "concept.story", label: "The concept story has its pitch", kind: "min-rows", anchor: "story-pitch", todo: "Write the pitch in the concept story, or draft the story with AI", params: { section: "concept/story", min: 1, only: { field: "part", value: "pitch", none: "The concept story has no pitch yet." } } },
   { id: "concept.files", label: "At least one file is in Files", kind: "min-rows", anchor: "add-file", todo: "Add a file: a document, note or chat the concept came from", params: { section: "concept/files", min: 1 } },
   { id: "concept.brief", label: "The brief has at least three lines", kind: "min-rows", anchor: "add-row", params: { section: "concept/brief", min: 3 } },
   { id: "concept.go", label: "The go/no-go decision is decided", kind: "decision-made", params: { key: GO_DECISION, fallback: "root" } },

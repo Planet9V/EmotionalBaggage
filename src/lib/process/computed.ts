@@ -132,9 +132,10 @@ export function contentProofCheck(rows: Item[], sections: string[], conceptName 
     if (evaluate(fields, links, conceptName ? [conceptName] : []).length) bad.push(r);
   }
   return {
-    met: bad.length === 0,
-    detail: released === 0 ? "Nothing is released yet, so nothing needs proof." : bad.length ? `${plural(bad.length, "released row")} without proof: ${bad.slice(0, 5).map((b) => b.title).join("; ")}.` : `All ${plural(released, "released row")} have proof for their claims.`,
-    action: `Link proof to ${plural(bad.length, "row")} or move ${bad.length === 1 ? "it" : "them"} back to draft`,
+    // True of zero rows is not proof: with nothing released, nothing shows the copy has proof.
+    met: released > 0 && bad.length === 0,
+    detail: released === 0 ? "Nothing is released yet, so nothing shows the copy has proof." : bad.length ? `${plural(bad.length, "released row")} without proof: ${bad.slice(0, 5).map((b) => b.title).join("; ")}.` : `All ${plural(released, "released row")} have proof for their claims.`,
+    action: released === 0 ? "Approve a piece of copy first" : `Link proof to ${plural(bad.length, "row")} or move ${bad.length === 1 ? "it" : "them"} back to draft`,
     href: bad[0] ? `/s/${bad[0].section}` : `/s/${sections[0]}`,
   };
 }

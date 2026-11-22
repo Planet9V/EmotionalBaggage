@@ -14,6 +14,7 @@
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
 import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
 import { SOURCES_STORE, STORY_STORE, storyPart } from "@/lib/story/parts";
+import { readManifest } from "@/lib/story/seedFiles";
 import { STORE } from "@/lib/domain";
 import { buildSpec, validateSpec } from "@/lib/enclosure/spec";
 import { generateCaseMaker } from "@/lib/enclosure/casemaker";
@@ -30,12 +31,16 @@ const CURRENCY = "USD"; // a new concept's currency
 const PRODUCT_TYPE = "electronics"; // the example is electronics in an enclosure
 
 /** Every row of the example as a fresh install holds it, each with its own id. */
-function seedRows(): Item[] {
+function seedRows(storedFiles: ReadonlySet<string>): Item[] {
   const out: Item[] = [];
   const add = (section: string, title: string, body: string, data: Record<string, unknown>, status: string) =>
     out.push({ id: out.length + 1, projectId: SEED_PROJECT.id, section, title, body, data, status, sort: out.length });
   // the story and the list of source documents come first, as seedStory puts them
-  for (const s of SEED_SOURCES) add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title }, "not uploaded");
+  // A fresh install stores the owner's documents in Files (seedFiles, from the seed manifest): those rows hold a
+  // file. A document the manifest does not have is only listed, and the gate does not count it as a file.
+  SEED_SOURCES.forEach((s, i) =>
+    storedFiles.has(s.title) ? add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title, fileId: i + 1 }, "stored") : add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title }, "not uploaded"),
+  );
   for (const p of SEED_STORY) add(STORY_STORE, storyPart(p.part)?.heading ?? p.part, p.body, { part: p.part }, p.status);
   for (const s of SEED_ITEMS) add(s.section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
   for (const [section, items] of Object.entries(SEED_ADDITIONS)) for (const s of items) add(section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
@@ -128,7 +133,7 @@ export type ExampleData = {
 
 /** The example's rows, as the app's own Item rows, and what the app's own rules work out from them. */
 export async function exampleData(): Promise<ExampleData> {
-  const all = seedRows();
+  const all = seedRows(new Set(((await readManifest()) ?? []).map((e) => e.title)));
   const of = (section: string) => all.filter((r) => r.section === section);
   const parts = of(STORE.parts);
   enclosure ??= generateEnclosure(parts);

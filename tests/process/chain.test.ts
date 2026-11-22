@@ -103,7 +103,7 @@ describe("the Prototype chain", () => {
     rows.push(job);
     expect(n()).toMatchObject({ label: 'Move "Enclosure base" in 3D printing to done', href: "/s/prototype/printing" });
     rows.splice(rows.indexOf(job), 1, { ...job, status: "done" });
-    const wire = row("design/wiring", "soldered", {}, "VCC to sensor");
+    const wire = row("design/wiring", "soldered", { from: "BT1", to: "U2" }, "VCC to sensor");
     rows.push(wire);
     expect(n()).toMatchObject({ label: 'Move "VCC to sensor" in Wiring and soldering to tested', href: "/s/prototype/wiring" });
     rows.splice(rows.indexOf(wire), 1, { ...wire, status: "tested" });

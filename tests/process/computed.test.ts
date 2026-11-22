@@ -34,7 +34,9 @@ describe("gates that read other features' checks", () => {
     expect(evaluateCheck(c, [], {}, {}).met).toBe(false);
     // no wire, no circuit: never "Met: no errors" on an empty schematic (U27)
     expect(evaluateCheck(c, [], {}, { erc: { ok: true, errors: 0, warnings: 0 } })).toMatchObject({ met: false, detail: "No schematic yet: there are no wires to check." });
-    const wired = [{ id: 1, projectId: "p", section: "design/wiring", title: "w", body: "", data: {}, status: "to solder", sort: 1 }];
+    const wired = [{ id: 1, projectId: "p", section: "design/wiring", title: "w", body: "", data: { from: "BT1", to: "U1" }, status: "to solder", sort: 1 }];
+    // a row in the wires that names no two ends is not a wire: still no circuit
+    expect(evaluateCheck(c, [{ ...wired[0], data: {} }], {}, { erc: { ok: true, errors: 0, warnings: 0 } })).toMatchObject({ met: false, detail: "No schematic yet: there are no wires to check." });
     expect(evaluateCheck(c, wired, {}, { erc: { ok: false, errors: 2, warnings: 1 } })).toMatchObject({ met: false, detail: "2 errors and 1 warning in the electrical checks." });
     expect(evaluateCheck(c, wired, {}, { erc: { ok: true, errors: 0, warnings: 3 } })).toMatchObject({ met: true, detail: "No errors, 3 warnings to read." });
   });
@@ -79,10 +81,11 @@ describe("gates that read other features' checks", () => {
     expect(evaluateCheck(c, rows.map((r) => (r.section === "prototype/tests" ? { ...r, status: "fail" } : r)), {}, { currency: "USD" }).met).toBe(false);
   });
 
-  it("content proof: a released ad with a superlative and no proof holds the Marketing gate; a draft does not", () => {
+  it("content proof: a released ad with a superlative and no proof holds the Marketing gate; with only a draft, nothing shows proof yet", () => {
     const c = find("electronics", "marketing", "marketing.proof");
     const ad = (status: string, proof: unknown[] = []) => row("marketing/ads", status, { channel: "meta", fields: { primaryText: "The best bag tag ever made" }, proof }, "Meta: best");
-    expect(evaluateCheck(c, [ad("draft")]).met).toBe(true);
+    // with nothing released there is nothing to show the copy has proof: not met, and it does not blame the draft
+    expect(evaluateCheck(c, [ad("draft")])).toMatchObject({ met: false, detail: "Nothing is released yet, so nothing shows the copy has proof." });
     const r = evaluateCheck(c, [ad("approved")]);
     expect(r).toMatchObject({ met: false, href: "/s/marketing/ads" });
     expect(r.detail).toContain("Meta: best");

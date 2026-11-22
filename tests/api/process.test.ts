@@ -26,10 +26,11 @@ const add = (id: string, section: string, title: string, extra: Record<string, u
 // earlier run can carry the same id: count only lines written by this run.
 let since = 0;
 
-/** The story's pitch and one source: the first two checks of the Concept gate. */
+/** The story's pitch, written, and one stored file: the first two checks of the Concept gate. */
 async function storyAndSource(id: string) {
-  expect((await add(id, "concept/story", "The pitch", { data: { part: "pitch" } })).status).toBe(201);
-  expect((await add(id, "concept/files", "Notes", { status: "not uploaded" })).status).toBe(201);
+  expect((await add(id, "concept/story", "The pitch", { body: "A toy that teaches knots.", data: { part: "pitch" } })).status).toBe(201);
+  const file = await q<{ id: string }>("INSERT INTO files (project_id, name, mime, kind, size, sha256, bytes) VALUES ($1,'notes.txt','text/plain','source',5,'x',$2) RETURNING id", [id, Buffer.from("notes")]);
+  expect((await add(id, "concept/files", "Notes", { status: "stored", data: { kind: "note", fileId: Number(file[0].id), fileName: "notes.txt" } })).status).toBe(201);
 }
 
 describe("process API", () => {

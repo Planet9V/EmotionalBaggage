@@ -138,7 +138,7 @@ describe("NextStepStrip", () => {
   it("shows the next step and why for the open concept", async () => {
     adminServer([
       on("GET", "/api/projects/toy/process", () => ({ body: base({ stage: "concept" }) })),
-      on("GET", "/api/projects/toy/items", () => ({ body: { items: [row("concept/story", "draft"), row("concept/files", "stored"), row("concept/brief", "open")] } })),
+      on("GET", "/api/projects/toy/items", () => ({ body: { items: [{ ...row("concept/story", "draft", { part: "pitch" }), body: "A toy that teaches knots." }, row("concept/files", "stored", { fileId: 1 }), row("concept/brief", "open")] } })),
     ]);
     renderWithClient(<ProcessContext projectId="toy"><NextStepStrip /></ProcessContext>);
     const strip = await screen.findByTestId("next-step-strip");

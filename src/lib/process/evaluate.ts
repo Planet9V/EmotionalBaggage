@@ -7,6 +7,7 @@ import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, 
 import { buildPassedCheck, campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
 import { plural } from "@/lib/format";
 import { isVerifiedClaim } from "@/lib/research/status";
+import { hasSubstance, leftOut } from "./substance";
 import { sectionLabel, stageLabel } from "@/lib/menuLookup";
 
 export type { GateFacts } from "./computed";
@@ -116,12 +117,40 @@ export function printsParts(rows: Item[]): boolean {
   });
 }
 
-export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): CheckResult {
+/**
+ * "Every row is X" and "no row is open" cannot be shown by a row with nothing in it: such a row is never settled,
+ * whatever its status says. It is filled in or deleted first.
+ */
+function unsettledEmpty(base: { id: string; label: string; href: string }, everyRow: Item[], section: string, label: string): CheckResult | null {
+  const empty = emptyRowsOf(everyRow, section);
+  if (!empty.length) return null;
+  const [one, many] = nounOf(section);
+  return {
+    ...base,
+    href: fixHref(section, { row: empty[0] }),
+    met: false,
+    detail: `${plural(empty.length, `empty ${one}`, `empty ${many}`)} cannot be settled: ${empty.length === 1 ? "it has" : "they have"} nothing in ${empty.length === 1 ? "it" : "them"}.`,
+    action: `Fill in or delete ${empty.length === 1 ? `the empty ${one}` : `the ${empty.length} empty ${many}`}${inSection(section, label)}`,
+  };
+}
+
+/** The rows of a section that hold nothing: listed beside a count so the user sees why they were left out. */
+function emptyRowsOf(all: Item[], path: string): Item[] {
+  return rowsOf(all, path).filter((r) => !hasSubstance(r));
+}
+const nounOf = (path: string): [string, string] => STORE_NOUN[UNLOCK_STORES.get(path) ?? path] ?? ["row", "rows"];
+
+/**
+ * One check against the concept's rows. Every check reads only rows that hold something
+ * (hasSubstance): a row with nothing in it is not evidence, whatever its status, so no check is met by one.
+ */
+export function evaluateCheck(check: Check, everyRow: Item[], concept: ConceptFields = {}, facts: GateFacts = {}): CheckResult {
+  const rows = everyRow.filter(hasSubstance);
   if (check.onlyIf === "prints-parts" && !printsParts(rows)) {
     const path = checkSection(check);
     return { id: check.id, label: check.label, href: path ? fixHref(path) : "/concepts", met: true, detail: "No part in the parts list is to be printed, so no print job is needed.", action: "Nothing to do" };
   }
-  const r = evaluateOne(check, rows, concept, facts);
+  const r = evaluateOne(check, rows, everyRow, concept, facts);
   // A saved enclosure with no file stored for printing: the step is to send it, not to set up a job from nothing (U12).
   if (!r.met && check.id === "prototype.print-jobs" && facts.enclosureFiles === 0 && rows.some((x) => x.section === "design/enclosure" && (x.data as { enclosureGenerator?: unknown })?.enclosureGenerator)) {
     return { ...r, action: "Send the enclosure to printing", href: "/s/design/enclosure#send-to-printing", detail: `${r.detail} The enclosure is saved but no file of it is stored for printing yet.` };
@@ -134,7 +163,8 @@ export function evaluateCheck(check: Check, rows: Item[], concept: ConceptFields
   return { ...r, detail, action: n.todo, href: fixHref(n.section, { anchor: n.anchor }) };
 }
 
-function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: GateFacts): CheckResult {
+/** `rows` hold something; `everyRow` also has the empty ones, read only to say they were left out or must be filled in. */
+function evaluateOne(check: Check, rows: Item[], everyRow: Item[], concept: ConceptFields, facts: GateFacts): CheckResult {
   const path = checkSection(check);
   const href = path ? fixHref(path, { anchor: check.anchor }) : "/concepts";
   const base = { id: check.id, label: check.label, href };
@@ -142,11 +172,15 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
     case "min-rows": {
       const p = check.params;
       const ex = p.except;
-      const all = rowsOf(rows, p.section).filter((r) => !ex || String(r.data?.[ex.field] ?? "") !== ex.value);
+      const only = p.only;
+      const all = rowsOf(rows, p.section).filter((r) => (!ex || String(r.data?.[ex.field] ?? "") !== ex.value) && (!only || String(r.data?.[only.field] ?? "") === only.value));
       const counted = p.statuses ? all.filter((r) => p.statuses!.includes(r.status)) : all;
       const n = counted.length;
       const met = n >= p.min;
       const label = sectionLabel(p.section);
+      // Rows that are there but hold nothing (a listed file never uploaded, a story part with no text) are named, not counted.
+      const left = met || all.length ? "" : only ? only.none : leftOut(UNLOCK_STORES.get(p.section) ?? p.section, emptyRowsOf(everyRow, p.section), nounOf(p.section));
+
       // Rows exist but none is at the status asked for: name the first one and open it.
       const waiting = p.statuses && !met ? all.find((r) => !p.statuses!.includes(r.status)) : undefined;
       if (waiting) {
@@ -161,7 +195,7 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       return {
         ...base,
         met,
-        detail: met ? `${things(p.section, n)} ${p.statuses ? listOr(p.statuses) : "recorded"}.` : `${things(p.section, n)} ${p.statuses ? listOr(p.statuses) : "recorded"}, ${p.min} needed.`,
+        detail: met ? `${things(p.section, n)} ${p.statuses ? listOr(p.statuses) : "recorded"}.` : n === 0 && left ? left : `${things(p.section, n)} ${p.statuses ? listOr(p.statuses) : "recorded"}, ${p.min} needed.`,
         action:
           n === 0 && check.todo
             ? check.todo
@@ -179,6 +213,8 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const bad = badRows.length;
       const want = listOr(check.params.statuses);
       const label = sectionLabel(check.params.section);
+      const hollow = unsettledEmpty(base, everyRow, check.params.section, label);
+      if (hollow) return hollow;
       // True of zero rows is not proof: an empty section fails unless the definition allows it.
       if (xs.length === 0 && !check.params.allowEmpty) {
         return { ...base, met: false, detail: `No ${thingsWord(check.params.section)}${inSection(check.params.section, label)} yet, so nothing shows this is ${want}.`, action: check.todo ?? `Add ${thingsWord(check.params.section)}${inSection(check.params.section, label)}` };
@@ -198,6 +234,8 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const open = all.filter((r) => set.has(r.status));
       const n = open.length;
       const label = sectionLabel(check.params.section);
+      const hollow = unsettledEmpty(base, everyRow, check.params.section, label);
+      if (hollow) return hollow;
       if (all.length === 0 && !check.params.allowEmpty) {
         return { ...base, met: false, detail: `No ${thingsWord(check.params.section)}${inSection(check.params.section, label)} yet, so nothing shows none is ${listOr(statuses)}.`, action: check.todo ?? `Add ${thingsWord(check.params.section)}${inSection(check.params.section, label)}` };
       }

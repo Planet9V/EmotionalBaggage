@@ -15,6 +15,11 @@ const decision = (key: string, chosen = "", unlocks: string[] = [], title = `Dec
   row("concept/decisions", chosen ? "decided" : "open", { key, chosen, unlocks, options: [{ id: "yes", label: "Yes", outcome: "" }, { id: "no", label: "No", outcome: "" }] }, title);
 
 const check = <C extends Check>(c: C) => c;
+/** The story's pitch, written, and a file that is stored: what the first two Concept checks count. */
+const pitch = (): Item => ({ ...row("concept/story", "draft", { part: "pitch" }, "The pitch"), body: "A toy that teaches knots." });
+const file = (): Item => row("concept/files", "stored", { kind: "note", fileId: 1, fileName: "notes.txt" }, "Notes");
+/** A wire names both its ends. */
+const wire = (status: string): Item => row("design/wiring", status, { from: "BT1", fromPin: "+", to: "U1", toPin: "VCC" }, "Power");
 
 describe("check kinds", () => {
   it("min-rows counts the rows of the section's store and says how many are missing", () => {
@@ -102,7 +107,7 @@ describe("check kinds", () => {
 describe("evaluateGate", () => {
   it("is met only when every check is, and keeps the checks in order", () => {
     const gate = gateOf(processFor("electronics"), "concept");
-    const rows = [row("concept/story", "draft"), row("concept/files", "stored"), row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open"), decision("go", "yes")];
+    const rows = [pitch(), file(), row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open"), decision("go", "yes")];
     const r = evaluateGate(gate, rows, { oneLiner: "x" });
     expect(r.met).toBe(true);
     expect(r.checks.map((c) => c.id)).toEqual(gate.checks.map((c) => c.id));
@@ -189,8 +194,12 @@ describe("nextStep", () => {
     const def = processFor(t);
     // The story and its sources come first (they are written before anything else)
     expect(nextStep(def, empty, [], { oneLiner: "x" })).toMatchObject({ label: "Write the pitch in the concept story, or draft the story with AI", href: "/story#story-pitch" });
-    expect(nextStep(def, empty, [row("concept/story", "draft")], { oneLiner: "x" })).toMatchObject({ label: "Add a file: a document, note or chat the concept came from", href: "/files#add-file" });
-    const rows = [row("concept/story", "draft"), row("concept/files", "stored"), row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open")];
+    // a story row that is not the pitch, or a pitch with no words, is still no pitch
+    expect(nextStep(def, empty, [row("concept/story", "draft", { part: "origin" })], { oneLiner: "x" }).href).toBe("/story#story-pitch");
+    expect(nextStep(def, empty, [pitch()], { oneLiner: "x" })).toMatchObject({ label: "Add a file: a document, note or chat the concept came from", href: "/files#add-file" });
+    // a document that is listed but not uploaded is not a file
+    expect(nextStep(def, empty, [pitch(), row("concept/files", "not uploaded", { kind: "document", fileName: "PRD.pdf" }, "PRD.pdf")], { oneLiner: "x" }).href).toBe("/files#add-file");
+    const rows = [pitch(), file(), row("concept/brief", "open"), row("concept/brief", "open"), row("concept/brief", "open")];
     expect(nextStep(def, empty, rows, { oneLiner: "x" })).toMatchObject({ label: "Add the go/no-go question as the first decision", href: "/s/concept/decisions" });
     expect(nextStep(def, empty, [...rows, decision("go", "yes")], { oneLiner: "x" })).toEqual({
       label: "Advance to Research",
@@ -203,10 +212,10 @@ describe("nextStep", () => {
     const state: ProcessState = { stage: "prototype", gates: [] };
     // electronics: parts in hand, then the enclosure printed, then the build sheet
     const printedShell = () => row("design/bom", "in hand", { source: "Own printer" });
-    expect(nextStep(processFor("electronics"), state, [printedShell(), row("design/wiring", "to solder")]).href).toBe("/s/prototype/printing#new-print-job");
-    expect(nextStep(processFor("electronics"), state, [printedShell(), row("prototype/printing", "done"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    expect(nextStep(processFor("electronics"), state, [printedShell(), wire("to solder")]).href).toBe("/s/prototype/printing#new-print-job");
+    expect(nextStep(processFor("electronics"), state, [printedShell(), row("prototype/printing", "done"), wire("to solder")]).href).toBe("/s/prototype/wiring");
     // with nothing to print, the print checks do not apply (U2)
-    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), row("design/wiring", "to solder")]).href).toBe("/s/prototype/wiring");
+    expect(nextStep(processFor("electronics"), state, [row("design/bom", "in hand"), wire("to solder")]).href).toBe("/s/prototype/wiring");
     // a physical product with a printed part goes to printing too (U2)
     expect(nextStep(processFor("physical"), state, [row("design/bom", "in hand", { source: "Own printer" }), row("prototype/assembly", "open")]).href).toBe("/s/prototype/printing#new-print-job");
     // with no parts at all, "every bought part is in hand" is not met: the first step is the parts (process review 5)
