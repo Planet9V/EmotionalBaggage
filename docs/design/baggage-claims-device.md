@@ -434,7 +434,7 @@ At a hundred units the electronics fall to $32.66 a unit and the total to $62.69
 
 ## 6. Mechanical inputs for the enclosure
 
-The machine-readable copy is `docs/design/baggage-claims-device-envelope.json`. Frame: the enclosure agent's Rev C frame, 60 wide (x) by 80 high (y, the loop end up) by 42 deep (z, front face at 0).
+The machine-readable copy is `docs/design/baggage-claims-device-envelope.json`. Frame: the enclosure agent's Rev C frame, 60 wide (x) by 80 high (y, the loop end up) by 42 deep (z, front face at 0). The app's Physical layout uses its own frame (x 80 along the tag's height, y 42 deep with the lid and grille at y = 42, z 60 across); the parts' boxes in the batch are this packing turned into that frame, so the Enclosure page builds around them with no error: the speaker against the grille side, the holder and the board strip in the back layer, the regulator, MOSFET and capacitor below the speaker, and three openings (grille, switch, button).
 
 The tag designer's Rev C (`/home/claude/work/tag/revC/DESIGN.md`, read 22 Nov at 13:10) has since been redrawn for two cells. Where it and this note disagree is in section 6.6; the largest is the speaker's depth.
 
