@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import type { Item } from "@/lib/types";
 import { toPart } from "@/lib/domain";
 import { PartCard } from "@/components/sourcing/PartCard";
+import { OfferForm } from "@/components/sourcing/OfferForm";
 import { ShoppingList } from "@/components/sourcing/ShoppingList";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { freshClient } from "../client/mockServer";
@@ -29,6 +30,13 @@ const PAGE = "https://www.mouser.com/ProductDetail/ABC-1/";
 const offer = { id: "o1", supplier: "Mouser", price: 12, packSize: 100, checkedAt: "2026-11-21", source: "entered" };
 const item = (sourcing: unknown, status = "to buy", extra: Record<string, unknown> = {}): Item => ({ id: 9, projectId: "p", section: "design/bom", title: "Buck converter", body: "", status, sort: 1, data: { ref: "U1", qty: 4, ...(sourcing ? { sourcing } : {}), ...extra } });
 const draft = { id: "d1", kind: "offer", createdAt: "2026-11-21", researchId: 3, model: "stub/model", citation: PAGE, offer: { id: "x", supplier: "Mouser", price: 1.25, packSize: 10, checkedAt: "2026-11-21", source: "research", citation: PAGE } };
+
+/** The message shown beside a control: the element its aria-describedby names, or null when it names none. */
+function beside(form: HTMLElement, label: string): string | null {
+  const ids = (within(form).getByLabelText(label).getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean);
+  const texts = ids.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e && e.getAttribute("role") === "alert").map((e) => e.textContent ?? "");
+  return texts.length ? texts.join(" ") : null;
+}
 
 function open(it: Item, onSave = vi.fn(async () => undefined), onResearch = vi.fn()) {
   if (!vi.isMockFunction(globalThis.fetch)) draftsApi();
@@ -99,16 +107,48 @@ describe("a part's sourcing", () => {
     const { onSave } = open(item(undefined));
     const form = screen.getByRole("form", { name: /Add an offer for Buck converter/ });
     fireEvent.click(within(form).getByRole("button", { name: "Add offer" }));
-    expect((await within(form).findByRole("alert")).textContent).toMatch(/supplier/);
+    await waitFor(() => expect(beside(form, "Supplier")).toBe("name the supplier"));
     expect(onSave).not.toHaveBeenCalled();
     fireEvent.change(within(form).getByLabelText("Supplier"), { target: { value: "LCSC" } });
     fireEvent.change(within(form).getByLabelText("Price of one pack"), { target: { value: "-3" } });
     fireEvent.click(within(form).getByRole("button", { name: "Add offer" }));
-    expect((await within(form).findByRole("alert")).textContent).toMatch(/negative/);
+    await waitFor(() => expect(beside(form, "Price of one pack")).toBe("cannot be negative"));
+    expect(beside(form, "Supplier")).toBeNull();
     fireEvent.change(within(form).getByLabelText("Price of one pack"), { target: { value: "0.8" } });
     fireEvent.click(within(form).getByRole("button", { name: "Add offer" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect((onSave.mock.calls[0] as unknown as [{ data: { sourcing: { offers: { supplier: string; price: number; source: string }[] } } }])[0].data.sourcing.offers[0]).toMatchObject({ supplier: "LCSC", price: 0.8, source: "entered" });
+  });
+
+  it("shows every problem of an offer at once, each beside its field, with no field path in front", async () => {
+    const { onSave } = open(item(undefined));
+    const form = screen.getByRole("form", { name: /Add an offer for Buck converter/ });
+    fireEvent.change(within(form).getByLabelText("Price of one pack"), { target: { value: "-3" } });
+    fireEvent.change(within(form).getByLabelText("Pieces in the pack"), { target: { value: "0" } });
+    fireEvent.change(within(form).getByLabelText("Lead time, days"), { target: { value: "-1" } });
+    fireEvent.change(within(form).getByLabelText("Product page"), { target: { value: "ftp://x" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Add offer" }));
+    await waitFor(() => expect(beside(form, "Supplier")).toBe("name the supplier"));
+    expect(beside(form, "Price of one pack")).toBe("cannot be negative");
+    expect(beside(form, "Pieces in the pack")).toBe("must be a whole number, 1 or more");
+    expect(beside(form, "Lead time, days")).toBe("cannot be negative");
+    expect(beside(form, "Product page")).toBe("must be an http or https address");
+    expect(within(form).getByLabelText("Supplier").getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(within(form).getByLabelText("Supplier"));
+    expect(form.textContent).not.toMatch(/\b(supplier|price|packSize|leadTimeDays|url): /);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("keeps what was typed and says why, in the form, when adding an offer is refused", async () => {
+    const onAdd = vi.fn(async () => { throw new Error("The change was not saved."); });
+    render(<OfferForm label="Buck converter" onAdd={onAdd} />);
+    const form = screen.getByRole("form", { name: /Add an offer for Buck converter/ });
+    fireEvent.change(within(form).getByLabelText("Supplier"), { target: { value: "LCSC" } });
+    fireEvent.change(within(form).getByLabelText("Price of one pack"), { target: { value: "0.8" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Add offer" }));
+    expect((await within(form).findByRole("alert")).textContent).toBe("The change was not saved.");
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect((within(form).getByLabelText("Supplier") as HTMLInputElement).value).toBe("LCSC");
   });
 
   it("saves an order status and moves the part's own status with it", async () => {
@@ -123,6 +163,24 @@ describe("a part's sourcing", () => {
     const c = onSave.mock.calls[0] as unknown as [{ status: string; data: { sourcing: { order: { status: string; qtyReceived: number } } } }];
     expect(c[0].status).toBe("in hand");
     expect(c[0].data.sourcing.order).toMatchObject({ status: "received", qtyReceived: 3 });
+  });
+
+  it("shows a problem in the order status beside its field, with no field path in front, and saves nothing", async () => {
+    const { onSave } = open(item({ offers: [offer], chosen: "o1", alternates: [], drafts: [] }));
+    const form = screen.getByRole("form", { name: /Order status of Buck converter/ });
+    fireEvent.change(within(form).getByLabelText("Quantity ordered"), { target: { value: "-4" } });
+    fireEvent.change(within(form).getByLabelText("Quantity received"), { target: { value: "-1" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Save order status" }));
+    await waitFor(() => expect(beside(form, "Quantity ordered")).toBe("cannot be negative"));
+    expect(beside(form, "Quantity received")).toBe("cannot be negative");
+    expect(within(form).getByLabelText("Quantity ordered").getAttribute("aria-invalid")).toBe("true");
+    expect(form.textContent).not.toMatch(/qtyOrdered|qtyReceived/);
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.change(within(form).getByLabelText("Quantity ordered"), { target: { value: "4" } });
+    fireEvent.change(within(form).getByLabelText("Quantity received"), { target: { value: "" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Save order status" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(beside(form, "Quantity ordered")).toBeNull();
   });
 
   it("asks before research, through the parent, for both kinds", () => {

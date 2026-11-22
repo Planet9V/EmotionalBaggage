@@ -29,8 +29,8 @@ Where a control is not a plain input (the shared `WhyField`, a picker), it is wi
 | | Before | After |
 |---|---:|---:|
 | Forms (`<form>` elements) | 55 in 51 files | 55 |
-| Conforming | 15 | 38 |
-| Hand-wired | 40 | 17 |
+| Conforming | 15 | 40 |
+| Hand-wired | 40 | 15 |
 
 The earlier audit's "51 forms" counted files.
 
@@ -66,7 +66,7 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | items/AddItemDialog.tsx | add a row | M | converted, batch 2 |
 | admin/SlicerSection.tsx | slicer address | S | converted, batch 2 |
 | concepts/DeleteConceptDialog.tsx | delete concept | S | converted, batch 2 (own mono label) |
-| sourcing/OfferForm.tsx | add an offer | M | hand-wired: decision needed (1) |
+| sourcing/OfferForm.tsx | add an offer | M | converted, ws17 (path prefix dropped, wording kept) |
 | layout/EnvelopePanel.tsx | create enclosure | S | hand-wired: decision needed (2) |
 | production/PriceBreaksDialog.tsx | price breaks | M | hand-wired: list of rows |
 | views/SocialView.tsx | compose post | M | converted, batch 3 |
@@ -88,7 +88,7 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | items/ItemDrawer.tsx | edit a row | L | hand-wired: autosave per field |
 | schematic/WireDialog.tsx | wire | L | hand-wired |
 | decisions/DecisionEditor.tsx | decision with options | L | hand-wired: list of options |
-| sourcing/PartCard.tsx | order status | M | hand-wired: decision needed (4) |
+| sourcing/PartCard.tsx | order status | M | converted, ws17 (path prefix dropped, wording kept) |
 | admin/CredentialsTab.tsx | provider credentials | M | hand-wired: fields come from the provider |
 | admin/ModelsTab.tsx | model choice | M | hand-wired: left (5) |
 | admin/ModelsTab.tsx | planner address | S | converted, batch 3 |
@@ -104,10 +104,8 @@ conversion needs `useFieldArray` or a per-field save and is a larger change than
 
 ## Needs a decision
 
-1. **OfferForm** shows one line for the first problem, written as `<field path>: <message>` from
-   `offerSchema` (for example `price: ...`). Moving to the shared pattern puts each message beside
-   its field without the path prefix, and can show several at once. The wording of those messages
-   then needs a pass, because some of `offerSchema`'s messages assume the prefix.
+1. ~~**OfferForm**~~ Done (ws17): each message of `offerSchema` now shows beside its field, without the
+   `<field path>:` prefix, and every problem shows at once. The wording of the messages is unchanged.
 2. **EnvelopePanel** uses `NumField`, which commits a number on blur and keeps its own text. The
    form has no messages: Create stays disabled until the three sizes and the basis are given.
    Moving it to `react-hook-form` means either a registered `NumField` or a different input that
@@ -117,10 +115,7 @@ conversion needs `useFieldArray` or a per-field save and is a larger change than
    keep their values in `react-hook-form`, but use their own label markup. Moving them onto
    `Field` changes how the labels look; that is a design decision, not a refactor.
 
-4. **PartCard's order status form** shows one line for the first problem, written as
-   `<field path>: <message>` from `orderSchema` (for example `qtyOrdered: ...`), the same shape as
-   OfferForm (1). Moving it to the shared pattern drops the path prefix and can show several
-   messages at once, so the schema's wording needs the same pass first.
+4. ~~**PartCard's order status form**~~ Done (ws17): the same change as OfferForm (1), for `orderSchema`.
 5. **ModelsTab's model choice** already uses `Field`, `describe()` and per-field messages, but its
    checks live in `check()`, which Test and Save share, and a provider choice or a preset rewrites
    several fields at once. Putting it on `react-hook-form` means changing how Test validates and

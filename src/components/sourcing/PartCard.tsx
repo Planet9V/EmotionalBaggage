@@ -1,7 +1,10 @@
 "use client";
 
 import { RowActions } from "@/components/drafts/RowActions";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { ExternalLink, Search, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +18,7 @@ import type { Kind } from "@/lib/sourcing/research";
 import { OfferForm } from "./OfferForm";
 import { ResearchDrafts } from "./ResearchDrafts";
 import { ErrorLine } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Card } from "@/components/ui/Card";
 
@@ -166,35 +169,47 @@ export function PartCard({ part, currency, onSave, onResearch }: {
   );
 }
 
+/** What the user typed, as text; blank quantities and notes are left out. The order's own schema checks the rest. */
+const clean = (x: string) => (x.trim() === "" ? undefined : x.trim());
+const typedOrder = z
+  .object({ status: z.string(), qtyOrdered: z.string(), qtyReceived: z.string(), orderedOn: z.string(), shippedOn: z.string(), receivedOn: z.string(), note: z.string() })
+  .transform((v): unknown => ({ status: v.status, qtyOrdered: clean(v.qtyOrdered), qtyReceived: clean(v.qtyReceived), orderedOn: v.orderedOn, shippedOn: v.shippedOn, receivedOn: v.receivedOn, note: clean(v.note) }))
+  .pipe(orderSchema);
+type TypedOrder = z.input<typeof typedOrder>;
+
 function OrderForm({ part, s, onSave }: { part: Part; s: Sourcing; onSave: (o: NonNullable<Sourcing["order"]>) => Promise<unknown> }) {
   const o = s.order;
-  const [v, setV] = useState({ status: o?.status ?? "to order", qtyOrdered: String(o?.qtyOrdered ?? ""), qtyReceived: String(o?.qtyReceived ?? ""), orderedOn: o?.orderedOn ?? "", shippedOn: o?.shippedOn ?? "", receivedOn: o?.receivedOn ?? "", note: o?.note ?? "" });
-  const [err, setErr] = useState("");
-  const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV((x) => ({ ...x, [k]: e.target.value }));
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = (x: string) => (x.trim() === "" ? undefined : x.trim());
-    const r = orderSchema.safeParse({ status: v.status, qtyOrdered: clean(v.qtyOrdered), qtyReceived: clean(v.qtyReceived), orderedOn: v.orderedOn, shippedOn: v.shippedOn, receivedOn: v.receivedOn, note: clean(v.note) });
-    if (!r.success) return setErr(`${r.error.issues[0].path.join(" ")}: ${r.error.issues[0].message}`);
-    setErr("");
-    try { await onSave(r.data); } catch (x) { setErr((x as Error).message); }
-  };
-  const short = v.status === "received" && v.qtyOrdered && v.qtyReceived && Number(v.qtyReceived) < Number(v.qtyOrdered);
+  const uid = useId();
+  const { register, handleSubmit, setError, control, formState: { errors, isSubmitting } } = useForm<TypedOrder, unknown, NonNullable<Sourcing["order"]>>({
+    resolver: zodResolver(typedOrder),
+    defaultValues: { status: o?.status ?? "to order", qtyOrdered: String(o?.qtyOrdered ?? ""), qtyReceived: String(o?.qtyReceived ?? ""), orderedOn: o?.orderedOn ?? "", shippedOn: o?.shippedOn ?? "", receivedOn: o?.receivedOn ?? "", note: o?.note ?? "" },
+  });
+  const id = (k: string) => `${uid}-${k}`;
+  const field = (k: keyof TypedOrder) => ({ id: id(k), ...describe(id(k), { error: errors[k]?.message }), ...register(k) });
+  const submit = handleSubmit(async (order) => {
+    try {
+      await onSave(order);
+    } catch (x) {
+      setError("root", { message: (x as Error).message });
+    }
+  });
+  const [status, qtyOrdered, qtyReceived] = useWatch({ control, name: ["status", "qtyOrdered", "qtyReceived"] });
+  const short = status === "received" && qtyOrdered && qtyReceived && Number(qtyReceived) < Number(qtyOrdered);
   return (
-    <form onSubmit={submit} className="space-y-2" aria-label={`Order status of ${part.item.title}`}>
+    <form onSubmit={submit} noValidate className="space-y-2" aria-label={`Order status of ${part.item.title}`}>
       <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">Order, tracked by you</h3>
       <p className="text-xs text-muted">You place the order on the supplier&apos;s site. Record here what happened.</p>
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Field label="Status"><NativeSelect value={v.status} onChange={set("status")}>{ORDER_STATUSES.map((x) => <option key={x}>{x}</option>)}</NativeSelect></Field>
-        <Field label="Quantity ordered"><Input inputMode="numeric" value={v.qtyOrdered} onChange={set("qtyOrdered")} /></Field>
-        <Field label="Quantity received"><Input inputMode="numeric" value={v.qtyReceived} onChange={set("qtyReceived")} /></Field>
-        <Field label="Ordered on"><Input type="date" value={v.orderedOn} onChange={set("orderedOn")} /></Field>
-        <Field label="Shipped on"><Input type="date" value={v.shippedOn} onChange={set("shippedOn")} /></Field>
-        <Field label="Received on"><Input type="date" value={v.receivedOn} onChange={set("receivedOn")} /></Field>
+        <Field id={id("status")} label="Status" error={errors.status?.message}><NativeSelect {...field("status")}>{ORDER_STATUSES.map((x) => <option key={x}>{x}</option>)}</NativeSelect></Field>
+        <Field id={id("qtyOrdered")} label="Quantity ordered" error={errors.qtyOrdered?.message}><Input inputMode="numeric" {...field("qtyOrdered")} /></Field>
+        <Field id={id("qtyReceived")} label="Quantity received" error={errors.qtyReceived?.message}><Input inputMode="numeric" {...field("qtyReceived")} /></Field>
+        <Field id={id("orderedOn")} label="Ordered on" error={errors.orderedOn?.message}><Input type="date" {...field("orderedOn")} /></Field>
+        <Field id={id("shippedOn")} label="Shipped on" error={errors.shippedOn?.message}><Input type="date" {...field("shippedOn")} /></Field>
+        <Field id={id("receivedOn")} label="Received on" error={errors.receivedOn?.message}><Input type="date" {...field("receivedOn")} /></Field>
       </div>
-      <Field label="Note"><Input value={v.note} onChange={set("note")} maxLength={500} /></Field>
+      <Field id={id("note")} label="Note" error={errors.note?.message}><Input maxLength={500} {...field("note")} /></Field>
       {short ? <p className="text-xs text-warning">Fewer arrived than were ordered. Set the status to short to keep the rest on the list.</p> : null}
-      <div className="flex items-center gap-2"><Button type="submit" size="sm">Save order status</Button>{err ? <ErrorLine>{err}</ErrorLine> : null}</div>
+      <div className="flex items-center gap-2"><Button type="submit" size="sm" disabled={isSubmitting}>Save order status</Button>{errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}</div>
     </form>
   );
 }

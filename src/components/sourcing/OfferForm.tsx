@@ -1,42 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useId } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { newId, offerSchema, type Offer } from "@/lib/sourcing/schemas";
 import { ErrorLine } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { todayUtc } from "@/lib/format";
+
+/** What the user typed, as text. The offer's own schema checks it, so the form and the stored offer can never disagree. */
+const typed = z
+  .object({ supplier: z.string(), partNumber: z.string(), url: z.string(), price: z.string(), packSize: z.string(), stock: z.string(), leadTimeDays: z.string(), checkedAt: z.string() })
+  .transform((v): unknown => ({
+    id: newId("o"),
+    supplier: v.supplier.trim(),
+    partNumber: v.partNumber.trim(),
+    url: v.url.trim(),
+    price: v.price,
+    packSize: v.packSize || "1",
+    stock: v.stock.trim(),
+    leadTimeDays: v.leadTimeDays === "" ? undefined : v.leadTimeDays,
+    checkedAt: v.checkedAt,
+    source: "entered" as const,
+  }))
+  .pipe(offerSchema);
+
+const blank = () => ({ supplier: "", partNumber: "", url: "", price: "", packSize: "1", stock: "", leadTimeDays: "", checkedAt: todayUtc() });
 
 /** Adds one offer the user typed. A price the user typed is theirs; one from research arrives as a draft instead. */
 export function OfferForm({ label, onAdd }: { label: string; onAdd: (o: Offer) => Promise<unknown> }) {
-  const [v, setV] = useState({ supplier: "", partNumber: "", url: "", price: "", packSize: "1", stock: "", leadTimeDays: "", checkedAt: todayUtc() });
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV((x) => ({ ...x, [k]: e.target.value }));
+  const uid = useId();
+  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm<z.input<typeof typed>, unknown, Offer>({ resolver: zodResolver(typed), defaultValues: blank() });
+  const id = (k: string) => `${uid}-${k}`;
+  const field = (k: keyof z.input<typeof typed>) => ({ id: id(k), ...describe(id(k), { error: errors[k]?.message }), ...register(k) });
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const raw = { id: newId("o"), supplier: v.supplier.trim(), partNumber: v.partNumber.trim(), url: v.url.trim(), price: v.price, packSize: v.packSize || "1", stock: v.stock.trim(), leadTimeDays: v.leadTimeDays === "" ? undefined : v.leadTimeDays, checkedAt: v.checkedAt, source: "entered" as const };
-    const r = offerSchema.safeParse(raw);
-    if (!r.success) return setErr(`${r.error.issues[0].path.join(" ") || "offer"}: ${r.error.issues[0].message}`);
-    setErr(""); setBusy(true);
-    try { await onAdd(r.data); setV((x) => ({ ...x, supplier: "", partNumber: "", url: "", price: "", packSize: "1", stock: "", leadTimeDays: "" })); } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
-  };
+  const submit = handleSubmit(async (offer) => {
+    try {
+      await onAdd(offer);
+      reset({ ...blank(), checkedAt: offer.checkedAt });
+    } catch (x) {
+      setError("root", { message: (x as Error).message });
+    }
+  });
 
   return (
-    <form onSubmit={submit} className="grid gap-2 rounded-lg border border-hairline bg-subtle p-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={`Add an offer for ${label}`}>
-      <Field label="Supplier"><Input value={v.supplier} onChange={set("supplier")} maxLength={120} /></Field>
-      <Field label="Price of one pack"><Input inputMode="decimal" value={v.price} onChange={set("price")} /></Field>
-      <Field label="Pieces in the pack"><Input inputMode="numeric" value={v.packSize} onChange={set("packSize")} /></Field>
-      <Field label="Lead time, days"><Input inputMode="numeric" value={v.leadTimeDays} onChange={set("leadTimeDays")} /></Field>
-      <Field label="Part number"><Input value={v.partNumber} onChange={set("partNumber")} maxLength={120} /></Field>
-      <Field label="Product page"><Input value={v.url} onChange={set("url")} placeholder="https://" maxLength={600} /></Field>
-      <Field label="Stock note"><Input value={v.stock} onChange={set("stock")} maxLength={200} /></Field>
-      <Field label="Price checked on"><Input type="date" value={v.checkedAt} onChange={set("checkedAt")} /></Field>
+    <form onSubmit={submit} noValidate className="grid gap-2 rounded-lg border border-hairline bg-subtle p-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={`Add an offer for ${label}`}>
+      <Field id={id("supplier")} label="Supplier" error={errors.supplier?.message}><Input maxLength={120} {...field("supplier")} /></Field>
+      <Field id={id("price")} label="Price of one pack" error={errors.price?.message}><Input inputMode="decimal" {...field("price")} /></Field>
+      <Field id={id("packSize")} label="Pieces in the pack" error={errors.packSize?.message}><Input inputMode="numeric" {...field("packSize")} /></Field>
+      <Field id={id("leadTimeDays")} label="Lead time, days" error={errors.leadTimeDays?.message}><Input inputMode="numeric" {...field("leadTimeDays")} /></Field>
+      <Field id={id("partNumber")} label="Part number" error={errors.partNumber?.message}><Input maxLength={120} {...field("partNumber")} /></Field>
+      <Field id={id("url")} label="Product page" error={errors.url?.message}><Input placeholder="https://" maxLength={600} {...field("url")} /></Field>
+      <Field id={id("stock")} label="Stock note" error={errors.stock?.message}><Input maxLength={200} {...field("stock")} /></Field>
+      <Field id={id("checkedAt")} label="Price checked on" error={errors.checkedAt?.message}><Input type="date" {...field("checkedAt")} /></Field>
       <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-4">
-        <Button type="submit" size="sm" disabled={busy}>{busy ? "Saving" : "Add offer"}</Button>
-        {err ? <ErrorLine>{err}</ErrorLine> : null}
+        <Button type="submit" size="sm" disabled={isSubmitting}>{isSubmitting ? "Saving" : "Add offer"}</Button>
+        {errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}
       </div>
     </form>
   );
