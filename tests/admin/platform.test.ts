@@ -26,12 +26,22 @@ import { setServiceBaseForTests } from "@/lib/secretOrigin";
 import { setConnectionTestLimit } from "@/lib/admin/connection";
 import { DELETE as credDelete } from "@/app/api/admin/credentials/[provider]/[field]/route";
 import { GET as accessGet } from "@/app/api/admin/access/route";
-import { DEMO_REFUSED } from "@/lib/admin/guard";
-import { anonymous, asAdministrator, json, read } from "../api/helpers";
+import { PLATFORM_ADMIN_NOTICE } from "@/lib/admin/guard";
+import { POST as passwordPost } from "@/app/api/auth/password/route";
+import { readAudit } from "@/lib/admin/audit";
+import { anonymous, json, read } from "../api/helpers";
 
-// Most of this file changes settings, as the administrator; "the public demo account" below puts the default
-// password back for its own tests.
-asAdministrator();
+// The platform administrator exists only in the new sign-in (src/lib/admin/platformAdminHook.ts, false until accounts
+// slice 2). Here the hook is stood in: most of the file runs as the platform administrator; the blocks about anyone
+// else set hook.admin to false, which is how every account of the old sign-in is treated.
+const hook = vi.hoisted(() => ({ admin: true }));
+vi.mock("@/lib/admin/platformAdminHook", () => ({ platformAdminFromAuth2: async () => hook.admin }));
+
+/** publicLevels() is kept for 60 seconds (review F6): move the clock past that to read what is saved now. */
+async function freshLevels() {
+  vi.setSystemTime(Date.now() + 61_000);
+  return publicLevels();
+}
 
 // The welcome page asks Next.js for a request (connection()); a test has no request scope, so only that call is stubbed.
 vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), connection: async () => undefined }));
@@ -53,9 +63,11 @@ beforeAll(async () => {
   savedSettings = await q("SELECT key, value FROM settings");
   savedCreds = await q("SELECT provider, field, value, bound_origin FROM credentials");
   setConnectionTestLimit(3000);
+  vi.useFakeTimers({ toFake: ["Date"] });
 });
 
 afterAll(async () => {
+  vi.useRealTimers();
   setConnectionTestLimit(null);
   setServiceBaseForTests("stripe", null);
   setServiceBaseForTests("elevenlabs", null);
@@ -65,7 +77,10 @@ afterAll(async () => {
   await pool().end();
 });
 
-beforeEach(emptyStores);
+beforeEach(async () => {
+  hook.admin = true;
+  await emptyStores();
+});
 
 const get = (h: (r: Request) => Promise<Response>, path: string) => h(json("GET", undefined, `http://test.local${path}`));
 const call = <C,>(h: (r: Request, c: C) => Promise<Response>, method: string, path: string, body?: unknown, ctx?: C) => h(json(method, body, `http://test.local${path}`), ctx as C);
@@ -94,7 +109,7 @@ describe("with empty settings and credentials tables, nothing is a blocker", () 
   });
 
   it("the welcome page's levels are the built-in four, prices hidden, exactly as content.ts had them", async () => {
-    const l = await publicLevels();
+    const l = await freshLevels();
     expect(l.showPrices).toBe(false);
     expect(l.levels.map((x) => [x.key, x.name, x.paid, x.action])).toEqual([
       ["free", "Free", false, "request"],
@@ -149,74 +164,117 @@ describe("with empty settings and credentials tables, nothing is a blocker", () 
   });
 });
 
-describe("the public demo account (still on the default password)", () => {
-  beforeAll(() => q("UPDATE users SET password_changed_at = NULL WHERE username = 'demo'"));
-  afterAll(() => q("UPDATE users SET password_changed_at = now() WHERE username = 'demo'"));
+describe("anyone but the platform administrator (every account of the old sign-in)", () => {
+  beforeEach(() => {
+    hook.admin = false;
+  });
 
   const state = async () => ({
     settings: await q("SELECT key, value FROM settings ORDER BY key"),
     credentials: await q("SELECT provider, field, value FROM credentials ORDER BY provider, field"),
     audit: (await q<{ n: string }>("SELECT max(id)::text AS n FROM audit_log"))[0].n,
   });
-  const writes = (): [string, () => Promise<Response>][] => {
+  /** Every new power: the plan catalogue, the new providers, the mail and voice settings, the new test kinds. */
+  const newPowers = (): [string, () => Promise<Response>][] => {
     const c = builtInCatalogue();
     c.showPrices = true;
-    c.tiers[1].priceMonthly = 1;
+    c.tiers[0].name = "PWNED by a visitor";
+    c.tiers[1].priceMonthly = 0.01;
     return [
-      ["PUT settings (mail)", () => call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "X", fromAddress: "x@example.test", host: "127.0.0.1", port: 2525, security: "none", username: null } })],
-      ["PUT settings (models)", () => call(settingsPut, "PUT", "/api/admin/settings", { plannerUrl: "http://127.0.0.1:1" })],
-      ["PUT credentials (stripe)", () => call(credPut, "PUT", "/api/admin/credentials/stripe", { fields: { publishableKey: PUB_TEST, secretKey: KEY_TEST } }, provider("stripe"))],
-      ["PUT credentials (openrouter)", () => call(credPut, "PUT", "/api/admin/credentials/openrouter", { fields: { apiKey: "sk-or-v1-demo-attempt-0000" } }, provider("openrouter"))],
-      ["DELETE credentials", () => call(credDelete, "DELETE", "/api/admin/credentials/stripe/secretKey", undefined, { params: Promise.resolve({ provider: "stripe", field: "secretKey" }) })],
       ["PUT plans", () => call(plansPut, "PUT", "/api/admin/plans", c)],
       ["DELETE plans", () => call(plansDelete, "DELETE", "/api/admin/plans")],
+      ["PUT settings mail", () => call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "X", fromAddress: "x@example.test", host: "127.0.0.1", port: 2525, security: "none", username: null } })],
+      ["PUT settings voice", () => call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "elevenlabs", model: "m", voice: "abc", speed: 1 } })],
+      ["PUT settings mail with a model", () => call(settingsPut, "PUT", "/api/admin/settings", { plannerUrl: "http://127.0.0.1:1", mail: { mode: "none" } })],
+      ["PUT stripe", () => call(credPut, "PUT", "/api/admin/credentials/stripe", { fields: { publishableKey: PUB_TEST, secretKey: KEY_TEST } }, provider("stripe"))],
+      ["PUT smtp", () => call(credPut, "PUT", "/api/admin/credentials/smtp", { fields: { password: "visitor-password-1" } }, provider("smtp"))],
+      ["PUT voice-openai", () => call(credPut, "PUT", "/api/admin/credentials/voice-openai", { fields: { apiKey: "visitor-key-123456" } }, provider("voice-openai"))],
+      ["PUT elevenlabs", () => call(credPut, "PUT", "/api/admin/credentials/elevenlabs", { fields: { apiKey: "visitor-key-123456" } }, provider("elevenlabs"))],
+      ["DELETE stripe secretKey", () => call(credDelete, "DELETE", "/api/admin/credentials/stripe/secretKey", undefined, { params: Promise.resolve({ provider: "stripe", field: "secretKey" }) })],
       ["test stripe", () => call(testPost, "POST", "/api/admin/test", { kind: "stripe" })],
       ["test smtp", () => call(testPost, "POST", "/api/admin/test", { kind: "smtp" })],
       ["test mail-message", () => call(testPost, "POST", "/api/admin/test", { kind: "mail-message", to: "x@example.test" })],
       ["test voice", () => call(testPost, "POST", "/api/admin/test", { kind: "voice" })],
     ];
   };
+  const refusedAll = async () => {
+    for (const [name, send] of newPowers()) {
+      const r = await read<{ error: string }>(await send());
+      expect({ name, ...r }).toEqual({ name, status: 403, body: { error: PLATFORM_ADMIN_NOTICE } });
+    }
+  };
+  const seed = async () => {
+    await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', $1)", [JSON.stringify(builtInCatalogue())]);
+    await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ('stripe','secretKey',$1,NULL),('stripe','publishableKey',$2,NULL),('stripe','webhookSecret','whsec_abcdefghijklmnop9876',NULL),('smtp','password','Tr0ub4dor-and-3xy','smtp://mail.internal.example:587')", [KEY_TEST, PUB_TEST]);
+    await q("INSERT INTO settings (key, value) VALUES ('mail.smtp', $1)", [JSON.stringify({ mode: "smtp", fromName: "Owner", fromAddress: "owner@example.com", host: "mail.internal.example", port: 587, security: "starttls", username: "smtp-user@example.com" })]);
+    await q("INSERT INTO settings (key, value) VALUES ('voice.tts', $1)", [JSON.stringify({ provider: "openai", baseUrl: "http://speech.internal.example/v1", model: "tts-1", voice: "alloy", speed: 1 })]);
+  };
 
-  it("can read every section, and is told it may not change them", async () => {
+  it("is told per capability that the new powers are the platform administrator's", async () => {
+    expect(await read(await get(accessGet, "/api/admin/access"))).toEqual({
+      status: 200,
+      body: { platformAdmin: false, capabilities: { plans: false, payments: false, email: false, voice: false }, notice: PLATFORM_ADMIN_NOTICE },
+    });
+  });
+
+  it("reads every section, but sees the new powers only as set or not set (review F5)", async () => {
+    await seed();
     for (const [h, p] of [[overviewGet, "/api/admin/overview"], [statusGet, "/api/admin/status"], [plansGet, "/api/admin/plans"], [paymentsGet, "/api/admin/payments"], [settingsGet, "/api/admin/settings"], [credsGet, "/api/admin/credentials"], [envGet, "/api/admin/environment"]] as const) {
       expect((await get(h as (r: Request) => Promise<Response>, p)).status, p).toBe(200);
     }
-    expect(await read(await get(accessGet, "/api/admin/access"))).toEqual({ status: 200, body: { canWrite: false, reason: DEMO_REFUSED } });
-  });
-
-  it("every write and every test that sends a secret answers 403 with the one sentence, and changes nothing", async () => {
-    // something saved first, so a refused DELETE has something it could have removed
-    await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', $1)", [JSON.stringify(builtInCatalogue())]);
-    await q("INSERT INTO credentials (provider, field, value) VALUES ('stripe', 'secretKey', $1)", [KEY_TEST]);
-    const levels = await publicLevels();
-    const before = await state();
-    for (const [name, send] of writes()) {
-      const r = await read<{ error: string }>(await send());
-      expect({ name, ...r }).toEqual({ name, status: 403, body: { error: DEMO_REFUSED } });
+    const creds = await read<{ providers: { id: string; locked?: boolean; fields: { name: string; set: boolean; last4: string | null; value: string | null; boundTo?: string | null; masked?: boolean }[] }[] }>(await get(credsGet, "/api/admin/credentials"));
+    for (const p of creds.body.providers.filter((x) => ["stripe", "smtp", "voice-openai", "elevenlabs"].includes(x.id))) {
+      expect(p.locked, p.id).toBe(true);
+      for (const f of p.fields.filter((x) => x.set)) expect({ id: `${p.id}.${f.name}`, last4: f.last4, value: f.value, boundTo: f.boundTo, masked: f.masked }).toEqual({ id: `${p.id}.${f.name}`, last4: null, value: null, boundTo: null, masked: true });
     }
+    const text = JSON.stringify(creds.body);
+    for (const leak of ["zzzz", "9876", "mail.internal.example", PUB_TEST]) expect(text, leak).not.toContain(leak);
+    const settings = await read<{ settings: { mail: unknown; voice: unknown } }>(await get(settingsGet, "/api/admin/settings"));
+    expect(settings.body.settings.mail).toEqual({ mode: "smtp", hidden: true });
+    expect(settings.body.settings.voice).toEqual({ provider: "openai", hidden: true });
+    expect(await read(await get(paymentsGet, "/api/admin/payments"))).toMatchObject({ body: { configured: true, hidden: true } });
+    const ov = await (await get(overviewGet, "/api/admin/overview")).text();
+    for (const leak of ["mail.internal.example", "owner@example.com", "speech.internal.example", "alloy", " test keys"]) expect(ov, leak).not.toContain(leak);
+  });
+
+  it("every new-power write and test answers 403 with the one sentence, and changes nothing; /welcome is unchanged", async () => {
+    await seed();
+    const levels = await freshLevels();
+    const before = await state();
+    await refusedAll();
     expect(await state()).toEqual(before);
-    expect(await publicLevels()).toEqual(levels);
+    expect(await freshLevels()).toEqual(levels);
   });
 
-  it("the welcome page is unaffected by the refused calls", async () => {
-    for (const [, send] of writes()) await send();
-    const l = await publicLevels();
-    expect(l.showPrices).toBe(false);
-    expect(l.levels.map((x) => x.price)).not.toContain("$1");
+  it("review B1: changing the account's own password opens nothing", async () => {
+    const user = (await q<{ id: string; password_hash: string; password_changed_at: Date | null }>("SELECT id, password_hash, password_changed_at FROM users WHERE username='demo'"))[0];
+    try {
+      await q("UPDATE users SET password_changed_at = NULL WHERE id=$1", [user.id]);
+      const pw = await passwordPost(json("POST", { current: "demo", next: "visitor-owned-pass-1" }, "http://test.local/api/auth/password"));
+      expect(pw.status).toBe(200);
+      const levels = await freshLevels();
+      const before = await state();
+      await refusedAll();
+      expect(await state()).toEqual(before);
+      expect((await freshLevels()).levels.map((l) => l.name)).toEqual(levels.levels.map((l) => l.name));
+      expect((await freshLevels()).showPrices).toBe(false);
+    } finally {
+      await q("UPDATE users SET password_hash=$2, password_changed_at=$3 WHERE id=$1", [user.id, user.password_hash, user.password_changed_at]);
+    }
   });
 
-  it("a test that sends no secret still runs (the database)", async () => {
+  it("everything that existed before this branch is open, as on main", async () => {
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", { plannerUrl: "http://127.0.0.1:1" })).status).toBe(200);
+    expect((await call(credPut, "PUT", "/api/admin/credentials/openrouter", { fields: { apiKey: "sk-or-v1-anyone-0000000000" } }, provider("openrouter"))).status).toBe(200);
     expect((await call(testPost, "POST", "/api/admin/test", { kind: "database" })).status).toBe(200);
   });
 
-  it("once the password is changed, the same calls go through", async () => {
-    await q("UPDATE users SET password_changed_at = now() WHERE username = 'demo'");
-    try {
-      expect(await read(await get(accessGet, "/api/admin/access"))).toEqual({ status: 200, body: { canWrite: true, reason: null } });
-      for (const [name, send] of writes()) expect({ name, status: (await send()).status }).toEqual({ name, status: 200 });
-    } finally {
-      await q("UPDATE users SET password_changed_at = NULL WHERE username = 'demo'");
-    }
+  it("review B5: a test by anyone else leaves admin.checks and the short credentials list alone", async () => {
+    await q("INSERT INTO settings (key, value) VALUES ('audit.credentials', $1)", [JSON.stringify([{ at: "2026-01-01T00:00:00Z", action: "replaced", provider: "stripe", field: "secretKey" }])]);
+    const short = JSON.stringify(await readAudit({ platformAdmin: true }));
+    for (let i = 0; i < 5; i++) await call(testPost, "POST", "/api/admin/test", { kind: "database" });
+    expect(await q("SELECT 1 FROM settings WHERE key='admin.checks'")).toHaveLength(0);
+    expect(JSON.stringify(await readAudit({ platformAdmin: true }))).toBe(short);
   });
 });
 
@@ -250,7 +308,7 @@ describe("Pricing and tiers", () => {
     const r = await read<{ source: string }>(await call(plansPut, "PUT", "/api/admin/plans", c));
     expect(r.status).toBe(200);
     expect(r.body.source).toBe("database");
-    const l = await publicLevels();
+    const l = await freshLevels();
     expect(l.showPrices).toBe(true);
     expect(l.levels.map((x) => x.key)).toEqual(["free", "maker", "self"]);
     expect(l.levels[1]).toMatchObject({ price: "$19", per: "a month" });
@@ -258,12 +316,12 @@ describe("Pricing and tiers", () => {
     expect(line[0].detail.after.showPrices).toBe(true);
     expect(line[0].detail.before).toBeTruthy();
     expect((await call(plansDelete, "DELETE", "/api/admin/plans")).status).toBe(200);
-    expect((await publicLevels()).showPrices).toBe(false);
+    expect((await freshLevels()).showPrices).toBe(false);
   });
 
   it("a saved document that no longer validates falls back to the built-in catalogue instead of breaking the page", async () => {
     await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', '{\"tiers\": 5}')");
-    expect((await publicLevels()).levels).toHaveLength(4);
+    expect((await freshLevels()).levels).toHaveLength(4);
   });
 });
 
@@ -459,5 +517,118 @@ describe("Voice", () => {
     const t = await read<{ ok: boolean }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }));
     expect(t.body.ok).toBe(true);
     expect(speech.seen.at(-1)!.url).toMatch(/^\/v1\/text-to-speech\/abc123\?/);
+  });
+});
+
+describe("review items", () => {
+  it("passwords and signing secrets never show their last four, even to the platform administrator", async () => {
+    await q("INSERT INTO settings (key, value) VALUES ('mail.smtp', $1)", [JSON.stringify({ mode: "smtp", fromName: "O", fromAddress: "o@example.com", host: "127.0.0.1", port: 2525, security: "none", username: null })]);
+    await call(credPut, "PUT", "/api/admin/credentials/smtp", { fields: { password: "a-long-password-9876" } }, provider("smtp"));
+    await call(credPut, "PUT", "/api/admin/credentials/stripe", { fields: { webhookSecret: "whsec_abcdefghijklmnop5432" } }, provider("stripe"));
+    const text = await (await get(credsGet, "/api/admin/credentials")).text();
+    expect(text).not.toContain("9876");
+    expect(text).not.toContain("5432");
+  });
+
+  it("B4: the slicer test does not repeat the body of what answered", async () => {
+    const s = await standIn(() => ({ status: 500, type: "text/plain", body: "INTERNAL-ONLY: db_host=10.0.0.5" }));
+    try {
+      const r = await read<{ ok: boolean; message: string; detail?: unknown }>(await call(testPost, "POST", "/api/admin/test", { kind: "slicer", url: s.url }));
+      expect(r.body.ok).toBe(false);
+      expect(JSON.stringify(r.body)).not.toContain("INTERNAL-ONLY");
+    } finally {
+      await s.close();
+    }
+  });
+
+  it("B4: ? and # are refused in every base address an admin types", async () => {
+    for (const [kind, body] of [
+      ["slicer", { kind: "slicer", url: "http://127.0.0.1:1/x?y=1" }],
+      ["planner", { kind: "planner", url: "http://127.0.0.1:1/#frag" }],
+      ["model", { kind: "model", provider: "ollama", baseUrl: "http://127.0.0.1:1/v1?a=b" }],
+    ] as const) {
+      const r = await read<{ issues: { problem: string }[] }>(await call(testPost, "POST", "/api/admin/test", body));
+      expect({ kind, status: r.status, problem: r.body.issues?.[0]?.problem }).toEqual({ kind, status: 400, problem: "must not contain ? or #; give the base address only" });
+    }
+    const v = await read<{ issues: { field: string }[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openai", baseUrl: "http://127.0.0.1:1/v1?x=1", model: "m", voice: "v", speed: 1 } }));
+    expect(v.body.issues[0].field).toBe("voice.baseUrl");
+  });
+
+  it("F1: a mail password or speech key cannot be saved before its address", async () => {
+    const m = await read<{ issues: { problem: string }[] }>(await call(credPut, "PUT", "/api/admin/credentials/smtp", { fields: { password: "early-password-123" } }, provider("smtp")));
+    expect(m.status).toBe(400);
+    expect(m.body.issues[0].problem).toMatch(/save the mail server in Admin, Email first/);
+    const v = await read<{ issues: { problem: string }[] }>(await call(credPut, "PUT", "/api/admin/credentials/voice-openai", { fields: { apiKey: "early-key-1234567" } }, provider("voice-openai")));
+    expect(v.status).toBe(400);
+    expect(await q("SELECT 1 FROM credentials")).toHaveLength(0);
+  });
+
+  it("F1: an unbound one saved earlier is removed when the address is first set, not bound to it", async () => {
+    await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ('smtp','password','legacy-unbound-pass',NULL),('voice-openai','apiKey','legacy-unbound-key',NULL)");
+    const r = await read<{ notices: string[] }>(await call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "O", fromAddress: "o@example.com", host: "127.0.0.1", port: 2525, security: "none", username: null }, voice: { provider: "openai", baseUrl: "http://127.0.0.1:1/v1", model: "m", voice: "v", speed: 1 } }));
+    expect(r.status).toBe(200);
+    expect(r.body.notices.join(" ")).toMatch(/saved before any address was set/);
+    expect(await q("SELECT 1 FROM credentials")).toHaveLength(0);
+  });
+
+  it("F2: voice audio is capped at 2 MB, must be a known audio type, and an error body is never repeated", async () => {
+    let answer: { status: number; type?: string; body: string | Buffer } = { status: 200, type: "audio/mpeg", body: Buffer.alloc(3 * 1024 * 1024, 1) };
+    const s = await standIn(() => answer);
+    try {
+      await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openai", baseUrl: `${s.url}/v1`, model: "m", voice: "v", speed: 1 } });
+      const test = async () => (await read<{ ok: boolean; message: string; detail?: { audio?: string } }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }))).body;
+      let t = await test();
+      expect(t.ok).toBe(false);
+      expect(t.message).toMatch(/more than 2 MB/);
+      answer = { status: 200, type: "text/html", body: "<html>INTERNAL-PAGE</html>" };
+      t = await test();
+      expect(t.ok).toBe(false);
+      expect(t.message).not.toContain("INTERNAL-PAGE");
+      answer = { status: 500, body: JSON.stringify({ error: { message: "INTERNAL-ONLY admin_note=hunter2" } }) };
+      t = await test();
+      expect(t.message).toBe("The speech endpoint answered with a server error (HTTP 500).");
+      answer = { status: 200, type: "audio/wav", body: Buffer.from("RIFF-small") };
+      t = await test();
+      expect(t.ok).toBe(true);
+    } finally {
+      await s.close();
+    }
+  });
+
+  it("F3: a service that is not a mail server gets a fixed sentence, never its own text", async () => {
+    const srv: TcpServer = tcpServer((sock) => {
+      sock.write("HTTP/1.1 400 Bad Request\r\nX-Internal: INTERNAL-BANNER db=10.0.0.5\r\n\r\n");
+      sock.end();
+    });
+    await new Promise<void>((r) => srv.listen(0, "127.0.0.1", () => r()));
+    try {
+      await call(settingsPut, "PUT", "/api/admin/settings", { mail: { mode: "smtp", fromName: "O", fromAddress: "o@example.com", host: "127.0.0.1", port: (srv.address() as AddressInfo).port, security: "none", username: null } });
+      const r = await read<{ ok: boolean; message: string }>(await call(testPost, "POST", "/api/admin/test", { kind: "smtp" }));
+      expect(r.body.ok).toBe(false);
+      expect(r.body.message).not.toMatch(/INTERNAL|HTTP\/1\.1|10\.0\.0\.5/);
+    } finally {
+      await new Promise((res) => srv.close(() => res(null)));
+    }
+  });
+
+  it("F4: no security with a user name is refused unless the server is on this machine", async () => {
+    const mail = (host: string) => ({ mail: { mode: "smtp", fromName: "O", fromAddress: "o@example.com", host, port: 25, security: "none", username: "user" } });
+    const r = await read<{ issues: { field: string; problem: string }[] }>(await call(settingsPut, "PUT", "/api/admin/settings", mail("smtp.example.com")));
+    expect(r.status).toBe(400);
+    expect(r.body.issues[0].field).toBe("mail.security");
+    expect(r.body.issues[0].problem).toMatch(/unless the server is on this machine/);
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", mail("localhost"))).status).toBe(200);
+  });
+
+  it("F6: the public levels are kept for a minute, and a save in Admin shows at once", async () => {
+    const first = await freshLevels();
+    await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', $1)", [JSON.stringify({ ...builtInCatalogue(), showPrices: true })]);
+    expect(await publicLevels()).toEqual(first); // written behind Admin's back: still the kept answer
+    vi.setSystemTime(Date.now() + 61_000);
+    expect((await publicLevels()).showPrices).toBe(true);
+    const c = builtInCatalogue();
+    c.tiers[0].name = "Saved just now";
+    expect((await call(plansPut, "PUT", "/api/admin/plans", c)).status).toBe(200);
+    expect((await publicLevels()).levels[0].name).toBe("Saved just now");
   });
 });
