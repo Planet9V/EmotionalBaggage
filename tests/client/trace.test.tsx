@@ -408,7 +408,7 @@ describe("builds", () => {
     expect(within(card).getByText("Idle").closest("li")?.textContent).toContain("fail");
     expect(within(card).getByText(/cannot be marked passed/).textContent).toContain('"Plays a clip"');
     // a build that cannot pass has its button disabled, with the reason beside it
-    expect((within(card).getByRole("button", { name: "Mark EVT passed" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(card).getByRole("button", { name: "Mark passed: EVT" }) as HTMLButtonElement).disabled).toBe(true);
     // ticking a criterion saves the whole list
     fireEvent.click(within(card).getByRole("checkbox", { name: "Plays a clip" }));
     await waitFor(() =>
@@ -422,7 +422,7 @@ describe("builds", () => {
     refuse[1] = "This build cannot be marked passed: 1 of 2 exit criteria is not met (for example \"Plays a clip\").";
     renderWith(<BuildsView {...props} />);
     const card = await screen.findByRole("listitem", { name: "EVT" });
-    fireEvent.click(within(card).getByRole("button", { name: "Mark EVT passed" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Mark passed: EVT" }));
     expect((await within(card).findByRole("alert")).textContent).toContain("1 of 2 exit criteria is not met");
     expect(within(screen.getByRole("listitem", { name: "DVT" })).queryByRole("alert")).toBeNull();
     expect(within(card).queryByText("Passed")).toBeNull();
@@ -431,7 +431,7 @@ describe("builds", () => {
   it("marks a build passed when the server allows it", async () => {
     db = [item(1, "prototype/builds", "PVT", { status: "testing", data: { criteria: [{ text: "Boots", met: true }], tests: ["t1"] } }), item(2, "prototype/tests", "Drop", { data: { key: "t1" }, status: "pass" })];
     renderWith(<BuildsView {...props} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Mark PVT passed" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Mark passed: PVT" }));
     expect(await screen.findByText("Passed")).toBeTruthy();
   });
 
@@ -439,7 +439,7 @@ describe("builds", () => {
     db = [item(1, "prototype/builds", "Empty", { status: "planned" })];
     renderWith(<BuildsView {...props} />);
     const card = await screen.findByRole("listitem", { name: "Empty" });
-    const button = within(card).getByRole("button", { name: "Mark Empty passed" }) as HTMLButtonElement;
+    const button = within(card).getByRole("button", { name: "Mark passed: Empty" }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     expect(within(card).getByText("Add at least one exit criterion and one test before marking this build passed.")).toBeTruthy();
     expect(button.getAttribute("aria-describedby")).toBeTruthy();

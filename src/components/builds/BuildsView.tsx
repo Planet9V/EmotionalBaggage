@@ -212,7 +212,7 @@ export function BuildsView({ project, section, store }: ViewProps) {
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> {stale.length ? "Passed, evidence lost" : "Passed"}
                   </span>
                 ) : (
-                  <Button size="sm" disabled={cannotPass !== null} aria-describedby={cannotPass ? `pass-reason-${b.id}` : undefined} onClick={() => void setStatus(b, PASSED)} aria-label={`Mark ${b.title} passed`}>
+                  <Button size="sm" disabled={cannotPass !== null} aria-describedby={cannotPass ? `pass-reason-${b.id}` : undefined} onClick={() => void setStatus(b, PASSED)} aria-label={`Mark passed: ${b.title}`}>
                     Mark passed
                   </Button>
                 )}
