@@ -9,8 +9,10 @@ import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
+import { voiceOf } from "../speech";
 import { E, bump, clamp01, kf, mix } from "./ease";
-import { A, BAG_TOP, Bag, Built, C, Contact, Figure, HANDLE_Y, Sign, Stage, onBody, useClock, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { A, BAG_MID, BAG_TOP, Bag, Built, C, Contact, HANDLE_Y, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { Figure, onBody, type FigPose } from "./people";
 
 const PLATE = 0.1;
 const BAG_Z = 0.05;
@@ -376,12 +378,23 @@ function ScaleSet({ button }: { button: boolean }) {
       yaw: 0.3 * kf(t, [[2900, 0], [3500, 1], [5400, 1], [5900, 0]]) - 0.12 * kf(t, [[5900, 0], [6400, 1], [7300, 1], [7600, 0]]),
     };
   };
+  const bagAt = (t: number): V3 => {
+    const b = bag(t).p;
+    return [b[0], b[1] + BAG_MID, b[2]];
+  };
   const agent = (t: number): FigPose => {
     if (button) {
       // end of shift: chin on her hand, elbow on the desk, until the souvenirs make her look
       const look = kf(t, [[POP + 300, 0], [POP + 800, 1]]);
       const lean = 0.2;
+      // half asleep on her hand; the pop wakes her: brows up, eyes wide, a little "o"
+      const woke = kf(t, [[POP + 120, 0], [POP + 260, 1, "out"], [POP + 1400, 1], [POP + 2200, 0.5]]);
       return {
+        look: look > 0.3 ? bagAt(t) : null,
+        lids: 0.55 * (1 - woke) + 0.1 * woke * kf(t, [[POP + 1400, 0], [POP + 2200, 1]]),
+        brow: 1.0 * woke - 0.2 * (1 - woke),
+        blink: bump(t, POP + 100, POP + 240),
+        mouth: woke > 0.6 && t < POP + 1500 ? "o" : woke > 0.3 ? "smile" : "flat",
         p: AGENT_BACK,
         yaw: AGENT_YAW,
         lean,
@@ -405,7 +418,16 @@ function ScaleSet({ button }: { button: boolean }) {
     const lean = (holding ? 0.12 : 0.12 * (1 - letGo)) - 0.1 * aback;
     const p: V3 = [x, hop(t, 1950, 3200, 4), kf(t, [[1950, 0.1], [2500, -1.2], [3200, AGENT_BACK[2]]])];
     const palms = (side: number): V3 => onBody(p, yaw, lean, [side * 0.24, 1.12 + 0.06 * aback, 0.3]);
+    // eyes: on the bag while she carries it, ahead as she walks round, on the number as it climbs, on the bag for the line
+    const walking = t > 1950 && t < 3300;
+    const eyes: V3 | null = walking ? null : t > 3300 && t < 5900 ? [DISPLAY[0], SCREEN_Y, DISPLAY[2]] : t > 9950 ? [HOST[0], 1.65, HOST[2]] : bagAt(t);
     return {
+      look: eyes,
+      brow: 1.0 * aback - 0.3 * down * (1 - aback) + 0.2 * kf(t, [[3600, 0], [4200, 1], [5900, 1], [6300, 0]]),
+      blink: bump(t, 7650, 7790) + bump(t, 9900, 10040),
+      lids: 0.3 * down,
+      mouth: aback > 0.6 ? "o" : "flat",
+      talk: voiceOf(scene, "agent", t),
       p,
       yaw,
       lean,
@@ -429,7 +451,13 @@ function ScaleSet({ button }: { button: boolean }) {
         const b = open(side);
         return [mix(a[0], b[0], shrug), mix(a[1], b[1], shrug), mix(a[2], b[2], shrug)];
       };
+      // watching the bag; for the line, straight down the lens, unimpressed
       return {
+        look: turn > 0.5 ? [-2.8, 1.35, 3.8] : bagAt(t),
+        brow: 0.6 * shrug + 0.5 * kf(t, [[POP + 150, 0], [POP + 400, 1], [5300, 0]]),
+        lids: 0.3 * turn * (1 - 0.6 * bump(t, 6000, 6400)),
+        mouth: shrug > 0.6 && t > 6700 ? "closed" : "flat",
+        talk: voiceOf(scene, "host", t),
         p: [HOST_B[0], 0.03 * shrug, HOST_B[2]],
         yaw,
         head: 0.2 * turn + 0.15 * kf(t, [[POP, 0], [POP + 300, 1], [5500, 0]]),
@@ -438,7 +466,13 @@ function ScaleSet({ button }: { button: boolean }) {
         handR: hand(1),
       };
     }
+    // a beat after the agent, a flicker of the brows at "FAT?"; then the line, to her
     return {
+      look: t > 9700 ? [AGENT_BACK[0], 1.6, AGENT_BACK[2]] : bagAt(t),
+      brow: 0.5 * kf(t, [[7950, 0], [8150, 1], [8900, 1], [9300, 0]]),
+      blink: bump(t, 7950, 8090),
+      lids: 0.25,
+      talk: voiceOf(scene, "host", t),
       p: HOST,
       yaw: HOST_YAW,
       head: 0.55 * kf(t, [[9700, 0], [10150, 1]]),

@@ -9,7 +9,8 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
 import { E, bump, clamp01, kf, mix, swing } from "./ease";
-import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, Figure, HANDLE_Y, Sign, Stage, luggage, onBody, trolley, useClock, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, HANDLE_Y, Sign, Stage, luggage, trolley, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { Figure, onBody, type FigPose } from "./people";
 
 // ---- the toss -------------------------------------------------------------------------------------------------
 
@@ -80,7 +81,16 @@ function handler(t: number): FigPose {
   } else if (reach > 0 && reach < 1.01 && turned > 0.9) {
     hand = (side) => [-2.05, mix(0.8, 1.05, reach), 0.2 + side * 0.16];
   }
+  // eyes on the bag through the wind-up and the throw; the thud makes him start, then he looks round, puzzled
+  const bagAt: V3 = [b.p[0], b.p[1] + BAG_MID, b.p[2]];
+  const startle = kf(s, [[LAND, 0], [LAND + 120, 1, "out"], [LAND + 900, 0.6], [4450, 0.3]]);
+  const puzzled = kf(s, [[4300, 0], [4700, 1]]);
   return {
+    look: s < LAND + 200 ? bagAt : null,
+    browIn: 0.7 * kf(s, [[300, 0], [700, 1], [RELEASE, 1], [RELEASE + 250, 0]]) - 0.6 * puzzled,
+    brow: 0.9 * startle + 0.3 * puzzled - 0.4 * kf(s, [[300, 0], [700, 1], [RELEASE, 1], [RELEASE + 250, 0]]),
+    mouth: s > 650 && s < RELEASE ? "wince" : s >= RELEASE && s < RELEASE + 380 ? "open" : startle > 0.7 && s < LAND + 700 ? "o" : puzzled > 0.5 ? "closed" : "flat",
+    blink: bump(s, LAND, LAND + 140),
     p: HANDLER,
     yaw: mix(1.2, -1.75, turned) + (s > 4450 ? 0.25 * E.io(clamp01((s - 4450) / 600)) : 0),
     lean: kf(s, [[350, 0.05], [900, -0.22], [RELEASE, 0.32, "in"], [1500, 0]]) + 0.14 * kf(s, [[5100, 0], [5500, 1]]),
@@ -268,7 +278,7 @@ function TossSet() {
       <Streaks />
       <Bag pose={tossBag} speaking={(t) => bagSpeaking(TOSS, t)} time={held} />
       <Dust at={[TO[0], BELT + 0.02, TO[2] + 0.25]} progress={(t) => (held(t) - LAND) / 950} />
-      <Figure pose={handler} role="handler" />
+      <Figure pose={handler} role="handler" time={held} />
     </>
   );
 }
@@ -333,7 +343,14 @@ function owner(t: number): FigPose {
   const reach = kf(t, [[2350, 0], [2900, 1]]);
   const grip: V3 = [b.p[0], b.p[1] + HANDLE_Y - 0.005, b.p[2] - 0.03];
   const glance = kf(t, [[7950, 0], [8400, 1]]);
+  // the first "whoa" makes him start; at the punchline, the slow deadpan look down at it
+  const start = kf(t, [[5120, 0], [5230, 1, "out"], [6000, 0.6], [7000, 0.2], [7900, 0]]);
   return {
+    look: t < 1300 ? null : [b.p[0], b.p[1] + (reach > 0.5 && t < LIFT + 900 ? HANDLE_Y : BAG_MID), b.p[2]],
+    brow: 0.9 * start - 0.15 * glance,
+    blink: bump(t, 5120, 5260),
+    lids: 0.42 * glance,
+    mouth: start > 0.7 ? "o" : "flat",
     p: [x, t < 1900 ? 0.05 * Math.abs(Math.sin((t / 1900) * Math.PI * 5)) : 0, -0.05],
     // walks in side on, then turns to face us with the bag held out at one side
     yaw: kf(t, [[1500, Math.PI / 2], [2300, 0.3]]),
@@ -360,14 +377,23 @@ function bystander(t: number): FigPose {
   const at = (l: V3) => onBody([WATCHER[0], WATCHER[1], WATCHER[2]], WATCHER_YAW, lean, l);
   // the phone: held low and read, then raised to eye level at arm's length (it dips a little as they laugh)
   const phone: V3 = [mix(0.06, 0.16, film), mix(1.12, 1.62, film) - 0.12 * laugh + 0.025 * shake * laugh, mix(0.3, 0.62, film)];
+  const phoneAt = at(phone);
+  const gasp = kf(t, [[5080, 0], [5180, 1, "out"], [5700, 1], [6100, 0]]);
   return {
+    // reading the phone; the take snaps the eyes to the bag, and they stay there
+    look: take < 0.5 ? phoneAt : [curbBag(t).p[0], curbBag(t).p[1] + BAG_MID, 0],
+    lids: 0.3 * (1 - take),
+    brow: 1.0 * gasp + 0.5 * laugh + 0.25 * film * (1 - laugh),
+    blink: bump(t, 5070, 5200),
+    squint: laugh,
+    mouth: laugh > 0.3 ? "laugh" : gasp > 0.4 ? "o" : film > 0.6 ? "grin" : "flat",
     p: [WATCHER[0], 0.035 * shake * laugh, WATCHER[2]],
     yaw: WATCHER_YAW + 0.12 * take,
     lean,
     // reading, then the snap up toward the noise
     nod: mix(0.5, -0.12, take) + 0.18 * laugh,
     head: -0.1 * take,
-    handR: at(phone),
+    handR: phoneAt,
     handL: laugh > 0 ? at([mix(-0.31, -0.02, laugh), mix(0.8, 1.5, laugh), mix(0.03, 0.22, laugh)]) : null,
   };
 }
