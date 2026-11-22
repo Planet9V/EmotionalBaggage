@@ -7,16 +7,27 @@
  * on, Better Auth checks the origin against its trusted list, the throttle and the session.
  *
  * Changes are recorded in the audit log by src/lib/auth2/auth.ts (hooks and the user-created database hook).
+ * POST /api/auth2/first-run/owner is answered here before the instance is built (src/lib/auth2/firstRun.ts).
  */
 import { NextResponse } from "next/server";
 import { route } from "@/lib/api/route";
 import { withClientAddress } from "@/lib/auth2/clientAddress";
 import { auth2Enabled } from "@/lib/auth2/config";
+import { createOwner } from "@/lib/auth2/firstRun";
 import { auth2, SetupRequired } from "@/lib/auth2/server";
+import { ownerPool, ready } from "@/lib/db";
+
+const FIRST_RUN = "/api/auth2/first-run/owner";
 
 const handle = route.open(
   async (req: Request) => {
     if (!(await auth2Enabled())) return NextResponse.json({ error: "Not found." }, { status: 404 });
+    // The first-run owner (src/lib/auth2/firstRun.ts) is answered before the instance is built: in production it
+    // stores the base address the instance needs.
+    if (req.method === "POST" && new URL(req.url).pathname === FIRST_RUN) {
+      await ready();
+      return createOwner(ownerPool(), withClientAddress(req), { build: auth2 });
+    }
     try {
       return (await auth2()).handler(withClientAddress(req));
     } catch (e) {

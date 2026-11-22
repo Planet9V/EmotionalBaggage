@@ -113,6 +113,16 @@ export async function createWorkspace(db: Pool, user: { id: string; email: strin
   });
 }
 
+/** A workspace made by a platform administrator for a named owner: no per-person limit. */
+export async function createWorkspaceFor(db: Pool, actor: string, owner: { id: string; email: string }, name: string): Promise<string> {
+  return inTx(db, async (c) => {
+    await lockUser(c, owner.id);
+    const id = await insertWorkspace(c, name, `ws-${newId().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24)}`, owner.id);
+    await auditIn(c, { actor, action: "workspace.created", summary: `As platform administrator, created the workspace "${name}" with ${owner.email} as owner`, detail: { workspaceId: id } });
+    return id;
+  });
+}
+
 /** Moves every session of `userId` that names `gone` (or nothing) to their first workspace. */
 async function repointSessions(c: PoolClient, userId: string, gone: string) {
   await c.query(
@@ -178,18 +188,21 @@ export async function renameWorkspace(db: Pool, actor: string, workspaceId: stri
  * Deletes a workspace: its memberships and invitations go with it. Refused when it is the deleting owner's only
  * workspace. Anyone for whom it was the last workspace gets a new one of their own.
  */
-export async function deleteWorkspace(db: Pool, actor: { id: string; email: string }, workspaceId: string) {
+export async function deleteWorkspace(db: Pool, actor: { id: string; email: string }, workspaceId: string, opts: { platformAdmin?: boolean } = {}) {
   await inTx(db, async (c) => {
     // Users first, then the workspace (the order every change here takes), sorted so two deletions agree.
     const before = (await c.query<{ userId: string }>('SELECT "userId" FROM member WHERE "organizationId" = $1', [workspaceId])).rows.map((r) => r.userId);
     for (const u of [...new Set([actor.id, ...before])].sort()) await lockUser(c, u);
     const name = await lockWorkspace(c, workspaceId);
-    const mine = await c.query<{ n: number }>('SELECT count(*)::int AS n FROM member WHERE "userId" = $1', [actor.id]);
-    if (mine.rows[0].n <= 1) throw refuse("FORBIDDEN", "ONLY_WORKSPACE", "This is your only workspace, so it cannot be deleted. Every account keeps at least one.");
+    // A platform administrator may delete any workspace: whoever is left without one gets a new one below.
+    if (!opts.platformAdmin) {
+      const mine = await c.query<{ n: number }>('SELECT count(*)::int AS n FROM member WHERE "userId" = $1', [actor.id]);
+      if (mine.rows[0].n <= 1) throw refuse("FORBIDDEN", "ONLY_WORKSPACE", "This is your only workspace, so it cannot be deleted. Every account keeps at least one.");
+    }
     const people = (await c.query<{ userId: string }>('SELECT "userId" FROM member WHERE "organizationId" = $1', [workspaceId])).rows.map((r) => r.userId);
     await c.query("DELETE FROM organization WHERE id = $1", [workspaceId]);
     for (const u of people) await afterLoss(c, u, workspaceId);
-    await auditIn(c, { actor: actor.email, action: "workspace.deleted", summary: `Deleted the workspace "${name}" (${people.length} ${people.length === 1 ? "member" : "members"})`, detail: { workspaceId } });
+    await auditIn(c, { actor: actor.email, action: "workspace.deleted", summary: `${opts.platformAdmin ? "As platform administrator, deleted" : "Deleted"} the workspace "${name}" (${people.length} ${people.length === 1 ? "member" : "members"})`, detail: { workspaceId } });
   });
 }
 

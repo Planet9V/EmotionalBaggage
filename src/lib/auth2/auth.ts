@@ -198,8 +198,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       },
       session: {
         create: {
-          // Every session starts in a workspace: the one the user joined first.
+          // Every session starts in a workspace: the one the user joined first. A disabled account gets none: this
+          // runs only once the password (and code) were right, so the refusal tells nothing to a guesser.
           before: async (session: { userId: string } & Record<string, unknown>) => {
+            const off = await db.query('SELECT 1 FROM "user" WHERE id = $1 AND "disabledAt" IS NOT NULL', [session.userId]);
+            if (off.rowCount) throw APIError.from("FORBIDDEN", { code: "ACCOUNT_DISABLED", message: "This account has been disabled by an administrator." });
             const r = await db.query<{ organizationId: string }>('SELECT "organizationId" FROM member WHERE "userId" = $1 ORDER BY "createdAt", id LIMIT 1', [session.userId]);
             return { data: { ...session, activeOrganizationId: r.rows[0]?.organizationId ?? null } };
           },

@@ -50,6 +50,7 @@ const PAGES: [string, () => Promise<Page>][] = [
   ["workspaces", () => import("@/app/(account)/auth/workspaces/page") as Promise<Page>],
   ["invite", () => import("@/app/(account)/auth/invite/page") as Promise<Page>],
   ["workspace", () => import("@/app/(account)/auth/workspace/page") as Promise<Page>],
+  ["first-run", () => import("@/app/(account)/auth/first-run/page") as Promise<Page>],
 ];
 const params = { searchParams: Promise.resolve({}) };
 
@@ -273,5 +274,28 @@ describe("with AUTH2 on", () => {
     fireEvent.click(screen.getByRole("button", { name: "Invite" }));
     expect((await screen.findByText("http://localhost:3322/auth/invite?token=abc")).getAttribute("data-invite-link")).not.toBeNull();
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ workspaceId: "w1", email: "x@example.test", role: "member" });
+  });
+
+  it("the first-run page prefills the administrator address, asks for the address only when needed, and never fills a password", async () => {
+    window.IntersectionObserver ??= class { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } root = null; rootMargin = ""; thresholds = []; } as never;
+    const { FirstRun } = await import("@/app/(account)/auth/first-run/FirstRun");
+    const { storyData } = await import("@/components/welcome/storyData");
+    const { exampleData } = await import("@/components/welcome/exampleData");
+    const story = storyData(await exampleData());
+    render(<FirstRun email="admin@oxot.nl" address={null} idea={story.origin.idea} facts={story.hero} />);
+    expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("admin@oxot.nl");
+    expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+    expect(screen.queryByLabelText("Address of this installation")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Welcome to your own installation" })).toBeTruthy();
+    replies.push({ status: 200, body: {} });
+    fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Olive" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long enough" } });
+    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "long enough" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/account"));
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "Olive", email: "admin@oxot.nl", password: "long enough" });
+    cleanup();
+    render(<FirstRun email="admin@oxot.nl" address="https://app.example.test" idea={story.origin.idea} facts={story.hero} />);
+    expect((screen.getByLabelText("Address of this installation") as HTMLInputElement).value).toBe("https://app.example.test");
   });
 });

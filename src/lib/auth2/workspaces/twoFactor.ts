@@ -1,8 +1,9 @@
 /**
  * The two-factor requirement (accounts slice 2, step 4; owner's ruling, matching Eigenia's portal rule).
  *
- * A person must use an authenticator app when ANY workspace they belong to requires it (its policy), or when an
- * owner or admin of any of their workspaces required it of them by name. Such a person, until enrolled, is sent
+ * A person must use an authenticator app when ANY workspace they belong to requires it (its policy), when an
+ * owner or admin of any of their workspaces required it of them by name, or when a platform administrator required
+ * it of them ("user"."twoFactorRequired", ../adminOps.ts). Such a person, until enrolled, is sent
  * to enrolment after the password step and cannot reach any workspace (owed(): the workspace endpoints answer
  * TWO_FACTOR_SETUP_REQUIRED, the screens redirect); once enrolled they cannot turn it off.
  *
@@ -17,11 +18,12 @@ import { render, type MailSender } from "../mail";
 import { asRole, manages, may, type Role } from "./permissions";
 import { inTx, lockWorkspace, refuse, type Membership } from "./store";
 
-const REQUIRED_SQL = `EXISTS (
+const REQUIRED_SQL = `(EXISTS (
   SELECT 1 FROM member m
     LEFT JOIN auth2_workspace_policy p ON p.organization_id = m."organizationId"
     LEFT JOIN auth2_member_flags f ON f.member_id = m.id
-   WHERE m."userId" = $1 AND (COALESCE(p.two_factor_required, false) OR COALESCE(f.two_factor_required, false)))`;
+   WHERE m."userId" = $1 AND (COALESCE(p.two_factor_required, false) OR COALESCE(f.two_factor_required, false)))
+  OR COALESCE((SELECT "twoFactorRequired" FROM "user" WHERE id = $1), false))`;
 
 /** Whether any workspace of the user requires two-factor of them. */
 export async function requiredFor(db: Pool, userId: string): Promise<boolean> {

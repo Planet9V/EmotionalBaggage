@@ -17,10 +17,24 @@ export async function proxy(request: NextRequest) {
   // The new sign-in's screens (switch on) are open to a signed-out browser; each checks its own session. With it
   // off they are treated like any other page, as before. The switch is read from PostgreSQL with a short cache
   // (src/lib/auth2/config.ts), which also keeps the root layout's copy current.
-  if ((await auth2Enabled()) && pathname.startsWith(`${AUTH2_PAGES}/`)) return NextResponse.next();
+  const on = await auth2Enabled();
+  if (on && pathname.startsWith(`${AUTH2_PAGES}/`)) return NextResponse.next();
+  // A self-hosted install with no account yet: the front door leads to "create the owner" (src/lib/auth2/firstRun.ts).
+  // The answer is cached once an account exists, so this costs nothing afterwards.
+  if (on && (pathname === "/" || pathname === "/welcome") && (await firstRunOpenNow())) return NextResponse.redirect(new URL(`${AUTH2_PAGES}/first-run`, request.url));
   const target = pageGate(pathname, search, request.cookies.has(SESSION_COOKIE));
   if (!target) return NextResponse.next();
   return NextResponse.redirect(new URL(target, request.url));
+}
+
+async function firstRunOpenNow(): Promise<boolean> {
+  try {
+    const [{ ownerPool, ready }, { firstRunOpen }] = await Promise.all([import("@/lib/db"), import("@/lib/auth2/firstRun")]);
+    await ready();
+    return await firstRunOpen(ownerPool());
+  } catch {
+    return false;
+  }
 }
 
 export const config = {
