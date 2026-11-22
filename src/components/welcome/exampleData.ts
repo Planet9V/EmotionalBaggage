@@ -12,6 +12,7 @@
 //  - the unit cost is the app's own build-up (referenceUnitCost).
 // The enclosure takes about a tenth of a second and is built once per server process.
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
+import { applySeedContent } from "@/lib/seedContent";
 import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
 import { SOURCES_STORE, STORY_STORE, storyPart } from "@/lib/story/parts";
 import { readManifest } from "@/lib/story/seedFiles";
@@ -44,7 +45,8 @@ function seedRows(storedFiles: ReadonlySet<string>): Item[] {
   for (const p of SEED_STORY) add(STORY_STORE, storyPart(p.part)?.heading ?? p.part, p.body, { part: p.part }, p.status);
   for (const s of SEED_ITEMS) add(s.section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
   for (const [section, items] of Object.entries(SEED_ADDITIONS)) for (const s of items) add(section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
-  return out;
+  // then the content batches entered since (src/lib/seedContent.ts), as seedContent applies them to a database
+  return applySeedContent(out);
 }
 
 /** A mesh as plain numbers (positions in mm to 0.001, triangle indices), so it can cross to the browser as a prop. */
