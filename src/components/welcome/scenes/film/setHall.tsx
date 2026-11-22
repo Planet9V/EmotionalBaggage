@@ -9,8 +9,8 @@
 import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { bagSpeaking, sceneOf } from "../scenes";
-import { voiceOf } from "../speech";
+import { sceneOf } from "../scenes";
+import { bagVoice, voiceOf } from "../speech";
 import { bump, clamp01, kf, mix } from "./ease";
 import { A, BAG_MID, Bag, Built, C, Contact, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure, type FigPose } from "./people";
@@ -272,7 +272,7 @@ function HoldSet() {
         </mesh>
       </A>
       <Contact at={() => ({ p: [0, DECK, 0], w: 0.85, d: 0.55, o: 0.6 })} tint="#000000" />
-      <Bag pose={holdBag} speaking={(t) => bagSpeaking(HOLD, t)} lamp={0.035} />
+      <Bag pose={holdBag} voice={(t) => bagVoice(HOLD, t)} lamp={0.035} />
       {[0, 1, 2].map((i) => (
         <Z key={i} i={i} />
       ))}
@@ -528,7 +528,7 @@ function CarouselSet() {
           return { p: [b.p[0], TOP + 0.012, b.p[2]], w: 0.8, d: 0.8, o: 0.42 - 1.2 * (b.p[1] - TOP - 0.02) };
         }}
       />
-      <Bag pose={rideBag} speaking={(t) => bagSpeaking(CAROUSEL, t)} gravity={4.2} />
+      <Bag pose={rideBag} voice={(t) => bagVoice(CAROUSEL, t)} gravity={4.2} />
       <Figure pose={stranger} role="traveller" />
       <Figure pose={host} role="owner" tall={1.03} phone />
       <Figure pose={(t) => ({ p: [-3.2, 0, -3.3], yaw: 0.7, head: 0.2, look: t > 4000 ? [rideBag(t).p[0], 0.9, rideBag(t).p[2]] : null, brow: 0.5 * kf(t, [[4000, 0], [4400, 1], [6000, 1], [6600, 0]]) })} role="bystander" tall={0.97} />

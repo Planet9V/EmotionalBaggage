@@ -7,7 +7,8 @@
 import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { bagSpeaking, sceneOf } from "../scenes";
+import { sceneOf } from "../scenes";
+import { bagVoice } from "../speech";
 import { E, bump, clamp01, kf, mix, swing } from "./ease";
 import { footAt, stepFoot, swingOf, walk, walks, type Walk } from "./gait";
 import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, HANDLE_Y, Sign, Stage, luggage, trolley, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
@@ -298,7 +299,7 @@ function TossSet() {
       />
       <Trail />
       <Streaks />
-      <Bag pose={tossBag} speaking={(t) => bagSpeaking(TOSS, t)} time={held} />
+      <Bag pose={tossBag} voice={(t) => bagVoice(TOSS, t)} time={held} />
       <Dust at={[TO[0], BELT + 0.02, TO[2] + 0.25]} progress={(t) => (held(t) - LAND) / 950} />
       <Figure pose={handler} role="handler" time={held} />
     </>
@@ -490,7 +491,7 @@ function HandleSet() {
           return { p: [b.p[0], 0, 0], w: 0.85 + b.p[1], d: 0.55 + b.p[1] * 0.6, o: 0.5 - 0.9 * b.p[1] };
         }}
       />
-      <Bag pose={curbBag} speaking={(t) => bagSpeaking(HANDLE, t)} />
+      <Bag pose={curbBag} voice={(t) => bagVoice(HANDLE, t)} />
       <Figure pose={owner} role="owner" tall={1.03} />
       <Figure pose={bystander} role="bystander" phone />
     </>

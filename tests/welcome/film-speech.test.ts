@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SCENES, saidAt, type Line } from "@/components/welcome/scenes/scenes";
-import { PEOPLE_MS, speechLevel, syllables, voiceOf } from "@/components/welcome/scenes/speech";
+import { PEOPLE_MS, bagVoice, presence, speechLevel, syllables, voiceOf } from "@/components/welcome/scenes/speech";
 
 const fat: Line = SCENES.find((s) => s.id === "scale")!.lines[0]!;
 
@@ -44,5 +44,21 @@ describe("how loud a line is, from the subtitle timing", () => {
     expect(voiceOf(scale, "agent", 8700 + 1.5 * PEOPLE_MS)).toBeGreaterThan(0);
     expect(voiceOf(scale, "host", 8700 + 1.5 * PEOPLE_MS)).toBe(0);
     expect(voiceOf(scale, "bag", 5900 + 1.5 * 55)).toBeGreaterThan(0);
+  });
+
+  it("is present smoothly across a line, rising before it and falling after", () => {
+    const scale = SCENES.find((s) => s.id === "scale")!;
+    expect(presence(scale, "bag", 5000)).toBe(0);
+    expect(presence(scale, "bag", 5900 - 75)).toBeGreaterThan(0);
+    expect(presence(scale, "bag", 5900 - 75)).toBeLessThan(1);
+    // inside a word and in the gap between words, the bag is still speaking
+    expect(presence(scale, "bag", 5900 + 3.5 * 55)).toBe(1);
+    expect(speechLevel(fat, 5900 + 3.5 * 55)).toBe(0);
+    // "FAT?" ends at 7450 + 4 * 70; it has let go 350 ms later
+    expect(presence(scale, "bag", 7450 + 280 + 100)).toBeGreaterThan(0);
+    expect(presence(scale, "bag", 7450 + 280 + 400)).toBe(0);
+    const v = bagVoice(scale, 5900 + 1.5 * 55);
+    expect(v.on).toBe(1);
+    expect(v.level).toBeGreaterThan(0.75);
   });
 });

@@ -515,7 +515,7 @@ const PREROLL_MS = 2600;
  * seconds back whenever the film is cut to a new moment, so a held frame shows the same swing the film would).
  * `time` is the scene's own time, for a scene that stops it; `gravity` is how hard the tag is pulled down.
  */
-export function Bag({ pose, speaking, lamp = 0, time, gravity = 9.8, children }: { pose: (t: number) => BagPose; speaking?: (t: number) => boolean; lamp?: number; time?: (t: number) => number; gravity?: number; children?: ReactNode }) {
+export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { pose: (t: number) => BagPose; voice?: (t: number) => { level: number; on: number }; lamp?: number; time?: (t: number) => number; gravity?: number; children?: ReactNode }) {
   const root = useRef<THREE.Group>(null);
   const tumble = useRef<THREE.Group>(null);
   const hang = useRef<THREE.Group>(null);
@@ -524,6 +524,7 @@ export function Bag({ pose, speaking, lamp = 0, time, gravity = 9.8, children }:
   const tag = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
   const ringMat = useRef<THREE.MeshBasicMaterial>(null);
+  const grilleMat = useRef<THREE.MeshBasicMaterial>(null);
   const lid = useRef<THREE.MeshStandardMaterial>(null);
   const light = useRef<THREE.PointLight>(null);
   const clock = useClock();
@@ -569,11 +570,15 @@ export function Bag({ pose, speaking, lamp = 0, time, gravity = 9.8, children }:
     tag.current.quaternion.setFromUnitVectors(DOWN, sim.d);
     tag.current.rotateY(q.tagTwist ?? 0);
 
-    const talk = speaking?.(now) ?? false;
-    const beat = (now % 520) / 520;
-    ring.current?.scale.setScalar(talk ? 1 + beat * 1.1 : 1);
-    if (ringMat.current) ringMat.current.opacity = talk ? 0.9 * (1 - beat) : 0;
-    const glow = (q.glow ?? 0) + (talk ? 0.3 : 0);
+    // the gadget performs its line: the grille pulses with each syllable, the lamp follows the voice, and it leans
+    // toward us while it speaks (and swells a hair on each syllable)
+    const v = voice?.(now) ?? { level: 0, on: 0 };
+    ring.current?.scale.setScalar(1 + 0.1 * v.on + 0.38 * v.level);
+    if (ringMat.current) ringMat.current.opacity = 0.2 * v.on + 0.6 * v.level;
+    if (grilleMat.current) grilleMat.current.opacity = 0.32 * v.level;
+    tag.current.rotateX(-0.16 * v.on);
+    tag.current.scale.setScalar(1 + 0.035 * v.level);
+    const glow = (q.glow ?? 0) + 0.12 * v.on + 0.45 * v.level;
     if (lid.current) lid.current.emissiveIntensity = 0.06 + glow * 0.75;
     if (light.current) light.current.intensity = glow * lamp;
 
@@ -629,6 +634,10 @@ export function Bag({ pose, speaking, lamp = 0, time, gravity = 9.8, children }:
                       <mesh ref={ring} position={[0, -loop - h / 2 - h * 0.27, face + 0.006]}>
                         <torusGeometry args={[w * 0.3, 0.007, 6, 28]} />
                         <meshBasicMaterial ref={ringMat} color="#ffffff" transparent opacity={0} depthWrite={false} toneMapped={false} />
+                      </mesh>
+                      <mesh position={[0, -loop - h / 2 - h * 0.27, face + 0.003]}>
+                        <circleGeometry args={[w * 0.29, 28]} />
+                        <meshBasicMaterial ref={grilleMat} color="#ffd9b0" transparent opacity={0} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} />
                       </mesh>
                       {lamp > 0 ? <pointLight ref={light} color="#ff8a3d" intensity={0} distance={1.5} decay={2} position={[0, -loop - h / 2, 0.32]} /> : null}
                     </group>
