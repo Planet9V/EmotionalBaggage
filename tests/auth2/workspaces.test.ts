@@ -275,3 +275,29 @@ describe("audit lines", () => {
     expect(removed?.summary).toContain(t.member.email);
   });
 });
+
+describe("N10: the actor's role is checked again inside the transaction", () => {
+  it("an admin demoted while their change waits on the workspace's lock does not make it", async () => {
+    const t = await team("n10");
+    const hold = await db.connect();
+    try {
+      await hold.query("BEGIN");
+      await hold.query("SELECT 1 FROM organization WHERE id = $1 FOR UPDATE", [t.ws]);
+      const pending = Promise.all([
+        t.admin.b.post<{ code: string }>("/workspace/member/remove", { workspaceId: t.ws, memberId: t.memberId }),
+        t.admin.b.post<{ code: string }>("/workspace/invite", { workspaceId: t.ws, email: "n10-invitee@zz-auth2.test", role: "member" }),
+        t.admin.b.post<{ code: string }>("/workspace/rename", { workspaceId: t.ws, name: "Renamed late" }),
+      ]);
+      await new Promise((r) => setTimeout(r, 400));
+      await hold.query("UPDATE member SET role = 'member' WHERE id = $1", [t.adminId]);
+      await hold.query("COMMIT");
+      const [rm, inv, ren] = await pending;
+      expect([rm.body.code, inv.body.code, ren.body.code]).toEqual(["NOT_ALLOWED", "NOT_ALLOWED", "NOT_ALLOWED"]);
+    } finally {
+      hold.release();
+    }
+    expect(await memberIdOf(t.ws, t.member.userId)).toBe(t.memberId);
+    expect((await db.query("SELECT 1 FROM invitation WHERE \"organizationId\" = $1", [t.ws])).rowCount).toBe(0);
+  });
+});
+

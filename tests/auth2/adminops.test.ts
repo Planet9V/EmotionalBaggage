@@ -223,3 +223,52 @@ describe("workspaces", () => {
     expect((await invitee.b.post<{ code: string }>("/workspace/invitation/accept", { token })).body.code).toBe("INVITATION_INVALID");
   });
 });
+
+describe("F7: the actor is checked again inside the transaction", () => {
+  it("an administrator unflagged while their change waits on a lock does not make it (the reviewer's interleaving)", async () => {
+    const c0 = await anAdmin("ops-stale");
+    const t = await newAccount(route, "ops-stale-target");
+    const hold = await db.connect();
+    try {
+      await hold.query("BEGIN");
+      await hold.query('SELECT 1 FROM "user" WHERE "platformAdmin" FOR UPDATE');
+      const pending = c0.ops.setPlatformAdmin(t.userId, true).then(() => "ok", (e: { body?: { code?: string } }) => e.body?.code);
+      await new Promise((r) => setTimeout(r, 400));
+      await hold.query('UPDATE "user" SET "platformAdmin" = false WHERE id = $1', [c0.userId]);
+      await hold.query("COMMIT");
+      expect(await pending).toBe("NOT_PLATFORM_ADMIN");
+    } finally {
+      hold.release();
+    }
+    expect((await flags(t.userId)).platformAdmin).toBe(false);
+  });
+
+  it("the same for a change that takes no administrator lock (a password)", async () => {
+    const c0 = await anAdmin("ops-stale2");
+    const t = await newAccount(route, "ops-stale2-target");
+    const hold = await db.connect();
+    try {
+      await hold.query("BEGIN");
+      await hold.query('SELECT 1 FROM "user" WHERE id = $1 FOR UPDATE', [c0.userId]);
+      const pending = c0.ops.setPassword(t.userId, "stale new password").then(() => "ok", (e: { body?: { code?: string } }) => e.body?.code);
+      await new Promise((r) => setTimeout(r, 400));
+      await hold.query('UPDATE "user" SET "disabledAt" = now() WHERE id = $1', [c0.userId]);
+      await hold.query("COMMIT");
+      expect(await pending).toBe("NOT_PLATFORM_ADMIN");
+    } finally {
+      hold.release();
+    }
+    expect((await signIn(t.email)).status).toBe(200);
+  });
+
+  it("N11: a disabled administrator does not count, and may lose the flag while an enabled one remains", async () => {
+    await db.query('UPDATE "user" SET "platformAdmin" = false');
+    const a = await anAdmin("ops-n11");
+    const d = await anAdmin("ops-n11-disabled");
+    await db.query('UPDATE "user" SET "disabledAt" = now() WHERE id = $1', [d.userId]);
+    await a.ops.setPlatformAdmin(d.userId, false);
+    expect((await flags(d.userId)).platformAdmin).toBe(false);
+    // The one enabled administrator still cannot go.
+    await expect(a.ops.setPlatformAdmin(a.userId, false)).rejects.toMatchObject({ body: { code: "LAST_PLATFORM_ADMIN" } });
+  });
+});
