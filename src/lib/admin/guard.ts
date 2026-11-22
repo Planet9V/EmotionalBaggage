@@ -15,7 +15,7 @@ import { platformAdminFromAuth2 } from "./platformAdminHook";
 /** The new powers: every provider, settings key and test kind this area added. Everything else is open as before. */
 const PLATFORM_ADMIN_ONLY = {
   /** credentials providers (src/lib/admin/providers.ts) */
-  providers: new Set<string>(["stripe", "smtp", "voice-openai", "elevenlabs"]),
+  providers: new Set<string>(["stripe", "smtp", "kokoro"]),
   /** keys of PUT /api/admin/settings */
   settings: new Set<string>(["mail", "voice"]),
   /** kinds of POST /api/admin/test */

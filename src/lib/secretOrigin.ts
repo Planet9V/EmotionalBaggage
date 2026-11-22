@@ -20,15 +20,13 @@ import { lwaTokenUrl, igGraphBase, xApiBase } from "@/lib/channels/http";
 import { DEFAULT_BASE_URL, embeddingModel, getCredential, getSetting, reasoningModel, SETTING, type ModelChoice, type Provider } from "@/lib/settings";
 
 /** Fixed API addresses of the hosted services. Only tests change them (setServiceBaseForTests), to reach a stand-in. */
-const SERVICE_BASE = { stripe: "https://api.stripe.com", elevenlabs: "https://api.elevenlabs.io" };
+const SERVICE_BASE = { stripe: "https://api.stripe.com" };
 const serviceBase = { ...SERVICE_BASE };
 export function setServiceBaseForTests(name: keyof typeof SERVICE_BASE, url: string | null) {
   serviceBase[name] = url ?? SERVICE_BASE[name];
 }
 /** Stripe's API, where its secret key is sent. */
 export const stripeApiBase = () => serviceBase.stripe;
-/** ElevenLabs' API, where its key is sent. */
-export const elevenLabsApiBase = () => serviceBase.elevenlabs;
 
 /** The binding of an SMTP password: smtp://host:port of the mail server it was saved for (not a web address). */
 export function smtpOrigin(host: string | null | undefined, port: number | null | undefined): string | null {
@@ -67,8 +65,7 @@ function builtInOrigin(provider: Provider): string | null {
   if (provider === "x") return originOf(xApiBase());
   if (provider === "instagram") return originOf(igGraphBase());
   if (provider === "stripe") return originOf(stripeApiBase());
-  if (provider === "elevenlabs") return originOf(elevenLabsApiBase());
-  // voice-openai and smtp have no built-in address: the one saved in Admin (currentOrigin)
+  // kokoro and smtp have no built-in address: the one saved in Admin (currentOrigin)
   return null;
 }
 
@@ -89,7 +86,7 @@ export async function currentOrigin(provider: Provider): Promise<string | null> 
       if (o) return o;
     }
   }
-  if (provider === "voice-openai") {
+  if (provider === "kokoro") {
     const v = await getSetting<{ baseUrl?: string } | null>(SETTING.voice, null);
     return originOf(v?.baseUrl);
   }

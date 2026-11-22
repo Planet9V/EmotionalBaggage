@@ -85,28 +85,38 @@ function isLoopback(host: string): boolean {
 }
 export type MailSettings = z.infer<typeof mailSettings>;
 
-/** Admin, Voice. provider "none" (the default) means no narration; keys are credentials of "voice-openai" / "elevenlabs". */
+/**
+ * Admin, Voice. Providers: "none" (the default: no narration) and "kokoro" (a Kokoro server the admin runs, reached
+ * at its OpenAI-compatible speech interface; an optional key is the credential of "kokoro"). OpenRouter is listed on
+ * the screen but not offered: see VOICE_PROVIDERS below.
+ */
 export const voiceSettings = z.discriminatedUnion("provider", [
   z.object({ provider: z.literal("none") }).strict(),
   z
     .object({
-      provider: z.literal("openai"),
+      provider: z.literal("kokoro"),
       baseUrl: httpUrl,
       model: z.string().trim().min(1, "is required").max(200),
       voice: z.string().trim().min(1, "is required").max(200),
       speed: z.number().min(0.25, "must be 0.25 to 4").max(4, "must be 0.25 to 4"),
     })
     .strict(),
-  z
-    .object({
-      provider: z.literal("elevenlabs"),
-      model: z.string().trim().min(1, "is required").max(200),
-      voice: z.string().trim().min(1, "is required: the ElevenLabs voice ID").max(200).regex(/^[A-Za-z0-9]+$/, "must be an ElevenLabs voice ID (letters and digits)"),
-      speed: z.number().min(0.7, "must be 0.7 to 1.2 for ElevenLabs").max(1.2, "must be 0.7 to 1.2 for ElevenLabs"),
-    })
-    .strict(),
 ]);
 export type VoiceSettings = z.infer<typeof voiceSettings>;
+
+/** The providers the Voice section lists, in order. Only "none" and "kokoro" can be saved. */
+export const VOICE_PROVIDERS = [
+  { id: "none", label: "None (narration off)", available: true },
+  { id: "kokoro", label: "Kokoro (a speech server you run)", available: true },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    available: false,
+    reason:
+      "Not available: OpenRouter's documentation on speech output (https://openrouter.ai/docs) could not be checked when this was built, so it is not offered until it is confirmed which models and voices produce audio there.",
+  },
+] as const;
+
 
 export const adminSettingsPut = z
   .object({

@@ -73,10 +73,10 @@ export async function testVoice(ms: number): Promise<TestResult> {
   try {
     const { audio, contentType } = await s.synth.synthesize(VOICE_TEST_TEXT, { timeoutMs: ms });
     const kb = Math.max(1, Math.round(audio.byteLength / 1024));
-    const who = s.settings.provider === "elevenlabs" ? "ElevenLabs" : "The speech endpoint";
+    const who = "The Kokoro server";
     return {
       ok: true,
-      message: `${who} spoke the test sentence: ${kb} KB of ${contentType}.${s.settings.provider === "elevenlabs" ? " ElevenLabs counts the characters against the account's quota." : ""}`,
+      message: `${who} spoke the test sentence: ${kb} KB of ${contentType}.`,
       detail: audio.byteLength <= MAX_PLAYBACK_BYTES ? { audio: `data:${contentType.split(";")[0]};base64,${Buffer.from(audio).toString("base64")}` } : {},
     };
   } catch (e) {

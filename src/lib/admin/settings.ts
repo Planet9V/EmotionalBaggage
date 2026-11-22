@@ -35,7 +35,7 @@ export type AdminSettings = {
 /** Mail as a reader sees it: the whole setting for the platform administrator, else only whether one is set (review F5). */
 type MailView = MailSettings | { mode: "smtp"; hidden: true };
 /** Voice likewise: the provider only, without address, model or voice, for anyone but the platform administrator. */
-type VoiceView = VoiceSettings | { provider: "openai" | "elevenlabs"; hidden: true };
+type VoiceView = VoiceSettings | { provider: "kokoro"; hidden: true };
 
 export async function readAdminSettings(viewer: { platformAdmin: boolean }): Promise<AdminSettings> {
   const [reasoningModel, embeddingModel, plannerUrl, defaultConcept, plannerEffective, slicerUrl, slicerEffective, mail, voice] = await Promise.all([
@@ -123,7 +123,7 @@ export async function writeAdminSettings(change: AdminSettingsChange): Promise<s
     // the saved value is removed (and the admin told), as for the model keys below.
     const moves: [Provider, string, string | null][] = [];
     if (change.mail) moves.push(["smtp", "password", change.mail.mode === "smtp" ? smtpOrigin(change.mail.host, change.mail.port) : null]);
-    if (change.voice) moves.push(["voice-openai", "apiKey", change.voice.provider === "openai" ? originOf(change.voice.baseUrl) : null]);
+    if (change.voice) moves.push(["kokoro", "apiKey", change.voice.provider === "kokoro" ? originOf(change.voice.baseUrl) : null]);
     for (const [provider, field, next] of moves) {
       const cred = await c.query<{ bound_origin: string | null }>("SELECT bound_origin FROM credentials WHERE provider=$1 AND field=$2 FOR UPDATE", [provider, field]);
       if (!cred.rowCount || !next) continue; // nothing saved, or switched off (kept for when it comes back)

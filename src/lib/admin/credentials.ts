@@ -106,7 +106,7 @@ export function checkCredentialFields(provider: string, fields: Record<string, s
 /** Providers whose secret goes to an address the admin sets: the address must be saved first. */
 const ADDRESS_FIRST: Partial<Record<string, string>> = {
   smtp: "cannot be saved yet: save the mail server in Admin, Email first, because the password is only ever sent to the server it was saved for",
-  "voice-openai": "cannot be saved yet: choose the speech endpoint and save its address in Admin, Voice first, because the key is only ever sent to the address it was saved for",
+  kokoro: "cannot be saved yet: choose Kokoro and save its address in Admin, Voice first, because the key is only ever sent to the address it was saved for",
 };
 
 /**

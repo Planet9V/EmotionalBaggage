@@ -93,15 +93,10 @@ const DEFS: Record<Provider, Omit<ProviderDef, "id">> = {
     purpose: "Email: confirmations, password resets and invitations. The server address is set in Admin, Email.",
     fields: [{ name: "password", label: "SMTP password", secret: true, required: false, noLast4: true }],
   },
-  "voice-openai": {
-    label: "Speech endpoint (OpenAI-compatible)",
-    purpose: "Voice: narration from any service that speaks the OpenAI speech interface. The address is set in Admin, Voice.",
+  kokoro: {
+    label: "Kokoro speech service",
+    purpose: "Voice: narration from a Kokoro server you run (its OpenAI-compatible speech interface). A key only if it sits behind a proxy that asks for one. The address is set in Admin, Voice.",
     fields: [key(false)],
-  },
-  elevenlabs: {
-    label: "ElevenLabs",
-    purpose: "Voice: narration through ElevenLabs.",
-    fields: [key(true)],
   },
 };
 

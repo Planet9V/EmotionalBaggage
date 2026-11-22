@@ -46,7 +46,7 @@ export async function readChecks(): Promise<Partial<Record<ServiceKey, LastCheck
 }
 
 const OF_PROVIDER: Partial<Record<string, ServiceKey[]>> = {
-  stripe: ["payments"], smtp: ["email"], "voice-openai": ["voice"], elevenlabs: ["voice"], perplexity: ["research"],
+  stripe: ["payments"], smtp: ["email"], kokoro: ["voice"], perplexity: ["research"],
   "amazon-sp": ["amazon"], x: ["x"], instagram: ["instagram"],
   ollama: ["reasoningModel", "embeddingModel"], lmstudio: ["reasoningModel", "embeddingModel"], openrouter: ["reasoningModel", "embeddingModel"],
 };

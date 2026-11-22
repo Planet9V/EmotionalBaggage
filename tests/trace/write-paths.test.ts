@@ -44,6 +44,7 @@ const WRITE_PATHS: Record<string, string> = {
   "admin/printers/route.ts": "self",
   "admin/plans/route.ts": "src/lib/admin/plans.ts",
   "admin/settings/route.ts": "src/lib/admin/settings.ts",
+  "admin/voice/options/route.ts": "none: lists the voices and models a speech server offers; nothing is saved",
   "admin/test/route.ts": "src/lib/admin/connection.ts",
   "auth/password/route.ts": "self",
   "auth/sign-in/route.ts": "self",

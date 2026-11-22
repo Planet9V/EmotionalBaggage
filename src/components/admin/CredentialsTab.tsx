@@ -50,7 +50,7 @@ function testFor(p: ProviderView, typed: string, settings: AdminSettings | undef
   // the channel connections test the saved values (src/lib/channels/connection.ts)
   if (p.id === "amazon-sp" || p.id === "x" || p.id === "instagram") return { kind: p.id };
   if (p.id === "stripe" || p.id === "smtp") return { kind: p.id };
-  if (p.id === "voice-openai" || p.id === "elevenlabs") return { kind: "voice" };
+  if (p.id === "kokoro") return { kind: "voice" };
   if (MODEL_PROVIDERS.has(p.id)) {
     const id = p.id as "ollama" | "lmstudio" | "openrouter";
     const saved = [settings?.reasoningModel, settings?.embeddingModel].find((m) => m?.provider === id);

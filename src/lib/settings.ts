@@ -4,7 +4,7 @@
 import { q } from "@/lib/db";
 
 /** Outside services that can hold credentials. */
-export const PROVIDERS = ["ollama", "lmstudio", "openrouter", "perplexity", "amazon-sp", "x", "instagram", "stripe", "smtp", "voice-openai", "elevenlabs"] as const;
+export const PROVIDERS = ["ollama", "lmstudio", "openrouter", "perplexity", "amazon-sp", "x", "instagram", "stripe", "smtp", "kokoro"] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 /**
@@ -69,7 +69,7 @@ export const SETTING = {
   defaultConcept: "concepts.default",
   /** mail server: sender, host, port, security, user name (the password is a credential of "smtp") */
   mail: "mail.smtp",
-  /** narration: provider, address, model, voice, speed (keys are credentials of "voice-openai" and "elevenlabs") */
+  /** narration: provider, address, model, voice, speed (an optional key is the credential of "kokoro") */
   voice: "voice.tts",
   /** the plan catalogue: one validated JSON document (src/lib/admin/plans.ts) */
   plans: "plans.catalogue",
