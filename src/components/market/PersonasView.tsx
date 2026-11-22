@@ -4,6 +4,9 @@ import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +17,7 @@ import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ApproveButton, FieldRow, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
 import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
@@ -147,32 +150,35 @@ export function PersonasView({ project, store }: ViewProps) {
   );
 }
 
+const PERSONA_NAME_ID = "persona-name";
+type PersonaKey = (typeof FIELDS)[number][0];
+const personaSchema = z.object({
+  title: z.string().trim().min(1, "Give the persona a name."),
+  vals: z.record(z.string(), z.string()),
+});
+
 function PersonaDialog({ item, onClose, onSave }: { item: Item | null; onClose: () => void; onSave: (title: string, data: Record<string, unknown>) => Promise<void> }) {
   const start = personaData.safeParse(item?.data ?? {});
   const d = start.success ? start.data : {};
-  const [title, setTitle] = useState(item?.title ?? "");
-  const [vals, setVals] = useState<Record<string, string>>(Object.fromEntries(FIELDS.map(([k]) => [k, String(d[k] ?? "")])));
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    if (!title.trim()) return setErr("Give the persona a name.");
-    setBusy(true);
-    setErr("");
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting: busy } } = useForm<{ title: string; vals: Record<PersonaKey, string> }>({
+    resolver: zodResolver(personaSchema),
+    defaultValues: { title: item?.title ?? "", vals: Object.fromEntries(FIELDS.map(([k]) => [k, String(d[k] ?? "")])) as Record<PersonaKey, string> },
+  });
+  const save = handleSubmit(async ({ title, vals }) => {
     try {
-      await onSave(title.trim(), vals);
+      await onSave(title, vals);
     } catch (e) {
-      setErr((e as Error).message);
-      setBusy(false);
+      setError("root", { message: (e as Error).message });
     }
-  };
+  });
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={item ? "Edit persona" : "Add persona"} description={item?.status === "approved" ? "Saving an edit puts an approved persona back to draft." : undefined}>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void save(); }}>
-        <Field label="Name"><Input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+      <form className="space-y-3" noValidate onSubmit={(e) => void save(e)}>
+        <Field id={PERSONA_NAME_ID} label="Name" error={errors.title?.message}><Input id={PERSONA_NAME_ID} {...describe(PERSONA_NAME_ID, { error: errors.title?.message })} {...register("title")} /></Field>
         {FIELDS.map(([k, label]) => (
-          <Field key={k} label={label}><Textarea rows={2} value={vals[k]} onChange={(e) => setVals((v) => ({ ...v, [k]: e.target.value }))} /></Field>
+          <Field key={k} label={label}><Textarea rows={2} {...register(`vals.${k}`)} /></Field>
         ))}
-        {err && <ErrorLine>{err}</ErrorLine>}
+        {errors.root?.message && <ErrorLine>{errors.root.message}</ErrorLine>}
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={busy}>{busy ? "Saving" : "Save"}</Button>

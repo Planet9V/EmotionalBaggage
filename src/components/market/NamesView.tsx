@@ -4,6 +4,9 @@ import { RowActions } from "@/components/drafts/RowActions";
 import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import { useMemo, useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/Card";
@@ -14,7 +17,7 @@ import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
 import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Modal } from "@/components/ui/modal";
 import { statusesFor } from "@/lib/menuLookup";
@@ -145,16 +148,30 @@ export function NamesView({ project }: ViewProps) {
   );
 }
 
+const NAME_ID = "add-name-or-line";
+const addNameSchema = z.object({
+  title: z.string().trim().min(1, "Type the name or line."),
+  kind: z.enum(["Name", "Tagline"]),
+});
+
 function AddDialog({ onClose, onAdd }: { onClose: () => void; onAdd: (title: string, kind: "Name" | "Tagline") => Promise<void> }) {
-  const [t, setT] = useState("");
-  const [k, setK] = useState<"Name" | "Tagline">("Name");
-  const [err, setErr] = useState("");
+  const { register, handleSubmit, setError, formState: { errors } } = useForm<z.infer<typeof addNameSchema>>({
+    resolver: zodResolver(addNameSchema),
+    defaultValues: { title: "", kind: "Name" },
+  });
+  const submit = handleSubmit(async ({ title, kind }) => {
+    try {
+      await onAdd(title, kind);
+    } catch (x) {
+      setError("root", { message: (x as Error).message });
+    }
+  });
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Add a name or tagline">
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!t.trim()) return setErr("Type the name or line."); onAdd(t.trim(), k).catch((x) => setErr((x as Error).message)); }}>
-        <Field label="Name or line"><Input value={t} onChange={(e) => setT(e.target.value)} autoFocus /></Field>
-        <Field label="Kind"><NativeSelect value={k} onChange={(e) => setK(e.target.value as typeof k)}><option>Name</option><option>Tagline</option></NativeSelect></Field>
-        {err && <ErrorLine>{err}</ErrorLine>}
+      <form className="space-y-3" noValidate onSubmit={(e) => void submit(e)}>
+        <Field id={NAME_ID} label="Name or line" error={errors.title?.message}><Input id={NAME_ID} autoFocus {...describe(NAME_ID, { error: errors.title?.message })} {...register("title")} /></Field>
+        <Field label="Kind"><NativeSelect {...register("kind")}><option>Name</option><option>Tagline</option></NativeSelect></Field>
+        {errors.root?.message && <ErrorLine>{errors.root.message}</ErrorLine>}
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>Cancel</Button><Button type="submit">Add</Button></div>
       </form>
     </Modal>
