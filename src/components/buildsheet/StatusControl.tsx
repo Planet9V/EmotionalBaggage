@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { STATUS_FLOW } from "./derive";
+import { TONE_CLASS, statusTone } from "@/lib/statusTones";
 
 const LABEL: Record<(typeof STATUS_FLOW)[number], string> = { "to solder": "To solder", soldered: "Soldered", tested: "Tested" };
 
@@ -45,7 +46,7 @@ export function StatusControl({ status, name, onChange }: { status: string; name
             onClick={() => { if (!locked) onChange(s); }}
             className={`h-7 rounded px-2.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange ${
               on
-                ? s === "tested" ? "bg-success-soft text-success" : s === "soldered" ? "bg-info-soft text-info" : "bg-warning-soft text-warning"
+                ? TONE_CLASS[statusTone(s)]
                 : locked ? "cursor-not-allowed text-muted" : "text-secondary hover:text-primary"
             }`}
           >
