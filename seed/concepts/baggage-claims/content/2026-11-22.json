@@ -242,6 +242,440 @@
    "status": "candidate",
    "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
    "sourceLocation": "Campaign 9, line 112"
+  },
+  {
+   "proposal": "P140",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "Successful Kickstarter tech campaigns average about $33k raised"
+   },
+   "sourceFile": "Create a PRD for this with arch instructions bom a.md",
+   "sourceLocation": "Market and launch framing, footnote 6, line 45",
+   "appendBody": "The cited source: footnote 6, a LinkedIn article (\"I researched Kickstarter [an] entire week, here's [the] cheat sheet\"). The companion claim in the same sentence: \"campaigns with video are far likelier to fund\"."
+  },
+  {
+   "proposal": "P141",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "10% of tech backers delivered 60% of reward funding in Q3 2026"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 93",
+   "appendBody": "The cited source: footnote 7, a LinkedIn post by \"tcf-team\" on tech and gadget Kickstarter campaigns. The playbook's use of it: \"the $49 tier exists to capture the whale 10% who bring 60% of funds\"."
+  },
+  {
+   "proposal": "P142",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "Turnkey PCBA runs about $18-22 per board for a moderate BOM at 1,000 pieces"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9, page 5",
+   "appendBody": "The rest of the PRD's sentence, which is also unverified: \"$1-5 per board at high volume, 2-layer PCB $0.50-1.50 at 1k+\". Cited in the chat: makerpcb.com, lzjpcb.com and wintechpcbassembly.com cost articles (footnotes 1 to 3)."
+  },
+  {
+   "proposal": "P143",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "Mid-tier creators (50k-500k followers) get about 3x the engagement of mega-influencers for prop comedy"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 3, line 35",
+   "appendBody": "The playbook gives no source for the 3x figure."
+  },
+  {
+   "proposal": "P144",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Short-form travel comedy is one of the most reliable viral content genres",
+   "body": "Stated without a source. The whole Phase 1 gate tests it.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "front page, Why now, page 1"
+  },
+  {
+   "proposal": "P145",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Kickstarter campaigns with a video are far likelier to fund",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9, page 5"
+  },
+  {
+   "proposal": "P146",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Kickstarter takes about 8-10% in fees",
+   "body": "Basis for net revenue of $17.20 on $19 and $21.70 on $24.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5"
+  },
+  {
+   "proposal": "P147",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A direct store (Shopify or TikTok Shop) takes about 12% blended",
+   "body": "Basis for net revenue of $21.95 on $24.95.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5"
+  },
+  {
+   "proposal": "P149",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Between 1% and 3% of a pre-launch email list converts on day one",
+   "body": "The playbook calls it an \"industry rule\" and uses 2%: 3,000 x 2% x $24 is about $1.4k.",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 5, line 65"
+  },
+  {
+   "proposal": "P150",
+   "op": "add",
+   "section": "research/claims",
+   "title": "About $1.4k of day-one pledges triggers Kickstarter's trending algorithm",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 5, line 66"
+  },
+  {
+   "proposal": "P151",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Posting many creator clips in one week makes the algorithm read the subject as a trend, not an ad",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 3, line 38"
+  },
+  {
+   "proposal": "P152",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Morning commuter slots (6-8 am local) are the right posting time for the unbranded clips",
+   "body": "Stated as an instruction, with no source.",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 1, line 15"
+  },
+  {
+   "proposal": "P153",
+   "op": "add",
+   "section": "research/claims",
+   "title": "ManyChat can auto-DM a commenter who types a keyword and take them to a one-field email capture",
+   "body": "The whole Phase 1 capture path depends on it, on each platform used.",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 1, line 22"
+  },
+  {
+   "proposal": "P154",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Four-packs are where the margin lives",
+   "body": "Said of the $99 four-pack; no arithmetic is given.",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 89"
+  },
+  {
+   "proposal": "P155",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Airport gift retail is reachable through Paradies and Hudson-style channels",
+   "body": "Named as the channel for segment P4; no contact or terms have been checked.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§2, page 2"
+  },
+  {
+   "proposal": "P159",
+   "op": "add",
+   "section": "research/claims",
+   "title": "TSA allows installed lithium batteries in checked devices",
+   "body": "",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "The One Regulatory Gotcha, line 48"
+  },
+  {
+   "proposal": "P163",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Celebrity voice impressions invite right-of-publicity claims and platform takedowns",
+   "body": "",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "The One Regulatory Gotcha, last paragraph, line 52"
+  },
+  {
+   "proposal": "P165",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A real baggage handler can be filmed for the launch video with written consent",
+   "body": "Airport and airline permission to film airside is not mentioned.",
+   "data": {
+    "source": "BaggageClaims_LaunchVideo_Script_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Shot list notes, line 77"
+  },
+  {
+   "proposal": "P166",
+   "op": "add",
+   "section": "research/claims",
+   "title": "85 dBA at 1 m is loud enough for terminals and below PA levels",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_DesignPackage_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.2 SPK1, page 2"
+  },
+  {
+   "proposal": "P171",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Waveshare ESP32-S3 Mini is $8.99 at Micro Center, SKU 699323, same-day pickup",
+   "body": "Chat footnote: https://www.microcenter.com/product/699323/waveshare-esp32-s3-mini-development-board",
+   "data": {
+    "source": "BOM_shopping_list.csv"
+   },
+   "status": "unverified",
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "U1 row, line 2"
+  },
+  {
+   "proposal": "P172",
+   "op": "add",
+   "section": "research/claims",
+   "title": "HiLetgo GY-521 MPU-6050 is $6.99 for one or $11.79 for three on Amazon",
+   "body": "",
+   "data": {
+    "source": "BOM_shopping_list.csv"
+   },
+   "status": "unverified",
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "U2 row, line 3"
+  },
+  {
+   "proposal": "P174",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A four-pack of 3 W 8-ohm speakers is $6.99 on Amazon ($1.75 each)",
+   "body": "The first proposal says a 3 W mini cavity speaker is about $2.50-3.50.",
+   "data": {
+    "source": "Build me the low level design , inter interface co.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Build me the low level design , inter interface co.md",
+   "sourceLocation": "Shopping plan, line 25"
+  },
+  {
+   "proposal": "P175",
+   "op": "add",
+   "section": "research/claims",
+   "title": "The MPU-6050 costs $0.90 in volume",
+   "body": "The first proposal says about $1-2.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§3.1, page 2"
+  },
+  {
+   "proposal": "P177",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A voice pack on microSD costs $0.50 to make",
+   "body": "Sold at $7.99. Card, duplication, packaging and postage are not itemised.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9, page 5"
+  },
+  {
+   "proposal": "P179",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A 2-layer PCB costs $0.50-1.50 at 1,000 and assembly $1-5 a board at high volume",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9, page 5"
+  },
+  {
+   "proposal": "P180",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Moving from microSD to SPI flash and to offshore assembly saves another $3-4 a unit at 1,000",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 note, page 5"
+  },
+  {
+   "proposal": "P181",
+   "op": "add",
+   "section": "research/claims",
+   "title": "YX5200 and KT148A can be dual-sourced as the audio codec",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks, page 6"
+  },
+  {
+   "proposal": "P182",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Inland PETG is about $20 a kg at Micro Center",
+   "body": "",
+   "data": {
+    "source": "BOM_shopping_list.csv"
+   },
+   "status": "unverified",
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "ENC1 row, line 16"
+  },
+  {
+   "proposal": "P183",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Bambu Lab A1 is $259.99 at Micro Center, with a 256 mm bed, direct drive and about 20 minutes of setup",
+   "body": "",
+   "data": {
+    "source": "Can I do a 3d printer for this integrated - if so.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "The printer: Bambu Lab A1, line 9"
+  },
+  {
+   "proposal": "P185",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A1 mini Combo with AMS lite is $299.99 with a 180 mm bed; enclosed printers (P2S, X2D) start at $649",
+   "body": "",
+   "data": {
+    "source": "Can I do a 3d printer for this integrated - if so.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "Budget alternative, line 15"
+  },
+  {
+   "proposal": "P186",
+   "op": "add",
+   "section": "research/claims",
+   "title": "PETG print-in-place hinges need 0.3-0.4 mm clearance per side; PETG micro-welds at PLA clearances",
+   "body": "",
+   "data": {
+    "source": "Can I do a 3d printer for this integrated - if so.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "Level 2 design rules, line 23"
+  },
+  {
+   "proposal": "P187",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Over-extrusion shrinks print-in-place clearances by 0.1-0.15 mm",
+   "body": "",
+   "data": {
+    "source": "Can I do a 3d printer for this integrated - if so.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "The printer: Bambu Lab A1, line 12"
+  },
+  {
+   "proposal": "P188",
+   "op": "add",
+   "section": "research/claims",
+   "title": "PETG survives -10 to +45 C and is the best print-in-place material; ASA is not needed",
+   "body": "",
+   "data": {
+    "source": "Can I do a 3d printer for this integrated - if so.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "Material spec, line 34"
+  },
+  {
+   "proposal": "P189",
+   "op": "add",
+   "section": "research/claims",
+   "title": "An A1 prints 4-6 shells per plate overnight",
+   "body": "Basis for printing the 100-unit batch in house.",
+   "data": {
+    "source": "Can I do a 3d printer for this integrated - if so.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "after the material table, line 38"
   }
  ]
 }

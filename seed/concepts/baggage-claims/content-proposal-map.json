@@ -1,0 +1,3504 @@
+{
+ "about": "Where each row of docs/research/baggage-claims-content-proposal.csv went on 22 Nov 2026. entered: the rows it became in seed/concepts/baggage-claims/content/<batch>.json (a row's id differs per database, so rows are named by section and title, or by part reference). Not entered: its group in docs/research/baggage-claims-owner-decisions.md (a conflict, b choice, c superseded, d confidence, e website platform) and the reason.",
+ "rows": {
+  "P001": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P093.",
+   "waitsOn": "P093"
+  },
+  "P002": {
+   "entered": false,
+   "group": "d",
+   "reason": "Confidence medium: combined or inferred from several lines.",
+   "subgroup": "D1"
+  },
+  "P003": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P111.",
+   "waitsOn": "P111"
+  },
+  "P004": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Stakeholder: traveler (buyer)"
+    }
+   ]
+  },
+  "P005": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Stakeholder: gift-giver"
+    }
+   ]
+  },
+  "P006": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Stakeholder: baggage handler and bystander"
+    }
+   ]
+  },
+  "P007": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Stakeholder: retailer"
+    }
+   ]
+  },
+  "P008": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/brief",
+     "match": {
+      "title": "Who it is for"
+     }
+    }
+   ]
+  },
+  "P009": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P097.",
+   "waitsOn": "P097"
+  },
+  "P010": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Data flow and firmware states"
+    }
+   ]
+  },
+  "P011": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P092.",
+   "waitsOn": "P092"
+  },
+  "P012": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P013": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/brief",
+     "match": {
+      "title": "Claimed moats"
+     }
+    }
+   ]
+  },
+  "P014": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P113.",
+   "waitsOn": "P113"
+  },
+  "P015": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P016": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Realistic ceiling"
+    }
+   ]
+  },
+  "P017": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Scale or exit"
+    }
+   ]
+  },
+  "P018": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P089.",
+   "waitsOn": "P089"
+  },
+  "P019": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Success metrics: product and business"
+    }
+   ]
+  },
+  "P020": {
+   "entered": false,
+   "group": "b",
+   "reason": "no risk section; brief or open questions",
+   "subgroup": "B0"
+  },
+  "P021": {
+   "entered": false,
+   "group": "b",
+   "reason": "no risk section; brief or open questions",
+   "subgroup": "B0"
+  },
+  "P022": {
+   "entered": false,
+   "group": "b",
+   "reason": "no risk section; brief or open questions",
+   "subgroup": "B0"
+  },
+  "P023": {
+   "entered": false,
+   "group": "b",
+   "reason": "no risk section; brief or open questions",
+   "subgroup": "B0"
+  },
+  "P024": {
+   "entered": false,
+   "group": "b",
+   "reason": "no risk section; brief or open questions",
+   "subgroup": "B0"
+  },
+  "P025": {
+   "entered": false,
+   "group": "b",
+   "reason": "no risk section; brief or open questions",
+   "subgroup": "B0"
+  },
+  "P026": {
+   "entered": false,
+   "group": "b",
+   "reason": "no release exists; only angles",
+   "subgroup": "B0"
+  },
+  "P027": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P028": {
+   "entered": false,
+   "group": "b",
+   "reason": "question wording is mine",
+   "subgroup": "B0"
+  },
+  "P029": {
+   "entered": false,
+   "group": "b",
+   "reason": "question wording is mine",
+   "subgroup": "B0"
+  },
+  "P030": {
+   "entered": false,
+   "group": "b",
+   "reason": "question wording is mine",
+   "subgroup": "B0"
+  },
+  "P031": {
+   "entered": false,
+   "group": "b",
+   "reason": "question wording is mine",
+   "subgroup": "B0"
+  },
+  "P032": {
+   "entered": false,
+   "group": "b",
+   "reason": "question wording is mine",
+   "subgroup": "B0"
+  },
+  "P033": {
+   "entered": false,
+   "group": "b",
+   "reason": "question wording is mine",
+   "subgroup": "B0"
+  },
+  "P034": {
+   "entered": false,
+   "group": "b",
+   "reason": "house style for support",
+   "subgroup": "B0"
+  },
+  "P035": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/names",
+     "match": {
+      "title": "Baggage Claims"
+     }
+    }
+   ]
+  },
+  "P036": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/names",
+     "match": {
+      "title": "Sass Case"
+     }
+    }
+   ]
+  },
+  "P037": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P038": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/names",
+     "match": {
+      "title": "LoudMouth Luggage"
+     }
+    }
+   ]
+  },
+  "P039": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/names",
+     "match": {
+      "title": "Checked & Offended"
+     }
+    }
+   ]
+  },
+  "P040": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Bellyaching"
+    }
+   ]
+  },
+  "P041": {
+   "entered": false,
+   "group": "b",
+   "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents).",
+   "subgroup": "B6"
+  },
+  "P042": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "HeavyBag"
+    }
+   ]
+  },
+  "P043": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Unclaimed"
+    }
+   ]
+  },
+  "P044": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Freightened"
+    }
+   ]
+  },
+  "P045": {
+   "entered": false,
+   "group": "b",
+   "reason": "is a split name wanted",
+   "subgroup": "B0"
+  },
+  "P046": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P120.",
+   "waitsOn": "P120"
+  },
+  "P047": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P120.",
+   "waitsOn": "P120"
+  },
+  "P048": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P120.",
+   "waitsOn": "P120"
+  },
+  "P049": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Seasonal and stretch voice pack names"
+    }
+   ]
+  },
+  "P050": {
+   "entered": false,
+   "group": "d",
+   "reason": "The kind text is longer than the field allows, so it cannot be entered as written.",
+   "subgroup": "D3"
+  },
+  "P051": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P052": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P053": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P054": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P055": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P056": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P057": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P058": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P059": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P060": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P061": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P062": {
+   "entered": false,
+   "group": "b",
+   "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents).",
+   "subgroup": "B6"
+  },
+  "P063": {
+   "entered": false,
+   "group": "b",
+   "reason": "adds an option",
+   "subgroup": "B0"
+  },
+  "P064": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P065": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/decisions",
+     "match": {
+      "title": "Phase 1 gate: did the unbranded clips pass?"
+     }
+    }
+   ]
+  },
+  "P066": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P089.",
+   "waitsOn": "P089"
+  },
+  "P067": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P068": {
+   "entered": false,
+   "group": "b",
+   "reason": "purchase",
+   "subgroup": "B0"
+  },
+  "P069": {
+   "entered": false,
+   "group": "b",
+   "reason": "firmware direction",
+   "subgroup": "B0"
+  },
+  "P070": {
+   "entered": false,
+   "group": "b",
+   "reason": "roadmap",
+   "subgroup": "B0"
+  },
+  "P071": {
+   "entered": false,
+   "group": "b",
+   "reason": "scope",
+   "subgroup": "B0"
+  },
+  "P072": {
+   "entered": false,
+   "group": "b",
+   "reason": "content plan",
+   "subgroup": "B0"
+  },
+  "P073": {
+   "entered": false,
+   "group": "b",
+   "reason": "mechanical design",
+   "subgroup": "B0"
+  },
+  "P074": {
+   "entered": false,
+   "group": "b",
+   "reason": "commercial terms",
+   "subgroup": "B0"
+  },
+  "P075": {
+   "entered": false,
+   "group": "b",
+   "reason": "tier design",
+   "subgroup": "B0"
+  },
+  "P076": {
+   "entered": false,
+   "group": "b",
+   "reason": "optional hardware",
+   "subgroup": "B0"
+  },
+  "P077": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/questions",
+     "match": {
+      "title": "Is Austin still the home base?"
+     }
+    }
+   ]
+  },
+  "P078": {
+   "entered": false,
+   "group": "b",
+   "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents).",
+   "subgroup": "B6"
+  },
+  "P079": {
+   "entered": false,
+   "group": "b",
+   "reason": "audience",
+   "subgroup": "B0"
+  },
+  "P080": {
+   "entered": false,
+   "group": "b",
+   "reason": "nothing is written",
+   "subgroup": "B0"
+  },
+  "P081": {
+   "entered": false,
+   "group": "b",
+   "reason": "nothing is written",
+   "subgroup": "B0"
+  },
+  "P082": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P083": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P084": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P085": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P086": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P087": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P088": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P089": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P090": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P091": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P092": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P093": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P094": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P095": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P096": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P097": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P098": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P099": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P100": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P101": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P102": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P103": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P104": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P105": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P106": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P107": {
+   "entered": false,
+   "group": "c",
+   "reason": "Enclosure size: settled at 80 x 60 x 42 mm from your documentation. Marked resolved; the 80 x 60 x 40 mm project box is not entered."
+  },
+  "P108": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P109": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P110": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P111": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P112": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P113": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P114": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P115": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P116": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P117": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P118": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P119": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P120": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P121": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P122": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P123": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P124": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P125": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P126": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P127": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P128": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P129": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P130": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P131": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P132": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P133": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P134": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P135": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P136": {
+   "entered": false,
+   "group": "a",
+   "reason": "Conflict between documents: your decision."
+  },
+  "P137": {
+   "entered": false,
+   "group": "d",
+   "reason": "Says the three other market reports are unnumbered; the chat numbers them 8, 10 and 15.",
+   "subgroup": "D3"
+  },
+  "P138": {
+   "entered": false,
+   "group": "d",
+   "reason": "Adds the judgement \"Neither is a price study\".",
+   "subgroup": "D3"
+  },
+  "P139": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P140": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "match": {
+      "title": "Successful Kickstarter tech campaigns average about $33k raised"
+     }
+    }
+   ]
+  },
+  "P141": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "match": {
+      "title": "10% of tech backers delivered 60% of reward funding in Q3 2026"
+     }
+    }
+   ]
+  },
+  "P142": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "match": {
+      "title": "Turnkey PCBA runs about $18-22 per board for a moderate BOM at 1,000 pieces"
+     }
+    }
+   ]
+  },
+  "P143": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "match": {
+      "title": "Mid-tier creators (50k-500k followers) get about 3x the engagement of mega-influencers for prop comedy"
+     }
+    }
+   ]
+  },
+  "P144": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Short-form travel comedy is one of the most reliable viral content genres"
+    }
+   ]
+  },
+  "P145": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Kickstarter campaigns with a video are far likelier to fund"
+    }
+   ]
+  },
+  "P146": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Kickstarter takes about 8-10% in fees"
+    }
+   ]
+  },
+  "P147": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A direct store (Shopify or TikTok Shop) takes about 12% blended"
+    }
+   ]
+  },
+  "P148": {
+   "entered": false,
+   "group": "d",
+   "reason": "Its arithmetic is the reviewer's.",
+   "subgroup": "D3"
+  },
+  "P149": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Between 1% and 3% of a pre-launch email list converts on day one"
+    }
+   ]
+  },
+  "P150": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "About $1.4k of day-one pledges triggers Kickstarter's trending algorithm"
+    }
+   ]
+  },
+  "P151": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Posting many creator clips in one week makes the algorithm read the subject as a trend, not an ad"
+    }
+   ]
+  },
+  "P152": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Morning commuter slots (6-8 am local) are the right posting time for the unbranded clips"
+    }
+   ]
+  },
+  "P153": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "ManyChat can auto-DM a commenter who types a keyword and take them to a one-field email capture"
+    }
+   ]
+  },
+  "P154": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Four-packs are where the margin lives"
+    }
+   ]
+  },
+  "P155": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Airport gift retail is reachable through Paradies and Hudson-style channels"
+    }
+   ]
+  },
+  "P156": {
+   "entered": false,
+   "group": "d",
+   "reason": "Its arithmetic (2.07) is the reviewer's.",
+   "subgroup": "D3"
+  },
+  "P157": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P111.",
+   "waitsOn": "P111"
+  },
+  "P158": {
+   "entered": false,
+   "group": "d",
+   "reason": "The body is an instruction, not a statement in the document.",
+   "subgroup": "D3"
+  },
+  "P159": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "TSA allows installed lithium batteries in checked devices"
+    }
+   ]
+  },
+  "P160": {
+   "entered": false,
+   "group": "d",
+   "reason": "The excerpt says \"no UN38.3 lithium cells\"; the title says more.",
+   "subgroup": "D3"
+  },
+  "P161": {
+   "entered": false,
+   "group": "d",
+   "reason": "The body joins two documents into an inference.",
+   "subgroup": "D3"
+  },
+  "P162": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P163": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Celebrity voice impressions invite right-of-publicity claims and platform takedowns"
+    }
+   ]
+  },
+  "P164": {
+   "entered": false,
+   "group": "b",
+   "reason": "rights not addressed in any document",
+   "subgroup": "B0"
+  },
+  "P165": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A real baggage handler can be filmed for the launch video with written consent"
+    }
+   ]
+  },
+  "P166": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "85 dBA at 1 m is loud enough for terminals and below PA levels"
+    }
+   ]
+  },
+  "P167": {
+   "entered": false,
+   "group": "d",
+   "reason": "The design package does not give this as the reason PETG is enough.",
+   "subgroup": "D3"
+  },
+  "P168": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P169": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P170": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P171": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Waveshare ESP32-S3 Mini is $8.99 at Micro Center, SKU 699323, same-day pickup"
+    }
+   ]
+  },
+  "P172": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "HiLetgo GY-521 MPU-6050 is $6.99 for one or $11.79 for three on Amazon"
+    }
+   ]
+  },
+  "P173": {
+   "entered": false,
+   "group": "d",
+   "reason": "The excerpt supports the body, not the titled price.",
+   "subgroup": "D3"
+  },
+  "P174": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A four-pack of 3 W 8-ohm speakers is $6.99 on Amazon ($1.75 each)"
+    }
+   ]
+  },
+  "P175": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "The MPU-6050 costs $0.90 in volume"
+    }
+   ]
+  },
+  "P176": {
+   "entered": false,
+   "group": "d",
+   "reason": "The cited excerpt is not the line that states it.",
+   "subgroup": "D3"
+  },
+  "P177": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A voice pack on microSD costs $0.50 to make"
+    }
+   ]
+  },
+  "P178": {
+   "entered": false,
+   "group": "d",
+   "reason": "\"In stock at the listed prices\" is the reviewer's reading.",
+   "subgroup": "D3"
+  },
+  "P179": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A 2-layer PCB costs $0.50-1.50 at 1,000 and assembly $1-5 a board at high volume"
+    }
+   ]
+  },
+  "P180": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Moving from microSD to SPI flash and to offshore assembly saves another $3-4 a unit at 1,000"
+    }
+   ]
+  },
+  "P181": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "YX5200 and KT148A can be dual-sourced as the audio codec"
+    }
+   ]
+  },
+  "P182": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Inland PETG is about $20 a kg at Micro Center"
+    }
+   ]
+  },
+  "P183": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Bambu Lab A1 is $259.99 at Micro Center, with a 256 mm bed, direct drive and about 20 minutes of setup"
+    }
+   ]
+  },
+  "P184": {
+   "entered": false,
+   "group": "c",
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+  },
+  "P185": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A1 mini Combo with AMS lite is $299.99 with a 180 mm bed; enclosed printers (P2S, X2D) start at $649"
+    }
+   ]
+  },
+  "P186": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "PETG print-in-place hinges need 0.3-0.4 mm clearance per side; PETG micro-welds at PLA clearances"
+    }
+   ]
+  },
+  "P187": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Over-extrusion shrinks print-in-place clearances by 0.1-0.15 mm"
+    }
+   ]
+  },
+  "P188": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "PETG survives -10 to +45 C and is the best print-in-place material; ASA is not needed"
+    }
+   ]
+  },
+  "P189": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "An A1 prints 4-6 shells per plate overnight"
+    }
+   ]
+  },
+  "P190": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P191": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P192": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P193": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P194": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P195": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P196": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P197": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P198": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P199": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P200": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P201": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P202": {
+   "entered": false,
+   "group": "b",
+   "reason": "a bench measurement, not research",
+   "subgroup": "B0"
+  },
+  "P203": {
+   "entered": false,
+   "group": "b",
+   "reason": "a bench measurement, not research",
+   "subgroup": "B0"
+  },
+  "P204": {
+   "entered": false,
+   "group": "b",
+   "reason": "a bench measurement, not research",
+   "subgroup": "B0"
+  },
+  "P205": {
+   "entered": false,
+   "group": "b",
+   "reason": "a bench check, not research",
+   "subgroup": "B0"
+  },
+  "P206": {
+   "entered": false,
+   "group": "b",
+   "reason": "a load test, not research",
+   "subgroup": "B0"
+  },
+  "P207": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P105.",
+   "waitsOn": "P105"
+  },
+  "P208": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P099.",
+   "waitsOn": "P099"
+  },
+  "P209": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P103.",
+   "waitsOn": "P103"
+  },
+  "P210": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P100.",
+   "waitsOn": "P100"
+  },
+  "P211": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P101.",
+   "waitsOn": "P101"
+  },
+  "P212": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P102.",
+   "waitsOn": "P102"
+  },
+  "P213": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P104.",
+   "waitsOn": "P104"
+  },
+  "P214": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P106.",
+   "waitsOn": "P106"
+  },
+  "P215": {
+   "entered": false,
+   "group": "b",
+   "reason": "stretch scope",
+   "subgroup": "B0"
+  },
+  "P216": {
+   "entered": false,
+   "group": "b",
+   "reason": "stretch scope",
+   "subgroup": "B0"
+  },
+  "P217": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/requirements",
+     "match": {
+      "title": "Governor"
+     }
+    }
+   ]
+  },
+  "P218": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P092.",
+   "waitsOn": "P092"
+  },
+  "P219": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/requirements",
+     "match": {
+      "title": "Controls"
+     }
+    }
+   ]
+  },
+  "P220": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P221": {
+   "entered": false,
+   "group": "d",
+   "reason": "Confidence medium: Not compiled here. Line numbers and counts are mine.",
+   "subgroup": "D1"
+  },
+  "P222": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P097.",
+   "waitsOn": "P097"
+  },
+  "P223": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Feature extraction"
+    }
+   ]
+  },
+  "P224": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P092.",
+   "waitsOn": "P092"
+  },
+  "P225": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P098.",
+   "waitsOn": "P098"
+  },
+  "P226": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P127.",
+   "waitsOn": "P127"
+  },
+  "P227": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P131.",
+   "waitsOn": "P131"
+  },
+  "P228": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Audio command interface"
+    }
+   ]
+  },
+  "P229": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Loudness limit"
+    }
+   ]
+  },
+  "P230": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P105.",
+   "waitsOn": "P105"
+  },
+  "P231": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Radios off"
+    }
+   ]
+  },
+  "P232": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P233": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Rigid sensor mount"
+    }
+   ]
+  },
+  "P234": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Service and debug port"
+    }
+   ]
+  },
+  "P235": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Content ships independently of firmware"
+    }
+   ]
+  },
+  "P236": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "design/requirements",
+     "title": "Idle false positives under one a day"
+    }
+   ]
+  },
+  "P237": {
+   "entered": false,
+   "group": "b",
+   "reason": "Rev B scope",
+   "subgroup": "B0"
+  },
+  "P238": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/wiring",
+     "match": {
+      "title": "Switch to VIN"
+     }
+    }
+   ]
+  },
+  "P239": {
+   "entered": false,
+   "group": "b",
+   "reason": "two wordings",
+   "subgroup": "B0"
+  },
+  "P240": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/wiring",
+     "match": {
+      "title": "I2C data"
+     }
+    }
+   ]
+  },
+  "P241": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/wiring",
+     "match": {
+      "title": "Sensor power"
+     }
+    }
+   ]
+  },
+  "P242": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P092.",
+   "waitsOn": "P092"
+  },
+  "P243": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/wiring",
+     "match": {
+      "title": "UART from audio module"
+     }
+    }
+   ]
+  },
+  "P244": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/wiring",
+     "match": {
+      "title": "Busy line"
+     }
+    }
+   ]
+  },
+  "P245": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/wiring",
+     "match": {
+      "title": "Speaker lead 1"
+     }
+    }
+   ]
+  },
+  "P246": {
+   "entered": false,
+   "group": "b",
+   "reason": "check the drawing",
+   "subgroup": "B0"
+  },
+  "P247": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P248": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "U1"
+     }
+    }
+   ]
+  },
+  "P249": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "U2"
+     }
+    }
+   ]
+  },
+  "P250": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P251": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "S1"
+     }
+    },
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "S2"
+     }
+    }
+   ]
+  },
+  "P252": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "R1"
+     }
+    }
+   ]
+  },
+  "P253": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P131.",
+   "waitsOn": "P131"
+  },
+  "P254": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "W1"
+     }
+    }
+   ]
+  },
+  "P255": {
+   "entered": false,
+   "group": "c",
+   "reason": "Enclosure size: settled at 80 x 60 x 42 mm from your documentation. Marked resolved; the 80 x 60 x 40 mm project box is not entered."
+  },
+  "P256": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "design/bom",
+     "match": {
+      "ref": "SPK1"
+     }
+    }
+   ]
+  },
+  "P257": {
+   "entered": false,
+   "group": "b",
+   "reason": "not on the parts list",
+   "subgroup": "B0"
+  },
+  "P258": {
+   "entered": false,
+   "group": "b",
+   "reason": "not on the parts list",
+   "subgroup": "B0"
+  },
+  "P259": {
+   "entered": false,
+   "group": "b",
+   "reason": "not on the parts list",
+   "subgroup": "B0"
+  },
+  "P260": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P261": {
+   "entered": false,
+   "group": "b",
+   "reason": "not on the parts list",
+   "subgroup": "B0"
+  },
+  "P262": {
+   "entered": false,
+   "group": "b",
+   "reason": "consumables",
+   "subgroup": "B0"
+  },
+  "P263": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P264": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P110.",
+   "waitsOn": "P110"
+  },
+  "P265": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P266": {
+   "entered": false,
+   "group": "c",
+   "reason": "A print job for the Rev A shell; the tag changes what is printed. Confirm it still applies."
+  },
+  "P267": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P268": {
+   "entered": false,
+   "group": "c",
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+  },
+  "P269": {
+   "entered": false,
+   "group": "c",
+   "reason": "A print job for the Rev A shell; the tag changes what is printed. Confirm it still applies."
+  },
+  "P270": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Tools and materials on the bench"
+    }
+   ]
+  },
+  "P271": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "prototype/assembly",
+     "match": {
+      "title": "Phase 0 — Bench setup"
+     }
+    }
+   ]
+  },
+  "P272": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P110.",
+   "waitsOn": "P110"
+  },
+  "P273": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "prototype/assembly",
+     "match": {
+      "title": "Phase 2 — Electronics"
+     }
+    }
+   ]
+  },
+  "P274": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P109.",
+   "waitsOn": "P109"
+  },
+  "P275": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P109.",
+   "waitsOn": "P109"
+  },
+  "P276": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P109.",
+   "waitsOn": "P109"
+  },
+  "P277": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P109.",
+   "waitsOn": "P109"
+  },
+  "P278": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P109.",
+   "waitsOn": "P109"
+  },
+  "P279": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "prototype/assembly",
+     "match": {
+      "title": "Phase 3 — First power-on"
+     }
+    }
+   ]
+  },
+  "P280": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P098.",
+   "waitsOn": "P098"
+  },
+  "P281": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P131.",
+   "waitsOn": "P131"
+  },
+  "P282": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P283": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P284": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Threshold tuning on the bench"
+    }
+   ]
+  },
+  "P285": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P286": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Rev A1: threshold tuning on real flights"
+    }
+   ]
+  },
+  "P287": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Troubleshooting: boot loop"
+    }
+   ]
+  },
+  "P288": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Troubleshooting: no gags, but the log shows events"
+    }
+   ]
+  },
+  "P289": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Troubleshooting: gags at random"
+    }
+   ]
+  },
+  "P290": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Troubleshooting: weigh-in never fires"
+    }
+   ]
+  },
+  "P291": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/assembly",
+     "title": "Troubleshooting: high sleep current"
+    }
+   ]
+  },
+  "P292": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "prototype/tests",
+     "match": {
+      "title": "Idle"
+     }
+    }
+   ]
+  },
+  "P293": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P092.",
+   "waitsOn": "P092"
+  },
+  "P294": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/tests",
+     "title": "Power rail voltage"
+    }
+   ]
+  },
+  "P295": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/tests",
+     "title": "No shorts on the rails"
+    }
+   ]
+  },
+  "P296": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/tests",
+     "title": "3.3 V rail"
+    }
+   ]
+  },
+  "P297": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/tests",
+     "title": "First power-on: no heat"
+    }
+   ]
+  },
+  "P298": {
+   "entered": false,
+   "group": "b",
+   "reason": "which boot log is right",
+   "subgroup": "B0"
+  },
+  "P299": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/tests",
+     "title": "Events appear in the log"
+    }
+   ]
+  },
+  "P300": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P109.",
+   "waitsOn": "P109"
+  },
+  "P301": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P302": {
+   "entered": false,
+   "group": "b",
+   "reason": "no pass condition in the documents",
+   "subgroup": "B0"
+  },
+  "P303": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P304": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P305": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P306": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P307": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P308": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P309": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P310": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P311": {
+   "entered": false,
+   "group": "b",
+   "reason": "no procedure in the documents",
+   "subgroup": "B0"
+  },
+  "P312": {
+   "entered": false,
+   "group": "d",
+   "reason": "Links five tests to the build by inference.",
+   "subgroup": "D3"
+  },
+  "P313": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P130.",
+   "waitsOn": "P130"
+  },
+  "P314": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/builds",
+     "title": "Rev A1 - tuned and voiced"
+    }
+   ]
+  },
+  "P315": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P113.",
+   "waitsOn": "P113"
+  },
+  "P316": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P135.",
+   "waitsOn": "P135"
+  },
+  "P317": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "prototype/builds",
+     "title": "Rev D - retail display model"
+    }
+   ]
+  },
+  "P318": {
+   "entered": false,
+   "group": "b",
+   "reason": "the section has one amount per line, the PRD has four volumes",
+   "subgroup": "B0"
+  },
+  "P319": {
+   "entered": false,
+   "group": "b",
+   "reason": "one amount per line against four volumes",
+   "subgroup": "B0"
+  },
+  "P320": {
+   "entered": false,
+   "group": "b",
+   "reason": "one amount per line against four volumes",
+   "subgroup": "B0"
+  },
+  "P321": {
+   "entered": false,
+   "group": "b",
+   "reason": "one amount per line against four volumes",
+   "subgroup": "B0"
+  },
+  "P322": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P323": {
+   "entered": false,
+   "group": "b",
+   "reason": "one amount per line against four volumes",
+   "subgroup": "B0"
+  },
+  "P324": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P094.",
+   "waitsOn": "P094"
+  },
+  "P325": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P113.",
+   "waitsOn": "P113"
+  },
+  "P326": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P111.",
+   "waitsOn": "P111"
+  },
+  "P327": {
+   "entered": false,
+   "group": "d",
+   "reason": "Adds a comparison the PRD does not make.",
+   "subgroup": "D3"
+  },
+  "P328": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "production/economics",
+     "title": "Margin targets"
+    }
+   ]
+  },
+  "P329": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P130.",
+   "waitsOn": "P130"
+  },
+  "P330": {
+   "entered": false,
+   "group": "b",
+   "reason": "capital, not unit cost",
+   "subgroup": "B0"
+  },
+  "P331": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P332": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "production/economics",
+     "match": {
+      "title": "Voice pack (DLC)"
+     }
+    }
+   ]
+  },
+  "P333": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P334": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P130.",
+   "waitsOn": "P130"
+  },
+  "P335": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P113.",
+   "waitsOn": "P113"
+  },
+  "P336": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P113.",
+   "waitsOn": "P113"
+  },
+  "P337": {
+   "entered": false,
+   "group": "b",
+   "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
+   "subgroup": "B5"
+  },
+  "P338": {
+   "entered": false,
+   "group": "b",
+   "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
+   "subgroup": "B5"
+  },
+  "P339": {
+   "entered": false,
+   "group": "b",
+   "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
+   "subgroup": "B5"
+  },
+  "P340": {
+   "entered": false,
+   "group": "b",
+   "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
+   "subgroup": "B5"
+  },
+  "P341": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P342": {
+   "entered": false,
+   "group": "b",
+   "reason": "no supplier is named",
+   "subgroup": "B0"
+  },
+  "P343": {
+   "entered": false,
+   "group": "b",
+   "reason": "no supplier is named",
+   "subgroup": "B0"
+  },
+  "P344": {
+   "entered": false,
+   "group": "b",
+   "reason": "no supplier is named",
+   "subgroup": "B0"
+  },
+  "P345": {
+   "entered": false,
+   "group": "b",
+   "reason": "no supplier is named",
+   "subgroup": "B0"
+  },
+  "P346": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P347": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P348": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P349": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P350": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P351": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P352": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P353": {
+   "entered": false,
+   "group": "b",
+   "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
+   "subgroup": "B1"
+  },
+  "P354": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P355": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P122.",
+   "waitsOn": "P122"
+  },
+  "P356": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P357": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P358": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P359": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P360": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P361": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P362": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P363": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P364": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P365": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P366": {
+   "entered": false,
+   "group": "b",
+   "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
+   "subgroup": "B4"
+  },
+  "P367": {
+   "entered": false,
+   "group": "b",
+   "reason": "not addressed in any document",
+   "subgroup": "B0"
+  },
+  "P368": {
+   "entered": false,
+   "group": "d",
+   "reason": "Persona assembled from several lines of two documents.",
+   "subgroup": "D3"
+  },
+  "P369": {
+   "entered": false,
+   "group": "d",
+   "reason": "Persona assembled from several lines of two documents.",
+   "subgroup": "D3"
+  },
+  "P370": {
+   "entered": false,
+   "group": "d",
+   "reason": "Persona assembled from several lines of two documents.",
+   "subgroup": "D3"
+  },
+  "P371": {
+   "entered": false,
+   "group": "d",
+   "reason": "Persona assembled from several lines of two documents.",
+   "subgroup": "D3"
+  },
+  "P372": {
+   "entered": false,
+   "group": "b",
+   "reason": "an audience, not a buyer",
+   "subgroup": "B0"
+  },
+  "P373": {
+   "entered": false,
+   "group": "b",
+   "reason": "no competitor research exists",
+   "subgroup": "B0"
+  },
+  "P374": {
+   "entered": false,
+   "group": "b",
+   "reason": "no competitor research exists",
+   "subgroup": "B0"
+  },
+  "P375": {
+   "entered": false,
+   "group": "b",
+   "reason": "no competitor research exists",
+   "subgroup": "B0"
+  },
+  "P376": {
+   "entered": false,
+   "group": "b",
+   "reason": "no competitor research exists",
+   "subgroup": "B0"
+  },
+  "P377": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P378": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P379": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/positioning",
+     "title": "The video is the business plan"
+    }
+   ]
+  },
+  "P380": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P381": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/positioning",
+     "match": {
+      "title": "Voice rules"
+     }
+    }
+   ]
+  },
+  "P382": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P383": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P384": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P385": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P386": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P387": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P388": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P389": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P390": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P391": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P392": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P393": {
+   "entered": false,
+   "group": "c",
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+  },
+  "P394": {
+   "entered": false,
+   "group": "c",
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+  },
+  "P395": {
+   "entered": false,
+   "group": "c",
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+  },
+  "P396": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P397": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Cold open: bag hits the belt"
+    }
+   ]
+  },
+  "P398": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P399": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Device on a turntable"
+    }
+   ]
+  },
+  "P400": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Curb: handle grab"
+    }
+   ]
+  },
+  "P401": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Check-in scale"
+    }
+   ]
+  },
+  "P402": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Handler toss"
+    }
+   ]
+  },
+  "P403": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Dark hold"
+    }
+   ]
+  },
+  "P404": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Carousel"
+    }
+   ]
+  },
+  "P405": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Living room payoff and feature montage"
+    }
+   ]
+  },
+  "P406": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P407": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P408": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Claim ticket image"
+    }
+   ]
+  },
+  "P409": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Shame Ads statics"
+    }
+   ]
+  },
+  "P410": {
+   "entered": false,
+   "group": "c",
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+  },
+  "P411": {
+   "entered": false,
+   "group": "b",
+   "reason": "files are missing",
+   "subgroup": "B0"
+  },
+  "P412": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P413": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P414": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P121.",
+   "waitsOn": "P121"
+  },
+  "P415": {
+   "entered": false,
+   "group": "a",
+   "reason": "States one side of conflict P120.",
+   "waitsOn": "P120"
+  },
+  "P416": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P417": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/landing",
+     "match": {
+      "title": "Platinum Status"
+     }
+    }
+   ]
+  },
+  "P418": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/landing",
+     "match": {
+      "title": "Wholesale"
+     }
+    }
+   ]
+  },
+  "P419": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P420": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P421": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P422": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P423": {
+   "entered": false,
+   "group": "c",
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+  },
+  "P424": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P425": {
+   "entered": false,
+   "group": "b",
+   "reason": "paid amplification creative",
+   "subgroup": "B0"
+  },
+  "P426": {
+   "entered": false,
+   "group": "b",
+   "reason": "which total is right",
+   "subgroup": "B0"
+  },
+  "P427": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P428": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P429": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P430": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P431": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P432": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P433": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P434": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P435": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P436": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P437": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P438": {
+   "entered": false,
+   "group": "b",
+   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
+   "subgroup": "B3"
+  },
+  "P439": {
+   "entered": false,
+   "group": "b",
+   "reason": "no dates in the documents",
+   "subgroup": "B0"
+  },
+  "P440": {
+   "entered": false,
+   "group": "b",
+   "reason": "no dates in the documents",
+   "subgroup": "B0"
+  },
+  "P441": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P442": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P443": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P444": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P445": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P446": {
+   "entered": false,
+   "group": "b",
+   "reason": "hosts and codes are not fixed",
+   "subgroup": "B0"
+  },
+  "P447": {
+   "entered": false,
+   "group": "d",
+   "reason": "The cut times do not agree with the script's own beat times.",
+   "subgroup": "D3"
+  },
+  "P448": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/social",
+     "match": {
+      "title": "the suitcase screamed and the baggage handler LOST IT"
+     }
+    }
+   ]
+  },
+  "P449": {
+   "entered": false,
+   "group": "d",
+   "reason": "\"8 seconds, not 15\" is the reviewer's remark.",
+   "subgroup": "D3"
+  },
+  "P450": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/social",
+     "match": {
+      "title": "why is this bag having more fun than me"
+     }
+    }
+   ]
+  },
+  "P451": {
+   "entered": false,
+   "group": "d",
+   "reason": "The channel text is longer than the field allows, so it cannot be entered as written.",
+   "subgroup": "D3"
+  },
+  "P452": {
+   "entered": true,
+   "batch": "2026-11-22",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/social",
+     "title": "comment FAT for where to get one"
+    }
+   ]
+  },
+  "P453": {
+   "entered": false,
+   "group": "b",
+   "reason": "no text exists",
+   "subgroup": "B0"
+  },
+  "P454": {
+   "entered": false,
+   "group": "b",
+   "reason": "no email copy exists",
+   "subgroup": "B0"
+  },
+  "P455": {
+   "entered": false,
+   "group": "b",
+   "reason": "no email copy exists",
+   "subgroup": "B0"
+  },
+  "P456": {
+   "entered": false,
+   "group": "b",
+   "reason": "no email copy exists",
+   "subgroup": "B0"
+  },
+  "P457": {
+   "entered": false,
+   "group": "b",
+   "reason": "no email copy exists",
+   "subgroup": "B0"
+  },
+  "P458": {
+   "entered": false,
+   "group": "b",
+   "reason": "no email copy exists",
+   "subgroup": "B0"
+  },
+  "P459": {
+   "entered": false,
+   "group": "b",
+   "reason": "no press note exists",
+   "subgroup": "B0"
+  },
+  "P460": {
+   "entered": false,
+   "group": "e",
+   "reason": "Only matters if the website platform plan is in scope.",
+   "subgroup": "E2"
+  },
+  "P461": {
+   "entered": false,
+   "group": "c",
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+  },
+  "P462": {
+   "entered": false,
+   "group": "b",
+   "reason": "fee is a range",
+   "subgroup": "B0"
+  },
+  "P463": {
+   "entered": false,
+   "group": "b",
+   "reason": "fee is a range",
+   "subgroup": "B0"
+  },
+  "P464": {
+   "entered": false,
+   "group": "b",
+   "reason": "fee is a range",
+   "subgroup": "B0"
+  },
+  "P465": {
+   "entered": false,
+   "group": "b",
+   "reason": "two channels in one row",
+   "subgroup": "B0"
+  },
+  "P466": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P467": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P468": {
+   "entered": false,
+   "group": "b",
+   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
+   "subgroup": "B2"
+  },
+  "P469": {
+   "entered": false,
+   "group": "b",
+   "reason": "cost of creator codes",
+   "subgroup": "B0"
+  },
+  "P470": {
+   "entered": false,
+   "group": "b",
+   "reason": "not priced",
+   "subgroup": "B0"
+  },
+  "P471": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P472": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P473": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P474": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P475": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P476": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P477": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P478": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P479": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P480": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P481": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P482": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P483": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P484": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P485": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P486": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P487": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P488": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P489": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P490": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  },
+  "P491": {
+   "entered": false,
+   "group": "e",
+   "reason": "The website platform plan has no section in the app.",
+   "subgroup": "E1"
+  }
+ }
+}
