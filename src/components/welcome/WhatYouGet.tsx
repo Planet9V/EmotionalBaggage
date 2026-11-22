@@ -231,7 +231,7 @@ export function WhatYouGet(props: GetProps) {
                 {GET_VIEWS.badge}
               </p>
             </div>
-            <div id="get-panel" role="region" aria-label={`${now.stage}: ${now.get}`} className={`flex flex-col ${tall ? "h-[640px] sm:h-[620px]" : "max-h-[760px] min-h-[420px]"} lg:h-[620px] lg:max-h-none`}>
+            <div id="get-panel" role="region" aria-label={`${now.stage}: ${now.get}`} className={`flex flex-col ${tall ? "h-[640px] sm:h-[620px]" : "h-[680px] sm:h-[620px]"} lg:h-[620px]`}>
               <Output key={now.n} n={now.n} p={props} live={live} active={seen} sub={sub} />
             </div>
           </div>

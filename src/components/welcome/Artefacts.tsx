@@ -145,7 +145,7 @@ export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFac
     case "model":
       return (
         <Frame stage="03" kind="3D model">
-          {f.still ? <ModelStill still={f.still} assemble className="mx-auto max-h-[78px]" /> : null}
+          {f.still ? <ModelStill still={f.still} assemble className="mx-auto max-w-[156px]" /> : null}
           <p className={FOOT}>{f.case ? `${f.case.w} × ${f.case.d} × ${f.case.h} mm` : "Enclosure"}</p>
         </Frame>
       );
