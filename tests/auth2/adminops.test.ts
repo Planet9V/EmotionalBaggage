@@ -272,3 +272,19 @@ describe("F7: the actor is checked again inside the transaction", () => {
     await expect(a.ops.setPlatformAdmin(a.userId, false)).rejects.toMatchObject({ body: { code: "LAST_PLATFORM_ADMIN" } });
   });
 });
+
+describe("N14: no password reset for a disabled account", () => {
+  it("the request answers as for any address, and no link is sent", async () => {
+    const adm = await anAdmin("ops-n14");
+    const t = await newAccount(route, "ops-n14-target");
+    await adm.ops.setDisabled(t.userId, true);
+    const before = sent.length;
+    const res = await browser(route).post("/request-password-reset", { email: t.email, redirectTo: "/auth/reset/new" });
+    const other = await browser(route).post("/request-password-reset", { email: "nobody-n14@zz-auth2.test", redirectTo: "/auth/reset/new" });
+    expect(res.status).toBe(other.status);
+    expect(res.body).toEqual(other.body);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(sent.slice(before).filter((m) => m.to === t.email)).toHaveLength(0);
+  });
+});
+

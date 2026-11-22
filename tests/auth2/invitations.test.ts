@@ -287,3 +287,60 @@ describe("audit lines", () => {
     expect(all.rows[0].t).not.toContain(token);
   });
 });
+
+describe("N8 and N9: an invitation holds only while its sender may still give the role", () => {
+  async function trio(tag: string) {
+    const owner = await newAccount(route, `${tag}-o`);
+    const admin = await newAccount(route, `${tag}-a`);
+    const adminId = await addMember(db, owner.workspaceId, admin.userId, "admin");
+    return { owner, admin, adminId, ws: owner.workspaceId };
+  }
+
+  it("an admin's invitations are cancelled when the admin is demoted, removed or leaves", async () => {
+    const t = await trio("n8-demote");
+    const to = email("n8-a");
+    await t.admin.b.post("/workspace/invite", { workspaceId: t.ws, email: to, role: "admin" });
+    const token = tokenOf(to);
+    await t.owner.b.post("/workspace/member/role", { workspaceId: t.ws, memberId: t.adminId, role: "member" });
+    const invitee = await newAccount(route, "n8-a", to);
+    expect((await invitee.b.post<{ code: string }>("/workspace/invitation/accept", { token })).body.code).toBe("INVITATION_INVALID");
+    const r = await trio("n8-remove");
+    const to2 = email("n8-b");
+    await r.admin.b.post("/workspace/invite", { workspaceId: r.ws, email: to2, role: "member" });
+    await r.owner.b.post("/workspace/member/remove", { workspaceId: r.ws, memberId: r.adminId });
+    expect((await db.query(`SELECT status FROM invitation WHERE "organizationId" = $1`, [r.ws])).rows.map((x) => x.status)).toEqual(["canceled"]);
+  });
+
+  it("an owner demoted to admin keeps their member and admin invitations, but not an owner one", async () => {
+    const t = await trio("n8-keep");
+    const second = await newAccount(route, "n8-keep-2");
+    const secondId = await addMember(db, t.ws, second.userId, "owner");
+    await second.b.post("/workspace/invite", { workspaceId: t.ws, email: email("n8-m"), role: "member" });
+    await second.b.post("/workspace/invite", { workspaceId: t.ws, email: email("n8-o"), role: "owner" });
+    await t.owner.b.post("/workspace/member/role", { workspaceId: t.ws, memberId: secondId, role: "admin" });
+    const rows = (await db.query<{ role: string; status: string }>(`SELECT role, status FROM invitation WHERE "organizationId" = $1 ORDER BY role`, [t.ws])).rows;
+    expect(rows).toEqual([{ role: "member", status: "pending" }, { role: "owner", status: "canceled" }]);
+  });
+
+  it("checked again at acceptance: a sender demoted behind the screen's back makes the invitation lapse", async () => {
+    const t = await trio("n8-accept");
+    const to = email("n8-c");
+    await t.admin.b.post("/workspace/invite", { workspaceId: t.ws, email: to, role: "admin" });
+    // Changed directly, so no cancelling ran: acceptance itself must notice.
+    await db.query("UPDATE member SET role = 'member' WHERE id = $1", [t.adminId]);
+    const invitee = await newAccount(route, "n8-c", to);
+    const res = await invitee.b.post<{ code: string }>("/workspace/invitation/accept", { token: tokenOf(to) });
+    expect([res.status, res.body.code]).toEqual([404, "INVITATION_WITHDRAWN"]);
+    expect((await db.query('SELECT 1 FROM member WHERE "organizationId" = $1 AND "userId" = $2', [t.ws, invitee.userId])).rowCount).toBe(0);
+  });
+
+  it("N9: a person who owes two-factor cannot accept an invitation until they set it up", async () => {
+    const owner = await newAccount(route, "n9-owner");
+    const invitee = await newAccount(route, "n9-invitee");
+    await owner.b.post("/workspace/invite", { workspaceId: owner.workspaceId, email: invitee.email, role: "member" });
+    await db.query('UPDATE "user" SET "twoFactorRequired" = true WHERE id = $1', [invitee.userId]);
+    const res = await invitee.b.post<{ code: string }>("/workspace/invitation/accept", { token: tokenOf(invitee.email) });
+    expect([res.status, res.body.code]).toEqual([403, "TWO_FACTOR_SETUP_REQUIRED"]);
+  });
+});
+
