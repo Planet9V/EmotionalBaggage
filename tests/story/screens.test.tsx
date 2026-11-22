@@ -53,12 +53,13 @@ afterEach(() => {
 });
 
 describe("sidebar", () => {
-  it("opens Whole concept with Concept story first and Files after Chat", async () => {
+  it("opens Whole concept with Status, then Concept story, and Files after Chat", async () => {
     api([], []);
     renderWithClient(<Shell><p>page</p></Shell>);
     const nav = (await screen.findAllByRole("navigation", { name: "Whole concept" }))[0];
     const links = within(nav).getAllByRole("link").map((a) => [a.textContent?.trim(), a.getAttribute("href")]);
-    expect(links[0]).toEqual(["Concept story", "/story"]);
+    expect(links[0]).toEqual(["Status", "/status"]);
+    expect(links[1]).toEqual(["Concept story", "/story"]);
     const chat = links.findIndex(([, h]) => h === "/chat");
     expect(links[chat + 1]).toEqual(["Files", "/files"]);
     // the stage list does not repeat them
