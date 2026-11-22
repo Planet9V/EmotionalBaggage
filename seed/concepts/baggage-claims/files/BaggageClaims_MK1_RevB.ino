@@ -12,7 +12,14 @@
  * Clips   : LittleFS, 16-bit mono PCM WAV (16 kHz recommended), named /p<pack>/<class>_<n>.wav, for example
  *           /p1/impact_1.wav /p1/impact_2.wav /p1/weigh_1.wav /p1/grab_1.wav /p1/freefall_1.wav /p1/throw_1.wav
  *           /p1/landing_1.wav /p1/carousel_1.wav /p1/conveyor_1.wav /p1/inverted_1.wav /p1/idle_1.wav /p1/lowbatt_1.wav
- *           Packs are /p1 /p2 /p3. A class with several variants never plays the same one twice running.
+ *           Packs are /p1 to /p9; a long press cycles through those present and plays the pack's /p<k>/name_1.wav.
+ *           A class with several variants (_1 to _9) never plays the same one twice running.
+ *           Counted moments: /p1/impact_c1.wav ("That's one"), impact_c2.wav ("That's two"), impact_c3.wav
+ *           ("too many", the third and after); carousel_c1 to _c3 for the ride and its further laps. Used in place
+ *           of the plain variants when present. A landing counts as an impact.
+ *           /p1/box_1.wav plays once, at the very first start (until a factory reset). idle_* (the dark hold)
+ *           plays 10 dB quieter than the rest. A moment missing from a pack falls back to /p1, then to the
+ *           related moment (throw -> freefall, landing -> impact), then to silence: an older pack keeps working.
  *
  * Wiring (XIAO pin = GPIO):
  *   D0 = 1  battery sense: the midpoint of 1 M / 1 M from the battery side of the regulator, 100 nF to ground
@@ -174,8 +181,9 @@ static Preferences prefs;
 static I2SClass i2s;
 
 static uint8_t volumeStep = 2;   // 0, 1, 2 = 50 / 75 / 100 %
-static uint8_t voicePack = 1;    // /p1 /p2 /p3
-static uint8_t clipCount[bc::CLIP_CLASS_COUNT];
+static uint8_t voicePack = 1;    // /p1 to /p9
+static uint8_t clipCount[bc::CLIP_CLASS_COUNT];     // variants of each class in the current pack
+static uint8_t clipCountP1[bc::CLIP_CLASS_COUNT];   // and in pack 1, the fallback
 static bool fsReady = false, mpuReady = false, logging = false, playing = false;
 static bc::BatteryLevel battLevel = bc::BATT_OK;
 static uint16_t battMv = 0;
@@ -212,16 +220,38 @@ static void updateBattery() {
 }
 
 // ------------------------------------------------------------------------------------------------ clips
-static String clipPath(bc::ClipClass c, uint8_t variant) {
-  return String("/p") + voicePack + "/" + bc::clipClassName(c) + "_" + variant + ".wav";
+// /p<pack>/<stem>_<suffix>.wav: the suffix is the variant 1 to 9, or c1 to c3 for a count step.
+static String clipPath(uint8_t pack, bc::ClipClass c, const String& suffix) {
+  return String("/p") + pack + "/" + bc::clipClassName(c) + "_" + suffix + ".wav";
+}
+
+static void scanPack(uint8_t pack, uint8_t* counts) {
+  for (int c = 0; c < bc::CLIP_CLASS_COUNT; c++) {
+    uint8_t n = 0;
+    while (n < bc::MAX_VARIANTS && fsReady && LittleFS.exists(clipPath(pack, (bc::ClipClass)c, String(n + 1)))) n++;
+    counts[c] = n;
+  }
 }
 
 static void scanClips() {
-  for (int c = 0; c < bc::CLIP_CLASS_COUNT; c++) {
-    uint8_t n = 0;
-    while (n < 9 && fsReady && LittleFS.exists(clipPath((bc::ClipClass)c, n + 1))) n++;
-    clipCount[c] = n;
+  scanPack(voicePack, clipCount);
+  scanPack(1, clipCountP1);
+}
+
+// The file for a class: the count step's own clip if the pack (or pack 1) has one, else a variant from the
+// pack, else from pack 1, else the same from the related class. Empty when there is none.
+static String resolveClip(bc::ClipClass wanted, uint8_t step) {
+  const bc::ClipClass tries[2] = {wanted, bc::clipFallback(wanted)};
+  for (bc::ClipClass c : tries) {
+    if (step > 0) {
+      const String suffix = String("c") + step;
+      if (fsReady && LittleFS.exists(clipPath(voicePack, c, suffix))) return clipPath(voicePack, c, suffix);
+      if (fsReady && LittleFS.exists(clipPath(1, c, suffix))) return clipPath(1, c, suffix);
+    }
+    if (clipCount[c] > 0) return clipPath(voicePack, c, String(bc::pickVariant(&rtcPick, c, clipCount[c])));
+    if (clipCountP1[c] > 0) return clipPath(1, c, String(bc::pickVariant(&rtcPick, c, clipCountP1[c])));
   }
+  return String();
 }
 
 static bool packExists(uint8_t pack) {
@@ -259,24 +289,22 @@ static uint32_t wavOpen(File& f, uint32_t* dataBytes) {
 }
 
 // Plays one clip to the end (or until the button stops it, or the battery sags). The sensor keeps being read.
-static bool playClip(bc::ClipClass wanted) {
-  bc::ClipClass c = wanted;
-  if (clipCount[c] == 0) c = bc::clipFallback(c);
-  const uint8_t v = bc::pickVariant(&rtcPick, c, clipCount[c]);
-  if (v == 0) {
-    Serial.printf("CLIP: none for %s in /p%u\n", bc::clipClassName(wanted), voicePack);
+static bool playClip(bc::ClipClass wanted, uint8_t step = 0) {
+  const String path = resolveClip(wanted, step);
+  if (!path.length()) {
+    Serial.printf("CLIP: none for %s in /p%u or /p1\n", bc::clipClassName(wanted), voicePack);
     return false;
   }
-  File f = LittleFS.open(clipPath(c, v), "r");
+  File f = LittleFS.open(path, "r");
   uint32_t bytes = 0;
   const uint32_t rate = f ? wavOpen(f, &bytes) : 0;
   if (!rate) {
-    Serial.printf("CLIP: %s is not a 16-bit mono PCM WAV\n", clipPath(c, v).c_str());
+    Serial.printf("CLIP: %s is not a 16-bit mono PCM WAV\n", path.c_str());
     if (f) f.close();
     return false;
   }
-  const int32_t gain = bc::gainQ15(volumeStep, battLevel);
-  Serial.printf("PLAY %s  %lu Hz  %lu bytes  gain %ld/32768  batt %u mV\n", clipPath(c, v).c_str(), (unsigned long)rate, (unsigned long)bytes, (long)gain, battMv);
+  const int32_t gain = bc::clipGainQ15(wanted, volumeStep, battLevel);
+  Serial.printf("PLAY %s  %lu Hz  %lu bytes  gain %ld/32768  batt %u mV\n", path.c_str(), (unsigned long)rate, (unsigned long)bytes, (long)gain, battMv);
   i2s.setPins(PIN_I2S_BCLK, PIN_I2S_WS, PIN_I2S_DOUT);
   if (!i2s.begin(I2S_MODE_STD, rate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO)) {
     Serial.println("CLIP: the I2S output did not start");
@@ -340,9 +368,10 @@ static void onEvent(bc::Event e) {
     return;
   }
   const bc::Governor::Verdict v = gov.request(e, now, playing);
-  Serial.printf("EVT %s  -> %s\n", bc::eventName(e), bc::Governor::verdictName(v));
+  const uint8_t step = gov.countStep(e);
+  Serial.printf("EVT %s  count step %u  -> %s\n", bc::eventName(e), step, bc::Governor::verdictName(v));
   if (v != bc::Governor::PLAY) return;
-  playClip(bc::clipClassFor(e));
+  playClip(bc::clipClassFor(e), step);
 }
 
 static void sensorPump() {
@@ -358,6 +387,7 @@ static void sensorPump() {
                     det.tiltFromRestDeg(), det.yawTurnDeg(), det.still() ? 1 : 0);
     }
     if (e != bc::EV_NONE) {
+      gov.noteEvent(e);  // the running score counts every impact and lap, played or not
       if (playing) {
         Serial.printf("EVT %s  -> %s\n", bc::eventName(e), bc::Governor::verdictName(bc::Governor::REFUSED_BUSY));
       } else {
@@ -397,14 +427,15 @@ static void serviceButton() {
       Serial.println("BTN: clip stopped");
     } else if (held >= 1500) {
       uint8_t next = voicePack;
-      for (int i = 0; i < 3; i++) {
-        next = (uint8_t)(next % 3 + 1);
+      for (int i = 0; i < bc::MAX_PACKS; i++) {
+        next = (uint8_t)(next % bc::MAX_PACKS + 1);
         if (packExists(next)) break;
       }
       voicePack = next;
       prefs.putUChar("pack", voicePack);
       scanClips();
       Serial.printf("BTN: voice pack %u\n", voicePack);
+      if (clipCount[bc::CLIP_NAME] > 0) playClip(bc::CLIP_NAME);  // the pack says its name (its own clip only)
     } else {
       volumeStep = (uint8_t)((volumeStep + 1) % 3);
       prefs.putUChar("vol", volumeStep);
@@ -422,7 +453,8 @@ static void printStatus() {
   for (int c = 0; c < bc::CLIP_CLASS_COUNT; c++) Serial.printf("  %s: %u clip(s)\n", bc::clipClassName((bc::ClipClass)c), clipCount[c]);
 }
 
-// 'l' logging on/off (CSV: ms,ax,ay,az,gx,gy,gz,tilt,turn,still), 's' status, 'p' then a digit 0-9 or 'a': play that class.
+// 'l' logging on/off (CSV: ms,ax,ay,az,gx,gy,gz,tilt,turn,still), 's' status,
+// 'p' then a digit 0-9, 'a' (lowbatt), 'b' (box) or 'n' (name): play that class.
 static void serviceSerial() {
   while (Serial.available()) {
     const int ch = Serial.read();
@@ -435,7 +467,7 @@ static void serviceSerial() {
     } else if (ch == 'p') {
       delay(20);
       const int d = Serial.read();
-      const int c = d == 'a' ? 10 : d - '0';
+      const int c = d == 'a' ? bc::CLIP_LOWBATT : d == 'b' ? bc::CLIP_BOX : d == 'n' ? bc::CLIP_NAME : d - '0';
       if (c >= 0 && c < bc::CLIP_CLASS_COUNT) playClip((bc::ClipClass)c);
     }
   }
@@ -496,7 +528,7 @@ void setup() {
   volumeStep = prefs.getUChar("vol", 2);
   if (volumeStep > 2) volumeStep = 2;
   voicePack = prefs.getUChar("pack", 1);
-  if (voicePack < 1 || voicePack > 3) voicePack = 1;
+  if (voicePack < 1 || voicePack > bc::MAX_PACKS) voicePack = 1;
 
   fsReady = LittleFS.begin(false);
   if (fsReady && !packExists(voicePack)) voicePack = 1;
@@ -522,6 +554,11 @@ void setup() {
   Serial.printf("BAGGAGE CLAIMS MK1 Rev B  reset=%d  batt=%u mV  %s  %s%s\n", (int)why, battMv, mpuReady ? "MPU OK" : "MPU FAIL (check wiring)", fsReady ? "FS OK" : "FS FAIL (upload the clips)",
                 logging ? "  LOGGING" : "");
 
+  // the first start out of the box, once in the unit's life (a factory reset clears the flag)
+  if (fsReady && why != ESP_RST_DEEPSLEEP && !prefs.getBool("boxed", false) && battLevel < bc::BATT_VERY_LOW) {
+    prefs.putBool("boxed", true);
+    playClip(bc::CLIP_BOX);
+  }
   // the low-battery line, once
   if (battLevel == bc::BATT_VERY_LOW && !rtcLowBattSaid) {
     rtcLowBattSaid = true;

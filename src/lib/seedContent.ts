@@ -77,7 +77,7 @@ type ContentEnrich = Provenance & {
 type ContentRetire = Provenance & { op: "retire"; section: string; match: { title?: string; ref?: string }; why: string };
 
 /** Links a requirement (by title) to tests (by title) and parts (by reference), with the reason. */
-export type ContentLink = Provenance & { op: "link"; section: "design/requirements"; requirement: string; tests: string[]; parts: string[]; because: string };
+type ContentLink = Provenance & { op: "link"; section: "design/requirements"; requirement: string; tests: string[]; parts: string[]; because: string };
 
 export type ContentRow = ContentAdd | ContentEnrich | ContentRetire | ContentLink;
 /** `from`: where the batch's rows come from, as the history lines say it (default: the owner's documents). */

@@ -71,6 +71,7 @@ void Detector::reset() {
   secPrev_ = 0.0f; secCross_ = 0; secHaveMean_ = false; secMeanPrev_ = 1.0f;
   rideScore_ = 0; rideReported_ = false; rideDeferred_ = 0;
   transportS_ = 0; yawPos_ = yawNeg_ = 0.0f; carouselReported_ = false;
+  rideTurnDeg_ = 0.0f; lapBaseDeg_ = 0.0f;
   invertedMs_ = 0; invertedReported_ = false;
 }
 
@@ -337,17 +338,23 @@ void Detector::secondWindow() {
     transportS_ = 0;
     yawPos_ = yawNeg_ = 0.0f;
     carouselReported_ = false;
+    rideTurnDeg_ = lapBaseDeg_ = 0.0f;
   } else {
     if (sd >= 0.008f || turning) {
       if (transportS_ < 60000) transportS_++;
     }
     if (turning) {
       if (yawMean > 0) yawPos_ += yawAbs; else yawNeg_ += yawAbs;
+      rideTurnDeg_ += yawMean;
     }
     const float net = fabsf(yawPos_ - yawNeg_), total = yawPos_ + yawNeg_;
     if (!carouselReported_ && transportS_ >= c_.carouselSeconds && net >= c_.carouselTurnDeg && total > 0.0f && net / total >= c_.carouselConsistency) {
       queue(EV_CAROUSEL);
       carouselReported_ = true;
+      lapBaseDeg_ = rideTurnDeg_;
+    } else if (carouselReported_ && fabsf(rideTurnDeg_ - lapBaseDeg_) >= c_.carouselLapDeg) {
+      queue(EV_CAROUSEL);  // another lap of the same ride
+      lapBaseDeg_ = rideTurnDeg_;
     }
   }
 
@@ -376,14 +383,34 @@ void Detector::secondWindow() {
 // ---------------------------------------------------------------------------------------------------------
 
 void Governor::noteMotion(uint64_t nowMs) {
-  if (nowMs - s_->lastMotionMs > PHASE_RESET_MS) s_->usedMask = 0;
+  if (nowMs - s_->lastMotionMs > PHASE_RESET_MS) {
+    s_->usedMask = 0;
+    s_->impacts = s_->carousels = 0;
+    s_->impactStep = s_->carouselStep = 0;
+  }
   s_->lastMotionMs = nowMs;
+}
+
+static bool countedImpact(Event e) { return e == EV_IMPACT || e == EV_LANDING; }
+
+void Governor::noteEvent(Event e) {
+  if (countedImpact(e) && s_->impacts < 255) s_->impacts++;
+  if (e == EV_CAROUSEL && s_->carousels < 255) s_->carousels++;
+}
+
+uint8_t Governor::countStep(Event e) const {
+  const uint8_t n = countedImpact(e) ? s_->impacts : e == EV_CAROUSEL ? s_->carousels : 0;
+  return n > COUNT_STEPS ? COUNT_STEPS : n;
 }
 
 Governor::Verdict Governor::request(Event e, uint64_t nowMs, bool busy) {
   if (busy) return REFUSED_BUSY;
   const uint16_t bit = (uint16_t)(1u << e);
-  if (s_->usedMask & bit) return REFUSED_CLASS_USED;
+  // a counted class plays again only when its count has reached a step not yet played this phase
+  const uint8_t step = countStep(e);
+  uint8_t* played = countedImpact(e) ? &s_->impactStep : e == EV_CAROUSEL ? &s_->carouselStep : nullptr;
+  const bool newStep = played && step > *played;
+  if ((s_->usedMask & bit) && !newStep) return REFUSED_CLASS_USED;
   if (s_->everPlayed && nowMs - s_->lastGagEndMs < COOLDOWN_MS) return REFUSED_COOLDOWN;
   if (!s_->everPlayed || nowMs - s_->hourStartMs > 3600000ULL) {
     s_->hourStartMs = nowMs;
@@ -391,6 +418,7 @@ Governor::Verdict Governor::request(Event e, uint64_t nowMs, bool busy) {
   }
   if (s_->gagsThisHour >= MAX_PER_HOUR) return REFUSED_HOUR_CAP;
   s_->usedMask |= bit;
+  if (played && step > *played) *played = step;
   s_->gagsThisHour++;
   s_->everPlayed = true;
   s_->lastGagEndMs = nowMs;
@@ -411,7 +439,7 @@ const char* Governor::verdictName(Verdict v) {
 
 const char* clipClassName(ClipClass c) {
   static const char* const NAMES[CLIP_CLASS_COUNT] = {"impact", "weigh", "grab", "freefall", "throw", "landing",
-                                                      "carousel", "conveyor", "inverted", "idle", "lowbatt"};
+                                                      "carousel", "conveyor", "inverted", "idle", "lowbatt", "box", "name"};
   return c < CLIP_CLASS_COUNT ? NAMES[c] : "";
 }
 
@@ -468,6 +496,11 @@ int32_t gainQ15(uint8_t volumeStep, BatteryLevel level) {
   else if (level == BATT_VERY_LOW) g = (g * 16423) >> 15;  // -6 dB
   else if (level == BATT_EMPTY) g = 0;
   return g;
+}
+
+int32_t clipGainQ15(ClipClass c, uint8_t volumeStep, BatteryLevel level) {
+  const int32_t g = gainQ15(volumeStep, level);
+  return c == CLIP_IDLE ? (g * 10362) >> 15 : g;  // -10 dB more for the dark hold
 }
 
 }  // namespace bc

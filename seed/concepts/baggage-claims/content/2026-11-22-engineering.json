@@ -1456,7 +1456,7 @@
         "title": "Firmware sketch compiles"
       },
       "setStatus": "open",
-      "setBody": "A new sketch was written for the 2 x AA design on 22 Nov 2026: BaggageClaims_MK1_RevB.ino with bc_detect.h and bc_detect.cpp, in Files. Proved so far: the detection core builds with g++ without a warning and passes 23 host tests on synthetic traces; the sketch type-checks with the ESP32-S3 compiler (xtensa-esp-elf g++ 15.2.0) against the Arduino-ESP32 4.0.0 headers. Not proved: a full build for the board with arduino-cli (its own tools could not be downloaded here), and anything on hardware. The Rev A sketch in the Drive folder still uses gxDump and gzDump before they are declared."
+      "setBody": "A new sketch was written for the 2 x AA design on 22 Nov 2026: BaggageClaims_MK1_RevB.ino with bc_detect.h and bc_detect.cpp, in Files. Proved on 22 Nov, on a PC: the detection core builds with g++ without a warning and passes 26 host tests on synthetic traces; arduino-cli 1.2.2 with the Arduino-ESP32 4.0.0 core compiles and links the whole sketch for esp32:esp32:XIAO_ESP32S3 with all warnings on and none in the sketch's files (418,264 bytes, 12 % of the 3.3 MB the tool counts; the partitions file gives the application 2 MB). One step was stood in for: Arduino's ctags tool, which adds function prototypes, could not be downloaded here, so a stand-in that adds none was used; the sketch declares its own prototypes, so nothing depends on it. Not proved: a build in the owner's own Arduino IDE with the real ctags, and anything on hardware. Left open for the owner to mark done after his own build. The Rev A sketch in the Drive folder still uses gxDump and gzDump before they are declared."
     },
     {
       "proposal": "E071",
@@ -1595,7 +1595,7 @@
       "op": "add",
       "section": "prototype/tests",
       "title": "Sketch builds for the board",
-      "body": "",
+      "body": "Run by an agent on 22 Nov 2026 with a stand-in for Arduino's ctags (scripts/firmware-check.sh board with BC_CTAGS_STUB=1): compiled and linked, 418,264 bytes, no warning in the sketch's files. Left not run until the build is repeated with the real Arduino tools (the IDE or a full arduino-cli install).",
       "data": {
         "pass": "arduino-cli compile for esp32:esp32:XIAO_ESP32S3 with core 4.0.0 finishes with no error (scripts/firmware-check.sh board), and the binary is under the 2 MB application partition"
       },

@@ -97,6 +97,7 @@ struct Config {
   float carouselTurnDeg = 120.0f;   // net turn in one direction
   float carouselConsistency = 0.80f;  // |net| / (left + right)
   float carouselLeakPerS = 0.975f;  // turn older than about 40 s fades
+  float carouselLapDeg = 360.0f;    // after the first report, each further lap of net turn in the same ride is reported again
   // --- inverted ---
   float upX = 0.0f, upY = 1.0f, upZ = 0.0f;  // the tag's "up" in sensor axes (the loop end); set for the enclosure
   float invertedCos = -0.90f;
@@ -202,6 +203,8 @@ class Detector {
   uint16_t transportS_;
   float yawPos_, yawNeg_;
   bool carouselReported_;
+  float rideTurnDeg_;      // net turn about the vertical in this ride, not faded (for the laps)
+  float lapBaseDeg_;       // rideTurnDeg_ when the last lap was reported
 
   // inverted
   uint16_t invertedMs_;
@@ -213,6 +216,10 @@ class Detector {
 // (Design package Rev A, section 1.5; the sketch of 19 Nov: PHASE_RESET_MS, COOLDOWN_MS, MAX_GAGS_HOUR.)
 struct GovernorState {
   uint16_t usedMask;       // classes already played this journey phase
+  uint8_t impacts;         // impacts (and landings) seen this journey phase, played or not: the running score
+  uint8_t carousels;       // carousel reports this phase: the first ride, then each further lap
+  uint8_t impactStep;      // the highest count step (1, 2, 3 = "too many") already played this phase
+  uint8_t carouselStep;
   uint8_t gagsThisHour;
   uint64_t hourStartMs;
   uint64_t lastGagEndMs;
@@ -231,6 +238,13 @@ class Governor {
   explicit Governor(GovernorState* s) : s_(s) {}
   // Call when motion is seen: a gap of PHASE_RESET_MS without motion starts a new journey phase.
   void noteMotion(uint64_t nowMs);
+  // Counts an event seen (call for every event, before request, whether or not it will play).
+  void noteEvent(Event e);
+  // For a counted class (impact and landing; carousel): 1 for the first this phase, 2 for the second, 3 for the
+  // third and after. 0 for a class that is not counted. A counted class may play once per step, so the score
+  // ("That's one", "That's two", "Too many") and the laps run across one journey phase.
+  uint8_t countStep(Event e) const;
+  static const uint8_t COUNT_STEPS = 3;
   // Asks to play a clip of class `e`. On PLAY the class is latched and counted.
   Verdict request(Event e, uint64_t nowMs, bool busy);
   void notePlaybackEnd(uint64_t nowMs) { s_->lastGagEndMs = nowMs; }
@@ -244,8 +258,16 @@ class Governor {
 // Clip classes on the file system, and a picker that never plays the same variant of a class twice running.
 enum ClipClass : uint8_t {
   CLIP_IMPACT = 0, CLIP_WEIGH, CLIP_GRAB, CLIP_FREEFALL, CLIP_THROW, CLIP_LANDING,
-  CLIP_CAROUSEL, CLIP_CONVEYOR, CLIP_INVERTED, CLIP_IDLE, CLIP_LOWBATT, CLIP_CLASS_COUNT
+  CLIP_CAROUSEL, CLIP_CONVEYOR, CLIP_INVERTED, CLIP_IDLE, CLIP_LOWBATT,
+  CLIP_BOX,    // the first start out of the box, once in the unit's life (until a factory reset)
+  CLIP_NAME,   // the pack says its own name, after a long press selects it
+  CLIP_CLASS_COUNT
 };
+// The clip plan, the same for every pack: a file stem per moment (clipClassName), variants _1 to _9, and for a
+// counted class the steps _c1, _c2, _c3. A moment added later gets a new stem; a pack without it falls back to
+// pack 1, then to clipFallback, then plays nothing, so an older pack keeps working on newer firmware.
+const uint8_t MAX_VARIANTS = 9;
+const uint8_t MAX_PACKS = 9;   // /p1 to /p9; a long press cycles through the ones present
 const char* clipClassName(ClipClass c);          // "impact", "weigh", ... : the file name stem
 ClipClass clipClassFor(Event e);
 ClipClass clipFallback(ClipClass c);              // throw -> freefall, landing -> impact, else itself
@@ -271,6 +293,8 @@ const uint16_t BATT_HYST_MV = 60;
 BatteryLevel batteryLevel(uint16_t millivolts, BatteryLevel previous);
 // Gain in Q15 (32768 = full scale) for the user volume step (0, 1, 2 = 50 / 75 / 100 %) and the battery level.
 int32_t gainQ15(uint8_t volumeStep, BatteryLevel level);
+// The same for one clip class: the dark-hold clip plays a further 10 dB down (the lines' house rule: quiet in the hold).
+int32_t clipGainQ15(ClipClass c, uint8_t volumeStep, BatteryLevel level);
 
 }  // namespace bc
 

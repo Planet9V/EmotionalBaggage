@@ -1,7 +1,7 @@
 // The content batches entered into the example concept after its first seed (src/lib/seedContent.ts,
 // src/lib/seedContentDb.ts): every row is one a person could have typed, a fresh database holds them, and an
 // install seeded before a batch gets it once, without duplicating a row or overwriting one a person has changed.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { pool, q, ready } from "@/lib/db";
@@ -159,7 +159,8 @@ describe("the content batches, as data", () => {
   it("name source documents that are in the example's files, and agree with the map of the review sheet", () => {
     const manifest = JSON.parse(readFileSync(join("seed", "concepts", P, "manifest.json"), "utf8")) as { files: { file: string }[] };
     const files = new Set(manifest.files.map((f) => f.file));
-    for (const r of allRows) expect(files.has(r.sourceFile), `${r.proposal} ${r.sourceFile}`).toBe(true);
+    // the engineering batch names the design note in this repository, which says where each figure comes from
+    for (const r of allRows) expect(eng.rows.includes(r) ? existsSync(r.sourceFile) : files.has(r.sourceFile), `${r.proposal} ${r.sourceFile}`).toBe(true);
     type Entry = { entered: boolean; batch?: string; group?: string; reason?: string; resolution?: { how: string; note: string; with?: string } };
     const map = JSON.parse(readFileSync(join("seed", "concepts", P, "content-proposal-map.json"), "utf8")) as { rows: Record<string, Entry>; added: Record<string, { batch: string }> };
     expect(Object.keys(map.rows)).toHaveLength(491);
@@ -198,11 +199,13 @@ describe("the content batches, in a database", () => {
     await q(`DELETE FROM events WHERE project_id='${P}' AND kind='seed.content' AND data->>'batch'=$1`, [rulings.batch]);
     await seedContent(pool());
     const m = await marker();
-    expect(m.map((e) => e.data.batch)).toEqual(CONTENT_BATCHES.map((b) => b.batch));
+    // one marker per batch (the rulings batch's was taken out above, so it is now the last one written)
+    expect(m.map((e) => e.data.batch).sort()).toEqual(CONTENT_BATCHES.map((b) => b.batch).sort());
     // (the counts in the marker are checked below, where the test sets the database up itself)
     for (const r of allAdds) expect(await count(`AND section='${r.section}' AND title=$$${r.title}$$`), r.proposal).toBe(1);
     // the rulings: a decided row holds the owner's words, and the row it decides has the status and the option
     for (const r of rulings.rows) {
+      if (r.op !== "add" && r.op !== "enrich") continue;
       const title = r.op === "add" ? r.title : r.match.title!;
       const got = (await q<{ status: string; data: Record<string, unknown> }>(`SELECT status, data FROM items WHERE project_id='${P}' AND section=$1 AND title=$2`, [r.section, title]))[0];
       const ruling = r.op === "add" ? r.ruling : r.decide?.ruling;

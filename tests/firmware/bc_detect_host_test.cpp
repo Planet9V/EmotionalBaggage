@@ -403,6 +403,51 @@ TEST(governor_one_per_class_per_phase_cooldown_and_six_an_hour) {
   CHECK(g.request(EV_IMPACT, at, false) == Governor::PLAY, "a new phase plays impact again");
 }
 
+// The running gags of the lines (docs/design/baggage-claims-lines.md): the bag counts impacts in a journey
+// ("That's one", "That's two", "Too many") and carousel laps ("lap two", "third lap").
+TEST(governor_lets_a_counted_class_play_once_per_count_step) {
+  GovernorState s{};
+  Governor g(&s);
+  uint64_t at = 1000;
+  g.noteMotion(at);
+  for (int i = 1; i <= 5; i++) {
+    g.noteEvent(EV_IMPACT);
+    const Governor::Verdict v = g.request(EV_IMPACT, at, false);
+    if (i <= 3) CHECK(v == Governor::PLAY && g.countStep(EV_IMPACT) == i, "impacts one, two and three (too many) each play");
+    else CHECK(v == Governor::REFUSED_CLASS_USED && g.countStep(EV_IMPACT) == 3, "after too many, nothing more this phase");
+    g.notePlaybackEnd(at + 2000);
+    at += 10000;
+  }
+  // an impact refused (busy) still counts, so the next one that plays says the right number
+  g.noteMotion(at + 61ULL * 60 * 1000);
+  at += 61ULL * 60 * 1000;
+  CHECK(g.countStep(EV_IMPACT) == 0, "a new journey phase starts the count again");
+  g.noteEvent(EV_IMPACT);
+  CHECK(g.request(EV_IMPACT, at, true) == Governor::REFUSED_BUSY, "busy");
+  g.noteEvent(EV_LANDING);
+  CHECK(g.countStep(EV_IMPACT) == 2 && g.request(EV_LANDING, at, false) == Governor::PLAY, "a landing counts as an impact: this is two");
+  CHECK(g.countStep(EV_GRAB) == 0, "a grab is not counted");
+}
+
+// A round carousel for over two minutes: the first report after 15 s and 120 degrees, then one at each further lap.
+TEST(a_long_carousel_ride_is_reported_again_at_each_further_lap) {
+  Trace t;
+  t.rest(2000);
+  t.vibrate(130000, 0.012f, {0.007f, 0, 1}, {0, 0, 9});
+  auto ev = run(t);
+  std::printf("    events: %s\n", names(ev).c_str());
+  // 9 deg/s for 130 s is 1170 degrees: reports at about 120, 480 and 840
+  CHECK(count(ev, EV_CAROUSEL) == 3, "three CAROUSEL: the ride, lap two, lap three");
+  CHECK(only(ev, {EV_CAROUSEL}), "nothing else");
+}
+
+TEST(clip_plan_and_quiet_dark_hold) {
+  CHECK(std::string(clipClassName(CLIP_BOX)) == "box" && std::string(clipClassName(CLIP_NAME)) == "name", "stems for the first start and the pack name");
+  CHECK(clipGainQ15(CLIP_IDLE, 2, BATT_OK) < gainQ15(2, BATT_OK) / 3 + 100, "the dark-hold clip plays 10 dB down");
+  CHECK(clipGainQ15(CLIP_IMPACT, 2, BATT_OK) == gainQ15(2, BATT_OK), "other clips at the volume step");
+  CHECK(clipGainQ15(CLIP_IDLE, 2, BATT_EMPTY) == 0, "silent when empty");
+}
+
 TEST(picker_never_repeats_a_variant_twice_running) {
   PickerState p{};
   p.rng = 99;
