@@ -1,23 +1,54 @@
 {
- "about": "Where each row of docs/research/baggage-claims-content-proposal.csv went on 22 Nov 2026. entered: the rows it became in seed/concepts/baggage-claims/content/<batch>.json (a row's id differs per database, so rows are named by section and title, or by part reference). Not entered: its group in docs/research/baggage-claims-owner-decisions.md (a conflict, b choice, c superseded, d confidence, e website platform) and the reason.",
+ "about": "Where each row of docs/research/baggage-claims-content-proposal.csv went on 22 Nov 2026. entered: the rows it became in seed/concepts/baggage-claims/content/<batch>.json (a row's id differs per database, so rows are named by section and title, or by part reference). Not entered: its group in docs/research/baggage-claims-owner-decisions.md (a conflict, b choice, c superseded, d confidence, e website platform) and the reason. Since the rulings of 22 Nov 2026 every row also carries `resolution`: how it was dealt with (ruling, estimate, reason, owner, ws14, design), a note, and `with` when another row's entry records it. `added` lists the rows of the later batch that come from the rulings and not from the sheet.",
  "rows": {
   "P001": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P093.",
-   "waitsOn": "P093"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/story",
+     "title": "Decided and still open"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P093."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P002": {
    "entered": false,
    "group": "d",
    "reason": "Confidence medium: combined or inferred from several lines.",
-   "subgroup": "D1"
+   "subgroup": "D1",
+   "resolution": {
+    "how": "ruling",
+    "note": "The conflicts the story left out are now either decided, estimated, with engineering or on the short list; the story part says which.",
+    "with": "P001"
+   }
   },
   "P003": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P111.",
-   "waitsOn": "P111"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Why now"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P111."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P004": {
    "entered": true,
@@ -80,7 +111,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P097.",
-   "waitsOn": "P097"
+   "waitsOn": "P097",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P010": {
    "entered": true,
@@ -97,12 +132,20 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P092.",
-   "waitsOn": "P092"
+   "waitsOn": "P092",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P012": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes the first proposal's form and plan, superseded by the tag on the handle and by the channels decided on 22 Nov. The document stays in Files."
+   }
   },
   "P013": {
    "entered": true,
@@ -118,15 +161,32 @@
    ]
   },
   "P014": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P113.",
-   "waitsOn": "P113"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/brief",
+     "title": "The ask and the gate"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P113."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P015": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes the first proposal's form and plan, superseded by the tag on the handle and by the channels decided on 22 Nov. The document stays in Files."
+   }
   },
   "P016": {
    "entered": true,
@@ -151,10 +211,23 @@
    ]
   },
   "P018": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P089.",
-   "waitsOn": "P089"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Success metrics: phase gate and launch"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P089."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P019": {
    "entered": true,
@@ -168,94 +241,289 @@
    ]
   },
   "P020": {
-   "entered": false,
-   "group": "b",
-   "reason": "no risk section; brief or open questions",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Risk: batteries in checked bags, as it looks to others (High)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no risk section; brief or open questions"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P021": {
-   "entered": false,
-   "group": "b",
-   "reason": "no risk section; brief or open questions",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Risk: annoyance and airline complaints (Medium)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no risk section; brief or open questions"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P022": {
-   "entered": false,
-   "group": "b",
-   "reason": "no risk section; brief or open questions",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Risk: imitators (Medium)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no risk section; brief or open questions"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P023": {
-   "entered": false,
-   "group": "b",
-   "reason": "no risk section; brief or open questions",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Risk: voice rights and publicity claims (Medium)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no risk section; brief or open questions"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P024": {
-   "entered": false,
-   "group": "b",
-   "reason": "no risk section; brief or open questions",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Risk: seasonality, Q4-heavy (Low-Med)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no risk section; brief or open questions"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P025": {
-   "entered": false,
-   "group": "b",
-   "reason": "no risk section; brief or open questions",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/brief",
+     "title": "Risk: single-source audio module (Low)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no risk section; brief or open questions"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P026": {
-   "entered": false,
-   "group": "b",
-   "reason": "no release exists; only angles",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/press",
+     "title": "Press angles on file (no release has been written)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no release exists; only angles"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P027": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "Will TSA confiscate it?"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P122."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P028": {
-   "entered": false,
-   "group": "b",
-   "reason": "question wording is mine",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "Can it ride in a checked bag?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "question wording is mine"
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P029": {
-   "entered": false,
-   "group": "b",
-   "reason": "question wording is mine",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "Will it annoy everyone around me?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "question wording is mine"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P030": {
-   "entered": false,
-   "group": "b",
-   "reason": "question wording is mine",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "Does it need an app or pairing?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "question wording is mine"
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P031": {
-   "entered": false,
-   "group": "b",
-   "reason": "question wording is mine",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "How long do the batteries last?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "question wording is mine"
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P032": {
-   "entered": false,
-   "group": "b",
-   "reason": "question wording is mine",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "Can I change what it says or how loud it is?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "question wording is mine"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P033": {
-   "entered": false,
-   "group": "b",
-   "reason": "question wording is mine",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "What does it react to?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "question wording is mine"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P034": {
-   "entered": false,
-   "group": "b",
-   "reason": "house style for support",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/faq",
+     "title": "FAQ house style: the Complaint Department"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "house style for support"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P035": {
    "entered": true,
@@ -286,7 +554,11 @@
   "P037": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P038": {
    "entered": true,
@@ -329,7 +601,11 @@
    "entered": false,
    "group": "b",
    "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents).",
-   "subgroup": "B6"
+   "subgroup": "B6",
+   "resolution": {
+    "how": "reason",
+    "note": "The naming note itself drops this name (\"skip it\"), and a row cannot be entered as rejected by anyone but a person."
+   }
   },
   "P042": {
    "entered": true,
@@ -365,28 +641,80 @@
    ]
   },
   "P045": {
-   "entered": false,
-   "group": "b",
-   "reason": "is a split name wanted",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Sass Case (product) with Baggage Claims (product line)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "is a split name wanted"
+   },
+   "resolution": {
+    "how": "owner",
+    "note": "on the owner's short list"
+   }
   },
   "P046": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P120.",
-   "waitsOn": "P120"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Voice pack ladder: Coach, Premium Sass, First Class"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P120."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P047": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P120.",
-   "waitsOn": "P120"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Black Card: Checked & Offended Edition"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P120."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P048": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P120.",
-   "waitsOn": "P120"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Tier names: Checked, Carry-On, Overhead Bin, First Class, The Whole Cargo Hold"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P120."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P049": {
    "entered": true,
@@ -400,82 +728,169 @@
    ]
   },
   "P050": {
-   "entered": false,
-   "group": "d",
-   "reason": "The kind text is longer than the field allows, so it cannot be entered as written.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "@TheBagComplains"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The kind text is longer than the field allows, so it cannot be entered as written."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P051": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P052": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P053": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P054": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P055": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P056": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P057": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P058": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P059": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P060": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P061": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P062": {
-   "entered": false,
-   "group": "b",
-   "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents).",
-   "subgroup": "B6"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/questions",
+     "title": "Which name ships?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents)."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P063": {
-   "entered": false,
-   "group": "b",
-   "reason": "adds an option",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/decisions",
+     "title": "Which name ships?"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "adds an option"
+   },
+   "resolution": {
+    "how": "owner",
+    "note": "on the owner's short list"
+   }
   },
   "P064": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P065": {
    "entered": true,
@@ -491,70 +906,136 @@
    ]
   },
   "P066": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P089.",
-   "waitsOn": "P089"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/decisions",
+     "title": "If Kickstarter runs: which goal?"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P089."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P067": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/decisions",
+     "title": "Which web stack for the product site?"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P068": {
    "entered": false,
    "group": "b",
    "reason": "purchase",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P069": {
    "entered": false,
    "group": "b",
    "reason": "firmware direction",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P070": {
    "entered": false,
    "group": "b",
    "reason": "roadmap",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P071": {
    "entered": false,
    "group": "b",
    "reason": "scope",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "owner",
+    "note": "The overhead-bin shove is proposed as a new moment with five lines. The scanner beep needs a microphone, which is not on the parts list, so it is not proposed.",
+    "with": "P492"
+   }
   },
   "P072": {
    "entered": false,
    "group": "b",
    "reason": "content plan",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "owner",
+    "note": "Who records the clips is on the owner's list (generated voice, voice actor, or one then the other).",
+    "with": "P492"
+   }
   },
   "P073": {
    "entered": false,
    "group": "b",
    "reason": "mechanical design",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P074": {
    "entered": false,
    "group": "b",
    "reason": "commercial terms",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "reason",
+    "note": "The later, more specific document (the playbook: 20 creators at 10%) is kept; the PRD's terms are recorded in the row.",
+    "with": "P430"
+   }
   },
   "P075": {
    "entered": false,
    "group": "b",
    "reason": "tier design",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "reason",
+    "note": "The cap of 100 with more if they sell out is written into the row's note; not asked.",
+    "with": "P385"
+   }
   },
   "P076": {
    "entered": false,
    "group": "b",
    "reason": "optional hardware",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P077": {
    "entered": true,
@@ -570,321 +1051,818 @@
    ]
   },
   "P078": {
-   "entered": false,
-   "group": "b",
-   "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents).",
-   "subgroup": "B6"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/questions",
+     "title": "Primary sales channel"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "A status or scope the sheet chose (a rejected name; a line added to every finalist; a statement about all documents)."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P079": {
    "entered": false,
    "group": "b",
    "reason": "audience",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "owner",
+    "note": "The first market: on the owner's list."
+   }
   },
   "P080": {
    "entered": false,
    "group": "b",
    "reason": "nothing is written",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "owner",
+    "note": "The lines are written in the lines document; how many go on a pack is in the voice pack evaluation; who voices them is on the owner's list.",
+    "with": "P492"
+   }
   },
   "P081": {
    "entered": false,
    "group": "b",
    "reason": "nothing is written",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P082": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "owner",
+    "note": "The name: on the owner's list."
+   }
   },
   "P083": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/questions",
+     "title": "Which web stack for the product site?"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P084": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ruling",
+    "note": "The schema and compose files in the folder belong to designs that are not the build; the owner: \"we already built this\".",
+    "with": "P083"
+   }
   },
   "P085": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Checkout on the product's own site: Stripe"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P086": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Email: the product's own mail server, set in Admin"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P087": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Referrals: the engine built into this app"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P088": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "File storage: PostgreSQL"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P089": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/questions",
+     "title": "Kickstarter goal: $15k or 2,000 backers?"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P090": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "First build time: about 3.5 hours hands-on (estimate)"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "estimate",
+    "note": "estimated, as the owner asked"
+   }
   },
   "P091": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P092": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P093": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Prototype parts: about $65 for one unit (estimate, added up)"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "estimate",
+    "note": "estimated, as the owner asked"
+   }
   },
   "P094": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "estimate",
+    "note": "The other totals on file ($58.80; $10-15) are recorded in the added-up estimate's text.",
+    "with": "P093"
+   }
   },
   "P095": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Batteries: two AA alkaline cells"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P096": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Motion sensor: the Adafruit MPU6050 breakout"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P097": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P098": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P099": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P100": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Free-fall: over 0.3 s"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P101": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Carousel: circular, periodic motion for about 15 s or more"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P102": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P103": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Handle grab: tilt and quick motion, then sustained tilt plus steady carry"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P104": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P105": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Hard impact: as documented"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P106": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "owner",
+    "note": "The different wordings of the same line are kept side by side in the lines document, each marked with its document; the owner picks.",
+    "with": "P492"
+   }
   },
   "P107": {
-   "entered": false,
-   "group": "c",
-   "reason": "Enclosure size: settled at 80 x 60 x 42 mm from your documentation. Marked resolved; the 80 x 60 x 40 mm project box is not entered."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Enclosure: 80 x 60 x 42 mm, a tag on the handle"
+    }
+   ],
+   "was": {
+    "group": "c",
+    "reason": "Enclosure size: settled at 80 x 60 x 42 mm from your documentation. Marked resolved; the 80 x 60 x 40 mm project box is not entered."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P108": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Enclosure print: about 75 g of PETG, about $1.50 of filament (estimate)"
+    },
+    {
+     "op": "add",
+     "section": "production/economics",
+     "title": "Enclosure print, one tag"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "estimate",
+    "note": "estimated, as the owner asked"
+   }
   },
   "P109": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Enclosure build: an integrated print with minimal user intervention"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P110": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P111": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P112": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "estimate",
+    "note": "The other totals on file ($58.80; $10-15) are recorded in the added-up estimate's text.",
+    "with": "P093"
+   }
   },
   "P113": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "Read as an estimate (about $750 against parts of $700), and as three different batches (5, 20, 100); both are written into the row. Not asked.",
+    "with": "P014"
+   }
   },
   "P114": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P115": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Marketing budget: 5,000 USD"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P116": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The figures are milestones of one plan, not rivals (500 to pass the gate, 2,000 to scale, 3,000 as a campaign's own target; a target under $8 and a stop above $10). Written into the row.",
+    "with": "P427"
+   }
   },
   "P117": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The playbook's own figure ($500) is kept; the chat summary's \"five-dollar\" is recorded in the row.",
+    "with": "P435"
+   }
   },
   "P118": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The figures are milestones of one plan, not rivals (500 to pass the gate, 2,000 to scale, 3,000 as a campaign's own target; a target under $8 and a stop above $10). Written into the row.",
+    "with": "P427"
+   }
   },
   "P119": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The later documents ($19) are kept; the first proposal's $19.95 is recorded in the row's note.",
+    "with": "P382"
+   }
   },
   "P120": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The later, more specific document (the playbook) gives \"First Class\" to the collector tier; the pack ladder's use is recorded in its own row.",
+    "with": "P048"
+   }
   },
   "P121": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The two documents agree that the monthly winner gets the unit; \"Complaint of the Week\" is the weekly feature. Written into the row.",
+    "with": "P414"
+   }
   },
   "P122": {
-   "entered": false,
-   "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "In the hold: it performs, and an off switch exists"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "Conflict between documents: your decision."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P123": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ruling",
+    "note": "The schema and compose files in the folder belong to designs that are not the build; the owner: \"we already built this\".",
+    "with": "P083"
+   }
   },
   "P124": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ruling",
+    "note": "The schema and compose files in the folder belong to designs that are not the build; the owner: \"we already built this\".",
+    "with": "P083"
+   }
   },
   "P125": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ruling",
+    "note": "The schema and compose files in the folder belong to designs that are not the build; the owner: \"we already built this\".",
+    "with": "P083"
+   }
   },
   "P126": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P127": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P128": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P129": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P130": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "Read as an estimate (about $750 against parts of $700), and as three different batches (5, 20, 100); both are written into the row. Not asked.",
+    "with": "P014"
+   }
   },
   "P131": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P132": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P133": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P134": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14): a question about the device, its firmware, its parts or its print."
+   }
   },
   "P135": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "\"Aimed at Q4 gifting\" cannot be 2026; the launch row says to plan against the next gifting windows. Not asked.",
+    "with": "P440"
+   }
   },
   "P136": {
    "entered": false,
    "group": "a",
-   "reason": "Conflict between documents: your decision."
+   "reason": "Conflict between documents: your decision.",
+   "resolution": {
+    "how": "reason",
+    "note": "The later, more specific document (the playbook: 20 creators at 10%) is kept; the PRD's terms are recorded in the row.",
+    "with": "P430"
+   }
   },
   "P137": {
-   "entered": false,
-   "group": "d",
-   "reason": "Says the three other market reports are unnumbered; the chat numbers them 8, 10 and 15.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "title": "US gifts, novelty and souvenir market was about $32.7B in 2025, growing about 6.4% a year through 2034"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Says the three other market reports are unnumbered; the chat numbers them 8, 10 and 15."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P138": {
-   "entered": false,
-   "group": "d",
-   "reason": "Adds the judgement \"Neither is a price study\".",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "title": "Gag gifts sell in a $12-15 band on Etsy and eBay"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Adds the judgement \"Neither is a price study\"."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P139": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "research/claims",
+     "title": "FAA PackSafe requires lithium devices in checked bags to be fully off; alkaline AA cells face no such restriction"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P122."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P140": {
    "entered": true,
@@ -983,10 +1961,23 @@
    ]
   },
   "P148": {
-   "entered": false,
-   "group": "d",
-   "reason": "Its arithmetic is the reviewer's.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A 2,000-backer campaign at a $24 average grosses about $48k and contributes about $8-12k after COGS, fulfillment and marketing"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Its arithmetic is the reviewer's."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P149": {
    "entered": true,
@@ -1066,22 +2057,61 @@
    ]
   },
   "P156": {
-   "entered": false,
-   "group": "d",
-   "reason": "Its arithmetic (2.07) is the reviewer's.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Wholesale at $14.50 against a $29.95 MSRP gives retailers a 2x markup, and that is enough for airport retail"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Its arithmetic (2.07) is the reviewer's."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P157": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P111.",
-   "waitsOn": "P111"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Gag gifts retail well at $19.95 to $24.95, a 3-4x margin over parts"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P111."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P158": {
-   "entered": false,
-   "group": "d",
-   "reason": "The body is an instruction, not a statement in the document.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Alkaline batteries are allowed in carry-on and checked bags with essentially no restrictions"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The body is an instruction, not a statement in the document."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P159": {
    "entered": true,
@@ -1095,22 +2125,61 @@
    ]
   },
   "P160": {
-   "entered": false,
-   "group": "d",
-   "reason": "The excerpt says \"no UN38.3 lithium cells\"; the title says more.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "The design uses no UN38.3 lithium cells"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The excerpt says \"no UN38.3 lithium cells\"; the title says more."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P161": {
-   "entered": false,
-   "group": "d",
-   "reason": "The body joins two documents into an inference.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "With the radios disabled the device needs only FCC Part 15 unintentional-radiator treatment, by self-declaration, and the ESP32-S3 module is itself FCC certified"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The body joins two documents into an inference."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P162": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Airlines have a \"lithium-device handling policy\" that the compliance card can cite for an alkaline device"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P122."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P163": {
    "entered": true,
@@ -1124,10 +2193,23 @@
    ]
   },
   "P164": {
-   "entered": false,
-   "group": "b",
-   "reason": "rights not addressed in any document",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "The Wilhelm scream can be used as a product sound and in the launch video"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "rights not addressed in any document"
+   },
+   "resolution": {
+    "how": "owner",
+    "note": "on the owner's short list"
+   }
   },
   "P165": {
    "entered": true,
@@ -1152,28 +2234,72 @@
    ]
   },
   "P167": {
-   "entered": false,
-   "group": "d",
-   "reason": "The design package does not give this as the reason PETG is enough.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Cargo holds stay between -10 C and +45 C"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The design package does not give this as the reason PETG is enough."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P168": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P169": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Novelty brands are sued over website accessibility; WCAG 2.2 AA is the bar"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P170": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "EU visitors need double opt-in for email under CAN-SPAM and GDPR"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P171": {
    "entered": true,
@@ -1198,10 +2324,23 @@
    ]
   },
   "P173": {
-   "entered": false,
-   "group": "d",
-   "reason": "The excerpt supports the body, not the titled price.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "DFPlayer Mini is $5.90 retail and about $1.30 in quantity"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The excerpt supports the body, not the titled price."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P174": {
    "entered": true,
@@ -1226,10 +2365,23 @@
    ]
   },
   "P176": {
-   "entered": false,
-   "group": "d",
-   "reason": "The cited excerpt is not the line that states it.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A microSD card that holds three voice packs costs $2"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The cited excerpt is not the line that states it."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P177": {
    "entered": true,
@@ -1243,10 +2395,23 @@
    ]
   },
   "P178": {
-   "entered": false,
-   "group": "d",
-   "reason": "\"In stock at the listed prices\" is the reviewer's reading.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "The small prototype parts can be picked up the same day at Micro Center"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "\"In stock at the listed prices\" is the reviewer's reading."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P179": {
    "entered": true,
@@ -1306,7 +2471,11 @@
   "P184": {
    "entered": false,
    "group": "c",
-   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P185": {
    "entered": true,
@@ -1367,163 +2536,320 @@
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P191": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P192": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P193": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P194": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P195": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P196": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P197": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P198": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P199": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P200": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P201": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P202": {
-   "entered": false,
-   "group": "b",
-   "reason": "a bench measurement, not research",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "Three AA alkaline cells last 3-6 months"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "a bench measurement, not research"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P203": {
-   "entered": false,
-   "group": "b",
-   "reason": "a bench measurement, not research",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "The hard-impact gag is detected 100% of the time"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "a bench measurement, not research"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P204": {
-   "entered": false,
-   "group": "b",
-   "reason": "a bench measurement, not research",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A foam or loose sensor mount destroys the jerk signatures the classifier depends on"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "a bench measurement, not research"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P205": {
-   "entered": false,
-   "group": "b",
-   "reason": "a bench check, not research",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A 1 kOhm series resistor on the DFPlayer RX line stops random triggers"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "a bench check, not research"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P206": {
    "entered": false,
    "group": "b",
    "reason": "a load test, not research",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ruling",
+    "note": "A claim about a tool or a price of a web design that is not the build (Shopify, Klaviyo, Viral Loops, Vercel, Supabase, Postiz, version pins, hosting, the Rev A audio worker). Nothing rests on it now.",
+    "with": "P083"
+   }
   },
   "P207": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P105.",
-   "waitsOn": "P105"
+   "waitsOn": "P105",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P208": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P099.",
-   "waitsOn": "P099"
+   "waitsOn": "P099",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P209": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P103.",
-   "waitsOn": "P103"
+   "waitsOn": "P103",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P210": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P100.",
-   "waitsOn": "P100"
+   "waitsOn": "P100",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P211": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P101.",
-   "waitsOn": "P101"
+   "waitsOn": "P101",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P212": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P102.",
-   "waitsOn": "P102"
+   "waitsOn": "P102",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P213": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P104.",
-   "waitsOn": "P104"
+   "waitsOn": "P104",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P214": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P106.",
-   "waitsOn": "P106"
+   "waitsOn": "P106",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P215": {
    "entered": false,
    "group": "b",
    "reason": "stretch scope",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P216": {
    "entered": false,
    "group": "b",
    "reason": "stretch scope",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P217": {
    "entered": true,
@@ -1542,7 +2868,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P092.",
-   "waitsOn": "P092"
+   "waitsOn": "P092",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P219": {
    "entered": true,
@@ -1560,19 +2890,31 @@
   "P220": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P221": {
    "entered": false,
    "group": "d",
    "reason": "Confidence medium: Not compiled here. Line numbers and counts are mine.",
-   "subgroup": "D1"
+   "subgroup": "D1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P222": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P097.",
-   "waitsOn": "P097"
+   "waitsOn": "P097",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P223": {
    "entered": true,
@@ -1589,25 +2931,41 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P092.",
-   "waitsOn": "P092"
+   "waitsOn": "P092",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P225": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P098.",
-   "waitsOn": "P098"
+   "waitsOn": "P098",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P226": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P127.",
-   "waitsOn": "P127"
+   "waitsOn": "P127",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P227": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P131.",
-   "waitsOn": "P131"
+   "waitsOn": "P131",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P228": {
    "entered": true,
@@ -1635,7 +2993,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P105.",
-   "waitsOn": "P105"
+   "waitsOn": "P105",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P231": {
    "entered": true,
@@ -1652,7 +3014,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "waitsOn": "P122",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P233": {
    "entered": true,
@@ -1702,7 +3068,11 @@
    "entered": false,
    "group": "b",
    "reason": "Rev B scope",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P238": {
    "entered": true,
@@ -1721,7 +3091,11 @@
    "entered": false,
    "group": "b",
    "reason": "two wordings",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P240": {
    "entered": true,
@@ -1753,7 +3127,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P092.",
-   "waitsOn": "P092"
+   "waitsOn": "P092",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P243": {
    "entered": true,
@@ -1798,13 +3176,21 @@
    "entered": false,
    "group": "b",
    "reason": "check the drawing",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P247": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P248": {
    "entered": true,
@@ -1836,7 +3222,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "waitsOn": "P122",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P251": {
    "entered": true,
@@ -1875,7 +3265,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P131.",
-   "waitsOn": "P131"
+   "waitsOn": "P131",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P254": {
    "entered": true,
@@ -1893,7 +3287,11 @@
   "P255": {
    "entered": false,
    "group": "c",
-   "reason": "Enclosure size: settled at 80 x 60 x 42 mm from your documentation. Marked resolved; the 80 x 60 x 40 mm project box is not entered."
+   "reason": "Enclosure size: settled at 80 x 60 x 42 mm from your documentation. Marked resolved; the 80 x 60 x 40 mm project box is not entered.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P256": {
    "entered": true,
@@ -1912,72 +3310,124 @@
    "entered": false,
    "group": "b",
    "reason": "not on the parts list",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P258": {
    "entered": false,
    "group": "b",
    "reason": "not on the parts list",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P259": {
    "entered": false,
    "group": "b",
    "reason": "not on the parts list",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P260": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P261": {
    "entered": false,
    "group": "b",
    "reason": "not on the parts list",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P262": {
    "entered": false,
    "group": "b",
    "reason": "consumables",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P263": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P264": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P110.",
-   "waitsOn": "P110"
+   "waitsOn": "P110",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P265": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P266": {
    "entered": false,
    "group": "c",
-   "reason": "A print job for the Rev A shell; the tag changes what is printed. Confirm it still applies."
+   "reason": "A print job for the Rev A shell; the tag changes what is printed. Confirm it still applies.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P267": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P268": {
    "entered": false,
    "group": "c",
-   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P269": {
    "entered": false,
    "group": "c",
-   "reason": "A print job for the Rev A shell; the tag changes what is printed. Confirm it still applies."
+   "reason": "A print job for the Rev A shell; the tag changes what is printed. Confirm it still applies.",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P270": {
    "entered": true,
@@ -2007,7 +3457,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P110.",
-   "waitsOn": "P110"
+   "waitsOn": "P110",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P273": {
    "entered": true,
@@ -2026,31 +3480,51 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P109.",
-   "waitsOn": "P109"
+   "waitsOn": "P109",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P275": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P109.",
-   "waitsOn": "P109"
+   "waitsOn": "P109",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P276": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P109.",
-   "waitsOn": "P109"
+   "waitsOn": "P109",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P277": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P109.",
-   "waitsOn": "P109"
+   "waitsOn": "P109",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P278": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P109.",
-   "waitsOn": "P109"
+   "waitsOn": "P109",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P279": {
    "entered": true,
@@ -2069,23 +3543,39 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P098.",
-   "waitsOn": "P098"
+   "waitsOn": "P098",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P281": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P131.",
-   "waitsOn": "P131"
+   "waitsOn": "P131",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P282": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P283": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P284": {
    "entered": true,
@@ -2101,7 +3591,11 @@
   "P285": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P286": {
    "entered": true,
@@ -2186,7 +3680,11 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P092.",
-   "waitsOn": "P092"
+   "waitsOn": "P092",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P294": {
    "entered": true,
@@ -2236,7 +3734,11 @@
    "entered": false,
    "group": "b",
    "reason": "which boot log is right",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P299": {
    "entered": true,
@@ -2253,84 +3755,140 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P109.",
-   "waitsOn": "P109"
+   "waitsOn": "P109",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P301": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P302": {
    "entered": false,
    "group": "b",
    "reason": "no pass condition in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P303": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P304": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P305": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P306": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P307": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P308": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P309": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P310": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P311": {
    "entered": false,
    "group": "b",
    "reason": "no procedure in the documents",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P312": {
    "entered": false,
    "group": "d",
    "reason": "Links five tests to the build by inference.",
-   "subgroup": "D3"
+   "subgroup": "D3",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P313": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P130.",
-   "waitsOn": "P130"
+   "waitsOn": "P130",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P314": {
    "entered": true,
@@ -2347,13 +3905,21 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P113.",
-   "waitsOn": "P113"
+   "waitsOn": "P113",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P316": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P135.",
-   "waitsOn": "P135"
+   "waitsOn": "P135",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P317": {
    "entered": true,
@@ -2370,60 +3936,100 @@
    "entered": false,
    "group": "b",
    "reason": "the section has one amount per line, the PRD has four volumes",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P319": {
    "entered": false,
    "group": "b",
    "reason": "one amount per line against four volumes",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P320": {
    "entered": false,
    "group": "b",
    "reason": "one amount per line against four volumes",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P321": {
    "entered": false,
    "group": "b",
    "reason": "one amount per line against four volumes",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P322": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P323": {
    "entered": false,
    "group": "b",
    "reason": "one amount per line against four volumes",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P324": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P094.",
-   "waitsOn": "P094"
+   "waitsOn": "P094",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P325": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P113.",
-   "waitsOn": "P113"
+   "waitsOn": "P113",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P326": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P111.",
-   "waitsOn": "P111"
+   "waitsOn": "P111",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P327": {
    "entered": false,
    "group": "d",
    "reason": "Adds a comparison the PRD does not make.",
-   "subgroup": "D3"
+   "subgroup": "D3",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P328": {
    "entered": true,
@@ -2440,19 +4046,31 @@
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P130.",
-   "waitsOn": "P130"
+   "waitsOn": "P130",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P330": {
    "entered": false,
    "group": "b",
    "reason": "capital, not unit cost",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P331": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P332": {
    "entered": true,
@@ -2471,274 +4089,539 @@
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P334": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P130.",
-   "waitsOn": "P130"
+   "waitsOn": "P130",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P335": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P113.",
-   "waitsOn": "P113"
+   "waitsOn": "P113",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P336": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P113.",
-   "waitsOn": "P113"
+   "waitsOn": "P113",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P337": {
    "entered": false,
    "group": "b",
    "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
-   "subgroup": "B5"
+   "subgroup": "B5",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P338": {
    "entered": false,
    "group": "b",
    "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
-   "subgroup": "B5"
+   "subgroup": "B5",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P339": {
    "entered": false,
    "group": "b",
    "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
-   "subgroup": "B5"
+   "subgroup": "B5",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P340": {
    "entered": false,
    "group": "b",
    "reason": "Batch and supplier rows that name a build, a home city or a row that is not a batch.",
-   "subgroup": "B5"
+   "subgroup": "B5",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P341": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P342": {
    "entered": false,
    "group": "b",
    "reason": "no supplier is named",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P343": {
    "entered": false,
    "group": "b",
    "reason": "no supplier is named",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P344": {
    "entered": false,
    "group": "b",
    "reason": "no supplier is named",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P345": {
    "entered": false,
    "group": "b",
    "reason": "no supplier is named",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P346": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P347": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P348": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P349": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P350": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P351": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P352": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P353": {
    "entered": false,
    "group": "b",
    "reason": "Would change the unit cost the app works out, or is not one number (a range, or one amount per volume).",
-   "subgroup": "B1"
+   "subgroup": "B1",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P354": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "waitsOn": "P122",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P355": {
    "entered": false,
    "group": "a",
    "reason": "States one side of conflict P122.",
-   "waitsOn": "P122"
+   "waitsOn": "P122",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P356": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P357": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P358": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P359": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P360": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P361": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P362": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P363": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P364": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P365": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P366": {
    "entered": false,
    "group": "b",
    "reason": "Compliance rows: the reason is from your documents, the check to carry out is the reviewer's wording.",
-   "subgroup": "B4"
+   "subgroup": "B4",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P367": {
    "entered": false,
    "group": "b",
    "reason": "not addressed in any document",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "ws14",
+    "note": "With engineering (WS14), which owns every Design, Prototype and Production row."
+   }
   },
   "P368": {
-   "entered": false,
-   "group": "d",
-   "reason": "Persona assembled from several lines of two documents.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/personas",
+     "title": "P1 - Frequent leisure flyer, 25-45"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Persona assembled from several lines of two documents."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P369": {
-   "entered": false,
-   "group": "d",
-   "reason": "Persona assembled from several lines of two documents.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/personas",
+     "title": "P2 - Gag-gift buyer"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Persona assembled from several lines of two documents."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P370": {
-   "entered": false,
-   "group": "d",
-   "reason": "Persona assembled from several lines of two documents.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/personas",
+     "title": "P3 - Travel content creator"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Persona assembled from several lines of two documents."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P371": {
-   "entered": false,
-   "group": "d",
-   "reason": "Persona assembled from several lines of two documents.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/personas",
+     "title": "P4 - Airport gift shop and novelty retail buyer"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "Persona assembled from several lines of two documents."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P372": {
-   "entered": false,
-   "group": "b",
-   "reason": "an audience, not a buyer",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/personas",
+     "title": "The audience that never pays: handlers and bystanders"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "an audience, not a buyer"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P373": {
-   "entered": false,
-   "group": "b",
-   "reason": "no competitor research exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/competitors",
+     "title": "Novelty sound gadgets on Etsy and eBay"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no competitor research exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P374": {
-   "entered": false,
-   "group": "b",
-   "reason": "no competitor research exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/competitors",
+     "title": "A Bluetooth speaker"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no competitor research exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P375": {
-   "entered": false,
-   "group": "b",
-   "reason": "no competitor research exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/competitors",
+     "title": "Another candle (any $20-30 gift)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no competitor research exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P376": {
-   "entered": false,
-   "group": "b",
-   "reason": "no competitor research exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/competitors",
+     "title": "Doing nothing; imitators after launch"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no competitor research exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P377": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P378": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P379": {
    "entered": true,
@@ -2752,9 +4635,23 @@
    ]
   },
   "P380": {
-   "entered": false,
-   "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/positioning",
+     "title": "Two markets: checked bag and carry-on"
+    }
+   ],
+   "was": {
+    "group": "c",
+    "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P381": {
    "entered": true,
@@ -2770,90 +4667,249 @@
    ]
   },
   "P382": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Early bird \"Checked\" - $19"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P383": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Standard \"Carry-On\" - $24"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P384": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Two-pack \"Overhead Bin\" - $34"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P385": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Collector \"First Class\" - $49"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P386": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Four-pack \"The Whole Cargo Hold\" - $99"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P387": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Desk-only \"Gate Agent Special\" - $18"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P388": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "The product's own site - $24.95"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P389": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Amazon marketplace - $27.95"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P390": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Wholesale - $14.50, MSRP $29.95"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P391": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Voice pack - $7.99"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P392": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Pricing assumptions"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P393": {
    "entered": false,
    "group": "c",
-   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P394": {
    "entered": false,
    "group": "c",
-   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P395": {
    "entered": false,
    "group": "c",
-   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P396": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P397": {
    "entered": true,
@@ -2869,7 +4925,11 @@
   "P398": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P399": {
    "entered": true,
@@ -2951,12 +5011,20 @@
   "P406": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P407": {
    "entered": false,
    "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it).",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P408": {
    "entered": true,
@@ -2983,41 +5051,105 @@
   "P410": {
    "entered": false,
    "group": "c",
-   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now."
+   "reason": "Brand kit, logo or colour; the design direction and colours are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P411": {
-   "entered": false,
-   "group": "b",
-   "reason": "files are missing",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/imagery",
+     "title": "Exploded view and schematic"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "files are missing"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P412": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P413": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/landing",
+     "title": "Moments"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P414": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P121.",
-   "waitsOn": "P121"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/landing",
+     "title": "Lost Baggage Hotline"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P121."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P415": {
-   "entered": false,
-   "group": "a",
-   "reason": "States one side of conflict P120.",
-   "waitsOn": "P120"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/landing",
+     "title": "Departure Board"
+    }
+   ],
+   "was": {
+    "group": "a",
+    "reason": "States one side of conflict P120."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P416": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P417": {
    "entered": true,
@@ -3046,177 +5178,541 @@
    ]
   },
   "P419": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/landing",
+     "title": "Voice-pack store"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P420": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/landing",
+     "title": "Stories wall"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P421": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/landing",
+     "title": "Press"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P422": {
-   "entered": false,
-   "group": "e",
-   "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/landing",
+     "title": "Legal pages"
+    }
+   ],
+   "was": {
+    "group": "e",
+    "reason": "Only matters if the website platform plan is in scope."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P423": {
    "entered": false,
    "group": "c",
-   "reason": "Carries a tagline or text on the product; taglines are being chosen now."
+   "reason": "Carries a tagline or text on the product; taglines are being chosen now.",
+   "resolution": {
+    "how": "design",
+    "note": "Waits on the design proposal, from which the look, the design direction and the launch line are being chosen. Not a question on this list."
+   }
   },
   "P424": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/ads",
+     "title": "My bag embarrassed me in front of the entire carousel. Five stars."
+    },
+    {
+     "op": "enrich",
+     "section": "marketing/ads",
+     "title": "TSA agent laughed so hard she forgot to swab my laptop. Five stars."
+    },
+    {
+     "op": "enrich",
+     "section": "marketing/ads",
+     "title": "Ruined my marriage. She took his side. The bag's side. Five stars."
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P425": {
-   "entered": false,
-   "group": "b",
-   "reason": "paid amplification creative",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/ads",
+     "title": "Amplified unbranded clip (whichever breaks out)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "paid amplification creative"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P426": {
-   "entered": false,
-   "group": "b",
-   "reason": "which total is right",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/campaigns",
+     "title": "Marketing plan and budget"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "which total is right"
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P427": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/campaigns",
+     "title": "Kill and scale criteria (whole plan)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P428": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "1 · The Four Gates"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P429": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "2 · @TheBagComplains"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P430": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "3 · 100 Bags, 100 Reactions"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P431": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "4 · The Lost Baggage Hotline"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P432": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "5 · The Departure Board"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P433": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "6 · The Complaint Desk"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P434": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "7 · Kickstarter page"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P435": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "8 · The Shame Ads"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P436": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "9 · Platinum Status"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P437": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/campaigns",
+     "title": "10 · Wholesale Trojan"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P438": {
-   "entered": false,
-   "group": "b",
-   "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose.",
-   "subgroup": "B3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/campaigns",
+     "title": "Always on, after launch"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Campaign and ad fields (objective, budget, target, stop rule) are the reviewer's reading of the playbook's prose."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P439": {
-   "entered": false,
-   "group": "b",
-   "reason": "no dates in the documents",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Launch: unbranded clips (the first gate)"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Build the five validation units"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Film at a real airport"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Cut the four short verticals"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Post with the pinned reply and the email capture"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Read the result at 72 hours and at 30 days"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no dates in the documents"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P440": {
-   "entered": false,
-   "group": "b",
-   "reason": "no dates in the documents",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Launch: crowdfunding (only if it runs)"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Pass the first gate"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Build the campaign page"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no dates in the documents"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P441": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A build phase of the Shopify plan (trial, Klaviyo, Viral Loops, Judge.me). The steps for the product's own site are in the launch plan in general terms.",
+    "with": "P083"
+   }
   },
   "P442": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A build phase of the Shopify plan (trial, Klaviyo, Viral Loops, Judge.me). The steps for the product's own site are in the launch plan in general terms.",
+    "with": "P083"
+   }
   },
   "P443": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A build phase of the Shopify plan (trial, Klaviyo, Viral Loops, Judge.me). The steps for the product's own site are in the launch plan in general terms.",
+    "with": "P083"
+   }
   },
   "P444": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A build phase of the Shopify plan (trial, Klaviyo, Viral Loops, Judge.me). The steps for the product's own site are in the launch plan in general terms.",
+    "with": "P083"
+   }
   },
   "P445": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "A build phase of the Shopify plan (trial, Klaviyo, Viral Loops, Judge.me). The steps for the product's own site are in the launch plan in general terms.",
+    "with": "P083"
+   }
   },
   "P446": {
    "entered": false,
    "group": "b",
    "reason": "hosts and codes are not fixed",
-   "subgroup": "B0"
+   "subgroup": "B0",
+   "resolution": {
+    "how": "reason",
+    "note": "A list of links that cannot be written until the name and the domain are decided; the tracked-links section holds real links only. The name is on the owner's list."
+   }
   },
   "P447": {
-   "entered": false,
-   "group": "d",
-   "reason": "The cut times do not agree with the script's own beat times.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/social",
+     "title": "POV: your suitcase gets body-shamed at check-in"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The cut times do not agree with the script's own beat times."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P448": {
    "entered": true,
@@ -3232,10 +5728,23 @@
    ]
   },
   "P449": {
-   "entered": false,
-   "group": "d",
-   "reason": "\"8 seconds, not 15\" is the reviewer's remark.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "marketing/social",
+     "title": "my luggage after 4 hours in the cargo hold"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "\"8 seconds, not 15\" is the reviewer's remark."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P450": {
    "entered": true,
@@ -3251,10 +5760,23 @@
    ]
   },
   "P451": {
-   "entered": false,
-   "group": "d",
-   "reason": "The channel text is longer than the field allows, so it cannot be entered as written.",
-   "subgroup": "D3"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/social",
+     "title": "crew rested me on the WET tarmac?? sir I am luggage"
+    }
+   ],
+   "was": {
+    "group": "d",
+    "reason": "The channel text is longer than the field allows, so it cannot be entered as written."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P452": {
    "entered": true,
@@ -3268,237 +5790,781 @@
    ]
   },
   "P453": {
-   "entered": false,
-   "group": "b",
-   "reason": "no text exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/social",
+     "title": "Recurring posts the plans call for (no copy written)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no text exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P454": {
-   "entered": false,
-   "group": "b",
-   "reason": "no email copy exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/announce",
+     "title": "Welcome sequence (three emails, in character)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no email copy exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P455": {
-   "entered": false,
-   "group": "b",
-   "reason": "no email copy exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/announce",
+     "title": "Hotline reveal email"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no email copy exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P456": {
-   "entered": false,
-   "group": "b",
-   "reason": "no email copy exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/announce",
+     "title": "Post-purchase sequence"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no email copy exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P457": {
-   "entered": false,
-   "group": "b",
-   "reason": "no email copy exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/announce",
+     "title": "Launch-day email to the list"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no email copy exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P458": {
-   "entered": false,
-   "group": "b",
-   "reason": "no email copy exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/announce",
+     "title": "Wholesale follow-up sequence"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no email copy exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P459": {
-   "entered": false,
-   "group": "b",
-   "reason": "no press note exists",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/announce",
+     "title": "Press note"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "no press note exists"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P460": {
    "entered": false,
    "group": "e",
    "reason": "Only matters if the website platform plan is in scope.",
-   "subgroup": "E2"
+   "subgroup": "E2",
+   "resolution": {
+    "how": "ruling",
+    "note": "The seven list names are kept in the email row; no list tool is chosen because the product's own mail server is used.",
+    "with": "P086"
+   }
   },
   "P461": {
-   "entered": false,
-   "group": "c",
-   "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "sales/listing",
+     "title": "Amazon listing not started"
+    }
+   ],
+   "was": {
+    "group": "c",
+    "reason": "Describes the strap mounting or the puck; superseded by the tag decision. Confirm the wording (or drop it)."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P462": {
-   "entered": false,
-   "group": "b",
-   "reason": "fee is a range",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "sales/channels",
+     "title": "Amazon FBA"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "fee is a range"
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P463": {
-   "entered": false,
-   "group": "b",
-   "reason": "fee is a range",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "sales/channels",
+     "title": "Kickstarter early bird"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "fee is a range"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P464": {
-   "entered": false,
-   "group": "b",
-   "reason": "fee is a range",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "sales/channels",
+     "title": "Kickstarter standard"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "fee is a range"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P465": {
-   "entered": false,
-   "group": "b",
-   "reason": "two channels in one row",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "sales/channels",
+     "title": "DTC site / TikTok Shop"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "two channels in one row"
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P466": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "sales/channels",
+     "title": "Wholesale (airport / gift retail)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P467": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "sales/channels",
+     "title": "Kickstarter bundles and collector tier"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P468": {
-   "entered": false,
-   "group": "b",
-   "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost.",
-   "subgroup": "B2"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "sales/channels",
+     "title": "Voice packs (add-on and store)"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "Prices and channel fees: entering them changes the price and margin the status page shows, and their margins are worked at the 10,000-unit cost."
+   },
+   "resolution": {
+    "how": "ruling",
+    "note": "decided by the owner's ruling of 22 Nov 2026"
+   }
   },
   "P469": {
-   "entered": false,
-   "group": "b",
-   "reason": "cost of creator codes",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "sales/channels",
+     "title": "Creator affiliate codes"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "cost of creator codes"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P470": {
-   "entered": false,
-   "group": "b",
-   "reason": "not priced",
-   "subgroup": "B0"
+   "entered": true,
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "sales/channels",
+     "title": "Licensing to luggage brands"
+    }
+   ],
+   "was": {
+    "group": "b",
+    "reason": "not priced"
+   },
+   "resolution": {
+    "how": "reason",
+    "note": "settled by his principle (marketing and sales stay general) or plain reasonableness"
+   }
   },
   "P471": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P472": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P473": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P474": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P475": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P476": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P477": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P478": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P479": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P480": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P481": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P482": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P483": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P484": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P485": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P486": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P487": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P488": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "Describes a web design that is not the build (the Shopify plan, Blueprint Rev A or Rev B). Recorded as decided in the stack question and in the story's \"Decided and still open\"; the document stays in Files.",
+    "with": "P083"
+   }
   },
   "P489": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "The Hotline audio worker as designed for Blueprint Rev A (S3, Klaviyo, a queue of its own). The Hotline itself stays a campaign; how it is built follows this app's stack.",
+    "with": "P083"
+   }
   },
   "P490": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "The Hotline audio worker as designed for Blueprint Rev A (S3, Klaviyo, a queue of its own). The Hotline itself stays a campaign; how it is built follows this app's stack.",
+    "with": "P083"
+   }
   },
   "P491": {
    "entered": false,
    "group": "e",
    "reason": "The website platform plan has no section in the app.",
-   "subgroup": "E1"
+   "subgroup": "E1",
+   "resolution": {
+    "how": "ruling",
+    "note": "The Hotline audio worker as designed for Blueprint Rev A (S3, Klaviyo, a queue of its own). The Hotline itself stays a campaign; how it is built follows this app's stack.",
+    "with": "P083"
+   }
+  }
+ },
+ "added": {
+  "P492": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "enrich",
+     "section": "concept/story",
+     "title": "Voice, humour and personality"
+    }
+   ],
+   "origin": "The owner's ruling of 22 Nov 2026 on the gag lines; docs/design/baggage-claims-lines.md"
+  },
+  "P493": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/questions",
+     "title": "Voice packs and holiday packs: sold as add-ons"
+    }
+   ],
+   "origin": "The owner's ruling of 22 Nov 2026 on voice packs; docs/research/baggage-claims-voice-packs.md"
+  },
+  "P494": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "concept/names",
+     "title": "Voice pack line-up proposed on 22 Nov"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P495": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Voice pack as a download - $4.99 (estimate)"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P496": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/pricing",
+     "title": "Holiday bundle: the unit with a holiday pack - $32.95 (estimate)"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P497": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "production/economics",
+     "title": "Voice pack, cost to make one pack's recordings"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P498": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/campaigns",
+     "title": "Voice packs and holiday packs through the year"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P499": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "\"New Yorker\" can name a voice pack without implying the magazine"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P500": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "research/claims",
+     "title": "A voice generated with the app's voice settings may be sold inside a product"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-voice-packs.md"
+  },
+  "P501": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Launch: the Amazon marketplace listing"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Listing assets: photos, the demo video, a title and five bullets"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "The compliance mark, the battery statement and a barcode"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Packaging that survives the post and shows the joke"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Open the seller account and choose how orders are fulfilled"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Publish the listing and run a small sponsored test"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-channels.md"
+  },
+  "P502": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Launch: the product's own site"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Decide the name and register the domain"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Connect Stripe and enter the mail server's SMTP details in Admin"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Publish the landing page with the demo video and the email capture"
+    },
+    {
+     "op": "add",
+     "section": "marketing/launch",
+     "title": "Turn on the referral ranks for the Departure Board"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-channels.md"
+  },
+  "P503": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "sales/channels",
+     "title": "Gift and novelty retailers"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-channels.md"
+  },
+  "P504": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "sales/channels",
+     "title": "Corporate gifting"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-channels.md"
+  },
+  "P505": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/campaigns",
+     "title": "Press angles"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-channels.md"
+  },
+  "P506": {
+   "batch": "2026-11-22-rulings",
+   "rows": [
+    {
+     "op": "add",
+     "section": "marketing/campaigns",
+     "title": "Seasonal gifting windows"
+    }
+   ],
+   "origin": "docs/research/baggage-claims-channels.md"
   }
  }
 }

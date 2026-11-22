@@ -3,9 +3,9 @@
 // concept with nothing in it.
 import { describe, expect, it } from "vitest";
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
-import { applySeedContent } from "@/lib/seedContent";
+import { applySeedContent, storyRow } from "@/lib/seedContent";
 import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
-import { SOURCES_STORE, STORY_STORE, storyPart } from "@/lib/story/parts";
+import { SOURCES_STORE } from "@/lib/story/parts";
 import { readManifest } from "@/lib/story/seedFiles";
 import { processView } from "@/lib/process/client";
 import type { ProcessResponse } from "@/lib/process/state";
@@ -34,7 +34,7 @@ function seedRows(manifest: { title: string; what: string; kind: string }[]): It
   // the files the owner supplied later (addedOn in the manifest) are stored as Files rows of their own
   const listed = new Set(SEED_SOURCES.map((s) => s.title));
   manifest.filter((e) => !listed.has(e.title)).forEach((e, i) => add(SOURCES_STORE, e.title, e.what, { kind: e.kind, fileName: e.title, fileId: 500 + i }, "stored"));
-  for (const p of SEED_STORY) add(STORY_STORE, storyPart(p.part)?.heading ?? p.part, p.body, { part: p.part }, p.status);
+  for (const r of SEED_STORY.map(storyRow)) add(r.section, r.title, r.body, r.data, r.status);
   for (const s of SEED_ITEMS) add(s.section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
   for (const [section, items] of Object.entries(SEED_ADDITIONS)) for (const s of items) add(section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
   return applySeedContent(out);
@@ -115,9 +115,11 @@ describe("Baggage Claims MK1 as seeded", () => {
   it("shows the figures the app works out, each linked to its page", () => {
     const f = Object.fromEntries(keyFigures(rows, "USD").map((x) => [x.key, x]));
     expect(f.parts).toMatchObject({ value: "16", href: "/s/design/bom" });
-    // 9 claims of the first seed and 30 entered from the documents on 22 Nov (seed/concepts/baggage-claims/content)
-    expect(f.claims).toMatchObject({ value: "0 / 39", detail: "39 unverified" });
-    expect(f.questions).toMatchObject({ value: "5", detail: "of 5 recorded" });
+    // 9 claims of the first seed, 30 entered from the documents on 22 Nov and 20 more with the owner's rulings of that
+    // day (seed/concepts/baggage-claims/content); every one is still unverified
+    expect(f.claims).toMatchObject({ value: "0 / 59", detail: "59 unverified" });
+    // his rulings decided two of the five first questions (the stack, the sales channel) and added 18 decided ones
+    expect(f.questions).toMatchObject({ value: "3", detail: "of 23 recorded" });
     expect(f["print-jobs"]).toMatchObject({ value: "2", detail: "0 printed" });
     // every document in the seed manifest is stored on a fresh install (26 on the dev server, 22 Nov)
     expect(manifest?.length).toBeGreaterThan(0);

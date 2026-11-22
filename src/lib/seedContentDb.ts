@@ -17,7 +17,7 @@ import { assertNewSendRow } from "@/lib/channels/rules";
 import { assertNewMarket } from "@/lib/market/rules";
 import { assertClaimChange, assertNewClaim } from "@/lib/research/rules";
 import { SEED_PROJECT } from "@/lib/seed";
-import { addedRow, applyBatches, CONTENT_BATCHES, enrichedRow, matches, seededRows, untouched, type ContentBatch, type ContentRow, type PlainRow } from "@/lib/seedContent";
+import { addedRow, applyBatches, CONTENT_BATCHES, enrichedRow, matches, RULED_SECTIONS, seededRows, untouched, type ContentBatch, type ContentRow, type PlainRow } from "@/lib/seedContent";
 import { assertNewPrintJob } from "@/lib/slicing/rules";
 import { addedDetail, changedDetail, itemDiff } from "@/lib/trace/changes";
 
@@ -34,7 +34,10 @@ const LOWEST = new Set(["open", "draft", "candidate", "unverified", "not run", "
  */
 export function checkContentRow(r: ContentRow, was?: PlainRow): PlainRow {
   if (r.op === "add") {
-    if (!LOWEST.has(r.status)) throw new Error(`${r.proposal}: a seeded row cannot start as "${r.status}"`);
+    // "decided" only for a question or a decision, and only with the owner's words that decide it
+    const byRuling = r.status === "decided" && RULED_SECTIONS.has(r.section) && Boolean(r.ruling?.trim());
+    if (!LOWEST.has(r.status) && !byRuling) throw new Error(`${r.proposal}: a seeded row cannot start as "${r.status}"`);
+    if (r.ruling !== undefined && !byRuling) throw new Error(`${r.proposal}: a ruling decides a question or a decision, and the row must then be "decided"`);
     const row = addedRow(r);
     const b = newItem.parse(row);
     assertNewClaim(b);
@@ -44,10 +47,15 @@ export function checkContentRow(r: ContentRow, was?: PlainRow): PlainRow {
     return { ...row, data: b.data ?? {} };
   }
   if (!was) throw new Error(`${r.proposal}: no row in ${r.section} matches ${JSON.stringify(r.match)}`);
+  if (r.decide) {
+    if (!RULED_SECTIONS.has(r.section) || !r.decide.ruling.trim()) throw new Error(`${r.proposal}: only a question or a decision can be decided, and only with the owner's words`);
+    const options = [...(Array.isArray(was.data.options) ? (was.data.options as { id?: string }[]) : []), ...((r.appendList?.options as { id?: string }[] | undefined) ?? [])];
+    if (r.decide.chosen !== undefined && !options.some((o) => o.id === r.decide!.chosen)) throw new Error(`${r.proposal}: "${r.decide.chosen}" is not one of the decision's options`);
+  }
   const row = enrichedRow(was, r);
   if (row.body.length > 20_000) throw new Error(`${r.proposal}: the text is too long`);
   const data = parseData(r.section, row.data) ?? {};
-  // the status does not change, and a claim's evidence is not touched
+  // the status changes only by a ruling (above), and a claim's evidence is not touched
   assertClaimChange({ section: was.section, status: was.status, data: was.data }, {});
   return { ...row, data };
 }
@@ -90,7 +98,7 @@ async function applyBatch(c: PoolClient, id: string, b: ContentBatch, expected: 
       continue;
     }
     const now = checkContentRow(r, { section: found.section, title: found.title, body: found.body, data: found.data, status: found.status });
-    const upd = await c.query<Row>(`UPDATE items SET body=$2, data=$3, updated_at=now() WHERE id=$1 RETURNING ${COLS}`, [found.id, now.body, JSON.stringify(now.data)]);
+    const upd = await c.query<Row>(`UPDATE items SET body=$2, data=$3, status=$4, updated_at=now() WHERE id=$1 RETURNING ${COLS}`, [found.id, now.body, JSON.stringify(now.data), now.status]);
     await log("item.edited", `"${found.title}": added what the owner's documents say (${r.proposal})`, { ...changedDetail(upd.rows[0], itemDiff(found, upd.rows[0])), ...from });
     // later rows of the same batch read this row as it now is
     const i = expected.indexOf(want);

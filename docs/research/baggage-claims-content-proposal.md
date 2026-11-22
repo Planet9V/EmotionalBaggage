@@ -848,6 +848,8 @@ The chat documents also cite 65 web addresses in footnotes. I did not open any o
 
 ## Entered on 22 Nov
 
+_Later the same day you answered the list of 376. Your rulings were applied in a second batch, `seed/concepts/baggage-claims/content/2026-11-22-rulings.json`: what became of each of the 376 rows is in `baggage-claims-owner-decisions.md` and its `.csv`, and in `seed/concepts/baggage-claims/content-proposal-map.json` under `resolution`. The text below describes the first batch._
+
 Your ruling of 22 Nov 2026 (option B): enter the rows that are plain facts from your documents and need no judgement; bring you only the rows where the documents disagree or a choice is needed. 115 of the 491 rows were entered; 376 are in `baggage-claims-owner-decisions.md` (and its `.csv`), grouped so you can answer with ids and letters.
 
 **Entered, by stage and action.**

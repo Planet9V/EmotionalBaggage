@@ -1,0 +1,2517 @@
+{
+ "batch": "2026-11-22-rulings",
+ "about": "The owner's rulings of 22 Nov 2026 applied to the rows of docs/research/baggage-claims-content-proposal.csv that had been left for him, in the Concept, Research, Marketing and Sales stages and the website platform, with the lines, voice packs and channels he asked for. A question or a decision is \"decided\" only where his own words decide it, and the row quotes them (`ruling`). Figures he asked to have guessed are labelled as estimates with what they rest on. Everything else is entered at its lowest status; claims stay unverified. Rows are added once per database by src/lib/seedContentDb.ts; a row a person has changed is left alone.",
+ "rows": [
+  {
+   "proposal": "P083",
+   "op": "enrich",
+   "section": "concept/questions",
+   "match": {
+    "title": "Which web stack for the product site?"
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§2 Tech stack, line 27",
+   "appendBody": "Decided by the owner on 22 Nov 2026: the product's own site runs on this app's stack; Stripe for the site, Amazon marketplace for the listing; the product's own mail server, set in Admin; the referral engine built in; no Shopify. The stack is Next.js, React, Tailwind and PostgreSQL with pgvector, with files and embeddings kept in PostgreSQL. The Shopify plan and the two blueprints stay in Files as reference; their schema and compose files are not the build.",
+   "decide": {
+    "ruling": "Owner, 22 Nov 2026, in substance: the stack is settled: Next.js, React, Tailwind, PostgreSQL with pgvector, PostgreSQL for file storage and embeddings. In his words: \"I don't understand why schema is an issue, we already built this.\"",
+    "on": "2026-11-22"
+   }
+  },
+  {
+   "proposal": "P067",
+   "op": "enrich",
+   "section": "concept/decisions",
+   "match": {
+    "title": "Which web stack for the product site?"
+   },
+   "sourceFile": "BaggageClaims_Web_Blueprint_RevA.md",
+   "sourceLocation": "header, line 4",
+   "appendBody": "Decided by the owner on 22 Nov 2026: none of the three; the product's own site runs on the stack this app is built on. What each document says of the others: Blueprint Rev A \"Supersedes 'Shopify system-of-record' for the custom build path; Shopify remains the documented fallback\"; Rev B \"Supersedes Rev A storage design\".",
+   "appendList": {
+    "options": [
+     {
+      "id": "this-app",
+      "label": "This app's stack",
+      "outcome": "Next.js, React, Tailwind, PostgreSQL with pgvector; files and embeddings in PostgreSQL; Stripe for the site, Amazon marketplace for the listing; the product's own mail server, set in Admin; the referral engine built in; no Shopify."
+     }
+    ]
+   },
+   "decide": {
+    "ruling": "Owner, 22 Nov 2026, in substance: the stack is settled: Next.js, React, Tailwind, PostgreSQL with pgvector, PostgreSQL for file storage and embeddings. In his words: \"I don't understand why schema is an issue, we already built this.\"",
+    "on": "2026-11-22",
+    "chosen": "this-app"
+   }
+  },
+  {
+   "proposal": "P085",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Checkout on the product's own site: Stripe",
+   "body": "Stripe takes the payment on the product's own site; the Amazon listing uses Amazon's checkout. The other value in the documents, Shopify Payments at 2.9% + 30c (website plan), is not used.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§2 Tech stack, line 30",
+   "ruling": "Owner, 22 Nov 2026: \"We do NOT use Shopify; we use Stripe and Amazon marketplace.\"",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P086",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Email: the product's own mail server, set in Admin",
+   "body": "Mail goes out through the product's own mail server; the admin enters its SMTP details in this app's Admin area. Klaviyo (website plan, and the Hotline worker's event), Listmonk and Resend (Blueprint Rev B) are not used. The seven lists the website plan names (gate_signup, hotline_user, backer, buyer, registered, dlc_buyer, wholesale_lead) are the audiences to keep apart, whatever holds them.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§2 Tech stack, line 32",
+   "ruling": "Owner, 22 Nov 2026: \"We have our own email server.\" The admin sets the SMTP information in the app's Admin area.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P087",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Referrals: the engine built into this app",
+   "body": "The Departure Board's referral ranks run on the referral engine this app has. Viral Loops (website plan, $49 a month) is not used.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§2 Tech stack, line 34",
+   "ruling": "Owner, 22 Nov 2026, in substance: the referral engine is built in.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P088",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "File storage: PostgreSQL",
+   "body": "Files and embeddings are kept in PostgreSQL. S3, and MinIO as its local stand-in (Blueprint Rev A, the compose file, the Hotline worker), are not used.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_Web_Blueprint_RevA.md",
+   "sourceLocation": "§7 Auth & security, line 111",
+   "ruling": "Owner, 22 Nov 2026, in substance: the stack is settled: Next.js, React, Tailwind, PostgreSQL with pgvector, PostgreSQL for file storage and embeddings. In his words: \"I don't understand why schema is an issue, we already built this.\"",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P078",
+   "op": "enrich",
+   "section": "concept/questions",
+   "match": {
+    "title": "Primary sales channel"
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "header, line 3",
+   "appendBody": "Decided by the owner on 22 Nov 2026: Amazon marketplace for the listing and the product's own site with Stripe; no Shopify. The PRD's own order was Kickstarter in weeks 4-12, then \"TikTok Shop + Shopify DTC; Amazon listing tuned to gag travel gift keywords; airport gift-store wholesale\"; the website plan's lifecycle (\"pre-launch capture -> Kickstarter -> DTC store -> DLC flywheel\") does not mention Amazon. Other outlets are listed, in general terms, under Sales.",
+   "decide": {
+    "ruling": "Owner, 22 Nov 2026: \"We do NOT use Shopify; we use Stripe and Amazon marketplace.\"",
+    "on": "2026-11-22"
+   }
+  },
+  {
+   "proposal": "P169",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Novelty brands are sued over website accessibility; WCAG 2.2 AA is the bar",
+   "body": "The product's own site runs on this app's stack, so the bar applies to it.",
+   "data": {
+    "source": "BaggageClaims_Website_Platform_Plan_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§6 Compliance, line 181"
+  },
+  {
+   "proposal": "P170",
+   "op": "add",
+   "section": "research/claims",
+   "title": "EU visitors need double opt-in for email under CAN-SPAM and GDPR",
+   "body": "CAN-SPAM is a US law; the sentence joins the two. It matters to the product's own mail server only if EU visitors are in the first market, which is on the owner's list.",
+   "data": {
+    "source": "BaggageClaims_Website_Platform_Plan_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§6 Compliance, line 173"
+  },
+  {
+   "proposal": "P413",
+   "op": "enrich",
+   "section": "marketing/landing",
+   "match": {
+    "title": "Moments"
+   },
+   "sourceFile": "BaggageClaims_Web_Blueprint_RevA.md",
+   "sourceLocation": "§2 Front-end, line 17",
+   "appendBody": "The eight vignettes are scroll-driven; a three-panel strip of them also sits on the home page."
+  },
+  {
+   "proposal": "P419",
+   "op": "add",
+   "section": "marketing/landing",
+   "title": "Voice-pack store",
+   "body": "The pack store on the product's own site: packs bought with Stripe, delivered as a download or as a card by post; a registered unit gets its first pack free.",
+   "data": {
+    "path": "/packs",
+    "cta": "Buy a pack"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§3 Sitemap, line 58"
+  },
+  {
+   "proposal": "P420",
+   "op": "add",
+   "section": "marketing/landing",
+   "title": "Stories wall",
+   "body": "A wall of approved Hotline tickets, contest entries and handler reactions; nothing is shown before someone has approved it.",
+   "data": {
+    "path": "/stories",
+    "cta": "File a complaint"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§3 Sitemap, line 60"
+  },
+  {
+   "proposal": "P421",
+   "op": "add",
+   "section": "marketing/landing",
+   "title": "Press",
+   "body": "The press kit: the hero video, product photos and a founder photo. The marks and the look wait on the design proposal.",
+   "data": {
+    "path": "/press",
+    "cta": "Download the kit"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§3 Sitemap, line 63"
+  },
+  {
+   "proposal": "P422",
+   "op": "add",
+   "section": "marketing/landing",
+   "title": "Legal pages",
+   "body": "Privacy, terms, the battery and safety page, and the voice release. The safety page states that the unit runs on AA alkaline cells and has an off switch.",
+   "data": {
+    "path": "/legal",
+    "cta": ""
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§3 Sitemap, line 62"
+  },
+  {
+   "proposal": "P095",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Batteries: two AA alkaline cells",
+   "body": "Two AA alkaline cells, as the first proposal said. The later documents' three AA (the PRD's power strategy, the parts list's 3xAA holder, the launch script's \"Three double-A batteries\") are superseded. The holder, the supply voltage and the battery life are with engineering (WS14); the script line needs the new count.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "The One Regulatory Gotcha, line 50",
+   "ruling": "Owner, 22 Nov 2026, in substance: 2 x AA batteries.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P096",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Motion sensor: the Adafruit MPU6050 breakout",
+   "body": "The Adafruit MPU6050 breakout. The documents' other values: the parts list's HiLetgo GY-521 board, and the sketch's raw I2C with no sensor library. The part, the library and the wiring are with engineering (WS14).",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§3 Step 5, page 5",
+   "ruling": "Owner, 22 Nov 2026, in substance: the Adafruit MPU6050 breakout.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P100",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Free-fall: over 0.3 s",
+   "body": "A fall counts after more than 0.3 s of near-zero g (the first proposal's figure). The design package and the sketch use 0.28 s below 0.15 g; the threshold in the firmware is with engineering (WS14).",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, rank 7, line 26",
+   "ruling": "Owner, 22 Nov 2026, in substance, on the detection rules: free-fall over 0.3 s; carousel = circular, periodic motion for about 15 s or more; handle grab = tilt and quick motion, then sustained tilt plus steady carry; hard impact as documented.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P101",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Carousel: circular, periodic motion for about 15 s or more",
+   "body": "The carousel is recognised by circular, periodic motion lasting about 15 s or more. The documents' other values: about 30 s (first proposal), over 25 s with a 3-12 s period (design package), three sign changes with no floor (sketch). The rule in the firmware is with engineering (WS14).",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, rank 4, line 23",
+   "ruling": "Owner, 22 Nov 2026, in substance, on the detection rules: free-fall over 0.3 s; carousel = circular, periodic motion for about 15 s or more; handle grab = tilt and quick motion, then sustained tilt plus steady carry; hard impact as documented.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P103",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Handle grab: tilt and quick motion, then sustained tilt plus steady carry",
+   "body": "A handle grab is tilt and quick motion, then sustained tilt plus steady carry. The documents' other wordings: \"carry-mode 10-90 s\" (design package); tilt between 25 and 75 degrees while moving for 10 s (sketch). The rule in the firmware is with engineering (WS14).",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.4 HANDLE_GRAB, page 2",
+   "ruling": "Owner, 22 Nov 2026, in substance, on the detection rules: free-fall over 0.3 s; carousel = circular, periodic motion for about 15 s or more; handle grab = tilt and quick motion, then sustained tilt plus steady carry; hard impact as documented.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P105",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Hard impact: as documented",
+   "body": "As the design package documents it: a peak of 8 to 14 g lasting under 50 ms; the sketch fires above 8.0 g. That window against a sensor range of +/-8 g is a setting for engineering (WS14) to make.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.4 HARD_IMPACT, page 2",
+   "ruling": "Owner, 22 Nov 2026, in substance, on the detection rules: free-fall over 0.3 s; carousel = circular, periodic motion for about 15 s or more; handle grab = tilt and quick motion, then sustained tilt plus steady carry; hard impact as documented.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P122",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "In the hold: it performs, and an off switch exists",
+   "body": "The unit may stay on in a checked bag: it runs on AA alkaline cells, so it is not required to be off. An off switch exists in case the airport asks. The documents' other value, \"Switch OFF before checking\" (the compliance card, the launch video's footer, the playbook's FAQ line), is superseded; the card's wording is with engineering (WS14). The battery rules themselves stay unverified claims in Research.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "product summary, page 1",
+   "ruling": "Owner, 22 Nov 2026, in substance: an off switch exists in case the airport asks, though with AA cells it is not required to be off.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P107",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Enclosure: 80 x 60 x 42 mm, a tag on the handle",
+   "body": "A tag that hangs from the suitcase handle, 80 x 60 x 42 mm, with a name card and a tracker pocket. The design chat and the parts list gave a height of 40 mm. The look and the wording on it are being chosen from the design proposal.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§4 Enclosure, page 3",
+   "ruling": "Owner, 22 Nov 2026, in substance: the enclosure is 80 x 60 x 42 mm, a tag that hangs from the handle, with a name card and a tracker pocket.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P109",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Enclosure build: an integrated print with minimal user intervention",
+   "body": "One integrated print that needs as little work from the builder as possible. In the documents that is the print-in-place direction of the 3D printing note and the build guide, against the PRD's two-piece shell with a mid-plate. The geometry is with engineering (WS14), to the tag's size.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§4 Enclosure, page 3",
+   "ruling": "Owner, 22 Nov 2026, in substance: an integrated print with minimal user intervention; for the costs, estimate with reasonable numbers.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P115",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Marketing budget: 5,000 USD",
+   "body": "5,000 USD in all. The documents' other values: a $3k creator seeding plus $2k amplification reserve (PRD, playbook header) and a rollup of about $4,500 with $1,300 of seeding (playbook). The split by phase is in Marketing, Campaigns, as a plan in round figures.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Content cost, page 6",
+   "ruling": "Owner, 22 Nov 2026, in substance: the marketing budget is 5,000 USD.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P090",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "First build time: about 3.5 hours hands-on (estimate)",
+   "body": "Estimate: about 3.5 hours of hands-on work for a first build, plus about 5 hours of unattended printing. It rests on the build guide's phase times, the most detailed of the three figures; the PRD's and the design package's \"about 90 minutes\" matches the build guide's electronics phase alone. Nobody has timed a build.",
+   "data": {
+    "estimate": true
+   },
+   "status": "decided",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§7 Assembly Summary, page 4",
+   "ruling": "Owner, 22 Nov 2026, on the first build time: \"I don't know, nobody knows, just guess.\"",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P093",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Prototype parts: about $65 for one unit (estimate, added up)",
+   "body": "Estimate: about $65 for one prototype. Added up from the parts list's 16 lines: 8.99 + 6.99 + 5.50 + 1.75 + 2.00 + 2.50 + 1.00 + 0.50 + 0.05 + 0.05 + 5.99 + 8.99 + 4.50 + 6.99 + 5.00 + 4.00 = $64.80. The lines are shelf prices from Micro Center and Amazon and include a wire kit, a board and filament that outlast one build. The other totals on file: the PRD's nine rows add up to $64.34 under a printed total of $64.80; its cost table's prototype column adds up to $58.80 with labour left out; the first proposal's $10-15 was written before any part was chosen. The move to two AA cells and to the tag changes a few lines; the parts list is with engineering (WS14).",
+   "data": {
+    "estimate": true
+   },
+   "status": "decided",
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "U1 row, line 2",
+   "ruling": "Owner, 22 Nov 2026: \"ADD up the prototype costs.\" The figures are estimates sourced from different places; total them.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P108",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Enclosure print: about 75 g of PETG, about $1.50 of filament (estimate)",
+   "body": "Estimate: about 75 g of PETG and about $1.50 of filament for one tag, in a print of 4 to 5 hours. It rests on the documents' range for a shell of this size (62 g for the print-in-place shell in the build guide; about 100 g for two halves and a plate in the 3D printing note) and on PETG at about $20 a kg. The PRD's $5.00 line prices a 250 g share of a spool, not the print. Engineering (WS14) replaces this with the sliced figure.",
+   "data": {
+    "estimate": true
+   },
+   "status": "decided",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§5 Bill of Materials, page 3",
+   "ruling": "Owner, 22 Nov 2026, in substance: the costs are unknown; estimate.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P108",
+   "op": "add",
+   "section": "production/economics",
+   "title": "Enclosure print, one tag",
+   "body": "About 75 g of PETG at about $20 a kg, 4 to 5 hours of printing. Rests on the documents' range of 62 g to 100 g for a shell of this size; not sliced yet.",
+   "data": {
+    "volume": "1",
+    "cogs": "about $1.50",
+    "price": "—",
+    "margin": "—"
+   },
+   "status": "estimate",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§5 Bill of Materials, page 3"
+  },
+  {
+   "proposal": "P003",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Why now",
+   "body": "The PRD's case: the US gifts, novelty and souvenir market was worth about $32.7B in 2025 and is forecast to grow at about 6.4% a year through 2034; gag gifting is a proven $12-15 consumer price band on Etsy and eBay; short-form travel comedy is one of the most reliable viral content genres; commodity parts (ESP32-class MCU, MEMS IMU, MP3 decoder) make a sub-$20 landed device possible at 1,000-unit volume. Every figure is an unverified claim in Research; the documents give three other costs at volume, which are with engineering (WS14).",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "front page, Why now, page 1"
+  },
+  {
+   "proposal": "P014",
+   "op": "enrich",
+   "section": "concept/brief",
+   "match": {
+    "title": "The ask and the gate"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6",
+   "appendBody": "Phase 1, \"Proof of funny\", runs weeks 1-3: build the five units, film the hero set (a real suitcase talking back at a real check-in scale, the handler toss, the carousel laps), post unbranded and measure the share rate. The ask of about $750 is an estimate: its two parts, about $500 of parts and $200 of tooling, add up to $700. The documents use \"EV batch\" for three different things: these 5 validation units, the 20 units sent to creators, and a later run of 100."
+  },
+  {
+   "proposal": "P018",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Success metrics: phase gate and launch",
+   "body": "Phase gate: a demo clip at 50k views, or 500 signups. Launch, if a crowdfunding launch runs: 2,000 backers, cost per customer under $8, visitor-to-backer conversion over 2.5%. Targets from the PRD; none is a forecast.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§13 Success Metrics, page 6"
+  },
+  {
+   "proposal": "P020",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Risk: batteries in checked bags, as it looks to others (High)",
+   "body": "Mitigation: AA alkaline only, by design; an off switch in case the airport asks; a carry-on use in the marketing.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks & Mitigations, page 6"
+  },
+  {
+   "proposal": "P021",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Risk: annoyance and airline complaints (Medium)",
+   "body": "Mitigation: governed output: 6 an hour at most, a 3 s cooldown, an 85 dBA ceiling, a volume button; and lines that are never about security and never aimed at the people nearby.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks & Mitigations, page 6"
+  },
+  {
+   "proposal": "P022",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Risk: imitators (Medium)",
+   "body": "Mitigation: speed, the brand and the voice; a design patent and a trademark; the classifier as a trade secret.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks & Mitigations, page 6"
+  },
+  {
+   "proposal": "P023",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Risk: voice rights and publicity claims (Medium)",
+   "body": "Mitigation: an original voice with a release, or a generated voice whose terms allow selling it; no celebrity impressions.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks & Mitigations, page 6"
+  },
+  {
+   "proposal": "P024",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Risk: seasonality, Q4-heavy (Low-Med)",
+   "body": "Mitigation: voice packs and holiday packs through the year; spring-break and summer editions; the wedding and group-trip angle.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks & Mitigations, page 6"
+  },
+  {
+   "proposal": "P025",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Risk: single-source audio module (Low)",
+   "body": "Mitigation: a second source for the audio module (YX5200 or KT148A); a later revision keeps the clips in flash and drops the module.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks & Mitigations, page 6"
+  },
+  {
+   "proposal": "P026",
+   "op": "add",
+   "section": "concept/press",
+   "title": "Press angles on file (no release has been written)",
+   "body": "The documents hold three press lines and no release text. (1) PRD: \"the world's sassiest suitcase\". (2) Naming note: \"the world's sassiest suitcase files its first claim\". (3) Playbook, the local-news line for the Complaint Desk: \"a suitcase filed a complaint at the airport today\".",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 2, page 6"
+  },
+  {
+   "proposal": "P027",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "Will TSA confiscate it?",
+   "body": "\"Alkaline AA. No lithium. We checked.\" The playbook's answer went on: \"The bag insists you switch it OFF before checking.\" That sentence is dropped: with AA cells the unit is not required to be off, and it has an off switch in case the airport asks. The battery rules are unverified claims in Research; check them before this is published.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, FAQ written in-character, line 97"
+  },
+  {
+   "proposal": "P028",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "Can it ride in a checked bag?",
+   "body": "Yes: it runs on AA alkaline cells, never lithium, so it may stay on, and there is an off switch if anyone asks. The launch video's lower third says \"AA POWER - checked-bag legal. No lithium, no drama.\" The rule itself is an unverified claim in Research.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§3 Step 6, compliance card, page 5"
+  },
+  {
+   "proposal": "P029",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "Will it annoy everyone around me?",
+   "body": "The governor allows one gag per kind of moment per journey phase, a 3 s cooldown and at most 6 gags an hour, at no more than 85 dBA at 1 m, with a volume button. The video's line: \"6 GAGS/HOUR MAX - funny, not annoying\".",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 3, lower thirds, line 53"
+  },
+  {
+   "proposal": "P030",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "Does it need an app or pairing?",
+   "body": "No. No app, no pairing, one button; it runs on two AA cells (the launch video's host says three, which was the count before 22 Nov). The radios are disabled in firmware.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 3, 1:36, line 47"
+  },
+  {
+   "proposal": "P031",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "How long do the batteries last?",
+   "body": "Not measured. The PRD stated 3-6 months on three AA cells; the unit now takes two, so engineering (WS14) estimates it again.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§3 Power strategy, page 2"
+  },
+  {
+   "proposal": "P032",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "Can I change what it says or how loud it is?",
+   "body": "One button: a short press cycles the volume (50 / 75 / 100%), a long press swaps the voice pack, a 10 s hold is a factory reset. More voice packs and holiday packs are sold as add-ons.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.2 Module functions, S2, page 2"
+  },
+  {
+   "proposal": "P033",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "What does it react to?",
+   "body": "Eight travel moments: a hard impact, the weigh-in, a handle grab, free-fall, the carousel, a conveyor or cart ride, being upside down, and hours untouched in the dark. The video's line: \"8 REAL TRAVEL MOMENTS - detected, not scripted\". More moments are proposed in the lines document.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 3, lower thirds, line 50"
+  },
+  {
+   "proposal": "P034",
+   "op": "add",
+   "section": "concept/faq",
+   "title": "FAQ house style: the Complaint Department",
+   "body": "All support is in character (\"Our agents are currently on a tarmac delay\"), with the real answer under every joke; order lookup, returns, and the safety and battery page.",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§4.7 Complaint Department, line 116"
+  },
+  {
+   "proposal": "P045",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Sass Case (product) with Baggage Claims (product line)",
+   "body": "The naming note's way out if torn: \"product name Sass Case, product line Baggage Claims\", with the tag text covering both.",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "My honest ranking, line 31"
+  },
+  {
+   "proposal": "P063",
+   "op": "enrich",
+   "section": "concept/decisions",
+   "match": {
+    "title": "Which name ships?"
+   },
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "My honest ranking, line 31",
+   "appendBody": "The naming note's ranking: Sass Case for retail, Baggage Claims for the launch video and the press angle.",
+   "appendList": {
+    "options": [
+     {
+      "id": "split",
+      "label": "Sass Case as product name, Baggage Claims as product line",
+      "outcome": "The naming note's suggestion if torn."
+     }
+    ]
+   }
+  },
+  {
+   "proposal": "P062",
+   "op": "enrich",
+   "section": "concept/questions",
+   "match": {
+    "title": "Which name ships?"
+   },
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "last paragraph, line 33",
+   "appendBody": "Screening owed on every finalist before anything is printed: the USPTO database and a domain check (\"One caveat worth 15 minutes\"). Domains named so far: BaggageClaims.com and SassCase.com."
+  },
+  {
+   "proposal": "P046",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Voice pack ladder: Coach, Premium Sass, First Class",
+   "body": "The naming note names the packs as a ladder so they read as a product line: Coach (Family Friendly), Premium Sass (Salty), First Class (New Yorker). The playbook gives \"First Class\" to the $49 collector tier and to the 25-referral group, so the third pack needs a name of its own; see the voice pack evaluation.",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Tier-able name system, line 29"
+  },
+  {
+   "proposal": "P047",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Black Card: Checked & Offended Edition",
+   "body": "The naming note's name for the $49 collector edition. The playbook calls that tier \"First Class\".",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Tier-able name system, line 29"
+  },
+  {
+   "proposal": "P048",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Tier names: Checked, Carry-On, Overhead Bin, First Class, The Whole Cargo Hold",
+   "body": "Reward tiers as cabin classes, from the playbook: Checked (early bird), Carry-On, Overhead Bin (two-pack), First Class (collector), The Whole Cargo Hold (four-pack); the desk-only tier is the Gate Agent Special. Working answer to the three uses of \"First Class\": it names the collector tier, and the 25-referral reward is that tier, so the two agree; the voice pack takes another name.",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 86"
+  },
+  {
+   "proposal": "P050",
+   "op": "add",
+   "section": "concept/names",
+   "title": "@TheBagComplains",
+   "body": "The bag's own account on TikTok, X and Instagram. Whether the handle is free has not been checked.",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 2, line 26"
+  },
+  {
+   "proposal": "P066",
+   "op": "enrich",
+   "section": "concept/decisions",
+   "match": {
+    "title": "If Kickstarter runs: which goal?"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, stretch goals, line 90",
+   "appendBody": "The other figures on file: the first proposal says \"a $15-20k Kickstarter\"; the playbook's stretch goals sit at $25k and $40k; the PRD itself carries both the $15k goal and 2,000 backers. A campaign of 30-45 days."
+  },
+  {
+   "proposal": "P089",
+   "op": "enrich",
+   "section": "concept/questions",
+   "match": {
+    "title": "Kickstarter goal: $15k or 2,000 backers?"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 2, page 6",
+   "appendBody": "Working figure, not a decision: the two are not the same kind of number. $15k is the funding goal (the PRD's, and the low end of the first proposal's $15-20k); 2,000 backers, about $48k at a $24 average, is the playbook's target for the campaign. Whether a crowdfunding launch runs at all is on the owner's list."
+  },
+  {
+   "proposal": "P139",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "FAA PackSafe requires lithium devices in checked bags to be fully off; alkaline AA cells face no such restriction"
+   },
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "The One Regulatory Gotcha, line 48",
+   "appendBody": "The cited pages: https://www.faa.gov/hazmat/packsafe/portable-electronic-devices-with-batteries, https://www.faa.gov/newsroom/lithium-batteries-baggage, the TSA page for lithium batteries of 100 watt hours or less in a device, and flightcheck.live (the only source cited for the alkaline half). The first proposal's wording: \"completely powered off and protected from accidental activation in the hold\". The owner's position of 22 Nov rests on the alkaline half: with AA cells the unit is not required to be off."
+  },
+  {
+   "proposal": "P157",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Gag gifts retail well at $19.95 to $24.95, a 3-4x margin over parts",
+   "body": "The first proposal's claim, resting on parts of $4-6 at 1,000 units; the documents give other costs at volume.",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Hardware and Build Cost, line 44"
+  },
+  {
+   "proposal": "P162",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Airlines have a \"lithium-device handling policy\" that the compliance card can cite for an alkaline device",
+   "body": "The card told owners to switch the unit off before checking \"per airline lithium-device handling policy\", although the unit has no lithium. The owner's ruling of 22 Nov drops the instruction; the card's wording is with engineering (WS14).",
+   "data": {
+    "source": "BaggageClaims_DesignPackage_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§3 field kit and compliance card, page 5"
+  },
+  {
+   "proposal": "P164",
+   "op": "add",
+   "section": "research/claims",
+   "title": "The Wilhelm scream can be used as a product sound and in the launch video",
+   "body": "The documents use it as the free-fall gag and in the video without saying anything about rights. Nobody has checked. The lines document proposes an original scream instead.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§8 row 4, page 5"
+  },
+  {
+   "proposal": "P202",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Three AA alkaline cells last 3-6 months",
+   "body": "Needs a measurement on the built unit. The unit now takes two AA cells, so the figure changes.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§3 Power strategy, page 2"
+  },
+  {
+   "proposal": "P203",
+   "op": "add",
+   "section": "research/claims",
+   "title": "The hard-impact gag is detected 100% of the time",
+   "body": "Needs drop tests on the built unit.",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, paragraph after the table, line 31"
+  },
+  {
+   "proposal": "P204",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A foam or loose sensor mount destroys the jerk signatures the classifier depends on",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_DesignPackage_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.2 U2, page 2"
+  },
+  {
+   "proposal": "P205",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A 1 kOhm series resistor on the DFPlayer RX line stops random triggers",
+   "body": "",
+   "data": {
+    "source": "BaggageClaims_BuildGuide_RevA.md"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 2, step 12c, line 46"
+  },
+  {
+   "proposal": "P137",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "US gifts, novelty and souvenir market was about $32.7B in 2025, growing about 6.4% a year through 2034"
+   },
+   "sourceFile": "Create a PRD for this with arch instructions bom a.md",
+   "sourceLocation": "Market and launch framing, footnote 4, line 41",
+   "appendBody": "Where the chat summary says the figure comes from: footnote 4, https://deepmarketinsights.com/vista/insights/gifts-novelty-and-souvenirs-market/united-states. The PRD prints no source."
+  },
+  {
+   "proposal": "P138",
+   "op": "enrich",
+   "section": "research/claims",
+   "match": {
+    "title": "Gag gifts sell in a $12-15 band on Etsy and eBay"
+   },
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Hardware and Build Cost, line 44",
+   "appendBody": "The first proposal gives a different band, \"similar novelty sound gadgets sell on Etsy and eBay for $13-15\", and cites two search pages: https://www.etsy.com/market/prank_novelty_gifts and an eBay search for \"naughty talking\"."
+  },
+  {
+   "proposal": "P148",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A 2,000-backer campaign at a $24 average grosses about $48k and contributes about $8-12k after COGS, fulfillment and marketing",
+   "body": "The $8-12k contribution is not broken down anywhere in the documents.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9, page 5"
+  },
+  {
+   "proposal": "P156",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Wholesale at $14.50 against a $29.95 MSRP gives retailers a 2x markup, and that is enough for airport retail",
+   "body": "Whether airport retailers accept that margin is not checked.",
+   "data": {
+    "source": "BaggageClaims_Marketing_Playbook_RevA.txt"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 10, line 123"
+  },
+  {
+   "proposal": "P158",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Alkaline batteries are allowed in carry-on and checked bags with essentially no restrictions",
+   "body": "The first proposal cites flightcheck.live for this. The owner's position on the off switch rests on it.",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "The One Regulatory Gotcha, line 50"
+  },
+  {
+   "proposal": "P160",
+   "op": "add",
+   "section": "research/claims",
+   "title": "The design uses no UN38.3 lithium cells",
+   "body": "The design package's words; whether that removes every transport test for the product is not stated.",
+   "data": {
+    "source": "BaggageClaims_DesignPackage_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.4, page 4"
+  },
+  {
+   "proposal": "P161",
+   "op": "add",
+   "section": "research/claims",
+   "title": "With the radios disabled the device needs only FCC Part 15 unintentional-radiator treatment, by self-declaration, and the ESP32-S3 module is itself FCC certified",
+   "body": "The prototype uses a development board; the volume design names an ESP32-S3-WROOM module.",
+   "data": {
+    "source": "BaggageClaims_DesignPackage_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.4, page 4"
+  },
+  {
+   "proposal": "P167",
+   "op": "add",
+   "section": "research/claims",
+   "title": "Cargo holds stay between -10 C and +45 C",
+   "body": "Used in the design package as the storage range.",
+   "data": {
+    "source": "BaggageClaims_DesignPackage_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.4, page 4"
+  },
+  {
+   "proposal": "P173",
+   "op": "add",
+   "section": "research/claims",
+   "title": "DFPlayer Mini is $5.90 retail and about $1.30 in quantity",
+   "body": "The first proposal's figures, citing dfrobot.com/product-1121.html. The parts list prices it at $5.50 each in an Amazon two-pack.",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Hardware and Build Cost, line 39"
+  },
+  {
+   "proposal": "P176",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A microSD card that holds three voice packs costs $2",
+   "body": "The prototype parts list has a 16 GB card at $5.99.",
+   "data": {
+    "source": "BaggageClaims_PRD_Business_Proposal_RevA.pdf"
+   },
+   "status": "unverified",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§3.3, page 2"
+  },
+  {
+   "proposal": "P178",
+   "op": "add",
+   "section": "research/claims",
+   "title": "The small prototype parts can be picked up the same day at Micro Center",
+   "body": "AA cells $2.50, slide switch $1.00, tactile button $0.50, resistors $0.05 each, 16 GB microSD $5.99, wire kit $8.99, perma-proto board $4.50, as the parts list prices them.",
+   "data": {
+    "source": "Build me the low level design , inter interface co.md"
+   },
+   "status": "unverified",
+   "sourceFile": "Build me the low level design , inter interface co.md",
+   "sourceLocation": "Shopping plan, line 24"
+  },
+  {
+   "proposal": "P414",
+   "op": "enrich",
+   "section": "marketing/landing",
+   "match": {
+    "title": "Lost Baggage Hotline"
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§4.3 Lost Baggage Hotline, line 86",
+   "appendBody": "Three steps: \"Where did your bag suffer?\"; \"What did they do to it?\"; \"Rate the trauma\". Out comes a short audio complaint in the bag's voice and a claim ticket with a claim number; downloading or sharing asks for an email. A \"Complaint of the Week\" is featured, and the best complaint of the month wins a free unit. Nothing is public before moderation."
+  },
+  {
+   "proposal": "P415",
+   "op": "enrich",
+   "section": "marketing/landing",
+   "match": {
+    "title": "Departure Board"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 5, line 61",
+   "appendBody": "The mechanics, on the referral engine built into this app: 1 signup is \"BOARDING GROUP D\"; 3 referrals earn a free voice pack at launch (\"upgrade to Group B\"); 10 lock the early price (\"Group A\"); 25 earn the collector tier (\"FIRST CLASS\"). Every share message is written as a complaint from the user's bag. One referral per verified email."
+  },
+  {
+   "proposal": "P368",
+   "op": "add",
+   "section": "marketing/personas",
+   "title": "P1 - Frequent leisure flyer, 25-45",
+   "body": "",
+   "data": {
+    "who": "Frequent leisure flyers aged 25-45; the core gifting demographic.",
+    "job": "Express personality; prank travel companions; clips worth posting.",
+    "trigger": "Airports are stressful, anonymous and boring; the bag turns dead travel time into a shared joke at weigh-in, belt and carousel.",
+    "whereTheyLook": "Short travel comedy on TikTok, Reels and Shorts."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§2, page 2"
+  },
+  {
+   "proposal": "P369",
+   "op": "add",
+   "section": "marketing/personas",
+   "title": "P2 - Gag-gift buyer",
+   "body": "",
+   "data": {
+    "who": "Buys for Secret Santa, Father's Day and Q4 gifting.",
+    "job": "A stocking-stuffer in the $20-30 band that explains itself in a 90-second demo.",
+    "trigger": "Needs a gift that is not another candle; the Q4 gifting spike.",
+    "whereTheyLook": "Amazon gift searches; gift guides."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§2, page 2"
+  },
+  {
+   "proposal": "P370",
+   "op": "add",
+   "section": "marketing/personas",
+   "title": "P3 - Travel content creator",
+   "body": "",
+   "data": {
+    "who": "Mid-size travel comedians, 50k-500k followers.",
+    "job": "A prop that generates clips; an affiliate income.",
+    "trigger": "A free unit and an affiliate code, with one brief: film the first genuine reaction."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§2, page 2"
+  },
+  {
+   "proposal": "P371",
+   "op": "add",
+   "section": "marketing/personas",
+   "title": "P4 - Airport gift shop and novelty retail buyer",
+   "body": "",
+   "data": {
+    "who": "Airport retail and novelty stores.",
+    "job": "An impulse item at the till; a gag shelf that does not go stale.",
+    "trigger": "A counter display with a button that demos the product without staff; new voice packs refresh it without new hardware."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§2, page 2"
+  },
+  {
+   "proposal": "P372",
+   "op": "add",
+   "section": "marketing/personas",
+   "title": "The audience that never pays: handlers and bystanders",
+   "body": "",
+   "data": {
+    "who": "Baggage handlers, check-in agents and people at the carousel.",
+    "job": "None; they are the audience.",
+    "trigger": "The bag talks back. The video's carousel beat ends with a stranger asking \"Where did you GET that?\""
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 2, 1:20, line 43"
+  },
+  {
+   "proposal": "P373",
+   "op": "add",
+   "section": "marketing/competitors",
+   "title": "Novelty sound gadgets on Etsy and eBay",
+   "body": "No named competing product appears in any document, and nobody has searched for an existing talking luggage gadget.",
+   "data": {
+    "kind": "alternative",
+    "what": "Similar novelty sound gadgets, as found on Etsy's prank and novelty gift pages and an eBay search.",
+    "priceText": "$12-15",
+    "sourceUrl": "https://www.etsy.com/market/prank_novelty_gifts",
+    "basis": "typed"
+   },
+   "status": "draft",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "footnote 3, line 71"
+  },
+  {
+   "proposal": "P374",
+   "op": "add",
+   "section": "marketing/competitors",
+   "title": "A Bluetooth speaker",
+   "body": "",
+   "data": {
+    "kind": "alternative",
+    "what": "The product the PRD measures itself against: \"the Bluetooth speaker's funnier, cheaper cousin\".",
+    "basis": "typed"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 Vision, page 2"
+  },
+  {
+   "proposal": "P375",
+   "op": "add",
+   "section": "marketing/competitors",
+   "title": "Another candle (any $20-30 gift)",
+   "body": "",
+   "data": {
+    "kind": "alternative",
+    "what": "The default gift the gag-gift buyer would otherwise choose.",
+    "priceText": "$20-30",
+    "basis": "typed"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 stakeholder table, page 2"
+  },
+  {
+   "proposal": "P376",
+   "op": "add",
+   "section": "marketing/competitors",
+   "title": "Doing nothing; imitators after launch",
+   "body": "",
+   "data": {
+    "kind": "alternative",
+    "what": "The PRD expects imitators and answers with speed, the brand, the voice, a design patent, a trademark and the classifier as a trade secret. No imitator is named.",
+    "basis": "typed"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§12 Risks, page 6"
+  },
+  {
+   "proposal": "P380",
+   "op": "add",
+   "section": "marketing/positioning",
+   "title": "Two markets: checked bag and carry-on",
+   "body": "Sell it both as a checked-bag comedy device and as a tag for a carry-on, where it is in earshot the whole trip. The PRD's risk table adds \"carry-on mode in marketing\".",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Road to the Quick Buck, 3, line 58"
+  },
+  {
+   "proposal": "P411",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Exploded view and schematic",
+   "body": "The exploded view named in the documents is not in the folder; a new one follows the tag's design.",
+   "data": {
+    "shotKey": "exploded-view",
+    "purpose": "An exploded view of the tag and the block schematic, for the how-it-works page and the listing.",
+    "usedIn": [
+     "how it works",
+     "listing"
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "front page, page 1"
+  },
+  {
+   "proposal": "P425",
+   "op": "add",
+   "section": "marketing/ads",
+   "title": "Amplified unbranded clip (whichever breaks out)",
+   "body": "Paid promotion goes only behind a clip that has already proved itself unpaid; the playbook's bar is 50k views in 72 h, with most of the spend on the platform where it broke out.",
+   "data": {
+    "channel": "The platform where the clip broke out",
+    "stopRule": "Spend only on a clip that passed the organic bar; stop when the cost per order passes the ceiling in the marketing plan."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 1, line 23"
+  },
+  {
+   "proposal": "P427",
+   "op": "add",
+   "section": "marketing/campaigns",
+   "title": "Kill and scale criteria (whole plan)",
+   "body": "Stop: the four unbranded clips stay under 50k views and under 500 emails in 30 days; rework the creative and do not fund production. Scale: more than 2,000 emails before launch green-lights the first production run; 3,000 is the Departure Board's own target. Paid promotion only ever goes behind clips already proven unpaid. A paid test stops when a customer costs more than $10; the target is under $8.",
+   "data": {
+    "objective": "awareness"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§7 Analytics dashboard, line 192"
+  },
+  {
+   "proposal": "P428",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "1 · The Four Gates"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 1, line 21",
+   "appendBody": "Posted raw at 6-8 am local, with the four on-screen hooks and the pinned reply \"comment FAT for where to get one\"; a comment with the keyword gets a message with a one-field email capture. \"This is the entire Phase-1 gate.\"",
+   "setData": {
+    "objective": "awareness",
+    "channel": "TikTok, Reels, Shorts"
+   }
+  },
+  {
+   "proposal": "P429",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "2 · @TheBagComplains"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 2, line 29",
+   "appendBody": "Replies in character to airline meltdown posts while they are still spreading; the bio is the only link out; \"cost is wit + speed\".",
+   "setData": {
+    "objective": "awareness",
+    "channel": "TikTok, X, Instagram"
+   }
+  },
+  {
+   "proposal": "P430",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "3 · 100 Bags, 100 Reactions"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 3, line 37",
+   "appendBody": "Creators with 50k-500k followers; a free unit plus an affiliate code worth 10%; one brief, \"film the first genuine reaction\"; all post in launch week. The plan ships 20 units, not 100. The PRD's other terms were 3-5 creators at 10-20%; the playbook is later and more specific.",
+   "setData": {
+    "objective": "awareness",
+    "channel": "Travel creators"
+   }
+  },
+  {
+   "proposal": "P431",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "4 · The Lost Baggage Hotline"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 4, line 47",
+   "appendBody": "\"File a complaint on behalf of your bag\": three questions, an audio complaint in the bag's voice and a shareable claim ticket; the ticket is free, downloading or sharing asks for an email; the best complaint of the month wins a unit.",
+   "setData": {
+    "objective": "consideration",
+    "channel": "The product's own site"
+   }
+  },
+  {
+   "proposal": "P432",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "5 · The Departure Board"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 5, line 60",
+   "appendBody": "Runs on the referral engine built into this app. The four boarding groups are in the landing page's row.",
+   "setData": {
+    "objective": "consideration",
+    "channel": "The product's own site"
+   }
+  },
+  {
+   "proposal": "P433",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "6 · The Complaint Desk"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 6, line 80",
+   "appendBody": "A pop-up mock airline complaint desk at a busy venue in the home city or at a travel expo; a uniformed \"claims agent\" takes real travellers' baggage stories and the unit on the counter answers; each claimant leaves with a ticket and a code; film everything.",
+   "setData": {
+    "objective": "conversion",
+    "channel": "Live stunt"
+   }
+  },
+  {
+   "proposal": "P434",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "7 · Kickstarter page"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 91",
+   "appendBody": "Only if a crowdfunding launch runs, which is on the owner's list: the hero video, tiers named as cabin classes, stretch goals that are voice packs and never hardware, a voice-pack add-on, and the FAQ in character.",
+   "setData": {
+    "objective": "conversion",
+    "channel": "Kickstarter"
+   }
+  },
+  {
+   "proposal": "P435",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "8 · The Shame Ads"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 8, line 100",
+   "appendBody": "A static image written as a five-star complaint, shown to people who watched the video and did not buy. The playbook's test is $500; the chat summary's \"five-dollar-test\" is the same test. These are invented reviews: ads only, never shown as customer reviews.",
+   "setData": {
+    "objective": "conversion",
+    "channel": "Retargeting"
+   }
+  },
+  {
+   "proposal": "P436",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "9 · Platinum Status"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 9, line 114",
+   "appendBody": "Every unit ships with a card and a code: registering the unit gives the first pack free; new packs follow through the year; the \"WORST FLIGHT STORY\" contest turns the winner's true story into a limited pack.",
+   "setData": {
+    "objective": "retention",
+    "channel": "The product's own site"
+   }
+  },
+  {
+   "proposal": "P437",
+   "op": "enrich",
+   "section": "marketing/campaigns",
+   "match": {
+    "title": "10 · Wholesale Trojan"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 10, line 121",
+   "appendBody": "After launch: a counter display whose button plays one gag, so it demos itself where bags are on people's minds.",
+   "setData": {
+    "objective": "conversion",
+    "channel": "Airport and gift retail"
+   }
+  },
+  {
+   "proposal": "P424",
+   "op": "enrich",
+   "section": "marketing/ads",
+   "match": {
+    "title": "My bag embarrassed me in front of the entire carousel. Five stars."
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.3 Key flows, line 164",
+   "setData": {
+    "stopRule": "$500 test; stop if a customer costs more than $10",
+    "costPerOrderCeilingMinor": 1000,
+    "currency": "USD"
+   }
+  },
+  {
+   "proposal": "P424",
+   "op": "enrich",
+   "section": "marketing/ads",
+   "match": {
+    "title": "TSA agent laughed so hard she forgot to swab my laptop. Five stars."
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.3 Key flows, line 164",
+   "setData": {
+    "stopRule": "$500 test; stop if a customer costs more than $10",
+    "costPerOrderCeilingMinor": 1000,
+    "currency": "USD"
+   }
+  },
+  {
+   "proposal": "P424",
+   "op": "enrich",
+   "section": "marketing/ads",
+   "match": {
+    "title": "Ruined my marriage. She took his side. The bag's side. Five stars."
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.3 Key flows, line 164",
+   "setData": {
+    "stopRule": "$500 test; stop if a customer costs more than $10",
+    "costPerOrderCeilingMinor": 1000,
+    "currency": "USD"
+   }
+  },
+  {
+   "proposal": "P438",
+   "op": "add",
+   "section": "marketing/campaigns",
+   "title": "Always on, after launch",
+   "body": "After launch: the Amazon listing tuned to gag and travel gift searches; the product's own site with Stripe; the pitch to airport and gift shops; holiday voice packs as the reason to buy again; licensing to luggage brands. The PRD named \"TikTok Shop + Shopify DTC\" here; the store is the product's own site.",
+   "data": {
+    "objective": "conversion",
+    "channel": "Amazon marketplace and the product's own site"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 3, page 6"
+  },
+  {
+   "proposal": "P453",
+   "op": "add",
+   "section": "marketing/social",
+   "title": "Recurring posts the plans call for (no copy written)",
+   "body": "\"Complaint of the Week\" from the Hotline; a new voice pack each season; the \"WORST FLIGHT STORY\" contest; creators' reactions in launch week; footage from the Complaint Desk.",
+   "data": {
+    "channel": "TikTok / Reels / Shorts"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Web_Blueprint_RevB.md",
+   "sourceLocation": "§5 Postiz, line 71"
+  },
+  {
+   "proposal": "P447",
+   "op": "enrich",
+   "section": "marketing/social",
+   "match": {
+    "title": "POV: your suitcase gets body-shamed at check-in"
+   },
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Vertical cuts, line 64",
+   "appendBody": "V1 \"FAT\": the curb grab and the weigh-in. Posted raw, no logo, no link, 6-8 am local, with the pinned reply. Whichever clip breaks out leads the hero cut."
+  },
+  {
+   "proposal": "P449",
+   "op": "enrich",
+   "section": "marketing/social",
+   "match": {
+    "title": "my luggage after 4 hours in the cargo hold"
+   },
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Vertical cuts, line 68",
+   "appendBody": "V3 \"DARK\": the dark-hold beat, 1:10-1:18 of the hero video."
+  },
+  {
+   "proposal": "P451",
+   "op": "add",
+   "section": "marketing/social",
+   "title": "crew rested me on the WET tarmac?? sir I am luggage",
+   "body": "The playbook's example of an in-character reply from @TheBagComplains to an airline complaint that is spreading.",
+   "data": {
+    "channel": "TikTok / X / Instagram"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 2, line 28"
+  },
+  {
+   "proposal": "P454",
+   "op": "add",
+   "section": "marketing/announce",
+   "title": "Welcome sequence (three emails, in character)",
+   "body": "No copy is written yet. Sent through the product's own mail server.",
+   "data": {
+    "kind": "sequence",
+    "step": 1,
+    "goal": "Welcome a new signup in the bag's voice; the first email carries the sign-in link and the referral link."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.1 Email/segments, line 134"
+  },
+  {
+   "proposal": "P455",
+   "op": "add",
+   "section": "marketing/announce",
+   "title": "Hotline reveal email",
+   "body": "No copy is written yet. Sent through the product's own mail server.",
+   "data": {
+    "kind": "email",
+    "subjects": [
+     "Your bag filed its complaint"
+    ],
+    "goal": "Send the claim ticket and the audio after a Hotline submission."
+   },
+   "status": "draft",
+   "sourceFile": "Walk through the Hotline TTS audio worker flow.md",
+   "sourceLocation": "Lifecycle, hop 8, line 20"
+  },
+  {
+   "proposal": "P456",
+   "op": "add",
+   "section": "marketing/announce",
+   "title": "Post-purchase sequence",
+   "body": "No copy is written yet. Sent through the product's own mail server.",
+   "data": {
+    "kind": "sequence",
+    "step": 1,
+    "sendOffsetDays": 10,
+    "goal": "Register the unit; later, ask for a review, then offer a voice pack."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.1 Email/segments, line 136"
+  },
+  {
+   "proposal": "P457",
+   "op": "add",
+   "section": "marketing/announce",
+   "title": "Launch-day email to the list",
+   "body": "No copy is written yet. Sent through the product's own mail server.",
+   "data": {
+    "kind": "email",
+    "goal": "Tell the list it is on sale, with one link."
+   },
+   "status": "draft",
+   "sourceFile": "Develop clever marketing campaigns for this hilari.md",
+   "sourceLocation": "Stage 2, 5, line 19"
+  },
+  {
+   "proposal": "P458",
+   "op": "add",
+   "section": "marketing/announce",
+   "title": "Wholesale follow-up sequence",
+   "body": "No copy is written yet. Sent through the product's own mail server.",
+   "data": {
+    "kind": "sequence",
+    "step": 1,
+    "goal": "Turn a request for the line sheet into a first order."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.1 Wholesale CRM, line 143"
+  },
+  {
+   "proposal": "P459",
+   "op": "add",
+   "section": "marketing/announce",
+   "title": "Press note",
+   "body": "No copy is written yet. Sent through the product's own mail server.",
+   "data": {
+    "kind": "press-note",
+    "goal": "Local and travel press at launch and at the Complaint Desk."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 6, line 81"
+  },
+  {
+   "proposal": "P389",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Amazon marketplace - $27.95",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 2795,
+    "currency": "USD",
+    "approach": "own",
+    "note": "The primary channel. The PRD nets $19.55 after about 30% all-in."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5"
+  },
+  {
+   "proposal": "P388",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "The product's own site - $24.95",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 2495,
+    "currency": "USD",
+    "approach": "own",
+    "note": "Paid with Stripe. The documents priced \"own store and TikTok Shop\" the same."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5"
+  },
+  {
+   "proposal": "P390",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Wholesale - $14.50, MSRP $29.95",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 1450,
+    "currency": "USD",
+    "approach": "own",
+    "note": "The shop sets a $29.95 price, about twice what it pays."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5"
+  },
+  {
+   "proposal": "P391",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Voice pack - $7.99",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 799,
+    "currency": "USD",
+    "approach": "value",
+    "note": "A card; the first pack is free when the unit is registered. See the voice pack evaluation for a download price."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 95"
+  },
+  {
+   "proposal": "P382",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Early bird \"Checked\" - $19",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 1900,
+    "currency": "USD",
+    "approach": "own",
+    "note": "Only if a crowdfunding launch runs. Capped at 300. The first proposal said $19.95; the PRD and the playbook are later and agree on $19."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 86"
+  },
+  {
+   "proposal": "P383",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Standard \"Carry-On\" - $24",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 2400,
+    "currency": "USD",
+    "approach": "own",
+    "note": "Only if a crowdfunding launch runs."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5"
+  },
+  {
+   "proposal": "P384",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Two-pack \"Overhead Bin\" - $34",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 3400,
+    "currency": "USD",
+    "approach": "own",
+    "note": "Two units. No margin is worked in the documents."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 87"
+  },
+  {
+   "proposal": "P385",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Collector \"First Class\" - $49",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 4900,
+    "currency": "USD",
+    "approach": "value",
+    "note": "Signed, with its own voice pack. The playbook both caps it at 100 and says never to cap it below demand; working answer: open with 100 and add more if they sell out."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 2, page 6"
+  },
+  {
+   "proposal": "P386",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Four-pack \"The Whole Cargo Hold\" - $99",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 9900,
+    "currency": "USD",
+    "approach": "own",
+    "note": "Four units; the group-trip and Secret Santa bundle."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 88"
+  },
+  {
+   "proposal": "P387",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Desk-only \"Gate Agent Special\" - $18",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 1800,
+    "currency": "USD",
+    "approach": "own",
+    "note": "The Complaint Desk's ticket code; 200 units."
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 6, line 77"
+  },
+  {
+   "proposal": "P392",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Pricing assumptions",
+   "body": "",
+   "data": {
+    "kind": "assumptions",
+    "targetMarginPercent": 45,
+    "note": "The PRD's target: a blended margin of 45% at launch, rising on repeat batches. Gift band $20-30; gag-gift band $12-15 on Etsy and eBay. Every unit cost behind these is an estimate until engineering (WS14) prices the parts list."
+   },
+   "status": "draft",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Hardware and Build Cost, line 44"
+  },
+  {
+   "proposal": "P462",
+   "op": "enrich",
+   "section": "sales/channels",
+   "match": {
+    "title": "Amazon FBA"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5",
+   "appendBody": "The primary channel: the Amazon marketplace listing. The PRD's figure is about 30% all-in; the split between referral fee, fulfilment and storage is not given.",
+   "setData": {
+    "platformPercent": 30
+   }
+  },
+  {
+   "proposal": "P463",
+   "op": "enrich",
+   "section": "sales/channels",
+   "match": {
+    "title": "Kickstarter early bird"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5",
+   "appendBody": "Only if a crowdfunding launch runs. Fees of about 8-10%, entered as 9; capped at 300.",
+   "setData": {
+    "platformPercent": 9
+   }
+  },
+  {
+   "proposal": "P464",
+   "op": "enrich",
+   "section": "sales/channels",
+   "match": {
+    "title": "Kickstarter standard"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5",
+   "appendBody": "Only if a crowdfunding launch runs. Fees of about 8-10%, entered as 9.",
+   "setData": {
+    "platformPercent": 9
+   }
+  },
+  {
+   "proposal": "P465",
+   "op": "enrich",
+   "section": "sales/channels",
+   "match": {
+    "title": "DTC site / TikTok Shop"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5",
+   "appendBody": "The product's own site, on this app's stack, with Stripe at checkout; no Shopify. The card fee is entered as 2.9% plus $0.30, Stripe's published US card rate at the time of writing, to check when the account is opened.",
+   "setData": {
+    "paymentPercent": 2.9,
+    "paymentFixed": 0.3
+   }
+  },
+  {
+   "proposal": "P466",
+   "op": "enrich",
+   "section": "sales/channels",
+   "match": {
+    "title": "Wholesale (airport / gift retail)"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9 pricing ladder, page 5",
+   "appendBody": "No platform fee; the shop pays $14.50 and sets a $29.95 price.",
+   "setData": {
+    "platformPercent": 0
+   }
+  },
+  {
+   "proposal": "P467",
+   "op": "add",
+   "section": "sales/channels",
+   "title": "Kickstarter bundles and collector tier",
+   "body": "Only if a crowdfunding launch runs: the two-pack, the collector tier and the four-pack; the prices are in Pricing.",
+   "data": {
+    "platformPercent": 9
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 87"
+  },
+  {
+   "proposal": "P469",
+   "op": "add",
+   "section": "sales/channels",
+   "title": "Creator affiliate codes",
+   "body": "A creator's code pays the creator 10% of the sale, on top of the channel's own fees, wherever the code is used.",
+   "data": {},
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.1 Affiliates, line 138"
+  },
+  {
+   "proposal": "P470",
+   "op": "add",
+   "section": "sales/channels",
+   "title": "Licensing to luggage brands",
+   "body": "License the motion-pattern engine to a luggage maker, or co-brand a line with one; the first proposal's scale-or-exit option. No price or terms.",
+   "data": {},
+   "status": "planned",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Road to the Quick Buck, 4, line 59"
+  },
+  {
+   "proposal": "P461",
+   "op": "enrich",
+   "section": "sales/listing",
+   "match": {
+    "title": "Amazon listing not started"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 3, page 6",
+   "appendBody": "Raw material the documents hold for whoever writes it: the one-liner; the eight moments and their lines; no app, no pairing, one button; two AA cells; voice packs and holiday packs; at most six gags an hour; a tag of 80 x 60 x 42 mm that hangs from the handle, with a name card and a tracker pocket; the PRD's brief, \"tuned to gag travel gift keywords\". Wording such as \"checked-bag legal\" needs checking against Amazon's rules and against the facts first. The Shame Ads are invented reviews and must never be used as customer reviews."
+  },
+  {
+   "proposal": "P001",
+   "op": "enrich",
+   "section": "concept/story",
+   "match": {
+    "title": "Decided and still open"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§5 Bill of Materials, page 3",
+   "setBody": "**Decided by the owner on 22 Nov 2026.** The product's own site runs on the stack this app is built on: Next.js, React, Tailwind and PostgreSQL with pgvector, with files and embeddings kept in PostgreSQL. Stripe takes payment on the site and the Amazon marketplace carries the listing; there is no Shopify. Mail goes out through the product's own mail server, whose SMTP details the admin enters in Admin, and referrals run on the engine built into this app. The unit takes two AA alkaline cells and uses the Adafruit MPU6050 breakout. It has an off switch in case the airport asks, though with AA cells it is not required to be off. It is a tag that hangs from the handle, 80 x 60 x 42 mm, with a name card and a tracker pocket, made as one integrated print that needs little work from the builder. The detection rules: free-fall is more than 0.3 s; the carousel is circular, periodic motion for about 15 s or more; a handle grab is tilt and quick motion, then sustained tilt plus steady carry; a hard impact is as the design package documents it. The marketing budget is 5,000 USD. More voice packs and holiday packs are to be sold.\n\n**Decided in the documents.** Alkaline AA power, so the bag can talk in the hold. Radios off. No celebrity impressions. Voice packs on microSD, sold as add-ons. The governor: one gag per moment per phase, three seconds apart, six an hour at most. A cheap test before any launch money is spent.\n\n**Estimated, because nobody knows yet.** A first build takes about 3.5 hours of hands-on work plus about 5 hours of unattended printing (the build guide's figure; the PRD's 90 minutes is the electronics alone). One prototype's parts add up to about $65: the parts list's 16 lines total $64.80, while the PRD's nine rows add up to $64.34 under the same printed total and its cost table's prototype column to $58.80. One printed tag is about 75 g of PETG, about $1.50 of filament. The ask of about $750 is itself an estimate.\n\n**With engineering.** The firmware's details where the documents disagree (the history buffer, the sleep mode, the filter, the boot log, the weigh-in and conveyor rules), the sketch, which exists only inside a chat document and has not been compiled, the parts list for two AA cells and the tag, the costs at volume, and the wording of the card in the box.\n\n**Still open, for the owner.**\n\n- **The name.** Every document says Baggage Claims; the project is called Emotional Baggage; the naming note ranks Sass Case first for retail and warns that Emotional Baggage \"attracts pre-existing novelty trademarks\". No trademark or domain screen has been run.\n- **A crowdfunding launch, or straight to the listing.** The documents plan a Kickstarter; the channels decided on 22 Nov are Amazon and the product's own site.\n- **Who voices the bag.** A generated voice from this app's voice settings, a contracted voice actor, or one then the other.\n- **The first market.** The United States alone, or with the EU.\n- **The lines.** The owner's own lines are kept as he wrote them; proposals for every sensed moment, and for new moments, wait for his stars and strikes.\n- **The packs.** Which come first, and what the New Yorker pack is called.\n\nThe look, the words on the tag and the launch line are being chosen from the design proposal."
+  },
+  {
+   "proposal": "P492",
+   "op": "enrich",
+   "section": "concept/story",
+   "match": {
+    "title": "Voice, humour and personality"
+   },
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog; the owner's ruling of 22 Nov 2026 on the lines",
+   "appendBody": "House rules for every line, set on 22 Nov 2026: the bag is the butt of the joke and is never mean to the people nearby; nothing about security, weapons, bombs, hijacking or anything an airport could treat as a threat or a false alarm; nothing built on a stereotype of any group; no celebrity impressions; most lines under ten words. The owner's own lines are kept exactly as he wrote them. At least eight more lines are proposed for each of the eight sensed moments, with fifteen new moments the same hardware could sense, in docs/design/baggage-claims-lines.md; the first of each is listed below as a proposal, and none is chosen until the owner stars or strikes it. The launch script's \"Three double-A batteries\" becomes two.",
+   "appendList": {
+    "examples": [
+     {
+      "text": "That's one. I'm keeping count.",
+      "context": "Proposed 22 Nov, not yet chosen: hard impact"
+     },
+     {
+      "text": "It's water weight.",
+      "context": "Proposed 22 Nov, not yet chosen: weigh-in"
+     },
+     {
+      "text": "Oh. We're doing this now.",
+      "context": "Proposed 22 Nov, not yet chosen: handle grab"
+     },
+     {
+      "text": "I can fly! ...I cannot fly.",
+      "context": "Proposed 22 Nov, not yet chosen: free-fall"
+     },
+     {
+      "text": "I'm the black one. No, the other black one.",
+      "context": "Proposed 22 Nov, not yet chosen: carousel"
+     },
+     {
+      "text": "I've seen parts of this airport you never will.",
+      "context": "Proposed 22 Nov, not yet chosen: conveyor or tarmac cart"
+     },
+     {
+      "text": "Wheels up. Not like that.",
+      "context": "Proposed 22 Nov, not yet chosen: upside down"
+     },
+     {
+      "text": "I love the dark. Very slimming.",
+      "context": "Proposed 22 Nov, not yet chosen: dark hold"
+     },
+     {
+      "text": "I fit. I'm sure I fit. I don't fit.",
+      "context": "Proposed 22 Nov, a new moment: overhead-bin shove"
+     },
+     {
+      "text": "We're late, aren't we.",
+      "context": "Proposed 22 Nov, a new moment: rolled fast"
+     },
+     {
+      "text": "There was a lift. I saw a lift.",
+      "context": "Proposed 22 Nov, a new moment: stairs"
+     },
+     {
+      "text": "C-c-c-cobblestones. L-l-lovely.",
+      "context": "Proposed 22 Nov, a new moment: cobblestones and rough ground"
+     },
+     {
+      "text": "Is this the queue for the queue?",
+      "context": "Proposed 22 Nov, a new moment: the queue shuffle"
+     },
+     {
+      "text": "Ooh. Moving stairs. Fancy.",
+      "context": "Proposed 22 Nov, a new moment: escalator tilt"
+     },
+     {
+      "text": "Ah, the boot. First class.",
+      "context": "Proposed 22 Nov, a new moment: taxi boot"
+     },
+     {
+      "text": "Was that turbulence, or the golf bag?",
+      "context": "Proposed 22 Nov, a new moment: turbulence in the hold"
+     },
+     {
+      "text": "Day two. Nobody's come.",
+      "context": "Proposed 22 Nov, a new moment: lost-luggage wait"
+     },
+     {
+      "text": "Oh, it's you. I thought you'd forgotten.",
+      "context": "Proposed 22 Nov, a new moment: hotel room"
+     },
+     {
+      "text": "Final score: too many bumps. One star.",
+      "context": "Proposed 22 Nov, a new moment: arrival at home"
+     },
+     {
+      "text": "Feed me. Two double-As. I'm not fussy.",
+      "context": "Proposed 22 Nov, a new moment: low battery"
+     },
+     {
+      "text": "Good morning. I have concerns.",
+      "context": "Proposed 22 Nov, a new moment: power on"
+     },
+     {
+      "text": "Fine. I'll hold it in.",
+      "context": "Proposed 22 Nov, a new moment: muted or switched off"
+     },
+     {
+      "text": "Finally. Do you know how long I was in that box?",
+      "context": "Proposed 22 Nov, a new moment: first use out of the box"
+     }
+    ]
+   }
+  },
+  {
+   "proposal": "P493",
+   "op": "add",
+   "section": "concept/questions",
+   "title": "Voice packs and holiday packs: sold as add-ons",
+   "body": "More voice packs and holiday packs are to be sold, the New Yorker pack among them. The line-up, how a pack reaches the unit, how it is sold, what it costs to make and the risks are in docs/research/baggage-claims-voice-packs.md. Which packs come first, and the New Yorker pack's name, are on the owner's list.",
+   "data": {},
+   "status": "decided",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026",
+   "ruling": "Owner, 22 Nov 2026: \"Yes we need additional voice packs or holiday packs to purchase\", naming the \"New Yorker\" voice pack and holiday packs, to be evaluated.",
+   "ruledOn": "2026-11-22"
+  },
+  {
+   "proposal": "P468",
+   "op": "add",
+   "section": "sales/channels",
+   "title": "Voice packs (add-on and store)",
+   "body": "Sold on the product's own site with Stripe, as a download or as a card by post; on Amazon as a card listed beside the unit and in a bundle with it; as a gift with a message. A registered unit gets its first pack free.",
+   "data": {
+    "price": 7.99
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§4.5 Product page, line 105"
+  },
+  {
+   "proposal": "P494",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Voice pack line-up proposed on 22 Nov",
+   "body": "In the box: Family Friendly, Salty. Named by the owner: the New Yorker pack (other names offered: New York Minute, Big Apple Attitude). Proposed: Holiday Heckler (year-end gifting); Summer Breakdown (summer travel); Group Trip (stag and hen trips, reunions; the documents' Bachelor Party Layover); Just Married (wedding gifts and honeymoons); Road Warrior (corporate gifting and frequent flyers); Are We There Yet? (family trips; a pack for all ages); International (travellers abroad; the documents' stretch-goal pack); Worst Flight Story (once a year; the documents' contest pack). None is chosen.",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P495",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Voice pack as a download - $4.99 (estimate)",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 499,
+    "currency": "USD",
+    "approach": "value",
+    "note": "An estimate, not a tested price: below the documents' $7.99 card because nothing is posted. Rests on the price of small paid add-ons in general, not on a study."
+   },
+   "status": "draft",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P496",
+   "op": "add",
+   "section": "marketing/pricing",
+   "title": "Holiday bundle: the unit with a holiday pack - $32.95 (estimate)",
+   "body": "",
+   "data": {
+    "kind": "price",
+    "priceMinor": 3295,
+    "currency": "USD",
+    "approach": "value",
+    "note": "An estimate: the Amazon price of $27.95 plus most of a $7.99 pack, so the bundle saves the buyer about $3. For the gifting season."
+   },
+   "status": "draft",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P497",
+   "op": "add",
+   "section": "production/economics",
+   "title": "Voice pack, cost to make one pack's recordings",
+   "body": "With a generated voice from this app's voice settings (Kokoro on the owner's own machine, or OpenRouter): a few dollars of generation at most, and about a day of writing, picking takes and levelling. With a voice actor: an estimate of $300 to $800 for about a hundred short lines with a buy-out and a release, to be confirmed by quotes. The documents put a pack's card at about $0.50. None of this is quoted.",
+   "data": {
+    "volume": "per pack",
+    "cogs": "about $5 generated; $300-800 with an actor",
+    "price": "—",
+    "margin": "—"
+   },
+   "status": "estimate",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P498",
+   "op": "add",
+   "section": "marketing/campaigns",
+   "title": "Voice packs and holiday packs through the year",
+   "body": "A pack for each gifting season gives buyers a reason to come back and gives shops something new without new hardware. First step: record one holiday pack and the New Yorker pack, and offer them on the product's own site. Must exist first: the base lines chosen, the voice chosen, and the firmware able to find a pack it has not seen before.",
+   "data": {
+    "objective": "retention",
+    "channel": "The product's own site and the Amazon listing"
+   },
+   "status": "planned",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P499",
+   "op": "add",
+   "section": "research/claims",
+   "title": "\"New Yorker\" can name a voice pack without implying the magazine",
+   "body": "As a word for someone from New York it describes the character. The New Yorker is also a magazine's name and a registered mark, so on a listing or a pack the name could be read as the magazine's. Not checked with anyone. Two other names are offered in the voice pack evaluation.",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Ranked Gag Catalog, voice packs; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P500",
+   "op": "add",
+   "section": "research/claims",
+   "title": "A voice generated with the app's voice settings may be sold inside a product",
+   "body": "Depends on the terms of the model and of the voice chosen (Kokoro, or the model reached through OpenRouter). Nobody has read them for this use. The alternative the documents name is a contracted voice actor with a release.",
+   "data": {
+    "source": "I have an idea for a quick gag and potential quick.md"
+   },
+   "status": "unverified",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "The One Regulatory Gotcha, last paragraph; the owner's ruling of 22 Nov 2026"
+  },
+  {
+   "proposal": "P426",
+   "op": "add",
+   "section": "marketing/campaigns",
+   "title": "Marketing plan and budget",
+   "body": "5,000 USD in all, split by phase in round figures. This is a plan, not a forecast: the first gate (clips, postage, small props) 500; units for creators and their postage 1,500; listing and site assets (photos, the demo video) 1,000; paid promotion behind clips that have already proved themselves 1,000; a small paid test on the listing or in retargeting 500; reserve 500. The playbook's own rollup came to about $4,500 with $1,300 of creator units; the PRD reserved $3k for creators and $2k for promotion. The order of goals stays: pass the first gate, launch, then sell-through and voice packs.",
+   "data": {
+    "kind": "plan",
+    "planTotalMinor": 500000
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Budget rollup, line 133"
+  },
+  {
+   "proposal": "P439",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Launch: unbranded clips (the first gate)",
+   "body": "The cheap test before anything else: four short clips with no logo and no link. Pass: a clip at 50k views, or 500 signups. No date is set.",
+   "data": {
+    "kind": "launch",
+    "launchKey": "phase1",
+    "channel": "TikTok, Reels, Shorts"
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6"
+  },
+  {
+   "proposal": "P439",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Build the five validation units",
+   "body": "The clips need a unit that really reacts.\n\nHow: Print, wire and load the first clips; engineering's build.",
+   "data": {
+    "kind": "step",
+    "key": "phase1-units",
+    "launch": "phase1",
+    "phase": "Before launch",
+    "why": "The clips need a unit that really reacts.",
+    "how": "Print, wire and load the first clips; engineering's build."
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6"
+  },
+  {
+   "proposal": "P439",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Film at a real airport",
+   "body": "The reactions of real people are the content.\n\nHow: With the handler's written consent; three takes of the toss; never fake the audio.",
+   "data": {
+    "kind": "step",
+    "key": "phase1-film",
+    "launch": "phase1",
+    "phase": "Before launch",
+    "why": "The reactions of real people are the content.",
+    "how": "With the handler's written consent; three takes of the toss; never fake the audio.",
+    "after": [
+     "phase1-units"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6"
+  },
+  {
+   "proposal": "P439",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Cut the four short verticals",
+   "body": "Each moment is its own clip.\n\nHow: FAT, OW, DARK and WHEE, fifteen seconds each.",
+   "data": {
+    "kind": "step",
+    "key": "phase1-cut",
+    "launch": "phase1",
+    "phase": "Before launch",
+    "why": "Each moment is its own clip.",
+    "how": "FAT, OW, DARK and WHEE, fifteen seconds each.",
+    "after": [
+     "phase1-film"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6"
+  },
+  {
+   "proposal": "P439",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Post with the pinned reply and the email capture",
+   "body": "A comment has to lead somewhere.\n\nHow: Raw, in the morning commuter hours, with \"comment FAT for where to get one\" pinned.",
+   "data": {
+    "kind": "step",
+    "key": "phase1-post",
+    "launch": "phase1",
+    "phase": "Before launch",
+    "why": "A comment has to lead somewhere.",
+    "how": "Raw, in the morning commuter hours, with \"comment FAT for where to get one\" pinned.",
+    "after": [
+     "phase1-cut"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6"
+  },
+  {
+   "proposal": "P439",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Read the result at 72 hours and at 30 days",
+   "body": "The gate decides whether launch money is spent.\n\nHow: 50k views on a clip, or 500 emails.",
+   "data": {
+    "kind": "step",
+    "key": "phase1-read",
+    "launch": "phase1",
+    "phase": "Before launch",
+    "why": "The gate decides whether launch money is spent.",
+    "how": "50k views on a clip, or 500 emails.",
+    "after": [
+     "phase1-post"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 1, page 6"
+  },
+  {
+   "proposal": "P501",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Launch: the Amazon marketplace listing",
+   "body": "The primary channel. Why it fits: gift buyers search there, and the product explains itself in a short video. No date is set.",
+   "data": {
+    "kind": "launch",
+    "launchKey": "amazon",
+    "channel": "Amazon marketplace"
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P501",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Listing assets: photos, the demo video, a title and five bullets",
+   "body": "A gag gift sells on its video and first photo.\n\nHow: Shoot the tag on a real handle; cut a short demo from the clips; write the copy in Sales, Amazon listing.",
+   "data": {
+    "kind": "step",
+    "key": "amazon-assets",
+    "launch": "amazon",
+    "phase": "Before launch",
+    "why": "A gag gift sells on its video and first photo.",
+    "how": "Shoot the tag on a real handle; cut a short demo from the clips; write the copy in Sales, Amazon listing."
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P501",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "The compliance mark, the battery statement and a barcode",
+   "body": "A listing for an electronic gadget is asked for them.\n\nHow: Engineering's compliance rows say which mark the first market needs; buy a barcode; state AA alkaline cells.",
+   "data": {
+    "kind": "step",
+    "key": "amazon-marks",
+    "launch": "amazon",
+    "phase": "Before launch",
+    "why": "A listing for an electronic gadget is asked for them.",
+    "how": "Engineering's compliance rows say which mark the first market needs; buy a barcode; state AA alkaline cells.",
+    "after": [
+     "amazon-assets"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P501",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Packaging that survives the post and shows the joke",
+   "body": "The box is the gift.\n\nHow: A printed sleeve or card with the name card inside; follows the design proposal.",
+   "data": {
+    "kind": "step",
+    "key": "amazon-pack",
+    "launch": "amazon",
+    "phase": "Before launch",
+    "why": "The box is the gift.",
+    "how": "A printed sleeve or card with the name card inside; follows the design proposal.",
+    "after": [
+     "amazon-marks"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P501",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Open the seller account and choose how orders are fulfilled",
+   "body": "Nothing lists without it.\n\nHow: Register the brand once the name is decided.",
+   "data": {
+    "kind": "step",
+    "key": "amazon-account",
+    "launch": "amazon",
+    "phase": "Before launch",
+    "why": "Nothing lists without it.",
+    "how": "Register the brand once the name is decided.",
+    "after": [
+     "amazon-pack"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P501",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Publish the listing and run a small sponsored test",
+   "body": "A new listing has no rank of its own.\n\nHow: A small test from the marketing plan's paid-test line.",
+   "data": {
+    "kind": "step",
+    "key": "amazon-list",
+    "launch": "amazon",
+    "phase": "Before launch",
+    "why": "A new listing has no rank of its own.",
+    "how": "A small test from the marketing plan's paid-test line.",
+    "after": [
+     "amazon-account"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P502",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Launch: the product's own site",
+   "body": "On this app's stack, with Stripe at checkout, the product's own mail server and the built-in referral engine. Why it fits: it holds the email list, the voice packs and the jokes the listing has no room for. No date is set.",
+   "data": {
+    "kind": "launch",
+    "launchKey": "site",
+    "channel": "The product's own site"
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P502",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Decide the name and register the domain",
+   "body": "Every page, link and email carries it.\n\nHow: The name is on the owner's list; run the trademark and domain check first.",
+   "data": {
+    "kind": "step",
+    "key": "site-name",
+    "launch": "site",
+    "phase": "Before launch",
+    "why": "Every page, link and email carries it.",
+    "how": "The name is on the owner's list; run the trademark and domain check first."
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P502",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Connect Stripe and enter the mail server's SMTP details in Admin",
+   "body": "Checkout and mail are settings, not builds.\n\nHow: In this app's Admin area.",
+   "data": {
+    "kind": "step",
+    "key": "site-stripe",
+    "launch": "site",
+    "phase": "Before launch",
+    "why": "Checkout and mail are settings, not builds.",
+    "how": "In this app's Admin area.",
+    "after": [
+     "site-name"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P502",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Publish the landing page with the demo video and the email capture",
+   "body": "The first gate's clips need somewhere to send people.\n\nHow: From the Landing page section; the look follows the design proposal.",
+   "data": {
+    "kind": "step",
+    "key": "site-page",
+    "launch": "site",
+    "phase": "Before launch",
+    "why": "The first gate's clips need somewhere to send people.",
+    "how": "From the Landing page section; the look follows the design proposal.",
+    "after": [
+     "site-stripe"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P502",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Turn on the referral ranks for the Departure Board",
+   "body": "Sharing is the cheapest reach there is.\n\nHow: The referral engine built into this app; one referral per verified email.",
+   "data": {
+    "kind": "step",
+    "key": "site-refer",
+    "launch": "site",
+    "phase": "Before launch",
+    "why": "Sharing is the cheapest reach there is.",
+    "how": "The referral engine built into this app; one referral per verified email.",
+    "after": [
+     "site-page"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P440",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Launch: crowdfunding (only if it runs)",
+   "body": "The documents' launch event. Whether it runs is on the owner's list. Why it could fit: it is a launch with a date, press and a list of backers; what it needs first: the first gate passed, the final voice, the hero video and the email list. The PRD's \"aimed at Q4 gifting\" cannot mean 2026, since the PRD is dated 19 Nov 2026; plan against the next gifting windows.",
+   "data": {
+    "kind": "launch",
+    "launchKey": "crowdfunding",
+    "channel": "Kickstarter"
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 2, page 6"
+  },
+  {
+   "proposal": "P440",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Pass the first gate",
+   "body": "No launch money before the clips prove the joke.\n\nHow: See the unbranded clips launch.",
+   "data": {
+    "kind": "step",
+    "key": "crowdfunding-gate",
+    "launch": "crowdfunding",
+    "phase": "Before launch",
+    "why": "No launch money before the clips prove the joke.",
+    "how": "See the unbranded clips launch."
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 2, page 6"
+  },
+  {
+   "proposal": "P440",
+   "op": "add",
+   "section": "marketing/launch",
+   "title": "Build the campaign page",
+   "body": "The page is the pitch.\n\nHow: The hero video, the tiers, voice packs as stretch goals, the FAQ in character.",
+   "data": {
+    "kind": "step",
+    "key": "crowdfunding-page",
+    "launch": "crowdfunding",
+    "phase": "Before launch",
+    "why": "The page is the pitch.",
+    "how": "The hero video, the tiers, voice packs as stretch goals, the FAQ in character.",
+    "after": [
+     "crowdfunding-gate"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 2, page 6"
+  },
+  {
+   "proposal": "P503",
+   "op": "add",
+   "section": "sales/channels",
+   "title": "Gift and novelty retailers",
+   "body": "Online gift shops and novelty stores. Why it fits: it is an impulse gift that needs no explaining. Must exist first: retail packaging, a barcode, a wholesale price and a one-page line sheet. First step: send the demo video and the line sheet to five gift buyers.",
+   "data": {},
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P504",
+   "op": "add",
+   "section": "sales/channels",
+   "title": "Corporate gifting",
+   "body": "Bulk orders for teams that travel, conference bags and sales kick-offs, with the company's name on the name card. Why it fits: a travel gift that gets a laugh, bought by the box. Must exist first: a bulk price, a way to print the name cards, and the family-friendly pack as the default. First step: a bulk-order page on the product's own site.",
+   "data": {},
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P505",
+   "op": "add",
+   "section": "marketing/campaigns",
+   "title": "Press angles",
+   "body": "Travel, gadget and gift writers, and local news. The lines on file: \"the world's sassiest suitcase\", and \"a suitcase filed a complaint at the airport today\". Must exist first: the demo video, photos and a unit to lend. First step: a short press note and a list of ten writers who cover travel gifts.",
+   "data": {
+    "objective": "awareness",
+    "channel": "Press"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  },
+  {
+   "proposal": "P506",
+   "op": "add",
+   "section": "marketing/campaigns",
+   "title": "Seasonal gifting windows",
+   "body": "Father's Day, the summer travel season, the year-end holidays and Secret Santa, wedding and group-trip season. Why it fits: it is bought as a gift more than for oneself. Must exist first: stock on the listing six weeks ahead, and a holiday pack for the year-end window. First step: put the four windows in the calendar and work back from each.",
+   "data": {
+    "objective": "conversion",
+    "channel": "Amazon marketplace and the product's own site"
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Go-to-market; the owner's ruling of 22 Nov 2026 on outlets and channels"
+  }
+ ]
+}
