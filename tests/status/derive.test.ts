@@ -74,6 +74,35 @@ describe("an empty concept", () => {
   });
 });
 
+describe("a new concept is first asked to define the idea, before any file", () => {
+  // The Concept gate's own order is the one-line description, the pitch, then Files; the status page leads with the same step.
+  const pitchRow = () => ({ ...row("concept/story", "draft", "The pitch", { part: "pitch" }), body: "A puck that heckles the trip." });
+  const files = (v: ReturnType<typeof processView>) => v.current.result.checks.findIndex((c) => c.id === "concept.files");
+
+  it("checks the one-line description and the pitch before Files, in the gate", () => {
+    const ids = processView(state(), []).current.result.checks.map((c) => c.id);
+    expect(ids.indexOf("concept.one-liner")).toBeLessThan(ids.indexOf("concept.story"));
+    expect(ids.indexOf("concept.story")).toBeLessThan(ids.indexOf("concept.files"));
+  });
+
+  it.each([
+    ["no description yet", "", "Give the concept a one-line description"],
+    ["a description and no pitch", "A puck that heckles the trip", "Write the pitch in the concept story, or draft the story with AI"],
+  ])("%s: the app's next step and the status page's first action are both the idea-defining one, not Add a file", (_what, oneLiner, label) => {
+    const v = processView(state({ oneLiner }), []);
+    expect(files(v)).toBeGreaterThan(-1);
+    expect(v.next.label).toBe(label);
+    expect(statusModel(v, []).actions[0]!.label).toBe(label);
+  });
+
+  it("with the description and the pitch written, Files is the next step on both", () => {
+    const rows = [pitchRow()];
+    const v = processView(state({ oneLiner: "A puck that heckles the trip" }), rows);
+    expect(v.next.label).toMatch(/^Add a file/);
+    expect(statusModel(v, rows).actions[0]!.label).toBe(v.next.label);
+  });
+});
+
 const manifest = await readManifest();
 
 describe("Baggage Claims MK1 as seeded", () => {
