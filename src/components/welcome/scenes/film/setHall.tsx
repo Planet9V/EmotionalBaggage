@@ -10,10 +10,11 @@ import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { sceneOf } from "../scenes";
-import { bagVoice, voiceOf } from "../speech";
+import { bagVoice } from "../speech";
+import { hallCast } from "./castHall";
 import { bump, clamp01, kf, mix } from "./ease";
-import { A, BAG_MID, Bag, Built, C, Contact, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
-import { Figure, type FigPose } from "./people";
+import { A, Bag, Built, C, Contact, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { Figure } from "./people";
 
 // ---- the dark hold --------------------------------------------------------------------------------------------
 
@@ -358,50 +359,15 @@ function rideBag(t: number): BagPose {
   };
 }
 
-const STRANGER: V3 = [-2.55, 0, 3.0];
-const STRANGER_YAW = 2.35;
-const HOST: V3 = [3.9, 0, -3.4];
-const HOST_YAW = -0.35;
-/** How far a head has to turn, from a body facing `yaw`, to look at the bag. */
-function toward(from: V3, yaw: number, t: number) {
-  const b = rideBag(t).p;
-  const turn = Math.atan2(b[0] - from[0], b[2] - from[2]) - yaw;
-  return Math.max(-1.1, Math.min(1.1, Math.atan2(Math.sin(turn), Math.cos(turn))));
-}
-function stranger(t: number): FigPose {
-  // watching it come, a lean in as it passes, and a hand that points after it as they ask
-  const watching = kf(t, [[AGAIN_AT - 300, 0], [AGAIN_AT + 300, 1]]);
-  const ask = kf(t, [[8050, 0], [8400, 1, "back"], [9800, 1], [10300, 0.4]]);
-  const lean = 0.14 * ask;
-  const b = rideBag(t).p;
-  const dir = Math.atan2(b[0] - STRANGER[0], b[2] - STRANGER[2]);
-  const bagAt: V3 = [b[0], b[1] + BAG_MID, b[2]];
-  // eyes find it before the head does; the brows go up as it comes past, and stay up for the question
-  return {
-    look: watching > 0.05 || t > 5200 ? bagAt : null,
-    brow: 0.9 * kf(t, [[7500, 0], [7800, 1, "out"]]) - 0.2 * kf(t, [[9900, 0], [10300, 1]]),
-    blink: bump(t, 7500, 7640),
-    mouth: t > 7600 && t < 8300 ? "o" : "flat",
-    talk: voiceOf(CAROUSEL, "stranger", t),
-    p: STRANGER,
-    yaw: STRANGER_YAW + 0.5 * watching * Math.max(-1, Math.min(1, Math.atan2(Math.sin(dir - STRANGER_YAW), Math.cos(dir - STRANGER_YAW)))),
-    head: watching * 0.5 * toward(STRANGER, STRANGER_YAW, t),
-    lean,
-    nod: 0.1 * ask,
-    handR: ask > 0.01 ? [mix(STRANGER[0] + 0.25, b[0], 0.3 * ask), mix(0.8, 1.25, ask), mix(STRANGER[2] - 0.1, b[2], 0.3 * ask)] : null,
-    // pointing after it
-    shapeR: ask > 0.3 ? "point" : undefined,
-    aimR: ask > 0.3 ? [b[0] - STRANGER[0], 0.1, b[2] - STRANGER[2]] : undefined,
-  };
-}
-function host(t: number): FigPose {
-  // filming it, and following it round with the phone
-  const turn = toward(HOST, HOST_YAW, t);
-  const a = HOST_YAW + turn * 0.6;
-  const b = rideBag(t).p;
-  // proud of it: filming, and grinning once it starts shouting "Wheee"
-  return { look: [b[0], b[1] + BAG_MID, b[2]], mouth: t > 3900 ? "grin" : "smile", brow: 0.4 * kf(t, [[3800, 0], [4200, 1]]), p: HOST, yaw: HOST_YAW, head: turn * 0.8, handR: [HOST[0] + 0.42 * Math.sin(a), 1.52, HOST[2] + 0.42 * Math.cos(a)], aimR: [0, 1, 0], palmR: [-Math.sin(a), 0, -Math.cos(a)], elbowR: [0.5, -1, 0] };
-}
+const { stranger, host, watcher } = hallCast({
+  bag: rideBag,
+  scene: CAROUSEL,
+  againAt: AGAIN_AT,
+  belt: (d) => {
+    const at = spot(d);
+    return [at.x, TOP, at.z];
+  },
+});
 
 /** A stadium-shaped slab: half the straight is `HS`, the ends have radius `r`. */
 function stadium(k: Kit, r: number, h: number, c: string, y: number) {
@@ -531,7 +497,7 @@ function CarouselSet() {
       <Bag pose={rideBag} voice={(t) => bagVoice(CAROUSEL, t)} gravity={4.2} />
       <Figure pose={stranger} role="traveller" />
       <Figure pose={host} role="owner" tall={1.03} phone />
-      <Figure pose={(t) => ({ p: [-3.2, 0, -3.3], yaw: 0.7, head: 0.2, look: t > 4000 ? [rideBag(t).p[0], 0.9, rideBag(t).p[2]] : null, brow: 0.5 * kf(t, [[4000, 0], [4400, 1], [6000, 1], [6600, 0]]) })} role="bystander" tall={0.97} />
+      <Figure pose={watcher} role="bystander" tall={0.97} />
     </>
   );
 }
