@@ -9,11 +9,11 @@ import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { sceneOf } from "../scenes";
-import { bagVoice, voiceOf } from "../speech";
+import { bagVoice } from "../speech";
 import { E, bump, clamp01, kf, mix } from "./ease";
-import { walks, type Walk } from "./gait";
-import { A, BAG_MID, BAG_TOP, Bag, Built, C, Contact, HANDLE_Y, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
-import { Figure, onBody, type FigPose } from "./people";
+import { buttonCast, scaleCast } from "./castScale";
+import { A, BAG_TOP, Bag, Built, C, Contact, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { Figure } from "./people";
 
 const PLATE = 0.1;
 const BAG_Z = 0.05;
@@ -208,34 +208,7 @@ const DAY_SET = checkIn(false);
 const EVENING_SET = checkIn(true);
 
 
-const AGENT_BACK: V3 = [-1.6, 0, -1.3];
-const AGENT_YAW = 0.42;
-const HOST: V3 = [3.2, 0, 0.8];
-const HOST_YAW = -2.3;
-/** In the button the owner stands close, beside the scale, facing the bag. */
-const HOST_B: V3 = [1.75, 0, 1.2];
-const HOST_B_YAW = -2.2;
 const TILT = 0.2;
-/** The agent: two short steps with the bag to the scale, then round the end of the desk to her place, turning to it. */
-const AGENT_WALKS: Walk[] = [
-  { t0: 500, t1: 1300, path: (u) => [mix(-0.78, -0.52, u), 0, 0.1], yaw0: Math.PI / 2, yaw1: Math.PI / 2, stride: 0.3 },
-  {
-    t0: 1950,
-    t1: 3650,
-    path: (u) => {
-      const pts: [number, number][] = [[-0.52, 0.1], [-0.72, -0.55], [-1.0, -1.2], [AGENT_BACK[0], AGENT_BACK[2]]];
-      const f = u * 3;
-      const i = Math.min(2, Math.floor(f));
-      const a = pts[i]!;
-      const b = pts[i + 1]!;
-      return [mix(a[0], b[0], f - i), 0, mix(a[1], b[1], f - i)];
-    },
-    yaw0: Math.PI / 2,
-    yaw1: AGENT_YAW,
-    lead: -1,
-  },
-];
-
 // ---- the huff ---------------------------------------------------------------------------------------------------
 
 const HUFF_AT = 7520;
@@ -396,135 +369,8 @@ function ScaleSet({ button }: { button: boolean }) {
       yaw: 0.3 * kf(t, [[2900, 0], [3500, 1], [5400, 1], [5900, 0]]) - 0.12 * kf(t, [[5900, 0], [6400, 1], [7300, 1], [7600, 0]]),
     };
   };
-  const bagAt = (t: number): V3 => {
-    const b = bag(t).p;
-    return [b[0], b[1] + BAG_MID, b[2]];
-  };
-  const agent = (t: number): FigPose => {
-    if (button) {
-      // end of shift: chin on her hand, elbow on the desk, until the souvenirs make her look
-      const look = kf(t, [[POP + 300, 0], [POP + 800, 1]]);
-      const lean = 0.2;
-      // half asleep on her hand; the pop wakes her: brows up, eyes wide, a little "o"
-      const woke = kf(t, [[POP + 120, 0], [POP + 260, 1, "out"], [POP + 1400, 1], [POP + 2200, 0.5]]);
-      return {
-        look: look > 0.3 ? bagAt(t) : null,
-        lids: 0.55 * (1 - woke) + 0.1 * woke * kf(t, [[POP + 1400, 0], [POP + 2200, 1]]),
-        brow: 1.0 * woke - 0.2 * (1 - woke),
-        blink: bump(t, POP + 100, POP + 240),
-        mouth: woke > 0.6 && t < POP + 1500 ? "o" : woke > 0.3 ? "smile" : "flat",
-        p: AGENT_BACK,
-        yaw: AGENT_YAW,
-        lean,
-        head: 0.45 * look,
-        nod: 0.15 - 0.2 * look,
-        handR: onBody(AGENT_BACK, AGENT_YAW, lean, [0.02, 1.43, 0.22 - 0.1 * look]),
-        handL: onBody(AGENT_BACK, AGENT_YAW, lean, [-0.26, 1.02, 0.42]),
-        // chin on her knuckles, the other hand flat on the desk
-        shapeR: "fist",
-        aimR: onBody([0, 0, 0], AGENT_YAW, 0, [0, 1, 0.3]),
-        palmR: onBody([0, 0, 0], AGENT_YAW, 0, [-1, 0, 0]),
-        elbowR: [0.2, -1, 0.3],
-        shapeL: "open",
-        aimL: onBody([0, 0, 0], AGENT_YAW, 0, [0.2, 0, 1]),
-        palmL: [0, -1, 0],
-      };
-    }
-    // she sets it down, then walks round the end of the desk to her place behind it
-    const gait = walks(t, AGENT_WALKS);
-    const x = gait.p[0];
-    const b = bag(t).p;
-    const holding = t < SET_DOWN + 150;
-    const letGo = kf(t, [[SET_DOWN + 150, 0], [SET_DOWN + 420, 1]]);
-    const hand = (side: number): V3 | null =>
-      letGo >= 1 ? null : [mix(b[0], x + 0.06, letGo), mix(b[1] + HANDLE_Y - 0.01, 0.8, letGo), mix(b[2] - 0.03 + side * 0.09, 0.1 + side * 0.3, letGo)];
-    // taken aback at the word, a beat late: back an inch, hands off the desk; then a slow look down at the bag
-    const aback = kf(t, [[7650, 0], [7850, 1, "out"], [8700, 1], [9200, 0]]);
-    const down = kf(t, [[8150, 0], [8650, 1], [9500, 1], [9900, 0]]);
-    const yaw = gait.yaw;
-    const lean = (holding ? 0.12 : 0.12 * (1 - letGo)) - 0.1 * aback;
-    const p: V3 = gait.p;
-    const palms = (side: number): V3 => onBody(p, yaw, lean, [side * 0.24, 1.12 + 0.06 * aback, 0.3]);
-    // eyes: on the bag while she carries it, ahead as she walks round, on the number as it climbs, on the bag for the line
-    const walking = t > 1950 && t < 3300;
-    const eyes: V3 | null = walking ? null : t > 3300 && t < 5900 ? [DISPLAY[0], SCREEN_Y, DISPLAY[2]] : t > 9950 ? [HOST[0], 1.65, HOST[2]] : bagAt(t);
-    return {
-      footL: gait.footL,
-      footR: gait.footR,
-      // knees bent to set it down gently
-      hipY: (gait.walking ? gait.bob : -0.012) - 0.13 * bump(t, 1050, 1800),
-      hipX: gait.sway,
-      look: eyes,
-      brow: 1.0 * aback - 0.3 * down * (1 - aback) + 0.2 * kf(t, [[3600, 0], [4200, 1], [5900, 1], [6300, 0]]),
-      blink: bump(t, 7650, 7790) + bump(t, 9900, 10040),
-      lids: 0.3 * down,
-      mouth: aback > 0.6 ? "o" : "flat",
-      talk: voiceOf(scene, "agent", t),
-      p,
-      yaw,
-      lean,
-      head: 0.5 * down + 0.75 * kf(t, [[9900, 0], [10250, 1]]),
-      nod: 0.3 * down - 0.08 * aback,
-      handL: aback > 0.01 ? palms(-1) : hand(1),
-      handR: aback > 0.01 ? palms(1) : hand(-1),
-      shapeL: aback > 0.01 ? "open" : letGo < 0.5 ? "grip" : undefined,
-      shapeR: aback > 0.01 ? "open" : letGo < 0.5 ? "grip" : undefined,
-      aimL: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, 0.3, 1]) : letGo < 0.5 ? [0, -1, 0] : undefined,
-      aimR: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, 0.3, 1]) : letGo < 0.5 ? [0, -1, 0] : undefined,
-      palmL: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, -0.3, 1]) : undefined,
-      palmR: aback > 0.01 ? onBody([0, 0, 0], yaw, 0, [0, -0.3, 1]) : undefined,
-    };
-  };
-  const host = (t: number): FigPose => {
-    if (button) {
-      // arms folded, watching the bag; at the line, a look straight down the lens and the smallest of shrugs
-      const turn = kf(t, [[5500, 0], [5850, 1]]);
-      const shrug = kf(t, [[5950, 0], [6250, 1, "back"], [7100, 1], [7500, 0.3]]);
-      // he turns from the bag to face us, body and all, so the shrug reads
-      const yaw = mix(HOST_B_YAW, -1.15, turn * 0.85);
-      const fold = (side: number): V3 => onBody(HOST_B, yaw, 0, [-side * 0.13, 1.08 + 0.02 * side, 0.22]);
-      const open = (side: number): V3 => onBody(HOST_B, yaw, 0, [side * 0.46, 0.98, 0.26]);
-      const hand = (side: number): V3 => {
-        const a = fold(side);
-        const b = open(side);
-        return [mix(a[0], b[0], shrug), mix(a[1], b[1], shrug), mix(a[2], b[2], shrug)];
-      };
-      // watching the bag; for the line, straight down the lens, unimpressed
-      return {
-        look: turn > 0.5 ? [-2.8, 1.35, 3.8] : bagAt(t),
-        brow: 0.6 * shrug + 0.5 * kf(t, [[POP + 150, 0], [POP + 400, 1], [5300, 0]]),
-        lids: 0.3 * turn * (1 - 0.6 * bump(t, 6000, 6400)),
-        mouth: shrug > 0.6 && t > 6700 ? "closed" : "flat",
-        talk: voiceOf(scene, "host", t),
-        p: [HOST_B[0], 0.03 * shrug, HOST_B[2]],
-        yaw,
-        head: 0.2 * turn + 0.15 * kf(t, [[POP, 0], [POP + 300, 1], [5500, 0]]),
-        nod: 0.12 * kf(t, [[POP, 0], [POP + 300, 1]]) * (1 - turn) + 0.12 * bump(t, 6300, 6800),
-        handL: hand(-1),
-        handR: hand(1),
-        // folded arms open into a shrug, palms up
-        shapeL: shrug > 0.4 ? "open" : undefined,
-        shapeR: shrug > 0.4 ? "open" : undefined,
-        palmL: shrug > 0.4 ? [0, 1, 0] : undefined,
-        palmR: shrug > 0.4 ? [0, 1, 0] : undefined,
-        aimL: shrug > 0.4 ? onBody([0, 0, 0], yaw, 0, [-0.6, 0, 1]) : undefined,
-        aimR: shrug > 0.4 ? onBody([0, 0, 0], yaw, 0, [0.6, 0, 1]) : undefined,
-        shrug: 0.7 * bump(t, 5950, 7300),
-      };
-    }
-    // a beat after the agent, a flicker of the brows at "FAT?"; then the line, to her
-    return {
-      look: t > 9700 ? [AGENT_BACK[0], 1.6, AGENT_BACK[2]] : bagAt(t),
-      brow: 0.5 * kf(t, [[7950, 0], [8150, 1], [8900, 1], [9300, 0]]),
-      blink: bump(t, 7950, 8090),
-      lids: 0.25,
-      talk: voiceOf(scene, "host", t),
-      p: HOST,
-      yaw: HOST_YAW,
-      head: 0.55 * kf(t, [[9700, 0], [10150, 1]]),
-      nod: 0.22 * kf(t, [[6200, 0], [6800, 1], [9700, 1], [10150, 0]]),
-    };
-  };
+  const cue = { bag, scene, setDown: SET_DOWN, display: [DISPLAY[0], SCREEN_Y, DISPLAY[2]] as V3, pop: POP };
+  const { agent, host } = button ? buttonCast(cue) : scaleCast(cue);
   return (
     <>
       <Stage look={button ? EVENING : LOOK} />
