@@ -50,7 +50,8 @@ export async function adminAccess(req: Request) {
 
 /**
  * route() for /api/admin: a signed-in session (any account, as before). `platformAdmin: true` for a route that is a new
- * power as a whole (the plan catalogue); the shared settings, credentials and test routes decide per key inside.
+ * power as a whole (the plan catalogue, the voice-overs tool: generating, accepting and discarding takes and choosing
+ * the cast); the shared settings, credentials and test routes decide per key inside.
  */
 export function adminRoute<A extends unknown[]>(handler: (...args: A) => Promise<Response>, opts?: RouteOptions & { platformAdmin?: boolean }) {
   return route(async (...args: A) => {

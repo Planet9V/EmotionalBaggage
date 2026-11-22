@@ -4,14 +4,18 @@
 // one of the circumstances from the owner's launch script, staged as a small lit set: the bag is put through it,
 // the gadget senses what happened (the label in the lower third), and after a beat the bag says its line as a
 // subtitle. The film plays through and loops, with a split-flap slate between scenes; the chapter list cuts to any
-// scene. There is no pause control and no sound (owner). The film is three-dimensional and loads only when the
+// scene. There is no pause control. It starts silent; the visitor may turn the voices on (the sound control, the
+// introduction and the clips are in ./SoundControl.tsx and ./voiceTrack.ts). The film is three-dimensional and loads only when the
 // section nears the window; until then, and wherever it cannot or should not run (no 3D, a device that cannot keep
 // pace, reduced motion, no script), a drawn safety-card frame stands in its place, with the scene's line set over it.
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useInView } from "motion/react";
 import { useAnimated, useHydrated } from "../useAnimated";
-import { ORIGIN, RECORDED, SCENES, SLATE_MS, SPEAKER, cueName, lineAt, lineText, saidAt, type SceneId } from "./scenes";
+import { ORIGIN, SCENES, SLATE_MS, SPEAKER, cueName, lineAt, lineText, saidAt, type SceneId } from "./scenes";
+import { INTRO, INTRO_CUE, SOUND, introText } from "./voiceScript";
+import { heldQueue, preloadList, speechLevelAt, startOffset, voiceTrack, type VoiceManifest } from "./voiceTrack";
+import { SoundControl, VoiceIntro } from "./SoundControl";
 import { Still } from "./Still";
 import { Slate } from "./Slate";
 import { filmMode, paceVerdict } from "./pace";
@@ -45,8 +49,26 @@ function hasWebGl() {
 const TICK = 40;
 /** Dispatched by other parts of the page (the toy) to cut the film to a scene. */
 const PLAY_EVENT = "c2r:origin-scene";
+const NO_VOICE: VoiceManifest = {};
+/** The introduction is heard once a visit: kept for the tab, not beyond it. */
+const INTRO_HEARD = "c2r:voice-intro";
+function introHeard() {
+  try {
+    return sessionStorage.getItem(INTRO_HEARD) === "1";
+  } catch {
+    return false;
+  }
+}
+function markIntroHeard() {
+  try {
+    sessionStorage.setItem(INTRO_HEARD, "1");
+  } catch {
+    // private browsing: it plays again on the next visit to the control
+  }
+}
 
-export function OriginScenes({ className = "", bare = false }: { className?: string; bare?: boolean }) {
+/** `voice` is the published voice-over set, worked out on the server: cue -> clip address, length, loudness envelope. */
+export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }: { className?: string; bare?: boolean; voice?: VoiceManifest }) {
   const hydrated = useHydrated();
   const animated = useAnimated();
   const section = useRef<HTMLElement>(null);
@@ -61,6 +83,10 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
   const [slow, setSlow] = useState(false);
   const [frozen, setFrozen] = useState(false);
   const [sound, setSound] = useState(false);
+  // the sound control has been used; the introduction is up; the cue being spoken over a held picture
+  const [asked, setAsked] = useState(false);
+  const [intro, setIntro] = useState(false);
+  const [held, setHeld] = useState("");
   const capable = useMemo(() => hydrated && hasWebGl(), [hydrated]);
   const mode = useMemo(() => (hydrated ? filmMode(window.location.search) : "normal"), [hydrated]);
 
@@ -68,7 +94,10 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
   // reduced motion gets the drawn frames, not a held picture of the film
   const film = capable && near && !slow && (animated || frozen);
   const moving = animated && !frozen;
-  const playing = film && ready && moving && seen;
+  // the introduction holds the film: the clock does not run under it
+  const playing = film && ready && moving && seen && !intro;
+  // no clock runs (reduced motion, the drawn frames, before the film is ready): the voices then follow their own order
+  const still = !(film && ready && moving);
   // a held frame: under reduced motion, in the drawn stills, and before the film is ready
   const t = moving && film && ready ? tick : frozen ? tick : scene.stillAt;
   const slate = cut.slate && (playing || frozen);
@@ -104,6 +133,7 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
   }, [animated, scene, store, cut.run]);
 
   const choose = (idx: number) => {
+    setIntro(false);
     setTime(store, animated ? 0 : SCENES[idx]!.stillAt);
     mark(store, idx, false);
     setTick(0);
@@ -115,6 +145,7 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
     const on = (e: Event) => {
       const idx = SCENES.findIndex((s) => s.id === (e as CustomEvent<SceneId>).detail);
       if (idx < 0) return;
+      setIntro(false);
       setTime(store, 0);
       mark(store, idx, false);
       setTick(0);
@@ -161,20 +192,70 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
     count(store, "triangles", triangles);
   };
 
-  const line = cut.slate ? null : lineAt(scene, t);
-  const said = line ? (line.who === "bag" ? saidAt(line, t) : lineText(line)) : "";
+  const heldLine = still && held ? scene.lines.find((l) => cueName(scene, l) === held) : undefined;
+  const line = cut.slate || intro ? null : (heldLine ?? lineAt(scene, t));
+  const said = line ? (line.who === "bag" && !heldLine ? saidAt(line, t) : lineText(line)) : "";
   const full = line ? lineText(line) : "";
   const lit = !cut.slate && t >= scene.litAt;
   const spoken = line ? `${line.who === "bag" ? "The bag" : SPEAKER[line.who]}: ${full}` : "";
 
-  // the narration track: with the sound switched on, a cue that has a recording plays as its subtitle starts
+  // the voice track: with the sound on, a cue's clip starts with its subtitle (from the matching moment when it is
+  // joined late), and a cut to the slate or to another scene, or the film leaving the window, silences it
   const cue = line && playing ? cueName(scene, line) : "";
+  const lineStart = line ? line.parts[0]!.at : 0;
+  // how loud the line is at this moment of its clip, sound on or off: the bag's mark beside its subtitle moves with it
+  const level = line && !heldLine ? speechLevelAt(cueName(scene, line), (t - lineStart) / 1000) : 0;
+  useEffect(() => voiceTrack.setManifest(voice), [voice]);
+  useEffect(() => () => voiceTrack.stop(), []);
   useEffect(() => {
-    if (!sound || !cue || !RECORDED.includes(cue)) return;
-    const voice = new Audio(`/audio/scenes/${cue}.mp3`);
-    void voice.play().catch(() => {});
-    return () => voice.pause();
-  }, [sound, cue, cut.run]);
+    if (!sound || intro || still) return;
+    if (!cue) voiceTrack.stop();
+    else voiceTrack.play(cue, startOffset(voice[cue]?.seconds ?? 0, (store.t - lineStart) / 1000));
+  }, [sound, intro, still, cue, lineStart, cut.run, voice, store]);
+  // clips are fetched one scene ahead, once the visitor has shown they want sound
+  useEffect(() => {
+    if (sound) voiceTrack.preload(preloadList(voice, SCENES, cut.idx));
+  }, [sound, cut.idx, voice]);
+  // over a held picture the scene's lines are spoken in order, each shown as it is said
+  useEffect(() => {
+    if (!sound || intro || !still || !seen) return;
+    voiceTrack.playQueue(heldQueue(voice, scene), setHeld);
+    return () => {
+      voiceTrack.stop();
+      setHeld("");
+    };
+  }, [sound, intro, still, seen, scene, cut.run, voice]);
+
+  // the introduction ends (heard out, skipped, or the section left): scene 1 starts from its top
+  const endIntro = () => {
+    markIntroHeard();
+    voiceTrack.stop();
+    setIntro(false);
+    setTime(store, animated ? 0 : SCENES[0]!.stillAt);
+    mark(store, 0, false);
+    setTick(0);
+    setCut((c) => ({ idx: 0, slate: false, run: c.run + 1 }));
+  };
+  const leftDuringIntro = intro && !seen;
+  useEffect(() => {
+    if (leftDuringIntro) voiceTrack.stop();
+  }, [leftDuringIntro]);
+  // the sound control: the element is made and first played inside this click, never before it
+  const toggleSound = () => {
+    setAsked(true);
+    if (sound) {
+      voiceTrack.stop();
+      setIntro(false);
+      setSound(false);
+      return;
+    }
+    voiceTrack.unlock();
+    setSound(true);
+    if (voiceTrack.has(INTRO_CUE) && !introHeard()) {
+      setIntro(true);
+      voiceTrack.play(INTRO_CUE, 0, endIntro);
+    }
+  };
 
   return (
     <section ref={section} id="origin" aria-labelledby="origin-title" className={`scroll-mt-4 ${bare ? "" : "border-b border-hairline py-9 sm:py-11"} ${className}`}>
@@ -206,13 +287,15 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
                 </div>
               ) : null}
 
+              {intro ? <VoiceIntro onSkip={endIntro} /> : null}
+
               {/* the subtitle band: the bag's lines are typed on; the people's lines are plain */}
               {line ? (
                 <div className="pointer-events-none absolute inset-x-0 bottom-[14.5%] flex justify-center px-3 sm:px-8" aria-hidden="true">
                   {line.who === "bag" ? (
                     <p key={`${cut.idx}${cut.run}${full}`} className="sc-line max-w-[34ch] text-center text-[15px] font-semibold tracking-tight text-white sm:text-[22px] lg:text-[26px]">
                       <span className="sc-sub">
-                        <span className="mr-2 inline-block h-3 w-2 rounded-[2px] bg-dutchOrange sm:h-[17px] sm:w-[11px]" />
+                        <span className="mr-2 inline-block h-3 w-2 rounded-[2px] bg-dutchOrange sm:h-[17px] sm:w-[11px]" style={level ? { opacity: 0.5 + level / 2 } : undefined} />
                         &ldquo;{said}
                         {said.length === full.length ? <>&rdquo;</> : null}
                       </span>
@@ -235,13 +318,9 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
               </div>
 
               {/* the letterbox, with the lower third in the bottom bar */}
-              <div className="absolute inset-x-0 top-0 flex h-[7%] min-h-6 items-center justify-end gap-3 bg-black px-3 sm:px-5">
-                {sound && RECORDED.length === 0 ? <span className="font-mono text-[10px] text-muted sm:text-[11px]">{ORIGIN.noSound}</span> : null}
-                {/* a sound switch, not a pause: the film never stops */}
-                <button type="button" aria-pressed={sound} onClick={() => setSound((on) => !on)} className="-my-2 rounded px-1.5 py-2 font-mono text-[10px] text-secondary outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-focus sm:text-[11px]">
-                  {sound ? ORIGIN.soundOff : ORIGIN.soundOn}
-                </button>
-              </div>
+              <div className="absolute inset-x-0 top-0 h-[7%] min-h-6 bg-black" />
+              {/* a sound switch, not a pause: the film never stops, and never starts sound by itself */}
+              <SoundControl sound={sound} asked={asked} empty={voiceTrack.empty && !voice[INTRO_CUE]} onToggle={toggleSound} onIntent={() => voiceTrack.preload([INTRO_CUE, ...preloadList(voice, SCENES, cut.idx)])} />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[12%] min-h-9 items-center gap-2 bg-black px-3 font-mono text-[10px] leading-tight sm:gap-3 sm:px-5 sm:text-xs" aria-hidden="true">
                 <span className={`h-2 w-2 shrink-0 rounded-full ${lit ? "bg-dutchOrange" : "bg-hairline"}`} />
                 <span className={`min-w-0 truncate ${lit ? "text-primary" : "text-muted"}`}>
@@ -256,6 +335,16 @@ export function OriginScenes({ className = "", bare = false }: { className?: str
             <p aria-live="polite" className="sr-only">
               {spoken}
             </p>
+            {/* said plainly beside the sound control: the voices are synthetic; and the introduction in words */}
+            <div className="mx-auto mt-2 flex w-full max-w-[1040px] flex-wrap items-start gap-x-4 gap-y-1 text-xs text-secondary">
+              <p>{SOUND.synthetic}</p>
+              <details className="min-w-0">
+                <summary className="cursor-pointer text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">{SOUND.transcript}</summary>
+                <p className="mt-1 max-w-[68ch] leading-relaxed">
+                  {INTRO.title}, spoken by a narrator before scene 1 when the sound is first turned on: &ldquo;{introText()}&rdquo;
+                </p>
+              </details>
+            </div>
           </div>
 
           {/* the chapter list: each scene's safety-card frame */}

@@ -158,6 +158,8 @@ export function ready() {
       await (await import("./story/seedFiles")).seedFiles(ownerPool());
       await (await import("./story/seedFiles")).upgradeSeedFiles(ownerPool());
       await (await import("./story/seedFiles")).addSeedFiles(ownerPool());
+      // the welcome film's voice-over clips, into the files store, once per batch
+      await (await import("./voice/seedVoiceovers")).seedVoiceovers(ownerPool());
       await (await import("./economics/movePricingChannels")).movePricingChannels(ownerPool());
       // content entered from the owner's documents after the first seed, one dated batch at a time
       await (await import("./seedContentDb")).seedContent(ownerPool());

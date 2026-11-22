@@ -9,7 +9,7 @@ export const SPEAKER: Record<Exclude<Who, "bag">, string> = { agent: "Agent", ho
 
 /** A line arrives in parts, so a pause can sit inside it. `ms` is the time per letter; 0 shows the part at once. */
 type Part = { at: number; text: string; ms?: number };
-/** A subtitle cue. `id` names it, and names its recording: public/audio/scenes/<scene>-<id>.mp3. */
+/** A subtitle cue. `id` names it, and with the scene names its voice-over clip (cueName). */
 export type Line = { id: string; who: Who; parts: Part[] };
 export type SceneId = "scale" | "toss" | "handle" | "hold" | "carousel" | "button";
 
@@ -116,11 +116,7 @@ export const SCENES: Scene[] = [
   },
 ];
 
-/**
- * The cues that have a recording in public/audio/scenes, as "<scene>-<cue>". None has been recorded yet, so with
- * the sound switched on the subtitles still carry every scene. Add a name here when its file is in the folder.
- */
-export const RECORDED: string[] = [];
+/** The name of a cue, and of its voice-over clip: "<scene>-<line>" (the clips and their script are in ./voiceScript.ts). */
 export const cueName = (scene: Scene, line: Line) => `${scene.id}-${line.id}`;
 
 export const sceneOf = (id: SceneId) => SCENES.find((s) => s.id === id)!;
@@ -138,11 +134,8 @@ export const ORIGIN = {
   ],
   bridge: "This is the idea the rest of this page carries from concept to market.",
   chapters: "The circumstances",
-  stageLabel: "A short silent film in six scenes: what happens to the suitcase, and what it says back.",
+  stageLabel: "A short film in six scenes, silent until you turn the sound on: what happens to the suitcase, and what it says back.",
   sensed: "SENSED",
-  soundOn: "Sound on",
-  soundOff: "Sound off",
-  noSound: "No recordings yet: subtitles only",
 };
 
 export const lineText = (l: Line) => l.parts.map((p) => p.text).join("");

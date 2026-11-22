@@ -142,10 +142,19 @@ const checkText = (text: string) => {
   if (text.length > MAX_SPEECH_CHARS) throw new SpeechError(`One piece of narration may be at most ${MAX_SPEECH_CHARS} characters.`);
 };
 
-/** The synthesizer in force, or why there is none. Never throws. synthesize() answers bytes and a content type. */
-export async function getSpeechSynthesizer(): Promise<{ configured: true; synth: SpeechSynthesizer; settings: VoiceReady } | { configured: false; reason: string }> {
-  const s = await readVoiceSettings();
-  if (s.provider === "none") return { configured: false, reason: NOT_SET_UP };
+/** A model, voice or speed to use in place of the saved one, for one piece (a film cue has its own speaker). */
+export type SpeechChoice = { model?: string; voice?: string; speed?: number };
+
+/**
+ * The synthesizer in force, or why there is none. Never throws. synthesize() answers bytes and a content type.
+ * `choice` replaces the saved model, voice or speed for this synthesizer only; the provider, address and key are
+ * always the saved ones. `settings` in the answer is what the synthesizer will really use.
+ */
+export async function getSpeechSynthesizer(choice: SpeechChoice = {}): Promise<{ configured: true; synth: SpeechSynthesizer; settings: VoiceReady } | { configured: false; reason: string }> {
+  const saved = await readVoiceSettings();
+  if (saved.provider === "none") return { configured: false, reason: NOT_SET_UP };
+  const named = { ...(choice.model?.trim() ? { model: choice.model.trim() } : {}), ...(choice.voice?.trim() ? { voice: choice.voice.trim() } : {}) };
+  const s: VoiceReady = saved.provider === "kokoro" ? { ...saved, ...named, ...(choice.speed ? { speed: Math.min(4, Math.max(0.25, choice.speed)) } : {}) } : { ...saved, ...named };
   if (s.provider === "openrouter") {
     // POST {base}/audio/speech { model, input, voice, response_format } answers the audio bytes (OpenRouter's speech
     // API, OpenAI Audio Speech compatible; read by the project manager on 22 Nov 2026, not reachable from the build machine).

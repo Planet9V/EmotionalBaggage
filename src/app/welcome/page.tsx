@@ -13,6 +13,7 @@ import { Market } from "@/components/welcome/Market";
 import { connection } from "next/server";
 import { Levels } from "@/components/welcome/Levels";
 import { publicLevels } from "@/lib/admin/plans";
+import { publicVoiceovers } from "@/lib/voice/voiceovers";
 import { exampleData } from "@/components/welcome/exampleData";
 import { storyData } from "@/components/welcome/storyData";
 import { LifecycleMap } from "@/components/welcome/LifecycleMap";
@@ -85,7 +86,7 @@ const SECTION = "border-b border-hairline py-9 sm:py-11";
 
 export default async function WelcomePage() {
   await connection(); // the plan catalogue is read per request, not frozen at build time
-  const [example, levels] = await Promise.all([exampleData(), publicLevels()]);
+  const [example, levels, voice] = await Promise.all([exampleData(), publicLevels(), publicVoiceovers()]);
   const story = storyData(example);
   return (
     <div className="min-h-[100dvh] bg-canvas text-primary">
@@ -179,7 +180,7 @@ export default async function WelcomePage() {
         </section>
 
         {/* 3. It started as a joke: the origin of the example, as a short film in six scenes */}
-        <OriginScenes />
+        <OriginScenes voice={voice} />
 
         {/* 4. The engineering, live: the app's own views on the example's rows */}
         <section id="engineering" aria-labelledby="engineering-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>
