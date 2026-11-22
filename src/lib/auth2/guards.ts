@@ -6,6 +6,7 @@ import type { Pool } from "pg";
 import { APIError, createEmailVerificationToken } from "better-auth/api";
 import { hashPassword } from "@/lib/auth";
 import { render, type MailSender } from "./mail";
+import { personalSlug } from "./workspaces/store";
 
 // --- F1: names and pictures -------------------------------------------------------------------------------------
 
@@ -22,11 +23,26 @@ const refuse = (code: string, message: string) => APIError.from("BAD_REQUEST", {
  * members, so it must not carry a link).
  */
 export function cleanName(raw: unknown): string {
-  if (typeof raw !== "string") throw refuse("INVALID_NAME", "Enter your name.");
+  return cleanLabel(raw, MAX_NAME, { empty: ["INVALID_NAME", "Enter your name."], long: ["NAME_TOO_LONG", `Keep the name to ${MAX_NAME} characters.`], link: ["NAME_HAS_LINK", "A name cannot contain a web address."] });
+}
+
+/** A workspace's name has the same rules as a person's (it is shown in invitation emails), a little longer. */
+const MAX_WORKSPACE_NAME = 100;
+export function cleanWorkspaceName(raw: unknown): string {
+  return cleanLabel(raw, MAX_WORKSPACE_NAME, {
+    empty: ["INVALID_WORKSPACE_NAME", "Enter a name for the workspace."],
+    long: ["WORKSPACE_NAME_TOO_LONG", `Keep the workspace name to ${MAX_WORKSPACE_NAME} characters.`],
+    link: ["WORKSPACE_NAME_HAS_LINK", "A workspace name cannot contain a web address."],
+  });
+}
+
+type Refusals = { empty: [string, string]; long: [string, string]; link: [string, string] };
+function cleanLabel(raw: unknown, max: number, r: Refusals): string {
+  if (typeof raw !== "string") throw refuse(...r.empty);
   const name = raw.replace(CONTROL, " ").replace(/\s+/g, " ").trim();
-  if (!name) throw refuse("INVALID_NAME", "Enter your name.");
-  if ([...name].length > MAX_NAME) throw refuse("NAME_TOO_LONG", `Keep the name to ${MAX_NAME} characters.`);
-  if (LINKISH.test(name)) throw refuse("NAME_HAS_LINK", "A name cannot contain a web address.");
+  if (!name) throw refuse(...r.empty);
+  if ([...name].length > max) throw refuse(...r.long);
+  if (LINKISH.test(name)) throw refuse(...r.link);
   return name;
 }
 
@@ -46,7 +62,6 @@ export function checkImage(raw: unknown): void {
 // --- B2: sign-up for an address that already has an account ----------------------------------------------------
 
 type Existing = { id: string; email: string; name: string; emailVerified: boolean };
-const slugOf = (id: string) => `ws-${id.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24)}`;
 
 /**
  * Better Auth answers a sign-up for an existing address exactly as for a new one, and changes nothing. That left an
@@ -96,7 +111,7 @@ export function replaceUnconfirmed(db: Pool, mail: MailSender, secret: string, l
         await c.query('DELETE FROM "twoFactor" WHERE "userId" = $1', [user.id]);
         // Reset links and two-factor challenges carry the user's id as their value.
         await c.query("DELETE FROM verification WHERE value = $1", [user.id]);
-        await c.query("UPDATE organization SET name = $2 WHERE slug = $1", [slugOf(user.id), `${name}'s workspace`]);
+        await c.query("UPDATE organization SET name = $2 WHERE slug = $1", [personalSlug(user.id), `${name}'s workspace`]);
         await c.query("COMMIT");
       } catch (e) {
         await c.query("ROLLBACK").catch(() => undefined);

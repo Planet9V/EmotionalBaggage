@@ -17,7 +17,9 @@
  * - Two-factor: authenticator-app codes with recovery codes only (no email or SMS codes), each code usable once
  *   (./replayGuard.ts).
  * - Every new account gets a workspace (a Better Auth organization) with the user as owner, and every session
- *   starts in one. Invitations wait for slice 2: their endpoints are switched off until then.
+ *   starts in one. The organization plugin supplies the tables only: every one of its endpoints is switched off,
+ *   and workspaces, members and invitations are changed through ./workspaces/plugin.ts, which holds its own
+ *   permission rules (./workspaces/permissions.ts).
  * - Sign-up, sign-in, sign-out, password and two-factor changes are written to the audit log.
  *
  * The owner's database connection is used (src/lib/db.ts ownerPool): the request role cannot read these tables.
@@ -33,6 +35,8 @@ import { audit } from "@/lib/db";
 import { AUTH2_BASE_PATH, AUTH2_PAGES, auth2BaseURL, auth2Secret, auth2TrustedOrigins } from "./config";
 import { mailSender, render, type MailSender } from "./mail";
 import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims } from "./guards";
+import { workspaces } from "./workspaces/plugin";
+import { createPersonal } from "./workspaces/store";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { hashSessionTokens } from "./tokenHash";
@@ -43,7 +47,17 @@ const SESSION_DAYS = 30;
 const ABSOLUTE_SESSION_DAYS = 90;
 const MAX_PASSWORD_LENGTH = 128;
 
-/** Better Auth endpoints that are off: they need a session token handed back (see ./tokenHash.ts) or belong to slice 2. */
+const ORGANIZATION_OPTIONS = { creatorRole: "owner", requireEmailVerificationOnInvitation: true } as const;
+
+/**
+ * Every endpoint of the organization plugin, read from the plugin itself so one added by an upgrade is off too. The
+ * plugin's rules are not this app's (it lets an admin invite an owner, keeps invitation ids as their own tokens, and
+ * clears the active workspace on a refused switch), so its tables are used through ./workspaces/ only.
+ */
+const ORGANIZATION_PATHS = Object.values(organization(ORGANIZATION_OPTIONS).endpoints).map((e) => (e as { path: string }).path);
+
+/** Better Auth endpoints that are off: they need a session token handed back (see ./tokenHash.ts), are not offered,
+ *  or are the organization plugin's (above). */
 const DISABLED_PATHS = [
   // two-factor codes by email or text message: not offered
   "/two-factor/send-otp",
@@ -52,13 +66,7 @@ const DISABLED_PATHS = [
   "/revoke-session",
   // checks a password and answers yes or no, with no screen using it: an oracle for guessing (review B5)
   "/verify-password",
-  "/organization/invite-member",
-  "/organization/accept-invitation",
-  "/organization/reject-invitation",
-  "/organization/cancel-invitation",
-  "/organization/get-invitation",
-  "/organization/list-invitations",
-  "/organization/list-user-invitations",
+  ...ORGANIZATION_PATHS,
 ];
 
 /** Requests allowed per address in a window (seconds). Everything else: 100 in 10 seconds. */
@@ -71,6 +79,8 @@ const THROTTLE = {
   "/request-password-reset": { window: 60, max: 3 },
   "/reset-password": { window: 60, max: 5 },
   "/change-password": { window: 60, max: 5 },
+  "/workspace/create": { window: 60, max: 3 },
+  "/workspace/delete": { window: 60, max: 3 },
 } as const;
 
 export type Auth2Options = {
@@ -80,8 +90,6 @@ export type Auth2Options = {
   /** The throttle; on unless a test turns it off. */
   rateLimit?: boolean;
 };
-
-const slugOf = (id: string) => `ws-${id.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24)}`;
 
 /** Audit actions for the endpoints that change who can sign in, written after they succeed. */
 const AUDITED: Record<string, [string, string]> = {
@@ -108,8 +116,6 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
   const mail = opts.mail ?? mailSender();
   const baseURL = (opts.baseURL ?? auth2BaseURL()).replace(/\/+$/, "");
   const link = (path: string, token: string) => `${baseURL}${AUTH2_PAGES}${path}?token=${encodeURIComponent(token)}`;
-  // Filled in by makeAuth once the instance exists; the sign-up hook needs it to create the workspace.
-  const self: { auth?: { api: { createOrganization: (a: { body: { name: string; slug: string; userId: string } }) => Promise<unknown> } } } = {};
 
   const secret = opts.secret ?? auth2Secret();
   const options = {
@@ -162,9 +168,7 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         create: {
           // A workspace of their own for every new account, with the user as its owner.
           after: async (user: { id: string; name: string; email: string }) => {
-            await self.auth!.api.createOrganization({
-              body: { name: `${user.name || user.email.split("@")[0]}'s workspace`, slug: slugOf(user.id), userId: user.id },
-            });
+            await createPersonal(db, user);
             // Recorded here, where the account really exists, not from the request: a sign-up for an address that
             // already has an account writes no line under a name the sender chose (review F2).
             await auditAs(user.email, "/sign-up/email");
@@ -224,10 +228,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         skipVerificationOnEnable: false,
         backupCodeOptions: { amount: 10, length: 10, storeBackupCodes: "encrypted" },
       }),
-      organization({ creatorRole: "owner", requireEmailVerificationOnInvitation: true }),
+      organization(ORGANIZATION_OPTIONS),
+      workspaces(db),
     ],
   } satisfies BetterAuthOptions;
-  return { options, self };
+  return { options };
 }
 
 async function auditAs(actor: string, path: string) {
@@ -237,14 +242,13 @@ async function auditAs(actor: string, path: string) {
 }
 
 export function makeAuth(db: Pool, opts: Auth2Options = {}) {
-  const { options, self } = auth2Options(db, opts);
+  const { options } = auth2Options(db, opts);
   const kysely = new Kysely({ dialect: new PostgresDialect({ pool: db }) });
   const base = kyselyAdapter(kysely, { type: "postgres", transaction: true });
   const auth = betterAuth({
     ...options,
     database: (o: BetterAuthOptions) => capSessionLife(hashSessionTokens(base(o)), ABSOLUTE_SESSION_DAYS * 24 * 60 * 60 * 1000),
   });
-  self.auth = auth as never;
   return auth;
 }
 

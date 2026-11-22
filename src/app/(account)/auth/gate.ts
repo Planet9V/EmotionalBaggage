@@ -9,6 +9,8 @@ import { connection } from "next/server";
 import { safeNext } from "@/app/sign-in/shared";
 import { auth2Enabled } from "@/lib/auth2/config";
 import { auth2Session } from "@/lib/auth2/server";
+import { activeWorkspace, membershipsOf } from "@/lib/auth2/workspaces/store";
+import { ownerPool } from "@/lib/db";
 
 export async function gate() {
   // Decided per request from the environment, never at build time.
@@ -32,4 +34,13 @@ export function nextOf(v: string | null) {
   const n = safeNext(v);
   const path = n.split(/[?#]/)[0];
   return path === "/" || path === "/auth/sign-in" || path === "/auth/two-factor" ? "/auth/account" : n;
+}
+
+/** The signed-in account with its active workspace (never empty: repaired here if it was) and all its workspaces. */
+export async function requireWorkspace(here: string) {
+  const s = await requireAccount(here);
+  const db = ownerPool();
+  const active = await activeWorkspace(db, s.session);
+  const all = await membershipsOf(db, s.user.id);
+  return { ...s, active, all };
 }

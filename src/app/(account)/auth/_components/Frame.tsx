@@ -7,15 +7,16 @@ import { prefersDark } from "@/lib/theme";
 
 /**
  * The page around every account screen: the same centred column, eyebrow, heading and card as the sign-in page
- * (src/app/sign-in/SignInForm.tsx). These pages have no app shell, so the stored theme is applied here.
+ * (src/app/sign-in/SignInForm.tsx). These pages have no app shell, so the stored theme is applied here. `wide` is
+ * for the workspace screens, which hold lists.
  */
-export function Frame({ title, lead, children, footer }: { title: string; lead?: ReactNode; children: ReactNode; footer?: ReactNode }) {
+export function Frame({ title, lead, children, footer, wide = false }: { title: string; lead?: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", prefersDark());
   }, []);
   return (
     <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10 text-primary">
-      <div className="w-full max-w-sm">
+      <div className={wide ? "w-full max-w-3xl" : "w-full max-w-sm"}>
         <p className={EYEBROW}>Concept to realization</p>
         <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-primary">{title}</h1>
         {lead && <p className="mt-1 text-sm text-secondary">{lead}</p>}

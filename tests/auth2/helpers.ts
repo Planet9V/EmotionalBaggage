@@ -150,3 +150,15 @@ export function authenticatorCode(otpauthUri: string, at = Date.now()): string {
 export async function forgetLastCode(db: Pool, userId: string) {
   await db.query("DELETE FROM auth2_totp_steps WHERE user_id = $1", [userId]);
 }
+
+/** Puts an existing account into a workspace with a role, straight in the database (a fixture, not the invite flow). */
+export async function addMember(db: Pool, workspaceId: string, userId: string, role: "owner" | "admin" | "member") {
+  const id = randomBytes(12).toString("base64url");
+  await db.query(`INSERT INTO member (id, "organizationId", "userId", role, "createdAt") VALUES ($1, $2, $3, $4, now())`, [id, workspaceId, userId, role]);
+  return id;
+}
+
+/** The audit lines written for one actor, newest last. */
+export async function auditOf(db: Pool, actor: string) {
+  return (await db.query<{ action: string; summary: string }>("SELECT action, summary FROM audit_log WHERE actor = $1 ORDER BY id", [actor])).rows;
+}

@@ -46,6 +46,7 @@ const PAGES: [string, () => Promise<Page>][] = [
   ["reset", () => import("@/app/(account)/auth/reset/page") as Promise<Page>],
   ["reset/new", () => import("@/app/(account)/auth/reset/new/page")],
   ["password", () => import("@/app/(account)/auth/password/page") as Promise<Page>],
+  ["workspaces", () => import("@/app/(account)/auth/workspaces/page") as Promise<Page>],
 ];
 const params = { searchParams: Promise.resolve({}) };
 
