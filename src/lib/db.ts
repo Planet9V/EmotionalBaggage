@@ -145,6 +145,9 @@ async function sourceChunkVectors(db: Pool) {
 export function ready() {
   if (!g.__c2rReady) {
     g.__c2rReady = (async () => {
+      // The new sign-in's settings, checked before anything else when it is on (src/lib/auth2/config.ts).
+      const auth2 = await import("./auth2/config");
+      if (auth2.auth2Enabled()) await auth2.checkAuth2Settings();
       await migrate();
       await (await import("./auth")).ensureDefaultUser(ownerPool());
       const vector = await vectorSupport();
@@ -158,7 +161,7 @@ export function ready() {
       await (await import("./economics/movePricingChannels")).movePricingChannels(ownerPool());
       // Last, so the tables made above are included. Only with two roles.
       const app = appUrl();
-      if (app) await (await import("./auth2/dbRoles")).ensureAppRole(ownerPool(), app);
+      if (app) await (await import("./auth2/dbRoles")).ensureAppRole(ownerPool(), app, ownerUrl());
       return vector;
     })().catch((e) => {
       g.__c2rReady = undefined;

@@ -13,7 +13,7 @@ import { Message } from "../_components/Message";
 import { MIN_PASSWORD, emailField, newPasswordField } from "../_components/rules";
 
 const schema = z
-  .object({ name: z.string().trim().min(1, "Enter your name.").max(100, "Keep the name under 100 characters."), email: emailField, password: newPasswordField, confirm: z.string() })
+  .object({ name: z.string().trim().min(1, "Enter your name.").max(80, "Keep the name to 80 characters."), email: emailField, password: newPasswordField, confirm: z.string() })
   .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The two passwords are not the same." });
 type Values = z.infer<typeof schema>;
 

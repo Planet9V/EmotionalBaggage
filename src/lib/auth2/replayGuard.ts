@@ -105,9 +105,13 @@ async function keyOf(ctx: HookCtx, userId: string): Promise<Buffer | null> {
   return secret.startsWith("base32:") ? base32Decode(secret.slice(7)) : Buffer.from(secret, "utf8");
 }
 
-/** The before-hook body for TOTP_PATH. Throws CODE_ALREADY_USED for a replayed code; otherwise lets the plugin decide. */
+/**
+ * The before-hook body for TOTP_PATH. Throws CODE_ALREADY_USED for a replayed code; otherwise lets the plugin decide.
+ * The code is taken exactly as sent: anything but six digits is left to the plugin, which refuses it, so a malformed
+ * code (" 123456") never claims a step the plugin would then not accept.
+ */
 export async function guardTotp(db: Pool, ctx: HookCtx): Promise<void> {
-  const code = typeof ctx.body?.code === "string" ? ctx.body.code.trim() : "";
+  const code = typeof ctx.body?.code === "string" ? ctx.body.code : "";
   if (!/^\d{6}$/.test(code)) return;
   const userId = await userOf(ctx);
   if (!userId) return;

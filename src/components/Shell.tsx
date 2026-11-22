@@ -57,12 +57,14 @@ function NavGroup({ id, open, onToggle, label, prefix, sub, children }: { id: st
 const NO_PROJECTS: Project[] = [];
 
 // The sign-in page renders bare: no sidebar, and none of the shell's API calls (they would answer 401).
-export function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children, auth2 = false }: { children: React.ReactNode; auth2?: boolean }) {
   const path = usePathname();
   // The landing page preview (/p/<concept id>) is the page as a visitor would see it, so it gets no sidebar.
   // The public welcome page (/welcome, /welcome/overview) is for visitors who are not signed in, so it gets no sidebar either.
-  // The new sign-in's screens (/auth/..., only while AUTH2 is on) are for people who are not signed in to the shell.
-  return path === "/sign-in" || path === "/welcome" || path.startsWith("/welcome/") || path.startsWith("/p/") || path.startsWith("/auth/") ? <>{children}</> : <AppShell>{children}</AppShell>;
+  // The new sign-in's screens (/auth/...) are for people who are not signed in to the shell, so they are bare while
+  // AUTH2 is on. With it off they do not exist, and their "not found" page has the shell like any other.
+  const bare = path === "/sign-in" || path === "/welcome" || path.startsWith("/welcome/") || path.startsWith("/p/") || (auth2 && path.startsWith("/auth/"));
+  return bare ? <>{children}</> : <AppShell>{children}</AppShell>;
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {

@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { Client } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { roleOf, scramVerifier } from "@/lib/auth2/dbRoles";
+import { APPEND_ONLY, APP_TABLES, READ_ONLY, WITHHELD, roleOf, scramVerifier } from "@/lib/auth2/dbRoles";
 
 const OWNER_URL = process.env.DATABASE_URL ?? "postgresql://c2r:c2r@localhost:5432/c2r_ws2_test";
 const ROLE = `zz_auth2_app_${process.pid}`;
@@ -63,8 +63,19 @@ afterEach(async () => {
 
 afterAll(async () => {
   await dropRole(ROLE);
-  await dropRole(`${ROLE}_su`);
+  for (const suffix of ["_su", "_db", "_member"]) await dropRole(`${ROLE}${suffix}`);
+  await asSuper((c) => c.query("DROP TABLE IF EXISTS zz_roles_unlisted"));
+  await asSuper((c) => c.query("REVOKE SELECT ON verification FROM PUBLIC"));
 });
+
+/** A throw-away login role with extra rights, and the address that names it. */
+async function oddRole(suffix: string, options: string) {
+  const name = `${ROLE}${suffix}`;
+  const pw = randomBytes(12).toString("base64url");
+  await dropRole(name);
+  await asSuper((c) => c.query(`CREATE ROLE "${name}" LOGIN ${options} PASSWORD '${scramVerifier(pw)}'`));
+  return appUrlFor(name, pw);
+}
 
 describe("one role (DATABASE_APP_URL not set)", () => {
   it("uses one pool for requests and for the owner's work, as before", async () => {
@@ -130,12 +141,72 @@ describe("two roles (DATABASE_APP_URL set)", () => {
   });
 
   it("refuses a request role that is a superuser", async () => {
-    const su = `${ROLE}_su`;
-    const pw = randomBytes(12).toString("base64url");
-    await asSuper((c) => c.query(`CREATE ROLE "${su}" LOGIN SUPERUSER PASSWORD '${scramVerifier(pw)}'`));
-    process.env.DATABASE_APP_URL = appUrlFor(su, pw);
+    process.env.DATABASE_APP_URL = await oddRole("_su", "SUPERUSER");
     const db = await import("@/lib/db");
-    await expect(db.ready()).rejects.toThrow(/superuser/);
+    await expect(db.ready()).rejects.toThrow(/must not have: superuser/);
+  });
+
+  it("refuses a request role that may create databases or roles", async () => {
+    process.env.DATABASE_APP_URL = await oddRole("_db", "CREATEDB CREATEROLE");
+    const db = await import("@/lib/db");
+    await expect(db.ready()).rejects.toThrow(/create roles, create databases/);
+  });
+
+  it("refuses a request role that belongs to the owner or to a role that reads everything", async () => {
+    const url = await oddRole("_member", "");
+    await asSuper((c) => c.query(`GRANT pg_read_all_data TO "${ROLE}_member"`));
+    process.env.DATABASE_APP_URL = url;
+    const db = await import("@/lib/db");
+    await expect(db.ready()).rejects.toThrow(/member of other roles \(pg_read_all_data\)/);
+    await asSuper((c) => c.query(`REVOKE pg_read_all_data FROM "${ROLE}_member"`));
+    await asSuper((c) => c.query(`GRANT "${new URL(OWNER_URL).username}" TO "${ROLE}_member"`));
+    await resetPools();
+    const db2 = await import("@/lib/db");
+    await expect(db2.ready()).rejects.toThrow(/member of other roles/);
+  });
+
+  it("refuses a request address on another database or server", async () => {
+    const u = new URL(APP_URL);
+    u.pathname = "/postgres";
+    process.env.DATABASE_APP_URL = u.toString();
+    const db = await import("@/lib/db");
+    await expect(db.ready()).rejects.toThrow(/same server, port and database/);
+  });
+
+  it("refuses to start when a withheld table is reachable anyway (granted to PUBLIC)", async () => {
+    await asSuper((c) => c.query("GRANT SELECT ON verification TO PUBLIC"));
+    process.env.DATABASE_APP_URL = APP_URL;
+    const db = await import("@/lib/db");
+    await expect(db.ready()).rejects.toThrow(/can still reach the table verification/);
+    await asSuper((c) => c.query("REVOKE SELECT ON verification FROM PUBLIC"));
+  });
+
+  it("grants by allow-list: sign-in tables read only, and a new table gets nothing", async () => {
+    await asSuper((c) => c.query("CREATE TABLE IF NOT EXISTS zz_roles_unlisted (x int)"));
+    process.env.DATABASE_APP_URL = APP_URL;
+    const db = await import("@/lib/db");
+    await db.ready();
+    await expect(db.q('SELECT id, email, name FROM "user" LIMIT 1')).resolves.toBeDefined();
+    await expect(db.q('SELECT "organizationId", role FROM member LIMIT 1')).resolves.toBeDefined();
+    await expect(db.q("SELECT id, name FROM organization LIMIT 1")).resolves.toBeDefined();
+    for (const sql of [
+      `UPDATE "user" SET "emailVerified" = true WHERE false`,
+      `INSERT INTO "user" (id, name, email, "emailVerified") VALUES ('zz', 'zz', 'zz@zz-auth2.test', true)`,
+      `DELETE FROM "user" WHERE false`,
+      `UPDATE member SET role = 'owner' WHERE false`,
+      `INSERT INTO member (id, "organizationId", "userId", role, "createdAt") VALUES ('zz', 'zz', 'zz', 'owner', now())`,
+      `DELETE FROM organization WHERE false`,
+      "SELECT 1 FROM zz_roles_unlisted",
+    ]) await expect(db.q(sql), sql).rejects.toMatchObject({ code: "42501" });
+  });
+});
+
+describe("the grant lists", () => {
+  it("place every table of the migrated schema in exactly one list", async () => {
+    const tables = await asSuper(async (c) => (await c.query<{ t: string }>("SELECT tablename AS t FROM pg_tables WHERE schemaname='public' AND tablename NOT LIKE 'zz_%' ORDER BY 1")).rows.map((r) => r.t));
+    const lists = [...APP_TABLES, ...APPEND_ONLY, ...Object.keys(READ_ONLY), ...WITHHELD];
+    expect(new Set(lists).size).toBe(lists.length);
+    expect(tables.filter((t) => !lists.includes(t))).toEqual([]);
   });
 
   it("refuses an address with no role or no password, in plain words", () => {

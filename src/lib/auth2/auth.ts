@@ -28,10 +28,11 @@ import { organization, twoFactor } from "better-auth/plugins";
 import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { Kysely, PostgresDialect } from "kysely";
 import type { Pool } from "pg";
-import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { CLIENT_ADDRESS_HEADER, hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { audit } from "@/lib/db";
 import { AUTH2_BASE_PATH, AUTH2_PAGES, auth2BaseURL, auth2Secret, auth2TrustedOrigins } from "./config";
 import { mailSender, render, type MailSender } from "./mail";
+import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims } from "./guards";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { hashSessionTokens } from "./tokenHash";
@@ -49,6 +50,8 @@ const DISABLED_PATHS = [
   "/two-factor/verify-otp",
   "/list-sessions",
   "/revoke-session",
+  // checks a password and answers yes or no, with no screen using it: an oracle for guessing (review B5)
+  "/verify-password",
   "/organization/invite-member",
   "/organization/accept-invitation",
   "/organization/reject-invitation",
@@ -79,11 +82,11 @@ export type Auth2Options = {
 };
 
 const slugOf = (id: string) => `ws-${id.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24)}`;
-const trustProxy = () => /^(1|true|yes|on)$/i.test(process.env.TRUST_PROXY?.trim() ?? "");
 
 /** Audit actions for the endpoints that change who can sign in, written after they succeed. */
 const AUDITED: Record<string, [string, string]> = {
   "/sign-up/email": ["account.signed_up", "Created an account"],
+  "/sign-up/replaced": ["account.sign_up_replaced", "Signed up again before confirming: the new password and name replaced the old ones"],
   "/verify-email": ["account.confirmed", "Confirmed the email address"],
   "/sign-in/email": ["account.signed_in", "Signed in (password)"],
   "/two-factor/verify-totp": ["account.signed_in_code", "Entered an authenticator code"],
@@ -108,11 +111,12 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
   // Filled in by makeAuth once the instance exists; the sign-up hook needs it to create the workspace.
   const self: { auth?: { api: { createOrganization: (a: { body: { name: string; slug: string; userId: string } }) => Promise<unknown> } } } = {};
 
+  const secret = opts.secret ?? auth2Secret();
   const options = {
     appName: APP_NAME,
     baseURL,
     basePath: AUTH2_BASE_PATH,
-    secret: opts.secret ?? auth2Secret(),
+    secret,
     trustedOrigins: opts.baseURL ? [new URL(baseURL).origin] : auth2TrustedOrigins(),
     database: db,
     telemetry: { enabled: false },
@@ -123,9 +127,9 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       disableCSRFCheck: false,
       useSecureCookies: baseURL.startsWith("https://"),
       cookiePrefix: COOKIE_PREFIX,
-      // The client's address, as clientAddress() in src/lib/auth.ts: X-Forwarded-For behind a trusted proxy,
-      // otherwise the header scripts/client-address.cjs fills from the socket (a client cannot set it).
-      ipAddress: { ipAddressHeaders: trustProxy() ? ["x-forwarded-for"] : ["x-c2r-client-address"] },
+      // The client's address, worked out by ./clientAddress.ts before the request reaches Better Auth (the route
+      // puts it in this header, overwriting whatever the client sent), so Better Auth reads one plain value.
+      ipAddress: { ipAddressHeaders: [CLIENT_ADDRESS_HEADER] },
     },
     session: {
       expiresIn: SESSION_DAYS * 24 * 60 * 60,
@@ -139,6 +143,8 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       minPasswordLength: MIN_PASSWORD_LENGTH,
       maxPasswordLength: MAX_PASSWORD_LENGTH,
       revokeSessionsOnPasswordReset: true,
+      // A sign-up for an address that is not confirmed yet replaces the earlier one (./guards.ts, review B2).
+      onExistingUserSignUp: replaceUnconfirmed(db, mail, secret, link, (email) => auditAs(email, "/sign-up/replaced")),
       resetPasswordTokenExpiresIn: 60 * 60,
       password: { hash: hashPassword, verify: ({ hash, password }: { hash: string; password: string }) => verifyPassword(password, hash) },
       sendResetPassword: async ({ user, token }: { user: { email: string; name: string }; token: string }) =>
@@ -159,6 +165,9 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
             await self.auth!.api.createOrganization({
               body: { name: `${user.name || user.email.split("@")[0]}'s workspace`, slug: slugOf(user.id), userId: user.id },
             });
+            // Recorded here, where the account really exists, not from the request: a sign-up for an address that
+            // already has an account writes no line under a name the sender chose (review F2).
+            await auditAs(user.email, "/sign-up/email");
           },
         },
       },
@@ -174,7 +183,19 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
     },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path === TOTP_PATH) await guardTotp(db, ctx as never);
+        const body = (ctx.body ?? {}) as Record<string, unknown>;
+        if (ctx.path === "/sign-up/email" || ctx.path === "/update-user") {
+          checkImage(body.image);
+          if (ctx.path === "/sign-up/email" || "name" in body) return { context: { body: { ...body, name: cleanName(body.name) } } };
+          return;
+        }
+        if (ctx.path === "/verify-email") await confirmedBefore(db, (ctx.query as { token?: unknown } | undefined)?.token);
+        if (ctx.path === TOTP_PATH || ctx.path === "/two-factor/verify-backup-code") {
+          if (ctx.path === TOTP_PATH) await guardTotp(db, ctx as never);
+          // No "trust this device": not decided by the owner, so never set (review F7).
+          if (body.trustDevice !== undefined) return { context: { body: { ...body, trustDevice: false } } };
+          return;
+        }
         if (ctx.path === "/revoke-other-sessions") {
           // Better Auth's own version compares listed tokens with the current one, which hashed storage makes
           // unequal (./tokenHash.ts), so it would end this session too. The same work, by id.
@@ -186,11 +207,13 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         }
       }),
       after: createAuthMiddleware(async (ctx) => {
-        if (!AUDITED[ctx.path]) return;
+        // Sign-up is recorded by the user-created database hook instead (review F2).
+        if (!AUDITED[ctx.path] || ctx.path === "/sign-up/email") return;
         const returned = ctx.context.returned;
         if (returned instanceof Error || (returned instanceof Response && !returned.ok)) return;
-        const fromBody = typeof (ctx.body as { email?: unknown } | undefined)?.email === "string" ? String((ctx.body as { email: string }).email).toLowerCase() : "";
-        const who = ctx.context.newSession?.user.email ?? ctx.context.session?.user.email ?? fromBody;
+        // The actor is the account the request acted on, never an address taken from the request body.
+        const fromToken = ctx.path === "/verify-email" ? tokenClaims((ctx.query as { token?: unknown } | undefined)?.token)?.email : undefined;
+        const who = ctx.context.newSession?.user.email ?? ctx.context.session?.user.email ?? fromToken;
         await auditAs(who || "unknown", ctx.path);
       }),
     },

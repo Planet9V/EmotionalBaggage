@@ -28,6 +28,15 @@ export const sent: MailMessage[] = [];
 
 const SUBJECT = { "confirm-email": /^Confirm your email address/, "reset-password": /^Choose a new password/ } as const;
 
+/** Waits (up to 5 s) until `count` emails of one kind have reached an address; work after a reply is not awaited. */
+export async function waitForMail(kind: keyof typeof SUBJECT, to: string, count: number) {
+  for (let i = 0; i < 100; i++) {
+    if (sent.filter((x) => SUBJECT[kind].test(x.subject) && x.to.toLowerCase() === to.toLowerCase()).length >= count) return;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error(`Fewer than ${count} ${kind} emails reached ${to}.`);
+}
+
 /** The newest captured email of one kind to one address, its link and the token in it. */
 export function lastMail(kind: keyof typeof SUBJECT, to: string) {
   const m = [...sent].reverse().find((x) => SUBJECT[kind].test(x.subject) && x.to.toLowerCase() === to.toLowerCase());
@@ -48,12 +57,12 @@ let addresses = 0;
 const nextAddress = () => `198.51.${100 + Math.floor(addresses / 250)}.${1 + (addresses++ % 250)}`;
 
 /** One browser: keeps the cookies the server sets and sends them back, with the Origin a page on this site sends. */
-export function browser(route: Route, opts: { address?: string; origin?: string | null } = {}) {
+export function browser(route: Route, opts: { address?: string; origin?: string | null; headers?: () => Record<string, string> } = {}) {
   const address = opts.address ?? nextAddress();
   const jar = new Map<string, string>();
   const cookieHeader = () => [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
   async function call<T = Record<string, unknown>>(method: "GET" | "POST", path: string, payload?: unknown, origin = opts.origin === undefined ? BASE : opts.origin): Promise<Reply<T>> {
-    const headers: Record<string, string> = { host: new URL(BASE).host, "x-c2r-client-address": address };
+    const headers: Record<string, string> = { host: new URL(BASE).host, "x-c2r-client-address": address, ...(opts.headers?.() ?? {}) };
     if (origin) headers.origin = origin;
     if (payload !== undefined) headers["content-type"] = "application/json";
     if (jar.size) headers.cookie = cookieHeader();

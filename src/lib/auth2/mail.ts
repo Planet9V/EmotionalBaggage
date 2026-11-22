@@ -27,8 +27,18 @@ const logSender: MailSender = {
   },
 };
 
-/** The sender in use. Only the log for now (no mail service has been chosen). */
+/**
+ * The sender in use. Only the log exists for now (no mail service has been chosen). In production that would put
+ * every confirmation and reset link in the server log, where anyone who reads the log could use it, so there it is
+ * refused and the new sign-in does not start.
+ */
 export function mailSender(): MailSender {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "AUTH2 is on in production but no mail service is configured (AUTH2_MAIL is not set). The only sender available writes " +
+        "confirmation and reset links to the server log, which is not safe in production. Turn AUTH2 off until a mail service is set up."
+    );
+  }
   return logSender;
 }
 

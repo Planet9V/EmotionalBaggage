@@ -313,3 +313,28 @@ In order. Sizes are rough: small is up to a day, medium a few days, large a week
 12. **The access-request form on /welcome:** keep it once sign-up exists?
 13. **Mail service** (Resend, Postmark or other) and the sending domain.
 14. Still open from the design: free plan, trial or both; card up front; price points (waiting on the cost measurement).
+
+## Review findings, 22 Nov
+
+An independent security review of accounts slice 1 (branch `ws2-accounts`) ran its own scripts against the branch. What it found, and what was done. Each fix has a test in `tests/auth2/`.
+
+| # | Finding | Done | Test |
+|---|---|---|---|
+| B1 | The log-only mailer writes whole confirmation and reset links to the server log. | In production with `AUTH2` on, the app refuses to start and names the missing mail setting (`AUTH2_MAIL`); elsewhere it still logs. | `review.test.ts` "B1" (3) |
+| B2 | Taking an address before its owner: sign up the victim's address with your password; the victim's own sign-up answered 200, sent nothing and kept the attacker's password. | For an unconfirmed address the newest sign-up wins: new password and name, sessions, second factor and reset links of the account ended, older confirmation links refused, a fresh one sent. Same answer as a new sign-up; the work runs after the answer so its time does not tell either. A confirmed address: same answer, nothing changes, no email. | `review.test.ts` "B2" (2) |
+| B3 | The request role could read and write `"user"`, `member` and `organization`. | Grants are an allow-list (`src/lib/auth2/dbRoles.ts`); those three are read-only, by named columns, so a later column (a billing customer id) is not readable by default; a table in no list gets nothing and is named in a start-up warning; a test fails while any table of the schema is unlisted. | `roles.test.ts` "grants by allow-list", "the grant lists" |
+| B4 | With `TRUST_PROXY=1`, a multi-value `X-Forwarded-For` put every client in one bucket, and a forged entry could fill it. | The app works the address out itself and hands Better Auth one value: right-most entry, or, with `TRUSTED_PROXIES`, the first entry from the right that is not one of our proxies. The admin guide says the app must not be reachable around the proxy. | `review.test.ts` "B4" (4) |
+| B5 | `/verify-password` had no tight throttle. | No screen uses it: switched off. | `review.test.ts` "B5" |
+| F1 | Names unbounded, with line breaks and links; `image` any text. | Names: control characters and line breaks become spaces, at most 80 characters, no web address; on sign-up and update-user. `image`: empty or https. | `review.test.ts` "F1" (2) |
+| F2 | The sign-up audit line took its actor from the request body, so a duplicate sign-up wrote a line under a chosen name. | Written from the user-created database hook; no line for a duplicate. No audit actor comes from a request body any more. | `review.test.ts` "F2" |
+| F3 | Start-up role checks too narrow. | Also refused: create role, create database, replication, membership of any role (the owner, `pg_read_all_data` and the like), another server or database; after granting, `has_table_privilege` must be false on every withheld table. | `roles.test.ts` (5 new) |
+| F4 | Secret checked by length only, and only at first use. | Also refuses repetitive or dictionary-like secrets; all settings checked in `ready()` when `AUTH2` is on. | `review.test.ts` "F4 and F5" |
+| F5 | Production could run on http or without `BETTER_AUTH_URL`. | Both refused in production. | same |
+| F6 | The replay guard trimmed the code, so a malformed code could use up its time step. | The code is taken as sent; anything but six digits is left to the plugin and claims nothing. | `review.test.ts` "F6 and F7" |
+| F7 | "Trust this device" could be asked for. | Stripped in the before-hook; never set (not an owner decision yet). | same |
+| N3 | With `AUTH2` off, `/auth/...` "not found" rendered without the app shell. | The shell is left out for `/auth/...` only while `AUTH2` is on (read by the root layout per request). Caveat: a client-side navigation from a statically built page keeps the value from build time; no such link exists before the cut-over. | `shell.test.tsx` (2) |
+| N4, N5 | Held for slice 2 by the project manager. Their text was not in the review folder this agent could read (`/tmp/ws2-review` holds scripts and outputs only), so they are recorded here by number only. | Not done. | none |
+
+Other observations in the review outputs, not raised as findings, for slice 2: `/list-accounts` and `/update-user` are reachable with a session (update-user is now validated, F1); a correctly signed cookie built from a copied session row is refused (hashing works); the `Authorization: Bearer` form is not accepted.
+
+Also fixed on the same day, from the full CI run: the route now refuses a NUL like every other route (`tests/api/nul.test.ts`), is listed in `tests/trace/write-paths.test.ts`, the typed authenticator key no longer has a label on a plain paragraph, and the role-creation error carries PostgreSQL's reason as its cause.

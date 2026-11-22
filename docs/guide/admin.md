@@ -64,6 +64,8 @@ docker compose exec db psql -U c2r c2r -c "DELETE FROM sign_in_attempts;"
 
 **Behind a reverse proxy.** The app takes the network address from the connection itself (the container starts with `node -r ./client-address.cjs server.js`, which records it). Behind a reverse proxy every request comes from the proxy, so set `TRUST_PROXY=1` for the web service: the app then reads the address from the right-most entry of `X-Forwarded-For`, which your proxy must append (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`). Never set it without a proxy in front: anyone could then send their own `X-Forwarded-For` and escape the per-address limits. Run with `next dev` or `next start`, the address is not recorded and every request counts as one address.
 
+The new sign-in (`AUTH2`) reads the address the same way, with one addition for a chain of proxies: list your own proxies in `TRUSTED_PROXIES` (addresses or ranges, comma-separated, for example `10.0.0.0/8`), and the app skips them from the right of `X-Forwarded-For` and takes the first address that is not one of them. Without `TRUSTED_PROXIES` it takes the right-most entry, as above. Entries further left are what the visitor's browser claimed and are never used. All of this holds only if the app cannot be reached except through the proxy: keep its port closed to everything but the proxy (on Railway, the public domain is the proxy).
+
 **Lost password.** This puts the install back to `demo` / `demo`. It deletes the account and its sessions; concepts and their data do not belong to an account, so nothing else is lost. The app recreates the default account when it starts with no users:
 
 ```
@@ -100,6 +102,7 @@ Every setting is optional except the database password. Keys, models, the planne
 | `WEB_PORT`, `PG_IMAGE` | The port the app listens on (3000) and the database image. |
 | `WEB_BIND` | The address the app is published on. Default `127.0.0.1`: this machine only. See "Opening it to the network". |
 | `TRUST_PROXY` | `1` only behind a reverse proxy that appends `X-Forwarded-For`. See "Behind a reverse proxy" under Signing in. |
+| `TRUSTED_PROXIES` | With `TRUST_PROXY=1` and more than one proxy in front: their addresses or ranges, comma-separated. See "Behind a reverse proxy". |
 | `AUTH2` | Off unless `1`. Switches on the new sign-in with accounts (email and password, email confirmation, authenticator-app codes) beside the current one. See "The new sign-in (being built)". |
 | `BETTER_AUTH_SECRET` | Needed only with `AUTH2=1`: at least 32 random characters (`openssl rand -base64 48`). Signs the new sign-in's cookies and encrypts authenticator secrets; changing it signs everyone out and makes enrolled authenticator apps unusable. |
 | `BETTER_AUTH_URL` | With `AUTH2=1`: the address people open the app at, for example `https://app.example.com`. Links in emails point there, and cookies are marked Secure when it starts with `https://`. |
@@ -114,7 +117,7 @@ Every setting is optional except the database password. Keys, models, the planne
 
 Accounts for more than one person are being built beside the current sign-in. While `AUTH2` is not set, nothing of it answers: `/api/auth2/...` is not found, the screens under `/auth/...` are not found, and signing in works exactly as described above. With `AUTH2=1` (and `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` set), people can create an account at `/auth/sign-up`, confirm their email address, sign in at `/auth/sign-in`, set up an authenticator app with recovery codes, and change or reset their password. The current sign-in and `demo` keep working beside it; the switch-over is a later step.
 
-No mail service is connected yet: confirmation and reset emails are written to the server log (lines starting `[auth2 mail, not sent]`) instead of being sent. Anyone who can read the log can follow those links, so keep `AUTH2` off on an install others can reach until a mail service is set up.
+No mail service is connected yet: confirmation and reset emails are written to the server log (lines starting `[auth2 mail, not sent]`) instead of being sent. Anyone who can read the log can follow those links, so in production (`NODE_ENV=production`, as in the Docker image) the app refuses to start with `AUTH2=1` until a mail service is set up, and says so. In production it also requires `BETTER_AUTH_URL` to be an `https://` address. All of these settings, and the secret, are checked when the app starts, so a wrong one fails the health check instead of someone's first sign-in.
 
 ## Two database roles
 

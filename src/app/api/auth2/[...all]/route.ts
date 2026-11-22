@@ -10,11 +10,12 @@
  */
 import { NextResponse } from "next/server";
 import { route } from "@/lib/api/route";
+import { withClientAddress } from "@/lib/auth2/clientAddress";
 import { auth2Enabled } from "@/lib/auth2/config";
 import { auth2 } from "@/lib/auth2/server";
 
 const handle = route.open(
-  async (req: Request) => (auth2Enabled() ? (await auth2()).handler(req) : NextResponse.json({ error: "Not found." }, { status: 404 })),
+  async (req: Request) => (auth2Enabled() ? (await auth2()).handler(withClientAddress(req)) : NextResponse.json({ error: "Not found." }, { status: 404 })),
   { maxBodyBytes: 64 * 1024 }
 );
 

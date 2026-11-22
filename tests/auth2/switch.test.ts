@@ -76,7 +76,7 @@ describe("with AUTH2 off", () => {
     const g = globalThis as unknown as { __c2rAuth2?: unknown };
     delete g.__c2rAuth2;
     const { auth2 } = await import("@/lib/auth2/server");
-    await expect(auth2()).rejects.toThrow(/BETTER_AUTH_SECRET must be set to at least 32 random characters/);
+    await expect(auth2()).rejects.toThrow(/BETTER_AUTH_SECRET must be at least 32 random characters/);
     if (saved !== undefined) process.env.BETTER_AUTH_SECRET = saved;
     else delete process.env.BETTER_AUTH_SECRET;
     delete process.env.AUTH2;
