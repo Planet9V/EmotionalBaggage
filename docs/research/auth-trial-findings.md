@@ -338,3 +338,28 @@ An independent security review of accounts slice 1 (branch `ws2-accounts`) ran i
 Other observations in the review outputs, not raised as findings, for slice 2: `/list-accounts` and `/update-user` are reachable with a session (update-user is now validated, F1); a correctly signed cookie built from a copied session row is refused (hashing works); the `Authorization: Bearer` form is not accepted.
 
 Also fixed on the same day, from the full CI run: the route now refuses a NUL like every other route (`tests/api/nul.test.ts`), is listed in `tests/trace/write-paths.test.ts`, the typed authenticator key no longer has a label on a plain paragraph, and the role-creation error carries PostgreSQL's reason as its cause.
+
+## Review findings, slice 2
+
+An independent review of slice 2 (branch `ws2b-workspaces`; scripts and outputs in `/tmp/ws2b-review`) found the items below. Each fix has a test in `tests/auth2/`.
+
+| # | Finding | Done | Test |
+|---|---|---|---|
+| B1 | One unauthenticated request could store an attacker's base address and leave first run open (written before the account existed, not rolled back; a lone surrogate passed the email check and failed at the database). | Everything is checked first; lone surrogates are refused wherever names and emails come in, and in every Better Auth body. The address must match the form's scheme and host, and is stored in the same transaction as the owner. `adminOps().setAddresses` changes it later, audited. | `firstrun.test.ts` "B1: nothing is stored unless the owner is" (4) |
+| B2 | Whoever reached a fresh install first became platform administrator. | A one-time set-up code: made at start while first run is open, only its hash stored (`auth2_setup_code`), printed once to the server log, compared in constant time, a growing wait after wrong codes, new after a restart, gone once the owner exists. The page asks for it and says where it is. | `firstrun.test.ts` "B2: the set-up code" (4) |
+| B3 | An ordinary sign-up before the owner closed first run for good with no administrator. | Open means no platform administrator and no completed install. While open, sign-up, reset, confirmation mail and invitation acceptance answer 503 `SETUP_REQUIRED`, and the screens say so. | `firstrun.test.ts` "B3 and N12" (4) |
+| B4 | A workspace owner or admin could invite someone, require two-factor, reset it, and reduce any account (even a platform administrator's) to its password. | Refused (`RESET_NEEDS_PLATFORM_ADMIN`) for a platform administrator, an owner or admin of another workspace that has others in it, or someone required by another workspace or a platform administrator. After any reset by someone else, the password alone starts no session until a proof is given at `/auth/re-enrol`: the link emailed to the account's own address, or without mail a one-time code shown once to whoever reset it. The proof is stored hashed and lasts 24 hours. At most three resets a day per person. `adminOps().resetTwoFactor` works the same way and returns the code. | `members.test.ts` reset tests (3), `screens.test.tsx` re-enrol |
+| B5 | The name-wide sign-in wait was a lock in practice (rotating addresses kept a name waiting; each IPv6 address counted alone). | A browser that signed in to the account before skips the name-wide wait. This uses an HMAC tag per account in an httpOnly cookie, made with the sign-in secret. A right password takes only its own try back out of the name-wide count. IPv6 is counted by /64. | `signinwait.test.ts` "B5" (3), including the reviewer's hour |
+| F6 | The switch and addresses lived in `settings`, which the request role can write. | Moved to `auth2_settings` (migration 0039, existing rows moved), read and written on the owner's connection only. | `roles.test.ts` "F6", `switch.test.ts` "F6" |
+| F7, N10 | The actor was checked before the transaction only. | Re-checked inside every transaction after its locks: platform administrators (still enabled), and workspace roles (re-read after the workspace's lock). | `adminops.test.ts` "F7" (2), `workspaces.test.ts` "N10" |
+| N8 | Invitations outlived their sender's right to give the role. | Cancelled when the sender is removed, leaves or is demoted below the role. Re-checked at acceptance (`INVITATION_WITHDRAWN`). | `invitations.test.ts` "N8 and N9" (3) |
+| N9 | Accepting skipped "set up two-factor first". | Applied. | `invitations.test.ts` "N9" |
+| N11 | The last-administrator rule counted disabled ones. | It counts and protects enabled administrators only. | `adminops.test.ts` "N11" |
+| N12 | The process could cache "closed" after a failed attempt. | "Closed" is cached only once an owner exists. | `firstrun.test.ts` "a failed attempt seen by another request ..." |
+| N13 | `ready()` checked settings only for the environment switch. | It reads the stored switch after the migrations. | `review.test.ts` "N13" |
+| N14 | A disabled account could ask for a reset. | No link is sent, and the answer is the same as for any address. | `adminops.test.ts` "N14" |
+| N15 | Settings were resolved on every request. | Cached for five seconds; a change through `writeAuth2Setting` is seen at once. | `review.test.ts` "N15" |
+
+Notes:
+- **One reading of B4:** an account's own workspace with nobody else in it does not count as "owner or admin of another workspace". Every account owns one, so counting it would have made every workspace reset impossible.
+- **A residual cost of B5:** while someone keeps guessing at an account from many addresses, a browser new to that account may wait up to a minute per try.
