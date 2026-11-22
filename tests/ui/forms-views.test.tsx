@@ -13,6 +13,9 @@ vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: ReactNode } & Record<string, unknown>) => <a href={href} {...rest}>{children}</a>,
 }));
 
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams("ask=Is the battery safe on a plane?") }));
+
+import { ResearchView } from "@/components/views/ResearchView";
 import { LaunchView } from "@/components/campaigns/LaunchView";
 import { PricingView } from "@/components/market/PricingView";
 import { MonitorView } from "@/components/views/MonitorView";
@@ -96,5 +99,32 @@ describe("ReviewsView, add a review", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
     await waitFor(() => expect(posts(srv)).toHaveLength(1));
     expect(posts(srv)[0].body).toMatchObject({ title: "Great battery", body: "Great battery\nbut loud", data: { kind: "review", rating: 4 } });
+  });
+});
+
+describe("ResearchView, ask a question", () => {
+  it("fills the question from the link, sends it trimmed, and clears the box after the answer", async () => {
+    const srv = mockServer([]);
+    const inner = globalThis.fetch;
+    const asked: unknown[] = [];
+    const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { "content-type": "application/json" } });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), "http://test.local").pathname;
+      if (path === "/api/research" && init?.method === "POST") {
+        asked.push(JSON.parse(String(init.body)));
+        return json({ entry: { id: 1, query: "q", answer: "a", citations: [], model: "m", createdAt: "2026-11-22T00:00:00Z" }, attached: null, effort: null, costUsd: null });
+      }
+      if (path === "/api/research") return json({ configured: true, model: "fast", entries: [] });
+      return inner(input, init);
+    }));
+    mount(<ResearchView {...propsFor("research", "ask")} />);
+    const box = (await screen.findByLabelText("Question")) as HTMLInputElement;
+    await waitFor(() => expect(box.value).toBe("Is the battery safe on a plane?"));
+    fireEvent.change(box, { target: { value: "  Is the battery safe on a plane?  " } });
+    fireEvent.click(screen.getByRole("button", { name: /Ask/ }));
+    await waitFor(() => expect(asked).toHaveLength(1));
+    expect(asked[0]).toEqual({ projectId: "p1", query: "Is the battery safe on a plane?" });
+    await waitFor(() => expect(box.value).toBe(""));
+    expect(srv.calls.filter((c) => c.method === "POST")).toHaveLength(0);
   });
 });

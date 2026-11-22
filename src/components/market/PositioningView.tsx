@@ -5,6 +5,9 @@ import { SectionEmpty } from "@/components/drafts/SectionEmpty";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Gavel, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +23,7 @@ import type { Item } from "@/lib/types";
 import type { ViewProps } from "@/components/views/types";
 import { ApproveButton, GeneratedLine, GenerateButton, ModelGate, Notes, Status, useGenerate, useModelStatus } from "./shared";
 import { ErrorLine, LoadError, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
 import { fmtDate } from "@/lib/format";
@@ -221,60 +224,76 @@ function StatementCard({ item, productName, projectId, rows, modelOn, onApprove,
   );
 }
 
+const FOR_WHOM_ID = "positioning-for-whom";
+const proofRefShape = z.object({ itemId: z.number(), section: z.string(), title: z.string().optional(), key: z.string().optional() });
+const statementSchema = z
+  .object({
+    forWhom: z.string(),
+    need: z.string(),
+    productIs: z.string(),
+    thatDoes: z.string(),
+    unlike: z.string(),
+    difference: z.string(),
+    messages: z.array(z.object({ text: z.string(), proof: z.array(proofRefShape) })),
+  })
+  .superRefine((v, ctx) => {
+    if (!v.forWhom.trim() && !v.messages.some((m) => m.text.trim())) ctx.addIssue({ code: "custom", path: ["forWhom"], message: "Fill in the line or at least one message." });
+  });
+type StatementValues = z.infer<typeof statementSchema>;
+
 function StatementDialog({ item, productName, rows, onClose, onSave }: {
   item: Item | null; productName: string; rows: Item[]; onClose: () => void;
   onSave: (data: Record<string, unknown>, title: string) => Promise<void>;
 }) {
   const p = positioningData.safeParse(item?.data ?? {});
   const d = p.success ? p.data : {};
-  const [f, setF] = useState({ forWhom: d.forWhom ?? "", need: d.need ?? "", productIs: d.productIs ?? "", thatDoes: d.thatDoes ?? "", unlike: d.unlike ?? "", difference: d.difference ?? "" });
-  const [msgs, setMsgs] = useState<PositioningMessage[]>(() => {
+  const startMessages = (): PositioningMessage[] => {
     const m = (d.messages ?? []).map((x) => ({ text: x.text, proof: x.proof }));
     while (m.length < 3) m.push({ text: "", proof: [] });
     return m;
+  };
+  const { register, control, handleSubmit, setValue, setError, formState: { errors, isSubmitting: busy } } = useForm<StatementValues>({
+    resolver: zodResolver(statementSchema),
+    defaultValues: { forWhom: d.forWhom ?? "", need: d.need ?? "", productIs: d.productIs ?? "", thatDoes: d.thatDoes ?? "", unlike: d.unlike ?? "", difference: d.difference ?? "", messages: startMessages() },
   });
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [forWhom, need, productIs, thatDoes, unlike, difference, msgs] = useWatch({ control, name: ["forWhom", "need", "productIs", "thatDoes", "unlike", "difference", "messages"] });
+  const f = { forWhom, need, productIs, thatDoes, unlike, difference };
   const options = rows.filter((r) => (r.section === "research/claims") || (r.section === "prototype/tests") || (r.section === "design/requirements"));
   const label = (r: Item) => `${r.section === "research/claims" ? "Claim" : r.section === "prototype/tests" ? "Test" : "Requirement"} (${r.status}): ${r.title.length > 70 ? `${r.title.slice(0, 70)}...` : r.title}`;
 
-  const toggle = (n: number, r: Item) =>
-    setMsgs((all) => all.map((m, i) => {
-      if (i !== n) return m;
-      const has = m.proof.some((x) => x.itemId === r.id);
-      const ref: ProofRef = { itemId: r.id, section: r.section, title: r.title, ...(typeof r.data.key === "string" && r.data.key ? { key: r.data.key } : {}) };
-      return { ...m, proof: has ? m.proof.filter((x) => x.itemId !== r.id) : [...m.proof, ref] };
-    }));
-
-  const save = async () => {
-    const messages = msgs.filter((m) => m.text.trim()).map((m) => ({ text: m.text.trim(), proof: m.proof }));
-    if (!f.forWhom.trim() && !messages.length) return setErr("Fill in the line or at least one message.");
-    setBusy(true);
-    setErr("");
-    try {
-      await onSave({ kind: "statement", ...f, messages }, lineTitle(positioningLine(f, productName)));
-    } catch (e) {
-      setErr((e as Error).message);
-      setBusy(false);
-    }
+  const toggle = (n: number, r: Item) => {
+    const m = msgs[n];
+    const has = m.proof.some((x) => x.itemId === r.id);
+    const ref: ProofRef = { itemId: r.id, section: r.section, title: r.title, ...(typeof r.data.key === "string" && r.data.key ? { key: r.data.key } : {}) };
+    setValue(`messages.${n}.proof`, has ? m.proof.filter((x) => x.itemId !== r.id) : [...m.proof, ref]);
   };
+
+  const save = handleSubmit(async (v) => {
+    const messages = v.messages.filter((m) => m.text.trim()).map((m) => ({ text: m.text.trim(), proof: m.proof }));
+    const line = { forWhom: v.forWhom, need: v.need, productIs: v.productIs, thatDoes: v.thatDoes, unlike: v.unlike, difference: v.difference };
+    try {
+      await onSave({ kind: "statement", ...line, messages }, lineTitle(positioningLine(line, productName)));
+    } catch (e) {
+      setError("root", { message: (e as Error).message });
+    }
+  });
 
   return (
     <Modal open wide onOpenChange={(o) => !o && onClose()} title={item ? "Edit positioning" : "Write a positioning"} description="Saving an edit puts an approved positioning back to draft and needs a new review.">
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void save(); }}>
+      <form className="space-y-4" noValidate onSubmit={(e) => void save(e)}>
         <p className="rounded-md bg-subtle px-3 py-2 text-sm text-secondary" aria-live="polite">{positioningLine(f, productName)}</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="For (who)"><Input value={f.forWhom} onChange={(e) => setF({ ...f, forWhom: e.target.value })} /></Field>
-          <Field label="Who need"><Input value={f.need} onChange={(e) => setF({ ...f, need: e.target.value })} /></Field>
-          <Field label={`${productName} is a`}><Input value={f.productIs} onChange={(e) => setF({ ...f, productIs: e.target.value })} /></Field>
-          <Field label="That"><Input value={f.thatDoes} onChange={(e) => setF({ ...f, thatDoes: e.target.value })} /></Field>
-          <Field label="Unlike (the main alternative)"><Input value={f.unlike} onChange={(e) => setF({ ...f, unlike: e.target.value })} /></Field>
-          <Field label={`${productName} (what is different)`}><Input value={f.difference} onChange={(e) => setF({ ...f, difference: e.target.value })} /></Field>
+          <Field id={FOR_WHOM_ID} label="For (who)" error={errors.forWhom?.message}><Input id={FOR_WHOM_ID} {...describe(FOR_WHOM_ID, { error: errors.forWhom?.message })} {...register("forWhom")} /></Field>
+          <Field label="Who need"><Input {...register("need")} /></Field>
+          <Field label={`${productName} is a`}><Input {...register("productIs")} /></Field>
+          <Field label="That"><Input {...register("thatDoes")} /></Field>
+          <Field label="Unlike (the main alternative)"><Input {...register("unlike")} /></Field>
+          <Field label={`${productName} (what is different)`}><Input {...register("difference")} /></Field>
         </div>
         {msgs.map((m, n) => (
           <fieldset key={n} className="space-y-2 rounded-lg border border-hairline p-3">
             <legend className="px-1 text-xs font-medium text-secondary">Message {n + 1}</legend>
-            <Textarea rows={2} aria-label={`Message ${n + 1}`} value={m.text} onChange={(e) => setMsgs((all) => all.map((x, i) => (i === n ? { ...x, text: e.target.value } : x)))} />
+            <Textarea rows={2} aria-label={`Message ${n + 1}`} {...register(`messages.${n}.text`)} />
             <p className="text-[11px] text-muted">Proof: tick what backs this message.</p>
             <div className="max-h-36 space-y-1 overflow-y-auto">
               {options.length === 0 && <p className="text-xs text-muted">The concept has no claims, tests or requirements to link yet.</p>}
@@ -287,7 +306,7 @@ function StatementDialog({ item, productName, rows, onClose, onSave }: {
             </div>
           </fieldset>
         ))}
-        {err && <ErrorLine>{err}</ErrorLine>}
+        {errors.root?.message && <ErrorLine>{errors.root.message}</ErrorLine>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={busy}>{busy ? "Saving" : "Save"}</Button>

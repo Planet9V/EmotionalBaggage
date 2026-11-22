@@ -29,8 +29,8 @@ Where a control is not a plain input (the shared `WhyField`, a picker), it is wi
 | | Before | After |
 |---|---:|---:|
 | Forms (`<form>` elements) | 55 in 51 files | 55 |
-| Conforming | 15 | 36 |
-| Hand-wired | 40 | 19 |
+| Conforming | 15 | 38 |
+| Hand-wired | 40 | 17 |
 
 The earlier audit's "51 forms" counted files.
 
@@ -77,20 +77,20 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | campaigns/CampaignDialog.tsx | campaign | L | hand-wired: nine checks, money inputs |
 | market/PersonasView.tsx | persona | M | converted, batch 3 |
 | market/NamesView.tsx | add a name or tagline | S | converted, batch 3 |
-| market/PositioningView.tsx | positioning line | M | hand-wired |
+| market/PositioningView.tsx | positioning line | M | converted, batch 6 |
 | market/PricingView.tsx | price point | M | converted, batch 4 |
 | market/CompetitorsView.tsx | competitor | L | hand-wired |
 | channels/ReviewsView.tsx | add a review | M | converted, batch 4 |
 | channels/ReviewsView.tsx | import reviews | L | hand-wired: file upload with column mapping |
-| views/ResearchView.tsx | ask research | M | hand-wired |
+| views/ResearchView.tsx | ask research | M | converted, batch 6 (own label) |
 | views/MonitorView.tsx | sales entry | M | converted, batch 4 |
 | views/bom/dialogs.tsx | part / import | L | hand-wired |
 | items/ItemDrawer.tsx | edit a row | L | hand-wired: autosave per field |
 | schematic/WireDialog.tsx | wire | L | hand-wired |
 | decisions/DecisionEditor.tsx | decision with options | L | hand-wired: list of options |
-| sourcing/PartCard.tsx | part sourcing | M | hand-wired |
+| sourcing/PartCard.tsx | order status | M | hand-wired: decision needed (4) |
 | admin/CredentialsTab.tsx | provider credentials | M | hand-wired: fields come from the provider |
-| admin/ModelsTab.tsx | model choice | M | hand-wired |
+| admin/ModelsTab.tsx | model choice | M | hand-wired: left (5) |
 | admin/ModelsTab.tsx | planner address | S | converted, batch 3 |
 | admin/PrintersTab.tsx | printer | L | hand-wired |
 | three/PartPanel.tsx | part geometry | L | hand-wired: held file (knip list), another branch is changing it |
@@ -116,6 +116,15 @@ conversion needs `useFieldArray` or a per-field save and is a larger change than
    their fields in the small mono capitals (`fieldLabel`), not in `Field`'s label style. They now
    keep their values in `react-hook-form`, but use their own label markup. Moving them onto
    `Field` changes how the labels look; that is a design decision, not a refactor.
+
+4. **PartCard's order status form** shows one line for the first problem, written as
+   `<field path>: <message>` from `orderSchema` (for example `qtyOrdered: ...`), the same shape as
+   OfferForm (1). Moving it to the shared pattern drops the path prefix and can show several
+   messages at once, so the schema's wording needs the same pass first.
+5. **ModelsTab's model choice** already uses `Field`, `describe()` and per-field messages, but its
+   checks live in `check()`, which Test and Save share, and a provider choice or a preset rewrites
+   several fields at once. Putting it on `react-hook-form` means changing how Test validates and
+   how presets fill the form, which is more than a batch and is left for its own change.
 
 ## What changes for a user in a converted form
 

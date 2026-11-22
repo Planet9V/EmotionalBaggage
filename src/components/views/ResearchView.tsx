@@ -4,9 +4,13 @@ import { Fragment, Suspense, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Search } from "lucide-react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/input";
+import { describe } from "@/components/ui/field";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, useItems } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
@@ -34,14 +38,22 @@ const day = (iso: string) => {
   return Number.isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
 };
 
+const askSchema = z.object({ query: z.string().trim().min(1, "Type a question.") });
+
 export function ResearchView({ project }: ViewProps) {
   const qc = useQueryClient();
   const research = useQuery(queries.research(project.id));
   const state: Resp | null = research.data ?? null;
   const loadError = messageOf(research.error);
-  const [query, setQuery] = useState("");
+  const { register, control, handleSubmit, setValue, reset, formState: { errors } } = useForm<z.infer<typeof askSchema>>({
+    resolver: zodResolver(askSchema),
+    defaultValues: { query: "" },
+  });
+  const query = useWatch({ control, name: "query" });
+  const setQuery = (text: string) => setValue("query", text);
   const [error, setError] = useState("");
-  const box = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLInputElement | null>(null);
+  const { ref: registerQueryBox, ...queryField } = register("query");
   const claims = useItems(project.id, "research/claims");
   // "Verify this" on a row arrives as ?ask=<the row's text>&claim=<id>: the question is filled in and
   // the claim is chosen in each evidence form.
@@ -63,14 +75,14 @@ export function ResearchView({ project }: ViewProps) {
   });
   const pending = askM.isPending;
 
-  const ask = async () => {
-    const q = query.trim();
-    if (!q || pending) return;
+  const ask = handleSubmit(async (values) => {
+    const q = values.query;
+    if (pending) return;
     setError("");
     setCost("");
     try {
       const r = await askM.mutateAsync(q);
-      setQuery("");
+      reset({ query: "" });
       if (r.attached) {
         setAttachTo("");
         setAttachedNote(
@@ -83,7 +95,7 @@ export function ResearchView({ project }: ViewProps) {
     } catch (e) {
       setError((e as Error).message);
     }
-  };
+  });
 
   if (loadError && !state) return <p role="alert" className="text-sm text-danger">{loadError}</p>;
   if (!state) return <LoadingBlocks rows={2} label="Loading" />;
@@ -110,10 +122,10 @@ export function ResearchView({ project }: ViewProps) {
       <Suspense fallback={null}>
         <FromUrl names={["ask", "claim", "item"]} onParams={(v) => { if (v.ask) setQuery(v.ask); if (v.claim) setPreferClaim(v.claim); if (v.item) setAttachTo(v.item); box.current?.focus(); }} />
       </Suspense>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
+      <form className="space-y-3" noValidate onSubmit={(e) => void ask(e)}>
         <label htmlFor="rq" className="text-sm font-medium text-primary">Question</label>
         <div className="flex gap-2">
-          <Input id="rq" ref={box} value={query} disabled={!on || pending} placeholder={on ? "Ask something the plan depends on" : "Connect Perplexity to ask"} onChange={(e) => setQuery(e.target.value)} />
+          <Input id="rq" ref={(el) => { registerQueryBox(el); box.current = el; }} disabled={!on || pending} placeholder={on ? "Ask something the plan depends on" : "Connect Perplexity to ask"} {...describe("rq", { error: errors.query?.message })} {...queryField} />
           <Button type="submit" disabled={!on || pending || !query.trim()}>
             <Search className="h-4 w-4" aria-hidden /> {pending ? "Searching" : "Ask"}
           </Button>
@@ -122,6 +134,7 @@ export function ResearchView({ project }: ViewProps) {
           Each question is billed to your Perplexity account: model tokens plus a fee for each web search
           (Perplexity lists $0.001 per Fast Search, which the default effort uses). Perplexity reports an estimate after the answer. Effort: {state.model}.
         </p>
+        {errors.query?.message && <p id="rq-error" role="alert" className="text-sm text-danger">{errors.query.message}</p>}
         {attachTo && !error && <p className="text-xs text-secondary">The answer will be attached to the row you came from. Attaching it does not verify anything.</p>}
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         {attachedNote && !error && <p role="status" className="text-sm text-primary">{attachedNote}</p>}

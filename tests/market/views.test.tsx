@@ -16,6 +16,7 @@ vi.mock("next/link", () => ({
 
 import { NamesView } from "@/components/market/NamesView";
 import { PricingView } from "@/components/market/PricingView";
+import { PositioningView } from "@/components/market/PositioningView";
 import { BrandView } from "@/components/market/BrandView";
 
 afterEach(cleanup);
@@ -72,6 +73,27 @@ describe("adding a name by hand", () => {
     fireEvent.change(within(dialog).getByLabelText("Kind"), { target: { value: "Tagline" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
     await waitFor(() => expect(srv.calls.find((c) => c.method === "POST")?.body).toMatchObject({ title: "Carry on", data: { kind: "Tagline" }, status: "candidate" }));
+  });
+});
+
+describe("writing a positioning", () => {
+  it("asks for the line or a message beside the first field, ticks proof per message, and sends the trimmed messages", async () => {
+    const srv = mockServer([row(7, "research/claims", { title: "Battery lasts a week", status: "unverified" })]);
+    mount(<PositioningView {...propsFor("marketing", "positioning")} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Write by hand/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    const message = await within(dialog).findByText("Fill in the line or at least one message.");
+    expect(message.getAttribute("role")).toBe("alert");
+    expect(within(dialog).getByLabelText("For (who)").getAttribute("aria-invalid")).toBe("true");
+    expect(srv.calls.some((c) => c.method === "POST")).toBe(false);
+    fireEvent.change(within(dialog).getByLabelText("Message 2"), { target: { value: "  Lasts a week  " } });
+    fireEvent.click(within(dialog).getAllByRole("checkbox")[1]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(srv.calls.find((c) => c.method === "POST")).toBeTruthy());
+    const sent = srv.calls.find((c) => c.method === "POST")?.body as { data: { kind: string; forWhom: string; messages: { text: string; proof: { itemId: number }[] }[] } };
+    expect(sent.data.kind).toBe("statement");
+    expect(sent.data.messages).toEqual([{ text: "Lasts a week", proof: [expect.objectContaining({ itemId: 7, section: "research/claims" })] }]);
   });
 });
 
