@@ -5,8 +5,8 @@
 // (space, A to Z, 0 to 9, a few marks) one character at a time, the top half folding down over the bottom, so
 // every cell needs a different number of flaps and a row settles raggedly, left to right.
 //
-// What it shows is data (BOARD_STATES in content.ts): the board before any call, then each gate called in turn,
-// with remarks that are the worked example's own figures. On a state change the Destination and Gate cells of
+// What it shows is data (boardStates in content.ts, given the example's true gates by the page): the board before
+// any call, then each gate called in turn, each with the status its own checks give it and how many are met. On a state change the Destination and Gate cells of
 // every row re-flap briefly too, as a real board's do. It moves to the next state every seven seconds while
 // it is on screen. It has no pause control (owner, 22 Nov). Off screen it waits; under reduced motion it rests on
 // one settled state, the one the server sends: the last, where every row shows its figure.
@@ -20,7 +20,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "motion/react";
 import { useAnimated } from "./useAnimated";
-import { BOARD, BOARD_REST, BOARD_STATES, type BoardRow } from "./content";
+import { BOARD, type BoardRow } from "./content";
 
 const DRUM = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-:";
 const FLAP_MS = 72;
@@ -128,14 +128,15 @@ function Flaps({ text, width }: { text: string; width: number }) {
 
 const TONE = { plain: "text-white", good: "text-success", late: "text-warning" } as const;
 
-export function DeparturesBoard() {
+export function DeparturesBoard({ states }: { /** every state of the board, the last being the one at rest */ states: BoardRow[][] }) {
   const board = useRef<HTMLDivElement>(null);
   const driver = useRef<ReturnType<typeof drive> | null>(null);
-  const [state, setState] = useState(BOARD_REST);
+  const rest = states.length - 1;
+  const [state, setState] = useState(rest);
   const animated = useAnimated();
   const seen = useInView(board, { amount: 0.3 });
   const running = animated && seen;
-  const rows = BOARD_STATES[state]!;
+  const rows = states[state]!;
 
   useEffect(() => {
     const d = board.current ? drive(board.current) : null;
@@ -145,14 +146,14 @@ export function DeparturesBoard() {
 
   // show the state: flapping when things may move, set straight otherwise
   useEffect(() => {
-    driver.current?.show(spell(BOARD_STATES[state]!), !animated);
-  }, [state, animated]);
+    driver.current?.show(spell(states[state]!), !animated);
+  }, [state, animated, states]);
 
   useEffect(() => {
     if (!running) return;
-    const t = window.setInterval(() => setState((s) => (s + 1) % BOARD_STATES.length), STATE_MS);
+    const t = window.setInterval(() => setState((s) => (s + 1) % states.length), STATE_MS);
     return () => window.clearInterval(t);
-  }, [running]);
+  }, [running, states.length]);
 
   return (
     <div className="dark overflow-hidden rounded-xl border border-hairline bg-[#0b0c0e] text-primary shadow-[var(--shadow-card)]">
@@ -173,7 +174,7 @@ export function DeparturesBoard() {
             {COLUMNS.map((c) => (
               <span key={c} data-col={c} className={c === "status" || c === "time" ? TONE[r.tone] : c === "gate" ? "text-dutchOrange-300" : "text-white"}>
                 {/* the server's characters; after that the driver owns them, so React is told the text never changes */}
-                <Flaps text={BOARD_STATES[BOARD_REST]![i]![c]} width={BOARD.cells[c]} />
+                <Flaps text={states[rest]![i]![c]} width={BOARD.cells[c]} />
               </span>
             ))}
           </div>
@@ -182,7 +183,7 @@ export function DeparturesBoard() {
 
       <table className="sr-only">
         <caption>
-          Departures for {BOARD.flight}, state {state + 1} of {BOARD_STATES.length}
+          Departures for {BOARD.flight}, state {state + 1} of {states.length}
         </caption>
         <thead>
           <tr>

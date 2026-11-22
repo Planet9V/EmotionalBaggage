@@ -2,23 +2,27 @@
  * The words of the public welcome page (/welcome) and its one-page overview (/welcome/overview), in one place
  * so the two never disagree. Every claim here is something the app does today, checked against
  * docs/guide/user.md and docs/guide/admin.md; where something needs a model, a key or a service, it says so.
- * No figures appear that are not measured in this repository: no user counts, no prices, no benchmarks.
+ * No figures appear that are not measured in this repository: no user counts, no benchmarks, no time savings.
+ * The one exception is LEVELS: the service levels are approved, their prices are proposals the owner has not
+ * confirmed, and SHOW_PRICES keeps them off the page until he does.
  */
 
 export const PRODUCT = "Concept to Realization";
 export const REPO_URL = "https://github.com/Planet9V/EmotionalBaggage";
 
 export const HERO = {
-  title: "Take one idea from a joke to a product you can hold, cost and sell.",
-  sub: "This workbench carries a product idea from first brief to sales channel in seven stages. AI drafts; you decide. Below: Baggage Claims MK1, the first idea put through it, a gadget strapped to a suitcase that heckles the trip.",
-  journeyLink: "See where the bag went",
-  status: "Public demo: sign in as demo / demo. That account is shared with everyone who visits.",
+  eyebrow: "For makers, first-time founders and small product firms",
+  title: "Your product idea, built and on sale.",
+  sub: "One workbench carries a physical product from a one-line idea to a costed prototype, a launch plan and a marketplace listing. AI drafts each stage from the last. You decide what stands.",
+  primary: "Request access",
+  secondary: "Try the live demo",
+  status: "Sign-up with your own workspace is being built. Today you can try the shared demo or request access.",
 };
 
 export const META = {
-  title: "Concept to Realization: from product idea to tested prototype and launch plan",
+  title: "Concept to Realization: take a product idea to a prototype, a launch and a listing",
   description:
-    "A free, self-hosted workbench for makers, first-time founders and small product firms: take a product idea through research, design, a prototype, unit cost and a launch plan. Try the live demo.",
+    "One workbench for makers, first-time founders and small product firms: AI drafts each stage from the last, from brief to parts list, print files, unit cost, ads and a marketplace listing, and you decide. Try the live demo or request access.",
 };
 
 /** The problem, as before and after pairs. The "after" side is what the app does, word for word from the guides. */
@@ -136,12 +140,12 @@ export const PRINCIPLES: { title: string; text: string }[] = [
   { title: "Nothing goes out without you", text: "Nothing is published, sent or bought until you confirm it in the app. The app never places an order." },
   { title: "AI drafts wait for you", text: "Every draft is kept with the rows it came from and counts for nothing until you approve it." },
   { title: "No invented numbers", text: "A missing price is named, not counted as zero. Print time and material come from OrcaSlicer's own output." },
-  { title: "Claims need proof", text: "A marketing line with a number or a superlative needs a linked proof row, or it cannot be approved." },
+  { title: "Claims are tied to proof", text: "A marketing line with a number or a superlative needs a linked proof row, or it cannot be approved." },
   { title: "Every change is recorded", text: "Each concept keeps its activity, and the install keeps an audit log that cannot be edited or deleted." },
 ];
 
 export const AUDIENCE = {
-  title: "For makers, first-time founders and small product firms",
+  title: "Is it for someone like me?",
   lead: "You have an idea for a physical product, often with electronics inside. You want to get from the idea to a working prototype, a parts list with real prices and a plan to sell it, without stitching ten tools together.",
   fit: [
     "Makers taking a first hardware product past the bench.",
@@ -157,7 +161,7 @@ export const AUDIENCE = {
 };
 
 export const RUNS_ON: { title: string; text: string }[] = [
-  { title: "Free, Apache 2.0", text: "No account with us and no subscription. You pay only the services you choose to connect, at their own rates." },
+  { title: "Free when self-hosted", text: "Apache 2.0. No account with us and no subscription when you run it yourself. You pay only the services you choose to connect, at their own rates." },
   { title: "Your machine", text: "Three containers with Docker Compose: the app, PostgreSQL with pgvector, and the planner. Every concept and file is stored in your database." },
   { title: "Your models", text: "Ollama, LM Studio or OpenRouter, chosen in Admin. Without a model the AI buttons say what is missing and everything else works." },
   { title: "Your keys", text: "Perplexity for research; X, Instagram and Amazon if you want them. Keys are kept in your own database and never shown again." },
@@ -169,10 +173,10 @@ export const RUN_COMMANDS = ["git clone https://github.com/Planet9V/EmotionalBag
 /** The objections, answered. Used for the FAQ on the page, its FAQPage data, and the overview's quick table. */
 export const FAQ: { q: string; a: string; /** the one-line answer on the printed overview */ short: string; where: string }[] = [
   {
-    q: "Is it really free?",
-    short: "Yes. Apache 2.0 and self-hosted; you pay only the services you connect.",
-    a: "Yes. The code is Apache 2.0 licensed and you run it yourself. The only costs are the outside services you choose to connect, such as OpenRouter or Perplexity, billed by them at their rates.",
-    where: "LICENSE in the repository",
+    q: "What does it cost?",
+    short: "Self-hosted is free under Apache 2.0. The hosted levels are set; their prices are not announced yet.",
+    a: "Running it yourself is free: the code is Apache 2.0 licensed, and you pay only the outside services you choose to connect, such as OpenRouter or Perplexity, at their rates. The hosted service will have a Free level and two paid levels, Maker and Studio. Their prices are not announced yet, and nothing can be bought today.",
+    where: "Your turn, on this page",
   },
   {
     q: "Do I need an AI model to use it?",
@@ -225,8 +229,8 @@ export const FAQ: { q: string; a: string; /** the one-line answer on the printed
 ];
 
 export const CLOSING = {
-  title: "Most ideas are never made. Get yours out.",
-  text: "For makers, first-time founders and small product firms. AI drafts, you decide, and the next step is always named. Start with the example, then bring your own idea.",
+  title: "Ready to get your idea out?",
+  text: "An idea that is not pursued is never realised. Put yours through the same stages as the example: AI drafts, you decide, and the next step is always named.",
 };
 
 /** What the live demo opens on. Beside the demo button in Get started. */
@@ -279,48 +283,57 @@ export type BagLineKey = keyof typeof BAG_LINES;
 export const HERO_LINES: BagLineKey[] = ["scale", "lifted", "impact", "conveyor", "carousel", "hold", "souvenirs"];
 
 /**
- * The departures board. Each row is a stage: its gate, what it is about before it is called, and one remark that
- * is a fact about the worked example (the seeded claims are all unverified, so Research is delayed; the seeded
- * listing is one row saying it is not started, so Sales stays scheduled; the rest are
- * the EXAMPLE figures). The board runs through BOARD_STATES in a loop: nothing called yet, then each gate called
- * in turn. Everything else on it is a status word.
+ * The departures board: where the worked example stands today. Each row is a stage and its gate. The status and
+ * the remark are worked out from the gate's true checks (exampleData.ts runs the app's own gate rules on the
+ * seeded rows), never typed: a stage reads Departed only when every check of its gate is met, Boarding while at
+ * least half are, Delayed while fewer are, and Scheduled when none is. The board runs through its states in a
+ * loop: nothing called yet, then each gate called in turn.
  */
 export const BOARD = {
-  title: "Seven stages, called in turn",
-  lead: `Seven gates, one bag. The board calls each stage in turn; the remarks are ${EXAMPLE.name}'s own figures.`,
+  title: "Where is the example today?",
+  lead: "Seven gates, one bag. Each row is a stage of the example, with its status worked out from the gate's own checks. Nothing has departed yet, and the board says so.",
+  rule: "Departed means every check of the gate is met. Boarding: at least half are. Delayed: fewer than half. Scheduled: none yet.",
   flight: EXAMPLE.name,
   columns: { time: "Time", destination: "Destination", gate: "Gate", status: "Status", remarks: "Remarks" },
   /** how wide each column is, in flap cells */
   cells: { time: 5, destination: 10, gate: 2, status: 9, remarks: 18 },
   rows: [
-    { n: "01", name: "Concept", about: "The idea", fact: `${EXAMPLE.documents} source docs` },
-    { n: "02", name: "Research", about: "The sources", fact: "9 claims to verify", hold: "Delayed" },
-    { n: "03", name: "Design", about: "The parts", fact: `${EXAMPLE.parts} parts ${EXAMPLE.wires} wires` },
-    { n: "04", name: "Prototype", about: "The build", fact: "Build 7h10" },
-    { n: "05", name: "Production", about: "The cost", fact: `Parts cost ${EXAMPLE.partsCost.toFixed(2)}` },
-    { n: "06", name: "Marketing", about: "The launch", fact: `${EXAMPLE.voicePacks.length} voice packs` },
-    { n: "07", name: "Sales", about: "The listing", fact: "No listing yet", hold: "Scheduled" },
-  ] as { n: string; name: string; about: string; fact: string; /** what the row shows once called, where the example's own rows say the stage is not through */ hold?: "Delayed" | "Scheduled" }[],
+    { key: "concept", n: "01", name: "Concept", about: "The idea" },
+    { key: "research", n: "02", name: "Research", about: "The sources" },
+    { key: "design", n: "03", name: "Design", about: "The parts" },
+    { key: "prototype", n: "04", name: "Prototype", about: "The build" },
+    { key: "production", n: "05", name: "Production", about: "The cost" },
+    { key: "marketing", n: "06", name: "Marketing", about: "The launch" },
+    { key: "sales", n: "07", name: "Sales", about: "The listing" },
+  ] as { key: string; n: string; name: string; about: string }[],
 };
 
 type BoardTone = "plain" | "good" | "late";
 export type BoardRow = { time: string; destination: string; gate: string; status: string; remarks: string; tone: BoardTone };
+export type GateCount = { met: number; total: number };
 
-/** The board with gate `called` (1 to 7) boarding and every earlier one gone; 0 is the board before any call. */
-function boardState(called: number): BoardRow[] {
-  return BOARD.rows.map((r, i) => {
-    const at = i + 1;
-    const base = { destination: r.name, gate: r.n };
-    if (at > called) return { ...base, time: at === called + 1 ? "Next" : "Later", status: "Scheduled", remarks: r.about, tone: "plain" };
-    if (r.hold) return { ...base, time: at === called ? "Now" : "Held", status: r.hold, remarks: r.fact, tone: r.hold === "Delayed" ? "late" : "plain" };
-    return { ...base, time: at === called ? "Now" : "Gone", status: at === called ? "Boarding" : "Departed", remarks: r.fact, tone: "good" };
-  });
+/** A gate's status word, from its checks alone. */
+function gateStatus(g: GateCount): { status: string; tone: BoardTone } {
+  if (g.total > 0 && g.met === g.total) return { status: "Departed", tone: "good" };
+  if (g.met === 0) return { status: "Scheduled", tone: "plain" };
+  return g.met * 2 >= g.total ? { status: "Boarding", tone: "good" } : { status: "Delayed", tone: "late" };
 }
 
-export const BOARD_STATES: BoardRow[][] = Array.from({ length: BOARD.rows.length + 1 }, (_, k) => boardState(k));
-/** What the server sends and what stays put without motion: the last state, where every row shows its fact. */
-export const BOARD_REST = BOARD_STATES.length - 1;
-
+/**
+ * Every state of the board for these gates: state 0 is the board before any call, state k has gates 1 to k called.
+ * A called row shows its true status and "4 of 6 checks met"; a row not yet called is Scheduled with what it is about.
+ */
+export function boardStates(gates: Record<string, GateCount>): BoardRow[][] {
+  const state = (called: number): BoardRow[] =>
+    BOARD.rows.map((r, i) => {
+      const at = i + 1;
+      const base = { destination: r.name, gate: r.n };
+      if (at > called) return { ...base, time: at === called + 1 ? "Next" : "Later", status: "Scheduled", remarks: r.about, tone: "plain" };
+      const g = gates[r.key] ?? { met: 0, total: 0 };
+      return { ...base, time: at === called ? "Now" : "Open", ...gateStatus(g), remarks: `${g.met} of ${g.total} checks met` };
+    });
+  return Array.from({ length: BOARD.rows.length + 1 }, (_, k) => state(k));
+}
 
 export type JourneyStage = {
   key: string;
@@ -346,7 +359,9 @@ export type JourneyStage = {
  * work out (parts placed, wires drawn, checks met) are computed where they are shown, never typed here.
  */
 export const ENGINEERING = {
-  title: "The engineering, live",
+  eyebrow: "The engineering, live",
+  title: "Is the engineering real?",
+  tagNote: "A handle-tag enclosure is being designed; this is the first enclosure, generated from the same parts.",
   lead: `Six of the workbench's own views, running here on ${EXAMPLE.name}'s rows. Turn the model, pan the schematic, watch the case print. Nothing on this page can be saved; in the workbench every one of them is yours to edit.`,
   tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
   loading: "Loading the view",
@@ -434,7 +449,7 @@ export const GATE = {
 export const LIVE_LINK = "These views run live in the engineering stage above";
 
 export const JOURNEY_INTRO = {
-  title: "The journey, gate by gate",
+  title: "What does each gate still need?",
   lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, with the example's own rows at each stage. Each gate shows its checks as they truly stand for the example today, worked out by the app's own gate rules: most are still open, and each open one says what is missing.`,
 };
 
@@ -536,28 +551,14 @@ export const ADS_NOTE = "The example holds three ad drafts, all for retargeting.
 export const LISTING_NOTE = "What a listing draft holds. The example's own listing is not started yet; it goes live only when you say so.";
 export const SCHEMATIC_NOTE = "A corner of the schematic: the audio module, its series resistor and the speaker, with the app's net colours.";
 
-/** "In 60 seconds": the trip as six slides, one line each. The pictures are drawn in Illustrations.tsx. */
-export const SIXTY = {
-  title: "The trip in 60 seconds",
-  lead: "Six slides, one line each.",
-  slides: [
-    { key: "joke", tab: "The joke", line: "It starts as a joke: a suitcase that complains about its trip.", note: "The bag's own line, from the gag catalogue in the source documents." },
-    { key: "idea", tab: "On screen", line: "In the first hour the idea is on screen, with its pitch and every source.", note: `${EXAMPLE.documents} source documents and ${EXAMPLE.decisions} decisions, kept with the concept.` },
-    { key: "part", tab: "In hand", line: "Then there is a part in your hand, printed from the enclosure the app drew.", note: "Sliced by OrcaSlicer; each print job is tracked to a result." },
-    { key: "cost", tab: "The cost", line: "The cost adds up, because it is added from what you entered.", note: `${EXAMPLE.parts} parts, $${EXAMPLE.partsCost.toFixed(2)} for the prototype. A missing price is named, never counted as zero.` },
-    { key: "launch", tab: "The launch", line: "The launch is drafted from what you approved, and waits for your yes.", note: `Ads per channel and ${EXAMPLE.voicePacks.length} voice packs to sell: ${EXAMPLE.voicePacks.join(", ")}.` },
-    { key: "turn", tab: "Your turn", line: "Your turn. The idea you keep not starting can go the same way.", note: "The live workbench opens on this example." },
-  ],
-};
-
 /**
  * The whole trip on one map: each stage, what it produces, and what feeds what. The sections are the app's
  * own; the feeds are the ones the guides describe (the parts list drives the schematic, the enclosure and the
  * unit cost; drafts are built from approved positioning; a claim needs proof). Drawn with React Flow.
  */
 export const MAP = {
-  title: "The whole trip on one map",
-  lead: "Seven stages, what each one produces, and what feeds what. Pick anything on the map to see what depends on it.",
+  title: "What changes when I change one thing?",
+  lead: "One map of the seven stages: what each one produces, and what feeds what. Pick anything on it to see what depends on it.",
   idle: "Nothing picked yet. Try the parts list.",
   note: "A map of what feeds what. Today the app's change notice lists design and cost rows; marketing and assembly rows are being added.",
   stages: [
@@ -590,4 +591,278 @@ export const POKE = {
     { key: "spin", label: "Send it round the carousel", line: "carousel" },
     { key: "dark", label: "Leave it in the dark", line: "hold" },
   ] as { key: "weigh" | "toss" | "spin" | "dark"; label: string; line: BagLineKey }[],
+};
+
+/** The header's links, in the page's order. */
+export const NAV: { href: string; label: string }[] = [
+  { href: "#get", label: "What you get" },
+  { href: "#fast", label: "How it works" },
+  { href: "#engineering", label: "Engineering" },
+  { href: "#market", label: "To market" },
+  { href: "#levels", label: "Levels" },
+  { href: "#faq", label: "Questions" },
+];
+
+/**
+ * The hero's visual: one line of an idea goes in, the stage outputs come out. The idea is the owner's own first
+ * note, taken from the story's origin part (storyData.ts reads it from src/lib/story/seed.ts); the outputs are
+ * the example's seeded rows (Artefacts.tsx).
+ */
+export const HERO_FLOW = {
+  label: "An idea typed as one line goes in. Nine outputs come out, one per step, from a brief to a sales channel.",
+  field: "Your idea, in one line",
+  from: "Idea",
+  to: "On sale",
+  caption: `The worked example: ${EXAMPLE.name}, shown in its own rows as they stand today. It is planned, not yet built or sold.`,
+};
+
+/** "What you get": the thing you walk away with at each stage. Every line is a section of the app today (src/lib/menu.ts). */
+export const GET = {
+  eyebrow: "What you get",
+  title: "What do I end up with?",
+  lead: "Something you can use at the end of each of seven stages: a working document, a file or a figure. The next stage is built on it. Pick a stage to see what it leaves you with.",
+  note: `Each output shown is one of ${EXAMPLE.name}'s own rows, the example this page follows.`,
+  label: "The seven stages, in two lanes",
+  holds: "In the workbench this stage holds",
+  see: { engineering: "See it running below", market: "See it open below" },
+  groups: [
+    {
+      key: "make",
+      title: "Make it",
+      sub: "From the idea to a prototype on the bench",
+      items: [
+        { n: "01", stage: "Concept", art: "brief", get: "A brief that has been argued with", also: "A press release and FAQ written first, an AI reviewer's challenge, and every decision laid out as a tree." },
+        { n: "02", stage: "Research", art: "claim", get: "Answers that keep their sources", also: "Each claim your plan leans on, marked verified or wrong from the sources you judged." },
+        { n: "03", stage: "Design", art: "parts", get: "A parts list with a cost you can believe", also: "A schematic with electrical checks, a physical layout, a 3D model and a printable enclosure." },
+        { n: "04", stage: "Prototype", art: "print", get: "Print files that fit, and a build sheet", also: "Sourcing links per part, sliced print jobs, assembly steps and acceptance tests." },
+      ],
+    },
+    {
+      key: "sell",
+      title: "Sell it",
+      sub: "From a unit cost to a listing",
+      items: [
+        { n: "05", stage: "Production", art: "cost", get: "A unit cost and a margin per channel", also: "Batch plans with the cash each needs, suppliers, and a compliance checklist for your own checking." },
+        { n: "06", stage: "Marketing", art: "ad", get: "Ads written to each channel's limits", also: "Positioning with its proof, a brand kit, a landing page, social posts and a dated launch plan." },
+        { n: "07", stage: "Sales", art: "channel", get: "A listing ready for the marketplace", also: "Channels with their fees, reviews turned into requirements, and a sales monitor." },
+      ],
+    },
+  ] as { key: string; title: string; sub: string; items: { n: string; stage: string; art: "brief" | "claim" | "parts" | "print" | "cost" | "ad" | "channel"; get: string; also: string }[] }[],
+};
+
+/**
+ * "How it goes fast": AI drafts each stage from the last and you decide. No time saving or percentage is claimed,
+ * because none has been measured; the copy says what the workbench is built to do.
+ */
+export const FAST = {
+  eyebrow: "How it goes fast",
+  title: "How does it get me there faster?",
+  lead: "AI drafts the next stage from the one you approved, so no stage starts from a blank page. Here an approved brief line becomes a drafted requirement, which becomes a drafted part, a wire, an assembly step, a test and an ad. Each draft waits for you, and nothing you have not approved is built on.",
+  label: "A chain of seven rows from the example. Each is drafted from the one before and approved before it feeds the next.",
+  draft: "Draft",
+  approve: "Approve",
+  approved: "Approved",
+  waits: "Waits for you",
+  from: "Drafted from the row before",
+  first: "Written by you",
+  note: `Shown on ${EXAMPLE.name}'s own rows. In the workbench the drafting is done by the model you choose, from the rows you approved, and every draft lists the rows it came from. No time saving is claimed here, because none has been measured.`,
+  guaranteesTitle: "What stays my decision?",
+  guarantees: [
+    { title: "Publishing and spending wait for you", text: "A post, a message or a purchase goes out only when you confirm it in the app. The app places no orders." },
+    { title: "Numbers come from your rows", text: "A missing price is named and left out of the total. Print time and material come from the slicer's own output." },
+    { title: "Claims need proof", text: "A marketing line with a number or a superlative needs a linked proof row before it can be approved." },
+    { title: "Changes are recorded", text: "Each concept keeps its activity, and the install keeps an audit log that is read only." },
+  ],
+};
+
+/**
+ * "It started as a joke": the origin of the example. The two sentences shown under the heading are read from the
+ * story's origin part (storyData.ts). The five circumstances and their lines are the owner's, word for word, from
+ * his launch script and gag catalogue, dashes and capitals included.
+ */
+export const ORIGIN = {
+  eyebrow: "It started as a joke",
+  title: "Where did the first idea come from?",
+  tag: "The gadget as now designed: a chunky orange tag that hangs from the suitcase handle on a loop, with its name inlaid and a speaker grille. A drawing, not a photograph.",
+  after: "This is the idea the rest of the page follows through the workbench.",
+  storyboard: "A storyboard for the idea. The gadget has not been built, so none of this is footage.",
+  scenes: [
+    { key: "scale", where: "The check-in scale", line: "Are you... calling me FAT?" },
+    { key: "toss", where: "The handler's toss", line: "OW! ...I felt that in my flip-flops." },
+    { key: "handle", where: "The handle", line: "Whoa whoa whoa — are you gonna buy me dinner first?" },
+    { key: "hold", where: "The dark hold", line: "Hello? ...Anyone? ...Cool, cool. I'll just be here." },
+    { key: "carousel", where: "The carousel", line: "Wheeee! Again! Again!" },
+  ],
+};
+
+/**
+ * The market stage: seven tabs at the weight of the engineering stage. Each shows the example's own rows where it
+ * has them, and where it has few or none, the structure the stage produces and the limits the app enforces, with
+ * a line saying which is which. Counts are worked out from the rows (storyData.ts).
+ */
+export const MARKET = {
+  eyebrow: "Then it went to market",
+  title: "Does it get me to market?",
+  lead: `Marketing and sales are stages of the same workbench, built on the same rows as the engineering. Seven of them are open here on ${EXAMPLE.name}. Where the example has rows you see them; where it has none yet you see what the stage produces and the limits it holds you to.`,
+  tabs: { positioning: "Positioning", brand: "Brand kit", ads: "Ads", landing: "Landing page", launch: "Launch plan", listing: "Listing", results: "Channels and results" },
+  badge: "The example's rows, read only",
+  note: "Connections to Amazon, X and Instagram are built to each service's published documentation and tested against stand-ins. They have not yet been run on live accounts.",
+  noscript: "Script is off, so the tabs cannot change. Every tab is set out below.",
+  positioning: {
+    path: "/s/marketing/positioning",
+    lineTitle: "The line",
+    lineHint: "The workbench composes one sentence from six parts. The brackets are the parts the example has not filled.",
+    notesTitle: "What the example holds",
+    messagesTitle: "Three messages, each tied to proof",
+    messagesHint: "A message can be approved only when it links to something the concept holds. This is what a link to the example's rows would count as today, by the app's own check.",
+    proven: (proven: number, count: number, label: string) => (label === "Requirements" ? `${count} written` : `${proven} of ${count} ${label === "Claims" ? "verified" : "passing"}`),
+    honest: (notes: number, statements: number) => `${EXAMPLE.name} has ${notes} positioning notes and ${statements === 0 ? "no positioning statement" : `${statements} positioning statement${statements === 1 ? "" : "s"}`} yet.`,
+    reviewer: "Before approval the AI reviewer attacks the positioning once, and the critique stays beside it.",
+  },
+  brand: {
+    path: "/s/marketing/brand",
+    voiceTitle: "Voice",
+    kitTitle: "What a brand kit holds",
+    kit: ["A voice summary", "Voice rules, each with a do and a do not", "Colours, primary and secondary", "A heading font and a body font", "Logos", "A tagline and boilerplate"],
+    kitHint: "Every ad, post, page and reply is drafted in the kit, and the landing page takes its colours and type.",
+    contrastTitle: "Every colour is checked for contrast",
+    contrastHint: "The example has chosen no colours, so the check is shown on this site's own orange.",
+    onWhite: "On white",
+    onBlack: "On black",
+    honest: (kit: boolean) => (kit ? `${EXAMPLE.name} has a brand kit.` : `${EXAMPLE.name} has voice rules from its playbook and no brand kit yet: no colours, no type.`),
+  },
+  ads: {
+    path: "/s/marketing/ads",
+    draftsTitle: "The example's ad variants",
+    limitsTitle: "Written to the channel's limits",
+    limitsHint: "Pick a channel. A limit from the platform's own page is enforced; a recommendation is shown as a guide.",
+    enforced: "platform limit",
+    guide: "guide",
+    required: "required",
+    fits: (label: string, field: string) => `The first variant, counted against ${label}: ${field}`,
+    honest: (ads: number, posts: number) => `${EXAMPLE.name} has ${ads} ad drafts and ${posts} social post drafts, none approved. An ad needs a stop and scale rule before it can be approved.`,
+  },
+  landing: {
+    path: "/s/marketing/landing",
+    pagesTitle: "The example's planned pages",
+    kindsTitle: "What the generator draws",
+    kindsHint: "One page for one approved message, as sections you edit and reorder, in the brand kit. Preview it, then export a static page with no script in it.",
+    cta: "Action",
+    honest: (pages: number, sections: number) => `${EXAMPLE.name} has ${pages} planned pages from its website plan and ${sections === 0 ? "no drafted sections" : `${sections} drafted sections`}, so there is no preview to show yet.`,
+  },
+  launch: {
+    path: "/s/marketing/launch",
+    pick: "Launch template",
+    day: "Launch day",
+    before: (n: number) => `${n} ${n === 1 ? "day" : "days"} before`,
+    after: (n: number) => `${n} ${n === 1 ? "day" : "days"} after`,
+    foot: "Each step is due a set number of days before or after launch day.",
+    needs: (gate: string) => `needs the ${gate} gate`,
+    steps: (n: number) => `${n} steps`,
+    honest: (launches: number) => (launches === 0 ? `${EXAMPLE.name} has no launch date yet, so no step has a due date. Set one in the workbench and every step is dated, counted back from it. Move the date and every step moves.` : `${EXAMPLE.name} has ${launches} launch planned.`),
+  },
+  listing: {
+    path: "/s/sales/listing",
+    fieldsTitle: "The listing, field by field",
+    fieldsHint: (category: string) => `Amazon's limits for ${category.toLowerCase()}. Claims Amazon does not allow are flagged as you write.`,
+    empty: "not written",
+    rowsTitle: "What the example holds",
+    honest: (rows: number) => `${EXAMPLE.name} has ${rows} listing row, and it says the listing is not started. Nothing is drawn in to fill the gap.`,
+  },
+  results: {
+    path: "/s/sales/channels",
+    channelsTitle: "Sales channels",
+    campaignsTitle: "Campaigns and their targets",
+    connectionsTitle: "Connections",
+    columns: { channel: "Channel", price: "Price", take: "Their take", net: "Net", status: "Status", campaign: "Campaign", budget: "Budget", target: "Target", result: "Result" },
+    none: "none yet",
+    foot: "Spend, clicks and orders are entered or imported by day and set against each campaign's target.",
+    honest: (channels: number, campaigns: number, days: number) => `${EXAMPLE.name} has ${channels} planned channels and ${campaigns} planned campaigns, each with the number it must reach, and ${days} days of results. Prices and takes are planned figures from its source documents.`,
+  },
+};
+
+/**
+ * Service levels. The four levels and what each includes are approved (docs/research/saas-pricing-and-platform-design.md,
+ * decision S3). Accounts and payment are not built: every paid level's button asks for access.
+ *
+ * PRICES ARE PROPOSALS AWAITING THE OWNER. He has not confirmed any price point, so SHOW_PRICES is false and the
+ * page shows "Price to be announced" on the paid levels. Set SHOW_PRICES to true only when he has confirmed the
+ * `price` fields below; nothing else needs to change.
+ */
+export const SHOW_PRICES = false;
+
+export type Level = {
+  key: "free" | "maker" | "studio" | "self";
+  name: string;
+  /** PROPOSAL, not confirmed by the owner. Shown only when SHOW_PRICES is true. */
+  price: string;
+  /** what follows the price, such as "a month" */
+  per: string;
+  paid: boolean;
+  who: string;
+  what: string;
+  includes: string[];
+  action: "request" | "run";
+};
+
+export const LEVELS: Level[] = [
+  {
+    key: "free",
+    name: "Free",
+    price: "$0", // proposal awaiting the owner
+    per: "",
+    paid: false,
+    who: "Anyone with one idea",
+    what: "Try the whole workbench on one concept, with your own AI key.",
+    includes: ["1 concept", "1 person", "Your own AI key", "The Baggage Claims example to explore"],
+    action: "request",
+  },
+  {
+    key: "maker",
+    name: "Maker",
+    price: "$29", // proposal awaiting the owner
+    per: "a month",
+    paid: true,
+    who: "Makers and first-time founders",
+    what: "One person taking an idea to a prototype and a launch.",
+    includes: ["Several concepts", "Monthly AI credits, with top-ups", "Slicing for your printer", "Exports", "Channels: Amazon, X, Instagram"],
+    action: "request",
+  },
+  {
+    key: "studio",
+    name: "Studio",
+    price: "$99", // proposal awaiting the owner
+    per: "a month",
+    paid: true,
+    who: "Small product firms",
+    what: "A team with several products in one shared workspace.",
+    includes: ["Team seats", "A shared workspace", "Roles", "Pooled AI credits", "More concepts and storage"],
+    action: "request",
+  },
+  {
+    key: "self",
+    name: "Self-hosted",
+    price: "Free", // proposal awaiting the owner
+    per: "",
+    paid: false,
+    who: "People who run it themselves",
+    what: "The same workbench on your own machine, with your own models.",
+    includes: ["Run it yourself with Docker", "Your own models and keys", "No limits set by us", "Apache-2.0 source"],
+    action: "run",
+  },
+];
+
+export const YOUR_TURN = {
+  eyebrow: "Your turn",
+  title: "What does it cost, and how do I start?",
+  lead: "Four levels, from one idea to a team. A subscription sets concepts, seats and storage and includes monthly AI credits.",
+  honest: "Sign-up with your own workspace is being built, and nothing can be bought yet. Today you can try the shared demo or request access.",
+  tba: "Price to be announced",
+  request: "Request access",
+  run: "Run it yourself",
+  includes: "Includes",
+  formTitle: (level: string | null) => (level ? `Request access: ${level}` : "Request access"),
+  formLead: (level: string | null) =>
+    `Tell us who you are and what you want to build${level ? `, and mention that ${level} is the level you want: the form has no field for it yet` : ""}. The request is stored here and the owner reads it in Admin. No email is sent yet, so the reply comes by hand.`,
+  demoTitle: "Or try the live demo now",
 };

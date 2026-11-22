@@ -168,14 +168,14 @@ function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: num
         <div className="relative rounded-xl border border-hairline bg-surface p-4 pl-6">
           <span className="absolute inset-y-0 left-0 w-1.5 rounded-l-xl bg-dutchOrange" aria-hidden />
           <p className="font-mono text-[11px] text-muted">{EXAMPLE.name} at this stage</p>
-          <dl className="mt-3 space-y-2.5">
+          {/* each figure sits inside its sentence, never as a number on its own */}
+          <ul className="mt-2 space-y-1.5">
             {stage.facts.map((f) => (
-              <div key={f.label} className="flex items-baseline gap-3">
-                <dt className="order-2 text-[13px] leading-snug text-secondary">{f.label}</dt>
-                <dd className="order-1 shrink-0 font-mono text-xl font-semibold tabular-nums tracking-tight text-primary">{f.figure}</dd>
-              </div>
+              <li key={f.label} className="text-[13px] leading-snug text-secondary">
+                <span className="font-semibold tabular-nums text-primary">{f.figure}</span> {f.label}
+              </li>
             ))}
-          </dl>
+          </ul>
           <figure className="mt-3 border-t border-hairline pt-3">
             <blockquote className="text-base font-semibold leading-snug tracking-tight text-primary">&ldquo;{said.line}&rdquo;</blockquote>
             <figcaption className="mt-1.5 flex items-center gap-2 font-mono text-[11px] text-muted">

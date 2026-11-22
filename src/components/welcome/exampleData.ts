@@ -108,6 +108,18 @@ export type ExampleData = {
   ads: Item[];
   listing: Item[];
   channels: Item[];
+  /** more seeded rows, for the hero's artefacts, the drafting chain and the market stage (storyData.ts) */
+  brief: Item[];
+  requirements: Item[];
+  printing: Item[];
+  assembly: Item[];
+  tests: Item[];
+  economics: Item[];
+  brand: Item[];
+  landing: Item[];
+  campaigns: Item[];
+  social: Item[];
+  launch: Item[];
   /** every stage's gate, by stage key, in its true state for the example */
   gates: Record<string, ExampleGate>;
   /** the unit cost, built up by the app's own calculation at the example's first planned batch size */
@@ -130,6 +142,17 @@ export async function exampleData(): Promise<ExampleData> {
     ads: of("marketing/ads"),
     listing: of("sales/listing"),
     channels: of("sales/channels"),
+    brief: of("concept/brief"),
+    requirements: of("design/requirements"),
+    printing: of("prototype/printing"),
+    assembly: of("prototype/assembly"),
+    tests: of("prototype/tests"),
+    economics: of("production/economics"),
+    brand: of("marketing/brand"),
+    landing: of("marketing/landing"),
+    campaigns: of("marketing/campaigns"),
+    social: of("marketing/social"),
+    launch: of("marketing/launch"),
     gates: gates(all),
     unit: referenceUnitCost(readEconomics({ parts, economics: of("production/economics"), channels: of("sales/channels"), methods: of("production/methods"), batches: of("production/batches"), printJobs: of("prototype/printing") }, CURRENCY)),
   };

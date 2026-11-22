@@ -22,9 +22,16 @@ test("a signed-out visit to / is sent to /welcome, and other pages still go to /
   }
 });
 
-test("the welcome page's primary call to action opens the sign-in form", async ({ page, baseURL }) => {
+test("the welcome page's primary call to action goes to the service levels and the request form, and the demo link opens sign-in", async ({ page, baseURL }) => {
   await page.goto("/welcome");
-  await page.getByRole("link", { name: "Try the live workbench" }).first().click();
+  // accounts and payment are not built: the primary action asks for access, and a level names itself above the form
+  await page.getByRole("link", { name: "Request access" }).first().click();
+  await expect(page).toHaveURL(`${baseURL}/welcome#levels`);
+  await expect(page.getByRole("heading", { level: 2, name: "What does it cost, and how do I start?" })).toBeInViewport();
+  await expect(page.getByText("Price to be announced")).toHaveCount(2);
+  await page.getByRole("link", { name: "Request access: Maker" }).click();
+  await expect(page.getByRole("heading", { level: 3, name: "Request access: Maker" })).toBeVisible();
+  await page.getByRole("link", { name: "Try the live demo" }).first().click();
   await expect(page).toHaveURL(`${baseURL}/sign-in`);
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
 });

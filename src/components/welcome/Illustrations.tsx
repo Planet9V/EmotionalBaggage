@@ -95,31 +95,6 @@ export function DeviceFace({ cx, cy, r }: { cx: number; cy: number; r: number })
   );
 }
 
-/** The story page with the pitch on it: the idea on screen in the first hour. */
-export function IdeaScreen({ className }: { className?: string }) {
-  return (
-    <Svg viewBox="0 0 320 220" className={className}>
-      <rect x="11" y="11" width="298" height="198" rx="12" fill={PAPER} />
-      <path d="M11 41h298" />
-      <circle cx="29" cy="26" r="4" fill={ORANGE} />
-      <circle cx="45" cy="26" r="4" fill={SHADE} />
-      <T x={64} y={30} mono>{EXAMPLE.name}</T>
-      <T x={30} y={68} mono size={10} fill="var(--link)">Pitch</T>
-      <T x={30} y={92} size={17} bold fill={INK}>A gadget that gives</T>
-      <T x={30} y={114} size={17} bold fill={INK}>a suitcase a voice.</T>
-      <path d="M196 100v17" className="wl-caret" stroke={ORANGE} />
-      <path d="M30 136h260" stroke={LINE} />
-      <T x={30} y={158} mono size={10}>Origin</T>
-      <path d="M84 154h150" className="wl-grow" stroke={LINE} strokeWidth="6" />
-      <T x={30} y={178} mono size={10}>Voice</T>
-      <path d="M84 174h110" className="wl-grow" style={{ animationDelay: "-2s" }} stroke={LINE} strokeWidth="6" />
-      <T x={30} y={198} mono size={10}>Sources</T>
-      <rect x="84" y="187" width="92" height="16" rx="8" fill={SHADE} strokeWidth="1.5" />
-      <T x={130} y={198.5} mono size={10} anchor="middle" fill={INK}>{EXAMPLE.documents} documents</T>
-    </Svg>
-  );
-}
-
 /** A corner of the schematic: the series resistor, the audio module and the speaker, in the app's net styles. */
 export function SchematicFragment({ className, children }: { className?: string; /** drawn over the nets: the travelling pulse */ children?: ReactNode }) {
   return (

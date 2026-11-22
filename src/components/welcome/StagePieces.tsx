@@ -114,7 +114,7 @@ function PrintLayer({ i, t }: { i: number; t: MotionValue<number> }) {
 }
 
 /** The base of the case on the print bed: ten layers laid one after another under a nozzle that moves, then a rest. */
-export function PrintBuild({ className }: { className?: string }) {
+function PrintBuild({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const t = useLoop(ref, 11);
   const top = 8 + LAYERS * LAYER_H;
@@ -224,7 +224,7 @@ function Slab({ s, t }: { s: (typeof SLABS)[number]; t: MotionValue<number> }) {
  * The parts list as a stack, sixteen slabs each as tall as its price, landing one by one while the total beside
  * them adds up; then the whole stack and the full total hold before the next lap.
  */
-export function CostBuild({ className = "", figureClassName = "text-3xl" }: { className?: string; figureClassName?: string }) {
+function CostBuild({ className = "", figureClassName = "text-3xl" }: { className?: string; figureClassName?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const figure = useRef<HTMLSpanElement>(null);
   const t = useLoop(ref, 13);
