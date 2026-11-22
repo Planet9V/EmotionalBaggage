@@ -5,7 +5,7 @@ import { q } from "@/lib/db";
 
 const SETTING_KEYS = ["models.reasoning", "models.embedding", "planner.url", "concepts.default", "audit.credentials"];
 
-export const FALLBACK_ENV = [
+const FALLBACK_ENV = [
   "OPENROUTER_API_KEY",
   "PERPLEXITY_API_KEY",
   "AMAZON_SP_REFRESH_TOKEN",

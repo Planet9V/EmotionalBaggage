@@ -30,8 +30,8 @@ export const printKeys = {
   track: (id: number) => ["print-track", id] as const,
 };
 
-export const slicerQuery = () => queryOptions({ queryKey: printKeys.slicer(), queryFn: ({ signal }) => api<SlicerState>("/api/slicer", { signal }), staleTime: 30_000 });
-export const planQuery = (id: number) => queryOptions({ queryKey: printKeys.plan(id), queryFn: ({ signal }) => api<Plan>(`/api/print-jobs/${id}/plan`, { signal }) });
+const slicerQuery = () => queryOptions({ queryKey: printKeys.slicer(), queryFn: ({ signal }) => api<SlicerState>("/api/slicer", { signal }), staleTime: 30_000 });
+const planQuery = (id: number) => queryOptions({ queryKey: printKeys.plan(id), queryFn: ({ signal }) => api<Plan>(`/api/print-jobs/${id}/plan`, { signal }) });
 
 export const useSlicer = () => useQuery(slicerQuery());
 export const usePlan = (id: number, enabled: boolean) => useQuery({ ...planQuery(id), enabled });

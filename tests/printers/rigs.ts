@@ -12,7 +12,7 @@ import * as moonraker from "../standins/moonraker";
 import * as octoprint from "../standins/octoprint";
 import * as prusalink from "../standins/prusalink";
 
-export const CLOSED = "http://127.0.0.1:1";
+const CLOSED = "http://127.0.0.1:1";
 
 export type Rig = {
   name: string;

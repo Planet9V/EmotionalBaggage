@@ -28,8 +28,8 @@ export type PortCapabilities = {
   notes: string[];
 };
 
-export type PortFile = { data: Uint8Array; contentType?: string };
-export type PortResult = { ok: true; message: string };
+type PortFile = { data: Uint8Array; contentType?: string };
+type PortResult = { ok: true; message: string };
 
 export interface PrinterPort {
   readonly family: string;

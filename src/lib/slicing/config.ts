@@ -2,7 +2,7 @@
 // SLICER_URL environment variable, the same order as the planner address (src/lib/admin/planner.ts).
 import { getSetting, SETTING } from "@/lib/settings";
 
-export const SLICER_SETTING = SETTING.slicerUrl;
+const SLICER_SETTING = SETTING.slicerUrl;
 
 export type SlicerAddress = { url: string | null; source: "admin" | "environment" | null };
 

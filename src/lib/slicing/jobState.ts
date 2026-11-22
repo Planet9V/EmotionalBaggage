@@ -21,12 +21,12 @@ export const TRANSITIONS: Record<PrintStatus, readonly PrintStatus[]> = {
 /** Statuses a person may set through the plain row editor. Everything else comes from an action. */
 export const MANUAL_TARGETS: readonly PrintStatus[] = ["queued", "cancelled"];
 
-export const isPrintStatus = (s: string): s is PrintStatus => (PRINT_STATUSES as readonly string[]).includes(s);
+const isPrintStatus = (s: string): s is PrintStatus => (PRINT_STATUSES as readonly string[]).includes(s);
 
 export const canMove = (from: string, to: string): boolean => isPrintStatus(from) && isPrintStatus(to) && TRANSITIONS[from].includes(to);
 
 /** Old rows used these words; migration 0018 renames them, and a row read before it ran is still understood. */
-export const LEGACY_STATUS: Record<string, PrintStatus> = { "waiting on file": "queued", ready: "queued", printed: "done" };
+const LEGACY_STATUS: Record<string, PrintStatus> = { "waiting on file": "queued", ready: "queued", printed: "done" };
 export const normaliseStatus = (s: string): string => LEGACY_STATUS[s] ?? s;
 
 export const STATUS_WORDS: Record<PrintStatus, string> = {

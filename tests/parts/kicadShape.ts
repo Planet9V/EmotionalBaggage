@@ -17,7 +17,7 @@ export type ShapeModel = Map<string, NodeShape>;
 // KiCad's lexer (common/dsnlexer.cpp, isNumber) reads a bare token as a number when it has this form.
 const NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 
-export function atomForm(a: SNode): AtomForm {
+function atomForm(a: SNode): AtomForm {
   if (typeof a === "string") return NUMBER.test(a) ? "number" : `keyword:${a}`;
   if (!Array.isArray(a)) return "string";
   throw new Error("not an atom");

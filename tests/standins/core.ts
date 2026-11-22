@@ -9,7 +9,7 @@
 import { createServer, type IncomingHttpHeaders, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
-export type UploadedFile = {
+type UploadedFile = {
   /** form field name, for example "file" */
   field: string;
   filename: string;
@@ -21,7 +21,7 @@ export type UploadedFile = {
 /** A parsed multipart/form-data body: plain fields as strings, file parts listed separately. */
 export type MultipartBody = { kind: "multipart"; fields: Record<string, string>; files: UploadedFile[] };
 
-export type RecordedRequest = {
+type RecordedRequest = {
   method: string;
   /** path without the query string */
   path: string;
@@ -66,7 +66,7 @@ export type Handler<O> = (req: RecordedRequest, options: O, base: string) => Rep
 
 export const json = (status: number, body: unknown, headers?: Record<string, string>): Reply => ({ status, json: body, headers });
 
-export function parseMultipart(raw: Buffer, contentType: string): MultipartBody {
+function parseMultipart(raw: Buffer, contentType: string): MultipartBody {
   const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType);
   const out: MultipartBody = { kind: "multipart", fields: {}, files: [] };
   if (!m) return out;

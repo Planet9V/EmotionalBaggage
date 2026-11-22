@@ -5,13 +5,13 @@ import { slicerUrl } from "./config";
 
 import { SLICER_NOT_SET_UP } from "./messages";
 
-export const NOT_SET_UP = SLICER_NOT_SET_UP;
+const NOT_SET_UP = SLICER_NOT_SET_UP;
 const SLICE_TIMEOUT_MS = 6 * 60_000;
 const QUICK_TIMEOUT_MS = 15_000;
 
 import type { SlicerCatalogue } from "./match";
 import { safeFetch } from "@/lib/net/outbound";
-export type { SlicerCatalogue, SlicerPrinter } from "./match";
+export type { SlicerCatalogue } from "./match";
 
 export type SliceRequest = {
   file: { data: Uint8Array; name: string };
