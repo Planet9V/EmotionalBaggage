@@ -1,7 +1,7 @@
 // The security review of 22 Nov (B1 to B5, F1, F2, F4 to F7): each finding, shown fixed through the real route or
 // the start-up checks. Roles (B3, F3) are in ./roles.test.ts; the shell (N3) in ./screens.test.tsx.
 import { randomBytes } from "node:crypto";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import { auth2ClientAddress } from "@/lib/auth2/clientAddress";
 import { checkAuth2Settings, secretProblem } from "@/lib/auth2/config";
@@ -32,22 +32,42 @@ afterAll(async () => {
 const env = process.env as Record<string, string | undefined>;
 const goodSecret = () => randomBytes(36).toString("base64url");
 
-describe("B1: no links in the log in production", () => {
-  it("refuses to build the new sign-in in production with only the log sender, naming the missing setting", async () => {
+describe("B1, as changed by the owner on 22 Nov: production without mail starts, and logs no link", () => {
+  it("in production with no mail service there is no sender, and the new sign-in still builds", async () => {
     env.NODE_ENV = "production";
+    const { currentMailSender } = await import("@/lib/auth2/mail");
+    expect(await currentMailSender()).toBeNull();
     const { makeAuth } = await import("@/lib/auth2/auth");
-    expect(() => makeAuth(db, { baseURL: "https://app.example.test", secret: goodSecret() })).toThrow(/no mail service is configured \(AUTH2_MAIL is not set\)/);
+    expect(() => makeAuth(db, { baseURL: "https://app.example.test", secret: goodSecret() })).not.toThrow();
+    await expect(checkAuth2Settings()).resolves.toBeUndefined();
   });
 
-  it("start-up checks refuse the same, before any request", async () => {
-    env.NODE_ENV = "production";
-    env.BETTER_AUTH_URL = "https://app.example.test";
-    await expect(checkAuth2Settings()).rejects.toThrow(/AUTH2_MAIL is not set/);
+  it("a sign-up and a reset in 'no mail' mode write no link or token to the log", async () => {
+    const { makeAuth } = await import("@/lib/auth2/auth");
+    const g = globalThis as unknown as { __c2rAuth2?: unknown };
+    const keep = g.__c2rAuth2;
+    g.__c2rAuth2 = { db, auth: makeAuth(db, { mail: null, rateLimit: false }) };
+    const lines: string[] = [];
+    const spies = (["log", "info", "warn", "error", "debug"] as const).map((k) => vi.spyOn(console, k).mockImplementation((...a: unknown[]) => void lines.push(a.map(String).join(" "))));
+    try {
+      const who = email("nomail");
+      const b = browser(route);
+      expect((await b.post("/sign-up/email", { name: "No Mail", email: who, password: PASSWORD })).status).toBe(200);
+      expect((await b.post("/request-password-reset", { email: who, redirectTo: "/auth/reset/new" })).status).toBe(200);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(lines.join("\n")).not.toMatch(/token=|\/auth\/(confirm|reset)/);
+      expect(lines.some((l) => /no mail service is configured/.test(l))).toBe(true);
+      const u = await db.query<{ emailVerified: boolean }>('SELECT "emailVerified" FROM "user" WHERE email = $1', [who]);
+      expect(u.rows[0].emailVerified).toBe(false);
+    } finally {
+      for (const s of spies) s.mockRestore();
+      g.__c2rAuth2 = keep;
+    }
   });
 
-  it("outside production it still logs", async () => {
-    const { mailSender } = await import("@/lib/auth2/mail");
-    expect(() => mailSender()).not.toThrow();
+  it("outside production the log sender is used and shows the link, for development", async () => {
+    const { currentMailSender } = await import("@/lib/auth2/mail");
+    expect(await currentMailSender()).not.toBeNull();
   });
 });
 
@@ -197,15 +217,47 @@ describe("F4 and F5: settings checked at start", () => {
     await dbm.ready();
   });
 
-  it("in production requires BETTER_AUTH_URL, and https", async () => {
-    const { auth2BaseURL } = await import("@/lib/auth2/config");
+  it("with no secret set, one is made, stored where requests cannot read it, and kept", async () => {
+    const { resolveAuth2Config } = await import("@/lib/auth2/config");
+    const keep = env.BETTER_AUTH_SECRET;
+    delete env.BETTER_AUTH_SECRET;
+    try {
+      const first = await resolveAuth2Config(db);
+      expect(secretProblem(first.secret)).toBeNull();
+      expect((await resolveAuth2Config(db)).secret).toBe(first.secret);
+      const { WITHHELD } = await import("@/lib/auth2/dbRoles");
+      expect(WITHHELD).toContain("auth2_secrets");
+      // An environment value still wins.
+      env.BETTER_AUTH_SECRET = keep;
+      expect((await resolveAuth2Config(db)).secret).toBe(keep);
+    } finally {
+      env.BETTER_AUTH_SECRET = keep;
+    }
+  });
+
+  it("in production a missing or http address is a warning, never a refusal", async () => {
+    const { resolveAuth2Config } = await import("@/lib/auth2/config");
     env.NODE_ENV = "production";
     delete env.BETTER_AUTH_URL;
-    expect(() => auth2BaseURL()).toThrow(/BETTER_AUTH_URL must be set/);
+    await db.query("DELETE FROM settings WHERE key = 'auth2.baseUrl'");
+    const none = await resolveAuth2Config(db);
+    expect(none.baseURL).toBeNull();
+    expect(none.warnings.join(" ")).toMatch(/not set yet/);
     env.BETTER_AUTH_URL = "http://app.example.test";
-    expect(() => auth2BaseURL()).toThrow(/must start with https/);
-    env.BETTER_AUTH_URL = "https://app.example.test/";
-    expect(auth2BaseURL()).toBe("https://app.example.test");
+    const http = await resolveAuth2Config(db);
+    expect(http.baseURL).toBe("http://app.example.test");
+    expect(http.warnings.join(" ")).toMatch(/not https/);
+    delete env.BETTER_AUTH_URL;
+    await db.query(`INSERT INTO settings (key, value) VALUES ('auth2.baseUrl', '"https://saved.example.test/"')`);
+    try {
+      const saved = await resolveAuth2Config(db);
+      expect(saved.baseURL).toBe("https://saved.example.test");
+      expect(saved.warnings).toEqual([]);
+      env.BETTER_AUTH_URL = "https://env.example.test";
+      expect((await resolveAuth2Config(db)).baseURL).toBe("https://env.example.test");
+    } finally {
+      await db.query("DELETE FROM settings WHERE key = 'auth2.baseUrl'");
+    }
   });
 });
 

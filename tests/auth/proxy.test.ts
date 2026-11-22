@@ -75,20 +75,20 @@ describe("the next parameter", () => {
 });
 
 describe("the proxy function", () => {
-  it("redirects a signed-out visit to / to /welcome", () => {
-    const res = proxy(new NextRequest("http://localhost:3000/"));
+  it("redirects a signed-out visit to / to /welcome", async () => {
+    const res = await proxy(new NextRequest("http://localhost:3000/"));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost:3000/welcome");
   });
 
-  it("redirects a signed-out page request", () => {
-    const res = proxy(new NextRequest("http://localhost:3000/report?print=1"));
+  it("redirects a signed-out page request", async () => {
+    const res = await proxy(new NextRequest("http://localhost:3000/report?print=1"));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost:3000/sign-in?next=%2Freport%3Fprint%3D1");
   });
 
-  it("lets a request with the session cookie continue", () => {
-    const res = proxy(new NextRequest("http://localhost:3000/report", { headers: { cookie: `${SESSION_COOKIE}=whatever` } }));
+  it("lets a request with the session cookie continue", async () => {
+    const res = await proxy(new NextRequest("http://localhost:3000/report", { headers: { cookie: `${SESSION_COOKIE}=whatever` } }));
     expect(res.headers.get("location")).toBeNull();
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });

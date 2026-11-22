@@ -19,7 +19,7 @@ const req = (method: string, path: string, init: { origin?: string; body?: unkno
 const page = async (path: string) => {
   const { NextRequest } = await import("next/server");
   const { proxy } = await import("@/proxy");
-  const res = proxy(new NextRequest(`http://localhost:3322${path}`));
+  const res = await proxy(new NextRequest(`http://localhost:3322${path}`));
   return res.headers.get("location");
 };
 
@@ -80,5 +80,53 @@ describe("with AUTH2 off", () => {
     if (saved !== undefined) process.env.BETTER_AUTH_SECRET = saved;
     else delete process.env.BETTER_AUTH_SECRET;
     delete process.env.AUTH2;
+  });
+});
+
+describe("the switch is a setting in PostgreSQL; AUTH2 in the environment only overrides it", () => {
+  const setSwitch = async (on: boolean | null) => {
+    const { ownerPool, ready } = await import("@/lib/db");
+    await ready();
+    if (on === null) await ownerPool().query("DELETE FROM settings WHERE key = 'auth2.enabled'");
+    else await ownerPool().query("INSERT INTO settings (key, value) VALUES ('auth2.enabled', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [JSON.stringify(on)]);
+    (await import("@/lib/auth2/config")).forgetAuth2Switch();
+  };
+  afterAll(async () => {
+    await setSwitch(null);
+    delete process.env.AUTH2;
+  });
+
+  it("no setting and no override: off, and the app is unchanged", async () => {
+    delete process.env.AUTH2;
+    await setSwitch(null);
+    const { auth2Enabled } = await import("@/lib/auth2/config");
+    expect(await auth2Enabled()).toBe(false);
+    const route = await import("@/app/api/auth2/[...all]/route");
+    expect((await route.GET(req("GET", "/get-session"))).status).toBe(404);
+    expect(await page("/auth/sign-up")).toBe("http://localhost:3322/sign-in?next=%2Fauth%2Fsign-up");
+  });
+
+  it("the setting on: the new sign-in answers and its screens are open", async () => {
+    delete process.env.AUTH2;
+    await setSwitch(true);
+    const { auth2Enabled, auth2EnabledNow } = await import("@/lib/auth2/config");
+    expect(await auth2Enabled()).toBe(true);
+    expect(auth2EnabledNow()).toBe(true);
+    expect(await page("/auth/sign-up")).toBeNull();
+    const route = await import("@/app/api/auth2/[...all]/route");
+    expect((await route.GET(req("GET", "/get-session"))).status).toBe(200);
+  });
+
+  it("the environment override wins over the setting, both ways", async () => {
+    const { auth2Enabled } = await import("@/lib/auth2/config");
+    await setSwitch(true);
+    process.env.AUTH2 = "0";
+    expect(await auth2Enabled()).toBe(false);
+    expect(await page("/auth/sign-up")).toBe("http://localhost:3322/sign-in?next=%2Fauth%2Fsign-up");
+    await setSwitch(false);
+    process.env.AUTH2 = "1";
+    expect(await auth2Enabled()).toBe(true);
+    delete process.env.AUTH2;
+    expect(await auth2Enabled()).toBe(false);
   });
 });

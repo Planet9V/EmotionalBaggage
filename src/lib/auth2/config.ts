@@ -1,66 +1,85 @@
 /**
- * The switch and the settings for the new sign-in (accounts, slice 1).
+ * The switch and the settings of the new sign-in, all kept in PostgreSQL (owner's rulings of 22 Nov: "everything
+ * is stored in Postgres", "Docker first"). With `docker compose up` and nothing else the app runs; the only
+ * configuration outside the database is the database connection itself.
  *
- * AUTH2 is off unless set to 1/true/yes/on. Off, nothing of the new sign-in answers: its API route says 404 and
- * its screens are not found, and the app signs in exactly as before (src/lib/auth.ts, `demo`/`demo`). On, the API
- * under /api/auth2 and the screens under /auth are reachable, beside the old sign-in; neither replaces the other
- * until the cut-over (slice 3).
+ * Where each value comes from, first match wins:
  *
- * Read at request time, never at build time, so one image serves both.
+ * | Value              | 1. environment (optional override)  | 2. PostgreSQL                                      | 3. otherwise                         |
+ * |--------------------|-------------------------------------|----------------------------------------------------|--------------------------------------|
+ * | the switch         | AUTH2 (1/on/true/yes or 0/off/...)  | setting `auth2.enabled` (src/lib/settings.ts)      | off                                  |
+ * | signing secret     | BETTER_AUTH_SECRET                  | table auth2_secrets, made on first use             | (always made)                        |
+ * | base address       | BETTER_AUTH_URL                     | setting `auth2.baseUrl`                            | http://localhost:PORT outside production; in production none until the first-run page stores the address the owner confirms |
+ * | other addresses    | AUTH2_TRUSTED_ORIGINS               | setting `auth2.trustedOrigins`                     | none                                 |
+ *
+ * The environment wins where both exist, so tests and development can force a value; nobody has to set one. A
+ * base address that is not https in production is a warning shown to the platform administrator, not a refusal.
+ * The secret lives in a table the request role cannot read (src/lib/auth2/dbRoles.ts, WITHHELD).
  */
+import { randomBytes } from "node:crypto";
+import type { Pool } from "pg";
+
 const ON = /^(1|true|yes|on)$/i;
+const OFF = /^(0|false|no|off)$/i;
 
 export const AUTH2_BASE_PATH = "/api/auth2";
 /** Where the new screens live (src/app/(account)/auth/). */
 export const AUTH2_PAGES = "/auth";
 
-export const auth2Enabled = () => ON.test(process.env.AUTH2?.trim() ?? "");
+export const AUTH2_SETTING = {
+  enabled: "auth2.enabled",
+  baseUrl: "auth2.baseUrl",
+  trustedOrigins: "auth2.trustedOrigins",
+  /** The address the first-run page offers for the platform administrator (migration 0034 seeds admin@oxot.nl). */
+  platformAdminAddress: "auth2.platformAdminAddress",
+} as const;
 
 const isProduction = () => process.env.NODE_ENV === "production";
 
+/** The AUTH2 environment override: true or false when set to a known word, null when not set. */
+function override(): boolean | null {
+  const v = process.env.AUTH2?.trim() ?? "";
+  if (ON.test(v)) return true;
+  if (OFF.test(v)) return false;
+  return null;
+}
+
+const CACHE_MS = 5_000;
+const g = globalThis as unknown as { __c2rAuth2Switch?: { value: boolean; at: number } };
+
 /**
- * The address the app is reached at, for links in emails and Better Auth's own origin check. In production it
- * must be set, and must be https (cookies are then Secure); elsewhere it defaults to this machine.
+ * Whether the new sign-in is on: the AUTH2 override, else the stored setting (read at most every five seconds),
+ * else off. A database that cannot be reached reads as off.
  */
-export function auth2BaseURL(): string {
-  const set = process.env.BETTER_AUTH_URL?.trim();
-  if (isProduction()) {
-    if (!set) throw new Error("BETTER_AUTH_URL must be set when AUTH2 is on in production: the https address people open the app at.");
-    if (!set.startsWith("https://")) throw new Error("BETTER_AUTH_URL must start with https:// when AUTH2 is on in production, so sign-in cookies are sent only over https.");
+export async function auth2Enabled(): Promise<boolean> {
+  const o = override();
+  if (o !== null) return o;
+  const c = g.__c2rAuth2Switch;
+  if (c && Date.now() - c.at < CACHE_MS) return c.value;
+  let value = false;
+  try {
+    const { getSetting } = await import("@/lib/settings");
+    value = (await getSetting<unknown>(AUTH2_SETTING.enabled, false)) === true;
+  } catch (e) {
+    console.error(`[auth2] the switch could not be read, so the new sign-in is off: ${(e as Error).message}`);
   }
-  if (set) {
-    try {
-      new URL(set);
-    } catch {
-      throw new Error("BETTER_AUTH_URL is not an address, for example https://app.example.com.");
-    }
-    return set.replace(/\/+$/, "");
-  }
-  return `http://localhost:${process.env.PORT?.trim() || "3000"}`;
+  g.__c2rAuth2Switch = { value, at: Date.now() };
+  return value;
 }
 
 /**
- * Other addresses the app is reached at (AUTH2_TRUSTED_ORIGINS, comma-separated), for example a self-hosted
- * install opened by name and by address. A state-changing request whose Origin is none of these and not the base
- * address is refused.
+ * The switch without waiting: the override, else the last value auth2Enabled() read in this process. For the root
+ * layout only, which must not query the database (it renders static pages too); every request passes the proxy,
+ * which reads the switch first.
  */
-export function auth2TrustedOrigins(): string[] {
-  const base = new URL(auth2BaseURL()).origin;
-  const more = (process.env.AUTH2_TRUSTED_ORIGINS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => {
-      try {
-        return new URL(s).origin;
-      } catch {
-        throw new Error(`AUTH2_TRUSTED_ORIGINS has an entry that is not an address: ${s}`);
-      }
-    });
-  return [...new Set([base, ...more])];
+export const auth2EnabledNow = (): boolean => override() ?? g.__c2rAuth2Switch?.value ?? false;
+
+/** Forgets the cached switch, after the setting changes. */
+export function forgetAuth2Switch() {
+  g.__c2rAuth2Switch = undefined;
 }
 
-const SECRET_HELP = "(for example: openssl rand -base64 48)";
+const SECRET_HELP = "(for example: openssl rand -base64 48), or leave it out and the app keeps its own";
 /** Words that put a secret in a dictionary: a random secret of this length does not contain them. */
 const WORDS = /secret|password|passwd|changeme|example|default|better.?auth|letmein|qwerty|123456|abcdef/i;
 
@@ -82,22 +101,97 @@ export function secretProblem(s: string): string | null {
   return null;
 }
 
-/** The signing and encryption secret. Required and random; never a default. */
-export function auth2Secret(): string {
-  const s = process.env.BETTER_AUTH_SECRET ?? "";
+/** The BETTER_AUTH_SECRET override: null when not set; a set value that is unfit is refused (it was chosen by someone). */
+export function envSecret(): string | null {
+  const s = process.env.BETTER_AUTH_SECRET;
+  if (s === undefined || s === "") return null;
   const problem = secretProblem(s);
-  if (problem) throw new Error(`${problem} It is needed while AUTH2 is on.`);
+  if (problem) throw new Error(problem);
   return s;
 }
 
+/** An address as an origin-less base (no trailing slash), or a plain sentence naming where it came from. */
+function asBase(raw: string, from: string): string {
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("scheme");
+    return raw.replace(/\/+$/, "");
+  } catch {
+    throw new Error(`${from} is not an address, for example https://app.example.com.`);
+  }
+}
+
+/** The base address from the environment only (tests and makeAuth's defaults): BETTER_AUTH_URL, else this machine. */
+export function envBaseURL(): string {
+  const set = process.env.BETTER_AUTH_URL?.trim();
+  return set ? asBase(set, "BETTER_AUTH_URL") : `http://localhost:${process.env.PORT?.trim() || "3000"}`;
+}
+
+const originsOf = (list: string[], from: string) =>
+  list.map((s) => s.trim()).filter(Boolean).map((s) => {
+    try {
+      return new URL(s).origin;
+    } catch {
+      throw new Error(`${from} has an entry that is not an address: ${s}`);
+    }
+  });
+
+export type Auth2Config = {
+  secret: string;
+  /** Null in production until the first-run page has stored the address the owner confirmed. */
+  baseURL: string | null;
+  trustedOrigins: string[];
+  /** Shown to a platform administrator; never a reason not to start. */
+  warnings: string[];
+};
+
+/** The signing secret: the override, else the stored one, made once (two starts at once keep the same one). */
+async function storedSecret(db: Pool): Promise<string> {
+  const fromEnv = envSecret();
+  if (fromEnv) return fromEnv;
+  const made = randomBytes(48).toString("base64url");
+  await db.query("INSERT INTO auth2_secrets (name, value) VALUES ('better-auth', $1) ON CONFLICT (name) DO NOTHING", [made]);
+  const r = await db.query<{ value: string }>("SELECT value FROM auth2_secrets WHERE name = 'better-auth'");
+  return r.rows[0].value;
+}
+
+/** Everything the new sign-in needs, resolved as in the table at the top. `db` is the owner's pool. */
+export async function resolveAuth2Config(db: Pool): Promise<Auth2Config> {
+  const setting = async <T>(key: string): Promise<T | null> => {
+    const r = await db.query<{ value: T }>("SELECT value FROM settings WHERE key = $1", [key]);
+    return r.rows[0]?.value ?? null;
+  };
+  const secret = await storedSecret(db);
+  const envURL = process.env.BETTER_AUTH_URL?.trim();
+  const savedURL = await setting<string>(AUTH2_SETTING.baseUrl);
+  let baseURL: string | null = null;
+  if (envURL) baseURL = asBase(envURL, "BETTER_AUTH_URL");
+  else if (typeof savedURL === "string" && savedURL) baseURL = asBase(savedURL, `The setting ${AUTH2_SETTING.baseUrl}`);
+  else if (!isProduction()) baseURL = envBaseURL();
+  const envOrigins = process.env.AUTH2_TRUSTED_ORIGINS?.trim();
+  const savedOrigins = await setting<unknown>(AUTH2_SETTING.trustedOrigins);
+  const more = envOrigins
+    ? originsOf(envOrigins.split(","), "AUTH2_TRUSTED_ORIGINS")
+    : Array.isArray(savedOrigins)
+      ? originsOf(savedOrigins.filter((x): x is string => typeof x === "string"), `The setting ${AUTH2_SETTING.trustedOrigins}`)
+      : [];
+  const trustedOrigins = [...new Set([...(baseURL ? [new URL(baseURL).origin] : []), ...more])];
+  const warnings: string[] = [];
+  if (isProduction() && baseURL && !baseURL.startsWith("https://")) {
+    warnings.push(`The sign-in address is ${baseURL}, not https: sign-in cookies are sent unencrypted. Serve the app over https and change the address.`);
+  }
+  if (isProduction() && !baseURL) warnings.push("The sign-in address is not set yet. It is stored when the owner is created on the first-run page.");
+  return { secret, baseURL, trustedOrigins, warnings };
+}
+
 /**
- * Every setting the new sign-in needs, checked at once. Called from ready() (src/lib/db.ts) when AUTH2 is on, so a
- * wrong setting stops the app at start, with the health check failing, instead of at someone's first sign-in.
+ * Checks of values someone set in the environment, run at start (ready() in src/lib/db.ts): a weak
+ * BETTER_AUTH_SECRET, an unreadable address, a TRUSTED_PROXIES entry that is not an address. A value nobody set is
+ * never a reason to stop.
  */
 export async function checkAuth2Settings(): Promise<void> {
-  auth2Secret();
-  auth2BaseURL();
-  auth2TrustedOrigins();
+  envSecret();
+  if (process.env.BETTER_AUTH_URL?.trim()) envBaseURL();
+  if (process.env.AUTH2_TRUSTED_ORIGINS?.trim()) originsOf(process.env.AUTH2_TRUSTED_ORIGINS.split(","), "AUTH2_TRUSTED_ORIGINS");
   (await import("./clientAddress")).trustedProxies();
-  (await import("./mail")).mailSender();
 }

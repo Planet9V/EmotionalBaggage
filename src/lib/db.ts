@@ -147,7 +147,7 @@ export function ready() {
     g.__c2rReady = (async () => {
       // The new sign-in's settings, checked before anything else when it is on (src/lib/auth2/config.ts).
       const auth2 = await import("./auth2/config");
-      if (auth2.auth2Enabled()) await auth2.checkAuth2Settings();
+      if (auth2.auth2EnabledNow()) await auth2.checkAuth2Settings();
       await migrate();
       await (await import("./auth")).ensureDefaultUser(ownerPool());
       const vector = await vectorSupport();

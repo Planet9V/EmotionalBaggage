@@ -12,10 +12,18 @@ import { NextResponse } from "next/server";
 import { route } from "@/lib/api/route";
 import { withClientAddress } from "@/lib/auth2/clientAddress";
 import { auth2Enabled } from "@/lib/auth2/config";
-import { auth2 } from "@/lib/auth2/server";
+import { auth2, SetupRequired } from "@/lib/auth2/server";
 
 const handle = route.open(
-  async (req: Request) => (auth2Enabled() ? (await auth2()).handler(withClientAddress(req)) : NextResponse.json({ error: "Not found." }, { status: 404 })),
+  async (req: Request) => {
+    if (!(await auth2Enabled())) return NextResponse.json({ error: "Not found." }, { status: 404 });
+    try {
+      return (await auth2()).handler(withClientAddress(req));
+    } catch (e) {
+      if (!(e instanceof SetupRequired)) throw e;
+      return NextResponse.json({ code: "SETUP_REQUIRED", error: "Sign-in is not set up yet. Open the first-run page to create the owner." }, { status: 503 });
+    }
+  },
   { maxBodyBytes: 64 * 1024 }
 );
 

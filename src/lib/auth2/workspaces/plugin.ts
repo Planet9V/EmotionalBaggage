@@ -12,6 +12,7 @@ import { createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { cleanWorkspaceName } from "../guards";
+import type { MailSender } from "../mail";
 import { isRole, manages, may, mayGrant, type Role } from "./permissions";
 import * as store from "./store";
 
@@ -29,7 +30,15 @@ async function memberOf(db: Pool, ctx: SessionCtx, workspaceId: string) {
 
 const notAllowed = () => store.refuse("FORBIDDEN", "NOT_ALLOWED", "Your role in this workspace does not allow this change.");
 
-export function workspaces(db: Pool) {
+/** What the invitation endpoints need from the sign-in's configuration (../auth.ts). */
+export type WorkspaceDeps = {
+  /** The mail sender, or null in "no mail" mode (../mail.ts, currentMailSender). */
+  mailer: () => Promise<MailSender | null>;
+  /** An address on this site's account screens with a token. */
+  link: (path: string, token: string) => string;
+};
+
+export function workspaces(db: Pool, _deps: WorkspaceDeps) {
   return {
     id: "c2r-workspaces",
     endpoints: {

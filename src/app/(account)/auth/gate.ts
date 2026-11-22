@@ -15,7 +15,7 @@ import { ownerPool } from "@/lib/db";
 export async function gate() {
   // Decided per request from the environment, never at build time.
   await connection();
-  if (!auth2Enabled()) notFound();
+  if (!(await auth2Enabled())) notFound();
 }
 
 /** The signed-in account (new sign-in), or a redirect to /auth/sign-in that comes back to `here`. */

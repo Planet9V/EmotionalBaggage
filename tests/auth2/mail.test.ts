@@ -1,7 +1,7 @@
 // The mail interface (trial task 4): three messages in plain sentences, the same words as text and HTML, and a sender
 // that writes to the log and sends nothing.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mailSender, render } from "@/lib/auth2/mail";
+import { currentMailSender, render } from "@/lib/auth2/mail";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -40,10 +40,21 @@ describe("mail", () => {
     expect(m.html).toContain('href="http://localhost:3322/auth/confirm?token=abc&amp;x=&lt;y&gt;"');
   });
 
-  it("the sender in use writes to the log and sends nothing", async () => {
+  it("outside production, with no mail service, the sender writes to the log and sends nothing", async () => {
     const log = vi.spyOn(console, "info").mockImplementation(() => undefined);
-    await mailSender().send(render({ kind: "confirm-email", to: "c@example.test", link: LINK }));
+    await (await currentMailSender())!.send(render({ kind: "confirm-email", to: "c@example.test", link: LINK }));
     expect(log).toHaveBeenCalledTimes(1);
     expect(String(log.mock.calls[0][0])).toMatch(/^\[auth2 mail, not sent\] to c@example.test: Confirm your email address/);
+  });
+
+  it("in production with no mail service there is no sender ('no mail' mode)", async () => {
+    const env = process.env as Record<string, string | undefined>;
+    const keep = env.NODE_ENV;
+    env.NODE_ENV = "production";
+    try {
+      expect(await currentMailSender()).toBeNull();
+    } finally {
+      env.NODE_ENV = keep;
+    }
   });
 });

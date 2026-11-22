@@ -2,9 +2,7 @@
  * Mail for the new sign-in (trial task 4, interface only).
  *
  * One interface, MailSender: it is given a finished message (address, subject, plain text, HTML) and sends it.
- * Until the owner names a mail service, the only sender is logSender, which writes the message to the server log
- * instead of sending it. A real sender (Resend, Postmark, SMTP...) is one more object with the same `send`, chosen
- * in mailSender() below; nothing else changes.
+ * Which sender is used is decided by currentMailSender() below, the one place a configured mail service plugs in.
  *
  * The three messages are built here from plain sentences, so every sender sends the same words:
  * - confirm-email: the link to confirm the address given at sign-up;
@@ -20,7 +18,8 @@ export type MailMessage = { to: string; subject: string; text: string; html: str
 
 export type MailSender = { send(m: MailMessage): Promise<void> };
 
-/** Writes the message to the server log. Not a mail service: anyone who can read the log can follow the link. */
+/** Writes the message to the server log. Not a mail service: anyone who can read the log can follow the link, so it
+ *  is used only outside production. */
 const logSender: MailSender = {
   async send(m) {
     console.info(`[auth2 mail, not sent] to ${m.to}: ${m.subject}\n${m.text}`);
@@ -28,18 +27,22 @@ const logSender: MailSender = {
 };
 
 /**
- * The sender in use. Only the log exists for now (no mail service has been chosen). In production that would put
- * every confirmation and reset link in the server log, where anyone who reads the log could use it, so there it is
- * refused and the new sign-in does not start.
+ * Where a configured mail service plugs in. Another change adds SMTP settings in the admin area and a
+ * `getMailSender()` beside this file; it is wired here, in this one place, and nowhere else. Until then: none.
  */
-export function mailSender(): MailSender {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "AUTH2 is on in production but no mail service is configured (AUTH2_MAIL is not set). The only sender available writes " +
-        "confirmation and reset links to the server log, which is not safe in production. Turn AUTH2 off until a mail service is set up."
-    );
-  }
-  return logSender;
+const configuredSender = async (): Promise<MailSender | null> => null;
+
+/**
+ * The one function every caller uses to send mail (owner's ruling: mail must never stop the app running).
+ * Answers the configured sender; with none, the log outside production; in production with none, null: "no mail"
+ * mode, in which nothing is sent and no link or token is written anywhere. In that mode sign-up leaves the account
+ * for an administrator to confirm, a password reset is asked of an administrator, and an invitation's link is
+ * handed to the person who made it (src/lib/auth2/workspaces/invitations.ts).
+ */
+export async function currentMailSender(): Promise<MailSender | null> {
+  const configured = await configuredSender();
+  if (configured) return configured;
+  return process.env.NODE_ENV === "production" ? null : logSender;
 }
 
 type Template = { subject: string; lines: string[]; action: string; after: string[] };

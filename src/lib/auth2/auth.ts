@@ -32,8 +32,8 @@ import { Kysely, PostgresDialect } from "kysely";
 import type { Pool } from "pg";
 import { CLIENT_ADDRESS_HEADER, hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { audit } from "@/lib/db";
-import { AUTH2_BASE_PATH, AUTH2_PAGES, auth2BaseURL, auth2Secret, auth2TrustedOrigins } from "./config";
-import { mailSender, render, type MailSender } from "./mail";
+import { AUTH2_BASE_PATH, AUTH2_PAGES, envBaseURL, envSecret } from "./config";
+import { currentMailSender, render, type MailSender } from "./mail";
 import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims } from "./guards";
 import { workspaces } from "./workspaces/plugin";
 import { createPersonal } from "./workspaces/store";
@@ -86,7 +86,10 @@ const THROTTLE = {
 export type Auth2Options = {
   baseURL?: string;
   secret?: string;
-  mail?: MailSender;
+  /** Where mail goes: a sender, null for "no mail" mode, or (left out) whatever currentMailSender() says per message. */
+  mail?: MailSender | null;
+  /** More addresses besides the base address that may send forms (resolved by ./config.ts). */
+  trustedOrigins?: string[];
   /** The throttle; on unless a test turns it off. */
   rateLimit?: boolean;
 };
@@ -113,17 +116,27 @@ const AUDITED: Record<string, [string, string]> = {
  * configuration with the plain pool (the planner cannot use the wrapped adapter).
  */
 export function auth2Options(db: Pool, opts: Auth2Options = {}) {
-  const mail = opts.mail ?? mailSender();
-  const baseURL = (opts.baseURL ?? auth2BaseURL()).replace(/\/+$/, "");
+  const mailer = opts.mail === undefined ? currentMailSender : async () => opts.mail ?? null;
+  // Better Auth's callbacks get a sender that asks at each message; in "no mail" mode it sends nothing.
+  const mail: MailSender = {
+    send: async (m) => {
+      const sender = await mailer();
+      if (sender) return sender.send(m);
+      // "No mail" mode: nothing of the message (no address, no link) reaches the log.
+      console.info("[auth2 mail] no mail service is configured: one message was not sent.");
+    },
+  };
+  const baseURL = (opts.baseURL ?? envBaseURL()).replace(/\/+$/, "");
   const link = (path: string, token: string) => `${baseURL}${AUTH2_PAGES}${path}?token=${encodeURIComponent(token)}`;
 
-  const secret = opts.secret ?? auth2Secret();
+  const secret = opts.secret ?? envSecret();
+  if (!secret) throw new Error("The new sign-in was built without its secret; build it through auth2() in ./server.ts, which reads it from the database.");
   const options = {
     appName: APP_NAME,
     baseURL,
     basePath: AUTH2_BASE_PATH,
     secret,
-    trustedOrigins: opts.baseURL ? [new URL(baseURL).origin] : auth2TrustedOrigins(),
+    trustedOrigins: [...new Set([new URL(baseURL).origin, ...(opts.trustedOrigins ?? [])])],
     database: db,
     telemetry: { enabled: false },
     disabledPaths: DISABLED_PATHS,
@@ -229,7 +242,7 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         backupCodeOptions: { amount: 10, length: 10, storeBackupCodes: "encrypted" },
       }),
       organization(ORGANIZATION_OPTIONS),
-      workspaces(db),
+      workspaces(db, { mailer, link }),
     ],
   } satisfies BetterAuthOptions;
   return { options };
