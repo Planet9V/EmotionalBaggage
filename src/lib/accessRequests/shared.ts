@@ -12,7 +12,7 @@ export const ACCESS_STATUS_LABEL: Record<AccessStatus, string> = { new: "New", c
 /**
  * The service levels a request can name, by key. The welcome page's cards (LEVELS in
  * src/components/welcome/content.ts) use the same keys and names; tests/api/access-requests.test.ts holds the two
- * lists together, and migration 0045 holds the column to these keys. "" is "no level chosen".
+ * lists together, and migration 0030 holds the column to these keys. "" is "no level chosen".
  */
 export const ACCESS_LEVELS = ["free", "maker", "studio", "self"] as const;
 export type AccessLevel = (typeof ACCESS_LEVELS)[number];

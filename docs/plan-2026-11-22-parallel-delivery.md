@@ -8,7 +8,7 @@ Owner instruction: a formal plan that uses several agents and a project manager,
 - **Agents:** one per workstream, each in its own working copy and branch under `/home/claude/ws/`, with its own database and port, so no two agents edit the same checkout.
 - **Definition of done for a workstream slice:** type check, lint and unused-code check clean; the tests for the touched area pass locally; all five CI jobs pass on the branch; the project manager has looked at the result in a browser; then it is merged and deployed.
 - **Capacity:** the build machine has 2 processors and 7 GB of memory, and has restarted under load before, losing running agents. Four agents run at once. The rest start as places free up. Agents run only the tests for their own area; the full suite runs in CI.
-- **Shared files:** each workstream has a reserved range of migration numbers and a list of folders it owns. Anything outside the list is changed only through the project manager.
+- **Shared files:** each workstream has a list of folders it owns. Migrations must apply in number order, so the ranges in the table are working numbers only: the project manager renumbers each branch's migrations to the next free number when it merges. Anything outside the list is changed only through the project manager.
 - **Owner decisions:** work that needs a decision is prepared up to the decision and then held; it never blocks another workstream.
 
 ## 2. Workstreams
@@ -80,6 +80,6 @@ The owner gets a report when each workstream lands on the live site, and a combi
 | WS1 | started 22 Nov |
 | WS2 | started 22 Nov (slice 1) |
 | WS3 | started 22 Nov |
-| WS4 | started 22 Nov |
+| WS4 | done 22 Nov: contrast fix, request form records the level (migration 0030), five owner files seeded, unused bag removed |
 | WS5 to WS7 | queued |
 | WS8, WS9 | held for owner |
