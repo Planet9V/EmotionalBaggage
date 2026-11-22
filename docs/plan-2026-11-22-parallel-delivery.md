@@ -22,6 +22,7 @@ Owner instruction: a formal plan that uses several agents and a project manager,
 | WS5 | Concept-to-production status dashboard | web developer | new `src/app/.../status`, `src/components/status/` | 0046 to 0047 | 2 |
 | WS6 | Billing: Stripe subscriptions, plan limits, AI credits | web developer | `src/lib/billing/`, billing routes and page | 0050 to 0059 | 2, after WS2 slice 1 |
 | WS7 | Reuse: forms onto the shared pattern, one place for status colours and channel names | refactorer | forms and shared kit | none | 2, after WS3 |
+| WS10 | Platform admin area: settings for Stripe, pricing and tiers, mail, Amazon and channels, AI and embeddings, voice, other services; then full control of users and organizations | web developer | `src/app/admin/`, `src/lib/admin/`, `src/lib/auth2/adminOps.ts` | next free | 2 and 3 |
 | WS8 | The handle tag in the app: form-factor decision, enclosure, print job | general | enclosure generator, concept rows | 0048 | held for owner |
 | WS9 | Enter the Baggage Claims content | general | concept rows only | none | held for owner |
 
@@ -42,6 +43,12 @@ Each fault: a failing test first, then the fix. One commit per fault.
 
 ### WS4. Small fixes and files
 White-on-orange contrast at 390 pixels in `DecisionFlow.tsx`; the request form records the chosen level; the owner's generator script, materials sheet and voxel arrays added to the concept's Files and the seed; the 121 MB clamshell model reduced below the 25 MB limit or left out with a note; re-sync of the project documents.
+
+### WS10. Platform admin area (owner instruction, 22 Nov)
+An area for the application's administrator only. No service is allowed to block the app from running: every setting has a "not configured" state and the app says what is switched off.
+- Part A, settings: an overview of every service and its state; Stripe keys and webhook secret; the plan catalogue (tiers, prices, limits, shown or hidden) read by the public page; mail server; Amazon and the other sales channels; AI models and embeddings; voice; other services. Secrets are write-only, audited, and encrypted at rest when `SETTINGS_KEY` is set.
+- Part B, people: the platform administrator creates, changes, disables and deletes users and organizations; confirms a user without any email; sets passwords; requires, disables or resets two-factor; adds people to organizations and hands over invitation links directly. The functions are built in accounts slice 2; the screens follow when it lands.
+- Mail is optional: with no mail server, sign-ups wait for an administrator to confirm them and no link is written to the log.
 
 ### WS5 to WS7
 Briefs are written when their wave starts, from the state of `main` at that time.
@@ -83,5 +90,6 @@ The owner gets a report when each workstream lands on the live site, and a combi
 | WS4 | done 22 Nov, live: contrast fix, request form records the level (migration 0030), five owner files seeded, unused bag removed |
 | WS5 | done 22 Nov, live at `/status` |
 | WS6 | queued behind WS2 slice 2 and the owner's prices and Stripe keys |
-| WS7 | started 22 Nov |
+| WS7 | built 22 Nov, in CI: one source for status colours and channel names, 14 of 40 hand-wired forms converted, held-back exports 54 to 18 |
+| WS10 | part A started 22 Nov; part B functions added to accounts slice 2 |
 | WS8, WS9 | held for owner |
