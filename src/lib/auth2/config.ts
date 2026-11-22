@@ -82,7 +82,7 @@ export async function auth2Enabled(): Promise<boolean> {
     value = await storedSwitch(ownerPool());
   } catch (e) {
     const known = g.__c2rAuth2Known;
-    console.error(`[auth2] the switch could not be read (${(e as Error).message}); ${known === undefined ? "answering 503" : `keeping the last value read, ${known ? "on" : "off"}`}`);
+    console.error(`[auth2] the switch could not be read, ${known === undefined ? "so the app answers 503" : `so the last value read is kept: ${known ? "on" : "off"}`}: ${(e as Error).message}`);
     if (known === undefined) throw new SwitchUnavailable();
     // Tried again on the next request, not held for the cache window.
     return known;
