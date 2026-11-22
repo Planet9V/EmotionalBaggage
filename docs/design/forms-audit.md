@@ -97,6 +97,11 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | app/sign-in/SignInForm.tsx | sign in | S | left: accounts workstream (WS2) replaces sign-in |
 | app/account/ChangePassword.tsx | change password | M | left: accounts workstream (WS2) |
 
+A hand-wired form with no note needs no decision: it was not reached in this pass and can be
+converted the same way, starting with the M forms. Where a note names a reason (a list of rows,
+autosave per field, a file upload with column mapping, fields that come from the provider), the
+conversion needs `useFieldArray` or a per-field save and is a larger change than a batch.
+
 ## Needs a decision
 
 1. **OfferForm** shows one line for the first problem, written as `<field path>: <message>` from
