@@ -11,6 +11,7 @@ import { sceneOf } from "../scenes";
 import { bagVoice } from "../speech";
 import { E, bump, clamp01, kf, mix, swing } from "./ease";
 import { handleCast, tossCast } from "./castTarmac";
+import { curbExtras } from "./extras";
 import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, Sign, Stage, luggage, trolley, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure } from "./people";
 
@@ -343,6 +344,7 @@ function curb(k: Kit) {
 }
 
 const { owner, bystander } = handleCast({ bag: curbBag });
+const CURB_EXTRAS = curbExtras(curbBag);
 
 function HandleSet() {
   return (
@@ -359,6 +361,9 @@ function HandleSet() {
       <Bag pose={curbBag} voice={(t) => bagVoice(HANDLE, t)} />
       <Figure pose={owner} role="owner" tall={1.03} />
       <Figure pose={bystander} role="bystander" phone />
+      {CURB_EXTRAS.map((x, i) => (
+        <Figure key={i} pose={x.pose} role={x.role} tall={x.tall} seed={20 + i * 4.3} />
+      ))}
     </>
   );
 }

@@ -10,9 +10,9 @@ import { onBody, type FigPose } from "./people";
 import type { Scene } from "../scenes";
 import { voiceOf } from "../speech";
 
-export const AGENT_BACK: V3 = [-1.6, 0, -1.3];
+const AGENT_BACK: V3 = [-1.6, 0, -1.3];
 const AGENT_YAW = 0.42;
-export const HOST: V3 = [3.2, 0, 0.8];
+const HOST: V3 = [3.2, 0, 0.8];
 const HOST_YAW = -2.3;
 /** In the button the owner stands close, beside the scale, facing the bag. */
 const HOST_B: V3 = [1.75, 0, 1.2];
