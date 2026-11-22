@@ -93,7 +93,7 @@ export function VoiceIntro({ onSkip }: { onSkip: () => void }) {
       <p aria-live="polite" className="sr-only">
         {SPEAKER_NAME.narrator}: {line.text}
       </p>
-      <button type="button" onClick={onSkip} className="absolute bottom-[13%] right-3 rounded bg-black/70 px-2 py-1.5 font-mono text-[10px] text-secondary outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-focus sm:right-5 sm:text-[11px]">
+      <button type="button" onClick={onSkip} className="absolute left-3 top-0 z-10 flex h-[7%] min-h-6 items-center rounded px-1.5 font-mono text-[10px] text-secondary outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-focus sm:left-5 sm:text-[11px]">
         {SOUND.skip}
       </button>
     </div>

@@ -8,7 +8,7 @@
 // introduction and the clips are in ./SoundControl.tsx and ./voiceTrack.ts). The film is three-dimensional and loads only when the
 // section nears the window; until then, and wherever it cannot or should not run (no 3D, a device that cannot keep
 // pace, reduced motion, no script), a drawn safety-card frame stands in its place, with the scene's line set over it.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useInView } from "motion/react";
 import { useAnimated, useHydrated } from "../useAnimated";
@@ -52,20 +52,24 @@ const PLAY_EVENT = "c2r:origin-scene";
 const NO_VOICE: VoiceManifest = {};
 /** The introduction is heard once a visit: kept for the tab, not beyond it. */
 const INTRO_HEARD = "c2r:voice-intro";
-function introHeard() {
+/** The sound control has been used in this tab: the invitation is not shown again (sound itself is never restored). */
+const SOUND_ASKED = "c2r:voice-asked";
+const flagged = (key: string) => {
   try {
-    return sessionStorage.getItem(INTRO_HEARD) === "1";
+    return sessionStorage.getItem(key) === "1";
   } catch {
     return false;
   }
-}
-function markIntroHeard() {
+};
+const flag = (key: string) => {
   try {
-    sessionStorage.setItem(INTRO_HEARD, "1");
+    sessionStorage.setItem(key, "1");
   } catch {
-    // private browsing: it plays again on the next visit to the control
+    // private browsing: forgotten on the next visit
   }
-}
+};
+const introHeard = () => flagged(INTRO_HEARD);
+const markIntroHeard = () => flag(INTRO_HEARD);
 
 /** `voice` is the published voice-over set, worked out on the server: cue -> clip address, length, loudness envelope. */
 export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }: { className?: string; bare?: boolean; voice?: VoiceManifest }) {
@@ -227,7 +231,7 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
   }, [sound, intro, still, seen, scene, cut.run, voice]);
 
   // the introduction ends (heard out, skipped, or the section left): scene 1 starts from its top
-  const endIntro = () => {
+  const endIntro = useCallback(() => {
     markIntroHeard();
     voiceTrack.stop();
     setIntro(false);
@@ -235,14 +239,18 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
     mark(store, 0, false);
     setTick(0);
     setCut((c) => ({ idx: 0, slate: false, run: c.run + 1 }));
-  };
-  const leftDuringIntro = intro && !seen;
+  }, [store, animated]);
+  // the section left during the introduction silences it; coming back plays it again from the top
+  const wasSeen = useRef(seen);
   useEffect(() => {
-    if (leftDuringIntro) voiceTrack.stop();
-  }, [leftDuringIntro]);
+    if (intro && !seen && wasSeen.current) voiceTrack.stop();
+    else if (intro && seen && !voiceTrack.now().cue) voiceTrack.play(INTRO_CUE, 0, endIntro);
+    wasSeen.current = seen;
+  }, [intro, seen, endIntro]);
   // the sound control: the element is made and first played inside this click, never before it
   const toggleSound = () => {
     setAsked(true);
+    flag(SOUND_ASKED);
     if (sound) {
       voiceTrack.stop();
       setIntro(false);
@@ -320,7 +328,7 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
               {/* the letterbox, with the lower third in the bottom bar */}
               <div className="absolute inset-x-0 top-0 h-[7%] min-h-6 bg-black" />
               {/* a sound switch, not a pause: the film never stops, and never starts sound by itself */}
-              <SoundControl sound={sound} asked={asked} empty={voiceTrack.empty && !voice[INTRO_CUE]} onToggle={toggleSound} onIntent={() => voiceTrack.preload([INTRO_CUE, ...preloadList(voice, SCENES, cut.idx)])} />
+              <SoundControl sound={sound} asked={asked || (hydrated && flagged(SOUND_ASKED))} empty={voiceTrack.empty && !voice[INTRO_CUE]} onToggle={toggleSound} onIntent={() => voiceTrack.preload([INTRO_CUE, ...preloadList(voice, SCENES, cut.idx)])} />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[12%] min-h-9 items-center gap-2 bg-black px-3 font-mono text-[10px] leading-tight sm:gap-3 sm:px-5 sm:text-xs" aria-hidden="true">
                 <span className={`h-2 w-2 shrink-0 rounded-full ${lit ? "bg-dutchOrange" : "bg-hairline"}`} />
                 <span className={`min-w-0 truncate ${lit ? "text-primary" : "text-muted"}`}>
@@ -335,8 +343,11 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
             <p aria-live="polite" className="sr-only">
               {spoken}
             </p>
-            {/* said plainly beside the sound control: the voices are synthetic; and the introduction in words */}
-            <div className="mx-auto mt-2 flex w-full max-w-[1040px] flex-wrap items-start gap-x-4 gap-y-1 text-xs text-secondary">
+          </div>
+          {/* said plainly beside the sound control: the voices are synthetic; and the introduction in words. Outside the
+              stage's dark scope, so it takes the page's own colours. */}
+          <div className="-mt-3 lg:col-span-12">
+            <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-start gap-x-4 gap-y-1 text-xs text-secondary">
               <p>{SOUND.synthetic}</p>
               <details className="min-w-0">
                 <summary className="cursor-pointer text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">{SOUND.transcript}</summary>
