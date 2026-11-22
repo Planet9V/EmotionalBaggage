@@ -253,7 +253,8 @@ export const EXAMPLE = {
   ] as [string, number][],
   pitch: "A gadget that gives a suitcase a voice.",
   wires: 20,
-  solderSteps: 18,
+  /** one step per wire on the build sheet: the app numbers them 1 to 20 (two pairs share an order number in the seed, 18 distinct) */
+  solderSteps: 20,
   build: "7 h 10 min",
   voicePacks: ["Family", "Salty", "New Yorker"],
 } as const;
@@ -279,7 +280,8 @@ export const HERO_LINES: BagLineKey[] = ["scale", "lifted", "impact", "conveyor"
 
 /**
  * The departures board. Each row is a stage: its gate, what it is about before it is called, and one remark that
- * is a fact about the worked example (the seeded claims are all unverified, so Research is delayed; the rest are
+ * is a fact about the worked example (the seeded claims are all unverified, so Research is delayed; the seeded
+ * listing is one row saying it is not started, so Sales stays scheduled; the rest are
  * the EXAMPLE figures). The board runs through BOARD_STATES in a loop: nothing called yet, then each gate called
  * in turn. Everything else on it is a status word.
  */
@@ -292,13 +294,13 @@ export const BOARD = {
   cells: { time: 5, destination: 10, gate: 2, status: 9, remarks: 18 },
   rows: [
     { n: "01", name: "Concept", about: "The idea", fact: `${EXAMPLE.documents} source docs` },
-    { n: "02", name: "Research", about: "The sources", fact: "9 claims to verify", delayed: true },
+    { n: "02", name: "Research", about: "The sources", fact: "9 claims to verify", hold: "Delayed" },
     { n: "03", name: "Design", about: "The parts", fact: `${EXAMPLE.parts} parts ${EXAMPLE.wires} wires` },
     { n: "04", name: "Prototype", about: "The build", fact: "Build 7h10" },
     { n: "05", name: "Production", about: "The cost", fact: `Parts cost ${EXAMPLE.partsCost.toFixed(2)}` },
     { n: "06", name: "Marketing", about: "The launch", fact: `${EXAMPLE.voicePacks.length} voice packs` },
-    { n: "07", name: "Sales", about: "The listing", fact: "0 live accounts" },
-  ] as { n: string; name: string; about: string; fact: string; delayed?: boolean }[],
+    { n: "07", name: "Sales", about: "The listing", fact: "No listing yet", hold: "Scheduled" },
+  ] as { n: string; name: string; about: string; fact: string; /** what the row shows once called, where the example's own rows say the stage is not through */ hold?: "Delayed" | "Scheduled" }[],
 };
 
 type BoardTone = "plain" | "good" | "late";
@@ -310,7 +312,7 @@ function boardState(called: number): BoardRow[] {
     const at = i + 1;
     const base = { destination: r.name, gate: r.n };
     if (at > called) return { ...base, time: at === called + 1 ? "Next" : "Later", status: "Scheduled", remarks: r.about, tone: "plain" };
-    if (r.delayed) return { ...base, time: at === called ? "Now" : "Held", status: "Delayed", remarks: r.fact, tone: "late" };
+    if (r.hold) return { ...base, time: at === called ? "Now" : "Held", status: r.hold, remarks: r.fact, tone: r.hold === "Delayed" ? "late" : "plain" };
     return { ...base, time: at === called ? "Now" : "Gone", status: at === called ? "Boarding" : "Departed", remarks: r.fact, tone: "good" };
   });
 }
@@ -329,7 +331,6 @@ export type JourneyStage = {
   does: string;
   /** where in the app */
   inApp: string;
-  shots: string[];
   /** this stage's views run live in the engineering stage above, so it shows no screenshot and links there */
   live?: boolean;
   /** index into PROBLEM.pairs, shown as "elsewhere" and "here" */
@@ -337,8 +338,6 @@ export type JourneyStage = {
   /** figures from this repository: the seed concept, its source documents and the journey document */
   facts: { figure: string; label: string }[];
   line: BagLineKey;
-  /** up to three of this stage's gate checks, worded as src/lib/process/definitions.ts words them */
-  gate: string[];
   extras?: ("exploded" | "layers" | "cost" | "ads" | "listing" | "schematic")[];
 };
 
@@ -351,12 +350,14 @@ export const ENGINEERING = {
   lead: `Six of the workbench's own views, running here on ${EXAMPLE.name}'s rows. Turn the model, pan the schematic, watch the case print. Nothing on this page can be saved; in the workbench every one of them is yours to edit.`,
   tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
   loading: "Loading the view",
+  badge: "Live views, in the workbench's dark theme",
   still: "A still of the 3D view; the live one loads as you reach it.",
   noscript: "Script is off, so the views cannot run. Here are stills of the schematic and the enclosure, the whole parts list and the first soldering steps.",
   hintMouse: "Drag to turn. Ctrl or Cmd + wheel to zoom.",
-  hintTouch: "Drag to turn. Pinch to zoom.",
-  panTouch: "Drag to pan. The buttons zoom.",
-  note: "As the app says of this example: the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
+  hintTouch: "Tap, then drag to turn. Pinch to zoom.",
+  tap: "Tap to explore",
+  panTouch: "Tap, then drag to pan. Pinch or the buttons zoom.",
+  note: "The stage is dark whichever theme the page is in: these are the workbench's own views in its dark theme. As the app says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
   model: {
     modes: { translucent: "Translucent", solid: "Solid", wireframe: "Wireframe", exploded: "Exploded" },
     wiresHidden: "The solid lid is closed, so the wires and the labels of the parts inside are not drawn.",
@@ -370,14 +371,17 @@ export const ENGINEERING = {
     hint: "Drag to pan. Ctrl or Cmd + wheel, or the buttons, to zoom. Press a pin or a wire to light it up.",
   },
   layout: {
-    scale: "Top, front and side, to scale in mm",
+    scale: "Top, front and side, to scale in mm.",
+    straps: "STR1, outside the case outline, is the pair of mounting straps under it.",
     hint: "Drag to pan. Press a part to name it. Ctrl or Cmd + wheel, or the buttons, to zoom.",
   },
   enclosure: {
     modes: { printing: "As it prints", assembled: "Assembled" },
     label: "The generated enclosure of the example: a base and a lid.",
-    printed: "Printed:",
-    tall: "Height:",
+    /** the plane climbs to the taller of the two pieces as they lie on the bed; the assembled height is the base plus the lid's thickness */
+    layer: "Layer height",
+    of: (top: string) => `of ${top} mm`,
+    sizes: (base: string, lid: string, assembled: string) => `On the bed the base is ${base} mm tall and the lid, turned over, ${lid} mm. Closed, the case is ${assembled} mm.`,
     checksTitle: "The app's checks, measured on these meshes",
     missing: "The enclosure generator did not run on this server, so there is nothing to show here.",
   },
@@ -395,19 +399,6 @@ export const ENGINEERING = {
   },
 };
 
-/** The page each screenshot is of, as scripts/landing-shots.mjs opens it: shown in the frame's address bar. */
-export const SHOT_PATH: Record<string, string> = {
-  schematic: "/s/design/schematic",
-  model: "/s/design/model",
-  enclosure: "/s/design/enclosure",
-  process: "/process",
-  plan: "/plan",
-  social: "/s/marketing/social",
-  launch: "/s/marketing/launch",
-  wiring: "/s/prototype/wiring",
-  chat: "/chat",
-};
-
 /** The journey's panels of seeded rows (StageRows.tsx): their counts are worked out from the rows, never typed. */
 export const ROWS = {
   claims: {
@@ -415,6 +406,15 @@ export const ROWS = {
     count: (n: number, open: number) => `${n} claims, ${open} still to verify`,
   },
   positioning: { count: (n: number) => `${n} rows` },
+  decisions: {
+    count: (n: number, decided: number) => `${n} decisions, ${decided} decided`,
+    hint: "The example's decision tree, every branch open. Press a decision to frame it and see where it stands.",
+    still: "The example's decisions, as a list until the tree loads.",
+  },
+  unit: {
+    count: (lines: number, batch: number) => `${lines} lines, at a batch of ${batch}`,
+    honest: "Added up by the app's own calculation from the seeded parts list. Prices are the example's own, from its source documents.",
+  },
   ads: { count: (n: number) => `${n} drafts, none approved` },
   listing: {
     count: (n: number) => `${n} row`,
@@ -426,11 +426,16 @@ export const ROWS = {
     honest: "Planned figures from the example's own source documents, not results: no channel has been run.",
   },
 };
+export const GATE = {
+  count: (met: number, total: number) => `Gate: ${met} of ${total} checks met`,
+  met: "met",
+  open: "not met",
+};
 export const LIVE_LINK = "These views run live in the engineering stage above";
 
 export const JOURNEY_INTRO = {
   title: "The journey, gate by gate",
-  lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, with the example's own rows at each stage. The ticked lines are checks each gate runs, shown met for illustration.`,
+  lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, with the example's own rows at each stage. Each gate shows its checks as they truly stand for the example today, worked out by the app's own gate rules: most are still open, and each open one says what is missing.`,
 };
 
 export const JOURNEY: JourneyStage[] = [
@@ -440,12 +445,10 @@ export const JOURNEY: JourneyStage[] = [
     name: "Concept",
     does: "Tell the idea once and keep every source with it. Then lay out the choices the idea depends on, and let the gate list what is still missing.",
     inApp: "Wizard, Concept story, Files, Decision tree",
-    shots: ["process"],
     facts: [
       { figure: String(EXAMPLE.documents), label: "source documents kept with the concept" },
       { figure: String(EXAMPLE.decisions), label: "decisions laid out, each with its options" },
     ],
-    gate: ["The concept story has its pitch", "At least one file is in Files", "The go/no-go decision is decided"],
     line: "scale",
   },
   {
@@ -454,9 +457,7 @@ export const JOURNEY: JourneyStage[] = [
     name: "Research",
     does: "Ask the questions that worry you and keep each answer with its sources. A claim becomes verified or wrong from the sources you judged, not from repetition.",
     inApp: "Research, Claims, Chat",
-    shots: [],
     facts: [{ figure: "2", label: "Kickstarter goals, and two build times, in the source documents. This is where they get settled." }],
-    gate: ["At least one claim is recorded", "At least 80% of claims are verified"],
     line: "hold",
   },
   {
@@ -465,14 +466,12 @@ export const JOURNEY: JourneyStage[] = [
     name: "Design",
     does: "Enter the parts once. The schematic, the physical layout, the 3D model and the enclosure are all drawn from that one list.",
     inApp: "Parts list, Schematic, Layout, 3D model, Enclosure",
-    shots: [],
     live: true,
     pair: 0,
     facts: [
       { figure: String(EXAMPLE.parts), label: "parts on the parts list" },
       { figure: String(EXAMPLE.wires), label: "wires on the schematic" },
     ],
-    gate: ["The schematic has at least one wire", "The electrical checks find no error", "The chosen enclosure passes its checks"],
     line: "lifted",
     extras: ["exploded", "schematic"],
   },
@@ -482,13 +481,11 @@ export const JOURNEY: JourneyStage[] = [
     name: "Prototype",
     does: "Source the parts, slice and print the case, wire it from a build sheet in order, and record each test.",
     inApp: "Sourcing, Print jobs, Build sheet, Tests",
-    shots: [],
     live: true,
     facts: [
       { figure: String(EXAMPLE.solderSteps), label: "soldering steps on the build sheet" },
       { figure: EXAMPLE.build, label: "to build, along the critical path" },
     ],
-    gate: ["Every bought part is in hand", "Every joint is soldered and tested", "Every acceptance test passes"],
     line: "impact",
     extras: ["layers"],
   },
@@ -498,10 +495,8 @@ export const JOURNEY: JourneyStage[] = [
     name: "Production",
     does: "Read the unit cost, added up from what you entered. See which parts have no price yet, then plan a batch and the cash it needs.",
     inApp: "Unit economics, Batch plans, Order of operations",
-    shots: ["plan"],
     pair: 1,
     facts: [{ figure: String(EXAMPLE.parts), label: "parts, every one with a price before the total is trusted" }],
-    gate: ["Unit economics have at least one line", "At least one batch is planned", "Production readiness: tests, compliance, parts and economics"],
     line: "souvenirs",
     extras: ["cost"],
   },
@@ -511,10 +506,8 @@ export const JOURNEY: JourneyStage[] = [
     name: "Marketing",
     does: "Approve drafts built from the brief and the proof: positioning, a brand kit, ads, a landing page and a launch plan whose dates count back from launch day.",
     inApp: "Positioning, Brand kit, Ads, Launch plan",
-    shots: [],
     pair: 3,
     facts: [{ figure: String(EXAMPLE.voicePacks.length), label: `voice packs to sell: ${EXAMPLE.voicePacks[0]}, ${EXAMPLE.voicePacks[1]} and ${EXAMPLE.voicePacks[2]}` }],
-    gate: ["The positioning is attacked by the reviewer and approved", "A name is chosen", "A launch plan has dated steps"],
     line: "carousel",
     extras: ["ads"],
   },
@@ -524,9 +517,7 @@ export const JOURNEY: JourneyStage[] = [
     name: "Sales",
     does: "List it, post about it, and watch orders and campaign results beside the targets you set. Nothing is posted until you confirm the exact text and the account.",
     inApp: "Listing, Channels, Social, Sales monitor",
-    shots: [],
     facts: [{ figure: "0", label: "real marketplace accounts run so far. These screens are built and tested against stand-ins, and say so." }],
-    gate: ["At least one sales channel is set", "Every listing element is ready or live", "Every ready or live listing has proof for its claims"],
     line: "conveyor",
     extras: ["listing"],
   },

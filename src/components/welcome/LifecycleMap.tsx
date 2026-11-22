@@ -32,7 +32,7 @@ export function LifecycleMap() {
   const ready = useHydrated();
   const wide = useWide();
   return (
-    <div className="min-h-[820px] lg:min-h-[318px]">
+    <div className="min-h-[844px] lg:min-h-[318px]">
       {ready ? <LifecycleFlow key={wide ? "wide" : "tall"} tall={!wide} /> : null}
       <AsList hidden={ready} />
     </div>

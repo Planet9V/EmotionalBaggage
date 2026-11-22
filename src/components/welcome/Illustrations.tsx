@@ -187,6 +187,13 @@ export function ListingCard({ className }: { className?: string }) {
     <Svg viewBox="0 0 320 200" className={className}>
       <rect x="11" y="11" width="298" height="178" rx="12" fill={PAPER} />
       <rect x="27" y="27" width="112" height="146" rx="8" fill={SHADE} />
+      {/* a soft band of light crossing the picture, as a product shot on a listing has */}
+      <clipPath id="wl-listing-picture">
+        <rect x="27" y="27" width="112" height="146" rx="8" />
+      </clipPath>
+      <g clipPath="url(#wl-listing-picture)">
+        <rect x="27" y="27" width="46" height="146" fill={ORANGE} fillOpacity="0.16" stroke="none" className="wl-sheen" />
+      </g>
       <g className="wl-float">
         <rect x="58" y="62" width="50" height="78" rx="9" fill={PAPER} />
         <path d="M72 62V50h22v12" />
@@ -195,7 +202,7 @@ export function ListingCard({ className }: { className?: string }) {
         <DeviceFace cx={83} cy={99} r={13} />
       </g>
       <T x={156} y={48} size={14} bold fill={INK}>{EXAMPLE.name}</T>
-      <T x={156} y={66} size={10}>A gadget that straps to a suitcase</T>
+      <T x={156} y={66} size={10}>Straps to a suitcase</T>
       <T x={156} y={79} size={10}>and heckles the trip.</T>
       {[100, 118, 136].map((y, i) => (
         <g key={y} className="wl-seq" style={{ animationDelay: `${i * 0.5}s` }}>

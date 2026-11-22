@@ -17,6 +17,7 @@ import { SchematicCanvas } from "@/components/schematic/SchematicCanvas";
 import { buildSymbolGraph, symbolNodeSize, SCALE, withRoutes } from "@/components/schematic/symbolGraph";
 import { buildGraph, computeNets, nodeHeight, NODE_W, HEADER_H, ROW_H, refParts, readWires, type XY } from "@/components/schematic/model";
 import type { Selection } from "@/components/schematic/SidePanel";
+import { TapToExplore } from "./TapToExplore";
 import { useAnimated } from "./useAnimated";
 import { ENGINEERING } from "./content";
 import { CHIP, CHIP_OFF, CHIP_ON, StageBar, StageFoot, StageView, Waiting } from "./StageParts";
@@ -67,7 +68,7 @@ export default function EngSchematic({ parts: partItems, wires: wireItems }: { p
         return net && net.netClass !== "power" && net.netClass !== "ground";
       })
       .map((w) => ({ id: String(w.item.id), source: w.from, sourcePort: `${w.from}\u0000${w.fromPin}`, target: w.to, targetPort: `${w.to}\u0000${w.toPin}` }));
-    elkLayoutRouted(nodes, edges, { node: 90, layer: 150 })
+    elkLayoutRouted(nodes, edges, { node: 90, layer: 150, edgeNode: 60, edgeEdge: 20 })
       .then((out) => {
         if (!live) return;
         setSymRoutes(out.routes);
@@ -144,6 +145,7 @@ export default function EngSchematic({ parts: partItems, wires: wireItems }: { p
         {!ready ? (
           <Waiting label={ENGINEERING.schematic.waiting} />
         ) : (
+          <TapToExplore className={view === "pins" ? "relative flex min-h-0 flex-1 flex-col" : "relative h-full"}>
           <ReactFlowProvider key={view}>
             {view === "symbols" ? (
               <SymbolCanvas nodes={symGraph.nodes} edges={symEdges} sel={sel} litPins={litPins} litWires={litWires} onMove={noop} onDragStop={noop} onSelect={setSel} onConnect={noop} titleBlock={null} readOnly heightClass="h-full rounded-none! border-0!" />
@@ -178,6 +180,7 @@ export default function EngSchematic({ parts: partItems, wires: wireItems }: { p
               />
             )}
           </ReactFlowProvider>
+          </TapToExplore>
         )}
       </StageView>
       <StageFoot hint={<><span className="sm:hidden">{ENGINEERING.panTouch}</span><span className="hidden sm:inline">{ENGINEERING.schematic.hint}</span></>} live={picked}>

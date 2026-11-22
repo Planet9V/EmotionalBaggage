@@ -147,7 +147,7 @@ export default async function WelcomePage() {
         </section>
 
         {/* The engineering, live: the app's own views on the example's rows */}
-        <section id="engineering" aria-labelledby="engineering-title" className="dark scroll-mt-4 border-b border-hairline bg-canvas py-9 text-primary sm:py-11">
+        <section id="engineering" aria-labelledby="engineering-title" className={`${SECTION} scroll-mt-4`}>
           <div className={WRAP}>
             <h2 id="engineering-title" className={H2}>{ENGINEERING.title}</h2>
             <p className={LEAD}>{ENGINEERING.lead}</p>
@@ -249,7 +249,7 @@ export default async function WelcomePage() {
               <div className="lg:col-span-5">
                 <h3 className="text-lg font-semibold tracking-tight text-primary">Run it yourself</h3>
                 <p className="mt-3 text-sm leading-relaxed text-secondary">
-                  You need Docker Desktop, or Docker Engine with Compose 2.24 or later. The first start brings the database up to date and loads {EXAMPLE.name}. Then open <span className="font-mono text-primary">http://localhost:3000</span>, sign in as demo / demo and choose your own password.
+                  You need Docker Desktop, or Docker Engine with Compose 2.24 or later. The first start brings the database up to date and loads {EXAMPLE.name}. Then open <span className="font-mono text-primary">http://localhost:3000</span> and sign in as demo / demo. That install has one account, and it is yours: set your own password for it in Admin. The public demo on this site is a different thing, one account shared by every visitor.
                 </p>
                 <p className="mt-4 text-sm">
                   <a href={REPO_URL} className="inline-flex items-center gap-1.5 font-medium text-link underline-offset-4 hover:underline" rel="noopener noreferrer">

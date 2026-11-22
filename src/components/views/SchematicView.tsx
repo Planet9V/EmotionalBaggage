@@ -193,7 +193,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
         return net && net.netClass !== "power" && net.netClass !== "ground";
       })
       .map((w) => ({ id: String(w.item.id), source: w.from, sourcePort: `${w.from}\u0000${w.fromPin}`, target: w.to, targetPort: `${w.to}\u0000${w.toPin}` }));
-    elkLayoutRouted(nodes, edges, { node: 90, layer: 150 })
+    elkLayoutRouted(nodes, edges, { node: 90, layer: 150, edgeNode: 60, edgeEdge: 20 })
       .then((out) => {
         if (!live) return;
         setSymLayout(out.positions);

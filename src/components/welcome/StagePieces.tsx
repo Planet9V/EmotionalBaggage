@@ -159,13 +159,17 @@ function Flow({ t, k, of, from, to, y, fill, laps }: { t: MotionValue<number>; k
 function SchematicLive() {
   const ref = useRef<HTMLDivElement>(null);
   const t = useLoop(ref, 6);
-  const lit = useTransform(t, (v) => (v === 1 ? 0 : 0.35 + 0.45 * Math.sin(v * Math.PI * 12) ** 2));
+  // 4.3 swells a lap: a rate that is not a whole number of swells a second, so the glow never looks still
+  const lit = useTransform(t, (v) => (v === 1 ? 0 : 0.3 + 0.6 * Math.sin(v * Math.PI * 4.3) ** 2));
+  const glow = useTransform(t, (v) => (v === 1 ? 0 : 0.06 + 0.3 * Math.sin(v * Math.PI * 4.3) ** 2));
   const wave1 = useTransform(t, (v) => (v === 1 ? 0 : Math.sin(v * Math.PI * 6) ** 2));
   const wave2 = useTransform(t, (v) => (v === 1 ? 0 : Math.sin(v * Math.PI * 6 - 0.9) ** 2));
   return (
     <div ref={ref} className="mt-2">
     <SchematicFragment className="block h-auto w-full">
+      <motion.rect x="150" y="52" width="100" height="96" rx="4" fill={ORANGE} stroke="none" style={{ opacity: glow }} />
       <motion.rect x="150" y="52" width="100" height="96" rx="4" stroke={ORANGE} strokeWidth="3" style={{ opacity: lit }} />
+      <motion.path d="M302 78h12v44h-12zM314 88l22-16v56l-22-16" fill="var(--net-audio)" stroke="none" style={{ opacity: glow }} />
       {[0, 1, 2].map((k) => (
         <Flow key={k} t={t} k={k} of={3} from={12} to={150} y={84} fill="var(--net-signal)" laps={3} />
       ))}

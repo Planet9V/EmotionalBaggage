@@ -3,18 +3,35 @@
 // The journey: seven panels, one per stage. On a wide screen they are a column with a rail that says where you
 // are: the rail is position: sticky, its line and luggage tag follow scroll progress, and nothing is ever locked
 // or hijacked. On a phone or tablet the same panels are a deck, one stage per slide, swiped sideways (Deck). Everything is in the page from the server and visible without script or motion.
-import { Fragment, useEffect, useRef, useState } from "react";
-import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
+import { Fragment, useEffect, useRef, useState, type ComponentType } from "react";
+import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import { ArrowUp, Check } from "lucide-react";
-import { Shot } from "./Shot";
+import type { Item } from "@/lib/types";
+import type { UnitCost } from "@/lib/economics/compute";
 import { STAGE_PICTURE } from "./StagePieces";
-import { stageRows, type JourneyRows } from "./StageRows";
+import { DecisionsStill, RowsPanel, UnitCostPanel, stageRows, type JourneyRows } from "./StageRows";
+import type { ExampleGate } from "./exampleData";
 import { Deck } from "./Deck";
-import { useAnimated, useWide } from "./useAnimated";
-import { BAG_LINES, EXAMPLE, FEATURES, JOURNEY, LIVE_LINK, SHOT_PATH, PROBLEM, type JourneyStage } from "./content";
+import { useAnimated } from "./useAnimated";
+import { BAG_LINES, EXAMPLE, GATE, JOURNEY, LIVE_LINK, PROBLEM, ROWS, type JourneyStage } from "./content";
+
+/**
+ * The decision tree needs a browser and its own chunk of script. Until that has arrived its box holds the same
+ * decisions as a list of exactly the same size, so nothing on the page moves when the tree takes over.
+ */
+function DecisionsBox({ rows }: { rows: Item[] }) {
+  const [Live, setLive] = useState<ComponentType<{ rows: Item[] }> | null>(null);
+  useEffect(() => {
+    let on = true;
+    void import("./JourneyLive").then((m) => on && setLive(() => m.DecisionsLive));
+    return () => {
+      on = false;
+    };
+  }, []);
+  return Live ? <Live rows={rows} /> : <DecisionsStill rows={rows} />;
+}
 
 const N = JOURNEY.length;
-const altOf = (shot: string) => FEATURES.find((f) => f.shot === shot)?.alt ?? "";
 
 /** Where the tag sits (0 to 1 down the rail) for a scroll position, given where each panel's middle is. */
 function railPosition(p: number, mids: number[]) {
@@ -39,69 +56,69 @@ function LuggageTag() {
   );
 }
 
-function Gate({ checks }: { checks: string[] }) {
-  const ref = useRef<HTMLUListElement>(null);
+/**
+ * A stage's gate in its true state for the example: every check the app's gate runs, met or not, and for one that
+ * is not met what the app found. The met ones tick in one after another as the panel comes into view.
+ */
+function Gate({ gate }: { gate: ExampleGate }) {
+  const ref = useRef<HTMLDivElement>(null);
   const animated = useAnimated();
-  const seen = useInView(ref, { once: true, amount: 0.6 });
-  const [met, setMet] = useState(0);
+  const seen = useInView(ref, { once: true, amount: 0.3 });
+  const [shown, setShown] = useState(0);
   useEffect(() => {
     if (!animated || !seen) return;
     let k = 0;
     const t = window.setInterval(() => {
       k += 1;
-      setMet(k);
-      if (k >= checks.length) window.clearInterval(t);
-    }, 320);
+      setShown(k);
+      if (k >= gate.checks.length) window.clearInterval(t);
+    }, 160);
     return () => window.clearInterval(t);
-  }, [animated, seen, checks.length]);
+  }, [animated, seen, gate.checks.length]);
   return (
-    <>
-      <p className="sr-only">Gate checks:</p>
-      <ul ref={ref} className="space-y-1.5">
-        {checks.map((c, i) => {
-          const done = !animated || i < met;
+    <div ref={ref}>
+      <p className="font-mono text-[11px] text-muted">{GATE.count(gate.met, gate.total)}</p>
+      <ul className="mt-2 space-y-2">
+        {gate.checks.map((c, i) => {
+          const ticked = c.met && (!animated || i < shown);
           return (
-            <li key={c} className="flex items-start gap-2.5 text-[13px] leading-snug text-secondary">
-              <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${done ? "border-transparent bg-success-soft" : "border-hairline"}`}>
-                {done ? <Check key="met" className={`h-3 w-3 text-success ${animated ? "wl-tick" : ""}`} aria-hidden /> : null}
+            <li key={c.id} className="flex items-start gap-2.5 text-[13px] leading-snug">
+              <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${c.met ? (ticked ? "border-transparent bg-success-soft" : "border-hairline") : "border-[var(--warning)]"}`}>
+                {ticked ? <Check key="met" className={`h-3 w-3 text-success ${animated ? "wl-tick" : ""}`} aria-hidden /> : null}
+                {!c.met ? <span className="h-1.5 w-1.5 rounded-full bg-warning" aria-hidden /> : null}
               </span>
-              {c}
+              <span className="min-w-0">
+                <span className={c.met ? "text-secondary" : "font-medium text-primary"}>{c.label}</span>
+                <span className="sr-only"> ({c.met ? GATE.met : GATE.open})</span>
+                {c.met ? null : <span className="mt-0.5 block text-xs leading-relaxed text-secondary">{c.detail}</span>}
+              </span>
             </li>
           );
         })}
       </ul>
-    </>
+    </div>
   );
 }
 
-/** A screenshot in its frame: a plain browser bar with the page's address, a hairline, one shadow. */
-function Frame({ shot, y, className = "" }: { shot: string; y?: MotionValue<number>; className?: string }) {
-  return (
-    <motion.div style={y ? { y } : undefined} className={`overflow-hidden rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)] ${className}`}>
-      <div className="flex h-7 items-center gap-1.5 border-b border-hairline bg-subtle px-3" aria-hidden="true">
-        <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
-        <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
-        <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
-        <span className="ml-2 truncate font-mono text-[11px] text-muted">{SHOT_PATH[shot]}</span>
-      </div>
-      <Shot name={shot} alt={altOf(shot)} />
-    </motion.div>
-  );
-}
-
-function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: number; active: boolean; rows: JourneyRows }) {
+function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: number; active: boolean; rows: JourneyData }) {
   const ref = useRef<HTMLElement>(null);
-  const animated = useAnimated();
-  const wide = useWide();
-  const linked = animated && wide;
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const yMain = useTransform(scrollYProgress, [0, 1], [14, -14]);
   const pair = stage.pair === undefined ? null : PROBLEM.pairs[stage.pair]!;
   const said = BAG_LINES[stage.line];
-  // A stage shows one of three things in its wide column: a screenshot (Concept, Production), the example's own
-  // seeded rows (Research, Marketing, Sales), or, for the stages whose views run live in the engineering stage
-  // (Design, Prototype), its drawings and a link up to them.
-  const table = stageRows(stage.key, rows);
+  // A stage shows one of three things in its wide column: one of the app's own components on the example's rows
+  // (the decision tree for Concept, the unit cost build-up for Production), the example's own seeded rows
+  // (Research, Marketing, Sales), or, for the stages whose views run live in the engineering stage (Design,
+  // Prototype), its drawings and a link up to them.
+  const decided = rows.decisions.filter((d) => typeof d.data.chosen === "string" && d.data.chosen).length;
+  const table =
+    stage.key === "concept" ? (
+      <RowsPanel path="/s/concept/decisions" count={ROWS.decisions.count(rows.decisions.length, decided)}>
+        <DecisionsBox rows={rows.decisions} />
+      </RowsPanel>
+    ) : stage.key === "production" ? (
+      <UnitCostPanel unit={rows.unit} />
+    ) : (
+      stageRows(stage.key, rows)
+    );
   const under = stage.live ? (stage.extras ?? []) : [];
   const beside = stage.live ? [] : (stage.extras ?? []);
 
@@ -133,7 +150,6 @@ function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: num
             </dl>
           ) : null}
         </div>
-        {stage.shots[0] ? <Frame shot={stage.shots[0]} y={linked ? yMain : undefined} /> : null}
         {table}
         {under.length ? (
           <>
@@ -168,7 +184,7 @@ function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: num
             </figcaption>
           </figure>
           <div className="mt-3 border-t border-hairline pt-3">
-            <Gate checks={stage.gate} />
+            <Gate gate={rows.gates[stage.key] ?? { met: 0, total: 0, checks: [] }} />
           </div>
         </div>
         {/* these drawings are for wide screens; on a phone each slide keeps to its main panel */}
@@ -178,7 +194,9 @@ function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: num
   );
 }
 
-export function Journey({ rows }: { rows: JourneyRows }) {
+export type JourneyData = JourneyRows & { decisions: Item[]; unit: UnitCost; gates: Record<string, ExampleGate> };
+
+export function Journey({ rows }: { rows: JourneyData }) {
   const ref = useRef<HTMLDivElement>(null);
   const mids = useRef<number[]>(JOURNEY.map((_, i) => (i + 0.5) / N));
   const [active, setActive] = useState(0);

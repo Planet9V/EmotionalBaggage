@@ -311,6 +311,34 @@ function Scene({
 
   const wallMm = Math.max(0, wall);
 
+  // Where each part's name goes. Parts often share a centre (a board over a battery holder, a speaker over both),
+  // so the smallest parts are placed first, in the middle of their own outline, and a larger part whose middle is
+  // taken moves its name to a free corner or edge of its outline. A part too small to hold a name gets it above.
+  type LabelBox = { x: number; y: number; w: number; h: number };
+  const taken: LabelBox[] = [];
+  const clash = (r: LabelBox) => taken.some((t) => Math.abs(t.x - r.x) < (t.w + r.w) / 2 && Math.abs(t.y - r.y) < (t.h + r.h) / 2);
+  const sizeOf = (text: string) => ({ w: px(text.length * 6.2 + 6), h: px(13) });
+  for (const s of shells) {
+    const [b] = bodiesInView(view, s.geometry);
+    if (b.kind !== "rect") continue;
+    const { w, h } = sizeOf(s.label);
+    taken.push({ x: b.x + px(4) + w / 2, y: b.y + px(9), w, h });
+  }
+  const labels = [...parts]
+    .map((p) => ({ p, f: footprint(view, p.geometry) }))
+    .sort((a, b) => a.f.w * a.f.h - b.f.w * b.f.h)
+    .map(({ p, f }) => {
+      const { w, h } = sizeOf(p.label);
+      const small = f.w * ppm < 26 || f.h * ppm < 12;
+      const inside = (sx: number, sy: number) => ({ x: f.x + f.w / 2 + sx * Math.max(0, f.w / 2 - w / 2 - px(3)), y: f.y + f.h / 2 + sy * Math.max(0, f.h / 2 - h / 2 - px(3)) });
+      const spots = small
+        ? [{ x: f.x + f.w / 2, y: f.y - px(7) }, { x: f.x + f.w / 2, y: f.y + f.h + px(8) }, { x: f.x - w / 2 - px(3), y: f.y + f.h / 2 }, { x: f.x + f.w + w / 2 + px(3), y: f.y + f.h / 2 }]
+        : [inside(0, 0), inside(-1, -1), inside(1, -1), inside(-1, 1), inside(1, 1), inside(0, -1), inside(0, 1), inside(-1, 0), inside(1, 0)];
+      const at = spots.find((s) => !clash({ ...s, w, h })) ?? spots[0];
+      taken.push({ ...at, w, h });
+      return { p, at };
+    });
+
   return (
     <>
       <defs>
@@ -344,8 +372,6 @@ function Scene({
         const sel = p.id === selectedId;
         const over = overlapping.has(p.id);
         const bodies = bodiesInView(view, p.geometry);
-        const f = footprint(view, p.geometry);
-        const small = f.w * ppm < 26 || f.h * ppm < 12;
         const stroke = sel ? "stroke-dutchOrange" : over ? "stroke-danger" : "stroke-secondary";
         const fill = sel ? "fill-dutchOrange" : "fill-surface";
         return (
@@ -363,23 +389,28 @@ function Scene({
                 </g>
               )
             )}
-            <text
-              x={f.x + f.w / 2}
-              y={small ? f.y - px(6) : f.y + f.h / 2}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={fs}
-              className={`pointer-events-none font-mono ${sel ? "fill-link" : "fill-primary"} stroke-canvas`}
-              strokeWidth={3}
-              strokeLinejoin="round"
-              paintOrder="stroke"
-              vectorEffect="non-scaling-stroke"
-            >
-              {p.label}
-            </text>
           </g>
         );
       })}
+
+      {/* Every label is drawn after every body, so no part hides another part's name, and each keeps clear of the others. */}
+      {labels.map(({ p, at }) => (
+        <text
+          key={p.id}
+          x={at.x}
+          y={at.y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={fs}
+          className={`pointer-events-none font-mono ${p.id === selectedId ? "fill-link" : "fill-primary"} stroke-canvas`}
+          strokeWidth={3}
+          strokeLinejoin="round"
+          paintOrder="stroke"
+          vectorEffect="non-scaling-stroke"
+        >
+          {p.label}
+        </text>
+      ))}
 
       {markers.map((m) => {
         const c = [...m.pos];

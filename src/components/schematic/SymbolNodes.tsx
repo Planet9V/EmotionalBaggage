@@ -4,7 +4,7 @@ import { createContext, memo, useContext } from "react";
 import { BaseEdge, EdgeLabelRenderer, Handle, Position, getSmoothStepPath, type Edge, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
 import { NET_STROKE } from "@/lib/domain";
 import { flagLayout, type SymPin } from "@/lib/parts/symbols";
-import { FLAG_H, FLAG_W, SCALE, symHandle, type FlagData, type SymEdgeData, type SymNodeData } from "./symbolGraph";
+import { COMPACT_H, COMPACT_W, FLAG_H, FLAG_W, SCALE, symHandle, type FlagData, type SymEdgeData, type SymNodeData } from "./symbolGraph";
 
 /** What the symbol nodes need from the view: which pins and wires are lit, and how to select a pin. */
 export type SymbolCtx = { litPins: Set<string>; onPickPin: (ref: string, pin: string) => void };
@@ -23,6 +23,8 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
   const X = (v: number) => origin.x + v * SCALE;
   const Y = (v: number) => origin.y + v * SCALE;
   const box = layout.rect;
+  const topPin = layout.pins.some((p) => p.side === "top");
+  const bottomPin = layout.pins.some((p) => p.side === "bottom");
   return (
     <div
       className={`relative rounded-md transition-[box-shadow] duration-150 ${selected ? "shadow-[0_0_0_2px_#E05A10]" : ""}`}
@@ -45,6 +47,9 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
         ))}
         {layout.pins.map((p) => {
           const end = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[p.toward];
+          // names along the top or bottom edge are wider than the pin pitch: every second one sits a line further in
+          const inRow = p.side === "top" || p.side === "bottom" ? layout.pins.filter((q) => q.side === p.side).sort((a, b) => a.x - b.x) : [];
+          const step = inRow.length > 1 && inRow.indexOf(p) % 2 === 1 ? (p.side === "top" ? 10 : -10) : 0;
           const lit = litPins.has(`${data.ref}.${p.name}`);
           const cls = data.pinClass[p.name];
           return (
@@ -53,7 +58,7 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
               {box && (
                 <text
                   x={X(p.x + end[0] * (p.length + 0.6))}
-                  y={Y(p.y + end[1] * (p.length + 0.6)) + (p.side === "top" ? 9 : p.side === "bottom" ? -3 : 3.5)}
+                  y={Y(p.y + end[1] * (p.length + 0.6)) + (p.side === "top" ? 9 : p.side === "bottom" ? -3 : 3.5) + step}
                   textAnchor={p.side === "left" ? "start" : p.side === "right" ? "end" : "middle"}
                   fontSize={9.5}
                   fontFamily="var(--font-mono, monospace)"
@@ -65,10 +70,13 @@ function SymbolNodeView({ data, selected }: NodeProps<SymbolNodeType>) {
             </g>
           );
         })}
-        <text x={width / 2} y={13} textAnchor="middle" fontSize={11} fontWeight={600} fontFamily="var(--font-mono, monospace)" fill="#E05A10">
+        {/* The reference and the title sit centred above and below the symbol, unless a pin leaves the body there:
+            then the reference moves to the body's left corner and the title ends short of the first bottom pin, clear of
+            the pins, their leads and their flags. */}
+        <text x={topPin && box ? X(box.x1) : width / 2} y={topPin && box ? Y(box.y1) - 6 : 13} textAnchor={topPin && box ? "start" : "middle"} fontSize={11} fontWeight={600} fontFamily="var(--font-mono, monospace)" fill="#E05A10">
           {data.ref}
         </text>
-        <text x={width / 2} y={height - 8} textAnchor="middle" fontSize={10} fill="var(--text-secondary)">
+        <text x={bottomPin && box ? X(Math.min(...layout.pins.filter((p) => p.side === "bottom").map((p) => p.x))) - 12 : width / 2} y={bottomPin && box ? Y(box.y2) + 14 : height - 8} textAnchor={bottomPin && box ? "end" : "middle"} fontSize={10} fill="var(--text-secondary)">
           {data.title.length > 34 ? `${data.title.slice(0, 33)}…` : data.title}
         </text>
       </svg>
@@ -96,6 +104,7 @@ function FlagNodeView({ data }: NodeProps<FlagNodeType>) {
   const { litPins, onPickPin } = useContext(SymbolContext);
   const lit = litPins.has(`${data.ref}.${data.pin}`);
   const color = lit ? "#E05A10" : data.kind === "ground" ? NET_STROKE.ground : NET_STROKE.power;
+  if (data.compact) return <CompactFlag data={data} lit={lit} color={color} onPick={() => onPickPin(data.ref, data.pin)} />;
   const lay = flagLayout(data.kind);
   const s = 9;
   // the port is at (0,0) of the drawing: top centre for ground, bottom centre for a supply
@@ -126,6 +135,43 @@ function FlagNodeView({ data }: NodeProps<FlagNodeType>) {
   );
 }
 
+/**
+ * A small flag beside a pin on the side of a symbol: the lead runs straight out from the pin to the flag's port,
+ * the supply arrow rises from it or the ground bars hang from it, and the net's name is on the far side.
+ */
+function CompactFlag({ data, lit, color, onPick }: { data: FlagData; lit: boolean; color: string; onPick: () => void }) {
+  const left = data.compact === "left";
+  const px = left ? COMPACT_W - 7 : 7; // the stem, just inside the port
+  const py = COMPACT_H;
+  const w = lit ? 2.5 : 1.6;
+  return (
+    <button
+      type="button"
+      className="nodrag relative block cursor-pointer bg-transparent p-0"
+      style={{ width: COMPACT_W, height: COMPACT_H * 2 }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPick();
+      }}
+      title={`${data.net} at ${data.ref}.${data.pin}`}
+      aria-label={`${data.kind === "ground" ? "Ground" : "Supply"} ${data.net} at ${data.ref}.${data.pin}`}
+    >
+      <svg width={COMPACT_W} height={COMPACT_H * 2} className="overflow-visible" aria-hidden>
+        <path d={`M${left ? COMPACT_W : 0} ${py}H${px}`} fill="none" stroke={color} strokeWidth={w} strokeLinecap="round" />
+        {data.kind === "ground" ? (
+          <path d={`M${px} ${py}v5M${px - 6} ${py + 5}h12M${px - 4} ${py + 8.5}h8M${px - 2} ${py + 12}h4`} fill="none" stroke={color} strokeWidth={w} strokeLinecap="round" />
+        ) : (
+          <path d={`M${px} ${py}v-12M${px - 5} ${py - 7}l5 -5l5 5`} fill="none" stroke={color} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        <text x={left ? px - 9 : px + 9} y={data.kind === "ground" ? py + 12 : py - 3} textAnchor={left ? "end" : "start"} fontSize={9} fontFamily="var(--font-mono, monospace)" fill={color}>
+          {data.net}
+        </text>
+      </svg>
+      <Handle type="target" id="f" position={left ? Position.Right : Position.Left} isConnectable={false} className="h-1! w-1! min-w-0! border-0! opacity-0" style={{ left: left ? COMPACT_W : 0, top: py }} />
+    </button>
+  );
+}
+
 /** An SVG path through elk's route, with its label at the middle of the longest straight run. */
 function routePath(points: { x: number; y: number }[]): [string, number, number] {
   const d = points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join(" ");
@@ -141,7 +187,8 @@ function routePath(points: { x: number; y: number }[]): [string, number, number]
 function NetEdgeView(props: EdgeProps<SymEdgeType>) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, data } = props;
   if (!data) return null;
-  const [path, lx, ly] = data.route ? routePath(data.route) : getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 0, offset: 16 });
+  const [path, mx, my] = data.route ? routePath(data.route) : getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 0, offset: 16 });
+  const [lx, ly] = data.route && data.labelAt ? [data.labelAt.x, data.labelAt.y] : [mx, my];
   const width = selected || data.lit ? 3 : data.flag ? 1.4 : 1.75;
   return (
     <>

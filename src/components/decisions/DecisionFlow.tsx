@@ -180,9 +180,11 @@ export type FlowProps = {
   onUserMove: () => void;
   /** reduced motion: move without easing */
   instant: boolean;
+  /** A viewer on the public welcome page: the whole tree is fitted on load and a plain wheel scrolls the page (Ctrl or Cmd + wheel zooms). */
+  readOnly?: boolean;
 };
 
-function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove, instant }: FlowProps) {
+function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove, instant, readOnly }: FlowProps) {
   const rf = useReactFlow();
 
   const { nodes, edges } = useMemo(() => {
@@ -344,6 +346,7 @@ function Flow({ all, byKey, tree, selected, expanded, only, onSelect, onUserMove
         // programmatic moves have no event; only a person's pan or zoom stops the walkthrough
         if (e) onUserMove();
       }}
+      {...(readOnly ? { fitView: true, fitViewOptions: { padding: FRAME_PAD, maxZoom: 1 }, zoomOnScroll: false, preventScrolling: false } : {})}
       proOptions={{ hideAttribution: true }}
       className="bg-transparent!"
     >

@@ -1,12 +1,12 @@
 "use client";
 
 import "@xyflow/react/dist/style.css";
-import { useCallback, useMemo, useState } from "react";
-import { Background, BackgroundVariant, ConnectionLineType, ConnectionMode, Controls, Panel, ReactFlow, type Connection, type Node, type NodeChangeset } from "@xyflow/react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Background, BackgroundVariant, ConnectionLineType, ConnectionMode, Controls, Panel, ReactFlow, getViewportForBounds, type Connection, type Node, type NodeChangeset, type ReactFlowInstance } from "@xyflow/react";
 import { MousePointerClick } from "lucide-react";
 import type { XY } from "@/lib/domain";
 import { SymbolContext, symbolEdgeTypes, symbolNodeTypes, type FlagNodeType, type SymEdgeType, type SymbolNodeType } from "./SymbolNodes";
-import type { SymEdge, SymNode } from "./symbolGraph";
+import { drawingBounds, type SymEdge, type SymNode } from "./symbolGraph";
 import type { ConnectRequest } from "./SchematicCanvas";
 import type { Selection } from "./SidePanel";
 import { useFitOnPrint } from "./useFitOnPrint";
@@ -43,6 +43,16 @@ export function SymbolCanvas(p: Props) {
   const { onMove, onDragStop, onSelect, onConnect } = p;
   const anyLit = p.litWires.size > 0 || p.litPins.size > 0;
   useFitOnPrint();
+  const wrap = useRef<HTMLDivElement>(null);
+  // Fits the whole drawing: the symbols, their flags and the routed wires (React Flow's own fit sees only the nodes,
+  // so a wire that runs round the outside was cut off). A viewer shows all of it; the editor never goes below FIT.minZoom.
+  const fitAll = (inst: ReactFlowInstance<SymbolNodeType | FlagNodeType, SymEdgeType>) => {
+    const el = wrap.current;
+    const bounds = drawingBounds(p.nodes, p.edges);
+    if (!el || !bounds) return void inst.fitView({ ...FIT, duration: 300 });
+    const padding = p.readOnly ? ({ top: "20px", left: "60px", right: "20px", bottom: "20px" } as const) : FIT.padding;
+    void inst.setViewport(getViewportForBounds(bounds, el.clientWidth, el.clientHeight, p.readOnly ? 0.1 : FIT.minZoom, FIT.maxZoom, padding), { duration: 300 });
+  };
 
   const nodes = useMemo(
     () =>
@@ -91,7 +101,7 @@ export function SymbolCanvas(p: Props) {
 
   return (
     <SymbolContext.Provider value={ctx}>
-      <div className={`schematic-canvas relative w-full overflow-hidden rounded-xl border border-hairline bg-canvas ${p.heightClass ?? "h-[clamp(620px,72vh,900px)]"}`} data-testid="symbol-canvas">
+      <div ref={wrap} className={`schematic-canvas relative w-full overflow-hidden rounded-xl border border-hairline bg-canvas ${p.heightClass ?? "h-[clamp(620px,72vh,900px)]"}`} data-testid="symbol-canvas">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -119,8 +129,8 @@ export function SymbolCanvas(p: Props) {
           deleteKeyCode={null}
           fitView
           fitViewOptions={FIT}
-          onInit={(inst) => window.setTimeout(() => void inst.fitView({ ...FIT, duration: 300 }), 350)}
-          minZoom={0.15}
+          onInit={(inst) => window.setTimeout(() => fitAll(inst), 350)}
+          minZoom={p.readOnly ? 0.1 : 0.15}
           maxZoom={3}
           snapToGrid
           snapGrid={[10, 10]}

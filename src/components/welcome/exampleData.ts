@@ -1,20 +1,45 @@
-// The worked example's rows for the live views on the welcome page, read on the server from the seed module
-// (src/lib/seed.ts): the same rows a fresh install loads for Baggage Claims MK1. The welcome page is public, so
-// it calls no API and reads no database for this; the rows are handed to the client as plain props.
+// The worked example's rows for the live views on the welcome page, read on the server from the seed modules
+// (src/lib/seed.ts and src/lib/story/seed.ts): the rows a fresh install loads for Baggage Claims MK1, with the
+// same default status the app's seeding gives a row ("open"). The welcome page is public, so it calls no API and
+// reads no database for this (the public demo's database can be changed by any visitor); the rows are handed to
+// the client as plain props.
 //
-// The enclosure is not a stored picture either: the app's own generator (CaseMaker on Manifold, the one the
-// Enclosure page runs) builds the base and the lid from the seeded parts here, on the server, and the app's own
-// checks measure the result. It takes about a tenth of a second and is done once per server process.
+// Nothing here is a stored picture or a typed figure:
+//  - the enclosure is built by the app's own generator (CaseMaker on Manifold, the one the Enclosure page runs)
+//    from the seeded parts, and measured by the app's own checks;
+//  - each stage's gate is worked out by the app's own gate rules (evaluateGate) on these rows, so the journey
+//    shows every check as it truly stands for the example;
+//  - the unit cost is the app's own build-up (referenceUnitCost).
+// The enclosure takes about a tenth of a second and is built once per server process.
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
+import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
+import { SOURCES_STORE, STORY_STORE, storyPart } from "@/lib/story/parts";
 import { STORE } from "@/lib/domain";
 import { buildSpec, validateSpec } from "@/lib/enclosure/spec";
 import { generateCaseMaker } from "@/lib/enclosure/casemaker";
 import { computeChecks } from "@/lib/enclosure/checks";
+import { processFor } from "@/lib/process/definitions";
+import { evaluateGate } from "@/lib/process/evaluate";
+import { buildCircuit } from "@/lib/parts/circuit";
+import { checkCircuit } from "@/lib/parts/erc";
+import { readEconomics } from "@/lib/economics/read";
+import { referenceUnitCost, type UnitCost } from "@/lib/economics/compute";
 import type { Item } from "@/lib/types";
 
-function rows(section: string, firstId: number): Item[] {
-  const seeded = SEED_ADDITIONS[section] ?? SEED_ITEMS.filter((i) => i.section === section);
-  return seeded.map((s, i) => ({ id: firstId + i, projectId: SEED_PROJECT.id, section, title: s.title, body: s.body ?? "", data: s.data ?? {}, status: s.status ?? "", sort: i }));
+const CURRENCY = "USD"; // a new concept's currency
+const PRODUCT_TYPE = "electronics"; // the example is electronics in an enclosure
+
+/** Every row of the example as a fresh install holds it, each with its own id. */
+function seedRows(): Item[] {
+  const out: Item[] = [];
+  const add = (section: string, title: string, body: string, data: Record<string, unknown>, status: string) =>
+    out.push({ id: out.length + 1, projectId: SEED_PROJECT.id, section, title, body, data, status, sort: out.length });
+  // the story and the list of source documents come first, as seedStory puts them
+  for (const s of SEED_SOURCES) add(SOURCES_STORE, s.title, s.what, { kind: s.kind, fileName: s.title }, "not uploaded");
+  for (const p of SEED_STORY) add(STORY_STORE, storyPart(p.part)?.heading ?? p.part, p.body, { part: p.part }, p.status);
+  for (const s of SEED_ITEMS) add(s.section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
+  for (const [section, items] of Object.entries(SEED_ADDITIONS)) for (const s of items) add(section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
+  return out;
 }
 
 /** A mesh as plain numbers (positions in mm to 0.001, triangle indices), so it can cross to the browser as a prop. */
@@ -52,30 +77,60 @@ async function generateEnclosure(parts: Item[]): Promise<ExampleEnclosure | null
 
 let enclosure: Promise<ExampleEnclosure | null> | null = null;
 
+/** A stage's gate as the app's own rules find it on the seeded rows. */
+export type ExampleGate = { met: number; total: number; checks: { id: string; label: string; met: boolean; /** what was found, for a check that is not met */ detail: string }[] };
+
+function gates(all: Item[]): Record<string, ExampleGate> {
+  const parts = all.filter((r) => r.section === STORE.parts);
+  const wires = all.filter((r) => r.section === STORE.wiring);
+  // what the gates need beyond the rows, as a fresh install has it: the electrical checks' counts, and nothing
+  // yet in the tables a campaign or "Send to printing" fills
+  const findings = checkCircuit(buildCircuit(parts, wires, []), { projectId: SEED_PROJECT.id });
+  const errors = findings.filter((f) => f.severity === "error").length;
+  const facts = { currency: CURRENCY, erc: { ok: errors === 0, errors, warnings: findings.filter((f) => f.severity === "warning").length }, links: 0, results: 0, enclosureFiles: 0 };
+  const concept = { name: SEED_PROJECT.name, oneLiner: SEED_PROJECT.oneLiner };
+  return Object.fromEntries(
+    processFor(PRODUCT_TYPE).stages.map((g) => {
+      const checks = evaluateGate(g, all, concept, facts).checks.map((c) => ({ id: c.id, label: c.label, met: c.met, detail: c.met ? "" : c.detail }));
+      return [g.stage, { met: checks.filter((c) => c.met).length, total: checks.length, checks }];
+    }),
+  );
+}
+
 export type ExampleData = {
   parts: Item[];
   wires: Item[];
   enclosure: ExampleEnclosure | null;
-  /** the seeded rows the journey shows for Research, Marketing and Sales */
+  /** the seeded rows the journey shows */
+  decisions: Item[];
   claims: Item[];
   positioning: Item[];
   ads: Item[];
   listing: Item[];
   channels: Item[];
+  /** every stage's gate, by stage key, in its true state for the example */
+  gates: Record<string, ExampleGate>;
+  /** the unit cost, built up by the app's own calculation at the example's first planned batch size */
+  unit: UnitCost;
 };
 
-/** The example's rows, as the app's own Item rows, and its enclosure as the app's generator builds it. */
+/** The example's rows, as the app's own Item rows, and what the app's own rules work out from them. */
 export async function exampleData(): Promise<ExampleData> {
-  const parts = rows(STORE.parts, 1);
+  const all = seedRows();
+  const of = (section: string) => all.filter((r) => r.section === section);
+  const parts = of(STORE.parts);
   enclosure ??= generateEnclosure(parts);
   return {
     parts,
-    wires: rows(STORE.wiring, 1001),
+    wires: of(STORE.wiring),
     enclosure: await enclosure,
-    claims: rows("research/claims", 2001),
-    positioning: rows("marketing/positioning", 3001),
-    ads: rows("marketing/ads", 3101),
-    listing: rows("sales/listing", 4001),
-    channels: rows("sales/channels", 4101),
+    decisions: of("concept/decisions"),
+    claims: of("research/claims"),
+    positioning: of("marketing/positioning"),
+    ads: of("marketing/ads"),
+    listing: of("sales/listing"),
+    channels: of("sales/channels"),
+    gates: gates(all),
+    unit: referenceUnitCost(readEconomics({ parts, economics: of("production/economics"), channels: of("sales/channels"), methods: of("production/methods"), batches: of("production/batches"), printJobs: of("prototype/printing") }, CURRENCY)),
   };
 }

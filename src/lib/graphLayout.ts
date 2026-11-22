@@ -17,7 +17,12 @@ export async function elkLayout(nodes: LayoutNode[], edges: LayoutEdge[], spacin
  * Positions and elk's own orthogonal routes: for each edge, the points from the source port through every bend to the
  * target port, in the same coordinates as the positions. A route holds only while both of its nodes stay where elk put them.
  */
-export async function elkLayoutRouted(nodes: LayoutNode[], edges: LayoutEdge[], spacing = { node: 60, layer: 120 }): Promise<{ positions: Record<string, XY>; routes: Record<string, XY[]> }> {
+export async function elkLayoutRouted(
+  nodes: LayoutNode[],
+  edges: LayoutEdge[],
+  /** `edgeNode`: how far a route keeps from a node it passes; the symbol view asks for room for the power and ground flags that hang off its symbols */
+  spacing: { node: number; layer: number; edgeNode?: number; /** between two routes running side by side: room for a net label on each */ edgeEdge?: number } = { node: 60, layer: 120 },
+): Promise<{ positions: Record<string, XY>; routes: Record<string, XY[]> }> {
   if (!nodes.length) return { positions: {}, routes: {} };
   elk ??= new ELK();
   const ids = new Set(nodes.map((n) => n.id));
@@ -33,6 +38,8 @@ export async function elkLayoutRouted(nodes: LayoutNode[], edges: LayoutEdge[], 
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       "elk.separateConnectedComponents": "true",
       "elk.spacing.componentComponent": String(spacing.node),
+      ...(spacing.edgeNode ? { "elk.spacing.edgeNode": String(spacing.edgeNode), "elk.layered.spacing.edgeNodeBetweenLayers": String(spacing.edgeNode) } : {}),
+      ...(spacing.edgeEdge ? { "elk.spacing.edgeEdge": String(spacing.edgeEdge), "elk.layered.spacing.edgeEdgeBetweenLayers": String(spacing.edgeEdge) } : {}),
     },
     children: nodes.map((n) => ({
       id: n.id,

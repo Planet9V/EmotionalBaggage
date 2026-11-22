@@ -25,8 +25,11 @@ export function BuildUpTable({
   onEdit,
   onRemove,
   printedRows,
+  readOnly = false,
 }: {
   unit: UnitCost;
+  /** no edit, remove or fix links: the public welcome page shows the build-up only */
+  readOnly?: boolean;
   onEdit?: (rowId: number) => void;
   onRemove?: (rowId: number) => void;
   /** a control per printed part (its material price per kg), shown under the part's line */
@@ -63,7 +66,7 @@ export function BuildUpTable({
         </TableHeader>
         <TableBody>
           {GROUPS.filter((g) => unit.lines.some((l) => l.group === g.key)).map((g) => (
-            <GroupRows key={g.key} title={g.title} subtotal={fm(sub[g.key])} lines={unit.lines.filter((l) => l.group === g.key)} fm={fm} editable={editable} onEdit={onEdit} onRemove={onRemove} printedRows={printedRows} />
+            <GroupRows key={g.key} title={g.title} subtotal={fm(sub[g.key])} lines={unit.lines.filter((l) => l.group === g.key)} fm={fm} editable={readOnly ? () => false : editable} readOnly={readOnly} onEdit={onEdit} onRemove={onRemove} printedRows={printedRows} />
           ))}
           <TableRow className="border-t-2 border-hairline bg-subtle">
             <TableCell className="font-semibold text-primary">
@@ -89,7 +92,9 @@ function GroupRows({
   onEdit,
   onRemove,
   printedRows,
+  readOnly,
 }: {
+  readOnly: boolean;
   title: string;
   subtotal: string;
   lines: CostLine[];
@@ -115,7 +120,7 @@ function GroupRows({
             {l.missing ? (
               <span className="ml-2 inline-flex items-center gap-1.5">
                 <StatusBadge tone="warning">Not priced</StatusBadge>
-                <Link href={l.missing.href} className="text-xs text-link hover:underline">
+                <Link href={l.missing.href} className={`text-xs text-link hover:underline ${readOnly ? "hidden" : ""}`}>
                   Fix it
                 </Link>
               </span>
@@ -132,7 +137,7 @@ function GroupRows({
                   <Trash2 className="h-3.5 w-3.5" aria-hidden />
                 </Button>
               </span>
-            ) : l.key.startsWith("method:") ? (
+            ) : l.key.startsWith("method:") && !readOnly ? (
               <Link href={HREF.methods} className="text-xs text-link hover:underline">
                 Method
               </Link>

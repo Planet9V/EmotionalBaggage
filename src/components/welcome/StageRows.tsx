@@ -4,6 +4,8 @@
 // listing is not started) the panel says so in the row's own words.
 import type { ReactNode } from "react";
 import type { Item } from "@/lib/types";
+import type { UnitCost } from "@/lib/economics/compute";
+import { BuildUpTable } from "@/components/economics/BuildUpTable";
 import { ROWS } from "./content";
 
 export type JourneyRows = { claims: Item[]; positioning: Item[]; ads: Item[]; listing: Item[]; channels: Item[] };
@@ -20,7 +22,7 @@ function Status({ value }: { value: string }) {
   return <span className={`inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-full px-2 font-mono text-[11px] ${TONE[value] ?? "bg-subtle text-secondary"}`}>{value}</span>;
 }
 
-function Panel({ path, count, children }: { path: string; count: string; children: ReactNode }) {
+export function RowsPanel({ path, count, children }: { path: string; count: string; children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
       <div className="flex h-8 items-center justify-between gap-3 border-b border-hairline bg-subtle px-3.5">
@@ -38,7 +40,7 @@ const CELL = "px-3.5 py-2.5 align-top text-[13px] leading-snug";
 function Claims({ rows }: { rows: Item[] }) {
   const open = rows.filter((r) => r.status !== "verified").length;
   return (
-    <Panel path="/s/research/claims" count={ROWS.claims.count(rows.length, open)}>
+    <RowsPanel path="/s/research/claims" count={ROWS.claims.count(rows.length, open)}>
       <table className="w-full border-collapse">
         <caption className="sr-only">{ROWS.claims.caption}</caption>
         <thead>
@@ -61,14 +63,14 @@ function Claims({ rows }: { rows: Item[] }) {
           ))}
         </tbody>
       </table>
-    </Panel>
+    </RowsPanel>
   );
 }
 
 function Marketing({ positioning, ads }: { positioning: Item[]; ads: Item[] }) {
   return (
     <div className="grid gap-4">
-      <Panel path="/s/marketing/positioning" count={ROWS.positioning.count(positioning.length)}>
+      <RowsPanel path="/s/marketing/positioning" count={ROWS.positioning.count(positioning.length)}>
         <ul>
           {positioning.map((r) => (
             <li key={r.id} className="flex items-start gap-3 border-b border-hairline px-3.5 py-3 last:border-0">
@@ -80,8 +82,8 @@ function Marketing({ positioning, ads }: { positioning: Item[]; ads: Item[] }) {
             </li>
           ))}
         </ul>
-      </Panel>
-      <Panel path="/s/marketing/ads" count={ROWS.ads.count(ads.length)}>
+      </RowsPanel>
+      <RowsPanel path="/s/marketing/ads" count={ROWS.ads.count(ads.length)}>
         <ul>
           {ads.map((r) => (
             <li key={r.id} className="flex items-start gap-3 border-b border-hairline px-3.5 py-3 last:border-0">
@@ -97,7 +99,7 @@ function Marketing({ positioning, ads }: { positioning: Item[]; ads: Item[] }) {
           ))}
         </ul>
         {ads[0]?.body ? <p className="border-t border-hairline bg-subtle px-3.5 py-2.5 text-[13px] leading-relaxed text-secondary">{ads[0].body}</p> : null}
-      </Panel>
+      </RowsPanel>
     </div>
   );
 }
@@ -105,7 +107,7 @@ function Marketing({ positioning, ads }: { positioning: Item[]; ads: Item[] }) {
 function Sales({ listing, channels }: { listing: Item[]; channels: Item[] }) {
   return (
     <div className="grid gap-4">
-      <Panel path="/s/sales/listing" count={ROWS.listing.count(listing.length)}>
+      <RowsPanel path="/s/sales/listing" count={ROWS.listing.count(listing.length)}>
         {listing.map((r) => (
           <div key={r.id} className="flex items-start gap-3 px-3.5 py-3">
             <div className="min-w-0 flex-1">
@@ -116,8 +118,8 @@ function Sales({ listing, channels }: { listing: Item[]; channels: Item[] }) {
           </div>
         ))}
         <p className="border-t border-hairline bg-subtle px-3.5 py-2.5 text-[13px] leading-relaxed text-secondary">{ROWS.listing.honest}</p>
-      </Panel>
-      <Panel path="/s/sales/channels" count={ROWS.channels.count(channels.length)}>
+      </RowsPanel>
+      <RowsPanel path="/s/sales/channels" count={ROWS.channels.count(channels.length)}>
         <table className="w-full border-collapse">
           <caption className="sr-only">{ROWS.channels.caption}</caption>
           <thead>
@@ -142,8 +144,37 @@ function Sales({ listing, channels }: { listing: Item[]; channels: Item[] }) {
           </tbody>
         </table>
         <p className="border-t border-hairline bg-subtle px-3.5 py-2.5 text-[13px] leading-relaxed text-secondary">{ROWS.channels.honest}</p>
-      </Panel>
+      </RowsPanel>
     </div>
+  );
+}
+
+/** The unit cost, line by line, drawn by the app's own build-up table from the app's own calculation. */
+export function UnitCostPanel({ unit }: { unit: UnitCost }) {
+  return (
+    <RowsPanel path="/s/production/economics" count={ROWS.unit.count(unit.lines.length, unit.batchSize)}>
+      <div className="overflow-x-auto">
+        <BuildUpTable unit={unit} readOnly />
+      </div>
+      <p className="border-t border-hairline bg-subtle px-3.5 py-2.5 text-[13px] leading-relaxed text-secondary">{ROWS.unit.honest}</p>
+    </RowsPanel>
+  );
+}
+
+/** The decisions as a plain list, in the box the live decision tree takes over: before it loads, and without script. */
+export function DecisionsStill({ rows }: { rows: Item[] }) {
+  return (
+    <>
+      <ul className="h-[440px] overflow-y-auto" tabIndex={0} aria-label={ROWS.decisions.still}>
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-start gap-3 border-b border-hairline px-3.5 py-3 last:border-0">
+            <p className="min-w-0 flex-1 text-sm font-medium leading-snug text-primary">{str(r.data.question) || r.title}</p>
+            <Status value={str(r.data.chosen) ? "decided" : r.status} />
+          </li>
+        ))}
+      </ul>
+      <p className="flex min-h-[5.5rem] items-center sm:min-h-[3.75rem] border-t border-hairline bg-subtle px-3.5 py-2.5 text-[13px] leading-relaxed text-secondary">{ROWS.decisions.still}</p>
+    </>
   );
 }
 

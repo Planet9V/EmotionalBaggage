@@ -375,6 +375,7 @@ html.light main {
 .wl-dark-on { opacity: 0.62; }
 .wl-wheel, .wl-swing, .wl-grow, .wl-breathe, .wl-float { transform-box: fill-box; transform-origin: center; }
 .wl-progress { transform-origin: 0 50%; transform: scaleX(0); }
+.wl-sheen { transform: translateX(-50px); }
 .wl-swing { transform-origin: 50% 0; }
 .wl-grow { transform-origin: 0 50%; }
 .wl-roll { transform-box: fill-box; transform-origin: 50% 100%; }
@@ -398,6 +399,7 @@ html.light main {
   .wl-seq { animation: wl-seq 6s ease-in-out infinite; }
   .wl-breathe { animation: wl-breathe 3s ease-in-out infinite; }
   .wl-float { animation: wl-float 3.4s ease-in-out infinite; }
+  .wl-sheen { animation: wl-sheen 3.7s ease-in-out infinite alternate; }
   .wl-progress { animation: wl-progress linear both; }
   .wl-pulse { animation: wl-pulse 1.5s ease-out infinite both; }
   .wl-rise { animation: wl-rise 350ms var(--ease-out-soft) both; }
@@ -415,7 +417,8 @@ html.light main {
 @keyframes wl-current { to { stroke-dashoffset: -32; } }
 @keyframes wl-turn { to { transform: rotate(360deg); } }
 @keyframes wl-roll { 0%, 100% { transform: rotate(1.4deg) translateY(0); } 50% { transform: rotate(2.2deg) translateY(-4px); } }
-@keyframes wl-float { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-4px); } }
+@keyframes wl-sheen { from { transform: translateX(-50px); } to { transform: translateX(116px); } }
+@keyframes wl-float { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(-5px); } }
 @keyframes wl-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes wl-ground { to { transform: translateX(-24px); } }
 @keyframes wl-swing { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(9deg); } }

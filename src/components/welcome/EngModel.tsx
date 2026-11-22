@@ -15,6 +15,7 @@ import ModelCanvas from "@/components/three/ModelCanvas";
 import type { ShowcaseNudge } from "@/components/three/canvasShowcase";
 import { SHELL_DEFAULTS } from "@/components/three/stl";
 import { useSceneModel } from "@/components/views/model/useSceneModel";
+import { TapToExplore } from "./TapToExplore";
 import { useAnimated } from "./useAnimated";
 import { ENGINEERING } from "./content";
 import { CHIP, CHIP_OFF, CHIP_ON, ICON, StageBar, StageFoot, StageView } from "./StageParts";
@@ -211,6 +212,7 @@ export default function EngModel({ parts: partItems, wires }: { parts: Item[]; w
       </StageBar>
       <StageView>
         <div ref={box} className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#171a20_0%,#0b0c0e_72%)]" role="group" aria-label="The 3D model of the example. Use the buttons to turn, tilt and zoom.">
+          <TapToExplore className="relative h-full w-full">
           <ModelCanvas
             parts={canvasParts}
             selectedId={null}
@@ -236,6 +238,7 @@ export default function EngModel({ parts: partItems, wires }: { parts: Item[]; w
             routed={[]}
             showcase={showcase}
           />
+          </TapToExplore>
           {/* the labels: placed each frame by Labels, from inside the canvas */}
           <div ref={labelHost} className={`pointer-events-none absolute inset-0 overflow-hidden ${labelsShown ? "" : "hidden"}`} aria-hidden="true">
             <svg className="absolute inset-0 h-full w-full">

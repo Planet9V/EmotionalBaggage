@@ -9,6 +9,7 @@ import type { Item } from "@/lib/types";
 import { insideOfOf } from "@/lib/geometry/overlap";
 import { ThreeView } from "@/components/layout/ThreeView";
 import { floorLevel, fmtMm, VIEW_DEFS, VIEW_ORDER, type LayoutPart } from "@/components/layout/geom";
+import { TapToExplore } from "./TapToExplore";
 import { ENGINEERING } from "./content";
 import { StageBar, StageFoot, StageView } from "./StageParts";
 
@@ -36,11 +37,14 @@ export default function EngLayout({ parts: partItems }: { parts: Item[] }) {
   return (
     <>
       <StageBar path="/s/design/layout">
-        <p className="font-mono text-[11px] text-muted">{ENGINEERING.layout.scale}</p>
+        <p className="whitespace-nowrap font-mono text-[11px] text-muted">
+          {ENGINEERING.layout.scale}
+          <span className="hidden lg:inline"> {ENGINEERING.layout.straps}</span>
+        </p>
       </StageBar>
-      <StageView className="grid gap-2 p-2 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:grid-rows-2">
+      <StageView className="grid grid-rows-3 gap-2 p-2 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:grid-rows-2">
         {VIEW_ORDER.map((k) => (
-          <div key={k} className={`min-h-0 ${k === "top" ? "lg:row-span-2" : ""}`}>
+          <TapToExplore key={k} className={`relative min-h-0 ${k === "top" ? "lg:row-span-2" : ""}`}>
             <ThreeView
               view={VIEW_DEFS[k]}
               parts={bodies}
@@ -59,7 +63,7 @@ export default function EngLayout({ parts: partItems }: { parts: Item[] }) {
               onCommit={noop}
               readOnly
             />
-          </div>
+          </TapToExplore>
         ))}
       </StageView>
       <StageFoot hint={<><span className="sm:hidden">{ENGINEERING.panTouch}</span><span className="hidden sm:inline">{ENGINEERING.layout.hint}</span></>} live={picked && pickedPart ? `${picked.ref} ${pickedPart.title}: ${picked.geometry.size.map(fmtMm).join(" x ")} mm` : ""}>

@@ -35,6 +35,7 @@ const EngBuildSheet = dynamic(() => import("./EngBuildSheet"), { ssr: false, loa
 
 type Tab = keyof typeof ENGINEERING.tabs;
 const TABS = Object.keys(ENGINEERING.tabs) as Tab[];
+const HEIGHT: Record<Tab, string> = { model: "h-[560px]", schematic: "h-[520px]", layout: "h-[1040px]", enclosure: "h-[600px]", bom: "h-[600px]", build: "h-[600px]" };
 const altOf = (shot: string) => FEATURES.find((f) => f.shot === shot)?.alt ?? "";
 
 type SortKey = keyof typeof ENGINEERING.bom.columns;
@@ -115,8 +116,12 @@ export function Engineering({ parts: partItems, wires, enclosure }: { parts: Ite
   };
 
   return (
-    <div ref={stage} className="dark overflow-hidden rounded-xl border border-hairline bg-[#0b0c0e] text-primary shadow-[var(--shadow-card)]">
-      <div role="tablist" aria-label={ENGINEERING.title} onKeyDown={onKey} className="flex overflow-x-auto border-b border-hairline [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    // The stage is dark in both themes on purpose: it is an instrument set into the page, with a bezel that takes
+    // the page's own theme, and it says so beside its tabs.
+    <div className="rounded-[18px] border border-hairline bg-bezel p-1.5 shadow-plate sm:p-2">
+    <div ref={stage} className="dark overflow-hidden rounded-xl border border-black/60 bg-[#0b0c0e] text-primary shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+      <div className="flex items-stretch border-b border-hairline">
+      <div role="tablist" aria-label={ENGINEERING.title} onKeyDown={onKey} className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t, i) => (
           <button
             key={t}
@@ -138,8 +143,15 @@ export function Engineering({ parts: partItems, wires, enclosure }: { parts: Ite
         ))}
       </div>
 
-      {/* one fixed height for every tab, so nothing below moves when a view loads or the tab changes */}
-      <div id="eng-panel" role="tabpanel" aria-labelledby={`eng-tab-${tab}`} className="flex h-[600px] flex-col lg:h-[700px]">
+        <p className="hidden shrink-0 items-center gap-2 border-l border-hairline px-4 font-mono text-[11px] text-muted lg:flex">
+          <span className="h-1.5 w-1.5 rounded-full bg-dutchOrange" aria-hidden />
+          {ENGINEERING.badge}
+        </p>
+      </div>
+
+      {/* Each tab has one fixed height, so nothing moves when its view loads. On a wide screen every tab has the same
+          one; on a phone the schematic and the three stacked layout views are given more. */}
+      <div id="eng-panel" role="tabpanel" aria-labelledby={`eng-tab-${tab}`} className={`flex flex-col lg:h-[700px] ${HEIGHT[tab]}`}>
         {tab === "bom" ? (
           <>
             <StageBar path="/s/design/bom">
@@ -199,6 +211,7 @@ export function Engineering({ parts: partItems, wires, enclosure }: { parts: Ite
           </ol>
         </div>
       </noscript>
+    </div>
     </div>
   );
 }

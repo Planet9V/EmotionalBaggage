@@ -119,8 +119,8 @@ export function SchematicCanvas(p: Props) {
     [onMove]
   );
 
-  // without the minimap a viewer needs no room kept for it
-  const fit = p.readOnly ? { ...FIT, padding: { ...FIT.padding, right: "24px" as const, bottom: "24px" as const } } : FIT;
+  // a viewer shows the whole drawing, however far out that is, and needs no room kept for the minimap
+  const fit = p.readOnly ? { ...FIT, minZoom: 0.1, padding: { top: "16px" as const, left: "56px" as const, right: "16px" as const, bottom: "16px" as const } } : FIT;
   const wireById = useMemo(() => new Map(p.wires.map((w) => [w.item.id, w])), [p.wires]);
   const wireOfEdge = (e: WireEdgeType) => e.data?.wire ?? null;
 
@@ -258,7 +258,7 @@ export function SchematicCanvas(p: Props) {
             // Node sizes arrive after the first paint; fit again once they are known.
             window.setTimeout(() => void inst.fitView({ ...fit, duration: 300 }), 350);
           }}
-          minZoom={0.2}
+          minZoom={p.readOnly ? 0.1 : 0.2}
           maxZoom={2.5}
           snapToGrid
           snapGrid={[4, 4]}

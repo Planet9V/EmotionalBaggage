@@ -200,7 +200,7 @@ export default function LifecycleFlow({ tall }: { tall: boolean }) {
           aria-label="The seven stages, what each produces and what feeds what"
         />
       </div>
-      <p aria-live={picked ? "polite" : "off"} className="mt-4 min-h-[6.5rem] rounded-lg border border-hairline bg-surface px-4 py-3 text-sm leading-relaxed text-primary lg:min-h-[4.5rem]">
+      <p aria-live={picked ? "polite" : "off"} className="mt-4 min-h-[8rem] rounded-lg border border-hairline bg-surface px-4 py-3 text-sm leading-relaxed text-primary lg:min-h-[4.5rem]">
         {caption(shown)}
       </p>
     </>
