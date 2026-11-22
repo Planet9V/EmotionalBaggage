@@ -59,6 +59,11 @@ function Camera({ shots, duration, shake }: { shots: Shot[]; duration: number; s
     const cam = camera as THREE.PerspectiveCamera;
     cam.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(fov) / 2) * widen));
     cam.lookAt(look.current);
+    // a hand holding the camera: the smallest slow drift, never still, never noticed (a few millimetres, a tenth of a degree)
+    const d = t / 1000;
+    cam.position.x += 0.006 * Math.sin(d * 0.9) + 0.003 * Math.sin(d * 2.3 + 1);
+    cam.position.y += 0.005 * Math.sin(d * 1.3 + 2) + 0.002 * Math.sin(d * 3.1);
+    cam.rotateZ(0.0015 * Math.sin(d * 0.7 + 0.5));
     // the thud: a short, dying shake
     const k = shake?.(t) ?? 0;
     if (k > 0) {
