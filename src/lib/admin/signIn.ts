@@ -2,15 +2,15 @@
 // Read here; changed through the route (platform administrator only) and src/lib/auth2/adminOps.ts setAddresses.
 // While the new sign-in is off nobody is the platform administrator: it is first turned on from inside the
 // container (`node scripts/sign-in.mjs on`); after that the platform administrator turns it off or on here.
-import { AUTH2_SETTING, auth2Enabled, override, readAuth2Setting, resolveAuth2Config } from "@/lib/auth2/config";
+import { AUTH2_SETTING, auth2Enabled, override, readAuth2Setting, resolveAddresses } from "@/lib/auth2/config";
 import { ownerPool, ready } from "@/lib/db";
 
+/** What the platform administrator reads of Admin, Sign-in. */
 export type SignInStatus = {
   on: boolean;
   /** "environment" when AUTH2 overrides the stored switch (development and tests) */
   switchFrom: "environment" | "database";
-  /** null for anyone but the platform administrator once the new sign-in is on */
-  detail: null | {
+  detail: {
     baseURL: string | null;
     trustedOrigins: string[];
     platformAdminAddress: string | null;
@@ -21,19 +21,27 @@ export type SignInStatus = {
   sharedConcepts: string;
 };
 
+/**
+ * What anyone else reads (cut-over review F1): whether the new sign-in is on, nothing more. With the switch off this
+ * is everyone, the public demo account included; with it on, nobody else reaches the route at all (B3).
+ */
+export type SignInSummary = { enabled: boolean };
+
 const SHARED_CONCEPTS =
   "Concepts are not yet kept apart per workspace: until that is built, every signed-in account sees and changes the same concepts, as today. Workspaces, members and invitations already work.";
 
-export async function signInStatus(viewer: { platformAdmin: boolean }): Promise<SignInStatus> {
+/** Reads only: never creates the secret or any other row (F1). */
+export async function signInStatus(viewer: { platformAdmin: boolean }): Promise<SignInStatus | SignInSummary> {
   await ready();
   const db = ownerPool();
   const on = await auth2Enabled();
-  const base: SignInStatus = { on, switchFrom: override() === null ? "database" : "environment", detail: null, sharedConcepts: SHARED_CONCEPTS };
-  if (on && !viewer.platformAdmin) return base;
-  const config = await resolveAuth2Config(db);
+  if (!viewer.platformAdmin) return { enabled: on };
+  const config = await resolveAddresses(db);
   const address = await readAuth2Setting<unknown>(db, AUTH2_SETTING.platformAdminAddress);
   return {
-    ...base,
+    on,
+    switchFrom: override() === null ? "database" : "environment",
+    sharedConcepts: SHARED_CONCEPTS,
     detail: {
       baseURL: config.baseURL,
       trustedOrigins: config.trustedOrigins.filter((o) => !config.baseURL || o !== new URL(config.baseURL).origin),

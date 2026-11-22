@@ -20,7 +20,7 @@ import type { ServiceStatus } from "@/lib/admin/overview";
 import type { CatalogueRead } from "@/lib/admin/plans";
 import type { PlanCatalogue, LimitKey } from "@/lib/admin/planSchema";
 import type { EnvLine } from "@/lib/admin/environment";
-import type { SignInStatus } from "@/lib/admin/signIn";
+import type { SignInStatus, SignInSummary } from "@/lib/admin/signIn";
 import type { MailSettings, VoiceSettings } from "@/lib/admin/schemas";
 
 import type { AuditRow } from "@/lib/auditLog";
@@ -157,7 +157,7 @@ export const usePayments = () => useQuery(queryOptions({ queryKey: adminKeys.pay
 export const useCredentials = () => useQuery(adminQueries.credentials());
 export const useCredentialsAudit = () => useQuery(adminQueries.credentialsAudit());
 export const useAdminSettings = () => useQuery(adminQueries.settings());
-export const useSignInStatus = () => useQuery<SignInStatus>({ queryKey: ["admin", "sign-in"], queryFn: ({ signal }) => api("/api/admin/sign-in", { signal }) });
+export const useSignInStatus = () => useQuery<SignInStatus | SignInSummary>({ queryKey: ["admin", "sign-in"], queryFn: ({ signal }) => api("/api/admin/sign-in", { signal }) });
 
 /** Changes to Admin, Sign-in (platform administrator only): the switch, or the addresses. */
 export function useSaveSignIn() {

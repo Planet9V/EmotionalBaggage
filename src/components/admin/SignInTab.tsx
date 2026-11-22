@@ -25,16 +25,18 @@ export function SignInTab() {
   const admin = useAdminAccess().platformAdmin;
   if (status.isPending) return <LoadingBlocks rows={2} label="Reading the sign-in settings" />;
   if (status.isError) return <LoadError what="The sign-in settings" message={messageOf(status.error)} onRetry={() => void status.refetch()} />;
-  const s = status.data;
+  // Anyone but the platform administrator is told only whether it is on (cut-over review F1).
+  const s = "on" in status.data ? status.data : null;
+  const on = s ? s.on : (status.data as { enabled: boolean }).enabled;
   return (
     <div className="space-y-4">
       <Panel
         title="Sign-in"
         description="Accounts with email and password, workspaces, invitations and two-step sign-in. While it is off, the app signs in as before."
-        actions={<StatusBadge tone={s.on ? "success" : "neutral"}>{s.on ? "On" : "Off"}</StatusBadge>}
+        actions={<StatusBadge tone={on ? "success" : "neutral"}>{on ? "On" : "Off"}</StatusBadge>}
       >
         <div className="space-y-3 text-sm text-primary">
-          {s.on ? (
+          {on ? (
             <p>The new sign-in is on: every page and every part of the app is reached with an account. The old shared sign-in no longer works.</p>
           ) : (
             <>
@@ -47,12 +49,12 @@ export function SignInTab() {
               </p>
             </>
           )}
-          {s.switchFrom === "environment" ? <p className="text-warning">The AUTH2 setting in the environment decides it here (development or tests); the stored switch is not used.</p> : null}
-          <p role="note" className="rounded-md bg-info-soft px-3 py-2 text-info">{s.sharedConcepts}</p>
-          {s.on && admin ? <TurnOff /> : null}
+          {s?.switchFrom === "environment" ? <p className="text-warning">The AUTH2 setting in the environment decides it here (development or tests); the stored switch is not used.</p> : null}
+          {s ? <p role="note" className="rounded-md bg-info-soft px-3 py-2 text-info">{s.sharedConcepts}</p> : null}
+          {on && admin ? <TurnOff /> : null}
         </div>
       </Panel>
-      {s.detail ? <Details detail={s.detail} canWrite={admin} /> : s.on ? <p className="text-sm text-secondary">The addresses are shown to the platform administrator only.</p> : null}
+      {s ? <Details detail={s.detail} canWrite={admin} /> : on ? <p className="text-sm text-secondary">The addresses are shown to the platform administrator only.</p> : null}
     </div>
   );
 }

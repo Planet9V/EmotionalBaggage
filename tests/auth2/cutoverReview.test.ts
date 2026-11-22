@@ -269,3 +269,35 @@ describe("B3: with the new sign-in on, the admin area is the platform administra
     expect(m.status).not.toBe(403);
   });
 });
+
+describe("F1: with the switch off, Admin, Sign-in tells the demo account only whether it is on", () => {
+  it("answers exactly { enabled }, and the read creates no secret", async () => {
+    const { GET } = await import("@/app/api/admin/sign-in/route");
+    const { forgetAuth2Switch } = await import("@/lib/auth2/config");
+    const kept = await db.query<{ value: string }>("SELECT value FROM auth2_secrets WHERE name = 'better-auth'");
+    const envSecret = process.env.BETTER_AUTH_SECRET;
+    process.env.AUTH2 = "0";
+    delete process.env.BETTER_AUTH_SECRET;
+    try {
+      await db.query("DELETE FROM auth2_secrets WHERE name = 'better-auth'");
+      forgetAuth2Switch();
+      const r = await GET(asBrowser("/api/admin/sign-in", sessionCookieHeader()));
+      expect(r.status).toBe(200);
+      expect(await r.json()).toEqual({ enabled: false });
+      expect((await db.query("SELECT 1 FROM auth2_secrets WHERE name = 'better-auth'")).rowCount).toBe(0);
+    } finally {
+      process.env.AUTH2 = "1";
+      process.env.BETTER_AUTH_SECRET = envSecret;
+      for (const k of kept.rows) await db.query("INSERT INTO auth2_secrets (name, value) VALUES ('better-auth', $1) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value", [k.value]);
+      forgetAuth2Switch();
+    }
+  });
+
+  it("the platform administrator still reads the whole status", async () => {
+    const { GET } = await import("@/app/api/admin/sign-in/route");
+    const { admin } = await strangerAndAdmin("f1");
+    const body = (await (await GET(asBrowser("/api/admin/sign-in", admin))).json()) as { on: boolean; detail: { baseURL: string } };
+    expect(body.on).toBe(true);
+    expect(body.detail.baseURL).toBe(BASE);
+  });
+});

@@ -223,8 +223,18 @@ export async function resolveAuth2Config(db: Pool): Promise<Auth2Config> {
 }
 
 async function resolveNow(db: Pool): Promise<Auth2Config> {
-  const setting = <T>(key: Auth2SettingKey) => readAuth2Setting<T>(db, key);
   const secret = await storedSecret(db);
+  return { secret, ...(await resolveAddresses(db)) };
+}
+
+export type Auth2Addresses = Omit<Auth2Config, "secret">;
+
+/**
+ * The addresses only, resolved as in the table at the top: reads, never creates anything (no secret is made). For
+ * Admin, Sign-in and for checking a change of the addresses inside its transaction (`db` may be its client).
+ */
+export async function resolveAddresses(db: Queryable): Promise<Auth2Addresses> {
+  const setting = <T>(key: Auth2SettingKey) => readAuth2Setting<T>(db, key);
   const envURL = process.env.BETTER_AUTH_URL?.trim();
   const savedURL = await setting<string>(AUTH2_SETTING.baseUrl);
   let baseURL: string | null = null;
@@ -244,7 +254,7 @@ async function resolveNow(db: Pool): Promise<Auth2Config> {
     warnings.push(`The sign-in address is ${baseURL}, not https: sign-in cookies are sent unencrypted. Serve the app over https and change the address.`);
   }
   if (isProduction() && !baseURL) warnings.push("The sign-in address is not set yet. It is stored when the owner is created on the first-run page.");
-  return { secret, baseURL, trustedOrigins, warnings };
+  return { baseURL, trustedOrigins, warnings };
 }
 
 /**

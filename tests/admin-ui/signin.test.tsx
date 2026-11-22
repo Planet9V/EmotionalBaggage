@@ -17,15 +17,15 @@ afterEach(() => {
 });
 
 describe("Admin, Sign-in", () => {
-  it("off: says how to turn it on from inside the container, and that concepts are shared", async () => {
+  it("off, for the demo account: says how to turn it on from inside the container, and nothing else (review F1)", async () => {
     adminServer([
       on("GET", "/api/admin/access", () => ({ body: NOT_ADMIN })),
-      on("GET", "/api/admin/sign-in", () => ({ body: { on: false, switchFrom: "database", detail: { baseURL: null, trustedOrigins: [], platformAdminAddress: "admin@oxot.nl", warnings: [], mail: false }, sharedConcepts: SHARED } })),
+      on("GET", "/api/admin/sign-in", () => ({ body: { enabled: false } })),
     ]);
     renderWithClient(<SignInTab />);
     expect(await screen.findByText("docker compose exec web node scripts/sign-in.mjs on")).toBeTruthy();
     expect(screen.getByText("Off")).toBeTruthy();
-    expect(screen.getByRole("note").textContent).toBe(SHARED);
+    expect(screen.queryByText("admin@oxot.nl")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save the addresses" })).toBeNull();
   });
 
@@ -43,6 +43,7 @@ describe("Admin, Sign-in", () => {
     renderWithClient(<SignInTab />);
     expect((await screen.findByRole("alert")).textContent).toMatch(/not https/);
     expect(screen.getByText(/Set up \(Admin, Email\)/)).toBeTruthy();
+    expect(screen.getByRole("note").textContent).toBe(SHARED);
     fireEvent.change(screen.getByLabelText("Address of this installation"), { target: { value: "https://app.example.test" } });
     fireEvent.change(screen.getByLabelText("Other addresses it is opened at"), { target: { value: "https://other.example.test" } });
     fireEvent.click(await screen.findByRole("button", { name: "Save the addresses" }));
@@ -53,7 +54,7 @@ describe("Admin, Sign-in", () => {
   it("on, for anyone else: only that it is on", async () => {
     adminServer([
       on("GET", "/api/admin/access", () => ({ body: NOT_ADMIN })),
-      on("GET", "/api/admin/sign-in", () => ({ body: { on: true, switchFrom: "database", detail: null, sharedConcepts: SHARED } })),
+      on("GET", "/api/admin/sign-in", () => ({ body: { enabled: true } })),
     ]);
     renderWithClient(<SignInTab />);
     expect(await screen.findByText("The addresses are shown to the platform administrator only.")).toBeTruthy();
