@@ -12,18 +12,20 @@ Kept by the project manager; updated at every merge. Plan: `docs/plan-2026-11-22
 
 | Tag Rev C: product design, three directions, colourways, renders | WS8 | Fable-tier (design) | `/home/claude/work/tag/revC` |
 
-## Next
+## Next, in the owner's order of 22 Nov (11:44)
 
-| Task | Workstream | Model | Waits for |
-|---|---|---|---|
-| Voice-overs tool: generate, preview and store clips for the scenes (Kokoro or OpenRouter), played by the film | WS12 | Sonnet build, lead review | admin area, cut-over |
-| Independent security review of slice 2 and the admin area | WS2, WS10 | Fable | their branches |
-| Admin area, part B: users and organizations screens on the platform-admin functions | WS10 | Sonnet, to a written specification; Fable review | slice 2 |
-| Sign-in cut-over: remove `demo`/`demo`, row-level security on concept tables | WS2 slice 3 | Fable-tier | owner go-ahead |
-| Stripe subscriptions, plan limits from the catalogue, AI credits | WS6 | Fable-tier | slice 2, admin part A |
-| Slack steps 2 to 5: admin section and platform channel; request checking, linking and buttons; workspace channels; commands and assistant | WS11 | Sonnet build, Fable for step 3 and review | admin part A, slice 2 |
-| User guide pages for Status, the admin area and accounts | docs | Sonnet | the features landing |
-| Re-sync the project documents | docs | lead | none |
+The build machine is at its limit with seven agents (load 10 on 2 processors), so each of these starts when a running agent finishes.
+
+| # | Task | Workstream | Model | Starts after |
+|---|---|---|---|---|
+| 1 | Cut-over: turn the new sign-in on; owner creates `admin@oxot.nl` | WS2 | lead, with the owner | accounts integration passes review |
+| 2 | Concepts separated per workspace: `workspace_id` and row-level security on every concept table; a test that walks every route as a second workspace | WS2 slice 3 | Fable-tier, security review | accounts integration merges |
+| 3 | Admin screens for users and organizations on the platform-admin functions | WS10 part B | Sonnet to a written specification, lead review | accounts integration merges |
+| 4 | Smaller faults from the handover: enclosure page blocks with no route to the fix; drafts show raw JSON; "Ask the assistant" missing on some rows; first next step is "Add a file"; audit-log flooding from the public form; no way to delete an access request; no upper bound on part quantity; export builds every file in memory; the two forms needing a wording decision | app | Sonnet, lead review | a free place |
+| 5 | Stripe subscriptions from the plan catalogue, plan limits enforced, AI credits ledger, billing page | WS6 | Fable-tier, security review | slice 3 |
+| 6 | User guide pages: Status, Admin, accounts and workspaces, voice-overs, the public page | docs | Sonnet | a free place; each page when its feature lands |
+| 7 | Voice clips and scenes ready for the owner's review | WS12, WS13 | lead | those agents finishing |
+| 8 | Slack steps 2 to 5 | WS11 | phase 2, by the owner's ruling | after the above |
 
 ## Owner decisions, 22 Nov (10:03)
 
