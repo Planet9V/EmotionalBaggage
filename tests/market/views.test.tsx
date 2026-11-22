@@ -57,6 +57,24 @@ describe("names checklist", () => {
   });
 });
 
+describe("adding a name by hand", () => {
+  it("asks for the name beside the field, then adds it as a candidate of the chosen kind", async () => {
+    const srv = mockServer([row(1, "concept/names", { title: "Sass Case", data: { kind: "Name" }, status: "shortlist" })]);
+    mount(<NamesView {...propsFor("concept", "names")} />);
+    await screen.findByText("Sass Case");
+    fireEvent.click(screen.getByRole("button", { name: /Add by hand/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+    expect((await within(dialog).findByText("Type the name or line.")).getAttribute("role")).toBe("alert");
+    expect(within(dialog).getByLabelText("Name or line").getAttribute("aria-invalid")).toBe("true");
+    expect(srv.calls.some((c) => c.method === "POST")).toBe(false);
+    fireEvent.change(within(dialog).getByLabelText("Name or line"), { target: { value: "  Carry on  " } });
+    fireEvent.change(within(dialog).getByLabelText("Kind"), { target: { value: "Tagline" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(srv.calls.find((c) => c.method === "POST")?.body).toMatchObject({ title: "Carry on", data: { kind: "Tagline" }, status: "candidate" }));
+  });
+});
+
 describe("pricing", () => {
   it("works the margin out from the parts list and the channel fee, and marks an incomplete cost", async () => {
     mockServer([

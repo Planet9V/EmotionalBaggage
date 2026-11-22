@@ -5,6 +5,9 @@ import { sentText } from "@/lib/channels/sentText";
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { ArrowLeft, ArrowRight, Check, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -16,7 +19,7 @@ import { SOCIAL_CHANNELS, checkSocial, socialChannel } from "@/lib/content/chann
 import { SocialCalendar } from "@/components/content/SocialCalendar";
 import type { ViewProps } from "./types";
 import { ErrorLine, LoadingBlocks } from "@/components/ui/states";
-import { Field } from "@/components/ui/field";
+import { describe, Field } from "@/components/ui/field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
@@ -183,34 +186,40 @@ export function SocialView({ project, section, store }: ViewProps) {
   );
 }
 
+const POST_TEXT_ID = "compose-post-text";
+
+// The character count and the channel's limits are shown as you type; they warn, they do not block.
+const composeSchema = z.object({
+  channel: z.string(),
+  text: z.string().refine((v) => v.trim() !== "", "Write the post first."),
+});
+type ComposeValues = z.infer<typeof composeSchema>;
+
 function ComposeDialog({ item, onClose, onSave }: { item: Item | null; onClose: () => void; onSave: (v: { text: string; channel: string }) => Promise<void> }) {
-  const [text, setText] = useState(item?.body ?? "");
-  const [channel, setChannel] = useState(item ? channelOf(item) : X_NAME);
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting: busy } } = useForm<ComposeValues>({
+    resolver: zodResolver(composeSchema),
+    defaultValues: { channel: item ? channelOf(item) : X_NAME, text: item?.body ?? "" },
+  });
+  const [channel, text] = useWatch({ control, name: ["channel", "text"] });
   const n = len(text);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!text.trim()) return setErr("Write the post first.");
-    setBusy(true);
+  const submit = handleSubmit(async (v) => {
     try {
-      await onSave({ text, channel });
+      await onSave({ text: v.text, channel: v.channel });
       onClose();
     } catch (x) {
-      setErr((x as Error).message);
-      setBusy(false);
+      setError("root", { message: (x as Error).message });
     }
-  };
+  });
 
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={item ? "Edit post" : "New draft post"}>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={(e) => void submit(e)} noValidate className="space-y-3">
         <Field label="Channel">
-          <NativeSelect value={channel} onChange={(e) => setChannel(e.target.value)}>{CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}</NativeSelect>
+          <NativeSelect {...register("channel")}>{CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}</NativeSelect>
         </Field>
-        <Field label="Post text">
-          <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+        <Field id={POST_TEXT_ID} label="Post text" error={errors.text?.message}>
+          <Textarea id={POST_TEXT_ID} rows={6} autoFocus {...describe(POST_TEXT_ID, { error: errors.text?.message })} {...register("text")} />
         </Field>
         {channel === X_NAME && (
           <p className={cn("font-mono text-xs", n > X_LIMIT ? "text-danger" : "text-muted")} aria-live="polite">
@@ -223,7 +232,7 @@ function ComposeDialog({ item, onClose, onSave }: { item: Item | null; onClose: 
             {checkSocial(socialChannel(channel)!, text).map((p, i) => <li key={i} className={p.level === "refuse" ? "text-danger" : "text-warning"}>{p.message}</li>)}
           </ul>
         )}
-        {err ? <ErrorLine>{err}</ErrorLine> : null}
+        {errors.root?.message ? <ErrorLine>{errors.root.message}</ErrorLine> : null}
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={busy}>{busy ? "Saving" : item ? "Save post" : "Save draft"}</Button>

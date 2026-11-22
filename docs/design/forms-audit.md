@@ -29,8 +29,8 @@ Where a control is not a plain input (the shared `WhyField`, a picker), it is wi
 | | Before | After |
 |---|---:|---:|
 | Forms (`<form>` elements) | 55 in 51 files | 55 |
-| Conforming | 15 | 25 |
-| Hand-wired | 40 | 30 |
+| Conforming | 15 | 29 |
+| Hand-wired | 40 | 26 |
 
 The earlier audit's "51 forms" counted files.
 
@@ -69,14 +69,14 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | sourcing/OfferForm.tsx | add an offer | M | hand-wired: decision needed (1) |
 | layout/EnvelopePanel.tsx | create enclosure | S | hand-wired: decision needed (2) |
 | production/PriceBreaksDialog.tsx | price breaks | M | hand-wired: list of rows |
-| views/SocialView.tsx | compose post | M | hand-wired |
+| views/SocialView.tsx | compose post | M | converted, batch 3 |
 | campaigns/PlanCard.tsx | launch plan settings | M | hand-wired |
 | campaigns/LinksView.tsx | tracked link | M | hand-wired |
 | campaigns/LaunchView.tsx | start a launch | M | hand-wired |
 | campaigns/ResultsView.tsx | results import and rule | M | hand-wired |
 | campaigns/CampaignDialog.tsx | campaign | L | hand-wired: nine checks, money inputs |
-| market/PersonasView.tsx | persona | M | hand-wired |
-| market/NamesView.tsx | name | M | hand-wired |
+| market/PersonasView.tsx | persona | M | converted, batch 3 |
+| market/NamesView.tsx | add a name or tagline | S | converted, batch 3 |
 | market/PositioningView.tsx | positioning line | M | hand-wired |
 | market/PricingView.tsx | price point | M | hand-wired |
 | market/CompetitorsView.tsx | competitor | L | hand-wired |
@@ -91,7 +91,7 @@ fields that depend on each other, a list of rows, or checks spread over several 
 | sourcing/PartCard.tsx | part sourcing | M | hand-wired |
 | admin/CredentialsTab.tsx | provider credentials | M | hand-wired: fields come from the provider |
 | admin/ModelsTab.tsx | model choice | M | hand-wired |
-| admin/ModelsTab.tsx | planner address | S | hand-wired |
+| admin/ModelsTab.tsx | planner address | S | converted, batch 3 |
 | admin/PrintersTab.tsx | printer | L | hand-wired |
 | three/PartPanel.tsx | part geometry | L | hand-wired: held file (knip list), another branch is changing it |
 | app/sign-in/SignInForm.tsx | sign in | S | left: accounts workstream (WS2) replaces sign-in |
