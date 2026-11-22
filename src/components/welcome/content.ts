@@ -657,7 +657,7 @@ export const GET_VIEWS = {
     stepOf: (n: number, total: number) => (n === 0 ? `Step 0 of ${total}` : `Step ${n} of ${total}`),
     nothingYet: "Nothing in place yet",
     counts: (shaped: number, parts: number, wires: number, steps: number) => `${shaped} of ${parts} parts with a shape, ${wires} wires, ${steps} assembly steps`,
-    hint: "The order is the build sheet's: the printed base, the board, each soldering step, then integration.",
+    hint: "Build-sheet order: base, board, each soldering step, integration.",
   },
   views: { model: "3D model", schematic: "Schematic" },
   print: {
