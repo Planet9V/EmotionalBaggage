@@ -55,9 +55,9 @@ const placeholder = (refs: string[]): Record<string, XY> => Object.fromEntries(r
 
 export type PinRow = { name: string; side: "left" | "right"; netClass: NetClass | null; extra: boolean; wired: boolean };
 
-export type SNode = { kind: "part"; id: string; ref: string; title: string; ghost: boolean; pins: PinRow[]; pos: XY; saved: boolean; part: Part | null };
+type SNode = { kind: "part"; id: string; ref: string; title: string; ghost: boolean; pins: PinRow[]; pos: XY; saved: boolean; part: Part | null };
 
-export type Segment = {
+type Segment = {
   id: string;
   wire: Wire;
   source: string;
@@ -290,11 +290,6 @@ function byPinKey(a: string, b: string) {
 // ───────── generated files
 
 export type FileMeta = { concept: string; generatedAt: Date };
-
-export function fmtDate(d: Date) {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
 
 export const CSV_HEADER = ["order", "name", "net", "class", "from ref", "from pin", "to ref", "to pin", "cut length mm", "length basis", "gauge", "note", "status"];
 

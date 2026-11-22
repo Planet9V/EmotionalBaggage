@@ -38,7 +38,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 const ENCLOSURE = /enclosure|tray|lid|case|shell|base/i;
-export const isPrintable = (f: FileMeta) => /\.(stl|3mf)$/i.test(f.name) && !/\.gcode\.3mf$/i.test(f.name);
+const isPrintable = (f: FileMeta) => /\.(stl|3mf)$/i.test(f.name) && !/\.gcode\.3mf$/i.test(f.name);
 
 /** Enclosure files from the Enclosure page first, newest first; then other files whose names look like a case. */
 export function enclosureFirst(files: FileMeta[]) {

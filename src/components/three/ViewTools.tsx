@@ -182,7 +182,7 @@ export type RouteState =
   | { state: "done"; outcome: RouteOutcome; totalMs: number }
   | { state: "error"; message: string };
 
-export const CELLS = [1, 2, 3, 5];
+const CELLS = [1, 2, 3, 5];
 
 export function RoutePanel({ cell, onCell, onRoute, result, canRoute, why, counts }: {
   cell: number;

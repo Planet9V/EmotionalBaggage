@@ -32,7 +32,7 @@ export function stateWord(d: Decision, all: Decision[], byKey: Map<string, Decis
 }
 
 /** Short form of a question for a sentence: the part before a colon, without the question mark. */
-export function shortQuestion(q: string) {
+function shortQuestion(q: string) {
   const head = q.includes(":") ? q.slice(0, q.indexOf(":")) : q;
   return head.replace(/\?\s*$/, "").trim() || q;
 }
@@ -198,7 +198,7 @@ export type LayoutInput = {
 };
 
 /** Options shown under a decision card, given the view. */
-export function shownOptions(d: Decision, input: LayoutInput) {
+function shownOptions(d: Decision, input: LayoutInput) {
   if (input.chosenOnly) {
     const o = chosenOption(d);
     return o ? [o] : [];

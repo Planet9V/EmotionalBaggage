@@ -1,5 +1,4 @@
 // Shared client/server shapes. Views import from here only.
-export type { Geometry } from "./domain/schemas";
 
 export type Project = { id: string; name: string; oneLiner: string };
 

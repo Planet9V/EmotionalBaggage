@@ -58,7 +58,7 @@ function bodiesFor(g: PartGeometry, p: ShellParams): { bodies: Body[]; problems:
 
 const downloadBytes = (buf: ArrayBuffer, name: string, type = "model/stl") => downloadFile(name, buf, type);
 
-export function meshExtent(m: Mesh): [number, number, number] {
+function meshExtent(m: Mesh): [number, number, number] {
   const b = bounds(m);
   return [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]];
 }

@@ -3,8 +3,8 @@
 // Gauge comes from the current a wire carries, and only when a current is set. A current is set on the wire row (data.currentMa,
 // typed on the sheet) or, failing that, on a part at one of its ends (data.currentMa on the part, mA drawn). With neither the gauge
 // is "unknown" and a gauge typed on the wire (data.gauge) is shown as the user's. Nothing is guessed.
-import type { Part, Wire } from "@/lib/domain";
-import { COLOUR_SWATCH, CLASS_ORDER, estimateLength, signalNetsOf, suggestedColour, type Length, type PartLite, type Step } from "./derive";
+import type { Wire } from "@/lib/domain";
+import { COLOUR_SWATCH, estimateLength, signalNetsOf, suggestedColour, type Length, type PartLite, type Step } from "./derive";
 
 /**
  * Maximum current for chassis wiring, copper, by AWG. Chassis wiring means wires inside equipment, in free air and not bundled
@@ -127,7 +127,6 @@ export const CONNECTIONS = [
   { key: "screw", label: "Bare wire in a screw terminal", strip: 6, awg: null },
   { key: "lug", label: "Ring or spade lug", strip: 6, awg: null },
 ] as const satisfies readonly { key: string; label: string; strip: number; awg: WireRange | null }[];
-export type ConnectionKey = (typeof CONNECTIONS)[number]["key"];
 
 /**
  * Starting strip lengths in mm. They are general bench practice, not taken from a connector's data sheet, and the sheet says so
@@ -141,7 +140,7 @@ export const connectionOf = (p: PartLite | undefined): string => {
 };
 
 /** The connection type at each end of a wire, with the wire sizes its terminal accepts (null: not sourced). */
-export function endRanges(w: Wire, parts: Map<string, PartLite>): EndRange[] {
+function endRanges(w: Wire, parts: Map<string, PartLite>): EndRange[] {
   return [w.from, w.to].flatMap((ref) => {
     const c = CONNECTIONS.find((x) => x.key === connectionOf(parts.get(ref)));
     return c ? [{ ref, label: c.label, range: c.awg as WireRange | null }] : [];
@@ -208,5 +207,3 @@ export function stripSummary(rows: SpecRow[], parts: Map<string, PartLite>, stri
 }
 
 export const swatch = (c: string) => COLOUR_SWATCH[c];
-export { CLASS_ORDER };
-export type { Part };
