@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { electricalFindings, ercSummary, RULES, type Rule } from "@/lib/parts/erc";
 import { part, pinsFor, seeded, wire } from "./fixtures";
+import { applySeedContent, seededRows } from "@/lib/seedContent";
 
 const rules = (fs: { rule: Rule }[]) => fs.map((f) => f.rule);
 
@@ -167,5 +168,17 @@ describe("pins nobody has described", () => {
     const mcu = part("U2"); // undescribed: its pin 3V3 has no kind
     const f = electricalFindings({ parts: [s, mcu], wires: [wire("U2", "3V3", "U1", "VDD")], pins: [] });
     expect(rules(f)).not.toContain("unpowered");
+  });
+});
+
+describe("the example concept after its content batches (the 2 x AA design of 22 Nov 2026)", () => {
+  it("has a schematic with no electrical error and no warning", () => {
+    const rows = applySeedContent(seededRows().map((r, i) => ({ ...r, id: i + 1, projectId: "example", sort: i })));
+    const parts = rows.filter((r) => r.section === "design/bom");
+    const wires = rows.filter((r) => r.section === "design/wiring");
+    expect(parts.some((p) => p.data.ref === "U4") && !parts.some((p) => p.data.ref === "SD1")).toBe(true);
+    const s = ercSummary({ parts, wires, pins: [] }, { projectId: "example" });
+    expect(s.findings.filter((f) => f.severity !== "info").map((f) => `${f.rule}: ${f.text}`)).toEqual([]);
+    expect(s.errors).toBe(0);
   });
 });

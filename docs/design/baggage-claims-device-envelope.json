@@ -3,7 +3,7 @@
   "date": "2026-11-22",
   "source": "docs/design/baggage-claims-device.md, section 6",
   "status": "Nothing here is measured. basis: 'page' = read on a maker's or reseller's page on 22 Nov 2026; 'doc' = the owner's Rev A documents; 'typical' = a common size, unverified; 'calc' = calculated; 'est' = estimate.",
-  "supersedes": "The packing Rev C was drawn around (3 x AA holder 48 x 58 x 17, perfboard 50 x 70, speaker 5 mm deep, DFPlayer). The owner's ruling of 22 Nov is two AA cells; the speaker that gives the loudness in the design note is 20 mm deep.",
+  "supersedes": "The packing Rev C was first drawn around (3 x AA holder 48 x 58 x 17, perfboard 50 x 70, speaker 5 mm deep, DFPlayer). Rev C has since been redrawn for two cells (revC/DESIGN.md, read 22 Nov 13:10); where it still differs from this design is under revCConflicts.",
   "units": "mm, grams",
   "frame": {
     "x": "width, 60",
@@ -322,5 +322,63 @@
     ],
     "basis": "doc",
     "petgSoftens": "75 to 80 deg C (est)"
-  }
+  },
+  "revCConflicts": [
+    {
+      "item": "speaker",
+      "revC": "36 dia x 5 deep, glued behind the grille",
+      "thisDesign": "40 dia x 20 deep, 4 ohm cone, rim clamped on a gasket ring",
+      "severity": "major",
+      "recommendation": "Keep the 20 mm speaker for loudness (about 80 dB at 1 m, est; a 5 mm mylar speaker is about 8 to 10 dB quieter, est). Put the board and modules below the speaker rather than in front of it; Rev C's 50.6 inside width does not take a 32 wide holder beside a 23 wide module strip. The tag designer chooses between this and the hinge inside the envelope."
+    },
+    {
+      "item": "speaker fixing",
+      "revC": "glued",
+      "thisDesign": "gasket ring, clamped",
+      "severity": "minor",
+      "recommendation": "A printed clamp ring, or glue together with the gasket."
+    },
+    {
+      "item": "carrier board",
+      "revC": "perfboard 50 x 70 under hooks",
+      "thisDesign": "70 x 22 strip or point-to-point",
+      "severity": "minor",
+      "recommendation": "Either works; a smaller carrier frees volume for the speaker."
+    },
+    {
+      "item": "converter pocket",
+      "revC": "18 x 12 x 5 reserved; audio module said to need 4.5 to 5 V",
+      "thisDesign": "U4 12 x 15 x 3; MAX98357A runs from 3.3 V",
+      "severity": "none",
+      "recommendation": "U4 fits with its 15 along the pocket's 18. Nothing needs 5 V."
+    },
+    {
+      "item": "power switch",
+      "revC": "9 x 4 x 4 sub-miniature, typical",
+      "thisDesign": "rated 1 A or more at 6 V DC, body about 12 x 6 x 6 (est)",
+      "severity": "moderate",
+      "recommendation": "Choose the 1 A part, then size the slot; keep the lever below the surface."
+    },
+    {
+      "item": "sensor fixing",
+      "revC": "two M2 self-tapping screws and two locating pegs",
+      "thisDesign": "four screws",
+      "severity": "minor",
+      "recommendation": "Acceptable with pegs at 0.05 clearance or less, flat posts and washers under the M2 heads."
+    },
+    {
+      "item": "USB-C access",
+      "revC": "not stated",
+      "thisDesign": "12 clear beyond the controller's USB-C, reachable with the lid open",
+      "severity": "moderate",
+      "recommendation": "Needed to load firmware and clips with the switch off."
+    },
+    {
+      "item": "depth margin",
+      "revC": "1.3 spare",
+      "thisDesign": "0.9 spare in this packing",
+      "severity": "minor",
+      "recommendation": "Measure the holder and speaker bought before the first print."
+    }
+  ]
 }

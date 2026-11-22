@@ -22,7 +22,7 @@ Companion files: the firmware (`BaggageClaims_MK1_RevB.ino`, `bc_detect.h`, `bc_
 - **Carousel.** At least 15 s of quiet transport with at least 120 degrees of turn one way about the vertical. Section 3.6.
 - **Battery life.** About 6 months at four travel days a month [est]. Section 2.6.
 - **What two AA cells do not meet.** Loudness: about 80 dB at 1 m against the documents' "~85 dBA" [calc], and Rev A as drawn would be no louder. Sleep current: about 0.25 mA against the documents' "<200 uA" [est], which Rev A's parts could not meet either. The 128 clips in each of three packs, and packs sold as a card: not in this build. Section 2.11.
-- **Firmware.** The detection logic passes 23 host tests [host]. The sketch type-checks against the board's core; a full build with arduino-cli was not completed here, so **compilation for the board is unverified**. Section 4.
+- **Firmware.** The detection logic passes 26 host tests [host]. arduino-cli compiles and links the whole sketch for the XIAO ESP32S3 with core 4.0.0 (418,264 bytes, no warning in the sketch's files), with one step stood in for: Arduino's ctags, which could not be downloaded. Nothing has run on a board. Section 4.
 - **Cost.** The documents' parts list adds up to $64.80 [doc]; the 2 x AA design comes to $72.83 for one, $72.83 each for five and $62.69 each for a hundred [est]. Section 5.
 
 ## 2. Electrical design
@@ -329,29 +329,49 @@ Each threshold is one named constant in `bc_detect.h`. A recording can be replay
 
 | | |
 |---|---|
-| Sketch | `BaggageClaims_MK1_RevB.ino` (553 lines) with `bc_detect.h` (277) and `bc_detect.cpp` (473) |
+| Sketch | `BaggageClaims_MK1_RevB.ino` (590 lines) with `bc_detect.h` (301) and `bc_detect.cpp` (506) |
 | Board | Seeed Studio XIAO ESP32S3; FQBN `esp32:esp32:XIAO_ESP32S3:PartitionScheme=default_8MB,USBMode=hwcdc,CDCOnBoot=default` |
 | Core | Arduino-ESP32 ("esp32" by Espressif) **4.0.0** |
 | Libraries | Wire 4.0.0, LittleFS 4.0.0, Preferences 4.0.0, ESP_I2S 4.0.0. All four are part of the core; nothing is installed from the Library Manager |
 | Radios | Never started; no Wi-Fi or Bluetooth code is linked |
-| Clips | LittleFS, 16-bit mono WAV, `/p<pack>/<class>_<n>.wav`; a class with several variants never plays the same one twice running |
+| Clips | LittleFS, 16-bit mono WAV, `/p<pack>/<stem>_<n>.wav`, packs `/p1` to `/p9`; the clip plan is in section 4.1 |
 
-The sketch implements: sensor set-up and FIFO batches; deep sleep with wake on the motion interrupt or the button, and the two-hour timer for the dark-idle line; the governor, with its state kept across sleep; clip choice without immediate repeats; three volume steps; the low-battery steps and the brown-out count; the button; a serial log and the logging mode.
+The sketch implements: sensor set-up and FIFO batches; deep sleep with wake on the motion interrupt or the button, and the two-hour timer for the dark-idle line; the governor, with its state kept across sleep; clip choice without immediate repeats; the running counts of impacts and carousel laps; three volume steps; the low-battery steps and the brown-out count; the button; the first-start line; a serial log and the logging mode.
 
 **What was proved, and what was not.**
 
 | Check | Result |
 |---|---|
 | Detection core builds with g++ 13.3, `-Wall -Wextra -Werror` | Passes |
-| Host tests: 23 tests on synthetic traces (`scripts/firmware-check.sh host`, also run by `tests/firmware/host.test.ts`) | **23 pass, 0 fail** |
-| Detection core compiles to an ESP32-S3 object with the board's compiler (xtensa-esp-elf g++ 15.2.0) | Compiles; 5.5 kB of code |
-| Sketch type-checks with that compiler against the core 4.0.0 headers and the board's variant (`-fsyntax-only`) | No error |
-| **Full build for the board with arduino-cli** (`scripts/firmware-check.sh board`) | **Not completed.** arduino-cli 1.2.2 and the core, the ESP32-S3 libraries and the compiler were fetched from GitHub, but arduino-cli also needs Arduino's own helper tools (ctags and others), which come from `downloads.arduino.cc`; that host is blocked here (403). **Compilation and linking for the board are unverified.** |
+| Host tests: 26 tests on synthetic traces (`scripts/firmware-check.sh host`, also run by `tests/firmware/host.test.ts`) | **26 pass, 0 fail** |
+| **Full build for the board with arduino-cli** (`BC_CTAGS_STUB=1 scripts/firmware-check.sh board`): arduino-cli 1.2.2, core 4.0.0, xtensa-esp-elf g++ 15.2.0, FQBN above, `--warnings all`, the sketch's own partitions file | **Compiles and links**: 418,264 bytes of program (12 % of the 3.3 MB arduino-cli counts; the partitions file gives the application 2 MB), 29,984 bytes of RAM; no warning in the sketch's three files. Run 22 Nov. |
+| What was stood in for | Arduino's `ctags` (it writes the function prototypes for a sketch) comes only from `downloads.arduino.cc`, which is blocked here. A stand-in that reports no tags was used, so arduino-cli added no prototypes. The sketch declares its own, so the build does not depend on them; the owner's Arduino IDE, with the real ctags, should give the same result. **Not yet repeated with the real tool.** |
 | Anything on hardware | Not done: no board, no sensor, no speaker |
 
 The synthetic traces are built from the physics in section 3, by the same hand that wrote the rules. They show the logic does what the specification says; they do not show the specification fits real luggage.
 
-Host tests, by name: a throw is a throw and its landing; the Rev A free-fall rule would miss a tumbling throw; a drop is a free-fall, not a throw; a short fall is only a hard impact; a set-down is nothing; the tag knocking the case is nothing; a hard knock at rest is one impact; conveyor vibration is a conveyor and never a flight; a racetrack carousel is reported once after 15 s; a round carousel is reported and its turn is not learnt as gyro offset; a rough carousel is a carousel, not a conveyor first; one right-angle corner is not a carousel; opposite turns cancel; a handle grab is reported after four seconds of tilted carry; knocked over and left is not a grab; a weigh-in is lift, still, moved; left for twelve seconds is not a weigh-in; still without a lift is not a weigh-in; speaker vibration during playback starts nothing; inverted for more than four seconds; the governor; the picker; the battery levels.
+Host tests, by name: a throw is a throw and its landing; the Rev A free-fall rule would miss a tumbling throw; a drop is a free-fall, not a throw; a short fall is only a hard impact; a set-down is nothing; the tag knocking the case is nothing; a hard knock at rest is one impact; conveyor vibration is a conveyor and never a flight; a racetrack carousel is reported once after 15 s; a round carousel is reported and its turn is not learnt as gyro offset; a rough carousel is a carousel, not a conveyor first; one right-angle corner is not a carousel; opposite turns cancel; a handle grab is reported after four seconds of tilted carry; knocked over and left is not a grab; a weigh-in is lift, still, moved; left for twelve seconds is not a weigh-in; still without a lift is not a weigh-in; speaker vibration during playback starts nothing; inverted for more than four seconds; the governor; a counted class plays once per count step; a long carousel ride is reported again at each further lap; the clip plan and the quiet dark hold; the picker; the battery levels.
+
+### 4.1 What the lines and the voice packs ask of the firmware
+
+`docs/design/baggage-claims-lines.md` (section "What the lines ask of the firmware") and `docs/research/baggage-claims-voice-packs.md` (the six firmware requirements) list what the writers need. Done in Rev B, or not, and why:
+
+| Request | In Rev B | How, or why not |
+|---|---|---|
+| A count of impacts in one journey, with clips for the first, the second and "too many" | **Yes** [host] | The governor counts every impact and landing in the journey phase, played or not. A counted class may play once per step, so `impact_c1.wav`, `impact_c2.wav` and `impact_c3.wav` (the third and after) can each play once a phase; without those files the plain variants play. The documents' "one gag per class per phase" still holds for every other class. Cooldown and the six-an-hour cap still apply |
+| A count of carousel laps, with clips for the second and the third | **Yes** [host] | After the first report (15 s, 120 degrees) each further 360 degrees of net turn in the same ride is reported again; `carousel_c1` to `_c3` as above. A lap is 360 degrees of turn whatever the carousel's shape |
+| Dark-hold clips played quieter | **Yes** [host] | `idle_*` plays 10 dB under the volume step. The writers' "recorded quiet" still applies; the two add up |
+| Several clips for a moment, never the same twice running | Yes (already) [host] | `_1` to `_9` per stem; the picker never repeats the last variant |
+| A goodbye on mute | **No** | S1 is a true disconnect (the ruling): when it opens there is no power to speak with. A soft power-off would need a second switch contact or a latch circuit, and the documents' button has no mute step. The POF lines can be kept for a later revision with a soft switch |
+| A first-start flag: the out-of-the-box line once | **Yes** | `box_1.wav` plays at the first start; the flag lives in flash (Preferences) and survives the cells being changed. A 10 s factory reset clears it |
+| Clip numbers kept apart for moments added later | **Yes**, by name instead of number | With clips in LittleFS the moment's file stem (`impact`, `weigh`, ... `box`, `name`) is its fixed identifier, and variants are `_1` to `_9`. A moment added later gets a new stem. Older packs keep working: a stem the pack lacks falls back to pack 1, then to the related moment, then to silence. The numbered `001.mp3` scheme was the DFPlayer's and is gone with it |
+| Find packs it has never seen | **Yes**, up to nine | A long press cycles through whichever of `/p1` to `/p9` exist |
+| Say which pack is on | **Yes** | After a long press the new pack plays its own `name_1.wav` |
+| Fall back when a pack lacks a moment | **Yes** | To pack 1's clip for that moment |
+| Remember the choice across power-off | Yes (already) | Pack and volume in Preferences |
+| A pack over USB with no card reader | **Partly** | Packs go into the controller's flash over its USB-C port as a LittleFS image (mklittlefs and esptool, both installed with the core), with the switch off. That is a tool for the maker, not for a buyer. A buyer-friendly path (the board appearing as a USB drive, which the ESP32-S3 can do) is not in this sketch |
+| Packs sold as a card | **No** | There is no card in the 2 x AA design (section 2.11). This changes how packs are sold; it is for Sales and Production to decide |
+| Flash space for packs | Limit | 5.9 MB holds about 190 s of clips at 16 kHz in all [calc], so three packs of ten to fifteen clips each, not 128 a pack |
 
 ## 5. Bill of materials and costs
 
@@ -416,7 +436,7 @@ At a hundred units the electronics fall to $32.66 a unit and the total to $62.69
 
 The machine-readable copy is `docs/design/baggage-claims-device-envelope.json`. Frame: the enclosure agent's Rev C frame, 60 wide (x) by 80 high (y, the loop end up) by 42 deep (z, front face at 0).
 
-**This supersedes the packing the Rev C enclosure was drawn around.** Rev C packed three AA cells in a 48 x 58 x 17 holder, a 50 x 70 perfboard, a 5 mm deep speaker and a DFPlayer. The speaker that reaches the loudness in section 2.7 is 20 mm deep, not 5.
+The tag designer's Rev C (`/home/claude/work/tag/revC/DESIGN.md`, read 22 Nov at 13:10) has since been redrawn for two cells. Where it and this note disagree is in section 6.6; the largest is the speaker's depth.
 
 ### 6.1 Parts
 
@@ -497,6 +517,22 @@ For a 0.4 mm nozzle at 0.2 mm layers [doc: the owner's printer and settings], di
 - **A screw as well as the latch** (the enclosure agent's M2 safety screw): a snap latch alone opens when a case lands on it.
 - **Heat.** PETG softens at about 75 to 80 deg C [est]; a car's parcel shelf in the sun can come near that. The documents' range is -10 to +45 deg C [doc], which is safe.
 
+### 6.6 Where the Rev C tag as drawn and this design differ
+
+Rev C (two cells, a one-piece print-in-place shell, body 54.6 wide inside the 60 envelope for the hinge, inside 50.6 x 76, depth stack closing at 42.0 with 1.3 spare) was drawn before this note's parts were known. Read against it:
+
+| # | Rev C as drawn | This design | Consequence and recommendation |
+|---|---|---|---|
+| 1 | Speaker 36 dia x 5 deep, glued behind the grille | 40 dia x 20 deep, 4 ohm cone [page], rim clamped on a gasket | **The main conflict.** A 20 mm speaker does not fit Rev C's stack (speaker and modules share an 8.3 mm layer in front of the board). A 5 mm mylar speaker fits but is about 8 to 10 dB quieter [est]: about 70 to 72 dB at 1 m, against 80 dB here and the documents' 85. Recommended: keep the loudness, because a gag that is not heard on a carousel is the product failing; give the speaker 20 mm at the top of the body and put the board and modules below it rather than in front of it (this note's packing, section 6.2, closes at 41.1 of 42 with 56 mm of inside width). Rev C's 50.6 mm inside width does not take this note's side-by-side holder and module strip (32 + 23 = 55); the board and modules then go below the speaker, beside the holder's lower end, or the hinge gives back width. That is the tag designer's call; the trade is loudness against the hinge inside the envelope |
+| 2 | Speaker glued | Rim on a 1 mm foam or TPU gasket ring, clamped | Glue alone lets the rim buzz once it lets go, and leaves the cone's front and back unsealed. A printed clamp ring, or glue with the gasket, both work |
+| 3 | Perfboard 50 x 70 under hooks | A 70 x 22 strip, or boards point to point | Either works electrically. Rev C's 50 x 70 board was the Rev A BOM's; with the DFPlayer and the card gone, a smaller carrier frees the volume item 1 needs |
+| 4 | Converter pocket 18 x 12 x 5 reserved; "the audio module needs 4.5 to 5 V" | U4 is 12 x 15 x 3 [page]; no DFPlayer: the MAX98357A runs from the 3.3 V rail (2.7 to 5.5 V [page]) | The pocket fits U4 with its long side along the pocket's 18. The 4.5 to 5 V question is closed: nothing in this design needs 5 V |
+| 5 | Slide switch 9 x 4 x 4 (typical), lever below a 6 x 2.6 slot in the front face | A switch rated 1 A or more at 6 V DC, body about 12 x 6 x 6 [est] | The common 9 mm sub-miniature switches are rated about 0.3 A [est]; at the end of the cells' life a clip draws about 0.7 A through it [calc]. Choose the 1 A part first and size the slot from it. The guarded lever below the surface is right |
+| 6 | Sensor: four posts, two M2 self-tapping screws and two locating pegs | Four screws | Two diagonal screws with two snug pegs is rigid enough if the board cannot rattle on the pegs (0.05 mm or less clearance on the pegs, flat posts). Washers under M2 heads in 2.5 mm holes, as Rev C says |
+| 7 | Sensor at the bottom of the front layer, on its own posts | On posts in the shell half that carries the loop, away from the speaker's skin | Rev C's place is on the body with the loop: good. Record which sensor axis points at the loop (`upX/upY/upZ` in `bc_detect.h`, default +Y) |
+| 8 | USB-C position not stated | 12 mm clear beyond the controller's USB-C, reachable with the lid open | Needed to load firmware and clips |
+| 9 | Depth margin 1.3 kept for the unmeasured speaker and holder | This packing: 0.9 spare | Both thin; both rest on a typical holder size. Measure the holder and speaker bought before the first print |
+
 ## 7. Requirements and tests entered in the app
 
 Through the engineering batch, with the lowest truthful statuses; nothing is marked passed.
@@ -507,11 +543,27 @@ Through the engineering batch, with the lowest truthful statuses; nothing is mar
 - **Links**, written at both ends: thirteen requirements to their tests and parts.
 - **Parts:** eight changed, two retired (R1, SD1), seven added. **Wires:** nine changed, five retired, nineteen added.
 - **Assembly:** phases 0, 2, 3, 4 and 5 gained the 2 x AA steps. The Rev A troubleshooting rows about the DFPlayer were left as the documents have them.
+- **Retired rows** go through a new batch operation, `retire`: a row of the seeded design that a ruling supersedes is taken out, with the reason in its history, and only while it still reads as seeded (a row a person changed stays). `link` writes a requirement's links to its tests and parts, as the first seed's links are written. Both are tested in `tests/story/content.test.ts`.
+
+What the app shows, the seed modules with every batch applied (worked out with the status page's own functions on 22 Nov):
+
+| | Before this batch (the sheet's two batches) | After |
+|---|---|---|
+| Unit cost (5 units, the Economics page) | $64.80 | **$72.83** |
+| Margin on the $27.95 Amazon price | -$45.24 | -$53.27 |
+| Parts | 16 | 21 |
+| Wires | 20 | 34; electrical checks: no error, no warning (`tests/parts/erc.test.ts`) |
+| Requirements open or blocked | 21 (one blocked: Firmware sketch compiles) | 29 (none blocked) |
+| Acceptance tests | 10, none passed | 21, none passed |
+| Gate checks met, Concept to Sales | 4/6, 1/2, 4/6, 2/7, 2/3, 3/17, 2/4 | the same: 4/6, 1/2, 4/6, 2/7, 2/3, 3/17, 2/4 |
+| Design stage | blocked | in progress |
+
+The gate counts do not move: the Design gate's unmet checks (enclosure generator, open requirements) and the Prototype gate's (parts in hand, printed, wiring tested, tests passing, a build passed) stay unmet, with more rows behind them. Sourcing lists the new parts with their price breaks; no part has a supplier row, before or after (Production's "every part priced and has a supplier" was unmet before), because choosing suppliers is not among the rulings.
 
 ## 8. Not verified, in one place
 
 1. Nothing has been built. No current, voltage, level, timing or mass in this note is measured.
-2. The sketch has not been built for the board (section 4) and has not run on one.
+2. The sketch compiles and links for the board with a stand-in for Arduino's ctags (section 4); the build with the real tool, and any run on a board, are owed.
 3. The sensor's wake-on-motion register sequence and its threshold units are from memory of the data sheet.
 4. Whether the regulator module tolerates USB power on its output with the battery off (section 2.4).
 5. The sleep current rests on two unconfirmed figures: the regulator module's no-load current and the sensor board's regulator (and whether that board has a power LED).
