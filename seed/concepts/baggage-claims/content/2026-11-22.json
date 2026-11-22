@@ -1105,6 +1105,289 @@
    "sourceLocation": "§11 Roadmap, D, page 6"
   },
   {
+   "proposal": "P332",
+   "op": "enrich",
+   "section": "production/economics",
+   "match": {
+    "title": "Voice pack (DLC)"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 7, line 92",
+   "appendBody": "Also sold as a Kickstarter add-on at checkout and in the cart on the product page; stretch-goal packs cost \"$0.50/unit to fulfill\"; registering a unit gives the first pack free. Target: 20% of buyers attach at least one pack within 12 months."
+  },
+  {
+   "proposal": "P328",
+   "op": "add",
+   "section": "production/economics",
+   "title": "Margin targets",
+   "body": "Target blended margin 45% at launch, \"expanding past 55% on repeat batches as COGS compresses and DLC voice packs ... attach\". The PRD's margins by channel at $11.15: Kickstarter early bird 35%, Kickstarter standard 49%, DTC 49%, Amazon FBA 43%, wholesale 23%.",
+   "data": {},
+   "status": "estimate",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§9, page 5"
+  },
+  {
+   "proposal": "P379",
+   "op": "add",
+   "section": "marketing/positioning",
+   "title": "The video is the business plan",
+   "body": "The product's demonstration is its marketing. \"This video is the business plan\" (first proposal); \"our entire marketing asset IS the demo video\" (PRD); \"Content cost: near-zero - every unit in the wild is a content generator\" (PRD).",
+   "data": {},
+   "status": "draft",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Content cost, page 6"
+  },
+  {
+   "proposal": "P381",
+   "op": "enrich",
+   "section": "marketing/positioning",
+   "match": {
+    "title": "Voice rules"
+   },
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Shot list notes, line 80",
+   "appendBody": "The production rules from the script: the hero voice is the final contracted talent, not scratch; \"never fake the AUDIO\"; keep the device visible in frame in at least 4 shots (\"backers fund what they can see\"); the on-screen supers name the real firmware event classes so the video doubles as a technical demo. The website's rule: every page masquerades as a piece of airport infrastructure and ends in exactly one conversion action."
+  },
+  {
+   "proposal": "P397",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Cold open: bag hits the belt",
+   "body": "0:00-0:08. Black, sound of a suitcase hitting a conveyor; tight on the suitcase being thrown onto a belt; freeze frame; title smash.",
+   "data": {
+    "shotKey": "cold-open",
+    "purpose": "0:00-0:08. Black, sound of a suitcase hitting a conveyor; tight on the suitcase being thrown onto a belt; freeze frame; title smash.",
+    "usedIn": [
+     "launch video"
+    ],
+    "source": "upload"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Cold open, line 12"
+  },
+  {
+   "proposal": "P399",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Device on a turntable",
+   "body": "0:31. Device rotating on a turntable under the title 'MEET: BAGGAGE CLAIMS MK1'.",
+   "data": {
+    "shotKey": "turntable",
+    "purpose": "0:31. Device rotating on a turntable under the title 'MEET: BAGGAGE CLAIMS MK1'.",
+    "usedIn": [
+     "launch video",
+     "listing main image candidate"
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 1, 0:31, line 26"
+  },
+  {
+   "proposal": "P400",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Curb: handle grab",
+   "body": "0:36. Host grabs the handle; the bag's dinner line; a bystander snorts. Super: HANDLE_GRAB.",
+   "data": {
+    "shotKey": "curb",
+    "purpose": "0:36. Host grabs the handle; the bag's dinner line; a bystander snorts. Super: HANDLE_GRAB.",
+    "usedIn": [
+     "launch video",
+     "vertical V1 \"FAT\""
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 2, 0:36, line 30"
+  },
+  {
+   "proposal": "P401",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Check-in scale",
+   "body": "0:45. Agent lifts the bag onto the scale; stillness; the display reads 62 lbs; the FAT line; agent: 'Sir, the bag is over the limit.' Host: 'Take it up with her.' Super: WEIGH_IN. Use a 62-lb dumbbell if the bag reads light.",
+   "data": {
+    "shotKey": "scale",
+    "purpose": "0:45. Agent lifts the bag onto the scale; stillness; the display reads 62 lbs; the FAT line; agent: 'Sir, the bag is over the limit.' Host: 'Take it up with her.' Super: WEIGH_IN. Use a 62-lb dumbbell if the bag reads light.",
+    "usedIn": [
+     "launch video",
+     "vertical V1",
+     "post-tag button at 2:10"
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Shot list notes, line 79"
+  },
+  {
+   "proposal": "P402",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Handler toss",
+   "body": "0:58. Wide, filmed at a distance: the bag arcs from cart to belt; mid-air freeze with the scream; thud; the handler turns, confused, and looks around. Super: FREEFALL + IMPACT. Three takes; this is the money shot.",
+   "data": {
+    "shotKey": "toss",
+    "purpose": "0:58. Wide, filmed at a distance: the bag arcs from cart to belt; mid-air freeze with the scream; thud; the handler turns, confused, and looks around. Super: FREEFALL + IMPACT. Three takes; this is the money shot.",
+    "usedIn": [
+     "launch video",
+     "vertical V2 \"OW\""
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 2, 0:58, line 35"
+  },
+  {
+   "proposal": "P403",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Dark hold",
+   "body": "1:10. Bag on a black luggage cart, slow push-in, nothing moves; the sleepy line, then snoring. Super: DARK_IDLE - 2 hrs.",
+   "data": {
+    "shotKey": "hold",
+    "purpose": "1:10. Bag on a black luggage cart, slow push-in, nothing moves; the sleepy line, then snoring. Super: DARK_IDLE - 2 hrs.",
+    "usedIn": [
+     "launch video",
+     "vertical V3 \"DARK\""
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 2, 1:10, line 38"
+  },
+  {
+   "proposal": "P404",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Carousel",
+   "body": "1:20. Wide on the carousel; the bag rounds the bend with the device visible; the Wheeee line; the host films it, laughing; a stranger asks where it came from. Super: CAROUSEL.",
+   "data": {
+    "shotKey": "carousel",
+    "purpose": "1:20. Wide on the carousel; the bag rounds the bend with the device visible; the Wheeee line; the host films it, laughing; a stranger asks where it came from. Super: CAROUSEL.",
+    "usedIn": [
+     "launch video",
+     "vertical V4 \"WHEE\""
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 2, 1:20, line 41"
+  },
+  {
+   "proposal": "P405",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Living room payoff and feature montage",
+   "body": "1:36-2:06. Host with the suitcase open on the floor, device in hand; fast feature montage with four lower thirds; rapid gag reel (inverted bag, belt rumble); tag card.",
+   "data": {
+    "shotKey": "payoff",
+    "purpose": "1:36-2:06. Host with the suitcase open on the floor, device in hand; fast feature montage with four lower thirds; rapid gag reel (inverted bag, belt rumble); tag card.",
+    "usedIn": [
+     "launch video"
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Act 3, 1:36, line 46"
+  },
+  {
+   "proposal": "P408",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Claim ticket image",
+   "body": "A faux legal document with a claim number: 'Claimant alleges being called FAT at Terminal C...'. Generated per Hotline submission and as share cards; printed at the Complaint Desk with a QR code.",
+   "data": {
+    "shotKey": "claim-ticket",
+    "purpose": "A faux legal document with a claim number: 'Claimant alleges being called FAT at Terminal C...'. Generated per Hotline submission and as share cards; printed at the Complaint Desk with a QR code.",
+    "usedIn": [
+     "/hotline",
+     "share images",
+     "Complaint Desk"
+    ],
+    "source": "render"
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 4, line 51"
+  },
+  {
+   "proposal": "P409",
+   "op": "add",
+   "section": "marketing/imagery",
+   "title": "Shame Ads statics",
+   "body": "A static image for each five-star complaint review, with one gag audio, autoplay off; reviews also render as complaint tickets on the product page.",
+   "data": {
+    "shotKey": "shame-ad",
+    "purpose": "A static image for each five-star complaint review, with one gag audio, autoplay off; reviews also render as complaint tickets on the product page.",
+    "usedIn": [
+     "retargeting ads",
+     "/product"
+    ]
+   },
+   "status": "draft",
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§4.5 Product page, line 103"
+  },
+  {
+   "proposal": "P417",
+   "op": "enrich",
+   "section": "marketing/landing",
+   "match": {
+    "title": "Platinum Status"
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§4.6 Platinum Status, line 111",
+   "appendBody": "The QR is on the in-box frequent-flyer card; the buyer enters the unit serial printed on the compliance card; registration captures email, purchase channel, unit serial and travel frequency; the serial is validated against the units table; a follow-up cross-sell goes out 14 days later."
+  },
+  {
+   "proposal": "P418",
+   "op": "enrich",
+   "section": "marketing/landing",
+   "match": {
+    "title": "Wholesale"
+   },
+   "sourceFile": "BaggageClaims_Website_Platform_Plan_RevA.txt",
+   "sourceLocation": "§5.1 Wholesale CRM, line 144",
+   "appendBody": "Line sheet download behind a form; the counter-display programme (a big red button that plays one random gag); the form captures company, channel type, estimated doors and a contact; follow-up is three emails and a sample offer. Pricing $14.50 wholesale against $29.95 MSRP."
+  },
+  {
+   "proposal": "P448",
+   "op": "enrich",
+   "section": "marketing/social",
+   "match": {
+    "title": "the suitcase screamed and the baggage handler LOST IT"
+   },
+   "sourceFile": "Write the script for the launch video.md",
+   "sourceLocation": "Production notes, line 50",
+   "appendBody": "V2 \"OW\", 0:58-1:09: handler toss, Wilhelm scream, thud, \"OW! Ow. Ow. Owww.\" The script chat calls it \"the likeliest viral breakout\"."
+  },
+  {
+   "proposal": "P450",
+   "op": "enrich",
+   "section": "marketing/social",
+   "match": {
+    "title": "why is this bag having more fun than me"
+   },
+   "sourceFile": "BaggageClaims_LaunchVideo_Script_RevA.txt",
+   "sourceLocation": "Vertical cuts, line 69",
+   "appendBody": "V4 \"WHEE\", 1:20-1:34: the carousel beat and the stranger's reaction."
+  },
+  {
+   "proposal": "P452",
+   "op": "add",
+   "section": "marketing/social",
+   "title": "comment FAT for where to get one",
+   "body": "The pinned reply under each unbranded clip; a comment with the keyword triggers the auto-DM.",
+   "data": {
+    "channel": "TikTok / Reels / Shorts"
+   },
+   "status": "draft",
+   "sourceFile": "Develop clever marketing campaigns for this hilari.md",
+   "sourceLocation": "Stage 1, 1, line 9"
+  },
+  {
    "proposal": "P248",
    "op": "enrich",
    "section": "design/bom",
