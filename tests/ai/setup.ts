@@ -2,7 +2,8 @@
 // rows directly (the Admin routes are built elsewhere), and remove them again.
 import { createServer } from "node:net";
 import { q } from "@/lib/db";
-import { SETTING, type ModelChoice } from "@/lib/settings";
+import { currentOrigin } from "@/lib/secretOrigin";
+import { SETTING, type ModelChoice, type Provider } from "@/lib/settings";
 
 export const PROVIDERS = [
   { provider: "ollama", prefix: "/v1", key: undefined },
@@ -28,14 +29,21 @@ export async function chooseEmbedding(choice: ModelChoice | null) {
     ]);
 }
 
-/** Saves a key as one saved before migration 0024 would be: unbound, so its first read binds it to the model address in use. */
+/**
+ * Saves a key as Admin, Credentials does: bound to the origin of the model address in use for that provider at the
+ * moment it is saved (src/lib/secretOrigin.ts currentOrigin), so choose the model first. A row left unbound would be
+ * bound to the provider's built-in address on first read (review S4), never to a stand-in.
+ */
 export async function saveKey(provider: string, key: string | undefined) {
   if (key === undefined) await q("DELETE FROM credentials WHERE provider=$1 AND field='apiKey'", [provider]);
-  else
-    await q("INSERT INTO credentials (provider, field, value) VALUES ($1,'apiKey',$2) ON CONFLICT (provider, field) DO UPDATE SET value=EXCLUDED.value, bound_origin=NULL", [
+  else {
+    const origin = await currentOrigin(provider as Provider);
+    await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ($1,'apiKey',$2,$3) ON CONFLICT (provider, field) DO UPDATE SET value=EXCLUDED.value, bound_origin=EXCLUDED.bound_origin", [
       provider,
       key,
+      origin,
     ]);
+  }
 }
 
 /** Removes every row these tests may have written. */
