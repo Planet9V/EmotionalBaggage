@@ -3,8 +3,8 @@ import { z } from "zod";
 import { adminRoute, isPlatformAdmin } from "@/lib/admin/guard";
 import { signInStatus } from "@/lib/admin/signIn";
 import { body, HttpError, sessionOf } from "@/lib/api/route";
-import { AUTH2_SETTING, writeAuth2Setting } from "@/lib/auth2/config";
-import { audit, ownerPool } from "@/lib/db";
+import { AUTH2_SETTING, forgetAuth2Switch, writeAuth2Setting } from "@/lib/auth2/config";
+import { audit, ownerPool, ownerTx } from "@/lib/db";
 
 /** The new sign-in's switch and addresses. Its details are the platform administrator's once it is on. */
 export const GET = adminRoute(async (req: Request) => NextResponse.json(await signInStatus({ platformAdmin: await isPlatformAdmin(req) })));
@@ -44,8 +44,14 @@ export const PUT = adminRoute(
       await refusalAsHttp(() => ops.setAddresses({ baseURL: b.baseURL, trustedOrigins: b.trustedOrigins, requestOrigin: req.headers.get("origin") ?? "" }));
     }
     if (b.enabled !== undefined) {
-      await writeAuth2Setting(ownerPool(), AUTH2_SETTING.enabled, b.enabled, s.username);
-      await audit({ action: "auth2.switch", summary: `Turned the new sign-in ${b.enabled ? "on" : "off"} in Admin, Sign-in`, detail: { enabled: b.enabled } });
+      const enabled = b.enabled;
+      // Turning it on ends every session of the old sign-in (cut-over review F3), in the same transaction.
+      const ended = await ownerTx(async (c) => {
+        await writeAuth2Setting(c, AUTH2_SETTING.enabled, enabled, s.username);
+        return enabled ? ((await c.query("DELETE FROM sessions")).rowCount ?? 0) : 0;
+      });
+      forgetAuth2Switch(); // after the commit, so no request caches the value from before it
+      await audit({ action: "auth2.switch", summary: `Turned the new sign-in ${enabled ? "on" : "off"} in Admin, Sign-in`, detail: { enabled, ...(enabled ? { oldSessionsEnded: ended } : {}) } });
     }
     return NextResponse.json(await signInStatus({ platformAdmin: await isPlatformAdmin(req) }));
   },

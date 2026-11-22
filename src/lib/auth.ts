@@ -156,9 +156,16 @@ type Queryable = Pick<Pool, "query"> | Pick<PoolClient, "query">;
  * Creates `demo` / `demo` when the users table is empty (decision D2). Called once from ready() in
  * src/lib/db.ts after the migrations, so it takes the pool directly instead of going through q().
  * Two processes starting at once cannot create two accounts: the second insert meets the unique
- * name and does nothing. Returns true when it created the account.
+ * name and does nothing. Returns true when it created the account. It never changes an existing
+ * account's password.
+ *
+ * While the new sign-in is on (the AUTH2 override, else the stored switch) it does nothing at all, so
+ * the old sign-in is not prepared behind it (cut-over review F3). A switch that cannot be read counts
+ * as on here.
  */
 export async function ensureDefaultUser(db: Queryable): Promise<boolean> {
+  const { override, storedSwitch } = await import("./auth2/config");
+  if (override() ?? (await storedSwitch(db).catch(() => true))) return false;
   const { rows } = await db.query("SELECT EXISTS (SELECT 1 FROM users) AS has");
   if (rows[0].has) return false;
   const hash = await hashPassword(DEFAULT_PASSWORD);

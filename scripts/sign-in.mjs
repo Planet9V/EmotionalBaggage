@@ -47,11 +47,16 @@ try {
     "INSERT INTO audit_log (actor, action, summary, detail) VALUES ('', 'auth2.switch', $1, $2)",
     [`Turned the new sign-in ${on ? "on" : "off"} from the command line (scripts/sign-in.mjs)`, JSON.stringify({ enabled: on })]
   );
+  // Turning it on ends every session of the old sign-in (cut-over review F3), so turning it off later does not
+  // bring them back: people sign in the old way again.
+  const ended = on ? (await client.query("DELETE FROM sessions")).rowCount ?? 0 : 0;
   await client.query("COMMIT");
   if (!on) {
     console.log("The new sign-in is off. Within a few seconds the app signs in the old way again. Accounts and workspaces are kept.");
+    console.log("The old shared sign-in is back, including demo / demo on a public site if its password was never changed. Everyone signs in again.");
     process.exit(0);
   }
+  console.log(`Ended ${ended} session${ended === 1 ? "" : "s"} of the old sign-in.`);
   const owner = await client.query(`SELECT EXISTS (SELECT 1 FROM "user" WHERE "platformAdmin") AS has`);
   console.log("The new sign-in is on. Within a few seconds every page asks for an account; the old shared sign-in stops working.");
   if (owner.rows[0].has) {

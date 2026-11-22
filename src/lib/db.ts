@@ -334,7 +334,8 @@ export async function tx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
 
 /**
  * tx() on the owner's connection, for the few things a request does that only a table's owner may: making a
- * per-width vector index the first time a width is used (src/lib/ai/embeddings.ts). Nothing else should use it.
+ * per-width vector index the first time a width is used (src/lib/ai/embeddings.ts), and turning the new sign-in on in
+ * Admin, Sign-in, which ends the old sign-in's sessions (src/app/api/admin/sign-in/route.ts). Nothing else should use it.
  */
 export async function ownerTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
   await ready();

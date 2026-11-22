@@ -371,3 +371,91 @@ describe("F2: the platform administrator cannot lock everyone out with the addre
     }
   });
 });
+
+describe("F3: turning the new sign-in on ends the old sign-in's sessions, and does not prepare the demo account", () => {
+  const run = async (arg: string) => {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    return promisify(execFile)("node", ["scripts/sign-in.mjs", arg], { env: { ...process.env, AUTH2: "" } });
+  };
+  /** A fresh session for the demo account, as tests/auth/session.setup.ts makes one, for the tests after this. */
+  async function newDemoSession() {
+    const { setTestSession } = await import("../api/helpers");
+    const { createSession, DEFAULT_USERNAME } = await import("@/lib/auth");
+    const id = (await db.query<{ id: string }>("SELECT id FROM users WHERE lower(username) = $1", [DEFAULT_USERNAME])).rows[0].id;
+    setTestSession(await createSession(Number(id), "vitest-setup"));
+  }
+
+  it("`sign-in.mjs on` deletes every old session; switched off again, the old cookie is not accepted", async () => {
+    const { readAuth2Setting, writeAuth2Setting } = await import("@/lib/auth2/config");
+    const { GET: projectsGet } = await import("@/app/api/projects/route");
+    const keep = await readAuth2Setting(db, "auth2.enabled");
+    try {
+      expect(Number((await db.query("SELECT count(*) AS n FROM sessions")).rows[0].n)).toBeGreaterThan(0);
+      const on = await run("on");
+      expect(on.stdout).toMatch(/Ended \d+ sessions? of the old sign-in/);
+      expect(Number((await db.query("SELECT count(*) AS n FROM sessions")).rows[0].n)).toBe(0);
+      const off = await run("off");
+      expect(off.stdout).toMatch(/demo \/ demo/);
+      process.env.AUTH2 = "0";
+      try {
+        expect((await projectsGet(asBrowser("/api/projects", sessionCookieHeader()))).status).toBe(401);
+      } finally {
+        process.env.AUTH2 = "1";
+      }
+    } finally {
+      await writeAuth2Setting(db, "auth2.enabled", keep);
+      await newDemoSession();
+    }
+  });
+
+  it("turning it on in Admin, Sign-in deletes them too, in the same step, and says how many in the audit log", async () => {
+    const { readAuth2Setting, writeAuth2Setting } = await import("@/lib/auth2/config");
+    const { PUT } = await import("@/app/api/admin/sign-in/route");
+    const keep = await readAuth2Setting(db, "auth2.enabled");
+    const { admin } = await strangerAndAdmin("f3");
+    try {
+      expect(Number((await db.query("SELECT count(*) AS n FROM sessions")).rows[0].n)).toBeGreaterThan(0);
+      expect((await PUT(asBrowser("/api/admin/sign-in", admin, { method: "PUT", body: { enabled: true } }))).status).toBe(200);
+      expect(Number((await db.query("SELECT count(*) AS n FROM sessions")).rows[0].n)).toBe(0);
+      const line = await db.query<{ detail: { oldSessionsEnded?: number } }>("SELECT detail FROM audit_log WHERE action = 'auth2.switch' ORDER BY id DESC LIMIT 1");
+      expect(line.rows[0].detail.oldSessionsEnded).toBeGreaterThan(0);
+    } finally {
+      await writeAuth2Setting(db, "auth2.enabled", keep);
+      await newDemoSession();
+    }
+  });
+
+  it("ensureDefaultUser makes no demo account while the switch is on, or when the switch cannot be read", async () => {
+    const { ensureDefaultUser } = await import("@/lib/auth");
+    const asked: string[] = [];
+    const fake = (stored: unknown) => ({
+      query: async (text: string) => {
+        asked.push(text);
+        if (text.includes("auth2_settings")) {
+          if (stored === "fail") throw new Error("simulated");
+          return { rows: stored === undefined ? [] : [{ value: stored }] };
+        }
+        return { rows: [{ has: false }], rowCount: 1 };
+      },
+    });
+    const call = (db: ReturnType<typeof fake>) => ensureDefaultUser(db as unknown as Pool);
+    // the AUTH2 override is on in this file
+    expect(await call(fake(false))).toBe(false);
+    expect(asked).toEqual([]);
+    delete process.env.AUTH2;
+    try {
+      for (const stored of [true, "fail"]) {
+        asked.length = 0;
+        expect(await call(fake(stored))).toBe(false);
+        expect(asked.some((t) => /INSERT INTO users/.test(t))).toBe(false);
+      }
+      // Off: an empty users table gets demo / demo, as before.
+      asked.length = 0;
+      expect(await call(fake(false))).toBe(true);
+      expect(asked.some((t) => /INSERT INTO users/.test(t))).toBe(true);
+    } finally {
+      process.env.AUTH2 = "1";
+    }
+  });
+});
