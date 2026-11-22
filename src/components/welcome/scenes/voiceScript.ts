@@ -82,7 +82,7 @@ export const SOUND = {
   on: "Sound on",
   off: "Sound off",
   none: "No voice-overs yet: subtitles only",
-  synthetic: "The voices are synthetic: made with Kokoro, an open speech model (Apache-2.0). No person was recorded.",
+  synthetic: "The voices are synthetic, made with speech models. No person was recorded.",
   transcript: "Introduction: transcript",
   skip: "Skip the introduction",
 };
