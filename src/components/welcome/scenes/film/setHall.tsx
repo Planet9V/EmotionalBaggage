@@ -10,8 +10,10 @@ import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
+import { voiceOf } from "../speech";
 import { bump, clamp01, kf, mix } from "./ease";
-import { A, Bag, Built, C, Contact, Figure, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type FigPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { A, BAG_MID, Bag, Built, C, Contact, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { Figure, type FigPose } from "./people";
 
 // ---- the dark hold --------------------------------------------------------------------------------------------
 
@@ -373,7 +375,14 @@ function stranger(t: number): FigPose {
   const lean = 0.14 * ask;
   const b = rideBag(t).p;
   const dir = Math.atan2(b[0] - STRANGER[0], b[2] - STRANGER[2]);
+  const bagAt: V3 = [b[0], b[1] + BAG_MID, b[2]];
+  // eyes find it before the head does; the brows go up as it comes past, and stay up for the question
   return {
+    look: watching > 0.05 || t > 5200 ? bagAt : null,
+    brow: 0.9 * kf(t, [[7500, 0], [7800, 1, "out"]]) - 0.2 * kf(t, [[9900, 0], [10300, 1]]),
+    blink: bump(t, 7500, 7640),
+    mouth: t > 7600 && t < 8300 ? "o" : "flat",
+    talk: voiceOf(CAROUSEL, "stranger", t),
     p: STRANGER,
     yaw: STRANGER_YAW + 0.5 * watching * Math.max(-1, Math.min(1, Math.atan2(Math.sin(dir - STRANGER_YAW), Math.cos(dir - STRANGER_YAW)))),
     head: watching * 0.5 * toward(STRANGER, STRANGER_YAW, t),
@@ -386,7 +395,9 @@ function host(t: number): FigPose {
   // filming it, and following it round with the phone
   const turn = toward(HOST, HOST_YAW, t);
   const a = HOST_YAW + turn * 0.6;
-  return { p: HOST, yaw: HOST_YAW, head: turn * 0.8, handR: [HOST[0] + 0.42 * Math.sin(a), 1.52, HOST[2] + 0.42 * Math.cos(a)] };
+  const b = rideBag(t).p;
+  // proud of it: filming, and grinning once it starts shouting "Wheee"
+  return { look: [b[0], b[1] + BAG_MID, b[2]], mouth: t > 3900 ? "grin" : "smile", brow: 0.4 * kf(t, [[3800, 0], [4200, 1]]), p: HOST, yaw: HOST_YAW, head: turn * 0.8, handR: [HOST[0] + 0.42 * Math.sin(a), 1.52, HOST[2] + 0.42 * Math.cos(a)] };
 }
 
 /** A stadium-shaped slab: half the straight is `HS`, the ends have radius `r`. */
@@ -517,7 +528,7 @@ function CarouselSet() {
       <Bag pose={rideBag} speaking={(t) => bagSpeaking(CAROUSEL, t)} gravity={4.2} />
       <Figure pose={stranger} role="traveller" />
       <Figure pose={host} role="owner" tall={1.03} phone />
-      <Figure pose={() => ({ p: [-3.2, 0, -3.3], yaw: 0.7, head: 0.2 })} role="bystander" tall={0.97} />
+      <Figure pose={(t) => ({ p: [-3.2, 0, -3.3], yaw: 0.7, head: 0.2, look: t > 4000 ? [rideBag(t).p[0], 0.9, rideBag(t).p[2]] : null, brow: 0.5 * kf(t, [[4000, 0], [4400, 1], [6000, 1], [6600, 0]]) })} role="bystander" tall={0.97} />
     </>
   );
 }
