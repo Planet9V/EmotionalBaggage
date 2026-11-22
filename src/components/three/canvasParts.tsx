@@ -10,6 +10,7 @@ import { bodyGeometry, sceneGeometry, shellGeometries, soupToGeometry } from "@/
 import { degToRad, radToDeg, snap, wrapDegrees } from "@/lib/geometry/rotation";
 import { ORANGE, Progress, ToolContext, applyFade, clickSelect, palette, setCursor, setOpacity, setSegment, useDispose } from "./canvasShared";
 import { CanvasPart, ModelCanvasProps, ShellView } from "./canvasTypes";
+import { ShowcaseLook } from "./canvasShowcase";
 
 export type LabelInfo = { side: 1 | -1; column: number };
 
@@ -117,6 +118,12 @@ export function BodyPart({ part, progress, selected, onSelect, onFocusPart, colo
     });
   }, [color, selected, progress, part.id, tool.cutting]);
   useDispose(material);
+  // the showcase's look: see-through parts and drawn edges (the app's own view keeps opaque parts, no edges)
+  const look = React.useContext(ShowcaseLook);
+  const edges = useMemo(() => (look.edges ? new THREE.EdgesGeometry(geometry, 25) : null), [look.edges, geometry]);
+  const edgeMaterial = useMemo(() => new THREE.LineBasicMaterial({ color: new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.35), transparent: true, opacity: 0.9 }), [color]);
+  useEffect(() => () => edges?.dispose(), [edges]);
+  useDispose(edgeMaterial);
   const rot = g.rotation ?? [0, 0, 0];
   useEffect(() => {
     onGroup(part.id, group.current);
@@ -127,7 +134,11 @@ export function BodyPart({ part, progress, selected, onSelect, onFocusPart, colo
     const p = progress.f(part.id);
     group.current?.position.set(g.pos[0] + g.explode[0] * p, g.pos[1] + g.explode[1] * p, g.pos[2] + g.explode[2] * p);
     group.current?.rotation.set(degToRad(rot[0]), degToRad(rot[1]), degToRad(rot[2]), "XYZ");
-    applyFade(material, 1, progress.fade(part.id), false);
+    const f = progress.fade(part.id);
+    applyFade(material, look.xray, f, look.xray < 0.999);
+    if (edges) setOpacity(edgeMaterial, 0.9 * f);
+    // a part faded out of sight is not drawn at all, so it neither shows nor catches a click
+    if (group.current) group.current.visible = f > 0.01;
   });
   return (
     <group ref={group} position={g.pos as [number, number, number]} rotation={[degToRad(rot[0]), degToRad(rot[1]), degToRad(rot[2]), "XYZ"]}>
@@ -148,6 +159,7 @@ export function BodyPart({ part, progress, selected, onSelect, onFocusPart, colo
           onPointerOut={() => setCursor("auto")}
         />
       ))}
+      {edges ? offsets.map((o, i) => <lineSegments key={`e${i}`} geometry={edges} material={edgeMaterial} position={o} dispose={null} renderOrder={1} />) : null}
     </group>
   );
 }
@@ -206,6 +218,9 @@ export function ShellPart({ part, progress, selected, onSelect, onFocusPart, col
     const f = progress.fade(part.id);
     applyFade(material, clear ? 0.16 : 1, f, clear);
     setOpacity(edgeMaterial, f);
+    // out of sight is not drawn (a layer switched off, or not yet placed in an assembly)
+    if (trayRef.current) trayRef.current.visible = f > 0.01;
+    if (lidRef.current) lidRef.current.visible = f > 0.01;
   });
   const tool = React.useContext(ToolContext);
   const handlers = {

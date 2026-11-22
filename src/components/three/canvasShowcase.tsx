@@ -10,10 +10,18 @@
  *  - nudges from buttons, for people who do not drag: turn, tilt, zoom;
  *  - a two-finger pinch zooms on a touch screen.
  * The enclosure preview on the welcome page uses the same component (EnclosureCanvas takes it as a child).
+ * Optional looks and motions, each off unless given (the logic is in showcaseLogic.ts):
+ *  - `xray`: the parts themselves see-through at this opacity (the shell has its own clear view);
+ *  - `edges`: each part's hard edges drawn as lines, so a see-through or solid part keeps a crisp outline;
+ *  - `hide`: part ids faded out of sight (the layers a visitor has switched off);
+ *  - `assembly`: the parts in the build sheet's order, `done` steps in place and the rest out of sight at their
+ *    exploded places; with `explode` at 1 each new step glides its parts into place;
+ *  - tags on the parts are a separate component, PartTags (canvasTags.tsx), passed as `children`.
  */
-import { useEffect, useRef } from "react";
+import { createContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
+import type { AssemblyStep } from "./showcaseLogic";
 
 export type ShowcaseNudge = { kind: "left" | "right" | "up" | "down" | "in" | "out"; n: number };
 export type ShowcaseOptions = {
@@ -27,7 +35,18 @@ export type ShowcaseOptions = {
   closer?: number;
   /** drawn inside the canvas: the welcome page's own label layer */
   children?: React.ReactNode;
+  /** opacity of the parts themselves, below 1 for a see-through look; default 1 */
+  xray?: number;
+  /** draw each part's hard edges as lines */
+  edges?: boolean;
+  /** part ids faded out of sight */
+  hide?: ReadonlySet<number>;
+  /** the assembly order, and how many of its steps are done */
+  assembly?: { steps: AssemblyStep[]; done: number };
 };
+
+/** How the parts are drawn (ModelCanvas provides it from `showcase`); the app's own view keeps the default. */
+export const ShowcaseLook = createContext<{ xray: number; edges: boolean }>({ xray: 1, edges: false });
 
 type Controls = { target: THREE.Vector3; update: () => void; addEventListener: (t: "start", f: () => void) => void; removeEventListener: (t: "start", f: () => void) => void };
 
