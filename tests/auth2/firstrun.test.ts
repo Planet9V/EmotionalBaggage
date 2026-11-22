@@ -225,12 +225,12 @@ describe("B1: nothing is stored unless the owner is", () => {
     const id = (await db.query<{ id: string }>('SELECT id FROM "user" WHERE email = $1', [OWNER])).rows[0].id;
     const { adminOps } = await import("@/lib/auth2/adminOps");
     const ops = adminOps({ db, auth, actorId: id, baseURL: "http://localhost:3322" });
-    await ops.setAddresses({ baseURL: "https://moved.example.test/path", trustedOrigins: ["https://also.example.test"] });
+    await ops.setAddresses({ baseURL: "https://moved.example.test/path", trustedOrigins: ["https://also.example.test"], requestOrigin: null });
     expect(await stored("auth2.baseUrl")).toBe("https://moved.example.test");
     expect(await stored("auth2.trustedOrigins")).toEqual(["https://also.example.test"]);
-    await expect(ops.setAddresses({ baseURL: "javascript:alert(1)" })).rejects.toMatchObject({ body: { code: "INVALID_ADDRESS" } });
+    await expect(ops.setAddresses({ baseURL: "javascript:alert(1)", requestOrigin: null })).rejects.toMatchObject({ body: { code: "INVALID_ADDRESS" } });
     expect((await auditOf(db, OWNER)).map((l) => l.action)).toContain("platform.addresses_set");
-    await ops.setAddresses({ baseURL: null, trustedOrigins: [] });
+    await ops.setAddresses({ baseURL: null, trustedOrigins: [], requestOrigin: null });
   });
 });
 

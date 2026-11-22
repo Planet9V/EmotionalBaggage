@@ -21,7 +21,7 @@ import type { Pool, PoolClient } from "pg";
 import { hashPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { auditIn } from "@/lib/db";
 import type { Auth2 } from "./auth";
-import { AUTH2_PAGES, AUTH2_SETTING, writeAuth2Setting } from "./config";
+import { AUTH2_PAGES, AUTH2_SETTING, resolveAddresses, writeAuth2Setting } from "./config";
 import { resetAndRequireProof } from "./workspaces/twoFactor";
 import { cleanEmail, cleanName, cleanWorkspaceName } from "./guards";
 import { isPlatformAdmin } from "./platformAdmin";
@@ -295,11 +295,18 @@ export function adminOps(ctx: Ctx) {
 
     /**
      * The address people open the installation at, and other addresses forms may come from (review B1): stored in
-     * the owner-only settings, used at once. null clears the base address (production then waits for the first-run
-     * page again only if no owner exists; otherwise sign-in answers 503 until it is set again).
+     * the owner-only settings, used at once. Checked so that nobody locks the installation out (cut-over review F2):
+     * - in production the address cannot be cleared;
+     * - a new address must be the origin of the request making the change (`requestOrigin`), as on the first-run
+     *   page: the administrator is looking at the app there, so it answers there;
+     * - other addresses must be well-formed origins, https (http only for localhost);
+     * - a change that would leave the request's own origin untrusted is refused.
+     * `requestOrigin: null` is for callers that are not a browser request (scripts and tests on the owner's
+     * connection); the two origin checks then do not apply.
      */
-    async setAddresses(input: { baseURL?: unknown; trustedOrigins?: unknown }) {
+    async setAddresses(input: { baseURL?: unknown; trustedOrigins?: unknown; requestOrigin: string | null }) {
       const actor = await admin(ctx);
+      const bad = (what: string, why = "is not an address, for example https://app.example.com.") => refuse("BAD_REQUEST", "INVALID_ADDRESS", `${what} ${why}`);
       const origin = (v: unknown, what: string) => {
         try {
           if (typeof v !== "string" || !v.isWellFormed()) throw new Error("text");
@@ -307,14 +314,39 @@ export function adminOps(ctx: Ctx) {
           if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("scheme");
           return u.origin;
         } catch {
-          throw refuse("BAD_REQUEST", "INVALID_ADDRESS", `${what} is not an address, for example https://app.example.com.`);
+          throw bad(what);
         }
       };
-      const base = input.baseURL === undefined ? undefined : input.baseURL === null ? null : origin(input.baseURL, "The address");
-      const more = input.trustedOrigins === undefined ? undefined : Array.isArray(input.trustedOrigins) ? input.trustedOrigins.slice(0, 20).map((o) => origin(o, "An other address")) : [];
+      const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);
+      /** An origin exactly (no path, query, user or fragment), https unless it is this machine. */
+      const trusted = (v: unknown) => {
+        const o = origin(v, "An other address");
+        const u = new URL(v as string);
+        if (u.username || u.password || u.search || u.hash || (u.pathname !== "/" && u.pathname !== "")) throw bad("An other address", `must be an origin only, for example https://app.example.com: ${o} with nothing after it.`);
+        if (u.protocol !== "https:" && !LOCAL.has(u.hostname)) throw bad("An other address", "must start with https:// (http only for localhost).");
+        return o;
+      };
+      const from = input.requestOrigin;
+      if (from !== null && !from) throw refuse("BAD_REQUEST", "ORIGIN_REQUIRED", "Change the addresses from Admin, Sign-in in a browser: the request did not say where it came from.");
+      const empty = input.baseURL === null || input.baseURL === "";
+      if (empty && process.env.NODE_ENV === "production") {
+        throw refuse("BAD_REQUEST", "ADDRESS_REQUIRED", "The address of this installation cannot be removed: sign-in would stop working for everyone.");
+      }
+      const base = input.baseURL === undefined ? undefined : empty ? null : origin(input.baseURL, "The address");
+      if (base && from !== null && base !== origin(from, "The page's own address")) {
+        throw refuse("BAD_REQUEST", "ADDRESS_MISMATCH", `The address must be the one this page is open at (${from}). Open Admin at the new address, then change it there.`);
+      }
+      const more = input.trustedOrigins === undefined ? undefined : Array.isArray(input.trustedOrigins) ? input.trustedOrigins.slice(0, 20).map(trusted) : [];
       await tx(async (c) => {
         if (base !== undefined) await writeAuth2Setting(c, AUTH2_SETTING.baseUrl, base, actor);
         if (more !== undefined) await writeAuth2Setting(c, AUTH2_SETTING.trustedOrigins, more.length ? [...new Set(more)] : null, actor);
+        if (from !== null) {
+          // What would be trusted after the change, read inside this transaction: the request's own origin must stay.
+          const after = await resolveAddresses(c);
+          if (!after.trustedOrigins.includes(origin(from, "The page's own address"))) {
+            throw refuse("BAD_REQUEST", "WOULD_LOCK_OUT", `This change would stop ${from}, where this page is open, from being trusted, so nobody could sign in here. Keep it in the list, or make the change from the address that stays.`);
+          }
+        }
         await audit(c, actor, "addresses_set", `Set the installation's address${base !== undefined ? ` to ${base ?? "(none)"}` : ""}${more !== undefined ? `; other addresses: ${more.join(", ") || "(none)"}` : ""}`, { baseURL: base, trustedOrigins: more });
       });
     },

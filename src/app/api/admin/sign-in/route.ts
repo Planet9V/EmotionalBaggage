@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adminRoute, isPlatformAdmin } from "@/lib/admin/guard";
 import { signInStatus } from "@/lib/admin/signIn";
-import { body, sessionOf } from "@/lib/api/route";
+import { body, HttpError, sessionOf } from "@/lib/api/route";
 import { AUTH2_SETTING, writeAuth2Setting } from "@/lib/auth2/config";
 import { audit, ownerPool } from "@/lib/db";
 
@@ -19,6 +19,18 @@ const change = z
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: "nothing to change" });
 
+/** A refusal of src/lib/auth2/adminOps.ts (Better Auth's APIError) as the same sentence and code, with its status. */
+async function refusalAsHttp(run: () => Promise<void>) {
+  try {
+    await run();
+  } catch (e) {
+    const { APIError } = await import("better-auth/api");
+    if (!(e instanceof APIError)) throw e;
+    const b = e.body as { code?: string; message?: string } | undefined;
+    throw new HttpError(e.statusCode, b?.message ?? "The change was refused.", b?.code ? { code: b.code } : undefined);
+  }
+}
+
 /** Platform administrator only. Addresses go through adminOps().setAddresses (checked and audited there). */
 export const PUT = adminRoute(
   async (req: Request) => {
@@ -27,7 +39,9 @@ export const PUT = adminRoute(
     if (b.baseURL !== undefined || b.trustedOrigins !== undefined) {
       const [{ adminOps }, { auth2 }, { resolveAuth2Config }] = await Promise.all([import("@/lib/auth2/adminOps"), import("@/lib/auth2/server"), import("@/lib/auth2/config")]);
       const config = await resolveAuth2Config(ownerPool());
-      await adminOps({ db: ownerPool(), auth: await auth2(), actorId: String(s.userId), baseURL: config.baseURL ?? "" }).setAddresses({ baseURL: b.baseURL, trustedOrigins: b.trustedOrigins });
+      // The request's own Origin: a new address must be it, and it must stay trusted (cut-over review F2).
+      const ops = adminOps({ db: ownerPool(), auth: await auth2(), actorId: String(s.userId), baseURL: config.baseURL ?? "" });
+      await refusalAsHttp(() => ops.setAddresses({ baseURL: b.baseURL, trustedOrigins: b.trustedOrigins, requestOrigin: req.headers.get("origin") ?? "" }));
     }
     if (b.enabled !== undefined) {
       await writeAuth2Setting(ownerPool(), AUTH2_SETTING.enabled, b.enabled, s.username);

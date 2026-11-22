@@ -6,11 +6,12 @@ import { sessionCookieHeader } from "../api/helpers";
 import { cleanUp, newAccount, useAuth2, type Browser } from "./helpers";
 
 let db: Pool;
+let auth: Awaited<ReturnType<typeof useAuth2>>["auth"];
 let route: Awaited<ReturnType<typeof useAuth2>>["route"];
 const BASE = "http://localhost:3322";
 
 beforeAll(async () => {
-  ({ db, route } = await useAuth2({ rateLimit: false }));
+  ({ db, auth, route } = await useAuth2({ rateLimit: false }));
   await cleanUp(db);
 });
 afterAll(async () => {
@@ -299,5 +300,74 @@ describe("F1: with the switch off, Admin, Sign-in tells the demo account only wh
     const body = (await (await GET(asBrowser("/api/admin/sign-in", admin))).json()) as { on: boolean; detail: { baseURL: string } };
     expect(body.on).toBe(true);
     expect(body.detail.baseURL).toBe(BASE);
+  });
+});
+
+describe("F2: the platform administrator cannot lock everyone out with the addresses", () => {
+  const put = async (cookie: string, body: unknown, from = BASE) => {
+    const { PUT } = await import("@/app/api/admin/sign-in/route");
+    const host = new URL(from).host;
+    const r = await PUT(asBrowser("/api/admin/sign-in", cookie, { method: "PUT", body, headers: { origin: from, host } }));
+    return { status: r.status, body: (await r.json()) as { error?: string; detail?: { code?: string } } };
+  };
+  const stored = async (key: string) => (await db.query<{ value: unknown }>("SELECT value FROM auth2_settings WHERE key = $1", [key])).rows[0]?.value ?? null;
+
+  it("a new address must be the page's own origin; other addresses must be https origins (http for localhost only)", async () => {
+    const { admin } = await strangerAndAdmin("f2");
+    const keep = { base: await stored("auth2.baseUrl"), more: await stored("auth2.trustedOrigins") };
+    try {
+      const moved = await put(admin, { baseURL: "https://elsewhere.example.test" });
+      expect(moved.status).toBe(400);
+      expect(moved.body.detail?.code).toBe("ADDRESS_MISMATCH");
+      expect(await stored("auth2.baseUrl")).toEqual(keep.base);
+      expect((await put(admin, { baseURL: BASE })).status).toBe(200);
+      for (const wrong of ["http://intranet.example.test", "https://x.example.test/path", "https://user@x.example.test", "not an address"]) {
+        const r = await put(admin, { trustedOrigins: [wrong] });
+        expect(r.status, wrong).toBe(400);
+        expect(r.body.detail?.code).toBe("INVALID_ADDRESS");
+      }
+      expect((await put(admin, { trustedOrigins: ["https://other.example.test", "http://localhost:4000"] })).status).toBe(200);
+      // No Origin at all (a script with the administrator's cookie): refused, nothing to compare with.
+      const { PUT } = await import("@/app/api/admin/sign-in/route");
+      const bare = new Request(`${BASE}/api/admin/sign-in`, { method: "PUT", headers: { host: "localhost:3322", cookie: admin, "content-type": "application/json" }, body: JSON.stringify({ trustedOrigins: [] }) });
+      const r = await PUT(bare);
+      expect(r.status).toBe(400);
+      expect(((await r.json()) as { detail: { code: string } }).detail.code).toBe("ORIGIN_REQUIRED");
+    } finally {
+      await db.query("DELETE FROM auth2_settings WHERE key IN ('auth2.baseUrl', 'auth2.trustedOrigins')");
+      if (keep.base !== null) await db.query("INSERT INTO auth2_settings (key, value) VALUES ('auth2.baseUrl', $1)", [JSON.stringify(keep.base)]);
+      if (keep.more !== null) await db.query("INSERT INTO auth2_settings (key, value) VALUES ('auth2.trustedOrigins', $1)", [JSON.stringify(keep.more)]);
+      (await import("@/lib/auth2/config")).forgetAuth2Switch();
+    }
+  });
+
+  it("a change that would stop trusting the page's own origin is refused; in production the address cannot be cleared", async () => {
+    const { admin } = await strangerAndAdmin("f2-lock");
+    const adminId = (await db.query<{ id: string }>('SELECT id FROM "user" WHERE email LIKE \'f2-lock-admin%\'')).rows[0].id;
+    const keep = await stored("auth2.trustedOrigins");
+    try {
+      expect((await put(admin, { trustedOrigins: ["https://other.example.test"] })).status).toBe(200);
+      const lock = await put(admin, { trustedOrigins: [] }, "https://other.example.test");
+      expect(lock.status).toBe(400);
+      expect(lock.body.detail?.code).toBe("WOULD_LOCK_OUT");
+      expect(await stored("auth2.trustedOrigins")).toEqual(["https://other.example.test"]);
+      const { adminOps } = await import("@/lib/auth2/adminOps");
+      const ops = adminOps({ db, auth, actorId: adminId, baseURL: BASE });
+      const env = process.env as Record<string, string | undefined>;
+      const node = env.NODE_ENV;
+      env.NODE_ENV = "production";
+      try {
+        for (const empty of [null, ""]) {
+          await expect(ops.setAddresses({ baseURL: empty, requestOrigin: BASE })).rejects.toMatchObject({ body: { code: "ADDRESS_REQUIRED" } });
+          await expect(ops.setAddresses({ baseURL: empty, requestOrigin: null })).rejects.toMatchObject({ body: { code: "ADDRESS_REQUIRED" } });
+        }
+      } finally {
+        env.NODE_ENV = node;
+      }
+    } finally {
+      await db.query("DELETE FROM auth2_settings WHERE key = 'auth2.trustedOrigins'");
+      if (keep !== null) await db.query("INSERT INTO auth2_settings (key, value) VALUES ('auth2.trustedOrigins', $1)", [JSON.stringify(keep)]);
+      (await import("@/lib/auth2/config")).forgetAuth2Switch();
+    }
   });
 });
