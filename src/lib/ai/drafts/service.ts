@@ -12,6 +12,7 @@ import { listDrafts } from "./store";
 import { readsText, type Draft, type GeneratorInfo, type GeneratorsReply, type RunResult } from "./shared";
 import { safeFetch } from "@/lib/net/outbound";
 import { currencyOf } from "@/lib/economics/currency";
+import { economicsRowsOf } from "@/lib/campaigns/server";
 import { sectionLabel } from "@/lib/menuLookup";
 
 /** The generators for a concept (optionally only those writing one store), with what each would read. */
@@ -134,12 +135,13 @@ export type OptimiseState = {
 export async function optimiseState(projectId: string): Promise<OptimiseState[]> {
   await readConcept(projectId);
   const currency = await currencyOf(projectId);
+  const cost = { rest: await economicsRowsOf(projectId), currency };
   const out: OptimiseState[] = [];
   for (const id of OPTIMISE_ACTIONS) {
     const g = findGenerator(OPTIMISE_GENERATOR[id])!;
     const store = MEASURE_STORE[id];
     const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, store])).map(toItem);
-    const m = measure(id, rows);
+    const m = measure(id, rows, cost);
     const ev = await q<{ data: { runId?: string; optimise?: { before?: Measure } }; created_at: Date }>(
       "SELECT data, created_at FROM events WHERE project_id=$1 AND kind='draft.run' AND data->>'generator'=$2 ORDER BY id DESC LIMIT 1",
       [projectId, g.id]
@@ -148,7 +150,7 @@ export async function optimiseState(projectId: string): Promise<OptimiseState[]>
     if (ev[0]?.data.runId && ev[0].data.optimise?.before) {
       const drafts: Draft[] = await listDrafts(projectId, { runId: ev[0].data.runId, status: "all" });
       const before = ev[0].data.optimise.before;
-      const projected = measure(id, applyDrafts(rows, drafts));
+      const projected = measure(id, applyDrafts(rows, drafts), cost);
       last = {
         runId: ev[0].data.runId,
         at: ev[0].created_at instanceof Date ? ev[0].created_at.toISOString() : String(ev[0].created_at),
@@ -171,8 +173,8 @@ export async function runOptimise(projectId: string, id: OptimiseAction, superse
   const store = MEASURE_STORE[id];
   const rows = (await q<ItemRow>(`SELECT ${ITEM_COLS} FROM items WHERE project_id=$1 AND section=$2 ORDER BY sort, id`, [projectId, store])).map(toItem);
   if (!rows.length) throw new HttpError(400, store === "prototype/printing" ? "There are no print jobs yet." : "The parts list is empty.");
-  const before = measure(id, rows);
   const currency = await currencyOf(projectId);
+  const before = measure(id, rows, { rest: await economicsRowsOf(projectId), currency });
   return runGenerator({
     projectId,
     generatorId: g.id,

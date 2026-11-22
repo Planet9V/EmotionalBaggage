@@ -4,18 +4,29 @@
 import { readParts } from "@/lib/domain";
 import type { Item } from "@/lib/types";
 import type { Draft } from "./shared";
-import { DEFAULT_CURRENCY, majorText } from "@/lib/economics/money";
+import { referenceUnitCost } from "@/lib/economics/compute";
+import { DEFAULT_CURRENCY, majorText, toMajor } from "@/lib/economics/money";
+import { readEconomics, type EconomicsRows } from "@/lib/economics/read";
+
+/** The rows beside the parts list that the unit cost is worked from (cost lines, methods, batches, print jobs). */
+export type CostRows = Omit<EconomicsRows, "parts">;
+export const NO_COST_ROWS: CostRows = { economics: [], channels: [], methods: [], batches: [] };
 
 export type CostMeasure = {
   parts: number;
   priced: number;
-  /** sum of the line costs that are entered */
+  /** sum of the parts that have a cost, as Unit economics prices them (major units) */
   pricedTotal: number;
   /** the whole list's cost, only when every part has a cost; otherwise null ("not priced") */
   total: number | null;
   /** unpriced parts that replaced a priced one (an approved substitute), and the sum of the prices they replaced */
   substitutes?: number;
   wasTotal?: number;
+  /** the unit cost Unit economics shows (parts plus cost lines) at its batch size, major units; absent on a measurement recorded before this was read */
+  unitCost?: number;
+  batchSize?: number;
+  /** false when a cost line beside the parts is not priced */
+  unitComplete?: boolean;
 };
 
 export type CountMeasure = {
@@ -40,13 +51,27 @@ export type PrintMeasure = {
 
 export type Measure = CostMeasure | CountMeasure | PrintMeasure;
 
-export function measureCost(bom: Item[]): CostMeasure {
+/**
+ * The cost of the parts and the unit cost, read from the unit economics (referenceUnitCost): the
+ * same function, rows and batch size as Unit economics and Pricing, so the pages cannot disagree.
+ */
+export function measureCost(bom: Item[], rest: CostRows, currency: string): CostMeasure {
   const parts = readParts(bom);
-  const priced = parts.filter((p) => p.line !== null);
-  const pricedTotal = Math.round(priced.reduce((a, p) => a + (p.line ?? 0), 0) * 100) / 100;
-  const subs = parts.filter((p) => p.line === null && typeof p.item.data.wasLine === "number");
+  const unit = referenceUnitCost(readEconomics({ ...rest, parts: parts.map((p) => p.item) }, currency));
+  const amount = new Map(unit.lines.filter((l) => l.group === "part").map((l) => [l.rowId, l.amount]));
+  const major = (minor: number) => toMajor(minor, currency);
+  const priced = parts.filter((p) => (amount.get(p.item.id) ?? null) !== null);
+  const pricedTotal = major(unit.partsSubtotal);
+  const subs = parts.filter((p) => (amount.get(p.item.id) ?? null) === null && typeof p.item.data.wasLine === "number");
   const wasTotal = Math.round(subs.reduce((a, p) => a + (p.item.data.wasLine as number), 0) * 100) / 100;
-  return { parts: parts.length, priced: priced.length, pricedTotal, total: parts.length && priced.length === parts.length ? pricedTotal : null, ...(subs.length ? { substitutes: subs.length, wasTotal } : {}) };
+  return {
+    parts: parts.length,
+    priced: priced.length,
+    pricedTotal,
+    total: parts.length && priced.length === parts.length ? pricedTotal : null,
+    ...(subs.length ? { substitutes: subs.length, wasTotal } : {}),
+    ...(parts.length ? { unitCost: major(unit.total), batchSize: unit.batchSize, unitComplete: unit.complete } : {}),
+  };
 }
 
 const FASTENER = /\b(screws?|bolts?|nuts?|washers?|rivets?|standoffs?|inserts?|fasteners?)\b/i;
@@ -128,8 +153,8 @@ export type OptimiseAction = (typeof OPTIMISE_ACTIONS)[number];
 
 export const MEASURE_STORE: Record<OptimiseAction, string> = { cost: "design/bom", parts: "design/bom", print: "prototype/printing" };
 
-export function measure(action: OptimiseAction, rows: Item[]): Measure {
-  return action === "cost" ? measureCost(rows) : action === "parts" ? measureCount(rows) : measurePrint(rows);
+export function measure(action: OptimiseAction, rows: Item[], cost: { rest: CostRows; currency: string }): Measure {
+  return action === "cost" ? measureCost(rows, cost.rest, cost.currency) : action === "parts" ? measureCount(rows) : measurePrint(rows);
 }
 
 const hm = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
@@ -140,7 +165,10 @@ export function describe(action: OptimiseAction, m: Measure, currency: string = 
   if (action === "cost") {
     const c = m as CostMeasure;
     if (!c.parts) return "No parts";
-    if (c.total !== null) return `${money(c.total)} for ${c.parts} parts`;
+    if (c.total !== null) {
+      const unit = c.unitCost === undefined ? "" : `; unit cost ${money(c.unitCost)} at ${c.batchSize ?? 1} ${c.batchSize === 1 ? "unit" : "units"}${c.unitComplete === false ? " (a cost line is not priced)" : ""}`;
+      return `${money(c.total)} for ${c.parts} parts${unit}`;
+    }
     const was = c.substitutes ? `; ${c.substitutes === 1 ? "1 substitute has" : `${c.substitutes} substitutes have`} no cost yet, was ${money(c.wasTotal ?? 0)}` : "";
     if (!c.priced) return `Not priced (none of ${c.parts} parts has a cost${was})`;
     return `Not priced (${c.priced} of ${c.parts} parts have a cost, adding up to ${money(c.pricedTotal)}${was})`;

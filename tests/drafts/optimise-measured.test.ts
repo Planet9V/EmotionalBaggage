@@ -155,7 +155,7 @@ describe("propose faster print settings: sliced at two settings", () => {
 
 describe("propose cheaper substitutes", () => {
   it("before 11.90 for 3 parts; the substitute is unpriced until a price is entered, then 7.40 for 3 parts", async () => {
-    expect((await byId("cost")).now.text).toBe("11.90 for 3 parts");
+    expect((await byId("cost")).now.text).toBe("11.90 for 3 parts; unit cost 11.90 at 1 unit");
     script["optimise-cost"] = { rows: [{ replaces: ids.board, title: "Bare microcontroller module", spec: "The same chip on a module", reason: "No USB bridge; programming needs an adapter" }] };
     const r = await go("cost");
     const d = r.body.drafts[0];
@@ -163,8 +163,8 @@ describe("propose cheaper substitutes", () => {
     expect((await approve(d.id)).status).toBe(200);
     expect((await patchItem(json("PATCH", { data: { line: 5 } }), ctx(String(ids.board)))).status).toBe(200);
     const a = await byId("cost");
-    expect(a.now.text).toBe("7.40 for 3 parts");
-    expect(a.last!.before.text).toBe("11.90 for 3 parts");
+    expect(a.now.text).toBe("7.40 for 3 parts; unit cost 7.40 at 1 unit");
+    expect(a.last!.before.text).toBe("11.90 for 3 parts; unit cost 11.90 at 1 unit");
     expect((await itemsOf(P, "design/bom")).find((x) => Number(x.id) === ids.board)!.data.wasLine).toBe(9.5);
   });
 });

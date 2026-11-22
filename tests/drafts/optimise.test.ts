@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { pool, q } from "@/lib/db";
 import { GET as STATE, POST as OPTIMISE } from "@/app/api/drafts/optimise/route";
-import { applyDrafts, describe as words, measureCost, measureCount, measurePrint, printMinutes } from "@/lib/ai/drafts/measure";
+import { applyDrafts, describe as words, measureCost as costOf, measureCount, measurePrint, NO_COST_ROWS, printMinutes } from "@/lib/ai/drafts/measure";
 import type { Draft, RunResult } from "@/lib/ai/drafts/shared";
 import type { OptimiseState } from "@/lib/ai/drafts/service";
 import type { Item } from "@/lib/types";
@@ -12,13 +12,16 @@ import { json, read } from "../api/helpers";
 import { chooseReasoning, clearModelRows } from "../ai/setup";
 import { addItem, approve, itemsOf, makeConcept, scriptedModel, type Script } from "./helpers";
 
+// the cost is read from the unit economics; these concepts have no cost lines beside the parts
+const measureCost = (bom: Item[]) => costOf(bom, NO_COST_ROWS, "USD");
+
 const item = (id: number, section: string, title: string, data: Record<string, unknown> = {}): Item => ({ id, projectId: "p", section, title, body: "", data, status: "open", sort: id });
 
 describe("measurements", () => {
   it("cost is a sum only when every part has a cost; otherwise not priced, with what is priced", () => {
     const all = [item(1, "design/bom", "A", { line: 2.5 }), item(2, "design/bom", "B", { line: "1.25" })];
-    expect(measureCost(all)).toEqual({ parts: 2, priced: 2, pricedTotal: 3.75, total: 3.75 });
-    expect(words("cost", measureCost(all))).toBe("3.75 for 2 parts");
+    expect(measureCost(all)).toEqual({ parts: 2, priced: 2, pricedTotal: 3.75, total: 3.75, unitCost: 3.75, batchSize: 1, unitComplete: true });
+    expect(words("cost", measureCost(all))).toBe("3.75 for 2 parts; unit cost 3.75 at 1 unit");
     const some = [...all, item(3, "design/bom", "C")];
     expect(measureCost(some).total).toBeNull();
     expect(words("cost", measureCost(some))).toBe("Not priced (2 of 3 parts have a cost, adding up to 3.75)");
@@ -87,7 +90,7 @@ describe("optimisation runs", () => {
   it("before any run each action shows its measurement now and no last run", async () => {
     const a = await state();
     expect(a.map((x) => x.id)).toEqual(["cost", "parts", "print"]);
-    expect(a[0].now.text).toBe("16.40 for 4 parts");
+    expect(a[0].now.text).toBe("16.40 for 4 parts; unit cost 16.40 at 1 unit");
     expect(a[1].now.text).toBe("4 parts, 7 pieces, 4 fasteners");
     expect(a[2].now.text).toBe("4 h 45 min to 5 h 45 min over 2 of 2 print jobs");
     expect(a.every((x) => x.last === null)).toBe(true);
@@ -105,7 +108,7 @@ describe("optimisation runs", () => {
     expect(d.data.wasLine).toBe(12);
     expect(d.data.ref).toBe("U1");
     const a = (await state())[0];
-    expect(a.last!.before.text).toBe("16.40 for 4 parts");
+    expect(a.last!.before.text).toBe("16.40 for 4 parts; unit cost 16.40 at 1 unit");
     expect(a.last!.ifApproved.text).toBe("Not priced (3 of 4 parts have a cost, adding up to 4.40; 1 substitute has no cost yet, was 12.00)");
     expect(a.last!.drafts).toEqual({ waiting: 1, approved: 0, rejected: 0 });
     await approve(d.id);
@@ -114,8 +117,8 @@ describe("optimisation runs", () => {
     expect(mid.now.text).toBe("Not priced (3 of 4 parts have a cost, adding up to 4.40; 1 substitute has no cost yet, was 12.00)");
     await q("UPDATE items SET data = data || '{\"line\": 4}'::jsonb WHERE id=$1", [ids.board]);
     const b = (await state())[0];
-    expect(b.now.text).toBe("8.40 for 4 parts");
-    expect(b.last!.before.text).toBe("16.40 for 4 parts");
+    expect(b.now.text).toBe("8.40 for 4 parts; unit cost 8.40 at 1 unit");
+    expect(b.last!.before.text).toBe("16.40 for 4 parts; unit cost 16.40 at 1 unit");
   });
 
   it("fewer parts: a merge keeps one part and removes the other; counts before and after from rows", async () => {
