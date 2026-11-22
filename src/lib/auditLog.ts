@@ -32,7 +32,20 @@ const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 const COLS = `id::int AS id, at, actor, project_id AS "projectId", project_name AS "projectName", action, summary, detail`;
 
-function where(f: Omit<AuditQuery, "limit">) {
+/**
+ * Lines only the platform administrator reads (review S1 of the admin area): changes to the new sections' settings
+ * (mail server, voice, the plan catalogue), the new providers' credentials and tests, and the new sign-in's own lines
+ * (accounts, workspaces, platform administration). Anyone else reading the install-wide log does not get them.
+ */
+const ADMIN_ONLY_SETTINGS = ["mail.smtp", "voice.tts", "plans.catalogue"];
+const ADMIN_ONLY_PROVIDERS = ["stripe", "smtp", "kokoro", "voice"];
+const RESTRICTED = `NOT (
+  (action LIKE 'setting.%' AND detail->>'key' = ANY(?))
+  OR (action LIKE 'credential.%' AND detail->>'provider' = ANY(?))
+  OR action LIKE 'platform.%' OR action LIKE 'account.%' OR action LIKE 'workspace.%' OR action LIKE 'auth2.%'
+)`;
+
+function where(f: Omit<AuditQuery, "limit">, viewer: { platformAdmin: boolean }) {
   const cond: string[] = [];
   const args: unknown[] = [];
   const add = (sql: string, v: unknown) => {
@@ -44,12 +57,17 @@ function where(f: Omit<AuditQuery, "limit">) {
   if (f.hide) add("action NOT LIKE ?", `${f.hide.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
   if (f.q) add("(summary ILIKE ? OR project_name ILIKE ? OR actor ILIKE ?)", like(f.q));
   if (f.before) add("id < ?", f.before);
+  if (!viewer.platformAdmin) {
+    args.push(ADMIN_ONLY_SETTINGS, ADMIN_ONLY_PROVIDERS);
+    let n = args.length - 2;
+    cond.push(RESTRICTED.replace(/\?/g, () => `$${++n}`));
+  }
   return { sql: cond.length ? `WHERE ${cond.join(" AND ")}` : "", args };
 }
 
 /** Newest first. `next` is the id to pass as `before` for the following page, or null at the end. */
-export async function readAuditLog(f: AuditQuery): Promise<{ entries: AuditRow[]; next: number | null }> {
-  const w = where(f);
+export async function readAuditLog(f: AuditQuery, viewer: { platformAdmin: boolean }): Promise<{ entries: AuditRow[]; next: number | null }> {
+  const w = where(f, viewer);
   const rows = await q<AuditRow>(`SELECT ${COLS} FROM audit_log ${w.sql} ORDER BY id DESC LIMIT ${f.limit + 1}`, w.args);
   const more = rows.length > f.limit;
   const entries = more ? rows.slice(0, f.limit) : rows;
@@ -57,8 +75,8 @@ export async function readAuditLog(f: AuditQuery): Promise<{ entries: AuditRow[]
 }
 
 /** The whole log, oldest first, one JSON object per line. */
-export async function auditLogFile(f: Omit<AuditQuery, "limit" | "before">): Promise<string> {
-  const w = where(f);
+export async function auditLogFile(f: Omit<AuditQuery, "limit" | "before">, viewer: { platformAdmin: boolean }): Promise<string> {
+  const w = where(f, viewer);
   const rows = await q<AuditRow>(`SELECT ${COLS} FROM audit_log ${w.sql} ORDER BY id`, w.args);
   return rows.map((r) => JSON.stringify(r)).join("\n") + (rows.length ? "\n" : "");
 }

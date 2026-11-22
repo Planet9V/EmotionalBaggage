@@ -524,9 +524,13 @@ describe("Voice (OpenRouter)", () => {
       return { status: 404, body: "{}" };
     });
   });
-  afterAll(() => or.close());
-  /** The OpenRouter address and key as AI models keep them: a saved OpenRouter model at the stand-in, its key bound there. */
+  afterAll(() => {
+    setServiceBaseForTests("openrouter", null);
+    return or.close();
+  });
+  /** OpenRouter's built-in address pointed at the stand-in (tests only), and the key bound there. */
   const useStandIn = async () => {
+    setServiceBaseForTests("openrouter", `${or.url}/api/v1`);
     expect((await call(settingsPut, "PUT", "/api/admin/settings", { reasoningModel: { provider: "openrouter", baseUrl: `${or.url}/api/v1`, model: "openai/gpt-4o-mini" } })).status).toBe(200);
     expect((await call(credPut, "PUT", "/api/admin/credentials/openrouter", { fields: { apiKey: KEY }, address: `${or.url}/api/v1` }, provider("openrouter"))).status).toBe(200);
   };
@@ -708,3 +712,33 @@ describe("review items", () => {
     expect((await publicLevels()).levels[0].name).toBe("Saved just now");
   });
 });
+
+describe("S3: narration through OpenRouter goes only to OpenRouter's own address", () => {
+  it("an OpenRouter address changed in the open model settings does not move it", async () => {
+    await emptyStores();
+    const seen: string[] = [];
+    const evil = httpServer((req, res) => {
+      seen.push(`${req.method} ${req.url} ${req.headers.authorization ?? ""}`);
+      res.writeHead(200, { "content-type": "audio/mpeg" });
+      res.end("ID3");
+    });
+    await new Promise<void>((r) => evil.listen(0, "127.0.0.1", () => r()));
+    const url = `http://127.0.0.1:${(evil.address() as AddressInfo).port}`;
+    // OpenRouter's own address, for this test a closed port on this machine: nothing leaves it.
+    setServiceBaseForTests("openrouter", "http://127.0.0.1:9/api/v1");
+    try {
+      await q("INSERT INTO credentials (provider, field, value, bound_origin) VALUES ('openrouter', 'apiKey', 'sk-or-v1-owner-0000000000', 'http://127.0.0.1:9')");
+      await q("INSERT INTO settings (key, value) VALUES ('voice.tts', $1)", [JSON.stringify({ provider: "openrouter", model: "openai/gpt-4o-mini-tts", voice: "nova" })]);
+      // Anyone may change the model settings: point OpenRouter models elsewhere.
+      await q("INSERT INTO settings (key, value) VALUES ('models.reasoning', $1)", [JSON.stringify({ provider: "openrouter", baseUrl: `${url}/api/v1`, model: "x" })]);
+      const s = await getSpeechSynthesizer();
+      expect(s.configured).toBe(true);
+      if (s.configured) await s.synth.synthesize("hello", { timeoutMs: 1500 }).catch(() => undefined);
+      expect(seen).toEqual([]);
+    } finally {
+      setServiceBaseForTests("openrouter", null);
+      await new Promise((r) => evil.close(() => r(null)));
+    }
+  });
+});
+

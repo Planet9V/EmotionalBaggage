@@ -20,11 +20,13 @@ import { lwaTokenUrl, igGraphBase, xApiBase } from "@/lib/channels/http";
 import { DEFAULT_BASE_URL, embeddingModel, getCredential, getSetting, reasoningModel, SETTING, type ModelChoice, type Provider } from "@/lib/settings";
 
 /** Fixed API addresses of the hosted services. Only tests change them (setServiceBaseForTests), to reach a stand-in. */
-const SERVICE_BASE = { stripe: "https://api.stripe.com" };
+const SERVICE_BASE = { stripe: "https://api.stripe.com", openrouter: "https://openrouter.ai/api/v1" };
 const serviceBase = { ...SERVICE_BASE };
 export function setServiceBaseForTests(name: keyof typeof SERVICE_BASE, url: string | null) {
   serviceBase[name] = url ?? SERVICE_BASE[name];
 }
+/** OpenRouter's own API, where narration goes (review S3: never the address in the open model settings). */
+export const openRouterVoiceBase = () => serviceBase.openrouter;
 /** Stripe's API, where its secret key is sent. */
 export const stripeApiBase = () => serviceBase.stripe;
 
@@ -98,14 +100,16 @@ export async function currentOrigin(provider: Provider): Promise<string | null> 
 }
 
 /**
- * Where a saved secret may go: its recorded origin, binding an older value (saved before 0024) on
- * first read; for a value from the environment, the built-in address. Null when nothing is set.
+ * Where a saved secret may go: its recorded origin; for a value from the environment, the built-in address. Null when
+ * nothing is set. A saved row with no recorded origin (older than 0024) is bound to the provider's built-in address
+ * only, never to an address someone could have just changed (review S4; migration 0040 bound the existing ones); a
+ * provider with no built-in address (Kokoro, mail) stays unbound, so the secret is not sent until typed again.
  */
 export async function boundOrigin(provider: Provider, field: string): Promise<string | null> {
   const rows = await q<{ bound_origin: string | null }>("SELECT bound_origin FROM credentials WHERE provider=$1 AND field=$2", [provider, field]);
   if (!rows.length) return (await getCredential(provider, field)) ? builtInOrigin(provider) : null;
   if (rows[0].bound_origin) return rows[0].bound_origin;
-  const o = await currentOrigin(provider);
+  const o = builtInOrigin(provider);
   if (o) await q("UPDATE credentials SET bound_origin=$3 WHERE provider=$1 AND field=$2 AND bound_origin IS NULL", [provider, field, o]);
   return o;
 }

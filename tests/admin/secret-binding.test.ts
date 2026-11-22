@@ -117,12 +117,13 @@ describe("model keys", () => {
     if (!m.ok) expect(m.reason).toMatch(/not sent/);
   });
 
-  it("a key saved before the binding existed is bound to the address in use on its first read", async () => {
+  it("a key saved before the binding existed is bound to the provider's own address, not the one in use (review S4)", async () => {
     const good = await listener();
     await putSettings(json("PUT", { reasoningModel: { provider: "lmstudio", baseUrl: `${good.url}/v1`, model: "m" } }));
     await q("INSERT INTO credentials (provider, field, value) VALUES ('lmstudio','apiKey',$1)", [KEY]);
     const view = await read<{ providers: { id: string; fields: { boundTo?: string | null }[] }[] }>(await getCredentials(json("GET")));
-    expect(view.body.providers.find((p) => p.id === "lmstudio")!.fields[0].boundTo).toBe(good.url);
+    // The address in use can be changed by any account, so it is not trusted for an unbound key.
+    expect(view.body.providers.find((p) => p.id === "lmstudio")!.fields[0].boundTo).toBe("http://host.docker.internal:1234");
     expect(JSON.stringify(view.body)).not.toContain(KEY);
   });
 

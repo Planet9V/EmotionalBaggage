@@ -9,8 +9,8 @@
 // Settings are the row "voice.tts"; an optional Kokoro key is the credential "kokoro", only sent to the address it was
 // saved for. Audio is answered in memory as bytes and a content type, and never written anywhere by this module: the
 // voice-overs tool that stores clips does that through the files store.
-import { DEFAULT_BASE_URL, embeddingModel, getSetting, reasoningModel, SETTING, type ModelChoice } from "@/lib/settings";
-import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
+import { getSetting, SETTING } from "@/lib/settings";
+import { boundElsewhere, openRouterVoiceBase, secretFor } from "@/lib/secretOrigin";
 import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 import { voiceSettings, type VoiceSettings } from "@/lib/admin/schemas";
 
@@ -123,14 +123,13 @@ async function post(url: string, headers: Record<string, string>, body: unknown,
 }
 
 /**
- * OpenRouter's address and key, as the AI models use them (no second key): the address of a saved OpenRouter model
- * (reasoning first, then embedding), else OpenRouter's own; the key is the credential openrouter.apiKey, only ever sent
- * to the host it was saved for (src/lib/secretOrigin.ts).
+ * OpenRouter's address and key for narration: always OpenRouter's own built-in address (review S3 of the admin area).
+ * It is not taken from the AI model settings, which any signed-in account may change: that would let them send the
+ * narration, and the OpenRouter key, elsewhere. The key is the credential openrouter.apiKey, only ever sent to the host
+ * it was saved for (src/lib/secretOrigin.ts), so a key saved for another address is refused here.
  */
 async function openRouterTarget(): Promise<{ base: string; key: string } | { reason: string }> {
-  const [r, e] = await Promise.all([reasoningModel(), embeddingModel()]);
-  const chosen = [r, e].find((c): c is ModelChoice => !!c && typeof c === "object" && c.provider === "openrouter");
-  const base = (chosen?.baseUrl || DEFAULT_BASE_URL.openrouter).replace(/\/+$/, "");
+  const base = openRouterVoiceBase().replace(/\/+$/, "");
   const k = await secretFor("openrouter", "apiKey", base);
   if (k.refused) return { reason: boundElsewhere("OpenRouter", k.boundTo, base) };
   if (!k.value) return { reason: "OpenRouter is chosen, but no OpenRouter key is saved. Add it in Admin, AI models." };

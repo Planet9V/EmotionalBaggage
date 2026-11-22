@@ -9,7 +9,7 @@ export const GET = adminRoute(async (req: Request) => NextResponse.json({ settin
 /** Any of reasoningModel, embeddingModel, plannerUrl, defaultConcept. Absent keys are unchanged; null clears. */
 export const PUT = adminRoute(async (req: Request) => {
   const b = await body(req, adminSettingsPut);
-  // mail and voice are new powers (platform administrator); every other key is open as before
+  // Only the keys listed open in the guard (GUARD_LISTS) may be changed by anyone; mail, voice and anything later need the platform administrator
   if (Object.keys(b).some((k) => platformAdminOnly.setting(k))) await requirePlatformAdmin(req);
   const notices = await writeAdminSettings(b);
   return NextResponse.json({ settings: await readAdminSettings({ platformAdmin: await isPlatformAdmin(req) }), notices });

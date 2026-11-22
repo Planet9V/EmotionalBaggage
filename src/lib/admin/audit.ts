@@ -57,7 +57,7 @@ export async function readAudit(viewer: { platformAdmin: boolean } = { platformA
   const list = Array.isArray(rows[0]?.value) ? rows[0].value : [];
   if (viewer.platformAdmin) return list;
   return list.map((e) => {
-    if (!platformAdminOnly.provider(e.provider)) return e;
+    if (!platformAdminOnly.auditSubject(e.provider)) return e;
     const { boundTo: _b, result: _r, ...rest } = e;
     void _b;
     void _r;

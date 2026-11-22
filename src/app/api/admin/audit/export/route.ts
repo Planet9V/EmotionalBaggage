@@ -1,11 +1,11 @@
-import { adminRoute } from "@/lib/admin/guard";
+import { adminRoute, isPlatformAdmin } from "@/lib/admin/guard";
 import { audit } from "@/lib/db";
 import { auditLogFile, auditQuery } from "@/lib/auditLog";
 
 /** The audit log as a file: one JSON object per line, oldest first. Taking a copy is itself recorded. */
 export const GET = adminRoute(async (req: Request) => {
   const f = auditQuery.omit({ limit: true, before: true }).parse(Object.fromEntries(new URL(req.url).searchParams));
-  const text = await auditLogFile(f);
+  const text = await auditLogFile(f, { platformAdmin: await isPlatformAdmin(req) });
   await audit({ action: "audit.exported", summary: "The audit log was downloaded as a file", detail: { lines: text ? text.split("\n").length - 1 : 0, filter: f } });
   return new Response(text, {
     headers: {

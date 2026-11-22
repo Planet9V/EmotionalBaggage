@@ -1,4 +1,4 @@
-import { adminRoute, platformAdminOnly, requirePlatformAdmin } from "@/lib/admin/guard";
+import { adminRoute, isPlatformAdmin, platformAdminOnly, requirePlatformAdmin } from "@/lib/admin/guard";
 import { NextResponse } from "next/server";
 import { body } from "@/lib/api/route";
 import { checkCredentialFields, providerView, saveCredentials } from "@/lib/admin/credentials";
@@ -15,5 +15,6 @@ export const PUT = adminRoute(async (req: Request, { params }: Ctx) => {
   const { def, values } = checkCredentialFields(provider, b.fields);
   if (b.address && !isModelProvider(def.id)) throw invalid(["address"], `applies to the model hosts only; ${def.label} keys go to its own address`);
   await saveCredentials(def, values, b.address);
-  return NextResponse.json({ provider: await providerView(def.id, { platformAdmin: true }) });
+  // What this caller may see of it, decided again (review S10): not everyone who may save a key is the administrator.
+  return NextResponse.json({ provider: await providerView(def.id, { platformAdmin: await isPlatformAdmin(req) }) });
 });
