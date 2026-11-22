@@ -61,7 +61,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   // The landing page preview (/p/<concept id>) is the page as a visitor would see it, so it gets no sidebar.
   // The public welcome page (/welcome, /welcome/overview) is for visitors who are not signed in, so it gets no sidebar either.
-  return path === "/sign-in" || path === "/welcome" || path.startsWith("/welcome/") || path.startsWith("/p/") ? <>{children}</> : <AppShell>{children}</AppShell>;
+  // The new sign-in's screens (/auth/..., only while AUTH2 is on) are for people who are not signed in to the shell.
+  return path === "/sign-in" || path === "/welcome" || path.startsWith("/welcome/") || path.startsWith("/p/") || path.startsWith("/auth/") ? <>{children}</> : <AppShell>{children}</AppShell>;
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {

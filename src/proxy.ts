@@ -10,9 +10,13 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { pageGate, SESSION_COOKIE } from "@/app/sign-in/shared";
+import { AUTH2_PAGES, auth2Enabled } from "@/lib/auth2/config";
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // The new sign-in's screens (AUTH2 on) are open to a signed-out browser; each checks its own session. With AUTH2
+  // off they are treated like any other page, as before.
+  if (auth2Enabled() && pathname.startsWith(`${AUTH2_PAGES}/`)) return NextResponse.next();
   const target = pageGate(pathname, search, request.cookies.has(SESSION_COOKIE));
   if (!target) return NextResponse.next();
   return NextResponse.redirect(new URL(target, request.url));

@@ -16,6 +16,27 @@ const req = (method: string, path: string, init: { origin?: string; body?: unkno
     body: init.body ? JSON.stringify(init.body) : undefined,
   });
 
+const page = async (path: string) => {
+  const { NextRequest } = await import("next/server");
+  const { proxy } = await import("@/proxy");
+  const res = proxy(new NextRequest(`http://localhost:3322${path}`));
+  return res.headers.get("location");
+};
+
+describe("the page proxy", () => {
+  it("with AUTH2 off, sends a signed-out visitor of /auth/... to the old sign-in, as for any page", async () => {
+    delete process.env.AUTH2;
+    expect(await page("/auth/sign-up")).toBe("http://localhost:3322/sign-in?next=%2Fauth%2Fsign-up");
+  });
+
+  it("with AUTH2 on, lets a signed-out visitor reach /auth/... and nothing else changes", async () => {
+    process.env.AUTH2 = "1";
+    expect(await page("/auth/sign-up")).toBeNull();
+    expect(await page("/concepts")).toBe("http://localhost:3322/sign-in?next=%2Fconcepts");
+    delete process.env.AUTH2;
+  });
+});
+
 describe("with AUTH2 off", () => {
   it("every address under /api/auth2 answers 404, for every method and origin", async () => {
     const route = await import("@/app/api/auth2/[...all]/route");
