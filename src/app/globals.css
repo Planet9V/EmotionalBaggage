@@ -482,3 +482,24 @@ html.light main {
 .wl-flap > i:nth-child(3), .wl-flap > i:nth-child(4) { z-index: 1; }
 /* the hinge, and the shadow it throws on the lower half */
 .wl-flap::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.5px); height: 1px; background: #0b0c0e; box-shadow: 0 1px 2px rgb(0 0 0 / 0.55); z-index: 2; }
+/* ==========================================================================
+   BEGIN scenes: "It started as a joke" (src/components/welcome/scenes). The film's sets are bright, so the
+   subtitles sit in their own dark band. The slate between scenes is a split-flap board in the manner of the
+   departures board above; its cells are sized from the stage's own width. Keyframes: the subtitle's arrival and
+   the turn of a flap; both off under reduced motion.
+   ========================================================================== */
+.sc-stage { container-type: inline-size; }
+.sc-line { line-height: 1.62; text-wrap: balance; }
+.sc-sub { padding: 0.2em 0.6em 0.26em; border-radius: 0.4em; background: rgb(8 10 14 / 0.82); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.sc-slate { background: #0b0c0e; font-family: var(--font-mono); font-size: clamp(8px, 2.55cqw, 27px); color: #fff; }
+.sc-flap { position: relative; display: inline-block; width: 1.28em; height: 1.75em; margin: 0 0.07em; overflow: hidden; border-radius: 0.16em; background: linear-gradient(#1d2027 0 50%, #181b21 50% 100%); font-weight: 600; line-height: 1.75em; text-align: center; }
+.sc-flap > b { display: block; font-weight: inherit; }
+.sc-flap::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.5px); height: 1px; background: #0b0c0e; box-shadow: 0 1px 2px rgb(0 0 0 / 0.55); }
+.sc-flap-accent { color: #ff8a3d; }
+@media (prefers-reduced-motion: no-preference) {
+  .sc-line { animation: sc-sub-in 160ms var(--ease-out-soft) both; }
+  .sc-flap-turn { animation: sc-flap-turn 55ms ease-in both; transform-origin: 50% 50%; }
+}
+@keyframes sc-sub-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sc-flap-turn { from { transform: perspective(5em) rotateX(70deg); opacity: 0.5; } to { transform: none; opacity: 1; } }
+/* END scenes */

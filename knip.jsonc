@@ -5,7 +5,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // tests/e2e/auth.setup.ts is the Playwright setup project (playwright.config.ts); tests/walk is the
   // hand-run browser walk (run with tsx, not by Vitest).
-  // HELD, to be removed: HeroBag.tsx and PokeTheBag.tsx (and Bag.tsx, which they draw) left the welcome page on
+  // HELD, to be removed (the scenes landed 22 Nov 2026 and do not use them): HeroBag.tsx and PokeTheBag.tsx (and Bag.tsx, which they draw) left the welcome page on
   // 22 Nov 2026 when it was reordered to sell the service. They are kept, unrendered, for the scenes work under
   // src/components/welcome/scenes, which reuses or replaces them; they leave this list when that lands.
   "entry": ["scripts/*.{mjs,cjs}", "tests/e2e/auth.setup.ts", "tests/walk/*.ts", "src/components/welcome/HeroBag.tsx", "src/components/welcome/PokeTheBag.tsx"],

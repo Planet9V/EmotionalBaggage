@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/welcome/ThemeToggle";
 import { HeroFlow } from "@/components/welcome/HeroFlow";
 import { WhatYouGet } from "@/components/welcome/WhatYouGet";
 import { DraftChain } from "@/components/welcome/DraftChain";
-import { OriginScenes } from "@/components/welcome/OriginScenes";
+import { OriginScenes } from "@/components/welcome/scenes/OriginScenes";
 import { DeparturesBoard } from "@/components/welcome/DeparturesBoard";
 import { Journey } from "@/components/welcome/Journey";
 import { Engineering } from "@/components/welcome/Engineering";
@@ -15,7 +15,7 @@ import { exampleData } from "@/components/welcome/exampleData";
 import { storyData } from "@/components/welcome/storyData";
 import { LifecycleMap } from "@/components/welcome/LifecycleMap";
 import { publicPageMetadata } from "@/components/welcome/meta";
-import { AUDIENCE, BOARD, CLOSING, ENGINEERING, EXAMPLE, FAQ, FAST, GATES_NOTE, GET, HERO, JOURNEY_INTRO, MAP, MARKET, META, NAV, ORIGIN, PRODUCT, REPO_URL, RUN_COMMANDS, RUNS_ON, YOUR_TURN, boardStates } from "@/components/welcome/content";
+import { AUDIENCE, BOARD, CLOSING, ENGINEERING, EXAMPLE, FAQ, FAST, GATES_NOTE, GET, HERO, JOURNEY_INTRO, MAP, MARKET, META, NAV, PRODUCT, REPO_URL, RUN_COMMANDS, RUNS_ON, YOUR_TURN, boardStates } from "@/components/welcome/content";
 
 export const generateMetadata = () => publicPageMetadata({ title: META.title, description: META.description, path: "/welcome" });
 
@@ -173,17 +173,8 @@ export default async function WelcomePage() {
           </div>
         </section>
 
-        {/* 3. It started as a joke: the origin of the example. The animated scenes go into OriginScenes. */}
-        <section id="origin" aria-labelledby="origin-title" className={`${SECTION} scroll-mt-4`}>
-          <div className={WRAP}>
-            <p className={EYEBROW}>{ORIGIN.eyebrow}: the worked example, {EXAMPLE.name}</p>
-            <h2 id="origin-title" className={H2}>{ORIGIN.title}</h2>
-            <div className="mt-5">
-              <OriginScenes sentences={story.origin.sentences} />
-            </div>
-            <p className="mt-5 text-[15px] font-medium text-primary">{ORIGIN.after}</p>
-          </div>
-        </section>
+        {/* 3. It started as a joke: the origin of the example, as a short film in six scenes */}
+        <OriginScenes />
 
         {/* 4. The engineering, live: the app's own views on the example's rows */}
         <section id="engineering" aria-labelledby="engineering-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>

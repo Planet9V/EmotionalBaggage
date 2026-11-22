@@ -178,34 +178,3 @@ export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFac
       );
   }
 }
-
-/**
- * The gadget as the owner now designs it: a chunky rounded orange tag that hangs from the suitcase handle on a
- * loop, with its name inlaid and a speaker grille. A drawing of the design, not of anything built; the engineering
- * stage still shows the first enclosure, generated from the same parts.
- */
-export function HandleTag({ className = "", label }: { className?: string; label: string }) {
-  return (
-    <svg viewBox="0 0 220 250" className={className} role="img" aria-label={label}>
-      {/* the suitcase handle the loop goes round */}
-      <path d="M18 52V34a16 16 0 0 1 16-16h152a16 16 0 0 1 16 16v18" fill="none" stroke="currentColor" className="text-secondary" strokeWidth="9" strokeLinecap="round" />
-      {/* the loop */}
-      <path d="M110 18c-17 0-25 12-25 28 0 21 13 30 25 44 12-14 25-23 25-44 0-16-8-28-25-28z" fill="none" stroke="var(--accent-orange)" strokeWidth="6" strokeLinejoin="round" />
-      {/* the tag, hanging at a slight angle */}
-      <g transform="rotate(-5 110 86)">
-        <rect x="58" y="84" width="104" height="150" rx="26" fill="var(--accent-orange)" />
-        <rect x="64" y="90" width="92" height="138" rx="21" fill="none" stroke="#fff" strokeOpacity="0.28" strokeWidth="1.5" />
-        <circle cx="110" cy="103" r="6.5" fill="var(--bg-canvas)" />
-        {/* the speaker grille */}
-        <g fill="#3a1503" fillOpacity="0.62">
-          {[0, 1, 2, 3].flatMap((r) => [0, 1, 2, 3, 4].map((c) => <circle key={`${r}-${c}`} cx={86 + c * 12} cy={128 + r * 12} r="3.3" />))}
-        </g>
-        {/* the inlaid wordmark */}
-        <g fill="#fff" fontFamily="var(--font-sans, sans-serif)" fontWeight="800" fontSize="13" textAnchor="middle" letterSpacing="1.2">
-          <text x="110" y="193">BAGGAGE</text>
-          <text x="110" y="210">CLAIMS</text>
-        </g>
-      </g>
-    </svg>
-  );
-}

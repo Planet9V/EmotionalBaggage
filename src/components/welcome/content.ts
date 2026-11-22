@@ -676,26 +676,6 @@ export const FAST = {
 };
 
 /**
- * "It started as a joke": the origin of the example. The two sentences shown under the heading are read from the
- * story's origin part (storyData.ts). The five circumstances and their lines are the owner's, word for word, from
- * his launch script and gag catalogue, dashes and capitals included.
- */
-export const ORIGIN = {
-  eyebrow: "It started as a joke",
-  title: "Where did the first idea come from?",
-  tag: "The gadget as now designed: a chunky orange tag that hangs from the suitcase handle on a loop, with its name inlaid and a speaker grille. A drawing, not a photograph.",
-  after: "This is the idea the rest of the page follows through the workbench.",
-  storyboard: "A storyboard for the idea. The gadget has not been built, so none of this is footage.",
-  scenes: [
-    { key: "scale", where: "The check-in scale", line: "Are you... calling me FAT?" },
-    { key: "toss", where: "The handler's toss", line: "OW! ...I felt that in my flip-flops." },
-    { key: "handle", where: "The handle", line: "Whoa whoa whoa — are you gonna buy me dinner first?" },
-    { key: "hold", where: "The dark hold", line: "Hello? ...Anyone? ...Cool, cool. I'll just be here." },
-    { key: "carousel", where: "The carousel", line: "Wheeee! Again! Again!" },
-  ],
-};
-
-/**
  * The market stage: seven tabs at the weight of the engineering stage. Each shows the example's own rows where it
  * has them, and where it has few or none, the structure the stage produces and the limits the app enforces, with
  * a line saying which is which. Counts are worked out from the rows (storyData.ts).
