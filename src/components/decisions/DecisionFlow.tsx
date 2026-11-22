@@ -123,7 +123,7 @@ function OptionChip({ data }: NodeProps<OptNode>) {
     <div
       className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-[12px] font-medium transition-colors duration-150 ${
         chosen
-          ? "border-dutchOrange bg-dutchOrange text-white"
+          ? "border-action bg-action text-white"
           : onPath
             ? "border-dutchOrange/40 bg-surface text-primary"
             : "border-hairline bg-surface text-secondary hover:border-dutchOrange/40"
