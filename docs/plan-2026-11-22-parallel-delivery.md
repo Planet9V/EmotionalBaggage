@@ -11,6 +11,10 @@ Owner instruction: a formal plan that uses several agents and a project manager,
 - **Shared files:** each workstream has a list of folders it owns. Migrations must apply in number order, so the ranges in the table are working numbers only: the project manager renumbers each branch's migrations to the next free number when it merges. Anything outside the list is changed only through the project manager.
 - **Owner decisions:** work that needs a decision is prepared up to the decision and then held; it never blocks another workstream.
 
+## 1a. Deployment rule (owner, 22 Nov)
+
+Docker first. The app runs with `docker compose up` and nothing else, and equally on Railway. The only configuration outside PostgreSQL is the database connection, which the compose file supplies. Every key, secret, address and switch, including the switch for the new sign-in, is entered in the admin area and stored in PostgreSQL. No step tells anyone to set a platform variable. The platform administrator is `admin@oxot.nl`.
+
 ## 2. Workstreams
 
 | # | Workstream | Agent | Owns | Migrations | Wave |
@@ -46,7 +50,7 @@ White-on-orange contrast at 390 pixels in `DecisionFlow.tsx`; the request form r
 
 ### WS10. Platform admin area (owner instruction, 22 Nov)
 An area for the application's administrator only. No service is allowed to block the app from running: every setting has a "not configured" state and the app says what is switched off.
-- Part A, settings: an overview of every service and its state; Stripe keys and webhook secret; the plan catalogue (tiers, prices, limits, shown or hidden) read by the public page; mail server; Amazon and the other sales channels; AI models and embeddings; voice; other services. Secrets are write-only, audited, and encrypted at rest when `SETTINGS_KEY` is set.
+- Part A, settings: an overview of every service and its state; Stripe keys and webhook secret; the plan catalogue (tiers, prices, limits, shown or hidden) read by the public page; mail server; Amazon and the other sales channels; AI models and embeddings; voice; other services. Secrets are write-only and audited.
 - Part B, people: the platform administrator creates, changes, disables and deletes users and organizations; confirms a user without any email; sets passwords; requires, disables or resets two-factor; adds people to organizations and hands over invitation links directly. The functions are built in accounts slice 2; the screens follow when it lands.
 - Mail is optional: with no mail server, sign-ups wait for an administrator to confirm them and no link is written to the log.
 
@@ -62,7 +66,7 @@ Briefs are written when their wave starts, from the state of `main` at that time
 | Review of the 491-row content sheet | WS9 |
 | Voice-over: record, produce as Eigenia's were, or a named text-to-speech service | sound in the scenes |
 | Mail service and sending domain | real confirmation and invitation emails |
-| Stripe test keys set as Railway variables by the owner | a real test-mode payment |
+| Stripe test keys, entered by the owner in the admin area | a real test-mode payment |
 | Go-ahead for the sign-in cut-over | WS2 slice 3 |
 
 ## 4. Merge order and risk
@@ -85,7 +89,7 @@ The owner gets a report when each workstream lands on the live site, and a combi
 | # | State |
 |---|---|
 | WS1 | done 22 Nov, live: third pass on five scenes; slow-device fallback fixed and tested |
-| WS2 | slice 1 merged 22 Nov behind `AUTH2` (off in production): two database roles, Better Auth, mail interface, screens, tests; independent security review done and its 12 findings fixed. Slice 2 started. Turning it on needs a mail service, `BETTER_AUTH_URL`, a secret and the owner's go-ahead |
+| WS2 | slice 1 merged 22 Nov behind `AUTH2` (off in production): two database roles, Better Auth, mail interface, screens, tests; independent security review done and its 12 findings fixed. Slice 2 started. Turning it on needs only the owner's go-ahead once slice 2 lands (secret and addresses are kept in PostgreSQL; mail is optional) |
 | WS3 | done 22 Nov, live: all eight wiring faults confirmed and fixed, each with a test (migration 0031) |
 | WS4 | done 22 Nov, live: contrast fix, request form records the level (migration 0030), five owner files seeded, unused bag removed |
 | WS5 | done 22 Nov, live at `/status` |
