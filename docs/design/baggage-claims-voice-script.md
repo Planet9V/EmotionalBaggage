@@ -1,6 +1,6 @@
 # Baggage Claims: voice script of the welcome film
 
-Status: written 22 November 2026 (workstream WS12). The data is `src/components/welcome/scenes/voiceScript.ts`; this page is the reasoning, the alternatives and what the owner still has to confirm. The owner's brief: "We have to have voice on the introduction and gag reels; it must be animated and funny."
+Status: written 22 November 2026 (workstream WS12); performance section rewritten the same day (WS18) after the owner's verdict on the first clips. The data is `src/components/welcome/scenes/voiceScript.ts`; this page is the reasoning, the alternatives and what the owner still has to confirm. The owner's brief: "We have to have voice on the introduction and gag reels; it must be animated and funny."
 
 **Whether it is funny is not verified.** Every clip below was chosen by measurement (length against its subtitle, a clean start and end, loudness, and two speech recognisers hearing the words). Nobody has listened to them for comedy. That is the owner's call, in a browser, with the sound on.
 
@@ -35,51 +35,169 @@ Owner's words: the last two sentences and "upside down in the dark for four hour
 
 The launch script's line "Three double-A batteries" is not used anywhere in the voice-overs. The owner has since ruled the device uses two AA cells; no spoken line or subtitle mentions batteries.
 
-## 2. Every spoken cue
+## 2. Every spoken cue, and how it is performed
 
-The words are exactly the subtitles of `scenes.ts` (the test `tests/voice/voiceovers.test.ts` holds every clip's text to its subtitle). "Sent to the voice" is the text the admin tool sends when it generates a cue in one piece; punctuation and spelling are shaped for timing, never a different word. The window is the time the subtitle gives the line before the next line or the end of the scene.
+The words are exactly the subtitles of `scenes.ts`, and they are never respelled. The data is `src/components/welcome/scenes/voiceDirections.ts`; every cue has two forms of the same performance:
 
-| Cue | Speaker | Subtitle | Sent to the voice | Window (s) |
+- **Direction**: what a voice director would say to an actor: the character's state and intention, the pace, where each pause lands and how long it is, which word carries the stress and how (pitch up, drawn out, clipped, cracking, a gasp, a sigh, a sniff, deadpan), the volume, and what must not happen. Sent beside the text to a model that takes instructions (OpenAI's mini TTS, and any OpenRouter speech model that lists an `instructions` parameter). It is never put into the spoken text.
+- **Bracket cues**: the subtitle with short delivery cues in square brackets, for a model that reads them as directions rather than speaking them (Fish Audio S2). With the brackets taken out the line is the subtitle word for word; the tool refuses any edit that changes a word, and `tests/voice/track.test.ts` holds the script's own cues to it.
+
+How each model is reached is decided from what the model lists at run time (section 3a). A model that takes no direction (Kokoro) is sent the plain subtitle.
+
+### Why the text shaping was dropped
+
+The first pass shaped the spoken text for Kokoro, which has no emotion control: "FAT" sent as "fat" because Kokoro spells capitals letter by letter, "Wheeee" sent as "Whee", commas and ellipses added to force pauses. The owner's verdict on those clips: "Voice clips are not realistic, I need better emotion, and you have to be aware that your pronunciation is NOT the way it sounds to be funny." He is right. A respelling changes how a word is read, not how it is meant: lower-casing FAT removed the one thing the capitals were there for, the shriek. Comedy lives in delivery (the pause before the punchline, the stress, pitch, attitude, a breath, a crack in the voice), and only a model that can be directed can give it. So the words stay as the owner wrote them and the performance travels as a direction. The one reading fix left is for Kokoro drafts only: words in capitals are sent as ordinary words, so it does not spell them out; that is labelled in the tool as a draft, not a performance.
+
+### The character of each speaker
+
+Put in front of every direction of that speaker (Admin, Voice-overs can change it per speaker). The bag's comes from the lines document's house rules and the launch script's casting note ("BAG (VO, sassy, high comic energy)").
+
+| Speaker | Character note |
+| --- | --- |
+| The bag | You are the suitcase: a put-upon, dramatic, vain diva of a bag, sorry for herself, sassy, with high comic energy. A bright American woman's voice with a wide pitch range. You complain to whoever is in earshot and never about them. Play every line as a real person who is genuinely offended or genuinely delighted, never as someone reading a joke; the comedy is in the timing and the attitude, not in funny voices. |
+| Agent | You are a check-in agent near the end of a long shift: polite, professional, entirely deadpan. You have not noticed that a suitcase just spoke. |
+| Host | You are the traveller, in his thirties, deadpan and dry. You have lived with this suitcase for a while and you have lost every argument with her. |
+| Stranger | You are a passer-by at the baggage carousel, warm and spontaneous, who has just heard a suitcase talk and wants one. |
+| Narrator | You are a nature-documentary narrator: British, warm, grave and completely sincere, describing a newly discovered creature. You are never in on the joke. |
+
+### The cues
+
+The window is the time the subtitle gives the line before the next line or the end of the scene; every pause in a direction is sized to fit it.
+
+#### `intro` (Narrator, window none s)
+
+Direction: Read it as natural history. "It started as a joke." measured and level, then a full beat of silence. The long second sentence unhurried and weighty, as if describing a rare animal; a faint relish on "absurdity". The three "when" lines build: each one shorter and quicker than the last, a short beat between them. Then a long pause, about three quarters of a second, and "And it is NOT happy about it." slower and lower, with real gravity: "NOT" is a firm, drawn-out, lower note, the weight of the whole film on it, not a shout. Do not spell NOT, do not shout it, do not smile audibly or wink, do not sound like an advert, and do not rush the pauses.
+
+Bracket cues: `[warm, grave, sincere] It started as a joke. [beat] A quick gag: a device that goes on luggage that is the comedic relief of all the airport luggage moments of absurdity. [beat] [building] It knows when it's being weighed. When it's being thrown. When it's been upside down in the dark for four hours. [long pause] [slow, low, grave] And it is NOT happy about it.`
+
+#### `handle-dinner` (The bag, window 4.50 s)
+
+Direction: She was dozing on the curb and is suddenly hoisted by the handle without a word. First alarm, then scandalised manners. Three "whoa"s about a third of a second apart, each higher and faster than the last, the third nearly a squeak. Then half a second in which she collects her dignity, with a small indignant intake of breath. "are you gonna buy me dinner first?" comes down in pitch, slower, arch and pointed: the stress is on "dinner", stretched a little with a scandalised lift; "first" falls away, tossed off. The whoas loud, the question at normal level. Do not read the whoas flat or alike, do not pause between them, do not shout the question, do not stress "first", and do not make it flirtatious: it is affronted propriety.
+
+Bracket cues: `[startled, each one higher] Whoa whoa whoa — [indignant intake of breath] [arch, pointed] are you gonna buy me dinner first?`
+
+#### `scale-fat` (The bag, window 2.80 s)
+
+Direction: Perfectly still on the scale, she has just read the number before anyone else. She gives them one chance to take it back. "Are you..." low, slow and quiet, almost a whisper of disbelief; the dots are a held breath. About half a second of silence. "calling me" quicker and tighter, rising. Then a sharp half-second gasp, and "FAT?" as a wounded shriek: one syllable, high and loud, cracking at the top, held a little, as if she has been slapped. Whisper, then normal, then the loudest moment of her scene. Do not spell the letters F-A-T, do not say it calmly or flatly, do not laugh, and leave no pause after it. The joke is the distance between the quiet start and the shriek.
+
+Bracket cues: `[quiet, slow disbelief] Are you... [beat] [tighter, rising] calling me [sharp gasp] [wounded shriek, voice cracking] FAT?`
+
+#### `scale-limit` (Agent, window 1.60 s)
+
+Direction: The twelfth overweight bag of her shift. She did not notice the suitcase spoke and answers as if the traveller had. Brisk, flat, polite customer-service register, even pitch, falling at the end; at most a faint stress on "limit". Normal volume, close to the microphone. No pause before or inside the line, and done in under a second and a half. Do not react to the bag, do not smile or sound amused or surprised, and do not rise at the end.
+
+Bracket cues: `[flat, brisk, bored] Sir, the bag is over the limit.`
+
+#### `scale-host` (Host, window 1.50 s)
+
+Direction: He does not look up. He has had this argument at home and lost, and he is glad to pass it on. A small tired breath out through the nose, then the line low, dry and falling, a little under his breath. The stress is on "her", as in the boss, with only a slight tilt. A little quieter than the agent. Do not make it a joke, do not laugh, do not sell "her", and finish inside a second and a half.
+
+Bracket cues: `[tired exhale] [dry, under his breath] Take it up with her.`
+
+#### `toss-ow` (The bag, window 6.38 s)
+
+Direction: She has been thrown through the air and slammed onto the belt. First pure reflex, then wounded dignity. "OW!" is a sharp, loud, high yelp on the impact, instant and short, like a stubbed toe: one syllable, a noise rather than a word. Then nearly a second of stunned silence while she takes stock, with a small shaky breath in. "...I felt that in my flip-flops." small, quiet, slightly trembling and offended, slow, as if checking for damage; "flip-flops" dropped flat and deadpan, because the injury is to what she is carrying. Do not stretch the OW into "owww", do not sound like someone really hurt or in danger, do not shout the second half, and do not wink at "flip-flops".
+
+Bracket cues: `[sharp yelp] OW! [stunned pause, shaky breath] [small, wounded, deadpan] ...I felt that in my flip-flops.`
+
+#### `hold-hello` (The bag, window 4.60 s)
+
+Direction: Hours in the dark hold; she has just woken, small in a huge empty room. Hoping someone is there, then pretending she never cared. "Hello?" soft, sleepy and hopeful, a little croaky, rising. About a second of silence: nobody answers. "...Anyone?" quieter and smaller, rising less. Another second of silence. "...Cool, cool." too quick and too casual, a brittle brightness, the second "cool" a touch lower: she is not cool. A short beat, then "I'll just be here." flat and resigned, trailing off to herself. Quiet throughout, each phrase quieter than the last, close to the microphone. Do not rush the silences (they are the joke), do not shout, do not sound frightened or in trouble (she is sulking, not in distress), and do not end on a rise.
+
+Bracket cues: `[soft, sleepy, hopeful] Hello? [long pause] [smaller] ...Anyone? [long pause] [too casual, brittle] ...Cool, cool. [beat] [flat, trailing off] I'll just be here.`
+
+#### `hold-dark` (The bag, window 2.50 s)
+
+Direction: The afterthought that is the whole complaint, aimed at whoever left her there. A small sniff, then three words, slow, low and deadpan, the lowest pitch she uses in the film, set down like a verdict, with only a hair of space between them. Quiet and close, no louder than "I'll just be here". Do not chop it into three spoken full stops, do not get loud or angry, and no spooky horror whisper: it is a sulk.
+
+Bracket cues: `[small sniff] [low, slow, deadpan] In the dark.`
+
+#### `carousel-whee` (The bag, window 4.60 s)
+
+Direction: On the carousel, coming round the bend; every bit of dignity from the earlier scenes is gone. Pure childish delight, and she wants another go. "Wheeee!" a long gleeful squeal rising through the bend, about a second, like a child on a fairground ride, a laugh breaking into the end of it. A quick delighted breath. "Again! Again!" fast and bouncing, the second higher and louder than the first, nearly begging. Loud and bright: the happiest she sounds. Do not say "whee" as a short read word, do not split it into two syllables, do not sound sarcastic, and do not slow the agains down.
+
+Bracket cues: `[gleeful squeal, rising] Wheeee! [delighted laugh, quick breath] Again! [higher, begging] Again!`
+
+#### `carousel-stranger` (Stranger, window 2.50 s)
+
+Direction: A passer-by who has just realised the suitcase is the one talking, and wants one now. Quick, warm, genuinely delighted and a little envious, half laughing; the pitch rises through the line and the stress lands hard on "GET", pitched up and slightly stretched: I need to know. A raised voice that carries across the hall. Do not sound like an advert or a cue line, do not be sarcastic, do not stress "that", and finish inside two seconds.
+
+Bracket cues: `[delighted, half laughing] Where did you GET that?`
+
+#### `button-souvenirs` (The bag, window 5.00 s)
+
+Direction: Back on the scale; she reads the display herself. Disbelief, then a defence she has clearly rehearsed. "Sixty-two pounds?" slow, each word weighed, rising in scandalised disbelief, "pounds" drawn up high. Then about a second and a half of silence while she scrambles for an excuse (a small thinking "hm" is fine, no words). "That's mostly" quick, prim and matter-of-fact, a tiny lift, then "SOUVENIRS." hit hard and proud on its first syllable, slightly over-enunciated, a full stop: case closed. Medium volume, the last word loudest. Do not rush the gap, do not make "souvenirs" a question, do not spell it, and do not sound embarrassed: she is indignant, and the excuse is worse than the charge.
+
+Bracket cues: `[slow, scandalised disbelief] Sixty-two pounds? [long pause, thinking] [prim, quick] That's mostly [proud, emphatic] SOUVENIRS.`
+
+#### `button-host` (Host, window 1.90 s)
+
+Direction: The last word of the film. He nods before he speaks. A beat of silence, a short resigned breath out, then the line low, level and slow, almost fond, falling at the end, a light stress on "not". Quiet, under his breath. Do not make it a punchline, do not laugh, do not raise the pitch, and keep the silence in front under half a second so the clip fits its 1.9 seconds.
+
+Bracket cues: `[beat, resigned exhale] [low, dry, almost fond] ...She's not wrong.`
+
+### The bag's lines for the voice packs
+
+The three lines marked ★ for each sensed moment in `docs/design/baggage-claims-lines.md`, directed the same way so packs can be made from them later (`PACK_DIRECTIONS` in the same file; shown read-only in Admin, Voice-overs). The bag's character note applies to all of them; the dark-hold lines are recorded quiet (house rule 7).
+
+| id | Moment | Line | Direction | Bracket cues |
 | --- | --- | --- | --- | --- |
-| `handle-dinner` | The bag | Whoa whoa whoa — are you gonna buy me dinner first? | Whoa whoa whoa! Are you gonna buy me dinner, first? | 4.50 |
-| `scale-fat` | The bag | Are you... calling me FAT? | Are you... calling me, fat?! | 2.80 |
-| `scale-limit` | Agent | Sir, the bag is over the limit. | Sir, the bag is over the limit. | 1.60 |
-| `scale-host` | Host | Take it up with her. | Take it up with her. | 1.50 |
-| `toss-ow` | The bag | OW! ...I felt that in my flip-flops. | Ow! ...I felt that, in my flip-flops. | 6.38 |
-| `hold-hello` | The bag | Hello? ...Anyone? ...Cool, cool. I'll just be here. | Hello? ...Anyone? ...Cool, cool. I'll just be here. | 4.60 |
-| `hold-dark` | The bag | In the dark. | In. The. Dark. | 2.50 |
-| `carousel-whee` | The bag | Wheeee! Again! Again! | Whee! Again!! Again! | 4.60 |
-| `carousel-stranger` | Stranger | Where did you GET that? | Where did you get that?! | 2.50 |
-| `button-souvenirs` | The bag | Sixty-two pounds? That's mostly SOUVENIRS. | Sixty-two pounds?! That's mostly... souvenirs! | 5.00 |
-| `button-host` | Host | ...She's not wrong. | ...She's not wrong. | 1.90 |
-
-Performance direction per cue (delivery; pace; where the pause lands; what makes it funny):
-
-- **`handle-dinner`** (The bag). Startled, then affronted: someone has just been picked up without being asked. The three whoas climb. Pace: The whoas quick and even, about a third of a second each; the question slower and pointed. Pause: Half a second after the third whoa, as she collects herself, before "are you gonna". Funny: The bag has the manners of a first date and the host has none. Lean on "dinner", not on "first".
-- **`scale-fat`** (The bag). Quiet disbelief turning to outrage. She has seen the number on the scale before anyone else has. Pace: "Are you" slow and level; "calling me" clipped; "FAT" full volume, one syllable held. Pause: A full second of silence after "Are you...": the stillness of the weigh-in. Then a short beat, a breath, before "FAT?". Funny: The long pause lets the visitor get there first. The word lands as the scale's display does.
-- **`scale-limit`** (Agent). Professional and entirely straight: the agent has said this four hundred times today and did not hear a suitcase speak. Pace: Brisk and flat, no rise at the end. Pause: None. She answers the bag's outburst as if it were paperwork. Funny: The straight face. Any hint of amusement kills it.
-- **`scale-host`** (Host). Weary and dry. He has had this argument with the bag at home and lost. Pace: Slow, falling; a small sigh on the way in. Pause: A beat before the line, as he does not look up. Funny: "Her": he treats the bag as a person, and as the one in charge.
-- **`toss-ow`** (The bag). A sharp yelp on impact, then small, wounded dignity from the belt. Pace: "OW" instant, on the thud. The second half slow and flat. Pause: Nearly a second after "OW!", while the dust settles. Funny: The injury is to what she is carrying. Deadpan on "flip-flops"; do not sell it.
-- **`hold-hello`** (The bag). Sleepy and small in a large dark room; then brittle, pretending not to mind. Pace: Each piece slower and quieter than the last. "Cool, cool" too casual, too quick. Pause: A second after "Hello?" for the answer that does not come; another after "Anyone?"; a short one before "I'll just be here". Funny: The pauses are the joke: nobody answers. "Cool, cool" is someone who is not cool about it.
-- **`hold-dark`** (The bag). Flat, aimed at whoever left her there. The lowest pitch she has in the film. Pace: Slow, three even words. Pause: It comes after its own silence: nearly half a second after "I'll just be here", as an afterthought. Funny: The afterthought that is the whole complaint. Underplay it.
-- **`carousel-whee`** (The bag). Pure delight, a child on a fairground ride; all the dignity of the earlier scenes gone. Pace: "Wheeee" long and rising through the bend; the two "Again"s fast, the second higher. Pause: A breath after "Wheeee!" as she comes round; almost none between the "Again"s. Funny: The one thing in the whole trip she likes is the one part everybody else hates.
-- **`carousel-stranger`** (Stranger). Delighted and a little envious: a stranger who wants one. The only line in the film that sells the product, so it must sound unprompted. Pace: Quick, rising, stress on "GET". Pause: None inside the line; it comes two seconds after the bag stops, once the stranger has worked out what spoke. Funny: It is not a joke: it is the audience's own question, said out loud.
-- **`button-souvenirs`** (The bag). Reading the display in disbelief, then a prepared defence, indignant. Pace: The number slow, each word weighed; the defence quick, with "SOUVENIRS" hit hard. Pause: A second after "pounds?" while she thinks of an excuse; a short lift before "SOUVENIRS". Funny: She disputes the number she objected to in scene 2, and the excuse is worse than the charge.
-- **`button-host`** (Host). Resigned agreement, to nobody in particular. He has stopped fighting. Pace: Slow and level. Pause: A long beat before it: the nod comes first, then the line. Funny: He sides with the bag. The last word of the film is the host giving in.
+| IMP-01 | Hard impact | That's one. I'm keeping count. | Winded from the hit, then icy. "That's one." low and clipped, through her teeth, straight after a small grunt of impact. A half-second pause. "I'm keeping count." slow and pointed, quietly menacing, like a schoolteacher writing a name on the board. Do not shout and do not laugh; the threat is in how calm it is. | `[winded grunt] [clipped, through her teeth] That's one. [beat] [slow, quietly menacing] I'm keeping count.` |
+| IMP-02 | Hard impact | Ow. No, no. Don't get up. | "Ow." small and flat, a sore wince rather than a yelp. Then mock politeness dripping with sarcasm: "No, no." quick and airy, "Don't get up." slow and sweet, a passive-aggressive host at a dinner party. Stress on "up". Do not sound really hurt, and do not get loud. | `[flat wince] Ow. [airy, sarcastic] No, no. [sweet, passive-aggressive] Don't get up.` |
+| IMP-03 | Hard impact | Fragile was a suggestion, apparently. | Dusting herself off with weary disdain. "Fragile" drawn out with a sniff of contempt; "was a suggestion" dry; a tiny pause; "apparently." dropped flat and deadpan, as an aside. Understatement: no anger, no volume. | `[weary disdain] Fragile was a suggestion, [beat] [deadpan aside] apparently.` |
+| WGH-01 | Weigh-in | It's water weight. | Quick, defensive, a little too fast, before anyone can say anything: she has said this before. A tiny nervous laugh at the start is fine. Stress on "water". Do not sound ashamed; she is getting her excuse in first. | `[quick, defensive, a little too fast] It's water weight.` |
+| WGH-02 | Weigh-in | Don't read it out loud. | A sharp urgent whisper, as the agent leans towards the display. Stress on "Don't". Mortified and bossy at once. Do not shout; it is a stage whisper. | `[sharp urgent whisper] Don't read it out loud.` |
+| WGH-03 | Weigh-in | It's the shoes. It's always the shoes. | Blame-shifting with conviction. "It's the shoes." brisk and certain. A short beat. "It's always the shoes." slower, wise and world-weary, as a universal truth, stress on "always". Do not rush the beat between them. | `[brisk, certain] It's the shoes. [beat] [slow, world-weary] It's always the shoes.` |
+| GRB-01 | Handle grab | Oh. We're doing this now. | Caught off guard, then resigned. "Oh." a small surprised dip, like being woken. A half-second pause. "We're doing this now." flat, unimpressed, not a question, stress on "now". Do not make it a question and do not raise the volume. | `[small surprised dip] Oh. [beat] [flat, unimpressed] We're doing this now.` |
+| GRB-02 | Handle grab | Mind the handle. It's my best feature. | Vain and fussy. "Mind the handle." a quick sharp instruction. "It's my best feature." softer, preening, a little breathy and pleased with herself, stress on "best". Do not overdo it into a sultry voice. | `[quick, sharp] Mind the handle. [preening, pleased with herself] It's my best feature.` |
+| GRB-03 | Handle grab | Lift with your knees. I've let myself go. | "Lift with your knees." brisk safety advice, matter-of-fact. A tiny pause, then "I've let myself go." a rueful, self-pitying confession, a small sigh in it, stress on "go". Do not play it sad; it is a cheerful admission. | `[brisk, matter-of-fact] Lift with your knees. [rueful sigh] I've let myself go.` |
+| FAL-01 | Free-fall | I can fly! ...I cannot fly. | "I can fly!" a burst of wild joy, high and rising, airborne. A sudden stop, about half a second of realisation. "...I cannot fly." flat, small and doomed, the pitch dropped right down. The turn is the joke: make the contrast as big as possible. No real scream, no cry for help. | `[wild joy, rising] I can fly! [sudden stop, realising] [flat, doomed] ...I cannot fly.` |
+| FAL-02 | Free-fall | Wheee— no. No. Regret. | Starts as the carousel's delighted "Wheee", cut off sharply as she realises. "no. No." quick, the second firmer. A beat. "Regret." one word, deadpan and grave. Do not let the wheee finish; it is interrupted. | `[delighted, cut off sharply] Wheee— [quick] no. [firmer] No. [beat] [deadpan, grave] Regret.` |
+| FAL-03 | Free-fall | Tell my wheels I loved them. | Melodramatic last words, a soap-opera death scene: breathy, trembling, slow, the voice catching on "loved". Played completely straight. Do not laugh, and keep it a cartoon farewell, not real distress. | `[melodramatic, breathy, trembling] Tell my wheels I [voice catching] loved them.` |
+| CAR-01 | Carousel | I'm the black one. No, the other black one. | Waving at her owner across the hall. "I'm the black one." bright, helpful, raised. Quick beat. "No, the other black one." quicker, exasperated, stress on "other". Do not slow down; it is a hurried correction. | `[bright, calling across the hall] I'm the black one. [quick, exasperated] No, the other black one.` |
+| CAR-02 | Carousel | Third lap. I live here now. | Dizzy resignation. "Third lap." flat, a sigh in front of it. A beat. "I live here now." deadpan acceptance, almost content, stress on "live". Quiet. Do not sound upset. | `[sigh] [flat] Third lap. [beat] [deadpan acceptance] I live here now.` |
+| CAR-03 | Carousel | Pick me! Pick me! Play it cool. Pick me. | "Pick me! Pick me!" eager, bouncing, fast and high, the second higher. A sudden stop, and "Play it cool." a hushed note to herself. Then "Pick me." low, slow, trying to be smooth and failing, a little desperate. The switch is the joke. | `[eager, bouncing] Pick me! Pick me! [sudden hush, to herself] Play it cool. [low, trying to be smooth] Pick me.` |
+| CNV-01 | Conveyor | I've seen parts of this airport you never will. | Smug and mysterious, bragging like a seasoned traveller, slow and knowing, a little conspiratorial. Stress on "never". Not threatening: smug. | `[smug, knowing, conspiratorial] I've seen parts of this airport you never will.` |
+| CNV-02 | Conveyor | No, no. You walk. I'll take the belt. | Mock generosity. "No, no." sweetly insistent. "You walk." magnanimous. "I'll take the belt." a martyr's sigh in it, stress on "I'll". Light, sarcastic, not angry. | `[sweetly insistent] No, no. You walk. [martyr's sigh] I'll take the belt.` |
+| CNV-03 | Conveyor | Are we there yet? | A bored child in the back seat: whiny, drawn out, sing-song, the "yet" stretched and rising. Not loud. | `[bored, whiny, sing-song] Are we there yet?` |
+| INV-01 | Upside down | Wheels up. Not like that. | "Wheels up." bright, like a pilot. A beat as she realises she is upside down. "Not like that." flat, disgruntled, stress on "that". The deflation is the joke. | `[bright, like a pilot] Wheels up. [beat] [flat, disgruntled] Not like that.` |
+| INV-02 | Upside down | This side up. It says so. Right there. | Mounting indignation, each sentence more pointed than the last, as if jabbing a finger at the label. "This side up." clipped. "It says so." sharper. "Right there." slow and emphatic, a word at a time. Not shouting. | `[clipped] This side up. [sharper] It says so. [slow, emphatic] Right there.` |
+| INV-03 | Upside down | The shampoo was not ready for this. | Quiet dread, a horror-film whisper about a domestic disaster, slow, stress on "not". Played as tragedy; do not wink. | `[quiet dread, slow] The shampoo was not ready for this.` |
+| DRK-01 | Dark hold | I love the dark. Very slimming. | Quiet and close (recorded soft). "I love the dark." a contented murmur. A beat. "Very slimming." a smug, self-satisfied whisper, stress on "slimming". The callback to the scale: vanity in the hold. | `[contented murmur] I love the dark. [beat] [smug whisper] Very slimming.` |
+| DRK-02 | Dark hold | The golf bag snores. | A whispered complaint to a neighbour, long-suffering and gossipy, quiet, a weary sigh before it. Stress on "snores". Recorded soft. | `[weary sigh] [gossipy whisper] The golf bag snores.` |
+| DRK-03 | Dark hold | I spy, with my little zipper... nothing. | A bored game in the dark, recorded soft. "I spy, with my little zipper..." sing-song, playful, slowing. A long pause, looking round. "nothing." flat and defeated. The pause is the joke. | `[sing-song, playful, slowing] I spy, with my little zipper... [long pause] [flat, defeated] nothing.` |
 
 ## 3. Casting
 
-Provider for every speaker: Kokoro (model Kokoro-82M v1.0, run locally with kokoro-onnx 0.6.1 for the seeded clips). The same voice ids work on a Kokoro server set up in Admin, Voice; Admin, Voice-overs can change any of them, or use OpenRouter, per speaker or per line.
+The seeded clips are Kokoro drafts (model Kokoro-82M v1.0, run locally with kokoro-onnx 0.6.1). Kokoro has no emotion control, so these are timing drafts, not performances; they stay published until the owner publishes better takes.
 
-| Speaker | Provider | Model | Voice id | Speed | Text shaping (subtitle unchanged) | Why |
-| --- | --- | --- | --- | --- | --- | --- |
-| The bag | Kokoro | Kokoro-82M v1.0 | `af_heart` | 1.0 (per phrase 0.85 to 1.3) | Each line built phrase by phrase at the subtitle's timing; ellipses and dashes for pauses; "FAT" sent lower-case (capitals are spelled out); "Ow" and "Whee" sent as checked phonemes or plain spellings, because stretched spellings are read as two syllables | Widest pitch movement of the five voices tried (af_bella, af_heart, bf_emma, af_aoede, af_nicole): 8.6 semitones on average; every phrase has a take both recognisers heard right |
-| Agent | Kokoro | Kokoro-82M v1.0 | `af_sarah` | 1.1 | none | Level and businesslike, a touch fast |
-| Host | Kokoro | Kokoro-82M v1.0 | `am_michael` | 0.95 | a trailing ellipsis on "Take it up with her" | Low, tired; slowed for the resigned lines |
-| Stranger | Kokoro | Kokoro-82M v1.0 | `am_puck` | 1.0 | "GET" in capitals for stress (read as a word) | Bright and quick, sounds unprompted |
-| Narrator | Kokoro | Kokoro-82M v1.0 | `bm_george` | 1.0 | commas for breath; "And it is... NOT happy" | Grave British documentary voice |
+| Speaker | Seeded voice (Kokoro) | Speed | Why |
+| --- | --- | --- | --- |
+| The bag | `af_heart` | 1.0 | Widest pitch movement of the five voices tried (af_bella, af_heart, bf_emma, af_aoede, af_nicole): 8.6 semitones on average |
+| Agent | `af_sarah` | 1.1 | Level and businesslike, a touch fast |
+| Host | `am_michael` | 0.95 | Low, tired |
+| Stranger | `am_puck` | 1.0 | Bright and quick |
+| Narrator | `bm_george` | 1.0 | Grave British documentary voice |
 
-Alternatives tried and kept in the take folder: agent af_kore, bf_alice; host am_adam, am_eric; stranger af_jessica, af_nova; narrator bm_fable, am_onyx.
+For the performances, Admin, Voice-overs picks a model and voice per speaker (or per take) from the configured service's live list: on OpenRouter, an expressive model such as Fish Audio S2.1 Pro, OpenAI's gpt-4o-mini-tts-2025-12-15, Microsoft MAI-Voice-2 or Google Gemini Flash TTS, whichever the list offers. OpenAI has announced the mini TTS model's shutdown on 6 January 2027, so it must not be the only voice of the film.
+
+### 3a. How a direction reaches each kind of model
+
+Decided per model from its supported parameters (OpenRouter's `GET /audio/speech/models`, read at run time) by `src/lib/voice/direction.ts`; the administrator may override it per take, except that a model known to read brackets aloud always gets none.
+
+| Kind of model | Text sent | Direction sent |
+| --- | --- | --- |
+| Reads bracket cues (Fish Audio S2) | the bracket-cue line | in the line, as the cues |
+| Lists `instructions` | the subtitle as written | top-level `instructions` (the speaker's note, then the cue's direction) |
+| OpenAI model, parameters not listed | the subtitle as written | `provider.options.openai.instructions` |
+| Kokoro | the subtitle, capitals as plain words | none: it takes none and would read brackets aloud |
+| Anything else | the bracket-cue line | in the line; listen for a cue being read aloud and switch to none if it is |
+
+None of this has been tried against the real OpenRouter models: the build machine cannot reach openrouter.ai. It is built to OpenRouter's documentation as read on 22 November 2026 and tested against a stand-in.
+
+### 3b. A local expressive model (22 Nov attempt)
+
+Chatterbox (Resemble AI, MIT, with an exaggeration control) was tried as an open model that could run on the build machine. Its code is reachable (PyPI), but its weights are published only on Hugging Face, which this machine cannot reach (the proxy refuses the connection; mirrors too), and no GitHub release carries them. The machine also has about 3 GB of free disk, less than the model and PyTorch need. No clip was made.
 
 ## 4. The clips
 

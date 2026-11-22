@@ -4,6 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SCENES, cueName, sceneOf } from "@/components/welcome/scenes/scenes";
 import { INTRO, INTRO_CUE, VOICE_CUES, cueOf, introLineAt } from "@/components/welcome/scenes/voiceScript";
+import { CUE_DIRECTIONS } from "@/components/welcome/scenes/voiceDirections";
+import { stripTags, tagProblem } from "@/lib/voice/direction";
 import { VoiceTrack, heldQueue, preloadList, startOffset, type VoiceManifest } from "@/components/welcome/scenes/voiceTrack";
 
 class FakePlayer {
@@ -54,19 +56,23 @@ beforeEach(() => {
 });
 
 describe("the cues of the film", () => {
-  it("are the introduction and every subtitled line, word for word, each with a direction", () => {
+  it("are the introduction and every subtitled line, word for word, each with a direction and bracket cues that leave the words alone", () => {
     const lines = SCENES.flatMap((s) => s.lines.map((l) => ({ key: cueName(s, l), who: l.who, text: l.parts.map((p) => p.text).join("") })));
     expect(VOICE_CUES.map((c) => c.key)).toEqual([INTRO_CUE, ...lines.map((l) => l.key)]);
     for (const l of lines) {
       const cue = cueOf(l.key)!;
       expect(cue.text).toBe(l.text);
       expect(cue.who).toBe(l.who);
-      for (const part of Object.values(cue.direction)) expect(part.length).toBeGreaterThan(10);
-      // what is sent to the voice is the same words: only case, punctuation, spacing and the length of a held
-      // letter may differ ("Wheeee" is sent as "Whee", which the voice reads as one syllable)
-      const words = (s: string) => s.toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/([a-z])\1{2,}/g, "$1$1").trim().split(/\s+/).join(" ");
-      expect(words(cue.say), l.key).toBe(words(cue.text));
       expect(cue.window).toBeGreaterThan(1);
+    }
+    for (const cue of VOICE_CUES) {
+      const d = CUE_DIRECTIONS[cue.key]!;
+      expect(d.direction.length, cue.key).toBeGreaterThan(200);
+      // every direction says what must not happen
+      expect(d.direction, cue.key).toMatch(/\bDo not\b/);
+      expect(stripTags(d.inlineTags), cue.key).toBe(cue.text.replace(/\s+/g, " ").trim());
+      expect(tagProblem(d.inlineTags), cue.key).toBeNull();
+      expect(d.inlineTags, cue.key).toMatch(/\[[^\]]+\]/);
     }
     expect(new Set(VOICE_CUES.map((c) => c.key)).size).toBe(VOICE_CUES.length);
   });

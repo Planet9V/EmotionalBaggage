@@ -17,7 +17,13 @@ import { voiceSettings, type VoiceSettings } from "@/lib/admin/schemas";
 /** One spoken piece: the bytes and their content type (audio/mpeg, audio/wav, ...). */
 type SpeechAudio = { audio: Uint8Array; contentType: string };
 
-export type SpeechSynthesizer = { synthesize(text: string, opts?: { timeoutMs?: number }): Promise<SpeechAudio> };
+/**
+ * How one piece is to be spoken. `instructions` is a performance direction: sent as the request's top-level
+ * `instructions` (via "instructions") or as provider.options.openai.instructions (via "provider-options"), and never
+ * added to the text. A Kokoro server is sent neither. `speed` is sent only when given.
+ */
+type SpeakOptions = { timeoutMs?: number; instructions?: string; via?: "instructions" | "provider-options"; speed?: number };
+export type SpeechSynthesizer = { synthesize(text: string, opts?: SpeakOptions): Promise<SpeechAudio> };
 
 /** The longest text one call may send; narration is cut into pieces by the caller. */
 const MAX_SPEECH_CHARS = 4000;
@@ -128,7 +134,7 @@ async function post(url: string, headers: Record<string, string>, body: unknown,
  * narration, and the OpenRouter key, elsewhere. The key is the credential openrouter.apiKey, only ever sent to the host
  * it was saved for (src/lib/secretOrigin.ts), so a key saved for another address is refused here.
  */
-async function openRouterTarget(): Promise<{ base: string; key: string } | { reason: string }> {
+export async function openRouterTarget(): Promise<{ base: string; key: string } | { reason: string }> {
   const base = openRouterVoiceBase().replace(/\/+$/, "");
   const k = await secretFor("openrouter", "apiKey", base);
   if (k.refused) return { reason: boundElsewhere("OpenRouter", k.boundTo, base) };
@@ -140,6 +146,16 @@ const checkText = (text: string) => {
   if (!text.trim()) throw new SpeechError("There is no text to speak.");
   if (text.length > MAX_SPEECH_CHARS) throw new SpeechError(`One piece of narration may be at most ${MAX_SPEECH_CHARS} characters.`);
 };
+
+/** The body of OpenRouter's POST /audio/speech: the direction, when there is one, goes beside the text. */
+function openRouterBody(model: string, voice: string, input: string, opts: SpeakOptions = {}): Record<string, unknown> {
+  const body: Record<string, unknown> = { model, input, voice, response_format: "mp3" };
+  if (opts.speed !== undefined) body.speed = opts.speed;
+  const instructions = opts.instructions?.trim();
+  if (instructions && opts.via === "provider-options") body.provider = { options: { openai: { instructions } } };
+  else if (instructions) body.instructions = instructions;
+  return body;
+}
 
 /** A model, voice or speed to use in place of the saved one, for one piece (a film cue has its own speaker). */
 export type SpeechChoice = { model?: string; voice?: string; speed?: number };
@@ -165,7 +181,7 @@ export async function getSpeechSynthesizer(choice: SpeechChoice = {}): Promise<{
       synth: {
         async synthesize(text, opts = {}) {
           checkText(text);
-          return post(`${t.base}/audio/speech`, { authorization: `Bearer ${t.key}` }, { model: s.model, input: text, voice: s.voice, response_format: "mp3" }, opts.timeoutMs ?? 30_000, "OpenRouter");
+          return post(`${t.base}/audio/speech`, { authorization: `Bearer ${t.key}` }, openRouterBody(s.model, s.voice, text, opts), opts.timeoutMs ?? 30_000, "OpenRouter");
         },
       },
     };
@@ -197,7 +213,7 @@ const MAX_ITEMS = 500;
 const FREE = "Type the name instead.";
 
 /** GET JSON from a speech service. Fixed sentences on failure; the remote body is never repeated. */
-async function getJson(url: string, key: string | null, who: string, what: string, ms: number): Promise<{ ok: true; json: unknown } | { ok: false; reason: string }> {
+export async function getJson(url: string, key: string | null, who: string, what: string, ms: number): Promise<{ ok: true; json: unknown } | { ok: false; reason: string }> {
   let res: Response;
   try {
     res = await safeFetch(url, { headers: key ? { authorization: `Bearer ${key}` } : {}, redirect: "manual", signal: AbortSignal.timeout(ms) });
@@ -221,7 +237,7 @@ async function getJson(url: string, key: string | null, who: string, what: strin
 }
 
 /** Plain names only (a string, or an object's id or name); anything else is dropped. */
-function namesOf(list: unknown[]): string[] {
+export function namesOf(list: unknown[]): string[] {
   const names = list
     .map((x) => (typeof x === "string" ? x : x && typeof x === "object" ? ((x as { id?: unknown; name?: unknown }).id ?? (x as { name?: unknown }).name) : null))
     .filter((x): x is string => typeof x === "string" && /^[\w.:@/+-]{1,100}$/.test(x));
@@ -229,7 +245,7 @@ function namesOf(list: unknown[]): string[] {
 }
 
 /** Where a Kokoro list comes from: the address given (the form, before saving) or the saved one, with the key only for its own host. */
-async function kokoroTarget(baseUrl?: string): Promise<{ base: string; key: string | null } | { reason: string }> {
+export async function kokoroTarget(baseUrl?: string): Promise<{ base: string; key: string | null } | { reason: string }> {
   const saved = await readVoiceSettings();
   const base = baseUrl ?? (saved.provider === "kokoro" ? saved.baseUrl : null);
   if (!base) return { reason: "Enter the Kokoro server's address first." };

@@ -6,26 +6,21 @@
 // trusted for that, because any signed-in account can upload a file of any kind to a concept; the public route
 // serves a file only when this row names it and its sha256 is the one recorded at publication.
 //
-// A take is a clip the administrator has generated and not yet accepted: stored the same way, named under `takes`,
-// never served to the public. Accepting it publishes it and keeps the clip it replaces as an earlier version.
+// A take is a clip the administrator has generated and not yet published: stored the same way, listed under `takes`
+// (several per cue, so they can be heard side by side; one may be starred), never served to the public. Publishing
+// one keeps the clip it replaces as an earlier version. Each take records how it was directed: the text sent, the
+// direction and how the direction reached the model (./direction.ts), and its length and loudness.
 import type { PoolClient } from "pg";
 import { z } from "zod";
-import { auditIn, q, tx } from "@/lib/db";
+import { q } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
-import { sha256 } from "@/lib/hash";
 import { SEED_PROJECT } from "@/lib/seed";
-import { HttpError } from "@/lib/api/route";
-import { VOICE_CUES, cueOf, type Speaker } from "@/components/welcome/scenes/voiceScript";
+import { VOICE_CUES, cueOf } from "@/components/welcome/scenes/voiceScript";
 import type { VoiceManifest } from "@/components/welcome/scenes/voiceTrack";
-import { decodeAudio, AudioDecodeError } from "./decode";
-import { encodeEnvelope, envelopeOf } from "./envelope";
-import { getSpeechSynthesizer, SpeechError } from "./speech";
 
 export const VOICEOVERS_KEY = "voice.overs";
-const VOICEOVER_KIND = "voiceover";
+export const VOICEOVER_KIND = "voiceover";
 const VOICEOVER_FOLDER = "Voice-overs";
-/** The longest clip kept: the introduction is about twenty seconds; anything much longer is not a cue of this film. */
-const MAX_SECONDS = 45;
 const MAX_VERSIONS = 20;
 
 const name = z.string().max(200);
@@ -40,8 +35,18 @@ const clipSchema = z.object({
   speaker: z.string().max(40),
   /** the words as subtitled */
   text: z.string().max(4000),
-  /** the words as sent to the voice (punctuation and spelling shaped for delivery) */
+  /** the text the model was asked to speak: the subtitle, with bracket cues for a model that reads them */
   say: z.string().max(4000),
+  /** the performance direction sent beside the text, when the model takes one */
+  direction: z.string().max(8000).optional(),
+  /** how the direction reached the model */
+  via: z.enum(["inline", "instructions", "provider-options", "none"]).optional(),
+  /** integrated loudness (LUFS) and sample peak (dBFS) of the decoded take, for comparison */
+  lufs: z.number().nullable().optional(),
+  peak: z.number().nullable().optional(),
+  /** a take's id within its cue, and whether the administrator starred it */
+  id: z.string().regex(/^[a-z0-9]{4,40}$/).optional(),
+  starred: z.boolean().optional(),
   provider: name,
   model: name,
   voice: name,
@@ -53,21 +58,33 @@ const clipSchema = z.object({
 });
 export type VoiceClip = z.infer<typeof clipSchema>;
 const versionSchema = z.object({ fileId: z.number(), sha256: z.string(), voice: name, replacedAt: z.string(), replacedBy: name });
-const castSchema = z.object({ model: name, voice: name, speed: z.number().min(0.25).max(4) });
+const castSchema = z.object({
+  model: name,
+  voice: name,
+  speed: z.number().min(0.25).max(4),
+  /** the character note put in front of every direction of this speaker; absent: the script's (SPEAKER_NOTE) */
+  prefix: z.string().max(4000).optional(),
+});
 export type CastChoice = z.infer<typeof castSchema>;
 const docSchema = z.object({
   clips: z.record(z.string(), clipSchema).default({}),
-  takes: z.record(z.string(), clipSchema).default({}),
+  /** a cue's takes, oldest first; a document from before several takes holds one take, read as a list of one */
+  takes: z.record(z.string(), z.preprocess((v) => (Array.isArray(v) ? v : v ? [v] : []), z.array(clipSchema))).default({}),
   versions: z.record(z.string(), z.array(versionSchema)).default({}),
   /** the administrator's choice of model, voice and speed per speaker, used when a cue names none */
   cast: z.record(z.string(), castSchema).default({}),
+  /** the administrator's own direction of a cue, replacing the script's (voiceDirections.ts) */
+  directions: z.record(z.string(), z.object({ direction: z.string().max(8000), inlineTags: z.string().max(4000), at: z.string().max(40), by: name })).default({}),
 });
 export type VoiceoverDoc = z.infer<typeof docSchema>;
-const EMPTY: VoiceoverDoc = { clips: {}, takes: {}, versions: {}, cast: {} };
+const EMPTY: VoiceoverDoc = { clips: {}, takes: {}, versions: {}, cast: {}, directions: {} };
 
 const parse = (raw: unknown): VoiceoverDoc => {
   const r = docSchema.safeParse(raw ?? {});
-  return r.success ? r.data : { ...EMPTY };
+  if (!r.success) return structuredClone(EMPTY);
+  // a take kept from before takes had ids is named by its sha256
+  for (const list of Object.values(r.data.takes)) for (const t of list) t.id ??= t.sha256.slice(0, 16);
+  return r.data;
 };
 
 /** The saved document. A missing or unreadable row is the empty one. */
@@ -107,7 +124,7 @@ export function publish(doc: VoiceoverDoc, cue: string, clip: VoiceClip): void {
 // --- The public page ---------------------------------------------------------------------------------------
 
 /** The address of a published clip: its sha256 is in it, so the answer can be kept by browsers for good. */
-const clipUrl = (cue: string, c: VoiceClip) => `/api/voiceovers/${cue}?v=${c.sha256.slice(0, 16)}`;
+export const clipUrl = (cue: string, c: VoiceClip) => `/api/voiceovers/${cue}?v=${c.sha256.slice(0, 16)}`;
 
 const PUBLIC_MS = 60_000;
 let cached: { at: number; value: VoiceManifest } | null = null;
@@ -141,148 +158,9 @@ export async function publishedAudio(cue: string): Promise<{ bytes: Buffer; mime
   return audioOf(clip);
 }
 
-async function audioOf(clip: VoiceClip) {
+export async function audioOf(clip: VoiceClip) {
   const rows = await q<{ bytes: Buffer; sha256: string }>("SELECT bytes, sha256 FROM files WHERE id=$1 AND project_id=$2 AND kind=$3", [clip.fileId, SEED_PROJECT.id, VOICEOVER_KIND]);
   const f = rows[0];
   if (!f || f.sha256 !== clip.sha256) return null;
   return { bytes: f.bytes, mime: clip.mime, sha256: clip.sha256 };
-}
-
-// --- The administrator's tool ------------------------------------------------------------------------------
-
-/** The unaccepted take of a cue, for the administrator's preview. */
-export async function takeAudio(cue: string) {
-  const take = (await readVoiceovers()).takes[cue];
-  return take ? audioOf(take) : null;
-}
-
-const summaryOf = (c: VoiceClip | undefined) => (c ? { fileId: c.fileId, sha256: c.sha256, voice: c.voice, model: c.model, speed: c.speed, seconds: c.seconds, say: c.say } : null);
-
-export type VoiceoverRow = {
-  cue: string;
-  speaker: Speaker;
-  text: string;
-  say: string;
-  /** the time the subtitle gives the line, in seconds; null for the introduction */
-  window: number | null;
-  clip: (Pick<VoiceClip, "seconds" | "voice" | "model" | "speed" | "say" | "at" | "by" | "provider"> & { url: string; seeded: boolean }) | null;
-  take: (Pick<VoiceClip, "seconds" | "voice" | "model" | "speed" | "say" | "at"> & { url: string }) | null;
-  versions: number;
-};
-
-/** Every cue with its published clip and its take, for Admin, Voice-overs. */
-export async function listVoiceovers(): Promise<{ rows: VoiceoverRow[]; cast: Record<string, CastChoice> }> {
-  const doc = await readVoiceovers();
-  const rows = VOICE_CUES.map((cue): VoiceoverRow => {
-    const c = doc.clips[cue.key];
-    const t = doc.takes[cue.key];
-    return {
-      cue: cue.key,
-      speaker: cue.who,
-      text: cue.text,
-      say: cue.say,
-      window: cue.window,
-      clip: c ? { seconds: c.seconds, voice: c.voice, model: c.model, speed: c.speed, say: c.say, at: c.at, by: c.by, provider: c.provider, url: clipUrl(cue.key, c), seeded: !!c.seed } : null,
-      take: t ? { seconds: t.seconds, voice: t.voice, model: t.model, speed: t.speed, say: t.say, at: t.at, url: `/api/admin/voiceovers/take/${cue.key}?v=${t.sha256.slice(0, 16)}` } : null,
-      versions: doc.versions[cue.key]?.length ?? 0,
-    };
-  });
-  return { rows, cast: doc.cast };
-}
-
-const NOT_CONFIGURED = "Voice is not configured. Set it in Admin, Voice.";
-
-export type TakeRequest = { cue: string; say?: string; model?: string; voice?: string; speed?: number; actor: string };
-
-/**
- * Generates one take of a cue with the configured voice service and stores it, unpublished. The model, voice and
- * speed are the ones asked for, else the administrator's choice for the cue's speaker, else the saved Voice settings.
- * The clip is measured here (length and loudness envelope) from its decoded samples.
- */
-export async function generateTake(r: TakeRequest): Promise<VoiceClip> {
-  const cue = cueOf(r.cue);
-  if (!cue) throw new HttpError(404, "That cue is not in the film.");
-  const cast = (await readVoiceovers()).cast[cue.who];
-  const choice = { model: r.model ?? cast?.model, voice: r.voice ?? cast?.voice, speed: r.speed ?? cast?.speed };
-  const s = await getSpeechSynthesizer(choice);
-  if (!s.configured) throw new HttpError(409, s.reason === "" ? NOT_CONFIGURED : `${NOT_CONFIGURED} ${s.reason}`);
-  const say = (r.say ?? cue.say).trim();
-  let bytes: Uint8Array;
-  let measured: Awaited<ReturnType<typeof decodeAudio>>;
-  try {
-    bytes = (await s.synth.synthesize(say, { timeoutMs: 60_000 })).audio;
-    measured = await decodeAudio(bytes);
-  } catch (e) {
-    if (e instanceof SpeechError || e instanceof AudioDecodeError) throw new HttpError(502, e.message);
-    throw e;
-  }
-  if (measured.seconds > MAX_SECONDS) throw new HttpError(502, `The voice service answered ${Math.round(measured.seconds)} seconds of audio; a clip may be at most ${MAX_SECONDS}.`);
-  const clip: Omit<VoiceClip, "fileId"> = {
-    sha256: sha256(bytes),
-    mime: measured.mime,
-    size: bytes.length,
-    seconds: Math.round(measured.seconds * 1000) / 1000,
-    envelope: encodeEnvelope(envelopeOf(measured.samples, measured.sampleRate)),
-    speaker: cue.who,
-    text: cue.text,
-    say,
-    provider: s.settings.provider,
-    model: s.settings.model,
-    voice: s.settings.voice,
-    speed: "speed" in s.settings ? s.settings.speed : 1,
-    at: new Date().toISOString(),
-    by: r.actor,
-  };
-  return tx(async (c) => {
-    const doc = await lockVoiceovers(c);
-    const old = doc.takes[cue.key];
-    if (old) await c.query("DELETE FROM files WHERE id=$1 AND kind=$2", [old.fileId, VOICEOVER_KIND]);
-    const stored: VoiceClip = { ...clip, fileId: await storeVoiceFile(c, cue.key, bytes, clip, "take") };
-    doc.takes[cue.key] = stored;
-    await writeVoiceovers(c, doc);
-    await auditIn(c, { action: "voiceover.take", summary: `Voice-over take generated for ${cue.key} (${stored.voice}, ${stored.seconds} s)`, detail: { cue: cue.key, before: summaryOf(old), after: summaryOf(stored) } });
-    return stored;
-  });
-}
-
-/** Publishes the take of a cue: the public page plays it from now on; the clip it replaces is kept as a version. */
-export async function acceptTake(cueKey: string): Promise<VoiceClip> {
-  return tx(async (c) => {
-    const doc = await lockVoiceovers(c);
-    const take = doc.takes[cueKey];
-    if (!take || !cueOf(cueKey)) throw new HttpError(404, "There is no take of that cue to accept.");
-    const before = doc.clips[cueKey];
-    publish(doc, cueKey, take);
-    delete doc.takes[cueKey];
-    await c.query("UPDATE files SET meta = meta || '{\"state\":\"published\"}'::jsonb WHERE id=$1 AND kind=$2", [take.fileId, VOICEOVER_KIND]);
-    if (before) await c.query("UPDATE files SET meta = meta || '{\"state\":\"version\"}'::jsonb WHERE id=$1 AND kind=$2", [before.fileId, VOICEOVER_KIND]);
-    await writeVoiceovers(c, doc);
-    await auditIn(c, { action: "voiceover.published", summary: `Voice-over published for ${cueKey} (${take.voice}, ${take.seconds} s)${before ? "; the earlier clip is kept as a version" : ""}`, detail: { cue: cueKey, before: summaryOf(before), after: summaryOf(take) } });
-    return take;
-  });
-}
-
-/** Throws the take of a cue away; the published clip is untouched. */
-export async function discardTake(cueKey: string): Promise<boolean> {
-  return tx(async (c) => {
-    const doc = await lockVoiceovers(c);
-    const take = doc.takes[cueKey];
-    if (!take) return false;
-    delete doc.takes[cueKey];
-    await c.query("DELETE FROM files WHERE id=$1 AND kind=$2", [take.fileId, VOICEOVER_KIND]);
-    await writeVoiceovers(c, doc);
-    await auditIn(c, { action: "voiceover.discarded", summary: `Voice-over take discarded for ${cueKey}`, detail: { cue: cueKey, before: summaryOf(take), after: null } });
-    return true;
-  });
-}
-
-/** Saves the model, voice and speed used for one speaker's cues from now on. */
-export async function saveCast(speaker: Speaker, choice: CastChoice): Promise<void> {
-  await tx(async (c) => {
-    const doc = await lockVoiceovers(c);
-    const before = doc.cast[speaker] ?? null;
-    doc.cast[speaker] = choice;
-    await writeVoiceovers(c, doc);
-    await auditIn(c, { action: "voiceover.cast", summary: `Voice chosen for the ${speaker}: ${choice.voice} (${choice.model}, speed ${choice.speed})`, detail: { speaker, before, after: choice } });
-  });
 }
