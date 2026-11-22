@@ -146,7 +146,6 @@ export const ORIGIN = {
 };
 
 export const lineText = (l: Line) => l.parts.map((p) => p.text).join("");
-const DEFAULT_MS = 42;
 
 /** How much of a line has been said at `t`. */
 export function saidAt(l: Line, t: number): string {
@@ -164,13 +163,4 @@ export function lineAt(scene: Scene, t: number): Line | null {
   let found: Line | null = null;
   for (const l of scene.lines) if (t >= l.parts[0]!.at) found = l;
   return found;
-}
-
-/** True while the bag is in the middle of saying something (the speaker grille pulses). */
-export function bagSpeaking(scene: Scene, t: number): boolean {
-  for (const l of scene.lines) {
-    if (l.who !== "bag") continue;
-    for (const p of l.parts) if (t >= p.at && t < p.at + p.text.length * (p.ms ?? DEFAULT_MS) + 180) return true;
-  }
-  return false;
 }

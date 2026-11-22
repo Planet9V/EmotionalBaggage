@@ -8,8 +8,8 @@
 import * as THREE from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { bagSpeaking, sceneOf } from "../scenes";
-import { voiceOf } from "../speech";
+import { sceneOf } from "../scenes";
+import { bagVoice, voiceOf } from "../speech";
 import { E, bump, clamp01, kf, mix } from "./ease";
 import { walks, type Walk } from "./gait";
 import { A, BAG_MID, BAG_TOP, Bag, Built, C, Contact, HANDLE_Y, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
@@ -545,7 +545,7 @@ function ScaleSet({ button }: { button: boolean }) {
         }
       />
       <Contact at={(t) => ({ p: [bag(t).p[0], PLATE, BAG_Z], w: 0.82, d: 0.55, o: 0.5 * clamp01(1 - (bag(t).p[1] - PLATE) * 3) })} />
-      <Bag pose={bag} speaking={(t) => bagSpeaking(scene, t)}>
+      <Bag pose={bag} voice={(t) => bagVoice(scene, t)}>
         {button ? <Souvenirs /> : <Strain />}
       </Bag>
       {button ? null : <Huff top={(t) => [bag(t).p[0] - 0.06 * Math.max(0, kf(t, [[7480, 0], [8150, 1]])), PLATE + BAG_TOP, BAG_Z]} />}

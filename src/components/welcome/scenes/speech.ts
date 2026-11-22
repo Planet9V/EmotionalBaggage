@@ -80,3 +80,31 @@ export function voiceOf(scene: Scene, who: Who, t: number): number {
   for (const l of scene.lines) if (l.who === who) v = Math.max(v, speechLevel(l, t));
   return v;
 }
+
+const ATTACK = 150;
+const RELEASE = 350;
+/**
+ * Whether `who` is in the middle of saying something at `t`, as a smooth 0 to 1: it rises just before each part of a
+ * line, holds while the part is typed, and falls away after it, so a short pause inside a line keeps it up.
+ */
+export function presence(scene: Scene, who: Who, t: number): number {
+  let v = 0;
+  for (const l of scene.lines) {
+    if (l.who !== who) continue;
+    for (const p of l.parts) {
+      const a = p.at;
+      const b = p.at + p.text.length * msOf(l, p.ms);
+      let e = 0;
+      if (t >= a && t <= b) e = 1;
+      else if (t < a && t > a - ATTACK) e = 1 - (a - t) / ATTACK;
+      else if (t > b && t < b + RELEASE) e = 1 - (t - b) / RELEASE;
+      v = Math.max(v, e * e * (3 - 2 * e));
+    }
+  }
+  return v;
+}
+
+/** The bag's voice at `t`: how loud it is this instant, and how present (for the lamp and the lean). */
+export function bagVoice(scene: Scene, t: number): { level: number; on: number } {
+  return { level: voiceOf(scene, "bag", t), on: presence(scene, "bag", t) };
+}
