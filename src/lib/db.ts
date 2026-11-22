@@ -145,7 +145,7 @@ async function sourceChunkVectors(db: Pool) {
 export function ready() {
   if (!g.__c2rReady) {
     g.__c2rReady = (async () => {
-      // The new sign-in's settings, checked before anything else when it is on (src/lib/auth2/config.ts).
+      // The new sign-in's settings module (src/lib/auth2/config.ts); its checks run after the migrations, below.
       const auth2 = await import("./auth2/config");
       await migrate();
       // After the migrations, so the stored switch can be read (review N13); the override counts as well.

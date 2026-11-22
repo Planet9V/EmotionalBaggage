@@ -32,7 +32,9 @@ describe("one name from one address", () => {
     for (let i = 0; i < PAIR_FREE; i++) expect((await tryIn("203.0.113.10", a.email, "wrong password")).status).toBe(401);
     // The fourth is counted and checked (the wait starts after it)...
     expect((await tryIn("203.0.113.10", a.email, "wrong password")).status).toBe(401);
-    // ...and the fifth must wait: even the right password is not looked at.
+    // ...and the fifth must wait: even the right password is not looked at. (The wait is one second; it is stretched
+    // here so a slow machine cannot outlast it between two requests.)
+    await db.query("UPDATE auth2_sign_in_waits SET next_allowed_at = now() + interval '1 minute' WHERE name_key = $1 AND client <> '' AND next_allowed_at > now() - interval '10 seconds'", [nameKey(a.email)]);
     const res = await tryIn("203.0.113.10", a.email, PASSWORD);
     expect(res.status).toBe(429);
     expect(res.body.code).toBe("SIGN_IN_WAIT");

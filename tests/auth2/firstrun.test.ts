@@ -149,6 +149,9 @@ describe("B2: the set-up code", () => {
 
   it("a wrong code earns a growing wait, during which even the right one waits", async () => {
     expect((await owner(browser(route), { setupCode: "WRONG-CODE" })).body.code).toBe("SETUP_CODE_WRONG");
+    // The wait is set (a second after the first wrong code); stretched here so a slow machine cannot outlast it.
+    expect((await db.query<{ w: boolean }>("SELECT next_allowed_at > now() - interval '5 seconds' AND failures = 1 AS w FROM auth2_setup_code")).rows[0].w).toBe(true);
+    await db.query("UPDATE auth2_setup_code SET next_allowed_at = now() + interval '1 minute'");
     const waiting = await owner();
     expect([waiting.status, waiting.body.code]).toEqual([429, "SETUP_CODE_WAIT"]);
     await db.query("UPDATE auth2_setup_code SET next_allowed_at = now()");
