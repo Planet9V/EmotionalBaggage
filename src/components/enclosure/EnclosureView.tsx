@@ -220,11 +220,14 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
         }
       >
         {errors.length ? (
-          <ul role="alert" className="mb-3 space-y-1 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
-            {errors.map((i, n) => (
-              <li key={n}>{i.message} <FixLink fix={fixFor(i, spec.parts)} /></li>
-            ))}
-          </ul>
+          // the alert wraps the list: role="alert" on the <ul> itself would replace its list role and orphan the items
+          <div role="alert">
+            <ul className="mb-3 space-y-1 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+              {errors.map((i, n) => (
+                <li key={n}>{i.message} <FixLink fix={fixFor(i, spec.parts)} /></li>
+              ))}
+            </ul>
+          </div>
         ) : null}
         {warnings.length ? (
           <ul className="mb-3 space-y-1 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">
