@@ -4,7 +4,7 @@ type: design
 created: 2026-11-22
 updated: 2026-11-22
 tags: [welcome-page, animation, three.js, characters]
-status: draft
+status: approved
 author: mixed
 ---
 
@@ -76,6 +76,10 @@ Before any work, the owner names the scenes and moments that most need it. After
 ## Scope boundaries
 
 Not in this question: the sets, the bag's own animation beyond the tag speaking, the lines, the voice recordings themselves, the rest of the welcome page.
+
+## Owner's choice, 22 November 2026
+
+Authorized, in this order: A, B, C, D, I, E, F, K, J. Not chosen: G (authored characters) and H (pre-rendered film). Everything existing is kept.
 
 ## Next step
 
