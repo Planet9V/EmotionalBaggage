@@ -31,7 +31,7 @@ import type { Pool } from "pg";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { audit } from "@/lib/db";
 import { AUTH2_BASE_PATH, AUTH2_PAGES, auth2BaseURL, auth2Secret, auth2TrustedOrigins } from "./config";
-import { logSender, type MailSender } from "./mail";
+import { mailSender, render, type MailSender } from "./mail";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { hashSessionTokens } from "./tokenHash";
@@ -102,7 +102,7 @@ const AUDITED: Record<string, [string, string]> = {
  * configuration with the plain pool (the planner cannot use the wrapped adapter).
  */
 export function auth2Options(db: Pool, opts: Auth2Options = {}) {
-  const mail = opts.mail ?? logSender;
+  const mail = opts.mail ?? mailSender();
   const baseURL = (opts.baseURL ?? auth2BaseURL()).replace(/\/+$/, "");
   const link = (path: string, token: string) => `${baseURL}${AUTH2_PAGES}${path}?token=${encodeURIComponent(token)}`;
   // Filled in by makeAuth once the instance exists; the sign-up hook needs it to create the workspace.
@@ -142,14 +142,14 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       resetPasswordTokenExpiresIn: 60 * 60,
       password: { hash: hashPassword, verify: ({ hash, password }: { hash: string; password: string }) => verifyPassword(password, hash) },
       sendResetPassword: async ({ user, token }: { user: { email: string; name: string }; token: string }) =>
-        mail.send({ kind: "reset-password", to: user.email, name: user.name, link: link("/reset/new", token) }),
+        mail.send(render({ kind: "reset-password", to: user.email, name: user.name, link: link("/reset/new", token) })),
     },
     emailVerification: {
       sendOnSignUp: true,
       autoSignInAfterVerification: false,
       expiresIn: 24 * 60 * 60,
       sendVerificationEmail: async ({ user, token }: { user: { email: string; name: string }; token: string }) =>
-        mail.send({ kind: "confirm-email", to: user.email, name: user.name, link: link("/confirm", token) }),
+        mail.send(render({ kind: "confirm-email", to: user.email, name: user.name, link: link("/confirm", token) })),
     },
     databaseHooks: {
       user: {

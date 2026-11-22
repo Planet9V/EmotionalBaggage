@@ -3,7 +3,7 @@
 // page on this site would, and an authenticator app written from RFC 6238.
 import { createHmac, randomBytes } from "node:crypto";
 import type { Pool } from "pg";
-import type { MailRequest } from "@/lib/auth2/mail";
+import type { MailMessage } from "@/lib/auth2/mail";
 
 const BASE = "http://localhost:3322";
 export const PASSWORD = "correct horse battery";
@@ -24,13 +24,16 @@ export async function useAuth2(opts: { rateLimit?: boolean } = {}) {
   return { db, auth, route };
 }
 
-export const sent: MailRequest[] = [];
+export const sent: MailMessage[] = [];
 
-/** The newest captured email of one kind to one address, and the token in its link. */
-export function lastMail(kind: MailRequest["kind"], to: string) {
-  const m = [...sent].reverse().find((x) => x.kind === kind && x.to.toLowerCase() === to.toLowerCase());
+const SUBJECT = { "confirm-email": /^Confirm your email address/, "reset-password": /^Choose a new password/ } as const;
+
+/** The newest captured email of one kind to one address, its link and the token in it. */
+export function lastMail(kind: keyof typeof SUBJECT, to: string) {
+  const m = [...sent].reverse().find((x) => SUBJECT[kind].test(x.subject) && x.to.toLowerCase() === to.toLowerCase());
   if (!m) throw new Error(`No ${kind} email was captured for ${to}.`);
-  return { ...m, token: new URL(m.link).searchParams.get("token") ?? "" };
+  const link = /https?:\/\/\S+/.exec(m.text)?.[0] ?? "";
+  return { ...m, link, token: new URL(link).searchParams.get("token") ?? "" };
 }
 
 let n = 0;
