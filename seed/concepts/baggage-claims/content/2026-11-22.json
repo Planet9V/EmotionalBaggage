@@ -854,6 +854,257 @@
    "appendBody": "Differential drive from SPK_1 / SPK_2, 8 ohm, no more than 3 W (interface IF-4); route the leads down the side wall channel."
   },
   {
+   "proposal": "P270",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Tools and materials on the bench",
+   "body": "Soldering iron and solder, flush cutters, small Phillips screwdriver, tweezers, hot glue, multimeter, USB-C cable, a PC with Arduino IDE 2.x. The design package lists \"hot glue or M2 kit\" and no tweezers, cable or PC.",
+   "data": {
+    "key": "tools"
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "header, line 6"
+  },
+  {
+   "proposal": "P284",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Threshold tuning on the bench",
+   "body": "No shake table needed. Put the unit in a duffel bag; drop onto carpet from 0.3, 0.6 and 1.0 m; play a luggage-carousel video loop for the carousel timing; log raw IMU to serial CSV. Tune IMPACT_G and STILL_VAR first: \"those two constants gate the two highest-ranked gags in the catalog\".",
+   "data": {
+    "key": "tune",
+    "after": [
+     "p4"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.4, calibration rig, page 3"
+  },
+  {
+   "proposal": "P286",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Rev A1: threshold tuning on real flights",
+   "body": "Roadmap step A1, weeks 2-4: tune the thresholds on real flights and record the 128-clip voice-over with a contracted voice actor. Exit: idle false positives under one a day; the \"suitcase test suite\" passes.",
+   "data": {
+    "key": "a1",
+    "after": [
+     "p7"
+    ]
+   },
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§11 Roadmap, A1, page 6"
+  },
+  {
+   "proposal": "P287",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Troubleshooting: boot loop",
+   "body": "Cause: battery and USB both connected. Fix: use one source only.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Troubleshooting, line 104"
+  },
+  {
+   "proposal": "P288",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Troubleshooting: no gags, but the log shows events",
+   "body": "Check the microSD format, the folder names and the file numbering.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Troubleshooting, line 105"
+  },
+  {
+   "proposal": "P289",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Troubleshooting: gags at random",
+   "body": "Cause: the 1 k ohm resistor on the DFPlayer RX line is missing (step 12c).",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Troubleshooting, line 106"
+  },
+  {
+   "proposal": "P290",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Troubleshooting: weigh-in never fires",
+   "body": "Cause: U2 is mounted on foam or is loose. Fix: remount it rigidly (step 11).",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Troubleshooting, line 107"
+  },
+  {
+   "proposal": "P291",
+   "op": "add",
+   "section": "prototype/assembly",
+   "title": "Troubleshooting: high sleep current",
+   "body": "Cause: the DFPlayer BUSY line is floating. Fix: check step 12e, and that the DFPlayer is idle.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 7, step 36, line 94"
+  },
+  {
+   "proposal": "P271",
+   "op": "enrich",
+   "section": "prototype/assembly",
+   "match": {
+    "title": "Phase 0 — Bench setup"
+   },
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 0, line 12",
+   "setBody": "1. Lay out all 16 BOM line items; verify against BOM_shopping_list.csv. 2. Flash check the ESP32-S3: plug USB-C into the PC, confirm a serial port appears. 3. Set the multimeter to continuity; it is used after every solder step. 4. Soldering iron 350 C; never power the board from battery AND USB at once."
+  },
+  {
+   "proposal": "P273",
+   "op": "enrich",
+   "section": "prototype/assembly",
+   "match": {
+    "title": "Phase 2 — Electronics"
+   },
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 2, line 28",
+   "appendBody": "Layout target: 5 x 7 cm perfboard, components on female headers (socketed, not soldered directly, so modules are replaceable)."
+  },
+  {
+   "proposal": "P279",
+   "op": "enrich",
+   "section": "prototype/assembly",
+   "match": {
+    "title": "Phase 3 — First power-on"
+   },
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 3, line 56",
+   "setBody": "15. Modules seated, switch ON, meter the 3V3 rail: expect 3.28-3.35 V. 16. MPU-6050 power LED lit; no hot spots by touch after 30 s. 17. Switch OFF."
+  },
+  {
+   "proposal": "P292",
+   "op": "enrich",
+   "section": "prototype/tests",
+   "match": {
+    "title": "Idle"
+   },
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 7, step 35, line 91",
+   "appendData": {
+    "pass": "For a quick run, temporarily set DARK_IDLE_MS = 120000 (two minutes). The design package calls it a \"2h bench idle\"."
+   }
+  },
+  {
+   "proposal": "P294",
+   "op": "add",
+   "section": "prototype/tests",
+   "title": "Power rail voltage",
+   "body": "",
+   "data": {
+    "pass": "With three AA cells in and the switch on, VIN to GND reads 4.5-4.9 V; switch open reads 0 V. Stop if outside 4.2-5.2 V."
+   },
+   "status": "not run",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 2, step 10d, line 35"
+  },
+  {
+   "proposal": "P295",
+   "op": "add",
+   "section": "prototype/tests",
+   "title": "No shorts on the rails",
+   "body": "",
+   "data": {
+    "pass": "VIN to GND and 3V3 to GND both read open; continuity on every net matches schematic.png."
+   },
+   "status": "not run",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 2, step 14, line 52"
+  },
+  {
+   "proposal": "P296",
+   "op": "add",
+   "section": "prototype/tests",
+   "title": "3.3 V rail",
+   "body": "",
+   "data": {
+    "pass": "With modules seated and the switch on, the 3V3 rail reads 3.28-3.35 V."
+   },
+   "status": "not run",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 3, step 15, line 56"
+  },
+  {
+   "proposal": "P297",
+   "op": "add",
+   "section": "prototype/tests",
+   "title": "First power-on: no heat",
+   "body": "",
+   "data": {
+    "pass": "MPU-6050 power LED lit; no hot spots by touch after 30 s."
+   },
+   "status": "not run",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 3, step 16, line 57"
+  },
+  {
+   "proposal": "P299",
+   "op": "add",
+   "section": "prototype/tests",
+   "title": "Events appear in the log",
+   "body": "",
+   "data": {
+    "pass": "Waving the board prints 'EVT:' lines with the event class as thresholds fire."
+   },
+   "status": "not run",
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 4, step 22, line 68"
+  },
+  {
+   "proposal": "P314",
+   "op": "add",
+   "section": "prototype/builds",
+   "title": "Rev A1 - tuned and voiced",
+   "body": "Threshold tuning on real flights; 128-clip voice-over with a contracted voice actor; weeks 2-4.",
+   "data": {
+    "criteria": [
+     {
+      "text": "False positives under 1 a day idle",
+      "met": false
+     },
+     {
+      "text": "Suitcase test suite passes",
+      "met": false
+     }
+    ]
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§11 Roadmap, A1, page 6"
+  },
+  {
+   "proposal": "P317",
+   "op": "add",
+   "section": "prototype/builds",
+   "title": "Rev D - retail display model",
+   "body": "Retail display model; voice-pack SD DLC; licensing talks; month 9 onward.",
+   "data": {
+    "criteria": [
+     {
+      "text": "Wholesale PO or licensing LOI",
+      "met": false
+     }
+    ]
+   },
+   "status": "planned",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§11 Roadmap, D, page 6"
+  },
+  {
    "proposal": "P248",
    "op": "enrich",
    "section": "design/bom",
