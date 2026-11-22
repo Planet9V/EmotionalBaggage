@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { q } from "@/lib/db";
 import { sessionFromRequest, type Session } from "@/lib/auth";
+import { SwitchUnavailable } from "@/lib/auth2/config";
 
 /** Thrown inside a route to answer with a specific status and a plain message. */
 export class HttpError extends Error {
@@ -144,6 +145,8 @@ const CONFLICT: Record<string, string> = {
 };
 
 function fail(e: unknown) {
+  // The sign-in switch could not be read and never has been in this process: not "signed out", not "off" (cut-over B2).
+  if (e instanceof SwitchUnavailable) return NextResponse.json({ error: e.message }, { status: 503, headers: { "retry-after": "30", "cache-control": "no-store" } });
   if (e instanceof HttpError) {
     return NextResponse.json({ error: e.message, ...(e.detail ? { detail: e.detail } : {}) }, { status: e.status, ...(e.headers ? { headers: e.headers } : {}) });
   }
@@ -253,12 +256,13 @@ export async function refuseWhenNewSignIn(): Promise<void> {
   if (await auth2Enabled()) throw new HttpError(404, "Not found.");
 }
 
-/** Who is signed in, for "who am I": the new sign-in's session when it is on, else the old one. Never throws. */
+/** Who is signed in, for "who am I": the new sign-in's session when it is on, else the old one. Throws only SwitchUnavailable (503). */
 export async function whoIsSignedIn(req: Request): Promise<{ username: string; usingDefaultPassword: boolean } | null> {
   try {
     const s = await resolveSession(req);
     return s ? { username: s.username, usingDefaultPassword: s.usingDefaultPassword } : null;
-  } catch {
+  } catch (e) {
+    if (e instanceof SwitchUnavailable) throw e;
     return null;
   }
 }

@@ -72,3 +72,82 @@ describe("B1: access requests are the platform administrator's while the new sig
     }
   });
 });
+
+describe("B2: a failed read of the switch never turns the new sign-in off", () => {
+  const g = globalThis as unknown as { __c2rAuth2Known?: boolean };
+  /** Makes the next `n` reads of auth2_settings on the owner's pool fail, as a statement timeout would. */
+  async function failSwitchReads(n: number) {
+    const { ownerPool } = await import("@/lib/db");
+    const p = ownerPool() as unknown as { query: (...a: unknown[]) => unknown };
+    const orig = p.query.bind(p);
+    let left = n;
+    p.query = (...a: unknown[]) => {
+      if (left > 0 && typeof a[0] === "string" && a[0].includes("auth2_settings")) {
+        left--;
+        return Promise.reject(new Error("simulated statement timeout"));
+      }
+      return orig(...a);
+    };
+    return () => void (p.query = orig);
+  }
+
+  async function withStoredSwitch(on: boolean, run: () => Promise<void>) {
+    const { writeAuth2Setting, readAuth2Setting, forgetAuth2Switch } = await import("@/lib/auth2/config");
+    const keep = await readAuth2Setting(db, "auth2.enabled");
+    delete process.env.AUTH2;
+    try {
+      await writeAuth2Setting(db, "auth2.enabled", on);
+      forgetAuth2Switch();
+      await run();
+    } finally {
+      await writeAuth2Setting(db, "auth2.enabled", keep);
+      process.env.AUTH2 = "1";
+    }
+  }
+
+  it("R1: read as on, then one failed read: the old demo session is still refused (latched on)", async () => {
+    const { forgetAuth2Switch } = await import("@/lib/auth2/config");
+    const { GET: projectsGet } = await import("@/app/api/projects/route");
+    await withStoredSwitch(true, async () => {
+      expect((await projectsGet(asBrowser("/api/projects", sessionCookieHeader()))).status).toBe(401);
+      const restore = await failSwitchReads(1);
+      try {
+        forgetAuth2Switch();
+        expect((await projectsGet(asBrowser("/api/projects", sessionCookieHeader()))).status).toBe(401);
+      } finally {
+        restore();
+      }
+      // A successful read that says off is what turns it off.
+      const { writeAuth2Setting } = await import("@/lib/auth2/config");
+      await writeAuth2Setting(db, "auth2.enabled", false);
+      expect((await projectsGet(asBrowser("/api/projects", sessionCookieHeader()))).status).toBe(200);
+    });
+  });
+
+  it("never read in this process and the read fails: 503 from the API and the proxy, not the old sign-in", async () => {
+    const { forgetAuth2Switch, auth2Enabled } = await import("@/lib/auth2/config");
+    const { GET: projectsGet } = await import("@/app/api/projects/route");
+    const { NextRequest } = await import("next/server");
+    const { proxy } = await import("@/proxy");
+    await withStoredSwitch(true, async () => {
+      const restore = await failSwitchReads(3);
+      const known = g.__c2rAuth2Known;
+      try {
+        forgetAuth2Switch();
+        g.__c2rAuth2Known = undefined;
+        const api = await projectsGet(asBrowser("/api/projects", sessionCookieHeader()));
+        expect(api.status).toBe(503);
+        expect(((await api.json()) as { error: string }).error).toMatch(/temporarily unavailable/);
+        const pageRes = await proxy(new NextRequest(`${BASE}/concepts`, { headers: { cookie: sessionCookieHeader() } }));
+        expect(pageRes.status).toBe(503);
+        expect(await pageRes.text()).toMatch(/Temporarily unavailable/);
+        await expect(auth2Enabled()).rejects.toThrow(/temporarily unavailable/);
+      } finally {
+        restore();
+        g.__c2rAuth2Known = known;
+        forgetAuth2Switch();
+      }
+      expect(await auth2Enabled()).toBe(true);
+    });
+  });
+});

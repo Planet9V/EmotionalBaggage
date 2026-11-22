@@ -7,7 +7,7 @@
  *
  * | Value              | 1. environment (optional override)  | 2. PostgreSQL                                      | 3. otherwise                         |
  * |--------------------|-------------------------------------|----------------------------------------------------|--------------------------------------|
- * | the switch         | AUTH2 (1/on/true/yes or 0/off/...)  | auth2_settings `auth2.enabled`                     | off                                  |
+ * | the switch         | AUTH2 (1/on/true/yes or 0/off/...)  | auth2_settings `auth2.enabled`                     | off when stored as off or not stored; a failed read keeps the last value read, or answers 503 |
  * | signing secret     | BETTER_AUTH_SECRET                  | table auth2_secrets, made on first use             | (always made)                        |
  * | base address       | BETTER_AUTH_URL                     | auth2_settings `auth2.baseUrl`                     | http://localhost:PORT outside production; in production none until the first-run page stores the address the owner confirms |
  * | other addresses    | AUTH2_TRUSTED_ORIGINS               | auth2_settings `auth2.trustedOrigins`              | none                                 |
@@ -49,25 +49,45 @@ export function override(): boolean | null {
 }
 
 const CACHE_MS = 5_000;
-const g = globalThis as unknown as { __c2rAuth2Switch?: { value: boolean; at: number }; __c2rAuth2Config?: { db: unknown; env: string; at: number; config: Auth2Config } };
+const g = globalThis as unknown as {
+  __c2rAuth2Switch?: { value: boolean; at: number };
+  /** the last value read successfully in this process; never cleared by forgetAuth2Switch (cut-over review B2) */
+  __c2rAuth2Known?: boolean;
+  __c2rAuth2Config?: { db: unknown; env: string; at: number; config: Auth2Config };
+};
+
+/** The switch could not be read and this process has never read it: answer 503, never "off" (cut-over review B2). */
+export class SwitchUnavailable extends Error {
+  readonly status = 503;
+  constructor() {
+    super("The application is temporarily unavailable. Try again in a minute.");
+  }
+}
 
 /**
- * Whether the new sign-in is on: the AUTH2 override, else the stored setting (read at most every five seconds),
- * else off. A database that cannot be reached reads as off.
+ * Whether the new sign-in is on: the AUTH2 override, else the stored setting (read at most every five seconds).
+ * A failed read never turns it off (cut-over review B2): it keeps the last value read successfully in this process,
+ * so once read as on it stays on until a successful read says off; with no value read yet it throws
+ * SwitchUnavailable, which routes and the proxy answer as 503.
  */
 export async function auth2Enabled(): Promise<boolean> {
   const o = override();
   if (o !== null) return o;
   const c = g.__c2rAuth2Switch;
   if (c && Date.now() - c.at < CACHE_MS) return c.value;
-  let value = false;
+  let value: boolean;
   try {
     const { ownerPool, ready } = await import("@/lib/db");
     await ready();
     value = await storedSwitch(ownerPool());
   } catch (e) {
-    console.error(`[auth2] the switch could not be read, so the new sign-in is off: ${(e as Error).message}`);
+    const known = g.__c2rAuth2Known;
+    console.error(`[auth2] the switch could not be read (${(e as Error).message}); ${known === undefined ? "answering 503" : `keeping the last value read, ${known ? "on" : "off"}`}`);
+    if (known === undefined) throw new SwitchUnavailable();
+    // Tried again on the next request, not held for the cache window.
+    return known;
   }
+  g.__c2rAuth2Known = value;
   g.__c2rAuth2Switch = { value, at: Date.now() };
   return value;
 }
@@ -77,7 +97,7 @@ export async function auth2Enabled(): Promise<boolean> {
  * layout only, which must not query the database (it renders static pages too); every request passes the proxy,
  * which reads the switch first.
  */
-export const auth2EnabledNow = (): boolean => override() ?? g.__c2rAuth2Switch?.value ?? false;
+export const auth2EnabledNow = (): boolean => override() ?? g.__c2rAuth2Switch?.value ?? g.__c2rAuth2Known ?? false;
 
 /** The stored switch, read straight from auth2_settings (ready() uses this after the migrations: review N13). */
 export async function storedSwitch(db: Queryable): Promise<boolean> {

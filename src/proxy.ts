@@ -10,14 +10,20 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicPath, pageGate, safeNext, SESSION_COOKIE } from "@/app/sign-in/shared";
-import { AUTH2_PAGES, auth2Enabled } from "@/lib/auth2/config";
+import { AUTH2_PAGES, auth2Enabled, SwitchUnavailable } from "@/lib/auth2/config";
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   // The new sign-in's screens (switch on) are open to a signed-out browser; each checks its own session. With it
   // off they are treated like any other page, as before. The switch is read from PostgreSQL with a short cache
   // (src/lib/auth2/config.ts), which also keeps the root layout's copy current.
-  const on = await auth2Enabled();
+  let on: boolean;
+  try {
+    on = await auth2Enabled();
+  } catch (e) {
+    if (e instanceof SwitchUnavailable) return unavailable(e.message);
+    throw e;
+  }
   if (on && pathname.startsWith(`${AUTH2_PAGES}/`)) return NextResponse.next();
   // A self-hosted install with no account yet: the front door leads to "create the owner" (src/lib/auth2/firstRun.ts).
   // The answer is cached once an account exists, so this costs nothing afterwards.
@@ -57,6 +63,12 @@ async function newSignInPageGate(request: NextRequest): Promise<string | null> {
     // Fails closed: anything that goes wrong reading the session is treated as signed out.
     return `${AUTH2_PAGES}/sign-in?next=${back}`;
   }
+}
+
+/** A plain page for "the sign-in switch cannot be read yet" (cut-over review B2): never the old sign-in instead. */
+function unavailable(message: string) {
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Temporarily unavailable</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui,sans-serif;max-width:36rem;margin:4rem auto;padding:0 1rem"><h1>Temporarily unavailable</h1><p>${message}</p></body></html>`;
+  return new NextResponse(html, { status: 503, headers: { "content-type": "text/html; charset=utf-8", "retry-after": "30", "cache-control": "no-store" } });
 }
 
 async function firstRunOpenNow(): Promise<boolean> {
