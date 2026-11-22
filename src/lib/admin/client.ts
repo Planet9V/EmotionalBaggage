@@ -329,10 +329,11 @@ export function useSavePlans() {
 
 export type Offered = { ok: true; items: string[] } | { ok: false; reason: string };
 
-/** The voices and models a Kokoro server offers, for the pickers (platform administrator; it calls the server). */
+/** The models and voices on offer, for the pickers (platform administrator; it calls Kokoro or OpenRouter). */
 export function useVoiceOptions() {
   return useMutation({
-    mutationFn: (baseUrl?: string) => api<{ voices: Offered; models: Offered }>("/api/admin/voice/options", { method: "POST", body: JSON.stringify(baseUrl ? { baseUrl } : {}) }),
+    mutationFn: (q: { provider: "kokoro" | "openrouter"; baseUrl?: string; model?: string }) =>
+      api<{ voices: Offered; models: Offered }>("/api/admin/voice/options", { method: "POST", body: JSON.stringify(q) }),
   });
 }
 

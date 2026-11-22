@@ -35,7 +35,7 @@ export type AdminSettings = {
 /** Mail as a reader sees it: the whole setting for the platform administrator, else only whether one is set (review F5). */
 type MailView = MailSettings | { mode: "smtp"; hidden: true };
 /** Voice likewise: the provider only, without address, model or voice, for anyone but the platform administrator. */
-type VoiceView = VoiceSettings | { provider: "kokoro"; hidden: true };
+type VoiceView = VoiceSettings | { provider: "kokoro" | "openrouter"; hidden: true };
 
 export async function readAdminSettings(viewer: { platformAdmin: boolean }): Promise<AdminSettings> {
   const [reasoningModel, embeddingModel, plannerUrl, defaultConcept, plannerEffective, slicerUrl, slicerEffective, mail, voice] = await Promise.all([

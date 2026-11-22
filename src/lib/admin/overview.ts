@@ -109,7 +109,7 @@ export async function serviceOverview(viewer: { platformAdmin: boolean }): Promi
   add({ key: "research", label: "Research (Perplexity)", tab: "models", configured: research.configured, source: fromCred(await credentialSource("perplexity", "apiKey")), summary: research.state, without: "Research, Ask is off; sources can still be added by hand." });
   add({
     key: "voice", label: "Voice", tab: "voice", configured: voice.configured, source: voice.configured ? "database" : null,
-    summary: voice.configured ? `Kokoro at ${voice.baseUrl}, model ${voice.model}, voice ${voice.voice}, speed ${voice.speed}.` : voice.reason,
+    summary: !voice.configured ? voice.reason : voice.provider === "openrouter" ? `OpenRouter, model ${voice.model}, voice ${voice.voice}.` : `Kokoro at ${voice.baseUrl}, model ${voice.model}, voice ${voice.voice}, speed ${voice.speed}.`,
     without: "Narration is off; nothing else uses a voice.",
   });
   const channel = (key: "amazon" | "x" | "instagram", label: string, v: typeof amazon, src: Source, without: string) =>

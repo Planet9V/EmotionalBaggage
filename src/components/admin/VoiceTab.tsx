@@ -1,10 +1,12 @@
 "use client";
 
-// Admin, Voice: text to speech for voice-overs and narration (owner ruling, 22 Nov). None by default. Kokoro: a speech
-// server the admin runs, at an address entered here; its voices and models are read from the server for the pickers,
-// and any name can still be typed. OpenRouter is listed but not offered, with the reason (VOICE_PROVIDERS). Settings
-// are saved through the shared settings route; an optional key is the shared key card of "kokoro", whose Test speaks
-// one sentence. A new power: only the platform administrator changes it.
+// Admin, Voice: text to speech for voice-overs and narration (owner ruling, 22 Nov). None by default.
+//  - Kokoro: a speech server the admin runs, at an address entered here; its models and voices are read from the
+//    server for the pickers. An optional key is the shared key card of "kokoro".
+//  - OpenRouter: the OpenRouter key and address of AI models (no second key); the model picker lists OpenRouter's
+//    speech models and the voice picker the chosen model's voices.
+// Any name can still be typed. Settings are saved through the shared settings route; the key card's Test speaks one
+// sentence. A new power: only the platform administrator changes it.
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,13 +21,16 @@ import { httpUrl, VOICE_PROVIDERS, voiceSettings } from "@/lib/admin/schemas";
 import { useAdminAccess, useAdminSettings, useSaveSettings, useVoiceOptions, type VoiceSettings } from "@/lib/admin/client";
 import { CredentialsTab } from "./CredentialsTab";
 
-type Form = { provider: "none" | "kokoro"; baseUrl: string; model: string; voice: string; speed: string };
+type Form = { provider: "none" | "kokoro" | "openrouter"; baseUrl: string; model: string; voice: string; speed: string };
 type Errors = Partial<Record<keyof Form, string>>;
 const LABEL: Record<keyof Form, string> = { provider: "Provider", baseUrl: "Address", model: "Model", voice: "Voice", speed: "Speed" };
-const OPENROUTER = VOICE_PROVIDERS.find((p) => p.id === "openrouter")!;
-
 const formOf = (v: VoiceSettings): Form =>
-  v.provider === "none" ? { provider: "none", baseUrl: "", model: "kokoro", voice: "", speed: "1" } : { provider: "kokoro", baseUrl: v.baseUrl, model: v.model, voice: v.voice, speed: String(v.speed) };
+  v.provider === "none"
+    ? { provider: "none", baseUrl: "", model: "", voice: "", speed: "1" }
+    : v.provider === "openrouter"
+      ? { provider: "openrouter", baseUrl: "", model: v.model, voice: v.voice, speed: "1" }
+      : { provider: "kokoro", baseUrl: v.baseUrl, model: v.model, voice: v.voice, speed: String(v.speed) };
+const KEY_CARD = { kokoro: "kokoro", openrouter: "openrouter" } as const;
 
 export function VoiceTab() {
   const settings = useAdminSettings();
@@ -35,17 +40,17 @@ export function VoiceTab() {
   if ("hidden" in saved) {
     return (
       <div className="space-y-4">
-        <Panel title="Voice" description="Text to speech, for voice-overs and narration." actions={<StatusBadge tone="success">Kokoro</StatusBadge>}>
+        <Panel title="Voice" description="Text to speech, for voice-overs and narration." actions={<StatusBadge tone="success">{saved.provider === "openrouter" ? "OpenRouter" : "Kokoro"}</StatusBadge>}>
           <p className="text-sm text-secondary">A voice is set up. Its details are shown to the platform administrator only.</p>
         </Panel>
-        <CredentialsTab only={["kokoro"]} intro={false} />
+        <CredentialsTab only={[KEY_CARD[saved.provider]]} intro={false} />
       </div>
     );
   }
   return (
     <div className="space-y-4">
       <VoiceForm saved={saved} />
-      {saved.provider === "kokoro" ? <CredentialsTab only={["kokoro"]} intro={false} /> : null}
+      {saved.provider !== "none" ? <CredentialsTab only={[KEY_CARD[saved.provider]]} intro={false} /> : null}
     </div>
   );
 }
@@ -62,18 +67,29 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
   const id = (n: string) => `voice-${n}`;
 
   const load = () => {
+    const model = form.model.trim() || undefined;
+    if (form.provider === "openrouter") {
+      setErrors({});
+      options.mutate({ provider: "openrouter", model });
+      return;
+    }
     const r = httpUrl.safeParse(form.baseUrl);
     if (!r.success) {
       setErrors({ baseUrl: `Address ${r.error.issues[0].message}.` });
       return;
     }
     setErrors({});
-    options.mutate(r.data);
+    options.mutate({ provider: "kokoro", baseUrl: r.data, model });
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const raw = form.provider === "none" ? { provider: "none" } : { provider: "kokoro", baseUrl: form.baseUrl, model: form.model, voice: form.voice, speed: Number(form.speed) };
+    const raw =
+      form.provider === "none"
+        ? { provider: "none" }
+        : form.provider === "openrouter"
+          ? { provider: "openrouter", model: form.model, voice: form.voice }
+          : { provider: "kokoro", baseUrl: form.baseUrl, model: form.model, voice: form.voice, speed: Number(form.speed) };
     const r = voiceSettings.safeParse(raw);
     if (!r.success) {
       const next: Errors = {};
@@ -98,26 +114,36 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
 
   const voices = options.data?.voices;
   const models = options.data?.models;
-  const listNote = (o: typeof voices, what: string) => (!o ? `Type the ${what}, or load the server's list.` : o.ok ? `${o.items.length} ${what}s listed by the server; any name can still be typed.` : o.reason);
+  const source = form.provider === "openrouter" ? "OpenRouter" : "the server";
+  const listNote = (o: typeof voices, what: string) => (!o ? `Type the ${what}, or load the list from ${source}.` : o.ok ? `${o.items.length} ${what}s listed by ${source}; any name can still be typed.` : o.reason);
 
   return (
     <Panel
       title="Voice"
       description="Text to speech, for voice-overs and narration. Off unless you choose a provider; nothing else in the app needs it."
-      actions={<StatusBadge tone={saved.provider === "none" ? "neutral" : "success"}>{saved.provider === "none" ? "No voice" : "Kokoro"}</StatusBadge>}
+      actions={<StatusBadge tone={saved.provider === "none" ? "neutral" : "success"}>{saved.provider === "none" ? "No voice" : saved.provider === "openrouter" ? "OpenRouter" : "Kokoro"}</StatusBadge>}
     >
       <form onSubmit={submit} noValidate className="space-y-4" aria-label="Voice settings" aria-busy={save.isPending || undefined}>
-        <Field id={id("provider")} label="Provider" hint={OPENROUTER.reason}>
-          <NativeSelect id={id("provider")} value={form.provider} onChange={(e) => set({ provider: e.target.value as Form["provider"] })} {...describe(id("provider"), { hint: true })}>
+        <Field id={id("provider")} label="Provider">
+          <NativeSelect id={id("provider")} value={form.provider} onChange={(e) => { set({ provider: e.target.value as Form["provider"] }); options.reset(); }}>
             {VOICE_PROVIDERS.map((p) => (
-              <option key={p.id} value={p.id} disabled={!p.available}>
-                {p.available ? p.label : `${p.label} (not available)`}
+              <option key={p.id} value={p.id}>
+                {p.label}
               </option>
             ))}
           </NativeSelect>
         </Field>
-        {form.provider === "kokoro" ? (
+        {form.provider === "openrouter" ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-secondary">Uses the OpenRouter key saved for AI models. Load the speech models, choose one, then load again for its voices.</p>
+            <Button type="button" variant="outline" size="sm" disabled={options.isPending || !canWrite} onClick={load}>
+              {options.isPending ? "Loading…" : form.model.trim() ? "Load models and this model's voices" : "Load speech models"}
+            </Button>
+          </div>
+        ) : null}
+        {form.provider !== "none" ? (
           <>
+            {form.provider === "kokoro" ? (
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
               <Field id={id("baseUrl")} label="Address" required error={errors.baseUrl} hint="The Kokoro server's OpenAI-compatible base address; the app adds /audio/speech. For example http://host.docker.internal:8880/v1">
                 <Input id={id("baseUrl")} spellCheck={false} value={form.baseUrl} onChange={(e) => set({ baseUrl: e.target.value })} {...describe(id("baseUrl"), { hint: true, error: errors.baseUrl })} />
@@ -126,6 +152,7 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
                 {options.isPending ? "Loading…" : "Load voices and models"}
               </Button>
             </div>
+            ) : null}
             {options.isError ? <SaveError message={messageOf(options.error)} /> : null}
             <div className="grid gap-4 md:grid-cols-3">
               <Field id={id("model")} label="Model" required error={errors.model} hint={listNote(models, "model")}>
@@ -134,9 +161,11 @@ function VoiceForm({ saved }: { saved: VoiceSettings }) {
               <Field id={id("voice")} label="Voice" required error={errors.voice} hint={listNote(voices, "voice")}>
                 <Input id={id("voice")} list={id("voices")} spellCheck={false} value={form.voice} onChange={(e) => set({ voice: e.target.value })} {...describe(id("voice"), { hint: true, error: errors.voice })} />
               </Field>
-              <Field id={id("speed")} label="Speed" required error={errors.speed} hint="0.25 to 4; 1 is normal.">
-                <Input id={id("speed")} inputMode="decimal" value={form.speed} onChange={(e) => set({ speed: e.target.value })} {...describe(id("speed"), { hint: true, error: errors.speed })} />
-              </Field>
+              {form.provider === "kokoro" ? (
+                <Field id={id("speed")} label="Speed" required error={errors.speed} hint="0.25 to 4; 1 is normal.">
+                  <Input id={id("speed")} inputMode="decimal" value={form.speed} onChange={(e) => set({ speed: e.target.value })} {...describe(id("speed"), { hint: true, error: errors.speed })} />
+                </Field>
+              ) : null}
             </div>
             <datalist id={id("models")}>{models?.ok ? models.items.map((m) => <option key={m} value={m} />) : null}</datalist>
             <datalist id={id("voices")}>{voices?.ok ? voices.items.map((v) => <option key={v} value={v} />) : null}</datalist>

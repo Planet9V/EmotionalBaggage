@@ -73,7 +73,7 @@ export async function testVoice(ms: number): Promise<TestResult> {
   try {
     const { audio, contentType } = await s.synth.synthesize(VOICE_TEST_TEXT, { timeoutMs: ms });
     const kb = Math.max(1, Math.round(audio.byteLength / 1024));
-    const who = "The Kokoro server";
+    const who = s.settings.provider === "openrouter" ? "OpenRouter" : "The Kokoro server";
     return {
       ok: true,
       message: `${who} spoke the test sentence: ${kb} KB of ${contentType}.`,

@@ -3,12 +3,13 @@
 //  - "kokoro": a Kokoro server the admin runs, reached at the address saved in Admin, Voice through its
 //    OpenAI-compatible speech interface: POST {base}/audio/speech { model, voice, input, speed } answers the audio;
 //    GET {base}/audio/voices and GET {base}/models list what it offers (listVoices, listSpeechModels).
-//  - "openrouter": listed but NOT offered (see VOICE_PROVIDERS): its speech output could not be confirmed against
-//    OpenRouter's documentation, so nothing here pretends to speak through it.
+//  - "openrouter": OpenRouter's speech API with the OpenRouter key and address AI models already use:
+//    POST {base}/audio/speech { model, input, voice, response_format } answers the audio; GET
+//    {base}/models?output_modalities=speech lists the speech models, each with its supported_voices.
 // Settings are the row "voice.tts"; an optional Kokoro key is the credential "kokoro", only sent to the address it was
 // saved for. Audio is answered in memory as bytes and a content type, and never written anywhere by this module: the
 // voice-overs tool that stores clips does that through the files store.
-import { getSetting, SETTING } from "@/lib/settings";
+import { DEFAULT_BASE_URL, embeddingModel, getSetting, reasoningModel, SETTING, type ModelChoice } from "@/lib/settings";
 import { boundElsewhere, secretFor } from "@/lib/secretOrigin";
 import { blockedIn, blockedSentence, safeFetch } from "@/lib/net/outbound";
 import { voiceSettings, type VoiceSettings } from "@/lib/admin/schemas";
@@ -121,10 +122,46 @@ async function post(url: string, headers: Record<string, string>, body: unknown,
   return { audio: await readCapped(res, who), contentType };
 }
 
+/**
+ * OpenRouter's address and key, as the AI models use them (no second key): the address of a saved OpenRouter model
+ * (reasoning first, then embedding), else OpenRouter's own; the key is the credential openrouter.apiKey, only ever sent
+ * to the host it was saved for (src/lib/secretOrigin.ts).
+ */
+async function openRouterTarget(): Promise<{ base: string; key: string } | { reason: string }> {
+  const [r, e] = await Promise.all([reasoningModel(), embeddingModel()]);
+  const chosen = [r, e].find((c): c is ModelChoice => !!c && typeof c === "object" && c.provider === "openrouter");
+  const base = (chosen?.baseUrl || DEFAULT_BASE_URL.openrouter).replace(/\/+$/, "");
+  const k = await secretFor("openrouter", "apiKey", base);
+  if (k.refused) return { reason: boundElsewhere("OpenRouter", k.boundTo, base) };
+  if (!k.value) return { reason: "OpenRouter is chosen, but no OpenRouter key is saved. Add it in Admin, AI models." };
+  return { base, key: k.value };
+}
+
+const checkText = (text: string) => {
+  if (!text.trim()) throw new SpeechError("There is no text to speak.");
+  if (text.length > MAX_SPEECH_CHARS) throw new SpeechError(`One piece of narration may be at most ${MAX_SPEECH_CHARS} characters.`);
+};
+
 /** The synthesizer in force, or why there is none. Never throws. synthesize() answers bytes and a content type. */
 export async function getSpeechSynthesizer(): Promise<{ configured: true; synth: SpeechSynthesizer; settings: VoiceReady } | { configured: false; reason: string }> {
   const s = await readVoiceSettings();
   if (s.provider === "none") return { configured: false, reason: NOT_SET_UP };
+  if (s.provider === "openrouter") {
+    // POST {base}/audio/speech { model, input, voice, response_format } answers the audio bytes (OpenRouter's speech
+    // API, OpenAI Audio Speech compatible; read by the project manager on 22 Nov 2026, not reachable from the build machine).
+    const t = await openRouterTarget();
+    if ("reason" in t) return { configured: false, reason: t.reason };
+    return {
+      configured: true,
+      settings: s,
+      synth: {
+        async synthesize(text, opts = {}) {
+          checkText(text);
+          return post(`${t.base}/audio/speech`, { authorization: `Bearer ${t.key}` }, { model: s.model, input: text, voice: s.voice, response_format: "mp3" }, opts.timeoutMs ?? 30_000, "OpenRouter");
+        },
+      },
+    };
+  }
   const base = s.baseUrl;
   const k = await secretFor("kokoro", "apiKey", base);
   if (k.refused) return { configured: false, reason: boundElsewhere("Kokoro", k.boundTo, base) };
@@ -134,56 +171,57 @@ export async function getSpeechSynthesizer(): Promise<{ configured: true; synth:
     settings: s,
     synth: {
       async synthesize(text, opts = {}) {
-        if (!text.trim()) throw new SpeechError("There is no text to speak.");
-        if (text.length > MAX_SPEECH_CHARS) throw new SpeechError(`One piece of narration may be at most ${MAX_SPEECH_CHARS} characters.`);
+        checkText(text);
         return post(`${base}/audio/speech`, key ? { authorization: `Bearer ${key}` } : {}, { model: s.model, voice: s.voice, input: text, speed: s.speed, response_format: "mp3" }, opts.timeoutMs ?? 30_000, "The Kokoro server");
       },
     },
   };
 }
 
-// --- Pickers: what a Kokoro server offers ---------------------------------------------------------------------
+// --- Pickers: what a Kokoro server or OpenRouter offers -------------------------------------------------------
 
 /** A list for a picker, or why there is none (the form then takes free text). */
 export type Offered = { ok: true; items: string[] } | { ok: false; reason: string };
 
 /** The most a list answer may be; a bigger one is not read (it is a list of names). */
-const MAX_LIST_BYTES = 256 * 1024;
+const MAX_LIST_BYTES = 1024 * 1024;
 const MAX_ITEMS = 500;
+const FREE = "Type the name instead.";
 
-/** GET a JSON list at a Kokoro address. Fixed sentences on failure; the remote body is never repeated. */
-async function getList(url: string, key: string | null, pick: (j: unknown) => unknown[] | null, what: string, ms: number): Promise<Offered> {
+/** GET JSON from a speech service. Fixed sentences on failure; the remote body is never repeated. */
+async function getJson(url: string, key: string | null, who: string, what: string, ms: number): Promise<{ ok: true; json: unknown } | { ok: false; reason: string }> {
   let res: Response;
   try {
     res = await safeFetch(url, { headers: key ? { authorization: `Bearer ${key}` } : {}, redirect: "manual", signal: AbortSignal.timeout(ms) });
   } catch (e) {
     const refused = blockedIn(e);
     if (refused) return { ok: false, reason: blockedSentence(refused) };
-    const err = e as { name?: string; cause?: { code?: string } };
-    if (err.name === "TimeoutError" || err.name === "AbortError") return { ok: false, reason: `The server did not list its ${what} within ${Math.round(ms / 1000)} seconds. Type the name instead.` };
-    return { ok: false, reason: `The server could not be reached to list its ${what}. Type the name instead.` };
+    const err = e as { name?: string };
+    if (err.name === "TimeoutError" || err.name === "AbortError") return { ok: false, reason: `${who} did not list its ${what} within ${Math.round(ms / 1000)} seconds. ${FREE}` };
+    return { ok: false, reason: `${who} could not be reached to list its ${what}. ${FREE}` };
   }
   if (res.status !== 200) {
     await res.body?.cancel().catch(() => undefined);
-    return { ok: false, reason: `The server does not list its ${what} (HTTP ${res.status}). Type the name instead.` };
+    return { ok: false, reason: `${who} does not list its ${what} (HTTP ${res.status}). ${FREE}` };
   }
-  let j: unknown;
   try {
-    const bytes = await readCapped(res, "The server", MAX_LIST_BYTES);
-    j = JSON.parse(new TextDecoder().decode(bytes));
+    const bytes = await readCapped(res, who, MAX_LIST_BYTES);
+    return { ok: true, json: JSON.parse(new TextDecoder().decode(bytes)) };
   } catch {
-    return { ok: false, reason: `The server's list of ${what} could not be read. Type the name instead.` };
+    return { ok: false, reason: `${who}'s list of ${what} could not be read. ${FREE}` };
   }
-  const list = pick(j);
-  if (!list) return { ok: false, reason: `The server answered, but not with a list of ${what}. Type the name instead.` };
+}
+
+/** Plain names only (a string, or an object's id or name); anything else is dropped. */
+function namesOf(list: unknown[]): string[] {
   const names = list
     .map((x) => (typeof x === "string" ? x : x && typeof x === "object" ? ((x as { id?: unknown; name?: unknown }).id ?? (x as { name?: unknown }).name) : null))
     .filter((x): x is string => typeof x === "string" && /^[\w.:@/+-]{1,100}$/.test(x));
-  return { ok: true, items: [...new Set(names)].slice(0, MAX_ITEMS) };
+  return [...new Set(names)].slice(0, MAX_ITEMS);
 }
 
-/** Where to list from: the address given (the form, before saving) or the saved one, with the key only for its own host. */
-async function listTarget(baseUrl?: string): Promise<{ base: string; key: string | null } | { reason: string }> {
+/** Where a Kokoro list comes from: the address given (the form, before saving) or the saved one, with the key only for its own host. */
+async function kokoroTarget(baseUrl?: string): Promise<{ base: string; key: string | null } | { reason: string }> {
   const saved = await readVoiceSettings();
   const base = baseUrl ?? (saved.provider === "kokoro" ? saved.baseUrl : null);
   if (!base) return { reason: "Enter the Kokoro server's address first." };
@@ -191,22 +229,66 @@ async function listTarget(baseUrl?: string): Promise<{ base: string; key: string
   return { base, key: k.refused ? null : k.value };
 }
 
-/** The voices a Kokoro server offers (GET {base}/audio/voices), for the voice picker. Never throws. */
-export async function listVoices(opts: { baseUrl?: string; timeoutMs?: number } = {}): Promise<Offered> {
-  const t = await listTarget(opts.baseUrl);
+/** OpenRouter's speech models: GET {base}/models?output_modalities=speech, each with supported_voices. */
+async function openRouterSpeechModels(ms: number): Promise<{ ok: true; models: unknown[] } | { ok: false; reason: string }> {
+  const t = await openRouterTarget();
   if ("reason" in t) return { ok: false, reason: t.reason };
-  return getList(`${t.base}/audio/voices`, t.key, (j) => {
-    const v = (j as { voices?: unknown })?.voices ?? j;
-    return Array.isArray(v) ? v : null;
-  }, "voices", opts.timeoutMs ?? 10_000);
+  const r = await getJson(`${t.base}/models?output_modalities=speech`, t.key, "OpenRouter", "speech models", ms);
+  if (!r.ok) return r;
+  const data = (r.json as { data?: unknown })?.data;
+  if (!Array.isArray(data)) return { ok: false, reason: `OpenRouter answered, but not with a list of speech models. ${FREE}` };
+  return { ok: true, models: data };
 }
 
-/** The models a Kokoro server lists (GET {base}/models, the OpenAI list shape), for the model picker. Never throws. */
-export async function listSpeechModels(opts: { baseUrl?: string; timeoutMs?: number } = {}): Promise<Offered> {
-  const t = await listTarget(opts.baseUrl);
+type ListOptions = { provider?: "kokoro" | "openrouter"; baseUrl?: string; model?: string; timeoutMs?: number };
+
+/** The provider to list for: the one asked for, else the saved one, else Kokoro. */
+async function providerOf(o: ListOptions): Promise<"kokoro" | "openrouter"> {
+  if (o.provider) return o.provider;
+  const s = await readVoiceSettings();
+  return s.provider === "openrouter" ? "openrouter" : "kokoro";
+}
+
+/**
+ * The voices on offer, for the voice picker. Never throws.
+ *  - Kokoro: GET {base}/audio/voices.
+ *  - OpenRouter: the chosen model's supported_voices, from its list of speech models.
+ */
+export async function listVoices(o: ListOptions = {}): Promise<Offered> {
+  const ms = o.timeoutMs ?? 10_000;
+  if ((await providerOf(o)) === "openrouter") {
+    const model = o.model ?? (await readVoiceSettings().then((s) => (s.provider === "openrouter" ? s.model : undefined)));
+    if (!model) return { ok: false, reason: "Choose a model first: the voices depend on it." };
+    const r = await openRouterSpeechModels(ms);
+    if (!r.ok) return r;
+    const m = r.models.find((x) => (x as { id?: unknown })?.id === model) as { supported_voices?: unknown } | undefined;
+    if (!m) return { ok: false, reason: `That model is not in OpenRouter's list of speech models. ${FREE}` };
+    if (!Array.isArray(m.supported_voices) || !m.supported_voices.length) return { ok: false, reason: "OpenRouter did not list the voices of that model. Type the voice instead." };
+    return { ok: true, items: namesOf(m.supported_voices) };
+  }
+  const t = await kokoroTarget(o.baseUrl);
   if ("reason" in t) return { ok: false, reason: t.reason };
-  return getList(`${t.base}/models`, t.key, (j) => {
-    const d = (j as { data?: unknown })?.data;
-    return Array.isArray(d) ? d : null;
-  }, "models", opts.timeoutMs ?? 10_000);
+  const r = await getJson(`${t.base}/audio/voices`, t.key, "The server", "voices", ms);
+  if (!r.ok) return r;
+  const v = (r.json as { voices?: unknown })?.voices ?? r.json;
+  return Array.isArray(v) ? { ok: true, items: namesOf(v) } : { ok: false, reason: `The server answered, but not with a list of voices. ${FREE}` };
+}
+
+/**
+ * The models on offer, for the model picker. Never throws.
+ *  - Kokoro: GET {base}/models (the OpenAI list shape).
+ *  - OpenRouter: GET {base}/models?output_modalities=speech, the models that produce speech.
+ */
+export async function listSpeechModels(o: ListOptions = {}): Promise<Offered> {
+  const ms = o.timeoutMs ?? 10_000;
+  if ((await providerOf(o)) === "openrouter") {
+    const r = await openRouterSpeechModels(ms);
+    return r.ok ? { ok: true, items: namesOf(r.models) } : r;
+  }
+  const t = await kokoroTarget(o.baseUrl);
+  if ("reason" in t) return { ok: false, reason: t.reason };
+  const r = await getJson(`${t.base}/models`, t.key, "The server", "models", ms);
+  if (!r.ok) return r;
+  const d = (r.json as { data?: unknown })?.data;
+  return Array.isArray(d) ? { ok: true, items: namesOf(d) } : { ok: false, reason: `The server answered, but not with a list of models. ${FREE}` };
 }
