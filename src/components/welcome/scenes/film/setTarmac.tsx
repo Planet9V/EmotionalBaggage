@@ -229,6 +229,40 @@ function Streaks() {
 
 const handler = tossCast({ bag: tossBag, held, release: RELEASE, land: LAND, at: HANDLER });
 
+/**
+ * The smear: a soft, stretched ghost of the bag behind it while it flies, as a drawn frame shows speed. One mesh,
+ * along the direction of travel, longer the faster it goes; gone the moment it lands.
+ */
+function Smear() {
+  const ref = useRef<THREE.Mesh>(null);
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  const clock = useClock();
+  const dir = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }), []);
+  useFrame(() => {
+    const g = ref.current;
+    if (!g) return;
+    const s = held(clock.t);
+    const p = (s - RELEASE) / (LAND - RELEASE);
+    g.visible = p > 0.04 && p < 0.97;
+    if (!g.visible) return;
+    const [x, y, z] = flight(p);
+    const [px, py, pz] = flight(Math.max(0, p - 0.11));
+    dir.a.set(x, y + BAG_MID, z);
+    dir.b.set(px, py + BAG_MID, pz);
+    const len = dir.a.distanceTo(dir.b);
+    g.position.copy(dir.a).add(dir.b).multiplyScalar(0.5);
+    g.quaternion.setFromUnitVectors(dir.up, dir.b.sub(dir.a).normalize());
+    g.scale.set(1, Math.max(0.01, len / 0.5), 1);
+    if (mat.current) mat.current.opacity = 0.42 * Math.min(1, p * 8, (1 - p) * 10);
+  });
+  return (
+    <mesh ref={ref} visible={false} frustumCulled={false}>
+      <capsuleGeometry args={[0.2, 0.5, 4, 12]} />
+      <meshBasicMaterial ref={mat} color={C.rib} transparent opacity={0} depthWrite={false} toneMapped={false} />
+    </mesh>
+  );
+}
+
 function TossSet() {
   return (
     <>
@@ -243,6 +277,7 @@ function TossSet() {
         }}
       />
       <Trail />
+      <Smear />
       <Streaks />
       <Bag pose={tossBag} voice={(t) => bagVoice(TOSS, t)} time={held} />
       <Dust at={[TO[0], BELT + 0.02, TO[2] + 0.25]} progress={(t) => (held(t) - LAND) / 950} />
