@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Activity, BookOpen, BookText, ChevronRight, FileText, FolderOpen, Gauge, GitBranch, LayoutList, Link2, ListChecks, Menu, MessagesSquare, Moon, PenLine, Plug, Plus, Printer, Settings, Sun, X } from "lucide-react";
+import { Activity, BookOpen, ChartNoAxesGantt, BookText, ChevronRight, FileText, FolderOpen, Gauge, GitBranch, LayoutList, Link2, ListChecks, Menu, MessagesSquare, Moon, PenLine, Plug, Plus, Printer, Settings, Sun, X } from "lucide-react";
 import { ProjectContext } from "@/lib/client";
 import { messageOf, queries } from "@/lib/queries";
 import { sectionsFor } from "@/lib/productTypes";
@@ -18,7 +18,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 const KEY = "c2r.project";
 /** which sidebar groups the person opened or closed by hand; a group not listed follows its default */
 const NAV_KEY = "c2r.nav";
-const WHOLE = ["/story", "/files", "/chat", "/process", "/plan", "/drafts", "/optimise", "/traceability", "/activity", "/report"];
+const WHOLE = ["/status", "/story", "/files", "/chat", "/process", "/plan", "/drafts", "/optimise", "/traceability", "/activity", "/report"];
 const WORKBENCH = ["/integrations", "/admin", "/printers"];
 
 function readNav(): Record<string, boolean> {
@@ -200,6 +200,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           <div className="scroll-shadow min-h-0 flex-1 overflow-y-auto px-2 py-3">
             <nav aria-label="Whole concept" className="mb-2">
               <NavGroup {...group(cid, "whole", true)} label="Whole concept">
+                <Link href="/status" className={link("/status", pathname === "/status")}><ChartNoAxesGantt className="h-3.5 w-3.5" aria-hidden /> Status</Link>
                 <Link href="/story" className={link("/story", pathname === "/story")}><BookText className="h-3.5 w-3.5" aria-hidden /> Concept story</Link>
                 <Link href="/chat" className={link("/chat", pathname === "/chat")}><MessagesSquare className="h-3.5 w-3.5" aria-hidden /> Chat</Link>
                 <Link href="/files" className={link("/files", pathname === "/files")}><FolderOpen className="h-3.5 w-3.5" aria-hidden /> Files</Link>

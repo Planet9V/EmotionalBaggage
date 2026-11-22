@@ -187,7 +187,7 @@ export function nextActions(view: ProcessView, rows: Item[], limit = 3): Action[
   });
 }
 
-export function decisionsOf(rows: Item[]): Decision[] {
+function decisionsOf(rows: Item[]): Decision[] {
   return rows.filter((r) => r.section === DECISIONS_STORE).map(toDecision).filter((d): d is Decision => !!d);
 }
 
@@ -297,7 +297,7 @@ export function statusModel(view: ProcessView, rows: Item[]): StatusModel {
       ? last
         ? "Every check of the last gate is met: the concept has reached sale."
         : `${current.label} is done${current.byOverride ? " by override" : ""}; the concept can move on to ${stages[stages.indexOf(current) + 1]!.label}.`
-      : `${plural(current.total - current.met, "check")} stand${current.total - current.met === 1 ? "s" : ""} between ${current.label} and ${last ? "sale" : stages[stages.indexOf(current) + 1]!.label}. ${passedCount} of ${stages.length} gates passed.`;
+      : `${plural(current.total - current.met, "check")} stand${current.total - current.met === 1 ? "s" : ""} between ${current.label} and ${last ? "sale" : stages[stages.indexOf(current) + 1]!.label}.`;
   return {
     stages,
     current,
