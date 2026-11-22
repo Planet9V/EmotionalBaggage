@@ -4,22 +4,15 @@
 // words and numbers are the example's own, as they stand, so a draft reads "draft" and a plan reads "planned".
 // Used by the hero's idea-in, outputs-out visual and by "What you get". No script; the hero adds the motion.
 import type { ReactNode } from "react";
+import { TONE_CLASS, approvalStatusTone } from "@/lib/statusTones";
 import type { HeroFacts } from "./storyData";
 
 export const ARTEFACT_KEYS = ["brief", "claim", "parts", "schematic", "model", "print", "cost", "ad", "channel"] as const;
 export type ArtefactKey = (typeof ARTEFACT_KEYS)[number];
 
-const TONE: Record<string, string> = {
-  done: "bg-success-soft text-success",
-  unverified: "bg-warning-soft text-warning",
-  draft: "bg-warning-soft text-warning",
-  estimate: "bg-info-soft text-info",
-  planned: "bg-info-soft text-info",
-  queued: "bg-info-soft text-info",
-};
 
 function Pill({ children }: { children: string }) {
-  return <span className={`inline-flex h-[18px] shrink-0 items-center whitespace-nowrap rounded-full px-1.5 font-mono text-[10px] ${TONE[children] ?? "bg-subtle text-secondary"}`}>{children}</span>;
+  return <span className={`inline-flex h-[18px] shrink-0 items-center whitespace-nowrap rounded-full px-1.5 font-mono text-[10px] ${TONE_CLASS[approvalStatusTone(children)]}`}>{children}</span>;
 }
 
 function Frame({ stage, kind, status, children }: { stage: string; kind: string; status?: string; children: ReactNode }) {

@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotConnected } from "@/components/wizard/shared";
 import { api } from "@/lib/client";
 import { keys, messageOf, queries } from "@/lib/queries";
-import { statusTone } from "@/lib/statusTones";
+import { approvalStatusTone } from "@/lib/statusTones";
 import type { GeneratorId } from "@/lib/market/generators";
 import type { GeneratedFrom } from "@/lib/market/schemas";
 import type { Item } from "@/lib/types";
@@ -91,7 +91,7 @@ export const Notes = ({ notes }: { notes: string[] }) =>
   ) : null;
 
 export function Status({ status }: { status: string }) {
-  return <StatusBadge tone={status === "approved" ? "success" : status === "draft" ? "warning" : statusTone(status)}>{status}</StatusBadge>;
+  return <StatusBadge tone={approvalStatusTone(status)}>{status}</StatusBadge>;
 }
 
 /** Draft becomes approved on the user's click only; approved can go back to draft. */

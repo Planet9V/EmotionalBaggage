@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AlertTriangle, ExternalLink } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { approvalStatusTone } from "@/lib/statusTones";
 import { cn } from "@/lib/utils";
 import type { Flag } from "@/lib/content/claims";
 import type { Problem } from "@/lib/content/channels";
@@ -77,6 +78,4 @@ export function MessageLine({ message, href = "/s/marketing/positioning" }: { me
 
 export const asFlags = (v: unknown): Flag[] => (Array.isArray(v) ? (v as Flag[]) : []);
 
-const tone = (status: string) => (status === "approved" || status === "ready" || status === "scheduled" ? "success" : status === "draft" ? "warning" : status === "killed" ? "danger" : "neutral") as "success" | "warning" | "danger" | "neutral";
-
-export const StatusPill = ({ status }: { status: string }) => <StatusBadge tone={tone(status)}>{status}</StatusBadge>;
+export const StatusPill = ({ status }: { status: string }) => <StatusBadge tone={approvalStatusTone(status)}>{status}</StatusBadge>;

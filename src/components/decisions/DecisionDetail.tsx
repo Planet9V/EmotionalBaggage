@@ -81,7 +81,7 @@ export function DecisionDetail({ d, all, byKey, tree, order, busy, onSelect, onC
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <p className={eyebrow}>Decision {d.key}</p>
-          <StatusBadge tone={state === "waiting" ? "warning" : statusTone(state)} className="px-2! py-0! text-[11px]!">
+          <StatusBadge tone={statusTone(state)} className="px-2! py-0! text-[11px]!">
             {BADGE[state]}
           </StatusBadge>
           <div className="ml-auto flex gap-1.5">

@@ -3,6 +3,7 @@
 // the column; nothing here is a screenshot and nothing is invented. Where the example holds almost nothing (its
 // listing is not started) the panel says so in the row's own words.
 import type { ReactNode } from "react";
+import { TONE_CLASS, approvalStatusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import type { UnitCost } from "@/lib/economics/compute";
 import { BuildUpTable } from "@/components/economics/BuildUpTable";
@@ -11,15 +12,9 @@ import { ROWS } from "./content";
 export type JourneyRows = { claims: Item[]; positioning: Item[]; ads: Item[]; listing: Item[]; channels: Item[] };
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
-const TONE: Record<string, string> = {
-  unverified: "bg-warning-soft text-warning",
-  draft: "bg-warning-soft text-warning",
-  planned: "bg-info-soft text-info",
-  done: "bg-success-soft text-success",
-};
 
 function Status({ value }: { value: string }) {
-  return <span className={`inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-full px-2 font-mono text-[11px] ${TONE[value] ?? "bg-subtle text-secondary"}`}>{value}</span>;
+  return <span className={`inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-full px-2 font-mono text-[11px] ${TONE_CLASS[approvalStatusTone(value)]}`}>{value}</span>;
 }
 
 export function RowsPanel({ path, count, children }: { path: string; count: string; children: ReactNode }) {
