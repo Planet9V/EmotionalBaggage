@@ -1,5 +1,5 @@
 // Two jobs (as in the trial):
-// 1. Proves migrations/0031_better_auth.sql holds everything Better Auth needs for the configuration in
+// 1. Proves migrations/0032_better_auth.sql holds everything Better Auth needs for the configuration in
 //    src/lib/auth2/auth.ts: against the migrated test database its own planner finds nothing to create or add. After
 //    a library upgrade or a new plugin this fails and names the table or column; the difference is the next migration.
 // 2. With AUTH2_SCHEMA_DB set to an EMPTY database and AUTH2_SCHEMA_OUT to a file, writes the SQL Better Auth would
