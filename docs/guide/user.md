@@ -95,7 +95,7 @@ Sections a generator can fill have a **Draft with AI** button. It says what it w
 
 An approved press release or FAQ entry is attacked once by the reviewer; **Revise with this critique** makes a new draft. In any row's editor, **Challenge this** asks the reviewer to argue against the row (saved in Challenge with a link back), and **Verify this** opens Research with the row as the question.
 
-After you change a decision, a requirement or a part, a notice says how many rows it affects. **Show what it affects** lists them by section with the reason, and **Propose updates** drafts changes to them, each shown before and after. Unit economics and the decision tree are listed as "Review by hand".
+After you change a decision, a requirement, a part, a claim or a positioning, a notice says how many rows it affects: a part lists the assembly steps that use it and the prices that rest on its cost; a claim or a positioning lists the positioning, ads, page sections, posts and listing that depend on it. **Show what it affects** lists them by section with the reason, and **Propose updates** drafts changes to them, each shown before and after. Unit economics and the decision tree are listed as "Review by hand".
 
 **Drafts** in the sidebar lists every draft of the concept. **Optimise** offers lower parts cost, fewer parts and shorter print time, measured from your rows: cost only when every part is priced, print time only from times entered after slicing.
 
@@ -271,7 +271,7 @@ Wire lengths on the cut list are estimates from the distance between parts, not 
 |---|---|
 | Personas | Who buys this: the job they are trying to get done, what triggers the purchase, the objection, and where they look. Drafted from the brief, verified claims and saved research; you edit and approve. |
 | Competitors | A sortable comparison of competitors and alternatives, including "do nothing". Prices and claims come from a cited research answer or from you; a row with no source is marked "unsourced: check this". Research competitors asks first and says Perplexity bills per question. |
-| Positioning | One positioning line and three supporting messages, each with its proof; a message with no proof is flagged. The reviewer must attack it once before it can be approved. |
+| Positioning | One positioning line and three supporting messages, each with its proof. It cannot be approved while a message has no proof (a verified claim, a passing test or a requirement), and the reviewer must attack it once first. |
 | Pricing | Candidate prices against the unit cost, channel fees and competitor prices, with margin worked out per channel. Margins marked with a star rest on an incomplete cost. |
 | Names | Name and tagline candidates with reasons, each with links you follow and tick yourself: domain, marketplaces, trademark search pages, social handles. The app does not run the searches and never says a name is available. This is not a trademark or domain clearance. |
 | Brand kit | Voice rules with do and do-not examples, colours with their contrast against white and black, type, logo files, tagline and boilerplate. A tool checks a piece of text against the voice. |
