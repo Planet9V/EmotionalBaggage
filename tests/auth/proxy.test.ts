@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy } from "@/proxy";
-import { isPublicPath, pageGate, safeNext, SESSION_COOKIE } from "@/app/sign-in/shared";
+import { isPublicPath, pageGate, PUBLIC_FOLDERS, safeNext, SESSION_COOKIE } from "@/app/sign-in/shared";
 
 describe("the proxy's redirect rules", () => {
   it("sends a signed-out visit to the bare address to the welcome page, not the sign-in form", () => {
@@ -20,7 +20,7 @@ describe("the proxy's redirect rules", () => {
     expect(pageGate("/plan", "", true)).toBeNull();
   });
 
-  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/models/frame.glb", "/fonts/inter.woff2", "/l/abcd2345", "/welcome", "/welcome/overview", "/landing/schematic-dark.webp"])(
+  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/vendor/occt/occt-import-js.wasm", "/audio/scenes/origin.mp3", "/l/abcd2345", "/welcome", "/welcome/overview", "/landing/schematic-dark.webp"])(
     "lets %s through signed out",
     (path) => {
       expect(isPublicPath(path)).toBe(true);
@@ -28,8 +28,14 @@ describe("the proxy's redirect rules", () => {
     }
   );
 
-  it.each(["/", "/plan", "/report", "/new", "/integrations", "/docs", "/docs/user", "/account", "/sign-inx", "/apix", "/l", "/l/", "/l/abcd2345/extra", "/lx/abcd2345", "/links", "/welcomex", "/welcomes/overview"])("guards %s", (path) => {
+  it.each(["/", "/plan", "/report", "/new", "/integrations", "/docs", "/docs/user", "/account", "/sign-inx", "/apix", "/l", "/l/", "/l/abcd2345/extra", "/lx/abcd2345", "/links", "/welcomex", "/welcomes/overview", "/admin.json", "/p/abc.json", "/s/a/b.c", "/docs/x.md", "/_next/data/x/admin.json", "/_next/admin", "/landing", "/landing/", "/landing/x", "/models/frame.glb", "/vendorx/a.js"])("guards %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
+  });
+
+  it("names every folder of public/ (a file there is static; any other path with a dot is a page: review N1)", async () => {
+    const { readdirSync } = await import("node:fs");
+    const folders = readdirSync("public", { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort();
+    expect(folders).toEqual([...PUBLIC_FOLDERS].sort());
   });
 
   it("never redirects to a path that leaves the site", () => {

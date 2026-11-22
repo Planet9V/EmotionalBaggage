@@ -488,3 +488,24 @@ describe("N4: `sign-in.mjs status` says whether an owner exists and whether a se
     }
   });
 });
+
+describe("N1: only real static paths pass the proxy without a session", () => {
+  it("R5: the review's path variants, switch on, with the old demo cookie or a forged one", async () => {
+    const { NextRequest } = await import("next/server");
+    const { proxy } = await import("@/proxy");
+    const page = async (path: string, cookie: string) => (await proxy(new NextRequest(`${BASE}${path}`, { headers: { cookie } }))).headers.get("location");
+    const signIn = (path: string) => `${BASE}/auth/sign-in?next=${encodeURIComponent(path)}`;
+    const demo = sessionCookieHeader();
+    // A dot in the last segment no longer makes a page public.
+    for (const p of ["/admin.json", "/p/abc.json", "/s/a/b.c", "/docs/x.md", "/_next/admin", "/models/frame.glb"]) expect(await page(p, demo), p).toBe(signIn(p));
+    // Next.js reads a data path as the page it stands for (the review saw the same), and that page is guarded.
+    expect(await page("/_next/data/x/admin.json", demo)).toBe(signIn("/admin"));
+    // As the review found them: guarded, normalised, or public on purpose.
+    for (const p of ["/concepts/", "/CONCEPTS", "/admin", "/admin/", "/Admin", "/p/abc", "/files", "/chat"]) expect(await page(p, demo), p).toBe(signIn(p));
+    expect(await page("/api/../admin", demo)).toBe(signIn("/admin"));
+    expect(await page("/%2e%2e/admin", demo)).toBe(signIn("/admin"));
+    expect(await page("/admin", "c2r2.session_token=a.b; __Secure-c2r2.session_token=a.b")).toBe(signIn("/admin"));
+    for (const p of ["/l/abc", "/welcome", "/landing/og.jpg", "/vendor/occt/occt-import-js.wasm"]) expect(await page(p, demo), p).toBeNull();
+    expect(await page("/", demo)).toBe(`${BASE}/welcome`);
+  });
+});

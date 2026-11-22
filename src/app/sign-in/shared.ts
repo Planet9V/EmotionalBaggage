@@ -31,20 +31,31 @@ export function safeNext(next: string | null | undefined): string {
   }
 }
 
+/**
+ * The folders in public/ (tests/auth/proxy.test.ts fails while public/ has a folder this list does not name). Only a
+ * file inside one of them is static; any other path with a dot in it is a page and is checked (cut-over review N1).
+ */
+export const PUBLIC_FOLDERS = ["audio", "landing", "vendor"] as const;
+/** Files the app serves at the top level (src/app/favicon.ico; robots.txt and sitemap.xml if they are ever added). */
+const PUBLIC_FILES = new Set(["/favicon.ico", "/robots.txt", "/sitemap.xml"]);
+const FILE_NAME = /^[^/]+\.[A-Za-z0-9]{1,8}$/;
+
 /** Paths a signed-out browser may open: the sign-in page, the welcome page, the API (route() answers 401 itself), short tracked links and static files. */
 export function isPublicPath(pathname: string): boolean {
   if (pathname === SIGN_IN_PATH || pathname.startsWith(`${SIGN_IN_PATH}/`)) return true;
   // the welcome page and its printable one-page overview (/welcome/overview)
   if (pathname === WELCOME_PATH || pathname.startsWith(`${WELCOME_PATH}/`)) return true;
   if (pathname === "/api" || pathname.startsWith("/api/")) return true;
-  if (pathname.startsWith("/_next/")) return true;
+  // Next.js's build output and image optimiser; in development also its hot reload and error overlay
+  if (pathname.startsWith("/_next/static/") || pathname === "/_next/image" || pathname.startsWith("/_next/image/")) return true;
+  if (process.env.NODE_ENV === "development" && (pathname.startsWith("/_next/") || pathname.startsWith("/__nextjs"))) return true;
   // Short tracked links (src/app/l/[code]/route.ts): a visitor to a campaign link has no session.
   // The handler redirects only to a destination a signed-in user saved, and stores no personal data.
   if (pathname.startsWith("/l/") && !pathname.slice(3).includes("/") && pathname.length > 3) return true;
-  if (pathname === "/favicon.ico" || pathname === "/robots.txt" || pathname === "/sitemap.xml") return true;
-  // Files from public/ (images, fonts, models): a last path segment with an extension.
-  const last = pathname.slice(pathname.lastIndexOf("/") + 1);
-  if (/^[^/]+\.[A-Za-z0-9]{1,8}$/.test(last)) return true;
+  if (PUBLIC_FILES.has(pathname)) return true;
+  // Files from public/: a file name with an extension inside one of its folders, nothing else.
+  const parts = pathname.split("/");
+  if (parts.length >= 3 && (PUBLIC_FOLDERS as readonly string[]).includes(parts[1]) && FILE_NAME.test(parts[parts.length - 1]) && !parts.includes("..")) return true;
   return false;
 }
 
