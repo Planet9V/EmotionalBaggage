@@ -163,7 +163,7 @@ export default function EngSchematic({ parts: partItems, wires: wireItems }: { p
                     return next;
                   })
                 }
-                hoverNet={null}
+                hoverWires={null}
                 highlight={litPins}
                 litWires={litWires}
                 onPickPin={(ref, pin) => setSel({ kind: "pin", ref, pin })}

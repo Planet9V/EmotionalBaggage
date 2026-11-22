@@ -119,6 +119,14 @@ export function buildCircuit(partItems: Item[], wireItems: Item[], pinRows: PinR
 }
 
 /**
+ * The nets the wires make when only the wires are known (no part or pin definitions): the same joining
+ * and naming as buildCircuit, so a wire list and a full circuit never disagree on what is one net.
+ */
+export function wireNets(wires: Wire[]): Net[] {
+  return buildCircuit([], wires.map((w) => w.item), []).nets;
+}
+
+/**
  * Nets joined through closed switches form one supply group: a supply on one side of a power
  * switch reaches the other side. Returns, for each net id, the ids of the nets in its group.
  */

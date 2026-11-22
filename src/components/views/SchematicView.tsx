@@ -20,7 +20,7 @@ import { elkLayout, elkLayoutRouted, type LayoutNode } from "@/lib/graphLayout";
 import { symbolLayout } from "@/lib/parts/symbols";
 import "@/components/schematic/print.css";
 import { printSchematic } from "@/components/schematic/printSchematic";
-import { buildGraph, computeChecks, computeNets, nodeId, nodeHeight, NODE_W, HEADER_H, ROW_H, pinsFor, refParts, readWires, type Check, type Part, type XY } from "@/components/schematic/model";
+import { buildGraph, computeChecks, netList, nodeId, nodeHeight, NODE_W, HEADER_H, ROW_H, pinsFor, refParts, readWires, type Check, type Part, type XY } from "@/components/schematic/model";
 import { SchematicCanvas, type ConnectRequest } from "@/components/schematic/SchematicCanvas";
 import { SidePanel, type Selection } from "@/components/schematic/SidePanel";
 import { ChecksPanel, rowProblems } from "@/components/schematic/ChecksPanel";
@@ -103,8 +103,9 @@ export function SchematicView({ project, section, store }: ViewProps) {
   );
   const wires = useMemo(() => readWires(wiresApi.items), [wiresApi.items]);
   const graph = useMemo(() => buildGraph(parts, wires, overlay, false, pinsLayout), [parts, wires, overlay, pinsLayout]);
-  const checks = useMemo(() => computeChecks(parts, wires).filter((c) => !c.id.startsWith("loose:")), [parts, wires]);
-  const nets = useMemo(() => computeNets(wires), [wires]);
+  const checks = useMemo(() => computeChecks(parts, wires, netList(circuit.nets)).filter((c) => !c.id.startsWith("loose:")), [parts, wires, circuit]);
+  // The net list is the circuit's own nets, the ones the electrical checks and the symbol view read.
+  const nets = useMemo(() => netList(circuit.nets), [circuit]);
   const nextOrder = useMemo(() => wires.reduce((m, w) => Math.max(m, w.order), 0) + 1, [wires]);
   const statuses = section.statuses ?? [];
   const symGraph = useMemo(() => buildSymbolGraph(circuit, symLayout, symOverlay), [circuit, symLayout, symOverlay]);
@@ -148,10 +149,10 @@ export function SchematicView({ project, section, store }: ViewProps) {
     return { litPins: pins, litWires: ws };
   }, [sel, wires]);
 
-  const highlight = useMemo(() => {
-    const n = hoverNet ? nets.find((x) => x.name === hoverNet) : null;
-    return new Set([...(n ? n.members : []), ...litPins]);
-  }, [hoverNet, nets, litPins]);
+  // Pointing at a net lights its pins and its wires: the wires of that net, whatever name is typed on them.
+  const hovered = useMemo(() => (hoverNet ? (nets.find((x) => x.name === hoverNet) ?? null) : null), [hoverNet, nets]);
+  const highlight = useMemo(() => new Set([...(hovered ? hovered.members : []), ...litPins]), [hovered, litPins]);
+  const hoverWires = useMemo(() => (hovered ? new Set(hovered.wires.map((w) => w.item.id)) : null), [hovered]);
 
   // ───────── automatic layouts with elkjs, for parts without a saved position
   const pinsLayoutKey = useMemo(() => graph.nodes.filter((n) => n.kind === "part").map((n) => `${n.id}:${n.kind === "part" ? n.pins.map((x) => x.name + x.side).join(",") : ""}`).join("|") + `#${wires.map((w) => w.item.id).join(",")}`, [graph, wires]);
@@ -479,7 +480,7 @@ export function SchematicView({ project, section, store }: ViewProps) {
                     return next;
                   })
                 }
-                hoverNet={hoverNet}
+                hoverWires={hoverWires}
                 highlight={highlight}
                 litWires={litWires}
                 onPickPin={onPickPin}

@@ -6,6 +6,7 @@ import { CLASS_LABEL, NET_CLASSES, NET_COLOR, pinsOf, readParts, readWires, type
 import { toCsvText } from "@/lib/csv";
 import { esc } from "@/lib/html";
 import { fmtFileStamp } from "@/lib/format";
+import { wireNets, type Net } from "@/lib/parts/circuit";
 
 export { CLASS_LABEL, readWires };
 export type { Part, XY };
@@ -171,7 +172,7 @@ export type Check = { id: string; tone: "danger" | "warning" | "neutral"; text: 
 const wireLabel = (w: Wire) => `Wire ${w.order} (${w.name || "unnamed"})`;
 const listRefs = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
-export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
+export function computeChecks(parts: Part[], wires: Wire[], nets: NetInfo[] = computeNets(wires)): Check[] {
   const out: Check[] = [];
   const counts = new Map<string, number>();
   for (const p of parts) counts.set(p.ref, (counts.get(p.ref) ?? 0) + 1);
@@ -233,7 +234,7 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
     });
   }
 
-  for (const n of computeNets(wires)) {
+  for (const n of nets) {
     if (n.classes.length > 1) {
       out.push({
         id: `mixed:${n.name}`,
@@ -259,24 +260,27 @@ export function computeChecks(parts: Part[], wires: Wire[]): Check[] {
   return out;
 }
 
-// ───────── nets as named on the wires
+// ───────── the net list: pins joined by wires (src/lib/parts/circuit.ts), never the name typed on a wire
 
-export const NO_NET = "(no net name)";
 export type NetInfo = { name: string; classes: NetClass[]; members: string[]; wires: Wire[] };
 
+/**
+ * The circuit's nets as the net list shows them. One entry per electrical net: an unnamed wire is a net
+ * of the pins it joins (named after its first pin), not part of one lump of every unnamed wire, and a
+ * name typed on wires that do not touch does not join them. `classes` are the classes its wires carry.
+ */
+export function netList(nets: Net[]): NetInfo[] {
+  return nets.map((n) => ({
+    name: n.name,
+    classes: [...new Set(n.wires.map((w) => w.netClass))],
+    members: n.members.map((m) => pinKey(m.ref, m.pin)).sort(byPinKey),
+    wires: n.wires,
+  }));
+}
+
+/** The net list of a set of wires alone. With the parts at hand, use netList(circuit.nets): the names then also follow the pins. */
 export function computeNets(wires: Wire[]): NetInfo[] {
-  const map = new Map<string, NetInfo>();
-  for (const w of wires) {
-    const name = w.net.trim() || NO_NET;
-    if (!map.has(name)) map.set(name, { name, classes: [], members: [], wires: [] });
-    const n = map.get(name)!;
-    n.wires.push(w);
-    if (!n.classes.includes(w.netClass)) n.classes.push(w.netClass);
-    for (const m of [pinKey(w.from, w.fromPin), pinKey(w.to, w.toPin)]) if (!n.members.includes(m)) n.members.push(m);
-  }
-  const list = [...map.values()];
-  for (const n of list) n.members.sort(byPinKey);
-  return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return netList(wireNets(wires));
 }
 
 function byPinKey(a: string, b: string) {
@@ -308,12 +312,12 @@ export function wiringCsv(wires: Wire[], cuts: ReadonlyMap<number, WireCut> = ne
   return toCsvText([CSV_HEADER, ...rows]);
 }
 
-/** (b1) Netlist as plain text, grouped by the net name on each wire. */
+/** (b1) Netlist as plain text: one block per electrical net. */
 export function netlistText(wires: Wire[], meta: FileMeta): string {
   const lines = [
     `Netlist: ${meta.concept}`,
     `Generated ${fmtFileStamp(meta.generatedAt)}`,
-    "Grouped by the net name on each wire.",
+    "Pins joined by wires are one net. A net with no name typed on its wires is named after its first pin.",
     "",
   ];
   for (const n of computeNets(wires)) {
@@ -327,56 +331,12 @@ export function netlistText(wires: Wire[], meta: FileMeta): string {
 export type ElectricalNet = { name: string; members: { ref: string; pin: string }[] };
 
 /**
- * Pins joined by wires form one electrical net. A part in series is its own part with a wire to
- * each of its pins, so it splits the net by itself. A net takes the net names of the wires in it;
- * a name shared by several electrical nets gets its first pin appended.
+ * Pins joined by wires form one electrical net: the circuit's own nets (src/lib/parts/circuit.ts), in the
+ * shape the netlist file writes. A part in series is its own part with a wire to each of its pins, so it
+ * splits the net by itself.
  */
 export function electricalNets(wires: Wire[]): ElectricalNet[] {
-  const parent = new Map<string, string>();
-  const find = (k: string): string => {
-    if (!parent.has(k)) parent.set(k, k);
-    let r = k;
-    while (parent.get(r) !== r) r = parent.get(r)!;
-    parent.set(k, r);
-    return r;
-  };
-  const union = (a: string, b: string) => parent.set(find(a), find(b));
-  const key = (ref: string, pin: string) => `${ref}\u0000${pinLabel(pin)}`;
-  const direct: [string, string][] = [];
-  for (const w of wires) {
-    const f = key(w.from, w.fromPin);
-    const t = key(w.to, w.toPin);
-    union(f, t);
-    direct.push([f, w.net]);
-  }
-  const groups = new Map<string, { members: Set<string>; names: string[]; fallback: string[] }>();
-  for (const k of parent.keys()) {
-    const r = find(k);
-    if (!groups.has(r)) groups.set(r, { members: new Set(), names: [], fallback: [] });
-    groups.get(r)!.members.add(k);
-  }
-  for (const [k, n] of direct) if (n.trim()) groups.get(find(k))!.names.push(n.trim());
-
-  const nets = [...groups.values()].map((g) => {
-    const members = [...g.members]
-      .map((m) => {
-        const [ref, pin] = m.split("\u0000");
-        return { ref, pin };
-      })
-      .sort((a, b) => byPinKey(`${a.ref}.${a.pin}`, `${b.ref}.${b.pin}`));
-    const names = [...new Set(g.names.length ? g.names : g.fallback)];
-    return { base: names.join("/") || "", members };
-  });
-  const uses = new Map<string, number>();
-  for (const n of nets) uses.set(n.base, (uses.get(n.base) ?? 0) + 1);
-  return nets
-    .map((n) => {
-      const first = n.members[0];
-      const tag = `(${first.ref}-${first.pin})`;
-      const name = !n.base ? `Net-${tag}` : (uses.get(n.base) ?? 0) > 1 ? `${n.base}-${tag}` : n.base;
-      return { name, members: n.members };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return wireNets(wires).map((n) => ({ name: n.name, members: n.members.map((m) => ({ ref: m.ref, pin: pinLabel(m.pin) })) }));
 }
 
 const q = (s: string) => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;

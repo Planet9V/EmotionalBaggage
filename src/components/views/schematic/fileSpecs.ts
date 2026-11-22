@@ -66,7 +66,7 @@ export function schematicFileSpecs({
     {
       key: "netlist",
       label: "Netlist (text and KiCad-style)",
-      detail: `${nets.length} named ${nets.length === 1 ? "net" : "nets"} as plain text, plus an S-expression netlist (.net) where pins wired together share one net.`,
+      detail: `${nets.length} ${nets.length === 1 ? "net" : "nets"} as plain text, plus an S-expression netlist (.net). In both, pins wired together share one net.`,
       note: "The .net file is a simple netlist for reference, not a validated KiCad project.",
       make: (): GeneratedFile[] => {
         const m = meta();

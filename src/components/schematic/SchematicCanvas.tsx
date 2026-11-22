@@ -34,7 +34,8 @@ type Props = {
   sel: Selection;
   hidden: Set<NetClass>;
   onToggleClass: (c: NetClass) => void;
-  hoverNet: string | null;
+  /** the wires of the net being pointed at in the net list, or null when none is */
+  hoverWires: ReadonlySet<number> | null;
   highlight: Set<string>;
   onMove: (moves: Record<string, XY>) => void;
   onDragStop: (ids: string[]) => void;
@@ -70,7 +71,7 @@ export function SchematicCanvas(p: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<Record<string, { width: number; height: number }>>({});
   const [dropping, setDropping] = useState(false);
-  const { graph, sel, hidden, hoverNet, onMove, onDragStop, onSelect, onConnect, onEditWire } = p;
+  const { graph, sel, hidden, hoverWires, onMove, onDragStop, onSelect, onConnect, onEditWire } = p;
 
   const nodes = useMemo(() => {
     return graph.nodes.map(
@@ -99,11 +100,11 @@ export function SchematicCanvas(p: Props) {
         targetHandle: s.targetHandle,
         selected,
         zIndex: selected ? 10 : 0,
-        data: { wire: s.wire, label: s.label, dim: !!hoverNet && s.wire.net !== hoverNet, emph: (!!hoverNet && s.wire.net === hoverNet) || !!p.litWires?.has(s.wire.item.id) },
+        data: { wire: s.wire, label: s.label, dim: !!hoverWires && !hoverWires.has(s.wire.item.id), emph: !!hoverWires?.has(s.wire.item.id) || !!p.litWires?.has(s.wire.item.id) },
       });
     }
     return out;
-  }, [graph, hidden, sel, hoverNet, p.litWires]);
+  }, [graph, hidden, sel, hoverWires, p.litWires]);
 
   const onNodesChange = useCallback(
     (changes: NodeChangeset<PartNodeType>) => {
