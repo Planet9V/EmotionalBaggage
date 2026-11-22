@@ -21,7 +21,7 @@ import type { CatalogueRead } from "@/lib/admin/plans";
 import type { PlanCatalogue, LimitKey } from "@/lib/admin/planSchema";
 import type { EnvLine } from "@/lib/admin/environment";
 import type { MailSettings, VoiceSettings } from "@/lib/admin/schemas";
-import type { MailView, VoiceView } from "@/lib/admin/settings";
+
 import type { AuditRow } from "@/lib/auditLog";
 import type { ModelChoice } from "@/lib/settings";
 import { downloadFile } from "@/lib/download";
@@ -32,7 +32,7 @@ export type PaymentsView =
   | { configured: true; mode: "test" | "live"; webhookSecret: boolean; webhookPath: string; hidden?: undefined }
   | { configured: false; reason: string; webhookPath: string; hidden?: undefined }
   | { configured: boolean; hidden: true; webhookPath: string };
-export type { MailView, VoiceView };
+
 
 export type AdminStatus = { complete: boolean; items: StatusItem[]; defaultPassword: boolean };
 export type TestResult = { ok: boolean; message: string; detail?: Record<string, unknown> };
