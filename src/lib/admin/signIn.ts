@@ -21,7 +21,7 @@ export type SignInStatus = {
   sharedConcepts: string;
 };
 
-export const SHARED_CONCEPTS =
+const SHARED_CONCEPTS =
   "Concepts are not yet kept apart per workspace: until that is built, every signed-in account sees and changes the same concepts, as today. Workspaces, members and invitations already work.";
 
 export async function signInStatus(viewer: { platformAdmin: boolean }): Promise<SignInStatus> {
