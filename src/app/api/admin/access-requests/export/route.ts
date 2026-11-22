@@ -1,10 +1,9 @@
-import { adminRoute } from "@/lib/admin/guard";
-import { sessionOf } from "@/lib/api/route";
-import { accessRequestsCsv, refuseWhileDefaultPassword } from "@/lib/accessRequests/store";
+import { adminRoute, guardAccessRequests } from "@/lib/admin/guard";
+import { accessRequestsCsv } from "@/lib/accessRequests/store";
 
 /** The access requests as a CSV file, newest first. Taking a copy is recorded in the audit log. */
 export const GET = adminRoute(async (req: Request) => {
-  refuseWhileDefaultPassword(sessionOf(req).usingDefaultPassword);
+  await guardAccessRequests(req);
   const { text } = await accessRequestsCsv();
   return new Response(text, {
     headers: {

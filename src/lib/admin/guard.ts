@@ -10,6 +10,7 @@
 //  - Reads of the new powers by anyone else say only configured or not configured (./credentials.ts, ./settings.ts,
 //    ./overview.ts).
 import { HttpError, route, sessionOf, type RouteOptions } from "@/lib/api/route";
+import { refuseWhileDefaultPassword } from "@/lib/accessRequests/store";
 import { platformAdminFromAuth2 } from "./platformAdminHook";
 
 /**
@@ -66,6 +67,17 @@ export async function isPlatformAdmin(req: Request): Promise<boolean> {
 /** A 403 with the plain sentence unless the caller is the platform administrator. */
 export async function requirePlatformAdmin(req: Request): Promise<void> {
   if (!(await isPlatformAdmin(req))) throw new HttpError(403, PLATFORM_ADMIN_NOTICE);
+}
+
+/**
+ * Access requests hold people's names, emails and companies. With the new sign-in on, sign-up is public, so they are
+ * the platform administrator's only (cut-over review B1). With it off, as before: refused while the account still
+ * uses the published demo password.
+ */
+export async function guardAccessRequests(req: Request): Promise<void> {
+  const s = sessionOf(req);
+  if (s.kind === "auth2") return requirePlatformAdmin(req);
+  refuseWhileDefaultPassword(s.usingDefaultPassword);
 }
 
 /** What the screens need, per capability. */
