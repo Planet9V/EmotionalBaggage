@@ -28,10 +28,19 @@ const logSender: MailSender = {
 };
 
 /**
- * Where a configured mail service plugs in. Another change adds SMTP settings in the admin area and a
- * `getMailSender()` beside this file; it is wired here, in this one place, and nowhere else. Until then: none.
+ * The configured mail service: Admin, Email (src/lib/admin/mail.ts getMailSender). With nothing configured there, or
+ * the settings unreadable, none. Imported when needed, so this module stays free of the admin area's imports.
  */
-const configuredSender = async (): Promise<MailSender | null> => null;
+async function configuredSender(): Promise<MailSender | null> {
+  try {
+    const { getMailSender } = await import("@/lib/admin/mail");
+    const setup = await getMailSender();
+    return setup.configured ? setup.sender : null;
+  } catch (e) {
+    console.error(`[auth2 mail] the mail settings could not be read, so no mail is sent: ${(e as Error).message}`);
+    return null;
+  }
+}
 
 /**
  * The one function every caller uses to send mail (owner's ruling: mail must never stop the app running).

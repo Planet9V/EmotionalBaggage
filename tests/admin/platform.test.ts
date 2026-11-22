@@ -4,7 +4,7 @@
 // Stripe (GET /v1/balance), an SMTP server, and a Kokoro speech server (its OpenAI-compatible speech interface). No real service
 // is called and no real secret is used.
 import { createServer as httpServer, type Server } from "node:http";
-import { createServer as tcpServer, type Server as TcpServer, type Socket } from "node:net";
+import { createServer as tcpServer, type Server as TcpServer } from "node:net";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { pool, q } from "@/lib/db";
@@ -31,6 +31,7 @@ import { POST as passwordPost } from "@/app/api/auth/password/route";
 import { readAudit } from "@/lib/admin/audit";
 import { POST as voiceOptions } from "@/app/api/admin/voice/options/route";
 import { anonymous, json, read } from "../api/helpers";
+import { smtpStandIn } from "./smtpStandIn";
 
 // The platform administrator exists only in the new sign-in (src/lib/admin/platformAdminHook.ts, false until accounts
 // slice 2). Here the hook is stood in: most of the file runs as the platform administrator; the blocks about anyone
@@ -384,49 +385,6 @@ describe("Payments (Stripe)", () => {
     expect(o.body.services.find((x) => x.key === "payments")?.state).toBe("not-configured");
   });
 });
-
-// A small SMTP server: greets, answers EHLO (with AUTH PLAIN), AUTH, MAIL, RCPT, DATA and QUIT. No TLS.
-function smtpStandIn(password: string): Promise<{ port: number; messages: string[]; close: () => Promise<void> }> {
-  const messages: string[] = [];
-  const srv: TcpServer = tcpServer((sock: Socket) => {
-    let data = false;
-    let buf = "";
-    let msg = "";
-    sock.write("220 standin ESMTP\r\n");
-    sock.on("data", (chunk) => {
-      buf += chunk.toString("utf8");
-      let i: number;
-      while ((i = buf.indexOf("\r\n")) >= 0) {
-        const line = buf.slice(0, i);
-        buf = buf.slice(i + 2);
-        if (data) {
-          if (line === ".") {
-            data = false;
-            messages.push(msg);
-            msg = "";
-            sock.write("250 queued\r\n");
-          } else msg += line + "\n";
-          continue;
-        }
-        const cmd = line.toUpperCase();
-        if (cmd.startsWith("EHLO") || cmd.startsWith("HELO")) sock.write("250-standin\r\n250 AUTH PLAIN LOGIN\r\n");
-        else if (cmd.startsWith("AUTH PLAIN")) {
-          const decoded = Buffer.from(line.split(" ")[2] ?? "", "base64").toString("utf8").split("\u0000");
-          sock.write(decoded[2] === password ? "235 ok\r\n" : "535 bad credentials\r\n");
-        } else if (cmd.startsWith("MAIL") || cmd.startsWith("RCPT") || cmd.startsWith("RSET") || cmd.startsWith("NOOP")) sock.write("250 ok\r\n");
-        else if (cmd === "DATA") {
-          data = true;
-          sock.write("354 go\r\n");
-        } else if (cmd === "QUIT") {
-          sock.write("221 bye\r\n");
-          sock.end();
-        } else sock.write("502 no\r\n");
-      }
-    });
-    sock.on("error", () => undefined);
-  });
-  return new Promise((resolve) => srv.listen(0, "127.0.0.1", () => resolve({ port: (srv.address() as AddressInfo).port, messages, close: () => new Promise((r) => srv.close(() => r())) })));
-}
 
 describe("Email", () => {
   const PW = "standin-password-9876";
