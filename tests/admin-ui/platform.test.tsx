@@ -16,7 +16,11 @@ import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
 const nav = vi.hoisted(() => ({ tab: "payments" }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(`tab=${nav.tab}`), useRouter: () => ({ replace: () => undefined }), usePathname: () => "/admin" }));
 
-const DEMO = "Change the default password before changing settings: this account is the public demo account.";
+const NOTICE = "These settings are changed by the platform administrator. That account is created when the new sign-in is switched on.";
+const ADMIN = { platformAdmin: true, capabilities: { plans: true, payments: true, email: true, voice: true }, notice: null };
+const NOT_ADMIN = { platformAdmin: false, capabilities: { plans: false, payments: false, email: false, voice: false }, notice: NOTICE };
+/** The platform administrator (only through the new sign-in), for the tests that save. */
+const asPlatformAdmin = on("GET", "/api/admin/access", () => ({ body: ADMIN }));
 
 beforeEach(shimBrowser);
 afterEach(() => {
@@ -82,7 +86,7 @@ describe("Payments", () => {
 
 describe("Pricing and tiers", () => {
   it("names a negative price at its field and sends nothing", async () => {
-    const { calls } = adminServer([on("GET", "/api/admin/plans", () => ({ body: { catalogue: builtInCatalogue(), source: "built-in", limits: [] } }))]);
+    const { calls } = adminServer([asPlatformAdmin, on("GET", "/api/admin/plans", () => ({ body: { catalogue: builtInCatalogue(), source: "built-in", limits: [] } }))]);
     renderWithClient(<PricingTab />);
     const price = (await screen.findAllByLabelText("Price a month"))[1] as HTMLInputElement;
     fireEvent.change(price, { target: { value: "-5" } });
@@ -94,6 +98,7 @@ describe("Pricing and tiers", () => {
 
   it("sends the whole catalogue with the prices switch on", async () => {
     const { calls } = adminServer([
+      asPlatformAdmin,
       on("GET", "/api/admin/plans", () => ({ body: { catalogue: builtInCatalogue(), source: "built-in", limits: [] } })),
       on("PUT", "/api/admin/plans", (c) => ({ body: { catalogue: c.body, source: "database", limits: [] } })),
     ]);
@@ -112,6 +117,7 @@ describe("Email", () => {
   const settings = (o: Partial<AdminSettings> = {}) => ({ settings: { mail: { mode: "smtp", fromName: "C2R", fromAddress: "noreply@example.test", host: "smtp.example.test", port: 587, security: "starttls", username: "c2r" }, voice: { provider: "none" }, ...o } });
   it("saves the server, and the password card shows only that a password is set", async () => {
     const { calls } = adminServer([
+      asPlatformAdmin,
       on("GET", "/api/admin/settings", () => ({ body: settings() })),
       on("PUT", "/api/admin/settings", () => ({ body: settings() })),
       on("GET", "/api/admin/credentials", () => ({ body: { providers: [{ id: "smtp", label: "Mail server (SMTP)", purpose: "Email.", configured: true, fields: [{ name: "password", label: "SMTP password", secret: true, required: false, set: true, source: "admin", last4: "9876", value: null, updatedAt: null }] }] } })),
@@ -125,24 +131,24 @@ describe("Email", () => {
   });
 });
 
-describe("the public demo account", () => {
+describe("anyone but the platform administrator", () => {
   const server = () =>
     adminServer([
-      on("GET", "/api/admin/access", () => ({ body: { canWrite: false, reason: DEMO } })),
-      on("GET", "/api/admin/payments", () => ({ body: { configured: true, mode: "test", webhookSecret: false, webhookPath: "/api/billing/stripe/webhook" } })),
-      on("GET", "/api/admin/credentials", () => ({ body: { providers: [stripe()] } })),
-      on("GET", "/api/admin/settings", () => ({ body: { settings: {} } })),
+      on("GET", "/api/admin/access", () => ({ body: NOT_ADMIN })),
+      on("GET", "/api/admin/payments", () => ({ body: { configured: true, hidden: true, webhookPath: "/api/billing/stripe/webhook" } })),
+      on("GET", "/api/admin/credentials", () => ({ body: { providers: [stripe({ locked: true, fields: stripe().fields.map((f) => ({ ...f, last4: null, value: null, masked: f.set })) })] } })),
+      on("GET", "/api/admin/settings", () => ({ body: { settings: { mail: { mode: "smtp", hidden: true }, voice: { provider: "none" } } } })),
       on("GET", "/api/admin/plans", () => ({ body: { catalogue: builtInCatalogue(), source: "built-in", limits: [] } })),
     ]);
 
-  it("sees the sentence at the top of the section, with a link to change the password, and Save, Remove and Test are off", async () => {
+  it("sees the one notice on Payments, set or not set only, and Save, Remove and Test are off", async () => {
     server();
     nav.tab = "payments";
     renderWithClient(<AdminView />);
-    expect(await screen.findByText(DEMO)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Change the password" }).getAttribute("href")).toBe("/account");
-    await screen.findByTestId("state-stripe-secretKey");
-    await waitFor(() => expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true));
+    expect((await screen.findByTestId("platform-admin-notice")).textContent).toBe(NOTICE);
+    expect((await screen.findByTestId("stripe-mode")).textContent).toBe("Set up");
+    expect((await screen.findByTestId("state-stripe-secretKey")).textContent).toBe("Set.");
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "Test connection" }) as HTMLButtonElement).disabled).toBe(true);
     for (const b of screen.getAllByRole("button", { name: "Remove" })) expect((b as HTMLButtonElement).disabled).toBe(true);
   });
@@ -151,7 +157,22 @@ describe("the public demo account", () => {
     server();
     nav.tab = "pricing";
     renderWithClient(<AdminView />);
-    expect(await screen.findByText(DEMO)).toBeTruthy();
+    expect(await screen.findByTestId("platform-admin-notice")).toBeTruthy();
     await waitFor(() => expect((screen.getByRole("button", { name: "Save the catalogue" }) as HTMLButtonElement).disabled).toBe(true));
+  });
+
+  it("sees that a mail server is set up, without its details", async () => {
+    server();
+    nav.tab = "email";
+    renderWithClient(<AdminView />);
+    expect(await screen.findByText("A mail server is set up. Its details are shown to the platform administrator only.")).toBeTruthy();
+  });
+
+  it("sees no notice on a section that existed before (Sales channels)", async () => {
+    server();
+    nav.tab = "channels";
+    renderWithClient(<AdminView />);
+    await screen.findByRole("link", { name: "Integrations" });
+    expect(screen.queryByTestId("platform-admin-notice")).toBeNull();
   });
 });
