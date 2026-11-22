@@ -527,12 +527,114 @@ describe("Voice (Kokoro)", () => {
     }
   });
 
-  it("OpenRouter and ElevenLabs cannot be saved as a voice provider", async () => {
-    for (const p of ["openrouter", "elevenlabs", "openai"]) {
+  it("ElevenLabs and a bare OpenAI-compatible endpoint cannot be saved as a voice provider", async () => {
+    for (const p of ["elevenlabs", "openai"]) {
       const r = await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: p, model: "m", voice: "v", speed: 1 } });
       expect({ p, status: r.status }).toEqual({ p, status: 400 });
     }
     expect((await call(credPut, "PUT", "/api/admin/credentials/elevenlabs", { fields: { apiKey: "x".repeat(20) } }, provider("elevenlabs"))).status).toBe(400);
+  });
+});
+
+// OpenRouter's speech API as the project manager read its documentation on 22 Nov 2026 (this machine cannot reach
+// openrouter.ai): POST /api/v1/audio/speech, GET /api/v1/models?output_modalities=speech with supported_voices, and
+// GET /api/v1/audio/speech/models. The stand-in answers those three; nothing here is checked against the real service.
+describe("Voice (OpenRouter)", () => {
+  let or: Awaited<ReturnType<typeof standIn>>;
+  const KEY = "sk-or-v1-voice-test-0000000000";
+  const AUDIO = Buffer.from("ID3-openrouter-mp3");
+  let speechStatus = 200;
+  beforeAll(async () => {
+    or = await standIn((s) => {
+      if (s.headers.authorization !== `Bearer ${KEY}`) return { status: 401, body: JSON.stringify({ error: { message: "No auth credentials found" } }) };
+      if (s.method === "POST" && s.url === "/api/v1/audio/speech") {
+        if (speechStatus !== 200) return { status: speechStatus, body: JSON.stringify({ error: { message: "INTERNAL-ONLY upstream detail" } }) };
+        return { status: 200, type: "audio/mpeg", body: AUDIO };
+      }
+      if (s.url === "/api/v1/models?output_modalities=speech") {
+        return {
+          status: 200,
+          body: JSON.stringify({
+            data: [
+              { id: "openai/gpt-4o-mini-tts", supported_voices: ["alloy", "nova", "<b>bad</b>"], pricing: { prompt: "0.0000006" } },
+              { id: "acme/speech-no-voices", pricing: {} },
+            ],
+          }),
+        };
+      }
+      if (s.url === "/api/v1/audio/speech/models") return { status: 200, body: JSON.stringify({ data: [{ id: "openai/gpt-4o-mini-tts" }] }) };
+      return { status: 404, body: "{}" };
+    });
+  });
+  afterAll(() => or.close());
+  /** The OpenRouter address and key as AI models keep them: a saved OpenRouter model at the stand-in, its key bound there. */
+  const useStandIn = async () => {
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", { reasoningModel: { provider: "openrouter", baseUrl: `${or.url}/api/v1`, model: "openai/gpt-4o-mini" } })).status).toBe(200);
+    expect((await call(credPut, "PUT", "/api/admin/credentials/openrouter", { fields: { apiKey: KEY }, address: `${or.url}/api/v1` }, provider("openrouter"))).status).toBe(200);
+  };
+
+  it("lists OpenRouter's speech models, and the chosen model's voices (plain names only)", async () => {
+    await useStandIn();
+    const r = await read<{ voices: { ok: boolean; items: string[] }; models: { ok: boolean; items: string[] } }>(await call(voiceOptions, "POST", "/api/admin/voice/options", { provider: "openrouter", model: "openai/gpt-4o-mini-tts" }));
+    expect(r.status).toBe(200);
+    expect(r.body.models).toEqual({ ok: true, items: ["openai/gpt-4o-mini-tts", "acme/speech-no-voices"] });
+    expect(r.body.voices).toEqual({ ok: true, items: ["alloy", "nova"] });
+    expect(or.seen.some((x) => x.url === "/api/v1/models?output_modalities=speech")).toBe(true);
+  });
+
+  it("a model with no supported_voices, or one not listed, leaves free text with a fixed sentence", async () => {
+    await useStandIn();
+    const none = await read<{ voices: { ok: boolean; reason: string } }>(await call(voiceOptions, "POST", "/api/admin/voice/options", { provider: "openrouter", model: "acme/speech-no-voices" }));
+    expect(none.body.voices).toEqual({ ok: false, reason: "OpenRouter did not list the voices of that model. Type the voice instead." });
+    const unknown = await read<{ voices: { ok: boolean; reason: string } }>(await call(voiceOptions, "POST", "/api/admin/voice/options", { provider: "openrouter", model: "nobody/nothing" }));
+    expect(unknown.body.voices.reason).toBe("That model is not in OpenRouter's list of speech models. Type the name instead.");
+    const noModel = await read<{ voices: { ok: boolean; reason: string } }>(await call(voiceOptions, "POST", "/api/admin/voice/options", { provider: "openrouter" }));
+    expect(noModel.body.voices.reason).toBe("Choose a model first: the voices depend on it.");
+  });
+
+  it("speaks with the OpenRouter key: { model, input, voice, response_format: mp3 }, bytes and a content type back", async () => {
+    await useStandIn();
+    speechStatus = 200;
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openrouter", model: "openai/gpt-4o-mini-tts", voice: "nova" } })).status).toBe(200);
+    const s = await getSpeechSynthesizer();
+    if (!s.configured) throw new Error(s.reason);
+    expect(await s.synth.synthesize("Hello.")).toEqual({ audio: new Uint8Array(AUDIO), contentType: "audio/mpeg" });
+    const sent = or.seen.filter((x) => x.url === "/api/v1/audio/speech").at(-1)!;
+    expect(sent.headers.authorization).toBe(`Bearer ${KEY}`);
+    expect(JSON.parse(sent.body)).toEqual({ model: "openai/gpt-4o-mini-tts", input: "Hello.", voice: "nova", response_format: "mp3" });
+    const t = await read<{ ok: boolean; message: string }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }));
+    expect(t.body).toMatchObject({ ok: true, message: expect.stringMatching(/^OpenRouter spoke the test sentence/) });
+  });
+
+  it("an upstream error is a fixed sentence and its status; the body is never repeated", async () => {
+    await useStandIn();
+    await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openrouter", model: "openai/gpt-4o-mini-tts", voice: "nova" } });
+    speechStatus = 502;
+    try {
+      const t = await read<{ ok: boolean; message: string }>(await call(testPost, "POST", "/api/admin/test", { kind: "voice" }));
+      expect(t.body).toEqual({ ok: false, message: "OpenRouter answered with a server error (HTTP 502)." });
+    } finally {
+      speechStatus = 200;
+    }
+  });
+
+  it("without an OpenRouter key, or with one saved for another host, it is not configured and nothing is sent", async () => {
+    await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openrouter", model: "openai/gpt-4o-mini-tts", voice: "nova" } });
+    expect(await getSpeechSynthesizer()).toMatchObject({ configured: false, reason: "OpenRouter is chosen, but no OpenRouter key is saved. Add it in Admin, AI models." });
+    // a key saved for OpenRouter's own address is not sent to the stand-in the model now points at
+    await call(credPut, "PUT", "/api/admin/credentials/openrouter", { fields: { apiKey: KEY } }, provider("openrouter"));
+    await q("UPDATE credentials SET bound_origin='https://openrouter.ai' WHERE provider='openrouter'");
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", { reasoningModel: { provider: "openrouter", baseUrl: `${or.url}/api/v1`, model: "m" } })).status).toBe(200);
+    const before = or.seen.length;
+    const s = await getSpeechSynthesizer();
+    expect(s.configured).toBe(false);
+    expect(or.seen.length).toBe(before);
+  });
+
+  it("is a new power: anyone but the platform administrator cannot choose it or list from OpenRouter", async () => {
+    hook.admin = false;
+    expect((await call(settingsPut, "PUT", "/api/admin/settings", { voice: { provider: "openrouter", model: "m", voice: "v" } })).status).toBe(403);
+    expect((await call(voiceOptions, "POST", "/api/admin/voice/options", { provider: "openrouter" })).status).toBe(403);
   });
 });
 
