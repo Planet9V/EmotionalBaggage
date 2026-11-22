@@ -1,0 +1,247 @@
+{
+ "batch": "2026-11-22",
+ "about": "Rows of docs/research/baggage-claims-content-proposal.csv that state one of the owner's documents plainly and need no decision from him (his ruling of 22 Nov 2026, option B). Each row names the sheet row it comes from and the document and place it was checked against. Rows are added once per database by src/lib/seedContentDb.ts; a row a person has changed is left alone.",
+ "rows": [
+  {
+   "proposal": "P004",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Stakeholder: traveler (buyer)",
+   "body": "Pain: airports are stressful, anonymous, boring. Relief: turns dead travel time into a shared joke at weigh-in, belt and carousel.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 stakeholder table, page 2"
+  },
+  {
+   "proposal": "P005",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Stakeholder: gift-giver",
+   "body": "Pain: needs a $20-30 gift that is NOT another candle. Relief: instant novelty; gag price band proven at $12-15 on Etsy and eBay.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 stakeholder table, page 2"
+  },
+  {
+   "proposal": "P006",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Stakeholder: baggage handler and bystander",
+   "body": "Pain: invisible labor. Relief: the bag talks back; handlers become the audience and the viral content engine.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 stakeholder table, page 2"
+  },
+  {
+   "proposal": "P007",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Stakeholder: retailer",
+   "body": "Pain: the gag shelf churns on meme cycles. Relief: seasonal voice packs refresh the SKU without new hardware.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 stakeholder table, page 2"
+  },
+  {
+   "proposal": "P010",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Data flow and firmware states",
+   "body": "IMU 100 Hz > ring buffer > feature extractor > state machine (BOOT / CALIBRATE / IDLE / ACTIVE_SAMPLE / CLASSIFY / DISPATCH / COOLDOWN) > UART > DFPlayer > 8-ohm speaker. Single-board device, radios disabled.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§4 System Architecture, page 2"
+  },
+  {
+   "proposal": "P016",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Realistic ceiling",
+   "body": "\"The realistic ceiling on a single gag run is a viral 5-figure-to-low-6-figure seasonal product\", and the worst case is \"the funniest road-trip companion ever made\".",
+   "data": {},
+   "status": "open",
+   "sourceFile": "I have an idea for a quick gag and potential quick.md",
+   "sourceLocation": "Road to the Quick Buck, last paragraph, line 61"
+  },
+  {
+   "proposal": "P017",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Scale or exit",
+   "body": "Phase 3 always-on: TikTok Shop and Shopify DTC; an Amazon listing tuned to gag travel gift keywords; an airport gift-store wholesale pitch with a counter display playing one clip on button-press; holiday voice packs as the re-purchase hook; luggage-brand licensing (co-brand) as the scale-or-exit option.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§10 Phase 3, page 6"
+  },
+  {
+   "proposal": "P019",
+   "op": "add",
+   "section": "concept/brief",
+   "title": "Success metrics: product and business",
+   "body": "Product: idle false positives under 1 a day, return rate under 4%, 4.3+ stars. Business: 45% blended gross margin on the first production run; 20% of buyers attach a DLC voice pack within 12 months.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§13 Success Metrics, page 6"
+  },
+  {
+   "proposal": "P008",
+   "op": "enrich",
+   "section": "concept/brief",
+   "match": {
+    "title": "Who it is for"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§2 Target Users & Use Cases, page 2",
+   "appendBody": "Each segment's signal and job. P1 frequent leisure flyers 25-45: core gifting demographic; express personality, prank travel companions, TikTokable moments. P2 gag-gift buyers (Secret Santa, Father's Day): Q4 gifting spike; a $20-30 stocking-stuffer with an explanation-free 90-second demo. P3 travel content creators: high leverage, low price sensitivity; a prop that generates clips, affiliate partners. P4 airport gift shops and novelty retail: Paradies/Hudson-style channel; high-margin impulse checkout SKU."
+  },
+  {
+   "proposal": "P013",
+   "op": "enrich",
+   "section": "concept/brief",
+   "match": {
+    "title": "Claimed moats"
+   },
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§1 Moats, page 2",
+   "appendBody": "The PRD's detail: (1) the trigger-pattern classifier is \"hard to copy well without flying duffel bags around\"; (3) the alkaline trick rests on FAA PackSafe (lithium devices must be fully OFF in the hold). From the risk table: the classifier is treated as a trade secret, alongside a design patent and trademark."
+  },
+  {
+   "proposal": "P065",
+   "op": "enrich",
+   "section": "concept/decisions",
+   "match": {
+    "title": "Phase 1 gate: did the unbranded clips pass?"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 1, line 24",
+   "appendBody": "The mechanics: posted raw at 6-8 am local commuter slots; pinned reply \"comment FAT for where to get one\" with a keyword auto-DM through ManyChat to a one-field email capture; the $2k amplification is split 70/30 toward the platform where the clip broke out; the kill window is 30 days."
+  },
+  {
+   "proposal": "P077",
+   "op": "enrich",
+   "section": "concept/questions",
+   "match": {
+    "title": "Is Austin still the home base?"
+   },
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 6, line 72",
+   "appendBody": "The evidence: the design chat's shopping plan says \"Micro Center (same-day, Austin)\"; the playbook's stunt is \"(Austin home-field)\", timed against SXSW or a travel expo; the home page's departure board opens with \"AUS\"."
+  },
+  {
+   "proposal": "P035",
+   "op": "enrich",
+   "section": "concept/names",
+   "match": {
+    "title": "Baggage Claims"
+   },
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Top contenders, line 9",
+   "appendBody": "In the note's words: \"the incumbent. Legal-world pun, instantly says 'luggage with complaints,' and 'file a claim' doubles as a return-policy joke. Hard to beat.\" The note says it \"wins for the Kickstarter video and PR angle\". Domain named in the playbook: BaggageClaims.com."
+  },
+  {
+   "proposal": "P036",
+   "op": "enrich",
+   "section": "concept/names",
+   "match": {
+    "title": "Sass Case"
+   },
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Top contenders, line 10",
+   "appendBody": "In the note's words: \"'suitcase' with the attitude baked in. Two syllables, giftable, and the voice packs (Family / Salty / New Yorker) live inside the name.\" Ranking: \"edges out Baggage Claims for retail (says it in two syllables, survives being shouted across a store)\". Domain: sasscase.com is planned as a redirect."
+  },
+  {
+   "proposal": "P038",
+   "op": "enrich",
+   "section": "concept/names",
+   "match": {
+    "title": "LoudMouth Luggage"
+   },
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Top contenders, line 12",
+   "appendBody": "In the note's words: \"alliterative, retail-shelf friendly, reads great on an airport gift-shop counter display.\""
+  },
+  {
+   "proposal": "P039",
+   "op": "enrich",
+   "section": "concept/names",
+   "match": {
+    "title": "Checked & Offended"
+   },
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Top contenders, line 13",
+   "appendBody": "In the note's words: \"the checked-bag journey plus the personality. Slightly long, but it's the funniest bumper sticker of the bunch.\" Also used in the proposed collector edition name."
+  },
+  {
+   "proposal": "P040",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Bellyaching",
+   "body": "\"cargo 'belly' + complaining. Deep cut, but rewarding.\"",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Strong alternates, line 18"
+  },
+  {
+   "proposal": "P042",
+   "op": "add",
+   "section": "concept/names",
+   "title": "HeavyBag",
+   "body": "\"deadpan, airline-scale joke embedded (overweight fees), short and trademarkable.\"",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Strong alternates, line 20"
+  },
+  {
+   "proposal": "P043",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Unclaimed",
+   "body": "\"carousel-native. Dark humor angle: the bag that refuses to shut up until somebody claims it.\"",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Strong alternates, line 21"
+  },
+  {
+   "proposal": "P044",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Freightened",
+   "body": "\"freight + frightened. Cute, but reads better in print than out loud.\"",
+   "data": {
+    "kind": "Name"
+   },
+   "status": "candidate",
+   "sourceFile": "What clever names for this ?.md",
+   "sourceLocation": "Strong alternates, line 22"
+  },
+  {
+   "proposal": "P049",
+   "op": "add",
+   "section": "concept/names",
+   "title": "Seasonal and stretch voice pack names",
+   "body": "Holiday Heckler, Summer Breakdown, Bachelor Party Layover (quarterly drops at $7.99); International pack (multilingual complaints, $25k stretch goal); Gold Voice (collector tier).",
+   "data": {
+    "kind": "Name (voice packs)"
+   },
+   "status": "candidate",
+   "sourceFile": "BaggageClaims_Marketing_Playbook_RevA.txt",
+   "sourceLocation": "Campaign 9, line 112"
+  }
+ ]
+}

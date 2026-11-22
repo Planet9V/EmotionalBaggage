@@ -159,6 +159,8 @@ export function ready() {
       await (await import("./story/seedFiles")).upgradeSeedFiles(ownerPool());
       await (await import("./story/seedFiles")).addSeedFiles(ownerPool());
       await (await import("./economics/movePricingChannels")).movePricingChannels(ownerPool());
+      // content entered from the owner's documents after the first seed, one dated batch at a time
+      await (await import("./seedContentDb")).seedContent(ownerPool());
       // Last, so the tables made above are included. Only with two roles.
       const app = appUrl();
       if (app) await (await import("./auth2/dbRoles")).ensureAppRole(ownerPool(), app, ownerUrl());
