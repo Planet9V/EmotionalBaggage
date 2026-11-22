@@ -126,7 +126,7 @@ function hero(d: ExampleData): HeroFacts {
       const ws = toWires(d.wires);
       return netWheel(ws, hubRef(ws));
     })(),
-    layers: d.enclosure ? printLayers(d.enclosure.outer, layerHeightOf(str(print?.data.settings)) ?? 0.2) : null,
+    layers: d.enclosure ? printLayers(d.enclosure.outer, layerHeightOf(str(print?.data.settings)) ?? 0.2, 20) : null,
   };
 }
 

@@ -109,7 +109,7 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
       assembly,
       onGrab: () => setHeld(true),
       nudge,
-      closer: (motion === "assembly" ? 0.78 : 0.82) * (narrow ? 1.45 : 1),
+      closer: (motion === "assembly" ? 0.78 : 0.82) * (narrow ? 1.2 : 1),
       children: tagsOn ? <PartTags parts={tagParts} host={tagHost} shown={shown} top={78} /> : null,
     }),
     [animated, seen, held, look, hide, assembly, nudge, motion, narrow, tagsOn, tagParts, shown],

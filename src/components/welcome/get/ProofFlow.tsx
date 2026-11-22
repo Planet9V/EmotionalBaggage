@@ -70,7 +70,7 @@ export default function ProofFlow({ market }: { market: MarketData }) {
   }, [market, animated, c]);
   return (
     <div className="h-[380px] w-full" aria-hidden>
-      <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES} fitView fitViewOptions={{ padding: 0.04, maxZoom: 1.4 }} proOptions={{ hideAttribution: true }} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} panOnDrag={false} zoomOnScroll={false} zoomOnPinch={false} zoomOnDoubleClick={false} preventScrolling={false} style={{ background: "transparent" }} />
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES} fitView fitViewOptions={{ padding: 0.04, maxZoom: 1.4 }} proOptions={{ hideAttribution: true }} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} nodesFocusable={false} edgesFocusable={false} panOnDrag={false} zoomOnScroll={false} zoomOnPinch={false} zoomOnDoubleClick={false} preventScrolling={false} style={{ background: "transparent" }} />
     </div>
   );
 }
