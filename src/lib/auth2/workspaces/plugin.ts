@@ -187,7 +187,7 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
           const pwOk = await verifyPassword(ctx.body.password, row?.password ?? (await dummy()));
           const ok = !!row && pwOk && (await twoFactor.giveProof(db, row.id, ctx.body.proof));
           if (!ok) throw store.refuse("BAD_REQUEST", "REENROL_INVALID", "That address, password and code or link do not match. Check them, or ask for a new reset.");
-          await clearTries(db, email);
+          await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
           return ctx.json({ proved: true });
         }
       ),

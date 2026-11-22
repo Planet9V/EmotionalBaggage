@@ -18,7 +18,7 @@
  * password once the wait has passed. Addresses are counted by /64 for IPv6 (./clientAddress.ts).
  *
  * A try made during a wait is refused without checking the password and without counting (429, SIGN_IN_WAIT,
- * Retry-After). A correct password clears both rows. Counts are forgotten after an hour with no try. Names are
+ * Retry-After). A correct password clears the row for its address (not the name-wide one). Counts are forgotten after an hour with no try. Names are
  * stored as their SHA-256; unknown names are counted the same as real ones, so the answers do not tell them apart.
  */
 import { createHash, createHmac } from "node:crypto";
@@ -88,9 +88,23 @@ export async function claimTry(db: Pool, email: string, client: string, now = ne
   }
 }
 
-/** A correct password: both counts for the name go. */
-export async function clearTries(db: Pool, email: string) {
-  await db.query("DELETE FROM auth2_sign_in_waits WHERE name_key = $1", [nameKey(email)]);
+/**
+ * A correct password: the count for this name from this address goes, and the right try is taken back out of the
+ * name-wide count (it was counted before the password was checked). The rest of the name-wide count stays (review
+ * B5): were a right password to clear it, an attacker would get NAME_FREE more free guesses every time the owner
+ * signed in. The owner's own browser skips the name-wide wait anyway once it has signed in (knownDevice).
+ */
+export async function clearTries(db: Pool, email: string, client: string, opts: { knownDevice?: boolean } = {}) {
+  const key = nameKey(email);
+  await db.query("DELETE FROM auth2_sign_in_waits WHERE name_key = $1 AND client = $2", [key, (client || "unknown").slice(0, 100)]);
+  // A known browser's try was never counted name-wide (claimTry), so there is nothing to take back.
+  if (opts.knownDevice) return;
+  await db.query(
+    `UPDATE auth2_sign_in_waits SET failures = GREATEST(failures - 1, 0),
+            next_allowed_at = CASE WHEN failures - 1 <= ${NAME_FREE} THEN LEAST(next_allowed_at, now()) ELSE next_allowed_at END
+      WHERE name_key = $1 AND client = $2`,
+    [key, ALL]
+  );
 }
 
 /** The cookie that marks a browser as having signed in to an account before; one tag per account, at most ten. */

@@ -276,7 +276,7 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
           const r = ctx.context.returned;
           const email = (ctx.body as { email?: unknown } | undefined)?.email;
           if (typeof email === "string" && !(r instanceof Error) && !(r instanceof Response && !r.ok)) {
-            await clearTries(db, email);
+            await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", { knownDevice: hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email) });
             // This browser has now signed in to this account: it skips the name-wide wait next time (review B5).
             ctx.setCookie(KNOWN_DEVICE_COOKIE, withTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email), {
               httpOnly: true, sameSite: "lax", secure: baseURL.startsWith("https://"), path: AUTH2_BASE_PATH, maxAge: 365 * 24 * 60 * 60,
