@@ -1,7 +1,7 @@
 {
   "concept": "baggage-claims",
   "source": "Google Drive folder \"Emotional baggage\" (folder id 1sZKy5ufsLNeoXnfCleQHMe6eWv9fcCPb), downloaded by the owner as a zip on 21 Nov 2026",
-  "note": "Every file here is the original, byte for byte. Until 21 Nov 2026 sixteen of them were copies made from the Drive preview (text without Markdown marks, the two PDFs as text, the schematic as a screen capture); each of those entries keeps the sha256 of the copy it replaced, so an install seeded with the copies can be brought up to the originals. Drive's zip names the naming note 'What clever names for this _.md'; its name in Drive, kept here, ends in ' ?.md'. On 22 Nov 2026 the owner uploaded five more files for the enclosure (entries with addedOn): the generator script, the materials table and the two voxel arrays are his originals, byte for byte. His STL, BaggageClaims_PiP_Clamshell_RevA.stl, is 121,253,284 bytes (sha256 0a97e63db654dccbca84a77c20b9a9989fafbf39255bc449fca2364f5901ecec): over the app's 25 MB a file and GitHub's 100 MB, so it is not in the repository; BaggageClaims_PiP_Clamshell_RevA_reduced.stl is a reduced copy of it (499,936 of 2,425,064 triangles, same bounding box, within 0.001 mm of the original surface; see its reducedFrom). The uploaded launch-script-summary.txt is not added: it is the text of 'Write the script for the launch video.md', which is already here as the original.",
+  "note": "Every file here is the original, byte for byte. Until 21 Nov 2026 sixteen of them were copies made from the Drive preview (text without Markdown marks, the two PDFs as text, the schematic as a screen capture); each of those entries keeps the sha256 of the copy it replaced, so an install seeded with the copies can be brought up to the originals. Drive's zip names the naming note 'What clever names for this _.md'; its name in Drive, kept here, ends in ' ?.md'. On 22 Nov 2026 the owner uploaded five more files for the enclosure (entries with addedOn): the generator script, the materials table and the two voxel arrays are his originals, byte for byte. His STL, BaggageClaims_PiP_Clamshell_RevA.stl, is 121,253,284 bytes (sha256 0a97e63db654dccbca84a77c20b9a9989fafbf39255bc449fca2364f5901ecec): over the app's 25 MB a file and GitHub's 100 MB, so it is not in the repository; BaggageClaims_PiP_Clamshell_RevA_reduced.stl is a reduced copy of it (499,936 of 2,425,064 triangles, same bounding box, within 0.001 mm of the original surface; see its reducedFrom). The uploaded launch-script-summary.txt is not added: it is the text of 'Write the script for the launch video.md', which is already here as the original. On 22 Nov 2026 four firmware files were added for the 2 x AA design (entries with addedOn 2026-11-22-firmware): the Rev B sketch, its detection core (two files) and its flash layout. They were written in the app's repository, not by the owner.",
   "files": [
     {
       "file": "I have an idea for a quick gag and potential quick.md",
@@ -388,6 +388,66 @@
         "method": "quadric edge collapse (fast-simplification 0.2.0), then 64 zero-area triangles removed; every edge still joins two faces (nine join four, twenty in the original)",
         "deviationMeasured": "120,000 vertices of each mesh against the other's surface"
       }
+    },
+    {
+      "file": "BaggageClaims_MK1_RevB.ino",
+      "title": "BaggageClaims_MK1_RevB.ino",
+      "folder": "Firmware",
+      "what": "The firmware sketch for the 2 x AA design, Rev B: sensor set-up, sleep and wake on the motion interrupt, clip playback over I2S, the button, the low-battery behaviour and a serial logging mode. For the Seeed Studio XIAO ESP32S3 with the Arduino-ESP32 core 4.0.0. Not run on hardware.",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 23390,
+      "sha256": "8c0688b3d27c0ec0e48186a4ce453bfe6322f6cc9afde3a700033df91c0b6e2c",
+      "copy": "written in the app's repository on 22 Nov 2026 for the 2 x AA design; not one of the owner's documents",
+      "readOn": "2026-11-22",
+      "origin": "Written on 22 Nov 2026 for the 2 x AA design (docs/design/baggage-claims-device.md in the app's repository), after the owner's ruling that the Arduino sketch is needed. It is not one of the owner's documents and has not been run on hardware.",
+      "addedOn": "2026-11-22-firmware"
+    },
+    {
+      "file": "bc_detect.h",
+      "title": "bc_detect.h",
+      "folder": "Firmware",
+      "what": "The detection core's interface, Rev B: the events, every threshold with its unit, the governor, the clip picker and the battery levels. Plain C++ with no Arduino headers, so it is tested on a PC.",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 12166,
+      "sha256": "3ad2ea6fe41095633e1d61b75c4c170e5e423ad72ced0e3f959dac67a1957472",
+      "copy": "written in the app's repository on 22 Nov 2026 for the 2 x AA design; not one of the owner's documents",
+      "readOn": "2026-11-22",
+      "origin": "Written on 22 Nov 2026 for the 2 x AA design (docs/design/baggage-claims-device.md in the app's repository), after the owner's ruling that the Arduino sketch is needed. It is not one of the owner's documents and has not been run on hardware.",
+      "addedOn": "2026-11-22-firmware"
+    },
+    {
+      "file": "bc_detect.cpp",
+      "title": "bc_detect.cpp",
+      "folder": "Firmware",
+      "what": "The detection core, Rev B: throw, free-fall, landing, hard impact, carousel, weigh-in, handle grab, conveyor and inverted, from the accelerometer and gyro at 100 Hz. Tested against synthetic traces only (tests/firmware in the app's repository).",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 16566,
+      "sha256": "0282ace47fa2944c5277d2870e050849a6e6cca3396be397283c91cd7736eefe",
+      "copy": "written in the app's repository on 22 Nov 2026 for the 2 x AA design; not one of the owner's documents",
+      "readOn": "2026-11-22",
+      "origin": "Written on 22 Nov 2026 for the 2 x AA design (docs/design/baggage-claims-device.md in the app's repository), after the owner's ruling that the Arduino sketch is needed. It is not one of the owner's documents and has not been run on hardware.",
+      "addedOn": "2026-11-22-firmware"
+    },
+    {
+      "file": "BaggageClaims_MK1_RevB.partitions.csv",
+      "title": "BaggageClaims_MK1_RevB.partitions.csv",
+      "folder": "Firmware",
+      "what": "The flash layout for the Rev B sketch on an 8 MB board: one 2 MB application and 5.9 MB of LittleFS for the clips. Renamed to partitions.csv in the sketch folder.",
+      "kind": "spreadsheet",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 367,
+      "sha256": "e06e6de7080a5c11432cf6db142fb55f358a7f677d95300640c18c9119088b88",
+      "copy": "written in the app's repository on 22 Nov 2026 for the 2 x AA design; not one of the owner's documents",
+      "readOn": "2026-11-22",
+      "origin": "Written on 22 Nov 2026 for the 2 x AA design (docs/design/baggage-claims-device.md in the app's repository), after the owner's ruling that the Arduino sketch is needed. It is not one of the owner's documents and has not been run on hardware.",
+      "addedOn": "2026-11-22-firmware"
     }
   ]
 }

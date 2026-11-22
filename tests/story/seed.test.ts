@@ -14,8 +14,10 @@ afterAll(async () => {
 const story = () => q<{ id: string; data: { part: string; sourceIds: number[] } }>("SELECT id, data FROM items WHERE project_id='baggage-claims' AND section='concept/story'");
 const sources = () => q<{ id: string; title: string; status: string }>("SELECT id, title, status FROM items WHERE project_id='baggage-claims' AND section='concept/files' ORDER BY sort");
 /** the 21 of the Drive folder and the files added since */
-const ALL = 26;
+const ALL = 30;
 const LATER = ["pip_clamshell_gen.py", "Part-Material-Why-Cost.csv", "_B.npy", "_T.npy", "BaggageClaims_PiP_Clamshell_RevA_reduced.stl"];
+/** the Rev B firmware written for the 2 x AA design (its own batch, 2026-11-22-firmware): not the owner's files */
+const FIRMWARE = ["BaggageClaims_MK1_RevB.ino", "bc_detect.h", "bc_detect.cpp", "BaggageClaims_MK1_RevB.partitions.csv"];
 const others = async () => (await q<{ n: number }>("SELECT count(*)::int AS n FROM items WHERE project_id='baggage-claims' AND section NOT IN ('concept/story','concept/files')"))[0].n;
 
 describe("the example concept's story", () => {
@@ -25,7 +27,7 @@ describe("the example concept's story", () => {
     expect(parts.map((r) => r.data.part).sort()).toEqual(STORY_PARTS.map((p) => p.key).sort());
     const list = await sources();
     expect(SEED_SOURCES).toHaveLength(21);
-    expect(list.map((s) => s.title)).toEqual([...SEED_SOURCES.map((s) => s.title), ...LATER]);
+    expect(list.map((s) => s.title)).toEqual([...SEED_SOURCES.map((s) => s.title), ...LATER, ...FIRMWARE]);
     expect(list.every((s) => s.status === "stored")).toBe(true);
     const ids = new Set(list.map((s) => Number(s.id)));
     for (const r of parts) expect(r.data.sourceIds.length > 0 && r.data.sourceIds.every((id) => ids.has(id))).toBe(true);
@@ -56,7 +58,7 @@ describe("the example concept's story", () => {
   it("stores every listed document as a file, checked against the manifest, in folders, with their text searchable", async () => {
     const manifest = (await readManifest())!;
     expect(manifest).toHaveLength(ALL);
-    expect(manifest.filter((m) => m.addedOn).map((m) => m.title)).toEqual(LATER);
+    expect(manifest.filter((m) => m.addedOn).map((m) => m.title)).toEqual([...LATER, ...FIRMWARE]);
     // nothing listed is over what the file store takes
     expect(manifest.every((m) => m.size <= 25 * 1024 * 1024)).toBe(true);
     const rows = await q<{ title: string; data: { fileId: number; folder: string; chunks: number }; sha256: string; size: number }>(
@@ -70,7 +72,7 @@ describe("the example concept's story", () => {
       expect(r.size).toBe(m.size);
       expect(r.data.folder).toBe(m.folder);
     }
-    expect(rows.filter((r) => r.data.chunks > 0)).toHaveLength(22); // no text: the schematic (an image), the two voxel arrays and the STL
+    expect(rows.filter((r) => r.data.chunks > 0)).toHaveLength(26); // no text: the schematic (an image), the two voxel arrays and the STL
     const hits = await q("SELECT 1 FROM source_chunks WHERE project_id='baggage-claims' AND search @@ to_tsquery('english', 'gxDump')");
     expect(hits.length).toBeGreaterThan(0);
   });
@@ -131,7 +133,7 @@ describe("the example concept's story", () => {
   it("adds the files the owner supplied later to an install seeded before them, once, and stores nothing twice", async () => {
     await ready();
     const manifest = (await readManifest())!;
-    const later = manifest.filter((m) => m.addedOn);
+    const later = manifest.filter((m) => m.addedOn === "2026-11-22");
     const added = () => q<{ summary: string; data: { batch: string; added: number } }>("SELECT summary, data FROM events WHERE project_id='baggage-claims' AND kind='seed.files.added' ORDER BY id");
     const remove = async (titles: string[]) => {
       await q("DELETE FROM files f USING items i WHERE f.id=(i.data->>'fileId')::bigint AND i.project_id='baggage-claims' AND i.section='concept/files' AND i.title = ANY($1)", [titles]);
@@ -145,10 +147,12 @@ describe("the example concept's story", () => {
     // as an install seeded with the 21 documents only
     await remove(LATER);
     await q("DELETE FROM events WHERE project_id='baggage-claims' AND kind='seed.files.added'");
-    expect(await sources()).toHaveLength(21);
+    expect(await sources()).toHaveLength(21 + FIRMWARE.length);
     await addSeedFiles(pool());
     await addSeedFiles(pool());
-    expect(await added()).toHaveLength(1);
+    // one marker per batch: the owner's five files, and the firmware (already there, so nothing added)
+    expect(await added()).toHaveLength(2);
+    expect((await added())[1]).toMatchObject({ data: { batch: "2026-11-22-firmware", added: 0 } });
     expect((await added())[0]).toMatchObject({ data: { batch: "2026-11-22", added: 5 } });
     const rows = await q<{ title: string; status: string; data: { folder: string; chunks: number; mime: string; origin: string; extract: { method: string } }; sha256: string; size: number; meta: { seed?: boolean; addedOn?: string } }>(
       "SELECT i.title, i.status, i.data, f.sha256, f.size, f.meta FROM items i JOIN files f ON f.id = (i.data->>'fileId')::bigint WHERE i.project_id='baggage-claims' AND i.section='concept/files' AND i.title = ANY($1)",
