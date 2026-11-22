@@ -676,6 +676,276 @@
    "status": "unverified",
    "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
    "sourceLocation": "after the material table, line 38"
+  },
+  {
+   "proposal": "P217",
+   "op": "enrich",
+   "section": "design/requirements",
+   "match": {
+    "title": "Governor"
+   },
+   "sourceFile": "Generate the Arduino sketch for the classification.md",
+   "sourceLocation": "sketch, tunables, line 34",
+   "appendBody": "One gag per event class per journey phase; in the sketch a new journey phase begins after 60 minutes without motion (PHASE_RESET_MS), which clears every class latch. A gag is refused while the player's BUSY line is low, within 3 s of the last gag, or after 6 in the rolling hour (serial log \"GOV: cap, refused\"). The volume button is usable between clips only."
+  },
+  {
+   "proposal": "P219",
+   "op": "enrich",
+   "section": "design/requirements",
+   "match": {
+    "title": "Controls"
+   },
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.2 IF-3 command subset, page 4",
+   "appendBody": "Short press cycles volume 50 / 75 / 100%, sent as player volume 15 / 23 / 30; the sketch starts at 23. Long press swaps the voice pack (sketch: held over 1.5 s; packs 1 to 3 in turn). A 10 s hold is a factory reset (sketch: over 9 s, restarts the processor). Active low with a 10k pull-up, debounce 30 ms in software. The button must be reachable through a slot in the shell."
+  },
+  {
+   "proposal": "P223",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Feature extraction",
+   "body": "From the 100 Hz samples the firmware derives magnitude, jerk, variance, orientation and periodicity (design package); the PRD lists magnitude, jerk, tilt and gravity-removed axes, with variance windows of 0.5 s and 8 s.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.1 Architecture, page 2"
+  },
+  {
+   "proposal": "P228",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Audio command interface",
+   "body": "UART 9600 8N1, YX5200 command set (0x7E frame). Set volume: 0x06 v (0-30). Play folder file: 0x0F f i, where f is the voice pack (1-3) and i the gag index (1-128). Playback status: BUSY on GPIO4, LOW while playing; the dispatcher holds its queue.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.2 IF-3 command subset, page 4"
+  },
+  {
+   "proposal": "P229",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Loudness limit",
+   "body": "No more than 85 dBA at 1 m, \"to stay a novelty, not a nuisance\". 3 W into 8 ohms. No measurement method is given.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.4, page 4"
+  },
+  {
+   "proposal": "P231",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Radios off",
+   "body": "Wi-Fi and Bluetooth are disabled in firmware, to save power and to keep the device out of RF certification scope; no networking.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.1 Architecture, page 2"
+  },
+  {
+   "proposal": "P233",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Rigid sensor mount",
+   "body": "U2 must be screwed down through its two holes, never foam mounted: \"Mounting compliance destroys jerk signatures.\" In a flexible TPU case the sensor is screwed to a rigid internal sled, not to the case.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "Can I do a 3d printer for this integrated - if so.md",
+   "sourceLocation": "Level 3, line 28"
+  },
+  {
+   "proposal": "P234",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Service and debug port",
+   "body": "USB-C on the dev board (IF-7) for flashing and a 115200 baud debug console. The serial log prints one \"EVT:\" line per classifier firing, with pack and clip, and doubles as the tuning log.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§2.1 IF-7, page 4"
+  },
+  {
+   "proposal": "P235",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Content ships independently of firmware",
+   "body": "Clips swap per voice pack, so seasonal editions, DLC and localization need no new hardware and no firmware change; a pack is a folder of numbered files on the card.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§8, page 5"
+  },
+  {
+   "proposal": "P236",
+   "op": "add",
+   "section": "design/requirements",
+   "title": "Idle false positives under one a day",
+   "body": "Product metric and Rev A1 exit criterion: fewer than one false gag a day while idle. No test method is given.",
+   "data": {},
+   "status": "open",
+   "sourceFile": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
+   "sourceLocation": "§11 Roadmap, A1, page 6"
+  },
+  {
+   "proposal": "P238",
+   "op": "enrich",
+   "section": "design/wiring",
+   "match": {
+    "title": "Switch to VIN"
+   },
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§3 Step 3a, page 5",
+   "appendBody": "The design package's check: with the switch open VIN reads 0 V, closed about 4.7 V. Never battery-power the board while USB-C is inserted (boot loop)."
+  },
+  {
+   "proposal": "P240",
+   "op": "enrich",
+   "section": "design/wiring",
+   "match": {
+    "title": "I2C data"
+   },
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.3 Pin map, I2C_SDA, page 2",
+   "appendBody": "4.7k pull-ups are on the GY-521 board, so none are added. Digital 3.3 V."
+  },
+  {
+   "proposal": "P241",
+   "op": "enrich",
+   "section": "design/wiring",
+   "match": {
+    "title": "Sensor power"
+   },
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§3 Step 3b, page 5",
+   "appendBody": "The design package's check: never connect GND to VCC; the MPU-6050 board's LED is lit when powered."
+  },
+  {
+   "proposal": "P243",
+   "op": "enrich",
+   "section": "design/wiring",
+   "match": {
+    "title": "UART from audio module"
+   },
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.3 Pin map, UART1_RX, page 2",
+   "appendBody": "Carries status and ACK frames."
+  },
+  {
+   "proposal": "P244",
+   "op": "enrich",
+   "section": "design/wiring",
+   "match": {
+    "title": "Busy line"
+   },
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Troubleshooting, line 108",
+   "appendBody": "LOW while playing; gates the dispatcher. If it floats, sleep current is high (troubleshooting)."
+  },
+  {
+   "proposal": "P245",
+   "op": "enrich",
+   "section": "design/wiring",
+   "match": {
+    "title": "Speaker lead 1"
+   },
+   "sourceFile": "BaggageClaims_BuildGuide_RevA.md",
+   "sourceLocation": "Phase 6, step 27, line 80",
+   "appendBody": "Differential drive from SPK_1 / SPK_2, 8 ohm, no more than 3 W (interface IF-4); route the leads down the side wall channel."
+  },
+  {
+   "proposal": "P248",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "U1"
+   },
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "U1 row, line 2",
+   "appendBody": "PRD wording \"(radios off in firmware)\". Product page cited in the design chat: https://www.microcenter.com/product/699323/waveshare-esp32-s3-mini-development-board.",
+   "setData": {
+    "search": "SKU 699323 'Waveshare ESP32-S3 Mini Development Board'"
+   }
+  },
+  {
+   "proposal": "P249",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "U2"
+   },
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "U2 row, line 3",
+   "setData": {
+    "search": "'HiLetgo GY-521 MPU-6050' (sold $6.99 1-pk or $11.79 3-pk)"
+   }
+  },
+  {
+   "proposal": "P251",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "S1"
+   },
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "S1 row, line 8",
+   "setBody": "SPST mini slide switch, through-hole or panel snap",
+   "setData": {
+    "search": "'SPST slide switch' (MC variety kit)"
+   }
+  },
+  {
+   "proposal": "P251",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "S2"
+   },
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "S1 row, line 8",
+   "setBody": "6mm tactile push button, panel or PCB",
+   "setData": {
+    "search": "'tactile push button' kit"
+   }
+  },
+  {
+   "proposal": "P252",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "R1"
+   },
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "R1 row, line 10",
+   "appendBody": "The CSV's reason: \"1k ohm 1/4W (UART level tolerance)\". The design package gives a different reason: noise immunity on the DFPlayer RX line.",
+   "setData": {
+    "search": "MC resistor kit / single"
+   }
+  },
+  {
+   "proposal": "P254",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "W1"
+   },
+   "sourceFile": "BOM_shopping_list.csv",
+   "sourceLocation": "W1 row, line 13",
+   "appendBody": "The assembly uses 2.54 mm female headers so the modules are socketed, not soldered.",
+   "setData": {
+    "search": "'jumper wire kit' + 'hookup wire spool'"
+   }
+  },
+  {
+   "proposal": "P256",
+   "op": "enrich",
+   "section": "design/bom",
+   "match": {
+    "ref": "SPK1"
+   },
+   "sourceFile": "BaggageClaims_DesignPackage_RevA.pdf",
+   "sourceLocation": "§1.2 SPK1, page 2",
+   "appendBody": "The speaker faces a tuned grille in the top shell and gives about 85 dBA at 1 m; sold as a four-pack for $6.99."
   }
  ]
 }
