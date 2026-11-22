@@ -11,6 +11,17 @@ Owner instruction: a formal plan that uses several agents and a project manager,
 - **Shared files:** each workstream has a list of folders it owns. Migrations must apply in number order, so the ranges in the table are working numbers only: the project manager renumbers each branch's migrations to the next free number when it merges. Anything outside the list is changed only through the project manager.
 - **Owner decisions:** work that needs a decision is prepared up to the decision and then held; it never blocks another workstream.
 
+## 1b. Who does what (owner, 22 Nov)
+
+Work is organised by this plan and by the task board in `docs/TASKS.md`, which lists every task with its owner, model and state; the project manager keeps it current at each merge.
+
+| Kind of work | Model |
+|---|---|
+| Design, architecture, security-sensitive code (sign-in, permissions, payments), anything that sets a rule other code follows, review of other agents' work, every merge decision | Fable (the lead session and its reviewers) |
+| Well-specified, lower-risk work: converting forms to the shared pattern, moving typed text to one source, tests for existing behaviour, documentation, renames, list and table screens built from shared components to a written specification | Sonnet agents |
+
+Every agent starts from the owner's documents (`docs/PLAN.md` decisions D1 to D14, the design documents, this plan) and reports anything that departs from them. Sonnet agents' work is reviewed by the lead before it merges, like any other.
+
 ## 1a. Deployment rule (owner, 22 Nov)
 
 Docker first. The app runs with `docker compose up` and nothing else, and equally on Railway. The only configuration outside PostgreSQL is the database connection, which the compose file supplies. Every key, secret, address and switch, including the switch for the new sign-in, is entered in the admin area and stored in PostgreSQL. No step tells anyone to set a platform variable. The platform administrator is `admin@oxot.nl`.
@@ -107,7 +118,7 @@ The owner gets a report when each workstream lands on the live site, and a combi
 | WS4 | done 22 Nov, live: contrast fix, request form records the level (migration 0030), five owner files seeded, unused bag removed |
 | WS5 | done 22 Nov, live at `/status` |
 | WS6 | queued behind WS2 slice 2 and the owner's prices and Stripe keys |
-| WS7 | built 22 Nov, in CI: one source for status colours and channel names, 14 of 40 hand-wired forms converted, held-back exports 54 to 18 |
+| WS7 | merged 22 Nov: one source for status colours and channel names, 14 of 40 hand-wired forms converted, held-back exports 54 to 18 |
 | WS10 | part A started 22 Nov; part B functions added to accounts slice 2 |
 | WS11 | specified 22 Nov; waits for the owner to confirm the scope |
 | WS8, WS9 | held for owner |
