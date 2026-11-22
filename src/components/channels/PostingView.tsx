@@ -18,6 +18,7 @@ import { channelOf, sendName } from "@/lib/channels/channelName";
 import { messageOf } from "@/lib/queries";
 import type { Item } from "@/lib/types";
 import { CostStatement, NotConnected, NotRealNote, SendDialog } from "./shared";
+import { channelName } from "@/lib/channels/registry";
 
 const READY = new Set(["approved", "scheduled"]);
 
@@ -78,12 +79,12 @@ export function PostingView({ project, store }: ViewProps) {
         ) : s ? (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1 text-sm">
-              <p className="flex items-center gap-2 font-medium text-primary">X <StatusBadge tone={s.x.configured ? "success" : "neutral"}>{s.x.configured ? `Connected${s.x.account ? ` as ${s.x.account}` : ""}` : "Not connected"}</StatusBadge></p>
-              {!s.x.configured ? <NotConnected service="X" what="nothing can be posted there" /> : null}
+              <p className="flex items-center gap-2 font-medium text-primary">{channelName("x")} <StatusBadge tone={s.x.configured ? "success" : "neutral"}>{s.x.configured ? `Connected${s.x.account ? ` as ${s.x.account}` : ""}` : "Not connected"}</StatusBadge></p>
+              {!s.x.configured ? <NotConnected service={channelName("x")} what="nothing can be posted there" /> : null}
             </div>
             <div className="space-y-1 text-sm">
-              <p className="flex items-center gap-2 font-medium text-primary">Instagram <StatusBadge tone={s.instagram.configured ? "success" : "neutral"}>{s.instagram.configured ? "Credentials saved" : "Not connected"}</StatusBadge></p>
-              {!s.instagram.configured ? <NotConnected service="Instagram" what="nothing can be published there" /> : <p className="text-secondary">Each post needs a public JPEG address: Instagram fetches the image itself.</p>}
+              <p className="flex items-center gap-2 font-medium text-primary">{channelName("instagram")} <StatusBadge tone={s.instagram.configured ? "success" : "neutral"}>{s.instagram.configured ? "Credentials saved" : "Not connected"}</StatusBadge></p>
+              {!s.instagram.configured ? <NotConnected service={channelName("instagram")} what="nothing can be published there" /> : <p className="text-secondary">Each post needs a public JPEG address: Instagram fetches the image itself.</p>}
             </div>
           </div>
         ) : null}

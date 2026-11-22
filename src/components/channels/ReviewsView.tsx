@@ -29,6 +29,7 @@ import { messageOf } from "@/lib/queries";
 import { statusTone } from "@/lib/statusTones";
 import type { Item } from "@/lib/types";
 import { todayUtc } from "@/lib/format";
+import { channelName } from "@/lib/channels/registry";
 
 export function ReviewsView({ project, section, store }: ViewProps) {
   const { items, loading, error, writeError, add, patch, reload } = useItems(project.id, store);
@@ -210,7 +211,7 @@ function AddReview({ onClose, onCreate }: { onClose: () => void; onCreate: (v: {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Kind"><NativeSelect value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="review">Review</option><option value="question">Question</option></NativeSelect></Field>
           <Field label="Rating (1 to 5)"><NativeSelect value={f.rating} onChange={(e) => setF({ ...f, rating: e.target.value })}><option value="">none</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</NativeSelect></Field>
-          <Field label="Where it was left"><Input value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} placeholder="Amazon, own site, e-mail" /></Field>
+          <Field label="Where it was left"><Input value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} placeholder={`${channelName("amazon")}, ${channelName("own-site").toLowerCase()}, e-mail`} /></Field>
           <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
           <Field label="Product version"><Input value={f.productVersion} onChange={(e) => setF({ ...f, productVersion: e.target.value })} /></Field>
           <Field label="Sentiment"><NativeSelect value={f.sentiment} onChange={(e) => setF({ ...f, sentiment: e.target.value })}><option value="">not set</option>{SENTIMENTS.map((s) => <option key={s} value={s}>{s}</option>)}</NativeSelect></Field>
@@ -250,7 +251,7 @@ function ImportDialog({ projectId, onClose }: { projectId: string; onClose: () =
               }}
             />
           </Field>
-          <Field label="Where they were left (when the file has no column for it)"><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Amazon" /></Field>
+          <Field label="Where they were left (when the file has no column for it)"><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder={channelName("amazon")} /></Field>
           <Field label="Kind (when the file has no column for it)"><NativeSelect value={kind} onChange={(e) => setKind(e.target.value as "" | "review" | "question")}><option value="">work it out</option><option value="review">reviews</option><option value="question">questions</option></NativeSelect></Field>
         </div>
         <Field label="Or paste here"><Textarea rows={10} value={text} onChange={(e) => setText(e.target.value)} className="font-mono text-xs" /></Field>

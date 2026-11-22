@@ -1,9 +1,10 @@
 import type { LaunchTemplate } from "./types";
+import { channelName } from "@/lib/channels/registry";
 
 export const ownSite: LaunchTemplate = {
   id: "own-site",
-  label: "Own site",
-  channel: "Own site",
+  label: channelName("own-site"),
+  channel: channelName("own-site"),
   blurb: "A store on your own domain: set up, payments and policies, the page, a test order, launch and the first week.",
   steps: [
     { key: "domain", title: "Register the domain and set up the store", phase: "Set up", daysBefore: 35, minutes: 180, why: "Everything else is built on the address and the store.", how: "Pick one store platform and stay with it. Put the product name and the brand kit's colours and type in the theme." },

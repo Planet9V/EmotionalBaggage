@@ -23,11 +23,13 @@ import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/Card";
 import { Kanban } from "@/components/items/Kanban";
 import { statusesFor } from "@/lib/menuLookup";
+import { channelName } from "@/lib/channels/registry";
 
 const NO_INTEGRATIONS: Integration[] = [];
 const socialOnly = (r: IntegrationsReport) => r.integrations.filter((i) => i.key === "x" || i.key === "instagram");
 
 const CHANNELS = [...SOCIAL_CHANNELS.map((c) => c.label), "other"];
+const X_NAME = channelName("x");
 const X_LIMIT = 280;
 const len = (s: string) => Array.from(s).length;
 const channelOf = (it: Item) => (typeof it.data.channel === "string" && it.data.channel ? it.data.channel : "other");
@@ -117,7 +119,7 @@ export function SocialView({ project, section, store }: ViewProps) {
                   <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
                     {grip} {ch}
                   </span>
-                  {ch === "X" && (
+                  {ch === X_NAME && (
                     <span className={cn("font-mono text-[11px]", n > X_LIMIT ? "text-danger" : "text-muted")} ><span aria-hidden>{n}/{X_LIMIT}</span><span className="sr-only">{`${n} of ${X_LIMIT} characters`}</span></span>
                   )}
                 </div>
@@ -183,7 +185,7 @@ export function SocialView({ project, section, store }: ViewProps) {
 
 function ComposeDialog({ item, onClose, onSave }: { item: Item | null; onClose: () => void; onSave: (v: { text: string; channel: string }) => Promise<void> }) {
   const [text, setText] = useState(item?.body ?? "");
-  const [channel, setChannel] = useState(item ? channelOf(item) : "X");
+  const [channel, setChannel] = useState(item ? channelOf(item) : X_NAME);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const n = len(text);
@@ -210,12 +212,12 @@ function ComposeDialog({ item, onClose, onSave }: { item: Item | null; onClose: 
         <Field label="Post text">
           <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
         </Field>
-        {channel === "X" && (
+        {channel === X_NAME && (
           <p className={cn("font-mono text-xs", n > X_LIMIT ? "text-danger" : "text-muted")} aria-live="polite">
             {n}/{X_LIMIT} characters{n > X_LIMIT ? `, ${n - X_LIMIT} over the limit` : ""}
           </p>
         )}
-        {channel !== "X" && socialChannel(channel) && (
+        {channel !== X_NAME && socialChannel(channel) && (
           <ul className="space-y-0.5 text-xs" aria-live="polite">
             <li className="font-mono text-muted">{n} characters</li>
             {checkSocial(socialChannel(channel)!, text).map((p, i) => <li key={i} className={p.level === "refuse" ? "text-danger" : "text-warning"}>{p.message}</li>)}

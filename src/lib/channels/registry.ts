@@ -33,6 +33,8 @@ export const CHANNELS: readonly ChannelDef[] = [
   { id: "tiktok", name: "TikTok", supports: ["ads", "social"] },
   { id: "reddit", name: "Reddit", supports: ["ads", "social"] },
   { id: "linkedin", name: "LinkedIn", supports: ["social"] },
+  { id: "own-site", name: "Own site", aliases: ["own website"], supports: ["sales"] },
+  { id: "kickstarter", name: "Kickstarter", supports: ["sales"] },
   { id: "micro-center", name: "Micro Center", supports: ["purchase"] },
   { id: "own-printer", name: "Own printer", supports: ["purchase"] },
   { id: "other", name: "Other", supports: ["replies", "import", "purchase"] },

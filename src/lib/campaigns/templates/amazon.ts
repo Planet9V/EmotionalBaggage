@@ -1,12 +1,13 @@
 import type { LaunchTemplate } from "./types";
+import { channelName } from "@/lib/channels/registry";
 
 const BRAND_REGISTRY = "https://brandservices.amazon.com/brandregistry/eligibility";
 
 /** A launch on Amazon as a brand owner selling its own product. Platform rules are linked or worded as things to check. */
 export const amazon: LaunchTemplate = {
   id: "amazon",
-  label: "Amazon",
-  channel: "Amazon",
+  label: channelName("amazon"),
+  channel: channelName("amazon"),
   blurb: "Account and Brand Registry, listing, images, inventory inbound, launch promotions and review requests.",
   steps: [
     { key: "account", title: "Open and verify the seller account", phase: "Account and Brand Registry", daysBefore: 70, minutes: 120, why: "Identity and bank checks can take longer than the rest of the plan put together.", how: "Start with the account type that suits the number of units you expect to sell. Keep the documents the checks ask for to hand.", platformRule: true, check: true },

@@ -4,6 +4,7 @@
 import { q } from "@/lib/db";
 import { credentialSource, embeddingModel, reasoningModel, type ModelChoice, type Provider } from "@/lib/settings";
 import { printerFamily } from "@/lib/admin/printerFamilies";
+import { channelName } from "@/lib/channels/registry";
 
 type Source = "admin" | "environment" | "mixed" | null;
 
@@ -136,7 +137,7 @@ export async function listIntegrations(): Promise<Integration[]> {
     },
     {
       key: "x",
-      name: "X",
+      name: channelName("x"),
       purpose: "Marketing → Posting, Replies and comments: send approved posts, read mentions.",
       env: ["X_ACCESS_TOKEN"],
       configured: x.configured,
@@ -147,7 +148,7 @@ export async function listIntegrations(): Promise<Integration[]> {
     },
     {
       key: "instagram",
-      name: "Instagram",
+      name: channelName("instagram"),
       purpose: "Marketing → Posting, Replies and comments: publish approved posts, read comments.",
       env: ["INSTAGRAM_ACCESS_TOKEN", "INSTAGRAM_ACCOUNT_ID"],
       configured: instagram.configured,

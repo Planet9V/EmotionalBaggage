@@ -85,7 +85,7 @@ const replies: Generator<z.infer<typeof replyRow>> = {
     if (src.section === CHANNEL.inbox) {
       const channel = channelName(channelOf(src.data.channel) === "instagram" ? "instagram" : "x");
       const len = Array.from(text).length;
-      if (channel === "X" && len > X_REPLY_MAX) return { ok: false, reason: `the reply is ${len} characters; X allows ${X_REPLY_MAX}` };
+      if (channel === channelName("x") && len > X_REPLY_MAX) return { ok: false, reason: `the reply is ${len} characters; X allows ${X_REPLY_MAX}` };
       const who = typeof src.data.author === "string" && src.data.author ? ` @${src.data.author}` : "";
       return {
         ok: true,
@@ -93,7 +93,7 @@ const replies: Generator<z.infer<typeof replyRow>> = {
       };
     }
     const source = typeof src.data.source === "string" ? src.data.source : "";
-    const channel = /amazon/i.test(source) ? "Amazon" : "Other";
+    const channel = channelName(/amazon/i.test(source) ? "amazon" : "other");
     return {
       ok: true,
       drafts: [

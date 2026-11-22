@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import type { ViewProps } from "./types";
 import { EmptyState, ErrorLine, LoadingBlocks } from "@/components/ui/states";
 import { Card } from "@/components/ui/Card";
+import { channelName } from "@/lib/channels/registry";
 
 const BUY_STEPS = ["to buy", "ordered", "in hand"];
 const PRINT_STEPS = ["to print", "in hand"];
@@ -133,7 +134,7 @@ function PartRow({ part: p, onStatus, onAsin }: { part: Part; onStatus: (s: stri
       <div className="min-w-0 space-y-1.5">
         {link ? (
           <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-link hover:underline">
-            Search {kind === "amazon" ? "Amazon" : "Micro Center"} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            Search {channelName(kind === "amazon" ? "amazon" : "micro-center")} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
           </a>
         ) : kind === "own" ? (
           <Link href="/s/prototype/printing" className="text-sm text-link hover:underline">Print it on your own printer</Link>
