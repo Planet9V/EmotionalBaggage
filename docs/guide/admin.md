@@ -69,7 +69,8 @@ Every route that writes the `credentials` table or an install-wide key of the `s
 | `POST /api/admin/test` | last test results (`recordCheck`, platform administrator's tests only), the credentials short list; the X test updates the connected X account | platform administrator (`adminRoute`) |
 | `POST`, `PATCH`, `DELETE /api/admin/printers...` | printers with their addresses and access codes (table `printers`) | platform administrator (`adminRoute`) |
 | `PUT /api/admin/sign-in` | the switch and addresses (`auth2_settings`) | platform administrator (`adminRoute`) |
-| every other `/api/admin` route (reads, access requests, exports, voice options) | nothing, or `access_requests` | platform administrator (`adminRoute`) |
+| `POST /api/admin/voiceovers` | the voice-overs document and cast (`voice.overs` in `settings`) | platform administrator (`adminRoute`) |
+| every other `/api/admin` route (reads, access requests and deleting one, exports, voice options) | nothing, or `access_requests` | platform administrator (`adminRoute`) |
 | `POST /api/channels/x/connect` | starts X's sign-in (whose answer replaces the saved X tokens) | platform administrator (`requirePlatformAdminUnderNewSignIn`) |
 | `GET /api/channels/x/callback` | the X tokens in `credentials`, the connected X account (`channels.x.account`) | platform administrator |
 | `POST /api/channels/x/ack` | the X cost statement acknowledgement (`channels.x.costAck`, install-wide) | platform administrator |

@@ -38,16 +38,17 @@ async function strangerAndAdmin(tag: string) {
 }
 
 describe("B1: access requests are the platform administrator's while the new sign-in is on", () => {
-  it("a self-signed-up account cannot list, export or change them; the platform administrator can; off is as before", async () => {
+  it("a self-signed-up account cannot list, export, change or delete them; the platform administrator can; off is as before", async () => {
     const { createAccessRequest } = await import("@/lib/accessRequests/store");
     const id = await createAccessRequest({ name: "Prospect Person", email: "prospect@zz-auth2.test", building: "x", company: "Acme", level: "" });
     const { GET: list } = await import("@/app/api/admin/access-requests/route");
     const { GET: exportCsv } = await import("@/app/api/admin/access-requests/export/route");
-    const { PATCH: patch } = await import("@/app/api/admin/access-requests/[id]/route");
+    const { PATCH: patch, DELETE: remove } = await import("@/app/api/admin/access-requests/[id]/route");
     const calls = (cookie: string) => [
       () => list(asBrowser("/api/admin/access-requests", cookie)),
       () => exportCsv(asBrowser("/api/admin/access-requests/export", cookie)),
       () => patch(asBrowser(`/api/admin/access-requests/${id}`, cookie, { method: "PATCH", body: { status: "contacted" } }), { params: Promise.resolve({ id: String(id) }) }),
+      () => remove(asBrowser(`/api/admin/access-requests/${id}`, cookie, { method: "DELETE" }), { params: Promise.resolve({ id: String(id) }) }),
     ];
     try {
       const { stranger, admin } = await strangerAndAdmin("b1");
@@ -58,13 +59,16 @@ describe("B1: access requests are the platform administrator's while the new sig
       }
       const statuses = [];
       for (const call of calls(admin)) statuses.push((await call()).status);
-      expect(statuses).toEqual([200, 200, 200]);
+      expect(statuses).toEqual([200, 200, 200, 200]);
+      expect((await db.query("SELECT 1 FROM access_requests WHERE id = $1", [id])).rowCount).toBe(0);
       // Off: as on main. The demo account still has the published password, so it is refused, by that rule.
       process.env.AUTH2 = "0";
       try {
         const r = await list(asBrowser("/api/admin/access-requests", sessionCookieHeader()));
         expect(r.status).toBe(403);
         expect(((await r.json()) as { error: string }).error).toMatch(/published demo password/);
+        const d = await remove(asBrowser("/api/admin/access-requests/1", sessionCookieHeader(), { method: "DELETE" }), { params: Promise.resolve({ id: "1" }) });
+        expect(d.status).toBe(403);
       } finally {
         process.env.AUTH2 = "1";
       }
