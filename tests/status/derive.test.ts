@@ -3,6 +3,7 @@
 // concept with nothing in it.
 import { describe, expect, it } from "vitest";
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
+import { applySeedContent } from "@/lib/seedContent";
 import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
 import { SOURCES_STORE, STORY_STORE, storyPart } from "@/lib/story/parts";
 import { readManifest } from "@/lib/story/seedFiles";
@@ -36,7 +37,7 @@ function seedRows(manifest: { title: string; what: string; kind: string }[]): It
   for (const p of SEED_STORY) add(STORY_STORE, storyPart(p.part)?.heading ?? p.part, p.body, { part: p.part }, p.status);
   for (const s of SEED_ITEMS) add(s.section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
   for (const [section, items] of Object.entries(SEED_ADDITIONS)) for (const s of items) add(section, s.title, s.body ?? "", s.data ?? {}, s.status ?? "open");
-  return out;
+  return applySeedContent(out);
 }
 
 const bcState = () => state({ projectId: SEED_PROJECT.id, name: SEED_PROJECT.name, oneLiner: SEED_PROJECT.oneLiner });
@@ -114,7 +115,8 @@ describe("Baggage Claims MK1 as seeded", () => {
   it("shows the figures the app works out, each linked to its page", () => {
     const f = Object.fromEntries(keyFigures(rows, "USD").map((x) => [x.key, x]));
     expect(f.parts).toMatchObject({ value: "16", href: "/s/design/bom" });
-    expect(f.claims).toMatchObject({ value: "0 / 9", detail: "9 unverified" });
+    // 9 claims of the first seed and 30 entered from the documents on 22 Nov (seed/concepts/baggage-claims/content)
+    expect(f.claims).toMatchObject({ value: "0 / 39", detail: "39 unverified" });
     expect(f.questions).toMatchObject({ value: "5", detail: "of 5 recorded" });
     expect(f["print-jobs"]).toMatchObject({ value: "2", detail: "0 printed" });
     // every document in the seed manifest is stored on a fresh install (26 on the dev server, 22 Nov)
