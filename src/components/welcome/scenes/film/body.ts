@@ -26,10 +26,10 @@ export const BONES = 30;
 export const lr = (bone: number, s: number) => bone + (s > 0 ? 1 : 0);
 
 // the joints in the rest pose
-const HIP_J = 0.84;
-const KNEE = 0.465;
-const ANKLE = 0.09;
-const LEG_X = 0.105;
+export const HIP_J = 0.84;
+export const KNEE = 0.465;
+export const ANKLE = 0.09;
+export const LEG_X = 0.105;
 const SHOULDER_Y = 1.31;
 const ARM_X = 0.27;
 export const UPPER = 0.235;

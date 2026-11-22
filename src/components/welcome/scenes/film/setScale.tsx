@@ -11,6 +11,7 @@ import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
 import { voiceOf } from "../speech";
 import { E, bump, clamp01, kf, mix } from "./ease";
+import { walks, type Walk } from "./gait";
 import { A, BAG_MID, BAG_TOP, Bag, Built, C, Contact, HANDLE_Y, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure, onBody, type FigPose } from "./people";
 
@@ -206,8 +207,6 @@ function checkIn(evening: boolean) {
 const DAY_SET = checkIn(false);
 const EVENING_SET = checkIn(true);
 
-/** Small steps: a glide with a hop in it. */
-const hop = (t: number, t0: number, t1: number, steps: number) => (t <= t0 || t >= t1 ? 0 : 0.045 * Math.abs(Math.sin(((t - t0) / (t1 - t0)) * Math.PI * steps)));
 
 const AGENT_BACK: V3 = [-1.6, 0, -1.3];
 const AGENT_YAW = 0.42;
@@ -217,6 +216,25 @@ const HOST_YAW = -2.3;
 const HOST_B: V3 = [1.75, 0, 1.2];
 const HOST_B_YAW = -2.2;
 const TILT = 0.2;
+/** The agent: two short steps with the bag to the scale, then round the end of the desk to her place, turning to it. */
+const AGENT_WALKS: Walk[] = [
+  { t0: 500, t1: 1300, path: (u) => [mix(-0.78, -0.52, u), 0, 0.1], yaw0: Math.PI / 2, yaw1: Math.PI / 2, stride: 0.3 },
+  {
+    t0: 1950,
+    t1: 3650,
+    path: (u) => {
+      const pts: [number, number][] = [[-0.52, 0.1], [-0.72, -0.55], [-1.0, -1.2], [AGENT_BACK[0], AGENT_BACK[2]]];
+      const f = u * 3;
+      const i = Math.min(2, Math.floor(f));
+      const a = pts[i]!;
+      const b = pts[i + 1]!;
+      return [mix(a[0], b[0], f - i), 0, mix(a[1], b[1], f - i)];
+    },
+    yaw0: Math.PI / 2,
+    yaw1: AGENT_YAW,
+    lead: -1,
+  },
+];
 
 // ---- the huff ---------------------------------------------------------------------------------------------------
 
@@ -413,7 +431,8 @@ function ScaleSet({ button }: { button: boolean }) {
       };
     }
     // she sets it down, then walks round the end of the desk to her place behind it
-    const x = kf(t, [[500, -0.78], [1300, -0.52], [1950, -0.52], [2500, -0.8], [3200, AGENT_BACK[0]]]);
+    const gait = walks(t, AGENT_WALKS);
+    const x = gait.p[0];
     const b = bag(t).p;
     const holding = t < SET_DOWN + 150;
     const letGo = kf(t, [[SET_DOWN + 150, 0], [SET_DOWN + 420, 1]]);
@@ -422,14 +441,19 @@ function ScaleSet({ button }: { button: boolean }) {
     // taken aback at the word, a beat late: back an inch, hands off the desk; then a slow look down at the bag
     const aback = kf(t, [[7650, 0], [7850, 1, "out"], [8700, 1], [9200, 0]]);
     const down = kf(t, [[8150, 0], [8650, 1], [9500, 1], [9900, 0]]);
-    const yaw = kf(t, [[1950, Math.PI / 2], [2200, Math.PI + 0.4], [2500, Math.PI * 1.5], [3200, Math.PI * 1.5], [3650, Math.PI * 2 + AGENT_YAW]]);
+    const yaw = gait.yaw;
     const lean = (holding ? 0.12 : 0.12 * (1 - letGo)) - 0.1 * aback;
-    const p: V3 = [x, hop(t, 1950, 3200, 4), kf(t, [[1950, 0.1], [2500, -1.2], [3200, AGENT_BACK[2]]])];
+    const p: V3 = gait.p;
     const palms = (side: number): V3 => onBody(p, yaw, lean, [side * 0.24, 1.12 + 0.06 * aback, 0.3]);
     // eyes: on the bag while she carries it, ahead as she walks round, on the number as it climbs, on the bag for the line
     const walking = t > 1950 && t < 3300;
     const eyes: V3 | null = walking ? null : t > 3300 && t < 5900 ? [DISPLAY[0], SCREEN_Y, DISPLAY[2]] : t > 9950 ? [HOST[0], 1.65, HOST[2]] : bagAt(t);
     return {
+      footL: gait.footL,
+      footR: gait.footR,
+      // knees bent to set it down gently
+      hipY: (gait.walking ? gait.bob : -0.012) - 0.13 * bump(t, 1050, 1800),
+      hipX: gait.sway,
       look: eyes,
       brow: 1.0 * aback - 0.3 * down * (1 - aback) + 0.2 * kf(t, [[3600, 0], [4200, 1], [5900, 1], [6300, 0]]),
       blink: bump(t, 7650, 7790) + bump(t, 9900, 10040),

@@ -9,6 +9,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { bagSpeaking, sceneOf } from "../scenes";
 import { E, bump, clamp01, kf, mix, swing } from "./ease";
+import { footAt, stepFoot, swingOf, walk, walks, type Walk } from "./gait";
 import { BAG_HALF, BAG_MID, Bag, Built, C, Contact, Dust, HANDLE_Y, Sign, Stage, luggage, trolley, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure, onBody, type FigPose } from "./people";
 
@@ -27,6 +28,14 @@ const TO: V3 = [1.95, BELT, 0.15];
 const HANDLER: V3 = [-1.25, 0, 0];
 const TOSS = sceneOf("toss");
 const ARC = 4.3;
+/** The handler turns on his feet, stepping round, toward the thud and back again. */
+const HANDLER_TURNS: Walk[] = [
+  { t0: 2250, t1: 2800, path: () => HANDLER, yaw0: 1.2, yaw1: -1.75 },
+  { t0: 4450, t1: 5050, path: () => HANDLER, yaw0: -1.75, yaw1: 1.45 },
+];
+/** The step into the throw: the front foot forward as the bag comes through, and back after. */
+const PLANTED = footAt(HANDLER, 1.2, -1);
+const STRIDE = { at: [PLANTED.at[0] + 0.28 * Math.sin(1.2), 0, PLANTED.at[2] + 0.28 * Math.cos(1.2)] as V3, yaw: 1.45 };
 
 const APRON: Look = {
   sky: ["#4f9fee", "#d9ebfa"],
@@ -85,7 +94,15 @@ function handler(t: number): FigPose {
   const bagAt: V3 = [b.p[0], b.p[1] + BAG_MID, b.p[2]];
   const startle = kf(s, [[LAND, 0], [LAND + 120, 1, "out"], [LAND + 900, 0.6], [4450, 0.3]]);
   const puzzled = kf(s, [[4300, 0], [4700, 1]]);
+  const feet = walks(s, HANDLER_TURNS);
+  const into = s < 2250 ? (s < 1300 ? stepFoot(s, 820, 1080, PLANTED, STRIDE) : stepFoot(s, 1500, 1820, STRIDE, PLANTED)) : null;
+  const forward = kf(s, [[820, 0], [1080, 1], [1500, 1], [1820, 0]]);
   return {
+    footL: into ?? feet.footL,
+    footR: feet.footR,
+    // the weight goes back on the wind-up, down and forward into the throw
+    hipZ: 0.12 * forward - 0.05 * kf(s, [[350, 0], [900, 1], [1080, 0]]),
+    hipY: -0.012 - 0.07 * forward - 0.03 * kf(s, [[350, 0], [900, 1], [1080, 0]]),
     look: s < LAND + 200 ? bagAt : null,
     browIn: 0.7 * kf(s, [[300, 0], [700, 1], [RELEASE, 1], [RELEASE + 250, 0]]) - 0.6 * puzzled,
     brow: 0.9 * startle + 0.3 * puzzled - 0.4 * kf(s, [[300, 0], [700, 1], [RELEASE, 1], [RELEASE + 250, 0]]),
@@ -312,6 +329,8 @@ const LIFT = 3200;
 const REST_X = 0.12;
 const UP = 0.3;
 const OWNER_X = -0.8;
+/** The owner walks in along the front, side on, and turns to face us as he stops by the bag. */
+const OWNER_WALK: Walk = { t0: 80, t1: 2150, path: (u) => [mix(-3.6, OWNER_X, u), 0, -0.05], yaw0: Math.PI / 2, yaw1: 0.3, stride: 0.66 };
 
 const CURB: Look = {
   sky: ["#6fb0ee", "#fbe8cf"],
@@ -344,7 +363,8 @@ function curbBag(t: number): BagPose {
 
 function owner(t: number): FigPose {
   const b = curbBag(t);
-  const x = kf(t, [[0, -3.6], [1900, OWNER_X, "out"]]);
+  const gait = walk(t, OWNER_WALK);
+  const x = gait.p[0];
   const reach = kf(t, [[2350, 0], [2900, 1]]);
   // the hand closes round the bar from above: knuckles to us, fingers wrapped under it
   const grip: V3 = [b.p[0], b.p[1] + HANDLE_Y + 0.03, b.p[2] + 0.012];
@@ -357,14 +377,20 @@ function owner(t: number): FigPose {
     blink: bump(t, 5120, 5260),
     lids: 0.42 * glance,
     mouth: start > 0.7 ? "o" : "flat",
-    p: [x, t < 1900 ? 0.05 * Math.abs(Math.sin((t / 1900) * Math.PI * 5)) : 0, -0.05],
+    p: gait.p,
+    footL: gait.footL,
+    footR: gait.footR,
+    hipY: gait.walking ? gait.bob : undefined,
+    hipX: gait.sway,
+    // the arms swing against the legs as he walks
+    handL: gait.walking ? onBody(gait.p, gait.yaw, 0, [-0.3, 0.8, swingOf(gait, -1)]) : null,
     // walks in side on, then turns to face us with the bag held out at one side
-    yaw: kf(t, [[1500, Math.PI / 2], [2300, 0.3]]),
+    yaw: gait.yaw,
     lean: 0.1 * reach - 0.1 * kf(t, [[LIFT, 0], [LIFT + 600, 1]]),
     // the pause, and the glance down
     head: 0.3 * reach + 0.5 * glance,
     nod: 0.2 * reach * (1 - kf(t, [[LIFT + 600, 0], [LIFT + 1100, 1]])) + 0.36 * glance,
-    handR: reach > 0 ? [mix(x + 0.3, grip[0], reach), mix(0.8, grip[1], reach), mix(0.0, grip[2], reach)] : null,
+    handR: reach > 0 ? [mix(x + 0.3, grip[0], reach), mix(0.8, grip[1], reach), mix(0.0, grip[2], reach)] : gait.walking ? onBody(gait.p, gait.yaw, 0, [0.3, 0.8, swingOf(gait, 1)]) : null,
     shapeR: reach > 0.85 ? "grip" : reach > 0 ? "open" : undefined,
     aimR: reach > 0.3 ? [0.15, -1, 0.1] : undefined,
     palmR: reach > 0.3 ? [0, -0.2, -1] : undefined,

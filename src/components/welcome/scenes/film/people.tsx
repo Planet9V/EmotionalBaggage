@@ -10,7 +10,7 @@ import { useFrame } from "@react-three/fiber";
 import { useBuilt, useClock, type V3 } from "./kit";
 import { blinkAt, mouthFor, pupilFor, type FaceState, type Mouth } from "./face";
 import { FACE_ACROSS, FACE_H, FACE_UPDOWN, FACE_W, drawFace, faceKey } from "./faceDraw";
-import { BONE, BONES, FORE, HAND_C, HEAD_C, HEAD_R, NECK, UPPER, WEAR, figureMaker, lr, skeletonOf, type Role } from "./body";
+import { ANKLE, BONE, BONES, FORE, HAND_C, HEAD_C, HEAD_R, HIP_J, KNEE, LEG_X, NECK, UPPER, WEAR, figureMaker, lr, skeletonOf, type Role } from "./body";
 import { aimDown, twoBone, type Limb } from "./rig";
 
 export type { Role } from "./body";
@@ -26,8 +26,18 @@ const CURL: Record<HandShape, [fingers: number, index: number, thumb: number]> =
   hold: [1.25, 1.15, 0.75],
 };
 
+/** A foot: the ground point under its ankle (raised while it swings), which way it points, and its heel lifted. */
+type FootPose = { at: V3; yaw?: number; heel?: number };
+
 export type FigPose = {
   p: V3;
+  /** where each foot is; left out, planted under the body where it stands */
+  footL?: FootPose;
+  footR?: FootPose;
+  /** the hips moved on the body: across toward its right (a weight shift), up or down (a crouch), forward */
+  hipX?: number;
+  hipY?: number;
+  hipZ?: number;
   /** turn about the vertical; 0 faces the camera side (+z) */
   yaw?: number;
   /** lean forward (positive) or back, about the feet */
@@ -160,6 +170,7 @@ type Scratch = {
   qu: THREE.Quaternion;
   qf: THREE.Quaternion;
   qh: THREE.Quaternion;
+  e: THREE.Euler;
   limb: Limb;
   curl: number[][];
   last: number;
@@ -177,6 +188,7 @@ const scratch = (): Scratch => ({
   qu: new THREE.Quaternion(),
   qf: new THREE.Quaternion(),
   qh: new THREE.Quaternion(),
+  e: new THREE.Euler(),
   limb: { mid: new THREE.Vector3(), end: new THREE.Vector3(), stretch: 1, hinge: new THREE.Vector3() },
   curl: [[...CURL.relax], [...CURL.relax]],
   last: NaN,
@@ -246,6 +258,32 @@ function poseArm(bones: THREE.Bone[], rest: THREE.Vector3[], q: FigPose, s: numb
   bones[lr(BONE.thumb, s)]!.rotation.set(0.5 * c[2]!, -s * 0.9 * c[2]!, -s * 0.35 * c[2]!);
 }
 
+const THIGH = HIP_J - KNEE;
+const SHIN = KNEE - ANKLE;
+/** One leg, solved from the hip to its foot: the knee bends forward, the foot lies flat at its plant. */
+function poseLeg(bones: THREE.Bone[], rest: THREE.Vector3[], g: THREE.Group, q: FigPose, s: number, tall: number, sc: Scratch) {
+  const foot = s > 0 ? q.footR : q.footL;
+  if (foot) sc.t.set(foot.at[0], foot.at[1] + ANKLE * tall, foot.at[2]);
+  else g.localToWorld(sc.t.set(s * LEG_X, ANKLE, 0));
+  const thigh = bones[lr(BONE.thigh, s)]!;
+  thigh.getWorldPosition(sc.s);
+  const yaw = foot?.yaw ?? q.yaw ?? 0;
+  // the knee points the way the foot does, a touch outward
+  sc.pole.set(Math.sin(yaw) + s * 0.12 * Math.cos(yaw), 0, Math.cos(yaw) - s * 0.12 * Math.sin(yaw));
+  const limb = twoBone(sc.s, sc.t, THIGH * tall, SHIN * tall, sc.pole, 1.04, sc.limb);
+  sc.v.copy(limb.hinge).negate();
+  aimDown(sc.w.subVectors(limb.mid, sc.s), sc.v, sc.qu);
+  setWorld(thigh, sc.qu, sc);
+  const shin = bones[lr(BONE.shin, s)]!;
+  shin.position.copy(rest[lr(BONE.shin, s)]!).multiplyScalar(limb.stretch);
+  aimDown(sc.w.subVectors(limb.end, limb.mid), sc.v, sc.qf);
+  shin.quaternion.copy(sc.qp.copy(sc.qu).invert().multiply(sc.qf));
+  const ft = bones[lr(BONE.foot, s)]!;
+  ft.position.copy(rest[lr(BONE.foot, s)]!).multiplyScalar(limb.stretch);
+  sc.qh.setFromEuler(sc.e.set(foot?.heel ?? 0, yaw, 0, "YXZ"));
+  ft.quaternion.copy(sc.qf.invert().multiply(sc.qh));
+}
+
 /** The face at one moment, from the pose and the figure's own blinking. `aim` is the look target in the head's frame. */
 function faceOf(q: FigPose, t: number, seed: number, aim: THREE.Vector3 | null): FaceState {
   const [lookX, lookY] = aim ? pupilFor(aim.x, aim.y, aim.z) : [0, 0];
@@ -285,8 +323,12 @@ export function Figure({ pose, role, tall = 1, phone = false, seed, time }: { po
     g.rotation.set(0, q.yaw ?? 0, 0);
     toRest(bones, rest);
     bones[BONE.root]!.rotation.set(q.lean ?? 0, 0, 0);
+    // soft knees by default: the hips sit a centimetre below a straight leg
+    bones[BONE.hips]!.position.add(sc.v.set(q.hipX ?? 0, q.hipY ?? -0.012, q.hipZ ?? 0));
     bones[BONE.head]!.rotation.set(q.nod ?? 0, q.head ?? 0, 0);
     g.updateMatrixWorld(true);
+    poseLeg(bones, rest, g, q, -1, tall, sc);
+    poseLeg(bones, rest, g, q, 1, tall, sc);
     poseArm(bones, rest, q, -1, tall, phone, sc, dt);
     poseArm(bones, rest, q, 1, tall, phone, sc, dt);
     // the phone shows only in a phone hand
