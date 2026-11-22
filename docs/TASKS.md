@@ -18,7 +18,8 @@ Kept by the project manager; updated at every merge. Plan: `docs/plan-2026-11-22
 | Admin area, part B: users and organizations screens on the platform-admin functions | WS10 | Sonnet, to a written specification; Fable review | slice 2 |
 | Sign-in cut-over: remove `demo`/`demo`, row-level security on concept tables | WS2 slice 3 | Fable-tier | owner go-ahead |
 | Stripe subscriptions, plan limits from the catalogue, AI credits | WS6 | Fable-tier | slice 2, admin part A |
-| Slack for the administrator and users | WS11 | Fable design, Sonnet build | owner to confirm scope |
+| Slack step 1: event catalogue and message builders (`docs/design/slack.md`) | WS11 | Sonnet | a free place |
+| Slack steps 2 to 5: admin section and platform channel; request checking, linking and buttons; workspace channels; commands and assistant | WS11 | Sonnet build, Fable for step 3 and review | admin part A, slice 2 |
 | User guide pages for Status, the admin area and accounts | docs | Sonnet | the features landing |
 | Re-sync the project documents | docs | lead | none |
 

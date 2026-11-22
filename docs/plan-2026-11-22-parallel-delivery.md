@@ -66,17 +66,8 @@ An area for the application's administrator only. No service is allowed to block
 - Part B, people: the platform administrator creates, changes, disables and deletes users and organizations; confirms a user without any email; sets passwords; requires, disables or resets two-factor; adds people to organizations and hands over invitation links directly. The functions are built in accounts slice 2; the screens follow when it lands.
 - Mail is optional: with no mail server, sign-ups wait for an administrator to confirm them and no link is written to the log.
 
-### WS11. Slack (owner instruction, 22 Nov; new, not in the earlier documents)
-The owner asked for "a capability for Slack for interaction, for admin and for users". Nothing about Slack exists in the app or its documents today. What follows is the proposed scope; the lines marked "to confirm" are the project manager's reading and are not built until the owner agrees.
-
-Rules it follows: Docker first; the Slack app's credentials and every setting are entered in the admin area and stored in PostgreSQL; Slack not being configured blocks nothing; shared components; every action audited.
-
-- **Administrator (platform):** an Admin section "Slack" holding the Slack app's client id, client secret and signing secret, with a test action and the addresses to paste into Slack. A platform channel that receives: new access requests and sign-ups waiting for confirmation, a service failing its check, a payment failing. From that channel the administrator can confirm a user or approve a request with a button. (to confirm: which events, and whether actions from Slack are wanted or only messages)
-- **Users (per workspace):** a workspace owner or admin connects the workspace to their own Slack with "Add to Slack" and picks a channel per concept or one for the workspace. Messages sent there: a gate passed or blocked, a decision waiting, a claim verified or found wrong, a print job finished or failed, a mention or assignment. Each message links back to the page. (to confirm: the event list)
-- **Interaction from Slack:** a slash command and the app's mention to ask "where is <concept>" (answers with the status page's headline and next three actions), to mark an open decision, and to put a question to the assistant about the concept, answered from the concept's own rows with the same rules as the in-app chat. (to confirm: whether the assistant is wanted in Slack in the first version; it spends AI credits)
-- **Each person:** links their Slack identity to their account once, so an action taken in Slack is recorded under their name and checked against their role. Notification preferences per person.
-- **Safety:** every request from Slack is checked against the signing secret and a time window; tokens are stored as other credentials are; a Slack user with no linked account can read nothing; a workspace's Slack sees only that workspace.
-- **Needs:** a Slack app created by the owner in his Slack account (the app gives the manifest to paste), and an address Slack can reach, so interaction from Slack works on the hosted service and on a self-hosted install only if it is reachable from the internet; outgoing messages work anywhere.
+### WS11. Slack (owner instruction, 22 Nov; new)
+Specified in `docs/design/slack.md`. The owner confirmed on 22 Nov: messages and actions, the assistant in the first version, and fuller event lists with examples (14 platform events, 19 workspace events). Built in five steps; the first two do not wait for accounts slice 2.
 
 ### WS5 to WS7
 Briefs are written when their wave starts, from the state of `main` at that time.
@@ -120,5 +111,5 @@ The owner gets a report when each workstream lands on the live site, and a combi
 | WS6 | queued behind WS2 slice 2 and the owner's prices and Stripe keys |
 | WS7 | merged 22 Nov: one source for status colours and channel names, 14 of 40 hand-wired forms converted, held-back exports 54 to 18 |
 | WS10 | part A started 22 Nov; part B functions added to accounts slice 2 |
-| WS11 | specified 22 Nov; waits for the owner to confirm the scope |
+| WS11 | specified and confirmed 22 Nov; step 1 starts when a place frees up |
 | WS8, WS9 | held for owner |
