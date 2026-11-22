@@ -106,7 +106,7 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
         {handOver && <HandOver link={handOver} onDone={() => setHandOver(null)} />}
 
         <Panel title="Members" description={admin ? "Roles, and whether each person signs in with an authenticator app." : "Who works in this workspace."}>
-          <Table aria-label="Members">
+          <Table aria-label="List of members">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -209,7 +209,7 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
             {admin.invitations.length === 0 ? (
               <p className="text-sm text-secondary">None.</p>
             ) : (
-              <Table aria-label="Invitations waiting">
+              <Table aria-label="List of invitations waiting">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
