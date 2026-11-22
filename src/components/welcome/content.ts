@@ -9,18 +9,16 @@ export const PRODUCT = "Concept to Realization";
 export const REPO_URL = "https://github.com/Planet9V/EmotionalBaggage";
 
 export const HERO = {
-  eyebrow: "Product workbench · free · self-hosted",
-  titleBefore: "Take your product idea to a ",
-  titleAccent: "tested prototype",
-  titleAfter: " and a launch plan, in one place.",
-  sub: "Concept to Realization walks a product idea through seven stages, from the first brief to the sales channel. Your parts list draws the schematic, the 3D layout, the enclosure and the build sheet. Every cost on screen is added up from what you entered.",
+  title: "Take one idea from a joke to a product you can hold, cost and sell.",
+  sub: "An idea nobody pursues never gets made. This workbench is built to get yours to market fast: AI drafts, you decide, and seven stages carry it from first brief to sales channel. For makers, first-time founders and small product firms. Below is the first idea put through it: Baggage Claims MK1, a puck that straps to a suitcase and heckles the trip.",
+  journeyLink: "See where the bag went",
   status: "Public demo: sign in as demo / demo. That account is shared with everyone who visits.",
 };
 
 export const META = {
   title: "Concept to Realization: from product idea to tested prototype and launch plan",
   description:
-    "A free, self-hosted workbench for a product idea: research, schematic, 3D layout, enclosure, build sheet, unit cost and launch plan in one place. Try the live demo.",
+    "A free, self-hosted workbench for makers, first-time founders and small product firms: take a product idea through research, design, a prototype, unit cost and a launch plan. Try the live demo.",
 };
 
 /** The problem, as before and after pairs. The "after" side is what the app does, word for word from the guides. */
@@ -143,12 +141,12 @@ export const PRINCIPLES: { title: string; text: string }[] = [
 ];
 
 export const AUDIENCE = {
-  title: "Built for one person with one product idea",
+  title: "For makers, first-time founders and small product firms",
   lead: "You have an idea for a physical product, often with electronics inside. You want to get from the idea to a working prototype, a parts list with real prices and a plan to sell it, without stitching ten tools together.",
   fit: [
-    "Inventors and makers taking a first hardware product past the bench.",
-    "Small teams preparing a Kickstarter, Amazon or own-site launch.",
-    "Engineers who want the cost and the build order worked out, not estimated in their head.",
+    "Makers taking a first hardware product past the bench.",
+    "First-time founders preparing a Kickstarter, Amazon or own-site launch.",
+    "Small product firms that want the cost and the build order worked out, not estimated in someone's head.",
   ],
   types: "Three kinds of product are supported: electronics in an enclosure, a printed part, and a physical product with no electronics. Sections that do not apply to yours are hidden, never deleted.",
   notYet: [
@@ -227,6 +225,247 @@ export const FAQ: { q: string; a: string; /** the one-line answer on the printed
 ];
 
 export const CLOSING = {
-  title: "Start with the example. Then bring your own idea.",
-  text: "The live workbench opens on Baggage Claims MK1, a full example concept with its parts, wiring, decisions, costs and campaigns already entered. Walk through it, then start a concept of your own with the six-step wizard.",
+  title: "Most ideas are never made. Get yours out.",
+  text: "For makers, first-time founders and small product firms. AI drafts, you decide, and the next step is always named. Start with the example, then bring your own idea.",
+};
+
+/** What the live demo opens on. Beside the demo button in Get started. */
+export const DEMO_NOTE =
+  "The live workbench opens on Baggage Claims MK1, a full example concept with its parts, wiring, decisions, costs and campaigns already entered. Walk through it, then start a concept of your own with the six-step wizard.";
+
+/**
+ * The worked example's figures, in one place so every section of the page shows the same ones. Each is from this
+ * repository: the 21 files under seed/concepts/baggage-claims/files, the seeded decisions, parts and wiring in
+ * src/lib/seed.ts, the concept story, and the order of operations as the planner totals it.
+ */
+export const EXAMPLE = {
+  name: "Baggage Claims MK1",
+  what: "a puck that straps to a suitcase and heckles the trip",
+  documents: 21,
+  decisions: 8,
+  parts: 16,
+  partsCost: 64.8,
+  /** every line of the parts list (BOM_shopping_list.csv), in its order; they add up to partsCost */
+  partLines: [
+    ["MCU dev board", 8.99], ["IMU sensor", 6.99], ["Audio module", 5.5], ["Speaker", 1.75], ["Battery holder", 2.0], ["Batteries", 2.5],
+    ["Power switch", 1.0], ["Mode button", 0.5], ["Resistor", 0.05], ["Resistor", 0.05], ["Storage", 5.99], ["Wire and headers", 8.99],
+    ["Carrier", 4.5], ["Mounting", 6.99], ["Enclosure", 5.0], ["Mount strap", 4.0],
+  ] as [string, number][],
+  pitch: "A gadget that gives a suitcase a voice.",
+  wires: 20,
+  solderSteps: 18,
+  build: "7 h 10 min",
+  voicePacks: ["Family", "Salty", "New Yorker"],
+} as const;
+
+/**
+ * The bag's own lines, word for word from the owner's gag catalogue for Baggage Claims MK1. They are the only
+ * jokes on the page: product copy stays plain. `where` says what is happening to the suitcase when it speaks.
+ */
+export const BAG_LINES = {
+  scale: { line: "Are you calling me FAT?", where: "on the check-in scale" },
+  impact: { line: "OW! ...I felt that in my flip-flops.", where: "after a hard landing on the belt" },
+  lifted: { line: "Whoa whoa whoa — are you gonna buy me dinner first?", where: "lifted by the handle" },
+  carousel: { line: "Wheeee! Again! Again!", where: "on the carousel" },
+  conveyor: { line: "Oh sure, I'll take the scenic route.", where: "on the conveyor" },
+  hold: { line: "Hello? ...Anyone? ...Cool, cool. I'll just be here.", where: "two hours into the dark hold" },
+  souvenirs: { line: "Sixty-two pounds? That's mostly SOUVENIRS.", where: "back at the scale" },
+} as const;
+
+export type BagLineKey = keyof typeof BAG_LINES;
+
+/** The order the hero's speech bubble cycles through. */
+export const HERO_LINES: BagLineKey[] = ["scale", "lifted", "impact", "conveyor", "carousel", "hold", "souvenirs"];
+
+export const BOARD = {
+  title: "Seven gates, one bag",
+  lead: `Today's departure is ${EXAMPLE.name}.`,
+  flight: EXAMPLE.name,
+};
+
+export type JourneyStage = {
+  key: string;
+  /** index into STAGES */
+  n: string;
+  name: string;
+  /** what the person does here: the desired state in docs/ux-discovery/journey-idea-to-product.md */
+  does: string;
+  /** where in the app */
+  inApp: string;
+  shots: string[];
+  /** index into PROBLEM.pairs, shown as "elsewhere" and "here" */
+  pair?: number;
+  /** figures from this repository: the seed concept, its source documents and the journey document */
+  facts: { figure: string; label: string }[];
+  line: BagLineKey;
+  /** up to three of this stage's gate checks, worded as src/lib/process/definitions.ts words them */
+  gate: string[];
+  extras?: ("exploded" | "layers" | "cost" | "ads" | "listing" | "schematic")[];
+};
+
+export const JOURNEY_INTRO = {
+  title: "The journey, gate by gate",
+  lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, in screenshots of the running app. The ticked lines are checks each gate runs, shown met for illustration.`,
+};
+
+export const JOURNEY: JourneyStage[] = [
+  {
+    key: "concept",
+    n: "01",
+    name: "Concept",
+    does: "Tell the idea once and keep every source with it. Then lay out the choices the idea depends on, and let the gate list what is still missing.",
+    inApp: "Wizard, Concept story, Files, Decision tree",
+    shots: ["process"],
+    facts: [
+      { figure: String(EXAMPLE.documents), label: "source documents kept with the concept" },
+      { figure: String(EXAMPLE.decisions), label: "decisions laid out, each with its options" },
+    ],
+    gate: ["The concept story has its pitch", "At least one file is in Files", "The go/no-go decision is decided"],
+    line: "scale",
+  },
+  {
+    key: "research",
+    n: "02",
+    name: "Research",
+    does: "Ask the questions that worry you and keep each answer with its sources. A claim becomes verified or wrong from the sources you judged, not from repetition.",
+    inApp: "Research, Claims, Chat",
+    shots: ["chat"],
+    facts: [{ figure: "2", label: "Kickstarter goals, and two build times, in the source documents. This is where they get settled." }],
+    gate: ["At least one claim is recorded", "At least 80% of claims are verified"],
+    line: "hold",
+  },
+  {
+    key: "design",
+    n: "03",
+    name: "Design",
+    does: "Enter the parts once. The schematic, the physical layout, the 3D model and the enclosure are all drawn from that one list.",
+    inApp: "Parts list, Schematic, Layout, 3D model, Enclosure",
+    shots: ["model", "schematic"],
+    pair: 0,
+    facts: [
+      { figure: String(EXAMPLE.parts), label: "parts on the parts list" },
+      { figure: String(EXAMPLE.wires), label: "wires on the schematic" },
+    ],
+    gate: ["The schematic has at least one wire", "The electrical checks find no error", "The chosen enclosure passes its checks"],
+    line: "lifted",
+    extras: ["exploded", "schematic"],
+  },
+  {
+    key: "prototype",
+    n: "04",
+    name: "Prototype",
+    does: "Source the parts, slice and print the case, wire it from a build sheet in order, and record each test.",
+    inApp: "Sourcing, Print jobs, Build sheet, Tests",
+    shots: ["wiring", "enclosure"],
+    facts: [
+      { figure: String(EXAMPLE.solderSteps), label: "soldering steps on the build sheet" },
+      { figure: EXAMPLE.build, label: "to build, along the critical path" },
+    ],
+    gate: ["Every bought part is in hand", "Every joint is soldered and tested", "Every acceptance test passes"],
+    line: "impact",
+    extras: ["layers"],
+  },
+  {
+    key: "production",
+    n: "05",
+    name: "Production",
+    does: "Read the unit cost, added up from what you entered. See which parts have no price yet, then plan a batch and the cash it needs.",
+    inApp: "Unit economics, Batch plans, Order of operations",
+    shots: ["plan"],
+    pair: 1,
+    facts: [{ figure: String(EXAMPLE.parts), label: "parts, every one with a price before the total is trusted" }],
+    gate: ["Unit economics have at least one line", "At least one batch is planned", "Production readiness: tests, compliance, parts and economics"],
+    line: "souvenirs",
+    extras: ["cost"],
+  },
+  {
+    key: "marketing",
+    n: "06",
+    name: "Marketing",
+    does: "Approve drafts built from the brief and the proof: positioning, a brand kit, ads, a landing page and a launch plan whose dates count back from launch day.",
+    inApp: "Positioning, Brand kit, Ads, Launch plan",
+    shots: ["launch"],
+    pair: 3,
+    facts: [{ figure: String(EXAMPLE.voicePacks.length), label: `voice packs to sell: ${EXAMPLE.voicePacks[0]}, ${EXAMPLE.voicePacks[1]} and ${EXAMPLE.voicePacks[2]}` }],
+    gate: ["The positioning is attacked by the reviewer and approved", "A name is chosen", "A launch plan has dated steps"],
+    line: "carousel",
+    extras: ["ads"],
+  },
+  {
+    key: "sales",
+    n: "07",
+    name: "Sales",
+    does: "List it, post about it, and watch orders and campaign results beside the targets you set. Nothing is posted until you confirm the exact text and the account.",
+    inApp: "Listing, Channels, Social, Sales monitor",
+    shots: ["social"],
+    facts: [{ figure: "0", label: "real marketplace accounts run so far. These screens are built and tested against stand-ins, and say so." }],
+    gate: ["At least one sales channel is set", "Every listing element is ready or live", "Every ready or live listing has proof for its claims"],
+    line: "conveyor",
+    extras: ["listing"],
+  },
+];
+
+/** Labels of the exploded view of the puck, top to bottom. The parts are on the parts list. */
+export const PUCK_LAYERS = ["Shell top", "Speaker", "Board", "Battery holder", "Shell base"];
+
+export const PRINT_NOTE = "Shell base in PETG, 4 perimeters, 25% infill, as the parts list specifies.";
+export const COST = { value: EXAMPLE.partsCost, label: `prototype parts cost: the ${EXAMPLE.parts} lines of the parts list, stacked` };
+export const ADS_NOTE = `One ad draft per voice pack (${EXAMPLE.voicePacks.join(", ")}), each waiting for approval.`;
+export const LISTING_NOTE = "The listing, drafted from the approved positioning. It goes live only when you say so.";
+export const SCHEMATIC_NOTE = "A corner of the schematic: the audio module, its series resistor and the speaker, with the app's net colours.";
+
+/** "In 60 seconds": the trip as six slides, one line each. The pictures are drawn in Illustrations.tsx. */
+export const SIXTY = {
+  title: "The trip in 60 seconds",
+  lead: "Six slides, one line each.",
+  slides: [
+    { key: "joke", tab: "The joke", line: "It starts as a joke: a suitcase that complains about its trip.", note: "The bag's own line, from the gag catalogue in the source documents." },
+    { key: "idea", tab: "On screen", line: "In the first hour the idea is on screen, with its pitch and every source.", note: `${EXAMPLE.documents} source documents and ${EXAMPLE.decisions} decisions, kept with the concept.` },
+    { key: "part", tab: "In hand", line: "Then there is a part in your hand, printed from the enclosure the app drew.", note: "Sliced by OrcaSlicer; each print job is tracked to a result." },
+    { key: "cost", tab: "The cost", line: "The cost adds up, because it is added from what you entered.", note: `${EXAMPLE.parts} parts, $${EXAMPLE.partsCost.toFixed(2)} for the prototype. A missing price is named, never counted as zero.` },
+    { key: "launch", tab: "The launch", line: "The launch is drafted from what you approved, and waits for your yes.", note: `Ads per channel and ${EXAMPLE.voicePacks.length} voice packs to sell: ${EXAMPLE.voicePacks.join(", ")}.` },
+    { key: "turn", tab: "Your turn", line: "Your turn. The idea you keep not starting can go the same way.", note: "The live workbench opens on this example." },
+  ],
+};
+
+/**
+ * The whole trip on one map: each stage, what it produces, and what feeds what. The sections are the app's
+ * own; the feeds are the ones the guides describe (the parts list drives the schematic, the enclosure and the
+ * unit cost; drafts are built from approved positioning; a claim needs proof). Drawn with React Flow.
+ */
+export const MAP = {
+  title: "The whole trip on one map",
+  lead: "Seven stages, what each one produces, and what feeds what. Pick anything on the map to see what depends on it.",
+  idle: "Nothing picked yet. Try the parts list.",
+  note: "A map of what feeds what. Today the app's change notice lists design and cost rows; marketing and assembly rows are being added.",
+  stages: [
+    { key: "concept", n: "01", name: "Concept", makes: [["story", "Concept story"], ["decisions", "Decision tree"]] },
+    { key: "research", n: "02", name: "Research", makes: [["answers", "Sourced answers"], ["claims", "Verified claims"]] },
+    { key: "design", n: "03", name: "Design", makes: [["parts", "Parts list"], ["schematic", "Schematic"], ["enclosure", "Enclosure"]] },
+    { key: "prototype", n: "04", name: "Prototype", makes: [["buildsheet", "Build sheet"], ["prints", "Print jobs"], ["tests", "Acceptance tests"]] },
+    { key: "production", n: "05", name: "Production", makes: [["unitcost", "Unit cost"], ["batch", "Batch plan"]] },
+    { key: "marketing", n: "06", name: "Marketing", makes: [["positioning", "Positioning"], ["pricing", "Pricing"], ["ads", "Ad copy"]] },
+    { key: "sales", n: "07", name: "Sales", makes: [["listing", "Listing"], ["monitor", "Sales monitor"]] },
+  ] as { key: string; n: string; name: string; makes: [id: string, label: string][] }[],
+  feeds: [
+    ["story", "positioning"], ["decisions", "batch"], ["answers", "claims"], ["claims", "positioning"], ["claims", "ads"],
+    ["parts", "schematic"], ["parts", "enclosure"], ["parts", "unitcost"], ["schematic", "buildsheet"], ["enclosure", "prints"],
+    ["buildsheet", "tests"], ["unitcost", "batch"], ["unitcost", "pricing"], ["positioning", "ads"], ["pricing", "listing"],
+    ["ads", "listing"], ["listing", "monitor"],
+  ] as [from: string, to: string][],
+};
+
+/** Every node of the map by id: the stage names and what each stage makes. */
+export const MAP_LABEL = new Map<string, string>(MAP.stages.flatMap((s) => [[s.key, s.name] as [string, string], ...s.makes]));
+
+export const POKE = {
+  title: "Go on, poke the bag",
+  lead: "The puck reads motion and answers back. This one is a drawing, so it is quiet, but it has the same opinions.",
+  idle: "Pick something to do to the bag.",
+  actions: [
+    { key: "weigh", label: "Weigh it", line: "scale" },
+    { key: "toss", label: "Toss it on the belt", line: "impact" },
+    { key: "spin", label: "Send it round the carousel", line: "carousel" },
+    { key: "dark", label: "Leave it in the dark", line: "hold" },
+  ] as { key: "weigh" | "toss" | "spin" | "dark"; label: string; line: BagLineKey }[],
 };

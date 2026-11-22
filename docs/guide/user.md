@@ -42,7 +42,7 @@ The left menu folds. Each group (Whole concept, Stages, Workbench) and each stag
 
 ### The welcome page
 
-People who are not signed in see the welcome page at `/welcome`; opening the bare address takes them there. It describes the workbench with screenshots of the running app and has two ways in. **Try the live workbench** signs in as demo / demo; that account is shared with everyone, so keep private ideas out of it. **Request your own workspace** is a form that stores your name, email, what you want to build and an optional company. No email is sent; the owner reads requests in Admin. A one-page overview that prints on one sheet is at `/welcome/overview`.
+People who are not signed in see the welcome page at `/welcome`; opening the bare address takes them there. It follows one idea, the example concept Baggage Claims MK1, through the seven stages: a six-slide summary ("The trip in 60 seconds"), one panel per stage with screenshots of the running app, the example's own figures and each stage's gate checks, and a map of what feeds what, where picking anything shows what depends on it. On a phone the stage panels are a deck you swipe sideways. A drawing of the suitcase can be poked to see what the puck says. Animations stop for anyone who asks their system for reduced motion, and anything that moves by itself (the hero's cycling lines, the slides) has a Pause button. It has two ways in. **Try the live workbench** signs in as demo / demo; that account is shared with everyone, so keep private ideas out of it. **Request your own workspace** is a form that stores your name, email, what you want to build and an optional company. No email is sent; the owner reads requests in Admin. A one-page overview that prints on one sheet is at `/welcome/overview`.
 
 ## Concepts
 
@@ -62,7 +62,7 @@ The Concepts page lists every concept with its name, one line, product type, sta
 
 **Files** is the concept's file store. Upload several files at once or drop them on the page, paste text as a file, put files in folders, rename, replace with a new version (the old one is kept), download or delete. Markdown, text, CSV, code, PDF and images open in a preview. Search finds files by name and by what they say; Chat and Draft with AI read the text of every file and cite it by name. Files are up to 25 MB; Word files must be saved as PDF first.
 
-The example concept comes with its story and its 21 source documents already in Files. They were copied from the owner's Drive as text, so Markdown files have lost their marks, the two PDFs are held as their text, and the schematic is a screen capture; uploading an original of the same name replaces the copy and keeps the copy as an earlier version.
+The example concept comes with its story and its 21 source documents already in Files. They are the owner's original files: Markdown with its marks, the two PDFs as PDFs, and the schematic at full size. An install that was set up before 21 November 2026 held preview copies of sixteen of them; on its next start each of those is replaced by its original and the copy is kept as an earlier version, unless you had already replaced or removed it.
 
 ## Chat
 

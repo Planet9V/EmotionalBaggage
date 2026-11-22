@@ -1,34 +1,42 @@
 import Link from "next/link";
-import { ArrowRight, Check, ExternalLink, Minus, Printer } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, ExternalLink, Minus, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/welcome/ThemeToggle";
-import { Shot } from "@/components/welcome/Shot";
 import { AccessRequestForm } from "@/components/welcome/AccessRequestForm";
+import { HeroBag } from "@/components/welcome/HeroBag";
+import { DeparturesBoard } from "@/components/welcome/DeparturesBoard";
+import { Journey } from "@/components/welcome/Journey";
+import { LifecycleMap } from "@/components/welcome/LifecycleMap";
+import { Sixty } from "@/components/welcome/Sixty";
+import { PokeTheBag } from "@/components/welcome/PokeTheBag";
 import { publicPageMetadata } from "@/components/welcome/meta";
-import { AUDIENCE, CLOSING, FAQ, FEATURES, GATES_NOTE, HERO, META, PRINCIPLES, PROBLEM, PRODUCT, REPO_URL, RUN_COMMANDS, RUNS_ON, STAGES } from "@/components/welcome/content";
+import { AUDIENCE, BOARD, CLOSING, DEMO_NOTE, EXAMPLE, FAQ, GATES_NOTE, HERO, JOURNEY_INTRO, MAP, META, POKE, SIXTY, PRINCIPLES, PRODUCT, REPO_URL, RUN_COMMANDS, RUNS_ON } from "@/components/welcome/content";
 
 export const generateMetadata = () => publicPageMetadata({ title: META.title, description: META.description, path: "/welcome" });
 
 /*
  * The public page about the workbench, for a visitor who is not signed in (a signed-out visit to / lands here).
- * A server component: the only browser code is the theme switch and the request form.
+ * It tells one story: one idea, Baggage Claims MK1, followed from a joke to a product
+ * (docs/ux-discovery/journey-idea-to-product.md). The motif is an airport: the stages have gates and the product
+ * is luggage. Product copy is plain; the only jokes are the bag's own lines.
  *
- * Order, and why (landing-page-generator, copywriting-psychologist, sales-enablement):
- *  1. Hero: one promise (idea to tested prototype and launch plan) and one primary action, the live demo, which is
- *     the lowest-effort next step. The demo's sharing is stated beside the button, where doubt starts.
- *  2. The problem: the reader is problem-aware (ten tools); before and after pairs name the pain in their words.
- *  3. How it works: the seven stages, so the reader sees the whole path before the detail.
- *  4. What you get: real screenshots, proof placed where scepticism rises, in the order a product moves.
- *  5. What it will not do: the reader of AI tools is sceptical; the guarantees answer that before it is asked.
- *  6. Who it is for, and who it is not for yet: self-selection keeps the promise honest.
- *  7. What it runs on: self-hosted, own models and keys, free; then the commands to run it.
- *  8. Get started: try the demo now, or request a workspace (the real form).
- *  9. FAQ: the remaining objections. 10. Closing call to action.
- * There is deliberately no row of headline numbers anywhere on the page.
+ * A server component. Each moving piece is a small client component under src/components/welcome, drawn still
+ * and complete by the server, so the page reads in full without script and under reduced motion.
+ *
+ *  1. Hero: the outcome in plain words, one primary action, and the bag speaking for itself.
+ *  2. Departures board: the seven stages at a glance.
+ *  3. The trip in 60 seconds: six slides, one line and one drawing each (the make-or-break moments).
+ *  4. The journey: one panel per stage, real screenshots, the example's real figures, each stage's gate checks.
+ *     On a phone it is a deck, one stage per slide.
+ *  5. The whole trip on one map (React Flow): what feeds what; pick a node to see what depends on it.
+ *  5. Poke the bag: the toy.
+ *  6. What it will not do, who it is for, what it runs on.
+ *  7. Get started (the demo, or the request form), questions, and the same primary action again.
+ * There is no pricing or sign-up: the app has one shared demo account and no payment. No customers, counts or
+ * logos appear, because none exist; the worked example is the proof.
  */
 
 const WRAP = "mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8";
-const EYEBROW = "font-mono text-[11px] uppercase tracking-[0.2em] text-link";
 const H2 = "text-display-3 font-semibold tracking-tight text-primary";
 const LEAD = "mt-4 max-w-3xl text-base leading-relaxed text-secondary sm:text-lg";
 
@@ -42,19 +50,14 @@ function PrimaryCta({ className = "" }: { className?: string }) {
   );
 }
 
-function SecondaryCta() {
-  return (
-    <Button asChild variant="outline" size="lg" className="h-11 rounded-xl bg-transparent px-6 text-sm font-semibold text-primary">
-      <a href="#request">Request your own workspace</a>
-    </Button>
-  );
-}
-
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
 };
+
+
+const SECTION = "border-b border-hairline py-10 sm:py-14 lg:py-12";
 
 export default function WelcomePage() {
   return (
@@ -66,14 +69,14 @@ export default function WelcomePage() {
       {/* Header and hero share the dark mood in both themes. */}
       <div className="dark bg-canvas text-primary">
         <header className="border-b border-hairline">
-          <div className={`${WRAP} flex h-16 items-center justify-between gap-4`}>
-            <Link href="/welcome" className="flex flex-col leading-tight focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept to realization</span>
-              <span className="text-sm font-semibold text-primary">Product workbench</span>
+          <div className={`${WRAP} flex h-14 items-center justify-between gap-4 sm:h-16`}>
+            <Link href="/welcome" className="text-sm font-semibold text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
+              {PRODUCT}
             </Link>
             <nav aria-label="On this page" className="hidden items-center gap-6 text-sm text-secondary md:flex">
-              <a href="#how" className="hover:text-primary">How it works</a>
-              <a href="#what" className="hover:text-primary">What you get</a>
+              <a href="#journey" className="hover:text-primary">The journey</a>
+              <a href="#map" className="hover:text-primary">The map</a>
+              <a href="#poke" className="hover:text-primary">Poke the bag</a>
               <a href="#run" className="hover:text-primary">Run it yourself</a>
               <a href="#faq" className="hover:text-primary">Questions</a>
             </nav>
@@ -86,155 +89,116 @@ export default function WelcomePage() {
           </div>
         </header>
 
-        <section aria-labelledby="hero-title" className="border-b border-hairline pb-16 pt-14 sm:pt-20">
-          <div className={WRAP}>
-            <div className="max-w-4xl">
-              <p className="inline-flex items-center rounded-full border border-[var(--accent-orange-border)] bg-[var(--accent-orange-subtle)] px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-link">
-                {HERO.eyebrow}
-              </p>
-              <h1 id="hero-title" className="mt-6 text-3xl font-semibold leading-[1.12] tracking-tight text-primary sm:text-4xl lg:text-5xl">
-                {HERO.titleBefore}
-                <span className="text-dutchOrange">{HERO.titleAccent}</span>
-                {HERO.titleAfter}
+        {/* 1. Hero */}
+        <section aria-labelledby="hero-title" className="border-b border-hairline pb-12 pt-8 sm:pt-14 lg:pb-16 lg:pt-16">
+          <div className={`${WRAP} grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]`}>
+            <div>
+              <h1 id="hero-title" className="max-w-[18ch] text-[2.25rem] font-semibold leading-[1.05] tracking-[-0.03em] text-primary sm:text-5xl lg:text-[3.5rem]">
+                {HERO.title}
               </h1>
-              <p className="mt-6 max-w-3xl text-base font-light leading-relaxed text-secondary sm:text-lg">{HERO.sub}</p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <PrimaryCta className="animate-glow motion-reduce:animate-none" />
-                <SecondaryCta />
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-secondary sm:mt-6 sm:text-lg">{HERO.sub}</p>
+              <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+                <PrimaryCta />
+                <a href="#journey" className="inline-flex h-11 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
+                  {HERO.journeyLink} <ArrowDown className="h-4 w-4" aria-hidden />
+                </a>
               </div>
               <p className="mt-5 flex items-start gap-2 font-mono text-xs text-muted">
-                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-dutchOrange motion-safe:animate-pulse" aria-hidden />
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
                 {HERO.status}
               </p>
             </div>
-            <figure className="mt-12">
-              <div className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
-                <div className="flex items-center gap-1.5 border-b border-hairline px-4 py-2.5" aria-hidden>
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--border-hairline)]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--border-hairline)]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--border-hairline)]" />
-                  <span className="ml-3 font-mono text-[11px] text-muted">/s/design/schematic</span>
-                </div>
-                <Shot name="schematic" theme="dark" eager alt={FEATURES[0]!.alt} />
-              </div>
-              <figcaption className="mt-3 text-xs text-muted">The schematic of the example concept, Baggage Claims MK1, as the app draws it. Screenshot of the running app.</figcaption>
-            </figure>
+            <HeroBag />
           </div>
         </section>
       </div>
 
       <main id="main">
-        {/* 2. The problem */}
-        <section aria-labelledby="problem-title" className="border-b border-hairline py-20">
+        {/* 2. Departures board */}
+        <section id="board" aria-labelledby="board-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>
           <div className={WRAP}>
-            <p className={EYEBROW}>The problem</p>
-            <h2 id="problem-title" className={`mt-3 max-w-3xl ${H2}`}>{PROBLEM.title}</h2>
-            <p className={LEAD}>{PROBLEM.lead}</p>
-            <div className="mt-10 overflow-hidden rounded-2xl border border-hairline bg-surface">
-              <div className="hidden grid-cols-2 border-b border-hairline bg-subtle px-6 py-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted sm:grid">
-                <span>Spread over separate tools</span>
-                <span>In the workbench</span>
-              </div>
-              <ul>
-                {PROBLEM.pairs.map((p) => (
-                  <li key={p.before} className="grid gap-2 border-b border-hairline px-6 py-5 last:border-b-0 sm:grid-cols-2 sm:gap-8">
-                    <p className="flex gap-3 text-sm text-secondary">
-                      <Minus className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                      <span><span className="sr-only">Spread over separate tools: </span>{p.before}</span>
-                    </p>
-                    <p className="flex gap-3 text-sm text-primary">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-link" aria-hidden />
-                      <span><span className="sr-only">In the workbench: </span>{p.after}</span>
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* 3. How it works */}
-        <section id="how" aria-labelledby="how-title" className="scroll-mt-4 border-b border-hairline bg-subtle py-20">
-          <div className={WRAP}>
-            <p className={EYEBROW}>How it works</p>
-            <h2 id="how-title" className={`mt-3 ${H2}`}>Seven stages, the same for every product</h2>
-            <p className={LEAD}>Every concept moves through the same seven stages with the same structure, so what you learn on one product carries to the next. Work down the stages in order, or jump to the one you need.</p>
-            <ol className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-hairline bg-[var(--border-hairline)] sm:grid-cols-2 lg:grid-cols-4">
-              {STAGES.map((s) => (
-                <li key={s.n} className="bg-surface p-6">
-                  <p className="font-mono text-xs text-link">{s.n}</p>
-                  <h3 className="mt-2 text-lg font-semibold tracking-tight text-primary">{s.name}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-secondary">{s.text}</p>
-                </li>
-              ))}
-              <li className="bg-surface p-6">
-                <p className="font-mono text-xs text-link">Gates</p>
-                <h3 className="mt-2 text-lg font-semibold tracking-tight text-primary">Between the stages</h3>
-                <p className="mt-2 text-sm leading-relaxed text-secondary">{GATES_NOTE}</p>
-              </li>
-            </ol>
-          </div>
-        </section>
-
-        {/* 4. What you get */}
-        <section id="what" aria-labelledby="what-title" className="scroll-mt-4 border-b border-hairline py-20">
-          <div className={WRAP}>
-            <p className={EYEBROW}>What you get</p>
-            <h2 id="what-title" className={`mt-3 ${H2}`}>Shown as the app draws it</h2>
+            <h2 id="board-title" className={H2}>{BOARD.title}</h2>
             <p className={LEAD}>
-              Every picture below is a screenshot of the running app with its example concept, Baggage Claims MK1: a motion-reactive audio gadget that straps to a suitcase. Nothing is mocked up. Switch the theme at the top and the pictures switch with it.
+              {BOARD.lead} {GATES_NOTE}
             </p>
-            <div className="mt-14 space-y-20">
-              {FEATURES.map((f, i) => (
-                <article key={f.shot} aria-labelledby={`f-${f.shot}`} className="grid items-center gap-8 grid-cols-1 lg:grid-cols-12 lg:gap-12">
-                  <div className={`lg:col-span-4 ${i % 2 ? "lg:order-2" : ""}`}>
-                    <p className="font-mono text-xs text-link">{f.stage}</p>
-                    <h3 id={`f-${f.shot}`} className="mt-2 text-xl font-semibold tracking-tight text-primary sm:text-2xl">{f.title}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-secondary sm:text-base">{f.text}</p>
-                    {f.note ? <p className="mt-3 rounded-lg border border-hairline bg-subtle px-3 py-2 text-xs leading-relaxed text-secondary">{f.note}</p> : null}
-                  </div>
-                  <figure className={`lg:col-span-8 ${i % 2 ? "lg:order-1" : ""}`}>
-                    <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
-                      <Shot name={f.shot} alt={f.alt} />
-                    </div>
-                  </figure>
-                </article>
-              ))}
+            <div className="mt-8">
+              <DeparturesBoard />
             </div>
           </div>
         </section>
 
-        {/* 5. What it will not do */}
-        <section aria-labelledby="trust-title" className="border-b border-hairline bg-subtle py-20">
+        {/* The trip in 60 seconds */}
+        <section id="sixty" aria-labelledby="sixty-title" className={`${SECTION} scroll-mt-4`}>
           <div className={WRAP}>
-            <p className={EYEBROW}>Trust</p>
-            <h2 id="trust-title" className={`mt-3 ${H2}`}>What it will not do behind your back</h2>
-            <p className={LEAD}>AI helps with the drafting. You keep the decisions. These rules hold on every screen.</p>
-            <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <h2 id="sixty-title" className={H2}>{SIXTY.title}</h2>
+            <p className={LEAD}>{SIXTY.lead}</p>
+            <div className="mt-8">
+              <Sixty cta={<PrimaryCta />} />
+            </div>
+          </div>
+        </section>
+
+        {/* 3. The journey */}
+        <section id="journey" aria-labelledby="journey-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>
+          <div className={WRAP}>
+            <h2 id="journey-title" className={H2}>{JOURNEY_INTRO.title}</h2>
+            <p className={LEAD}>{JOURNEY_INTRO.lead}</p>
+            <div className="mt-8 lg:mt-12">
+              <Journey />
+            </div>
+          </div>
+        </section>
+
+        {/* 4. The whole trip on one map */}
+        <section id="map" aria-labelledby="map-title" className={`${SECTION} scroll-mt-4`}>
+          <div className={WRAP}>
+            <h2 id="map-title" className={H2}>{MAP.title}</h2>
+            <p className={LEAD}>{MAP.lead}</p>
+            <div className="mt-8">
+              <LifecycleMap />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-muted">{MAP.note}</p>
+          </div>
+        </section>
+
+        {/* 5. Poke the bag */}
+        <section id="poke" aria-labelledby="poke-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>
+          <div className={WRAP}>
+            <h2 id="poke-title" className={H2}>{POKE.title}</h2>
+            <p className={LEAD}>{POKE.lead}</p>
+            <div className="mt-10">
+              <PokeTheBag />
+            </div>
+          </div>
+        </section>
+
+        {/* 6. What it will not do, who it is for, what it runs on */}
+        <section aria-labelledby="trust-title" className={SECTION}>
+          <div className={WRAP}>
+            <h2 id="trust-title" className={H2}>What it will not do behind your back</h2>
+            <p className={LEAD}>AI drafts. You decide. These rules hold on every screen.</p>
+            <ul className="mt-5 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-5">
               {PRINCIPLES.map((p) => (
-                <li key={p.title} className="rounded-xl border border-hairline bg-surface p-6">
-                  <h3 className="flex items-center gap-2 text-base font-semibold text-primary">
-                    <Check className="h-4 w-4 text-link" aria-hidden />
+                <li key={p.title} className="border-t border-hairline py-4">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-primary">
+                    <Check className="h-4 w-4 shrink-0 text-link" aria-hidden />
                     {p.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-secondary">{p.text}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-secondary">{p.text}</p>
                 </li>
               ))}
             </ul>
           </div>
         </section>
 
-        {/* 6. Who it is for */}
-        <section aria-labelledby="who-title" className="border-b border-hairline py-20">
-          <div className={`${WRAP} grid gap-12 grid-cols-1 lg:grid-cols-12`}>
+        <section aria-labelledby="who-title" className={`${SECTION} bg-subtle`}>
+          <div className={`${WRAP} grid grid-cols-1 gap-10 lg:grid-cols-12`}>
             <div className="lg:col-span-5">
-              <p className={EYEBROW}>Who it is for</p>
-              <h2 id="who-title" className={`mt-3 ${H2}`}>{AUDIENCE.title}</h2>
-              <p className="mt-4 text-base leading-relaxed text-secondary">{AUDIENCE.lead}</p>
+              <h2 id="who-title" className={H2}>{AUDIENCE.title}</h2>
               <p className="mt-4 text-sm leading-relaxed text-secondary">{AUDIENCE.types}</p>
             </div>
-            <div className="grid gap-6 lg:col-span-7 sm:grid-cols-2">
-              <div className="rounded-xl border border-hairline bg-surface p-6">
+            <div className="grid gap-8 sm:grid-cols-2 lg:col-span-7">
+              <div>
                 <h3 className="text-base font-semibold text-primary">A good fit</h3>
                 <ul className="mt-3 space-y-3">
                   {AUDIENCE.fit.map((t) => (
@@ -245,7 +209,7 @@ export default function WelcomePage() {
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl border border-hairline bg-surface p-6">
+              <div>
                 <h3 className="text-base font-semibold text-primary">Not a fit yet</h3>
                 <ul className="mt-3 space-y-3">
                   {AUDIENCE.notYet.map((t) => (
@@ -260,24 +224,22 @@ export default function WelcomePage() {
           </div>
         </section>
 
-        {/* 7. What it runs on, and running it */}
-        <section id="run" aria-labelledby="run-title" className="scroll-mt-4 border-b border-hairline bg-subtle py-20">
+        <section id="run" aria-labelledby="run-title" className={`${SECTION} scroll-mt-4`}>
           <div className={WRAP}>
-            <p className={EYEBROW}>Self-hosted</p>
-            <h2 id="run-title" className={`mt-3 ${H2}`}>Runs on your machine, with your models and your keys</h2>
-            <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            <h2 id="run-title" className={H2}>Runs on your machine, with your models and your keys</h2>
+            <dl className="mt-6 grid gap-x-10 gap-y-4 sm:grid-cols-2 sm:gap-y-6 lg:grid-cols-5">
               {RUNS_ON.map((r) => (
-                <div key={r.title} className="border-l-2 border-dutchOrange pl-4">
-                  <dt className="text-base font-semibold text-primary">{r.title}</dt>
+                <div key={r.title}>
+                  <dt className="text-sm font-semibold text-primary">{r.title}</dt>
                   <dd className="mt-1.5 text-sm leading-relaxed text-secondary">{r.text}</dd>
                 </div>
               ))}
             </dl>
-            <div className="mt-12 grid gap-8 grid-cols-1 lg:grid-cols-12 lg:items-start">
+            <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start lg:gap-8">
               <div className="lg:col-span-5">
                 <h3 className="text-xl font-semibold tracking-tight text-primary">Run it yourself</h3>
                 <p className="mt-3 text-sm leading-relaxed text-secondary">
-                  You need Docker Desktop, or Docker Engine with Compose 2.24 or later. The first start brings the database up to date and loads the example concept. Then open <span className="font-mono text-primary">http://localhost:3000</span>, sign in as demo / demo and choose your own password.
+                  You need Docker Desktop, or Docker Engine with Compose 2.24 or later. The first start brings the database up to date and loads {EXAMPLE.name}. Then open <span className="font-mono text-primary">http://localhost:3000</span>, sign in as demo / demo and choose your own password.
                 </p>
                 <p className="mt-4 text-sm">
                   <a href={REPO_URL} className="inline-flex items-center gap-1.5 font-medium text-link underline-offset-4 hover:underline" rel="noopener noreferrer">
@@ -301,14 +263,14 @@ export default function WelcomePage() {
           </div>
         </section>
 
-        {/* 8. Get started: the demo, or a workspace of one's own */}
-        <section id="request" aria-labelledby="start-title" className="scroll-mt-4 border-b border-hairline py-20">
-          <div className={`${WRAP} grid gap-12 grid-cols-1 lg:grid-cols-12`}>
+        {/* 7. Get started: the demo, or a workspace of one's own */}
+        <section id="request" aria-labelledby="start-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>
+          <div className={`${WRAP} grid grid-cols-1 gap-12 lg:grid-cols-12`}>
             <div className="lg:col-span-5">
-              <p className={EYEBROW}>Get started</p>
-              <h2 id="start-title" className={`mt-3 ${H2}`}>Try it now, or ask for your own workspace</h2>
+              <h2 id="start-title" className={H2}>Try it now, or ask for your own workspace</h2>
               <div className="mt-6 rounded-xl border border-hairline bg-surface p-6">
                 <h3 className="text-base font-semibold text-primary">The live workbench</h3>
+                <p className="mt-2 text-sm leading-relaxed text-secondary">{DEMO_NOTE}</p>
                 <p className="mt-2 text-sm leading-relaxed text-secondary">
                   Sign in as <span className="font-mono text-primary">demo</span> with the password <span className="font-mono text-primary">demo</span>. The account is public and shared: anyone who visits can read and change what is in it, and so can you. Please keep private ideas out of it.
                 </p>
@@ -317,7 +279,7 @@ export default function WelcomePage() {
             </div>
             <div className="lg:col-span-7">
               <h3 id="request-title" className="text-xl font-semibold tracking-tight text-primary">Request your own workspace</h3>
-              <p className="mt-2 mb-6 max-w-2xl text-sm leading-relaxed text-secondary">
+              <p className="mb-6 mt-2 max-w-2xl text-sm leading-relaxed text-secondary">
                 Tell us who you are and what you want to build. The request is stored here and the owner reads it in Admin. Nothing is sent by email yet, so the reply comes by hand.
               </p>
               <AccessRequestForm />
@@ -325,12 +287,10 @@ export default function WelcomePage() {
           </div>
         </section>
 
-        {/* 9. Questions */}
-        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 border-b border-hairline bg-subtle py-20">
-          <div className={`${WRAP} grid gap-10 grid-cols-1 lg:grid-cols-12`}>
+        <section id="faq" aria-labelledby="faq-title" className={`${SECTION} scroll-mt-4`}>
+          <div className={`${WRAP} grid grid-cols-1 gap-10 lg:grid-cols-12`}>
             <div className="lg:col-span-4">
-              <p className={EYEBROW}>Questions</p>
-              <h2 id="faq-title" className={`mt-3 ${H2}`}>Straight answers</h2>
+              <h2 id="faq-title" className={H2}>Straight answers</h2>
               <p className="mt-4 text-sm leading-relaxed text-secondary">
                 A short form of these answers, with where to see each one in the app, is on the{" "}
                 <Link href="/welcome/overview" className="text-link underline-offset-4 hover:underline">one-page overview</Link>, which prints on one sheet.
@@ -351,16 +311,13 @@ export default function WelcomePage() {
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
         </section>
 
-        {/* 10. Closing */}
-        <section aria-labelledby="close-title" className="dark bg-canvas py-20 text-primary">
+        {/* The same action the page opened with. */}
+        <section aria-labelledby="close-title" className="dark bg-canvas py-10 text-primary sm:py-14">
           <div className={WRAP}>
             <div className="max-w-3xl">
               <h2 id="close-title" className={H2}>{CLOSING.title}</h2>
               <p className="mt-4 text-base leading-relaxed text-secondary sm:text-lg">{CLOSING.text}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <PrimaryCta />
-                <SecondaryCta />
-              </div>
+              <PrimaryCta className="mt-6" />
             </div>
           </div>
         </section>
@@ -368,7 +325,7 @@ export default function WelcomePage() {
 
       <footer className="dark border-t border-hairline bg-canvas text-primary">
         <div className={`${WRAP} flex flex-wrap items-center justify-between gap-4 py-8 text-sm text-muted`}>
-          <p>{PRODUCT} · free and self-hosted · Apache 2.0</p>
+          <p>{PRODUCT}. Free and self-hosted, under Apache 2.0.</p>
           <nav aria-label="More" className="flex flex-wrap items-center gap-5">
             <Link href="/welcome/overview" className="inline-flex items-center gap-1.5 hover:text-primary">
               <Printer className="h-3.5 w-3.5" aria-hidden /> One-page overview
