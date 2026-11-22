@@ -1,6 +1,8 @@
-Generate the Arduino sketch for the classification engine
+<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
 
-The complete sketch is saved as BaggageClaims_Classifier_RevA.ino (262 lines) and reproduced below. It implements all eight classifiers from LLD §1.4, the state machine and governor from §1.5, and the exact pin map and register settings from ICD §§1.3/2.3.
+# Generate the Arduino sketch for the classification engine
+
+The complete sketch is saved as **BaggageClaims_Classifier_RevA.ino** (262 lines) and reproduced below. It implements all eight classifiers from LLD §1.4, the state machine and governor from §1.5, and the exact pin map and register settings from ICD §§1.3/2.3.
 
 ```cpp
 /* BAGGAGE CLAIMS MK1 - Classification Engine   Rev A - 2026-11-19
@@ -207,14 +209,22 @@ void loop(){
 }
 ```
 
-Build and flash
-Libraries: install DFRobotDFPlayerMini from Library Manager (it speaks the YX5200 serial command set the DFPlayer uses ); Wire and esp_sleep come with the ESP32 core^1
-Board selection: ESP32S3 Dev Module, USB CDC On Boot enabled so Serial prints appear at 115200
-Expected boot log: CAL OK g=(...) → DF OK → then EVT: lines every time a classifier fires as you shake/lift/rotate the board — that serial trace doubles as your tuning log
-Two honest caveats for the bench
-Gyro axis mapping. gz_ is read from the middle gyro register (GY). Which physical axis the carousel rotates around depends on how the puck is oriented on the bag — during calibration on the turntable test (spin it slowly), check the serial log and reassign gz_ to whichever register peaks, or store all three and take the max-magnitude axis.
-Interrupt wake. Rev A uses a 1-second sleep poll with the MPU-6050's latched motion interrupt so no motion is lost between polls; true GPIO6 ext1 wake for sub-100 µA idle is flagged as a Rev B firmware task in the code comments.
 
-Tuning guidance still applies from the calibration note: run carpet drops at 0.3/0.6/1.0 m, tweak IMPACT_G and STILL_VAR first — those two constants gate the two highest-ranked gags in the catalog.
+## Build and flash
 
-⁂
+- Libraries: install **DFRobotDFPlayerMini** from Library Manager (it speaks the YX5200 serial command set the DFPlayer uses ); Wire and esp_sleep come with the ESP32 core[^1]
+- Board selection: *ESP32S3 Dev Module*, USB CDC On Boot enabled so `Serial` prints appear at 115200
+- Expected boot log: `CAL OK g=(...)` → `DF OK` → then `EVT:` lines every time a classifier fires as you shake/lift/rotate the board — that serial trace doubles as your tuning log
+
+
+## Two honest caveats for the bench
+
+1. **Gyro axis mapping.** `gz_` is read from the middle gyro register (GY). Which physical axis the carousel rotates around depends on how the puck is oriented on the bag — during calibration on the turntable test (`spin it slowly`), check the serial log and reassign `gz_` to whichever register peaks, or store all three and take the max-magnitude axis.
+2. **Interrupt wake.** Rev A uses a 1-second sleep poll with the MPU-6050's *latched* motion interrupt so no motion is lost between polls; true GPIO6 ext1 wake for sub-100 µA idle is flagged as a Rev B firmware task in the code comments.
+
+Tuning guidance still applies from the calibration note: run carpet drops at 0.3/0.6/1.0 m, tweak `IMPACT_G` and `STILL_VAR` first — those two constants gate the two highest-ranked gags in the catalog.
+
+<div align="center">⁂</div>
+
+[^1]: https://www.dfrobot.com/product-1121.html
+

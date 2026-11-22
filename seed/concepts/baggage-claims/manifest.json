@@ -1,7 +1,7 @@
 {
   "concept": "baggage-claims",
-  "source": "Google Drive folder \"Emotional baggage\" (folder id 1sZKy5ufsLNeoXnfCleQHMe6eWv9fcCPb), read in place in the owner's browser; nothing was downloaded",
-  "note": "No file here is a byte-for-byte copy of the original: the Drive download address could not be fetched from the page (cross-origin), so every file was copied from what the Drive preview shows. Each entry's 'copy' says how.",
+  "source": "Google Drive folder \"Emotional baggage\" (folder id 1sZKy5ufsLNeoXnfCleQHMe6eWv9fcCPb), downloaded by the owner as a zip on 21 Nov 2026",
+  "note": "Every file here is the original, byte for byte. Until 21 Nov 2026 sixteen of them were copies made from the Drive preview (text without Markdown marks, the two PDFs as text, the schematic as a screen capture); each of those entries keeps the sha256 of the copy it replaced, so an install seeded with the copies can be brought up to the originals. Drive's zip names the naming note 'What clever names for this _.md'; its name in Drive, kept here, ends in ' ?.md'.",
   "files": [
     {
       "file": "I have an idea for a quick gag and potential quick.md",
@@ -10,11 +10,12 @@
       "what": "The owner's original idea, and the first proposal with the ranked gag catalogue.",
       "kind": "chat",
       "driveFileId": "15SdSUpyYX1bz4_GtQs42R8-gZvOh2sK6",
-      "driveSize": "7 KB",
-      "size": 6503,
-      "sha256": "52f2a447fc6676b0e62876c4a3321d97c1b5e2d5600115518e7d20e654c6eaf0",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original; the footnote link addresses are listed at the end, without their query strings",
-      "readOn": "2026-11-21"
+      "driveSize": "7464 bytes",
+      "size": 7464,
+      "sha256": "b7f1baf2155fc3fa6936951f1a23d33fe7857486e0badce15ef9e87f91621cca",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "52f2a447fc6676b0e62876c4a3321d97c1b5e2d5600115518e7d20e654c6eaf0"
     },
     {
       "file": "What clever names for this ?.md",
@@ -23,24 +24,26 @@
       "what": "Name candidates, a tiered naming system for the voice packs, and a ranking.",
       "kind": "chat",
       "driveFileId": "1xLliArZlGy1i2DzVgRvEwzG1SuBnMkQ_",
-      "driveSize": "3 KB",
-      "size": 2457,
-      "sha256": "9e65bbed5342d0a76a9b62c23b4dc14a07d68bfb5bd35ac96fb8183220f3b942",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "2693 bytes",
+      "size": 2693,
+      "sha256": "4bd608bdd1bf72706f9f930ce422d75c67c27462a9617873249f4fed5d2b664e",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "9e65bbed5342d0a76a9b62c23b4dc14a07d68bfb5bd35ac96fb8183220f3b942"
     },
     {
-      "file": "BaggageClaims_PRD_Business_Proposal_RevA.pdf.txt",
+      "file": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
       "title": "BaggageClaims_PRD_Business_Proposal_RevA.pdf",
       "folder": "Product and business",
       "what": "Product requirements document and full business proposal, Rev A: 6 pages, 13 sections.",
       "kind": "document",
       "driveFileId": "1_KWsXr13UCzvM2PreGfyIcnzrSOJt78S",
-      "driveSize": "19 KB (the PDF)",
-      "size": 13482,
-      "sha256": "50e24c5b335df2800b95fa4cd0b5a71230902d12b8cb24c6fc2fcbdab46b8c17",
-      "copy": "the original PDF could not be copied; this is its text, read from the Drive preview's text layer, all 6 pages (table cells joined with ' | ')",
-      "readOn": "2026-11-21"
+      "driveSize": "19236 bytes",
+      "size": 19236,
+      "sha256": "d451229afda0cf157049a3e1e73807fd3b8f3417c735b82c897fe02e6ac74318",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "50e24c5b335df2800b95fa4cd0b5a71230902d12b8cb24c6fc2fcbdab46b8c17"
     },
     {
       "file": "Create a PRD for this with arch instructions bom a.md",
@@ -49,24 +52,26 @@
       "what": "Chat summary of the PRD: headline economics and the decision gate.",
       "kind": "chat",
       "driveFileId": "1QOD88KnExpAZHAZCz6xpCf80dN5uc5Gn",
-      "driveSize": "4 KB",
-      "size": 3490,
-      "sha256": "4a75784da38c1027a2753e93285360c0c303457468b6496e8ca800fb6ac2cc30",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original; the footnote link addresses are listed at the end, without their query strings",
-      "readOn": "2026-11-21"
+      "driveSize": "4521 bytes",
+      "size": 4521,
+      "sha256": "59151eeb416985e3f8106d83763eb5da4440c01f4c0372d8fed40628c5cbb895",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "4a75784da38c1027a2753e93285360c0c303457468b6496e8ca800fb6ac2cc30"
     },
     {
-      "file": "BaggageClaims_DesignPackage_RevA.pdf.txt",
+      "file": "BaggageClaims_DesignPackage_RevA.pdf",
       "title": "BaggageClaims_DesignPackage_RevA.pdf",
       "folder": "Design and build",
       "what": "Low-level design, interface control document and assembly guide, Rev A: 5 pages.",
       "kind": "document",
       "driveFileId": "1BedLn5QN9375cvRPtG9YHhdJSR6WqpVH",
-      "driveSize": "15 KB (the PDF)",
-      "size": 9810,
-      "sha256": "6eefc6b60632522fa9de2f9072360c64998c13946794f3fdbe65483862f3f1db",
-      "copy": "the original PDF could not be copied; this is its text, read from the Drive preview's text layer, all 5 pages (table cells joined with ' | ')",
-      "readOn": "2026-11-21"
+      "driveSize": "15488 bytes",
+      "size": 15488,
+      "sha256": "882629baeccaa23c9dc081c0ab49f119c7b2319d93aab456995cb98dbcf86a36",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "6eefc6b60632522fa9de2f9072360c64998c13946794f3fdbe65483862f3f1db"
     },
     {
       "file": "Build me the low level design , inter interface co.md",
@@ -75,11 +80,12 @@
       "what": "Chat summary of the design package.",
       "kind": "chat",
       "driveFileId": "19bVb44CkDBE820KyXuUiby13DLpIIbb4",
-      "driveSize": "5 KB",
-      "size": 4121,
-      "sha256": "8ce546078dc253de7c2bcacb709afb9723435cf8e07c961956294b4c1e2d0fa8",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original; the footnote link addresses are listed at the end, without their query strings",
-      "readOn": "2026-11-21"
+      "driveSize": "4954 bytes",
+      "size": 4954,
+      "sha256": "2359047d455a50aa20203364b0fea6c6e47b521c433e545a8ac0c6e501529356",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "8ce546078dc253de7c2bcacb709afb9723435cf8e07c961956294b4c1e2d0fa8"
     },
     {
       "file": "BaggageClaims_BuildGuide_RevA.md",
@@ -88,11 +94,12 @@
       "what": "Step-by-step build guide, Rev A: eight phases with acceptance tests and a troubleshooting sheet.",
       "kind": "document",
       "driveFileId": "1mF9my9oit6rJS9EQJO_Mm90SgMZPy6Hx",
-      "driveSize": "6 KB",
-      "size": 5696,
-      "sha256": "3114e553d929a3154dc7e04673689c5bb39b1fc44cf757297bc5daa290c4325a",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "6021 bytes",
+      "size": 6021,
+      "sha256": "b86267382213c064c2efb2fd67b6776420ee03b8421e07acd56a8b18984a31ee",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "3114e553d929a3154dc7e04673689c5bb39b1fc44cf757297bc5daa290c4325a"
     },
     {
       "file": "BOM_shopping_list.csv",
@@ -101,11 +108,12 @@
       "what": "Bill of materials as a shopping list: 16 lines with Micro Center and Amazon sources.",
       "kind": "spreadsheet",
       "driveFileId": "1oHMYgicLNspKbFUg3Tn3fbfkD6CZ8CcM",
-      "driveSize": "2 KB",
-      "size": 2500,
-      "sha256": "a53424538d243065d90fcd99f5b2761596e4569682ffa4fede2cf4af155a3cfa",
-      "copy": "rebuilt as CSV from the table the Drive preview shows; the cell text is as shown, the quoting may differ from the original",
-      "readOn": "2026-11-21"
+      "driveSize": "2527 bytes",
+      "size": 2527,
+      "sha256": "c012f5b87b12fdedbeb665a125684eb6f0cb88ef9c7c2d9e88c5e5673ceb1f19",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "a53424538d243065d90fcd99f5b2761596e4569682ffa4fede2cf4af155a3cfa"
     },
     {
       "file": "schematic.png",
@@ -114,11 +122,12 @@
       "what": "Block-level wiring schematic.",
       "kind": "image",
       "driveFileId": "1hh9EdiZy8eQr81VasGnB0MYv0-ZNOjgD",
-      "driveSize": "207 KB",
-      "size": 360150,
-      "sha256": "a016669587a962cf0ec051f0b473a12a7a864ad45f0343ede4990ed9321b7451",
-      "copy": "screen capture of the original image (the original is 1600 x 1000 pixels; this capture of the preview is 1389 x 868)",
-      "readOn": "2026-11-21"
+      "driveSize": "211994 bytes",
+      "size": 211994,
+      "sha256": "b7731ebee1dd61cf2c68d30d263eb0ecfd8666d6ab554853475accdce4ffd631",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "a016669587a962cf0ec051f0b473a12a7a864ad45f0343ede4990ed9321b7451"
     },
     {
       "file": "Can I do a 3d printer for this integrated - if so.md",
@@ -127,11 +136,12 @@
       "what": "3D printer choice and three levels of enclosure integration.",
       "kind": "chat",
       "driveFileId": "1UXCkmaiX3liGkhdy7wSfIqk_OICpY-po",
-      "driveSize": "6 KB",
-      "size": 4444,
-      "sha256": "01dc65cac2a63fb5ea72add7ae3588ed8a3ef3c4e48ce9a014c1423dc0131ede",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "6081 bytes",
+      "size": 6081,
+      "sha256": "f96a6c35b2201cbe53e51204ef57cd92884733808d276a37f9092b0c36b4755b",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "01dc65cac2a63fb5ea72add7ae3588ed8a3ef3c4e48ce9a014c1423dc0131ede"
     },
     {
       "file": "Generate the Arduino sketch for the classification.md",
@@ -140,11 +150,12 @@
       "what": "The classifier firmware sketch, with bench caveats.",
       "kind": "chat",
       "driveFileId": "1v87M2TmLrQ0ZEi18r9fdExKBZMj-D3yy",
-      "driveSize": "10 KB",
-      "size": 10474,
-      "sha256": "9d12203f2ac6335be5c1e7b8cc30bfc4fbd6a7d3f998afd1cdb9293e3fddf99b",
-      "copy": "text copied from the Drive preview; the sketch's indentation and spacing were rebuilt from the page and checked line by line; the prose around it lost its Markdown marks",
-      "readOn": "2026-11-21"
+      "driveSize": "10732 bytes",
+      "size": 10732,
+      "sha256": "4a29645d30c9966b70570bece3af3c7fc69c692cd05d923c136e664329f0b196",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "9d12203f2ac6335be5c1e7b8cc30bfc4fbd6a7d3f998afd1cdb9293e3fddf99b"
     },
     {
       "file": "BaggageClaims_Marketing_Playbook_RevA.txt",
@@ -153,10 +164,10 @@
       "what": "Marketing playbook, Rev A: 10 campaigns in 4 funnel stages, about $4,500 budget, kill and scale rules.",
       "kind": "document",
       "driveFileId": "1cBwtcTQvO_EVo1pSxZmFYcB-xH4zu-Jp",
-      "driveSize": "9 KB",
+      "driveSize": "9433 bytes",
       "size": 9433,
       "sha256": "563f8b6989ca64bb82e7824d5834b0c5e0ddc1b1c2a3c65c93237fcd6b78ec15",
-      "copy": "text copied from the Drive preview; spacing and indentation rebuilt from the page",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
       "readOn": "2026-11-21"
     },
     {
@@ -166,11 +177,12 @@
       "what": "Chat summary of the marketing playbook.",
       "kind": "chat",
       "driveFileId": "1nS9LGqpPwPVVXnMLjq5bgzRAmeioVbOo",
-      "driveSize": "5 KB",
-      "size": 5037,
-      "sha256": "c170ac94bfc370a13f3b4a8607bcca7c35f461701b1bb1172db1f979ab706ec7",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "5287 bytes",
+      "size": 5287,
+      "sha256": "434bb3cd01be5d7f0c6af5cac33a37e0b84c58060f614382bf01c4ee1e56d206",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "c170ac94bfc370a13f3b4a8607bcca7c35f461701b1bb1172db1f979ab706ec7"
     },
     {
       "file": "BaggageClaims_LaunchVideo_Script_RevA.txt",
@@ -179,10 +191,10 @@
       "what": "Kickstarter launch video script, Rev A: the 2:15 hero cut, four 15-second verticals, audio cue sheet and shot notes.",
       "kind": "document",
       "driveFileId": "1g-0SeLLLX6Dx5D6gYdXG-SIUHHo12wKk",
-      "driveSize": "5 KB",
+      "driveSize": "5442 bytes",
       "size": 5442,
       "sha256": "ded1de24aa090074285b6a6e64b944b3a458d908ddd7be9aa2d61a4f33f9b496",
-      "copy": "text copied from the Drive preview; spacing and indentation rebuilt from the page, every line's length checked against the preview",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
       "readOn": "2026-11-21"
     },
     {
@@ -192,11 +204,12 @@
       "what": "Chat copy of the launch script with production notes.",
       "kind": "chat",
       "driveFileId": "1bofmsHj-AcQt8uT1GXl3WnuJiBXpzRwF",
-      "driveSize": "5 KB",
-      "size": 4226,
-      "sha256": "eeb22302ad5e12ec554fd18fea4cf799b1c5a64f2c9bd56c55d610b62df52c3f",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "4694 bytes",
+      "size": 4694,
+      "sha256": "44aae6149f6381ace3b949974f676b5f684ced74b89b213058e18684e82b7dde",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "eeb22302ad5e12ec554fd18fea4cf799b1c5a64f2c9bd56c55d610b62df52c3f"
     },
     {
       "file": "BaggageClaims_Website_Platform_Plan_RevA.txt",
@@ -205,10 +218,10 @@
       "what": "Website and platform plan, Rev A: strategy, sitemap, page designs, back office, compliance and phases, built on Shopify.",
       "kind": "document",
       "driveFileId": "1_g-U-3quRtPnvSnXSRAwC9_FekOaDL4_",
-      "driveSize": "14 KB",
+      "driveSize": "13984 bytes",
       "size": 13984,
       "sha256": "93d943ea4909328c2d8a44977c56b5760ed8b58ef1fb556676be7a272a618a42",
-      "copy": "text copied from the Drive preview; spacing and indentation rebuilt from the page",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
       "readOn": "2026-11-21"
     },
     {
@@ -218,11 +231,12 @@
       "what": "Web blueprint, Rev A: a custom build on Next.js 15.",
       "kind": "document",
       "driveFileId": "1KBsHmu29eY11YvuyWRKHkoq-sEbjz1Y6",
-      "driveSize": "7 KB",
-      "size": 6858,
-      "sha256": "23d45df1951d8d279afa52600d5e9664b1d384344d0647d2e832e0a71a978914",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original; its code blocks lost their line breaks",
-      "readOn": "2026-11-21"
+      "driveSize": "7334 bytes",
+      "size": 7334,
+      "sha256": "ec35178b31d05e8b5dc3a36eaaa37c8fc61900e072b7ade867f2dbf241487a38",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "23d45df1951d8d279afa52600d5e9664b1d384344d0647d2e832e0a71a978914"
     },
     {
       "file": "BaggageClaims_Web_Blueprint_RevB.md",
@@ -231,11 +245,12 @@
       "what": "Web blueprint, Rev B, which says it supersedes Rev A.",
       "kind": "document",
       "driveFileId": "1PWZHdOQ-UYAaImXodoACSrtRxHeZJhdn",
-      "driveSize": "6 KB",
-      "size": 5845,
-      "sha256": "2dec3e3c5812f40884ec1915dabb28aeffb7090b1c9349f4480b8b6ee094cf0e",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "6052 bytes",
+      "size": 6052,
+      "sha256": "9866cb22ad4567dd9baa5e784f5b453c1088049ddd326a657376f9c25f1a7daf",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "2dec3e3c5812f40884ec1915dabb28aeffb7090b1c9349f4480b8b6ee094cf0e"
     },
     {
       "file": "db_schema.sql",
@@ -244,10 +259,10 @@
       "what": "PostgreSQL database schema for the web platform, Rev A.",
       "kind": "other",
       "driveFileId": "1als1r5BDSlcXtf_eQvI6fPBWpF2r4PjQ",
-      "driveSize": "5 KB",
+      "driveSize": "5040 bytes",
       "size": 5040,
       "sha256": "263f12f4444739a4a50cbc2ab98cf19c16d849127ed69cbc1006808d627ef2a7",
-      "copy": "text copied from the Drive preview; spacing and indentation rebuilt from the page, every line's length checked against the preview",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
       "readOn": "2026-11-21"
     },
     {
@@ -257,10 +272,10 @@
       "what": "Docker Compose file for the web platform, Rev A.",
       "kind": "other",
       "driveFileId": "17iLrewIMhsCrR-JfvZBJemKjdF7IGbpH",
-      "driveSize": "2 KB",
+      "driveSize": "2551 bytes",
       "size": 2551,
       "sha256": "a4f7fdc4b8c7068dbd63df1a800e00fa1da65ff67197c9f36797a885800d15b9",
-      "copy": "text copied from the Drive preview; spacing and indentation rebuilt from the page, every line's length checked against the preview; the length of the whole text matches the preview",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
       "readOn": "2026-11-21"
     },
     {
@@ -270,11 +285,12 @@
       "what": "Design of the Lost Baggage Hotline audio worker: fragment stitching, idempotency, failure handling, capacity.",
       "kind": "chat",
       "driveFileId": "1aXZqDNbg9BA6G7WFaY2NIl-OpfOEM-Db",
-      "driveSize": "4 KB",
-      "size": 3652,
-      "sha256": "1fe4bee80845e4fcc504a3f09537e129dd77c6896afe9ef6cd9429b294507df2",
-      "copy": "text copied from the Drive preview. The preview shows Markdown already rendered, so heading marks, bold marks, table pipes and code fences are not in the copy, and it is shorter than the original",
-      "readOn": "2026-11-21"
+      "driveSize": "3878 bytes",
+      "size": 3878,
+      "sha256": "a16fddcd46d4ba6dccbb4c0f66be2893c886325f21f8afb5766e457fc740c99d",
+      "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
+      "readOn": "2026-11-21",
+      "replacedCopySha256": "1fe4bee80845e4fcc504a3f09537e129dd77c6896afe9ef6cd9429b294507df2"
     }
   ]
 }

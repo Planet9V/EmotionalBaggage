@@ -1,17 +1,17 @@
 RefDes,Component,Specification,Qty,Primary source,Search term / SKU,Speed option,Unit est. (USD),Line est. (USD)
 U1,MCU dev board,"Waveshare ESP32-S3 Mini Dev Board 240MHz, 4MB flash, onboard LDO",1,Micro Center,SKU 699323 'Waveshare ESP32-S3 Mini Development Board',Same-day store pickup,$8.99,$8.99
-U2,IMU sensor,"HiLetgo GY-521 MPU-6050 6-axis, I2C, 3.3V",1,Amazon,HiLetgo GY-521 MPU-6050' (sold $6.99 1-pk or $11.79 3-pk),Amazon same/next-day,$6.99,$6.99
-U3,Audio module,"DFPlayer Mini MP3/WAV player, microSD to 32GB, 9600 baud UART",1,Amazon,DFPlayer Mini MP3 player module 2 pack',Amazon next-day,$5.50,$5.50
-SPK1,Speaker,8Ω 3W mini speaker w/ pre-tinned leads (~36mm cavity),1,Amazon,4pcs 3W 8 ohm mini speaker',Amazon next-day,$1.75,$1.75
-BT1,Battery holder,3× AA holder with 150mm leads + cover,1,Amazon,3 AA battery holder with wire leads',Amazon next-day,$2.00,$2.00
+U2,IMU sensor,"HiLetgo GY-521 MPU-6050 6-axis, I2C, 3.3V",1,Amazon,'HiLetgo GY-521 MPU-6050' (sold $6.99 1-pk or $11.79 3-pk),Amazon same/next-day,$6.99,$6.99
+U3,Audio module,"DFPlayer Mini MP3/WAV player, microSD to 32GB, 9600 baud UART",1,Amazon,'DFPlayer Mini MP3 player module 2 pack',Amazon next-day,$5.50,$5.50
+SPK1,Speaker,8Ω 3W mini speaker w/ pre-tinned leads (~36mm cavity),1,Amazon,'4pcs 3W 8 ohm mini speaker',Amazon next-day,$1.75,$1.75
+BT1,Battery holder,3× AA holder with 150mm leads + cover,1,Amazon,'3 AA battery holder with wire leads',Amazon next-day,$2.00,$2.00
 BAT,Batteries,AA alkaline (no lithium = checked-bag legal per FAA PackSafe),3,Micro Center,Any AA alkaline 4/8-pack,Same-day store pickup,$2.50,$2.50
-S1,Power switch,"SPST mini slide switch, through-hole or panel snap",1,Micro Center,SPST slide switch' (MC variety kit),Same-day store pickup,$1.00,$1.00
-S2,Mode button,"6mm tactile push button, panel or PCB",1,Micro Center,tactile push button' kit,Same-day store pickup,$0.50,$0.50
+S1,Power switch,"SPST mini slide switch, through-hole or panel snap",1,Micro Center,'SPST slide switch' (MC variety kit),Same-day store pickup,$1.00,$1.00
+S2,Mode button,"6mm tactile push button, panel or PCB",1,Micro Center,'tactile push button' kit,Same-day store pickup,$0.50,$0.50
 R1,Resistor,1kΩ 1/4W (UART level tolerance),1,Micro Center,MC resistor kit / single,Same-day store pickup,$0.05,$0.05
 R2,Resistor,10kΩ 1/4W pull-up (mode button),1,Micro Center,MC resistor kit / single,Same-day store pickup,$0.05,$0.05
 SD1,Storage,"microSD 8–32GB FAT32 (voice clips, 001.mp3 naming)",1,Micro Center,16GB microSD,Same-day store pickup,$5.99,$5.99
-W1,Wire & headers,"22–24AWG hookup wire, dupont jumpers, pin headers",1,Micro Center,jumper wire kit' + 'hookup wire spool',Same-day store pickup,$8.99,$8.99
-PCB1,Carrier,Solderable perfboard / breadboard PCB 5×7cm,1,Micro Center,Adafruit perma-proto breadboard PCB',Same-day store pickup,$4.50,$4.50
-HW1,Mounting,"M2×8 screws + M2 brass standoffs ×4, foam tape, zip ties",1,Amazon,M2 brass standoff kit',Amazon next-day,$6.99,$6.99
-ENC1,Enclosure,"3D print bottom/top shell (PETG, 4 perimeters, 25% infill) or RadioShack-style project box 80×60×40mm",1,Your printer / Micro Center,Prusa or public makerspace 250g PETG filament (MC Inland ~$20/kg),Same-day,$5.00,$5.00
-STR1,Mount strap,Hook-and-loop (Velcro) luggage strap 25×300mm ×2,1,Amazon,adjustable velcro luggage strap 12in',Amazon next-day,$4.00,$4.00
+W1,Wire & headers,"22–24AWG hookup wire, dupont jumpers, pin headers",1,Micro Center,'jumper wire kit' + 'hookup wire spool',Same-day store pickup,$8.99,$8.99
+PCB1,Carrier,Solderable perfboard / breadboard PCB 5×7cm,1,Micro Center,'Adafruit perma-proto breadboard PCB',Same-day store pickup,$4.50,$4.50
+HW1,Mounting,"M2×8 screws + M2 brass standoffs ×4, foam tape, zip ties",1,Amazon,'M2 brass standoff kit',Amazon next-day,$6.99,$6.99
+ENC1,Enclosure,"3D print bottom/top shell (PETG, 4 perimeters, 25% infill) or RadioShack-style project box 80×60×40mm",1,Your printer / Micro Center Prusa or public makerspace,250g PETG filament (MC Inland ~$20/kg),Same-day,$5.00,$5.00
+STR1,Mount strap,Hook-and-loop (Velcro) luggage strap 25×300mm ×2,1,Amazon,'adjustable velcro luggage strap 12in',Amazon next-day,$4.00,$4.00

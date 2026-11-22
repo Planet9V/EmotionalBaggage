@@ -126,6 +126,7 @@ export function ready() {
       await seedLinks();
       await (await import("./story/seed")).seedStory(pool());
       await (await import("./story/seedFiles")).seedFiles(pool());
+      await (await import("./story/seedFiles")).upgradeSeedFiles(pool());
       await (await import("./economics/movePricingChannels")).movePricingChannels(pool());
       return vector;
     })().catch((e) => {

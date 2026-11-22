@@ -3,7 +3,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { pool, q, ready } from "@/lib/db";
 import { SEED_SOURCES, seedStory } from "@/lib/story/seed";
-import { readManifest, seedFiles } from "@/lib/story/seedFiles";
+import { readManifest, seedFiles, upgradeSeedFiles } from "@/lib/story/seedFiles";
 import { STORY_PARTS } from "@/lib/story/parts";
 
 afterAll(async () => {
@@ -86,5 +86,37 @@ describe("the example concept's story", () => {
     // the story still cites the same rows
     const pitch = await q<{ data: { sourceIds: number[] } }>("SELECT data FROM items WHERE id=$1", [story[0].id]);
     expect(pitch[0].data.sourceIds.every((id) => ids.includes(String(id)))).toBe(true);
+  });
+  it("brings an install seeded with the preview copies up to the originals, once, keeping each copy as an earlier version", async () => {
+    await ready();
+    const manifest = (await readManifest())!;
+    const swapped = manifest.filter((m) => m.replacedCopySha256);
+    expect(swapped).toHaveLength(16);
+    // as an install seeded with the copies: every swapped file holds other bytes under the copy's sha256, and one was replaced by hand
+    await q("DELETE FROM events WHERE project_id='baggage-claims' AND kind='seed.files.originals'");
+    for (const m of swapped) {
+      await q("UPDATE files f SET sha256=$2, bytes=convert_to('a preview copy','UTF8'), size=14, name=$3 FROM items i WHERE f.id=(i.data->>'fileId')::bigint AND i.project_id='baggage-claims' AND i.section='concept/files' AND i.title=$1", [m.title, m.replacedCopySha256, `${m.title}.txt`]);
+    }
+    const byHand = swapped[0];
+    await q("UPDATE files f SET meta='{\"source\":true}' FROM items i WHERE f.id=(i.data->>'fileId')::bigint AND i.project_id='baggage-claims' AND i.section='concept/files' AND i.title=$1", [byHand.title]);
+    await upgradeSeedFiles(pool());
+    await upgradeSeedFiles(pool());
+    const rows = await q<{ title: string; data: { fileName: string; versions?: { sha256?: string }[]; extract: { method: string } }; sha256: string; mime: string }>(
+      "SELECT i.title, i.data, f.sha256, f.mime FROM items i JOIN files f ON f.id = (i.data->>'fileId')::bigint WHERE i.project_id='baggage-claims' AND i.section='concept/files'"
+    );
+    expect(rows).toHaveLength(21);
+    for (const m of swapped.slice(1)) {
+      const r = rows.find((x) => x.title === m.title)!;
+      expect(r.sha256, m.title).toBe(m.sha256);
+      expect(r.data.fileName).toBe(m.file);
+      expect(r.data.versions?.[0]?.sha256).toBe(m.replacedCopySha256);
+    }
+    expect(rows.find((x) => x.title === byHand.title)!.sha256).toBe(byHand.replacedCopySha256);
+    const pdfs = rows.filter((r) => r.title.endsWith(".pdf") && r.title !== byHand.title);
+    expect(pdfs.length).toBeGreaterThan(0);
+    expect(pdfs.every((r) => r.mime === "application/pdf" && r.data.extract.method === "pdf")).toBe(true);
+    const ev = await q<{ summary: string }>("SELECT summary FROM events WHERE project_id='baggage-claims' AND kind='seed.files.originals'");
+    expect(ev).toHaveLength(1);
+    expect(ev[0].summary).toContain("15 preview copies");
   });
 });
