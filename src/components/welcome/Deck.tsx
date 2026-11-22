@@ -95,6 +95,12 @@ export function Deck({ label, tabs, auto = false, untilWide = false, children }:
           </div>
         ))}
       </div>
+      {auto ? (
+        // how long this slide has left before the deck moves on by itself; still once the visitor steers
+        <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-[var(--border-hairline)]" aria-hidden="true">
+          {running ? <div key={at} className="wl-progress h-full w-full bg-dutchOrange" style={{ animationDuration: `${HOLD_MS}ms` }} /> : null}
+        </div>
+      ) : null}
       <div className={`mt-4 flex items-center gap-2 ${hide}`}>
         <Button type="button" variant="outline" size="icon" aria-label="Previous slide" disabled={at === 0} onClick={() => step(at - 1)}>
           <ChevronLeft className="h-4 w-4" aria-hidden />

@@ -98,7 +98,7 @@ export function BodyPart({ part, progress, selected, onSelect, onFocusPart, colo
   }, [hasFile, fileShape, shape, size[0], size[1], size[2], axis]);
   useDispose(geometry);
   const offsets = hasFile ? ([[0, 0, 0]] as [number, number, number][]) : bodyOffsets(g);
-  const color = selected ? ORANGE : colors.body[index % 2];
+  const color = selected ? ORANGE : (part.color ?? colors.body[index % 2]);
   // One material per part, shared by its identical bodies; the meshes opt out of R3F disposal (dispose={null})
   // because they share this material and geometry, so both are disposed here.
   const material = useMemo(() => {
@@ -180,8 +180,8 @@ export function ShellPart({ part, progress, selected, onSelect, onFocusPart, col
   const lidRef = useRef<THREE.Group>(null);
   const H = g.size[1];
   const clear = view === "clear";
-  const color = selected ? ORANGE : colors.shell;
-  const edge = selected ? ORANGE : colors.edge;
+  const color = selected ? ORANGE : (part.color ?? colors.shell);
+  const edge = selected ? ORANGE : (part.color ?? colors.edge);
   const material = useMemo(() => {
     const f = progress.fade(part.id);
     return new THREE.MeshStandardMaterial({

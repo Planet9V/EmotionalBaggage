@@ -22,6 +22,10 @@ type Props = {
   onSelect: (s: Selection) => void;
   onConnect: (c: ConnectRequest) => void;
   titleBlock: React.ReactNode;
+  /** A viewer only: nothing is dragged or connected, the hint is hidden and a plain wheel scrolls the page (Ctrl or Cmd + wheel zooms). Used by the public welcome page. */
+  readOnly?: boolean;
+  /** Replaces the canvas height classes. */
+  heightClass?: string;
 };
 
 const refOfNode = (id: string) => id.slice(2);
@@ -87,7 +91,7 @@ export function SymbolCanvas(p: Props) {
 
   return (
     <SymbolContext.Provider value={ctx}>
-      <div className="schematic-canvas relative h-[clamp(620px,72vh,900px)] w-full overflow-hidden rounded-xl border border-hairline bg-canvas" data-testid="symbol-canvas">
+      <div className={`schematic-canvas relative w-full overflow-hidden rounded-xl border border-hairline bg-canvas ${p.heightClass ?? "h-[clamp(620px,72vh,900px)]"}`} data-testid="symbol-canvas">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -120,19 +124,20 @@ export function SymbolCanvas(p: Props) {
           maxZoom={3}
           snapToGrid
           snapGrid={[10, 10]}
+          {...(p.readOnly ? { nodesDraggable: false, nodesConnectable: false, zoomOnScroll: false, preventScrolling: false } : {})}
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20.32} size={1.1} color="var(--border-hairline)" />
           <Controls showInteractive={false} className="schematic-noprint rounded-md! border! border-hairline! shadow-xs!" />
-          <Panel position="top-left" className="schematic-noprint m-3! pointer-events-none">
+          {!p.readOnly && <Panel position="top-left" className="schematic-noprint m-3! pointer-events-none">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Press a pin or a wire to light it up in both views. Drag pin to pin to add a wire.
             </p>
-          </Panel>
+          </Panel>}
         </ReactFlow>
       </div>
       {/* the title block sits under the canvas, never over the drawing */}
-      <div className="mt-2 flex justify-end">{p.titleBlock}</div>
+      {p.titleBlock ? <div className="mt-2 flex justify-end">{p.titleBlock}</div> : null}
     </SymbolContext.Provider>
   );
 }

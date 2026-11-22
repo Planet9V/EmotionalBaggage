@@ -78,14 +78,19 @@ export function IsoRing({ cx = 0, cy = 0, z = 0, r, fill = "none", ...rest }: { 
   return <ellipse cx={sx} cy={sy} rx={r * 1.2247} ry={r * 0.7071} fill={fill} {...rest} />;
 }
 
-/** The puck seen from the front, as it sits on the strap: a disc, a dark speaker face, a ring of holes. */
-export function PuckFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
+/**
+ * The gadget seen from the front, as it sits on its straps: the real case is a box 80 by 60 mm (42 mm deep) with a
+ * round speaker opening in the lid. Drawn upright, 1.5 r wide and 2 r tall, in the accent, with the dark grille.
+ */
+export function DeviceFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
+  const w = r * 1.5;
+  const h = r * 2;
   return (
     <>
-      <circle cx={cx} cy={cy} r={r} fill={ORANGE} />
-      <circle cx={cx} cy={cy} r={r * 0.7} fill={DARK} />
-      <circle cx={cx} cy={cy} r={r * 0.48} stroke="#ffffff" strokeOpacity="0.7" strokeDasharray="1 6" />
-      <circle cx={cx} cy={cy} r={r * 0.24} stroke="#ffffff" strokeOpacity="0.7" strokeDasharray="1 6" />
+      <rect x={cx - w / 2} y={cy - h / 2} width={w} height={h} rx={r * 0.12} fill={ORANGE} />
+      <circle cx={cx} cy={cy} r={r * 0.46} fill={DARK} />
+      <circle cx={cx} cy={cy} r={r * 0.3} stroke="#ffffff" strokeOpacity="0.7" strokeDasharray="1 5" />
+      <circle cx={cx} cy={cy} r={r * 0.14} stroke="#ffffff" strokeOpacity="0.7" strokeDasharray="1 5" />
     </>
   );
 }
@@ -136,7 +141,7 @@ export function SchematicFragment({ className, children }: { className?: string;
       <T x={100} y={76} mono size={9} fill="var(--net-signal)">UART_TX</T>
       {/* the audio module */}
       <rect x="150" y="52" width="100" height="96" rx="4" fill={PAPER} />
-      <T x={200} y={44} mono size={10} anchor="middle">U3</T>
+      <T x={156} y={46} mono size={10}>U3</T>
       <T x={158} y={88} mono size={10} fill={INK}>RX</T>
       <T x={242} y={88} mono size={10} fill={INK} anchor="end">SPK_1</T>
       <T x={242} y={120} mono size={10} fill={INK} anchor="end">SPK_2</T>
@@ -152,14 +157,14 @@ export function SchematicFragment({ className, children }: { className?: string;
   );
 }
 
-/** Three ad drafts fanned out, one per voice pack, each still waiting for a yes. */
+/** The example's three ad drafts fanned out, each still waiting for a yes. */
 export function AdFan({ className }: { className?: string }) {
   const card = (name: string, turn: number, front: boolean) => (
     <g key={name} className="wl-fan" style={{ "--turn": `${turn}deg` } as CSSProperties}>
       <rect x="104" y="36" width="112" height="150" rx="10" fill={front ? PAPER : SHADE} />
-      <PuckFace cx={128} cy={60} r={11} />
+      <DeviceFace cx={128} cy={60} r={11} />
       <T x={146} y={58} size={11} bold fill={INK}>{name}</T>
-      <T x={146} y={71} mono size={9}>voice pack</T>
+      <T x={146} y={71} mono size={9}>retargeting</T>
       <path d="M118 96h84M118 110h84M118 124h52" stroke={LINE} strokeWidth="6" />
       <g className={front ? "wl-breathe" : undefined}>
         <rect x="118" y="150" width="48" height="20" rx="10" fill={front ? "var(--accent-orange-subtle)" : "none"} stroke={ORANGE} strokeWidth="1.5" />
@@ -167,28 +172,30 @@ export function AdFan({ className }: { className?: string }) {
       </g>
     </g>
   );
-  const [a, b, c] = EXAMPLE.voicePacks;
   return (
     <Svg viewBox="0 0 320 210" className={className}>
-      {card(a, -16, false)}
-      {card(c, 16, false)}
-      {card(b, 0, true)}
+      {card("Ad 1", -16, false)}
+      {card("Ad 3", 16, false)}
+      {card("Ad 2", 0, true)}
     </Svg>
   );
 }
 
-/** A marketplace listing in draft: the picture, the name, the points, and no price or stars, because none exist. */
+/** What a marketplace listing draft holds: the picture, the name, the points, and no price or stars, because none exist. */
 export function ListingCard({ className }: { className?: string }) {
   return (
     <Svg viewBox="0 0 320 200" className={className}>
       <rect x="11" y="11" width="298" height="178" rx="12" fill={PAPER} />
       <rect x="27" y="27" width="112" height="146" rx="8" fill={SHADE} />
-      <rect x="58" y="62" width="50" height="78" rx="9" fill={PAPER} />
-      <path d="M72 62V50h22v12" />
-      <rect x="56" y="92" width="54" height="14" rx="2" fill={INK} />
-      <PuckFace cx={83} cy={99} r={14} />
+      <g className="wl-float">
+        <rect x="58" y="62" width="50" height="78" rx="9" fill={PAPER} />
+        <path d="M72 62V50h22v12" />
+        <rect x="56" y="90" width="54" height="7" rx="1" fill={INK} />
+        <rect x="56" y="102" width="54" height="7" rx="1" fill={INK} />
+        <DeviceFace cx={83} cy={99} r={13} />
+      </g>
       <T x={156} y={48} size={14} bold fill={INK}>{EXAMPLE.name}</T>
-      <T x={156} y={66} size={10}>A puck that straps to a suitcase</T>
+      <T x={156} y={66} size={10}>A gadget that straps to a suitcase</T>
       <T x={156} y={79} size={10}>and heckles the trip.</T>
       {[100, 118, 136].map((y, i) => (
         <g key={y} className="wl-seq" style={{ animationDelay: `${i * 0.5}s` }}>

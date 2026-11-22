@@ -6,7 +6,8 @@
 // every cell needs a different number of flaps and a row settles raggedly, left to right.
 //
 // What it shows is data (BOARD_STATES in content.ts): the board before any call, then each gate called in turn,
-// with remarks that are the worked example's own figures. It moves to the next state every seven seconds while
+// with remarks that are the worked example's own figures. On a state change the Destination and Gate cells of
+// every row re-flap briefly too, as a real board's do. It moves to the next state every seven seconds while
 // it is on screen. It has no pause control (owner, 22 Nov). Off screen it waits; under reduced motion it rests on
 // one settled state, the one the server sends: the last, where every row shows its figure.
 //
@@ -31,6 +32,11 @@ function spell(rows: BoardRow[]) {
   return rows.map((r) => COLUMNS.map((c) => r[c].toUpperCase().padEnd(BOARD.cells[c], " ").slice(0, BOARD.cells[c])).join("")).join("");
 }
 const drumIndex = (ch: string) => Math.max(0, DRUM.indexOf(ch));
+const REFLAP = 3;
+// where Destination and Gate sit in a row of cells
+const REFLAP_FROM = BOARD.cells.time;
+const REFLAP_TO = BOARD.cells.time + BOARD.cells.destination + BOARD.cells.gate;
+const reflap = (k: number) => k >= REFLAP_FROM && k < REFLAP_TO;
 
 type Cell = { top: Element; bottom: Element; flapTop: HTMLElement; flapBottom: HTMLElement; at: number; to: number; due: number; turning: Animation[] };
 
@@ -86,6 +92,10 @@ function drive(root: HTMLElement) {
           c.top.textContent = DRUM[c.at]!;
           c.flapBottom.firstElementChild!.textContent = DRUM[c.at]!;
           land(c);
+        } else if (c.at === c.to && !c.turning.length && reflap(i % perRow) && DRUM[c.to] !== " ") {
+          // Destination and Gate do not change, but a real board re-flaps the whole row: three flaps back to the same letter
+          c.at = (c.to - REFLAP + DRUM.length) % DRUM.length;
+          c.due = now + (i % perRow) * 14 + Math.floor(i / perRow) * 60;
         } else if (c.at !== c.to && !c.turning.length) {
           // a small stagger along the row and down the board, so the change sweeps rather than snaps
           c.due = now + (i % perRow) * 14 + Math.floor(i / perRow) * 60;

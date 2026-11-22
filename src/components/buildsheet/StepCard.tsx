@@ -18,7 +18,7 @@ function End({ refId, pin, parts }: { refId: string; pin: string; parts: Map<str
   );
 }
 
-export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<string, PartLite>; onStatus: (s: string) => void }) {
+export function StepCard({ step, parts, onStatus, readOnly = false }: { step: Step; parts: Map<string, PartLite>; onStatus: (s: string) => void; /** shows the status as words, with no controls: the public welcome page */ readOnly?: boolean }) {
   const w = step.wire;
   return (
     <Card variant="flat" as="li" className="p-4 print:break-inside-avoid"
@@ -40,11 +40,17 @@ export function StepCard({ step, parts, onStatus }: { step: Step; parts: Map<str
                 <span>{w.netClass}</span>
               </p>
             </div>
-            <span className="no-print flex items-center gap-1">
-              <RowActions item={w.item} label={`joint ${w.name}`} />
-              <StatusControl status={w.status} name={w.name} onChange={onStatus} />
-            </span>
-            <span className="hidden font-mono text-xs print:inline">{w.status}</span>
+            {readOnly ? (
+              <span className="font-mono text-xs text-secondary">{w.status}</span>
+            ) : (
+              <>
+                <span className="no-print flex items-center gap-1">
+                  <RowActions item={w.item} label={`joint ${w.name}`} />
+                  <StatusControl status={w.status} name={w.name} onChange={onStatus} />
+                </span>
+                <span className="hidden font-mono text-xs print:inline">{w.status}</span>
+              </>
+            )}
           </div>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-secondary">
             <End refId={w.from} pin={w.fromPin} parts={parts} />

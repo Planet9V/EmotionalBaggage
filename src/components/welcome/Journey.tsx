@@ -5,12 +5,13 @@
 // or hijacked. On a phone or tablet the same panels are a deck, one stage per slide, swiped sideways (Deck). Everything is in the page from the server and visible without script or motion.
 import { Fragment, useEffect, useRef, useState } from "react";
 import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
-import { Check } from "lucide-react";
+import { ArrowUp, Check } from "lucide-react";
 import { Shot } from "./Shot";
 import { STAGE_PICTURE } from "./StagePieces";
+import { stageRows, type JourneyRows } from "./StageRows";
 import { Deck } from "./Deck";
 import { useAnimated, useWide } from "./useAnimated";
-import { BAG_LINES, EXAMPLE, FEATURES, JOURNEY, SHOT_PATH, PROBLEM, type JourneyStage } from "./content";
+import { BAG_LINES, EXAMPLE, FEATURES, JOURNEY, LIVE_LINK, SHOT_PATH, PROBLEM, type JourneyStage } from "./content";
 
 const N = JOURNEY.length;
 const altOf = (shot: string) => FEATURES.find((f) => f.shot === shot)?.alt ?? "";
@@ -73,7 +74,7 @@ function Gate({ checks }: { checks: string[] }) {
   );
 }
 
-/** A screenshot in its frame: a plain browser bar with the page's address, a hairline, one shadow. The picture pans slowly inside. */
+/** A screenshot in its frame: a plain browser bar with the page's address, a hairline, one shadow. */
 function Frame({ shot, y, className = "" }: { shot: string; y?: MotionValue<number>; className?: string }) {
   return (
     <motion.div style={y ? { y } : undefined} className={`overflow-hidden rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)] ${className}`}>
@@ -83,26 +84,26 @@ function Frame({ shot, y, className = "" }: { shot: string; y?: MotionValue<numb
         <span className="h-2 w-2 rounded-full bg-[var(--border-hairline)]" />
         <span className="ml-2 truncate font-mono text-[11px] text-muted">{SHOT_PATH[shot]}</span>
       </div>
-      <div className="wl-pan overflow-hidden">
-        <Shot name={shot} alt={altOf(shot)} />
-      </div>
+      <Shot name={shot} alt={altOf(shot)} />
     </motion.div>
   );
 }
 
-function Panel({ stage, index, active }: { stage: JourneyStage; index: number; active: boolean }) {
+function Panel({ stage, index, active, rows }: { stage: JourneyStage; index: number; active: boolean; rows: JourneyRows }) {
   const ref = useRef<HTMLElement>(null);
   const animated = useAnimated();
   const wide = useWide();
   const linked = animated && wide;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const yMain = useTransform(scrollYProgress, [0, 1], [14, -14]);
-  const ySecond = useTransform(scrollYProgress, [0, 1], [22, -22]);
   const pair = stage.pair === undefined ? null : PROBLEM.pairs[stage.pair]!;
   const said = BAG_LINES[stage.line];
-  // the wide drawings go under the screenshots, the rest beside them, so the two columns end about level
-  const under = (stage.extras ?? []).filter((e) => e === "schematic");
-  const beside = (stage.extras ?? []).filter((e) => e !== "schematic");
+  // A stage shows one of three things in its wide column: a screenshot (Concept, Production), the example's own
+  // seeded rows (Research, Marketing, Sales), or, for the stages whose views run live in the engineering stage
+  // (Design, Prototype), its drawings and a link up to them.
+  const table = stageRows(stage.key, rows);
+  const under = stage.live ? (stage.extras ?? []) : [];
+  const beside = stage.live ? [] : (stage.extras ?? []);
 
   return (
     <article
@@ -132,12 +133,18 @@ function Panel({ stage, index, active }: { stage: JourneyStage; index: number; a
             </dl>
           ) : null}
         </div>
-        {/* a second screen sits over the corner of the first on wider screens; the space for it is reserved */}
-        <div className={`relative ${stage.shots[1] ? "sm:pb-[10%]" : ""}`}>
-          <Frame shot={stage.shots[0]!} y={linked ? yMain : undefined} className={stage.shots[1] ? "sm:w-[88%]" : ""} />
-          {stage.shots[1] ? <Frame shot={stage.shots[1]} y={linked ? ySecond : undefined} className="hidden sm:absolute sm:bottom-0 sm:right-0 sm:block sm:w-[50%]" /> : null}
-        </div>
-        {under.length ? <div className="hidden gap-4 lg:grid">{under.map((e) => <Fragment key={e}>{STAGE_PICTURE[e]}</Fragment>)}</div> : null}
+        {stage.shots[0] ? <Frame shot={stage.shots[0]} y={linked ? yMain : undefined} /> : null}
+        {table}
+        {under.length ? (
+          <>
+            <div className={`grid gap-4 ${under.length > 1 ? "sm:grid-cols-2" : "sm:max-w-md"}`}>{under.map((e) => <Fragment key={e}>{STAGE_PICTURE[e]}</Fragment>)}</div>
+            <p>
+              <a href="#engineering" className="inline-flex items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
+                {LIVE_LINK} <ArrowUp className="h-4 w-4" aria-hidden />
+              </a>
+            </p>
+          </>
+        ) : null}
       </div>
 
       <div className="grid gap-4">
@@ -164,14 +171,14 @@ function Panel({ stage, index, active }: { stage: JourneyStage; index: number; a
             <Gate checks={stage.gate} />
           </div>
         </div>
-        {/* the drawings are for wide screens; on a phone each slide keeps to one picture, the screenshot */}
+        {/* these drawings are for wide screens; on a phone each slide keeps to its main panel */}
         {beside.length ? <div className="hidden gap-4 lg:grid">{beside.map((e) => <Fragment key={e}>{STAGE_PICTURE[e]}</Fragment>)}</div> : null}
       </div>
     </article>
   );
 }
 
-export function Journey() {
+export function Journey({ rows }: { rows: JourneyRows }) {
   const ref = useRef<HTMLDivElement>(null);
   const mids = useRef<number[]>(JOURNEY.map((_, i) => (i + 0.5) / N));
   const [active, setActive] = useState(0);
@@ -239,7 +246,7 @@ export function Journey() {
       <div className="min-w-0">
         <Deck label="The journey, stage by stage" tabs={JOURNEY.map((s) => s.name)} untilWide>
           {JOURNEY.map((s, i) => (
-            <Panel key={s.key} stage={s} index={i} active={active === i} />
+            <Panel key={s.key} stage={s} index={i} active={active === i} rows={rows} />
           ))}
         </Deck>
       </div>

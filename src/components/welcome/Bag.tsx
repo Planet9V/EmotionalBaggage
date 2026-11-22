@@ -1,21 +1,21 @@
-// The suitcase with the puck strapped to it: an original drawing in plain shapes, used by the hero, the deck and
+// The suitcase with the gadget strapped to it: an original drawing in plain shapes, used by the hero, the deck and
 // the toy. Decorative: the words beside it carry the meaning. Colours come from the theme tokens, so it follows
 // light and dark.
 //
 // It is always rolling: the wheels turn, the bag leans a little and bobs, the ground slides past underneath and
 // the tag swings. `hurry` spins the wheels and the ground faster for a moment (the hero sets it as a new line
-// lands). `speaking` pulses the ring round the puck's speaker for as long as it is set, or three times for
+// lands). `speaking` pulses a ring round the gadget's speaker for as long as it is set, or three times for
 // "briefly". All of it is CSS, and off under reduced motion.
-import { PuckFace, Svg } from "./Illustrations";
+import { DeviceFace, Svg } from "./Illustrations";
 
 const INK = "var(--text-primary)";
 
 function Wheel({ cx }: { cx: number }) {
   return (
     <g className="wl-wheel">
-      <circle cx={cx} cy="290" r="12" fill="var(--bg-subtle)" />
-      <path d={`M${cx} 278v24M${cx - 10.4} 284l20.8 12M${cx - 10.4} 296l20.8-12`} strokeWidth="1.5" />
-      <circle cx={cx} cy="290" r="3.5" fill="var(--accent-orange)" stroke="none" />
+      <circle cx={cx} cy="288" r="17" fill="var(--bg-subtle)" />
+      <path d={`M${cx} 271v34M${cx - 14.7} 279.5l29.4 17M${cx - 14.7} 296.5l29.4-17`} strokeWidth="1.5" />
+      <circle cx={cx} cy="288" r="4.5" fill="var(--accent-orange)" stroke="none" />
     </g>
   );
 }
@@ -40,13 +40,14 @@ export function Bag({ speaking = false, hurry = false, className = "" }: { speak
         {/* the shell */}
         <rect x="40" y="58" width="160" height="220" rx="22" fill="var(--bg-surface)" />
         <path d="M72 82v174M96 82v52M96 198v58M144 82v52M144 198v58M168 82v174" stroke="var(--border-hairline)" />
-        {/* the strap and the puck */}
-        <rect x="38" y="151" width="164" height="30" rx="3" fill={INK} />
-        <path d="M50 166h28M162 166h28" stroke="var(--bg-surface)" strokeDasharray="1 6" />
-        <circle cx="120" cy="166" r="36" className={speaking === "briefly" ? "wl-ring wl-ring-brief" : speaking ? "wl-ring wl-ring-on" : "wl-ring"} stroke="var(--accent-orange)" strokeWidth="3" opacity="0" />
-        <PuckFace cx={120} cy={166} r={36} />
+        {/* the two straps and the gadget: a box, taller than wide as it sits across them, speaker facing out */}
+        <rect x="38" y="143" width="164" height="15" rx="2" fill={INK} />
+        <rect x="38" y="174" width="164" height="15" rx="2" fill={INK} />
+        <path d="M50 150.5h34M156 150.5h34M50 181.5h34M156 181.5h34" stroke="var(--bg-surface)" strokeDasharray="1 6" />
+        <circle cx="120" cy="166" r="22" className={speaking === "briefly" ? "wl-ring wl-ring-brief" : speaking ? "wl-ring wl-ring-on" : "wl-ring"} stroke="var(--bg-surface)" strokeWidth="3" opacity="0" />
+        <DeviceFace cx={120} cy={166} r={34} />
         {/* wheel housings, then the wheels */}
-        <path d="M66 278v6M90 278v6M150 278v6M174 278v6" />
+        <path d="M64 278v4M92 278v4M148 278v4M176 278v4" />
         <Wheel cx={78} />
         <Wheel cx={162} />
       </g>

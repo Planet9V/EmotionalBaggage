@@ -10,7 +10,7 @@ export const REPO_URL = "https://github.com/Planet9V/EmotionalBaggage";
 
 export const HERO = {
   title: "Take one idea from a joke to a product you can hold, cost and sell.",
-  sub: "An idea nobody pursues never gets made. This workbench is built to get yours to market fast: AI drafts, you decide, and seven stages carry it from first brief to sales channel. For makers, first-time founders and small product firms. Below is the first idea put through it: Baggage Claims MK1, a puck that straps to a suitcase and heckles the trip.",
+  sub: "This workbench carries a product idea from first brief to sales channel in seven stages. AI drafts; you decide. Below: Baggage Claims MK1, the first idea put through it, a gadget strapped to a suitcase that heckles the trip.",
   journeyLink: "See where the bag went",
   status: "Public demo: sign in as demo / demo. That account is shared with everyone who visits.",
 };
@@ -240,7 +240,7 @@ export const DEMO_NOTE =
  */
 export const EXAMPLE = {
   name: "Baggage Claims MK1",
-  what: "a puck that straps to a suitcase and heckles the trip",
+  what: "a gadget that straps to a suitcase and heckles the trip",
   documents: 21,
   decisions: 8,
   parts: 16,
@@ -330,6 +330,8 @@ export type JourneyStage = {
   /** where in the app */
   inApp: string;
   shots: string[];
+  /** this stage's views run live in the engineering stage above, so it shows no screenshot and links there */
+  live?: boolean;
   /** index into PROBLEM.pairs, shown as "elsewhere" and "here" */
   pair?: number;
   /** figures from this repository: the seed concept, its source documents and the journey document */
@@ -340,26 +342,56 @@ export type JourneyStage = {
   extras?: ("exploded" | "layers" | "cost" | "ads" | "listing" | "schematic")[];
 };
 
-/** The engineering showcase: the app's own views, live on the page, on the example's own rows. */
+/**
+ * The engineering stage: the app's own views, live on the page, on the example's own rows. Counts that the views
+ * work out (parts placed, wires drawn, checks met) are computed where they are shown, never typed here.
+ */
 export const ENGINEERING = {
   title: "The engineering, live",
-  lead: `These are not pictures of the app. They are the app's own views, running here on ${EXAMPLE.name}'s rows: the parts you enter are the model you turn.`,
+  lead: `Six of the workbench's own views, running here on ${EXAMPLE.name}'s rows. Turn the model, pan the schematic, watch the case print. Nothing on this page can be saved; in the workbench every one of them is yours to edit.`,
+  tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
+  loading: "Loading the view",
+  still: "A still of the 3D view; the live one loads as you reach it.",
+  noscript: "Script is off, so the views cannot run. Here are stills of the schematic and the enclosure, the whole parts list and the first soldering steps.",
+  hintMouse: "Drag to turn. Ctrl or Cmd + wheel to zoom.",
+  hintTouch: "Drag to turn. Pinch to zoom.",
+  panTouch: "Drag to pan. The buttons zoom.",
+  note: "As the app says of this example: the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
   model: {
-    title: "The 3D model",
-    text: "Every part placed from the size you entered, inside the enclosure the app generates around them. Drag to turn it; the wires are the schematic's.",
-    real: "The app's own 3D view, on the example's seeded parts and wires.",
-    illustrative: "As the app says of this example: the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
-    hint: "Drag to turn. Ctrl or Cmd + wheel to zoom.",
-    still: "A still of the 3D view. Motion is reduced on this device, so the live view waits for you.",
-    open: "Open the live 3D view",
-    modes: { solid: "Solid", translucent: "Translucent", wireframe: "Wireframe", exploded: "Exploded" },
+    modes: { translucent: "Translucent", solid: "Solid", wireframe: "Wireframe", exploded: "Exploded" },
+    wiresHidden: "The solid lid is closed, so the wires and the labels of the parts inside are not drawn.",
+    /** `drawn` is null before the live view has worked the wires out */
+    counts: (placed: number, parts: number, drawn: number | null, wires: number) =>
+      `${placed} of ${parts} parts have a size and are placed${drawn === null ? `; ${wires} wires` : `; ${drawn} of ${wires} wires run between placed parts and are drawn`}`,
+  },
+  schematic: {
+    views: { symbols: "Symbols", pins: "Pins and wires" },
+    waiting: "Laying out the schematic",
+    hint: "Drag to pan. Ctrl or Cmd + wheel, or the buttons, to zoom. Press a pin or a wire to light it up.",
+  },
+  layout: {
+    scale: "Top, front and side, to scale in mm",
+    hint: "Drag to pan. Press a part to name it. Ctrl or Cmd + wheel, or the buttons, to zoom.",
+  },
+  enclosure: {
+    modes: { printing: "As it prints", assembled: "Assembled" },
+    label: "The generated enclosure of the example: a base and a lid.",
+    printed: "Printed:",
+    tall: "Height:",
+    checksTitle: "The app's checks, measured on these meshes",
+    missing: "The enclosure generator did not run on this server, so there is nothing to show here.",
   },
   bom: {
-    title: "The parts list",
-    text: "Sixteen lines, entered once. This list is what draws the model above, the schematic, the enclosure, the build sheet and the unit cost.",
-    real: "The example's seeded parts list, priced by the app's own price rule. Select a column heading to sort. On a narrow screen the specification and source columns are left out.",
+    caption: "The example's parts list",
+    sort: "Select a column heading to sort",
+    hint: "Priced by the app's own rule: a part with no price is named, never counted as zero.",
     columns: { ref: "Ref", title: "Part", spec: "Specification", qty: "Qty", source: "Source", line: "Line cost" },
     total: "Total",
+  },
+  build: {
+    heading: "The first soldering steps",
+    hint: "The order to solder in, from the schematic's wires.",
+    more: (n: number) => `And ${n} more, in the same order, on the build sheet in the workbench.`,
   },
 };
 
@@ -376,9 +408,29 @@ export const SHOT_PATH: Record<string, string> = {
   chat: "/chat",
 };
 
+/** The journey's panels of seeded rows (StageRows.tsx): their counts are worked out from the rows, never typed. */
+export const ROWS = {
+  claims: {
+    caption: "The example's claims to verify, each with its source and status",
+    count: (n: number, open: number) => `${n} claims, ${open} still to verify`,
+  },
+  positioning: { count: (n: number) => `${n} rows` },
+  ads: { count: (n: number) => `${n} drafts, none approved` },
+  listing: {
+    count: (n: number) => `${n} row`,
+    honest: "That is all the example holds here: one row saying the listing is not started. Nothing is drawn in to fill the gap.",
+  },
+  channels: {
+    caption: "The example's planned sales channels, with price, the channel's take and the net",
+    count: (n: number) => `${n} channels, none live`,
+    honest: "Planned figures from the example's own source documents, not results: no channel has been run.",
+  },
+};
+export const LIVE_LINK = "These views run live in the engineering stage above";
+
 export const JOURNEY_INTRO = {
   title: "The journey, gate by gate",
-  lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, in screenshots of the running app. The ticked lines are checks each gate runs, shown met for illustration.`,
+  lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, with the example's own rows at each stage. The ticked lines are checks each gate runs, shown met for illustration.`,
 };
 
 export const JOURNEY: JourneyStage[] = [
@@ -402,7 +454,7 @@ export const JOURNEY: JourneyStage[] = [
     name: "Research",
     does: "Ask the questions that worry you and keep each answer with its sources. A claim becomes verified or wrong from the sources you judged, not from repetition.",
     inApp: "Research, Claims, Chat",
-    shots: ["chat"],
+    shots: [],
     facts: [{ figure: "2", label: "Kickstarter goals, and two build times, in the source documents. This is where they get settled." }],
     gate: ["At least one claim is recorded", "At least 80% of claims are verified"],
     line: "hold",
@@ -413,7 +465,8 @@ export const JOURNEY: JourneyStage[] = [
     name: "Design",
     does: "Enter the parts once. The schematic, the physical layout, the 3D model and the enclosure are all drawn from that one list.",
     inApp: "Parts list, Schematic, Layout, 3D model, Enclosure",
-    shots: ["model", "schematic"],
+    shots: [],
+    live: true,
     pair: 0,
     facts: [
       { figure: String(EXAMPLE.parts), label: "parts on the parts list" },
@@ -429,7 +482,8 @@ export const JOURNEY: JourneyStage[] = [
     name: "Prototype",
     does: "Source the parts, slice and print the case, wire it from a build sheet in order, and record each test.",
     inApp: "Sourcing, Print jobs, Build sheet, Tests",
-    shots: ["wiring", "enclosure"],
+    shots: [],
+    live: true,
     facts: [
       { figure: String(EXAMPLE.solderSteps), label: "soldering steps on the build sheet" },
       { figure: EXAMPLE.build, label: "to build, along the critical path" },
@@ -457,7 +511,7 @@ export const JOURNEY: JourneyStage[] = [
     name: "Marketing",
     does: "Approve drafts built from the brief and the proof: positioning, a brand kit, ads, a landing page and a launch plan whose dates count back from launch day.",
     inApp: "Positioning, Brand kit, Ads, Launch plan",
-    shots: ["launch"],
+    shots: [],
     pair: 3,
     facts: [{ figure: String(EXAMPLE.voicePacks.length), label: `voice packs to sell: ${EXAMPLE.voicePacks[0]}, ${EXAMPLE.voicePacks[1]} and ${EXAMPLE.voicePacks[2]}` }],
     gate: ["The positioning is attacked by the reviewer and approved", "A name is chosen", "A launch plan has dated steps"],
@@ -470,7 +524,7 @@ export const JOURNEY: JourneyStage[] = [
     name: "Sales",
     does: "List it, post about it, and watch orders and campaign results beside the targets you set. Nothing is posted until you confirm the exact text and the account.",
     inApp: "Listing, Channels, Social, Sales monitor",
-    shots: ["social"],
+    shots: [],
     facts: [{ figure: "0", label: "real marketplace accounts run so far. These screens are built and tested against stand-ins, and say so." }],
     gate: ["At least one sales channel is set", "Every listing element is ready or live", "Every ready or live listing has proof for its claims"],
     line: "conveyor",
@@ -478,13 +532,17 @@ export const JOURNEY: JourneyStage[] = [
   },
 ];
 
-/** Labels of the exploded view of the puck, top to bottom. The parts are on the parts list. */
-export const PUCK_LAYERS = ["Shell top", "Speaker", "Board", "Battery holder", "Shell base"];
+/** Labels of the exploded drawing of the gadget, top to bottom. The parts are on the parts list. */
+export const CASE_LAYERS = ["Lid", "Speaker", "Carrier board", "Battery holder", "Base"];
+export const EXPLODED_TITLE = "The gadget, taken apart";
 
-export const PRINT_NOTE = "Shell base in PETG, 4 perimeters, 25% infill, as the parts list specifies.";
+/** The theme switch on the public pages. Their header and hero stay dark in both themes, so the label names the page. */
+export const TOGGLE = { toDark: "Switch page to dark", toLight: "Switch page to light" };
+
+export const PRINT_NOTE = "The base in PETG, 4 perimeters, 25% infill, as the parts list specifies.";
 export const COST = { value: EXAMPLE.partsCost, label: `prototype parts cost: the ${EXAMPLE.parts} lines of the parts list, stacked` };
-export const ADS_NOTE = `One ad draft per voice pack (${EXAMPLE.voicePacks.join(", ")}), each waiting for approval.`;
-export const LISTING_NOTE = "The listing, drafted from the approved positioning. It goes live only when you say so.";
+export const ADS_NOTE = "The example holds three ad drafts, all for retargeting. Each waits for approval.";
+export const LISTING_NOTE = "What a listing draft holds. The example's own listing is not started yet; it goes live only when you say so.";
 export const SCHEMATIC_NOTE = "A corner of the schematic: the audio module, its series resistor and the speaker, with the app's net colours.";
 
 /** "In 60 seconds": the trip as six slides, one line each. The pictures are drawn in Illustrations.tsx. */
@@ -533,7 +591,7 @@ export const MAP_LABEL = new Map<string, string>(MAP.stages.flatMap((s) => [[s.k
 
 export const POKE = {
   title: "Try the bag",
-  lead: "The puck reads motion and answers back. This one is a drawing, so it is quiet.",
+  lead: "The gadget reads motion and answers back. This one is a drawing, so it is quiet.",
   idle: "Pick something to do to the bag.",
   actions: [
     { key: "weigh", label: "Weigh it", line: "scale" },

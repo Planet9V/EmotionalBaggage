@@ -7,7 +7,7 @@ import { HeroBag } from "@/components/welcome/HeroBag";
 import { DeparturesBoard } from "@/components/welcome/DeparturesBoard";
 import { Journey } from "@/components/welcome/Journey";
 import { Engineering } from "@/components/welcome/Engineering";
-import { exampleEngineering } from "@/components/welcome/exampleData";
+import { exampleData } from "@/components/welcome/exampleData";
 import { LifecycleMap } from "@/components/welcome/LifecycleMap";
 import { Sixty } from "@/components/welcome/Sixty";
 import { PokeTheBag } from "@/components/welcome/PokeTheBag";
@@ -27,9 +27,11 @@ export const generateMetadata = () => publicPageMetadata({ title: META.title, de
  *
  *  1. Hero: the outcome in plain words, one primary action, and the bag speaking for itself.
  *  2. Departures board: the seven stages at a glance.
- *     Then the engineering, live: the app's own 3D view and parts list on the example's rows (Engineering.tsx).
+ *     Then the engineering, live: one dark stage of six tabs, each the app's own view on the example's rows
+ *     (Engineering.tsx): 3D, schematic, physical layout, enclosure and print, parts list, build sheet.
  *  3. The trip in 60 seconds: six slides, one line and one drawing each (the make-or-break moments).
- *  4. The journey: one panel per stage, real screenshots, the example's real figures, each stage's gate checks.
+ *  4. The journey: one panel per stage: a screenshot, the example's own seeded rows (StageRows.tsx) or drawings
+ *     with a link up to the live views, then the example's real figures and each stage's gate checks.
  *     On a phone it is a deck, one stage per slide.
  *  5. The whole trip on one map (React Flow): what feeds what; pick a node to see what depends on it.
  *     Then what it will not do, who it is for, what it runs on, and the toy as a small strip.
@@ -62,8 +64,8 @@ const faqSchema = {
 
 const SECTION = "border-b border-hairline py-9 sm:py-11";
 
-export default function WelcomePage() {
-  const example = exampleEngineering();
+export default async function WelcomePage() {
+  const example = await exampleData();
   return (
     <div className="min-h-[100dvh] bg-canvas text-primary">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:text-primary focus:ring-2 focus:ring-focus">
@@ -95,12 +97,12 @@ export default function WelcomePage() {
 
         {/* 1. Hero */}
         <section aria-labelledby="hero-title" className="border-b border-hairline pb-9 pt-8 sm:pb-11 sm:pt-11">
-          <div className={`${WRAP} grid items-center gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] lg:gap-12`}>
+          <div className={`${WRAP} grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:gap-12`}>
             <div>
               <h1 id="hero-title" className="max-w-[20ch] text-[1.9375rem] font-semibold leading-[1.1] tracking-[-0.025em] text-primary sm:text-4xl lg:text-[2.625rem]">
                 {HERO.title}
               </h1>
-              <p className="mt-4 max-w-[60ch] text-[15px] leading-relaxed text-secondary sm:text-base">{HERO.sub}</p>
+              <p className="mt-4 max-w-[76ch] text-[15px] leading-relaxed text-secondary sm:text-base">{HERO.sub}</p>
               <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
                 <PrimaryCta />
                 <a href="#journey" className="inline-flex h-11 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
@@ -123,9 +125,12 @@ export default function WelcomePage() {
           <div className={WRAP}>
             <h2 id="board-title" className={H2}>{BOARD.title}</h2>
             <p className={LEAD}>{BOARD.lead}</p>
-            <div className="mt-6">
-              <DeparturesBoard />
-            </div>
+          </div>
+          {/* the board runs wider than the text column, so its flaps can be larger */}
+          <div className="mx-auto mt-6 w-full max-w-[90rem] px-2 sm:px-6 lg:px-8">
+            <DeparturesBoard />
+          </div>
+          <div className={WRAP}>
             <p className="mt-3 max-w-[72ch] text-[13px] leading-relaxed text-muted">{GATES_NOTE}</p>
           </div>
         </section>
@@ -142,13 +147,15 @@ export default function WelcomePage() {
         </section>
 
         {/* The engineering, live: the app's own views on the example's rows */}
-        <section id="engineering" aria-labelledby="engineering-title" className={`${SECTION} scroll-mt-4 bg-subtle`}>
+        <section id="engineering" aria-labelledby="engineering-title" className="dark scroll-mt-4 border-b border-hairline bg-canvas py-9 text-primary sm:py-11">
           <div className={WRAP}>
             <h2 id="engineering-title" className={H2}>{ENGINEERING.title}</h2>
             <p className={LEAD}>{ENGINEERING.lead}</p>
-            <div className="mt-7">
-              <Engineering parts={example.parts} wires={example.wires} />
-            </div>
+          </div>
+          {/* the stage runs wider than the text column */}
+          <div className="mx-auto mt-7 w-full max-w-[90rem] px-2 sm:px-6 lg:px-8">
+            <Engineering parts={example.parts} wires={example.wires} enclosure={example.enclosure} />
+            <p className="mt-3 max-w-[80ch] px-2 text-[13px] leading-relaxed text-muted sm:px-0">{ENGINEERING.note}</p>
           </div>
         </section>
 
@@ -158,7 +165,7 @@ export default function WelcomePage() {
             <h2 id="journey-title" className={H2}>{JOURNEY_INTRO.title}</h2>
             <p className={LEAD}>{JOURNEY_INTRO.lead}</p>
             <div className="mt-9 lg:mt-11">
-              <Journey />
+              <Journey rows={example} />
             </div>
           </div>
         </section>

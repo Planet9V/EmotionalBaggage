@@ -48,6 +48,10 @@ type Props = {
   /** wires to emphasise: the selected wire, or every wire on a selected pin */
   litWires?: Set<number>;
   onPickPin?: (ref: string, pin: string) => void;
+  /** A viewer only: nothing is dragged or connected, the hint and the minimap are hidden and a plain wheel scrolls the page (Ctrl or Cmd + wheel zooms). Used by the public welcome page. */
+  readOnly?: boolean;
+  /** Replaces the canvas height classes. */
+  heightClass?: string;
 };
 
 const refOf = (nodeId: string) => nodeId.slice(2);
@@ -115,6 +119,8 @@ export function SchematicCanvas(p: Props) {
     [onMove]
   );
 
+  // without the minimap a viewer needs no room kept for it
+  const fit = p.readOnly ? { ...FIT, padding: { ...FIT.padding, right: "24px" as const, bottom: "24px" as const } } : FIT;
   const wireById = useMemo(() => new Map(p.wires.map((w) => [w.item.id, w])), [p.wires]);
   const wireOfEdge = (e: WireEdgeType) => e.data?.wire ?? null;
 
@@ -145,7 +151,7 @@ export function SchematicCanvas(p: Props) {
   };
 
   return (
-    <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight, onPickPin: p.onPickPin }}>
+    <SchematicContext.Provider value={{ onAddPin: p.onAddPin, highlight: p.highlight, onPickPin: p.onPickPin, readOnly: p.readOnly }}>
       {p.palette.length > 0 && (
         <Card variant="flat" className="schematic-noprint mb-3 px-3 py-2.5">
           <p className="text-xs text-secondary">
@@ -206,7 +212,7 @@ export function SchematicCanvas(p: Props) {
       <div
         ref={wrap}
         data-testid="pins-canvas"
-        className={`schematic-canvas relative h-[clamp(620px,72vh,900px)] w-full overflow-hidden rounded-xl border bg-canvas transition-colors duration-150 ${dropping ? "border-dutchOrange" : "border-hairline"}`}
+        className={`schematic-canvas relative ${p.heightClass ?? "h-[clamp(620px,72vh,900px)]"} w-full overflow-hidden rounded-xl border bg-canvas transition-colors duration-150 ${dropping ? "border-dutchOrange" : "border-hairline"}`}
         onDragOver={(e) => {
           if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
           e.preventDefault();
@@ -247,20 +253,21 @@ export function SchematicCanvas(p: Props) {
           connectionLineStyle={{ stroke: "#E05A10", strokeWidth: 2, strokeDasharray: "5 4" }}
           deleteKeyCode={null}
           fitView
-          fitViewOptions={FIT}
+          fitViewOptions={fit}
           onInit={(inst) => {
             // Node sizes arrive after the first paint; fit again once they are known.
-            window.setTimeout(() => void inst.fitView({ ...FIT, duration: 300 }), 350);
+            window.setTimeout(() => void inst.fitView({ ...fit, duration: 300 }), 350);
           }}
           minZoom={0.2}
           maxZoom={2.5}
           snapToGrid
           snapGrid={[4, 4]}
+          {...(p.readOnly ? { nodesDraggable: false, nodesConnectable: false, zoomOnScroll: false, preventScrolling: false } : {})}
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="var(--border-hairline)" />
           <Controls showInteractive={false} className="schematic-noprint rounded-md! border! border-hairline! shadow-xs!" />
-          <MiniMap
+          {!p.readOnly && <MiniMap
             pannable
             zoomable
             className="schematic-noprint rounded-md! border! border-hairline! bg-subtle!"
@@ -269,12 +276,12 @@ export function SchematicCanvas(p: Props) {
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
             maskColor="rgba(113, 113, 122, 0.16)"
-          />
-          <Panel position="bottom-center" className="schematic-noprint mb-3! pointer-events-none">
+          />}
+          {!p.readOnly && <Panel position="bottom-center" className="schematic-noprint mb-3! pointer-events-none">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] text-muted shadow-xs">
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden /> Drag parts to arrange. Drag from pin to pin to add a wire. Double-click a wire to edit it.
             </p>
-          </Panel>
+          </Panel>}
           {p.banner && (
             <Panel position="top-center" className="schematic-noprint mt-16!">
               {p.banner}

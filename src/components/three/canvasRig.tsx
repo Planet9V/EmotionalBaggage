@@ -41,8 +41,10 @@ function viewFor(camera: THREE.PerspectiveCamera, { min, max }: Bounds, dir: THR
 const DEFAULT_DIR = new THREE.Vector3(0.62, 0.48, 0.92);
 
 /** Points the camera at the middle of the bounds from a three-quarter view, far enough to see all of it. */
-function frameCamera(camera: THREE.PerspectiveCamera, controls: Controls, bounds: Bounds) {
+function frameCamera(camera: THREE.PerspectiveCamera, controls: Controls, bounds: Bounds, closer = 1) {
   const v = viewFor(camera, bounds, DEFAULT_DIR, 30);
+  // `closer` below 1 moves the camera in along the same line, so the model fills more of the view
+  if (closer !== 1) v.position.sub(v.target).multiplyScalar(closer).add(v.target);
   camera.position.copy(v.position);
   camera.near = v.near;
   camera.far = v.far;
@@ -79,7 +81,9 @@ function stepFly(f: Fly, dt: number, cam: THREE.Camera, controls: Controls) {
   return f.t >= 1;
 }
 
-export function CameraRig({ resetToken, boundsOf, focusKey, focusBoundsOf }: {
+export function CameraRig({ resetToken, boundsOf, focusKey, focusBoundsOf, closer = 1 }: {
+  /** distance factor for the first framing and each reset; the welcome page frames the model larger */
+  closer?: number;
   resetToken: number;
   boundsOf: () => Bounds;
   focusKey: string;
@@ -96,8 +100,10 @@ export function CameraRig({ resetToken, boundsOf, focusKey, focusBoundsOf }: {
   }, [boundsOf, focusBoundsOf]);
   useEffect(() => {
     if (!controls) return;
-    frameCamera(camera as THREE.PerspectiveCamera, controls, boundsRef.current());
+    frameCamera(camera as THREE.PerspectiveCamera, controls, boundsRef.current(), closer);
     invalidate();
+    // `closer` is fixed for a canvas; a change of it alone does not move the camera
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetToken, controls, camera, invalidate]);
 
   // Focus and return: glide to the new framing, keeping the direction the user is looking from.

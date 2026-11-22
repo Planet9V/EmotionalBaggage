@@ -24,6 +24,8 @@ export type CanvasCtx = {
   highlight: Set<string>;
   /** select one pin (lights it up in both views) */
   onPickPin?: (ref: string, pin: string) => void;
+  /** a viewer only: the Add pin button is left out (the public welcome page) */
+  readOnly?: boolean;
 };
 export const SchematicContext = createContext<CanvasCtx>({ onAddPin: () => {}, highlight: new Set() });
 
@@ -35,7 +37,7 @@ export type WireEdgeType = Edge<WireData, "wire">;
 const HANDLE = "h-[10px]! w-[10px]! rounded-full! border-2! bg-surface!";
 
 function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
-  const { onAddPin, highlight, onPickPin } = useContext(SchematicContext);
+  const { onAddPin, highlight, onPickPin, readOnly } = useContext(SchematicContext);
   const update = useUpdateNodeInternals();
   const sides = data.pins.map((p) => `${p.name}:${p.side}`).join("|");
   // handles move when a pin changes side or a pin is added; React Flow has to re-measure them
@@ -92,7 +94,7 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
         );
       })}
       <div className="flex items-center border-t border-hairline px-2" style={{ height: FOOT_H }}>
-        <button
+        {!readOnly && <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
@@ -101,7 +103,7 @@ function PartNodeView({ id, data, selected }: NodeProps<PartNodeType>) {
           className="nodrag inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] text-muted transition-colors duration-150 hover:text-link focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange"
         >
           <Plus className="h-3 w-3" aria-hidden /> Add pin
-        </button>
+        </button>}
       </div>
     </div>
   );

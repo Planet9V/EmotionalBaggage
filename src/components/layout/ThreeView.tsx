@@ -55,11 +55,13 @@ type Props = {
   onCommit: (id: number, pos: number[]) => void;
   /** Top view only: a tray part was dropped at scene x and z. */
   onDropDraft?: (id: number, x: number, z: number) => void;
+  /** A viewer only: parts cannot be dragged (a drag pans), and a plain wheel scrolls the page (Ctrl or Cmd + wheel zooms). Used by the public welcome page. */
+  readOnly?: boolean;
 };
 
 export function ThreeView({
   view, parts, shells, markers, wall, floor, selectedId, overlapping, snapOn, step, heightClass,
-  onSelect, onActivate, onMove, onCommit, onDropDraft,
+  onSelect, onActivate, onMove, onCommit, onDropDraft, readOnly = false,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -112,6 +114,7 @@ export function ThreeView({
     const svg = svgRef.current;
     if (!svg || !cam) return;
     const onWheel = (e: WheelEvent) => {
+      if (readOnly && !(e.ctrlKey || e.metaKey)) return;
       e.preventDefault();
       const r = svg.getBoundingClientRect();
       const px = e.clientX - r.left - r.width / 2;
@@ -123,7 +126,7 @@ export function ThreeView({
     };
     svg.addEventListener("wheel", onWheel, { passive: false });
     return () => svg.removeEventListener("wheel", onWheel);
-  }, [cam]);
+  }, [cam, readOnly]);
 
   const zoomBy = (f: number) => cam && setCamState({ ...cam, ppm: clamp(cam.ppm * f, MIN_PPM, MAX_PPM) });
 
@@ -139,7 +142,8 @@ export function ThreeView({
     if (hit && mm) {
       const id = Number(hit.getAttribute("data-part-id"));
       const p = partById(id);
-      if (p) {
+      if (p && readOnly) onSelect(id);
+      else if (p) {
         onSelect(id);
         gesture.current = { mode: "part", id, startMm: mm, startPos: [...p.geometry.pos], startClient: [e.clientX, e.clientY], moved: false, last: [...p.geometry.pos] };
         return;
@@ -186,7 +190,7 @@ export function ThreeView({
     if (g.mode === "part") {
       if (g.moved && !cancelled) onCommit(g.id, g.last);
       else if (g.moved) onMove(g.id, g.startPos);
-    } else if (!g.moved && !cancelled) {
+    } else if (!g.moved && !cancelled && !(readOnly && (e.target as Element).closest("[data-part-id]"))) {
       onSelect(null);
     }
   };
@@ -242,7 +246,7 @@ export function ThreeView({
         >
           <Scene
             view={view} cam={cam} size={size} parts={ordered} shells={shells} markers={markers} wall={wall} floor={floor}
-            selectedId={selectedId} overlapping={overlapping} dragging={!!readout}
+            selectedId={selectedId} overlapping={overlapping} dragging={!!readout} readOnly={readOnly}
           />
         </svg>
       )}
@@ -271,10 +275,10 @@ export function ThreeView({
 }
 
 function Scene({
-  view, cam, size, parts, shells, markers, wall, floor, selectedId, overlapping, dragging,
+  view, cam, size, parts, shells, markers, wall, floor, selectedId, overlapping, dragging, readOnly,
 }: {
   view: ViewDef; cam: Cam; size: { w: number; h: number }; parts: LayoutPart[]; shells: LayoutPart[]; markers: Marker[];
-  wall: number; floor: number; selectedId: number | null; overlapping: Set<number>; dragging: boolean;
+  wall: number; floor: number; selectedId: number | null; overlapping: Set<number>; dragging: boolean; readOnly: boolean;
 }) {
   const { ppm } = cam;
   const px = (n: number) => n / ppm;
@@ -345,7 +349,7 @@ function Scene({
         const stroke = sel ? "stroke-dutchOrange" : over ? "stroke-danger" : "stroke-secondary";
         const fill = sel ? "fill-dutchOrange" : "fill-surface";
         return (
-          <g key={p.id} data-part-id={p.id} style={{ cursor: dragging && sel ? "grabbing" : "grab" }}>
+          <g key={p.id} data-part-id={p.id} style={{ cursor: readOnly ? "pointer" : dragging && sel ? "grabbing" : "grab" }}>
             {bodies.map((b, i) =>
               b.kind === "rect" ? (
                 <g key={i}>

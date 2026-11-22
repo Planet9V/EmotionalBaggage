@@ -7,7 +7,9 @@
  *  - a wireframe look, set on every mesh material in the scene;
  *  - zoom with Ctrl or Cmd + wheel only, so an ordinary wheel over the canvas still scrolls the page
  *    (ModelCanvas turns the controls' own wheel zoom off when `showcase` is given);
- *  - nudges from buttons, for people who do not drag: turn, tilt, zoom.
+ *  - nudges from buttons, for people who do not drag: turn, tilt, zoom;
+ *  - a two-finger pinch zooms on a touch screen.
+ * The enclosure preview on the welcome page uses the same component (EnclosureCanvas takes it as a child).
  */
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -21,6 +23,10 @@ export type ShowcaseOptions = {
   onGrab?: () => void;
   /** one step of turning, tilting or zooming; `n` changes each time a button is pressed */
   nudge?: ShowcaseNudge;
+  /** distance factor for the framing: below 1 brings the camera in, so the model fills more of the view */
+  closer?: number;
+  /** drawn inside the canvas: the welcome page's own label layer */
+  children?: React.ReactNode;
 };
 
 type Controls = { target: THREE.Vector3; update: () => void; addEventListener: (t: "start", f: () => void) => void; removeEventListener: (t: "start", f: () => void) => void };
@@ -37,7 +43,7 @@ function orbit(cam: THREE.Camera, controls: Controls, turn: number, tilt: number
   controls.update();
 }
 
-export function Showcase({ turntable, wireframe, onGrab, nudge }: ShowcaseOptions) {
+export function Showcase({ turntable, wireframe = false, onGrab, nudge }: Omit<ShowcaseOptions, "wireframe"> & { wireframe?: boolean }) {
   const camera = useThree((s) => s.camera);
   const scene = useThree((s) => s.scene);
   const gl = useThree((s) => s.gl);
@@ -67,6 +73,45 @@ export function Showcase({ turntable, wireframe, onGrab, nudge }: ShowcaseOption
     };
     el.addEventListener("wheel", wheel, { passive: false });
     return () => el.removeEventListener("wheel", wheel);
+  }, [gl, camera, controls, invalidate]);
+
+  // Two fingers: pinch to zoom. The controls' own zoom is off (it would take the wheel), so the pinch is read here.
+  useEffect(() => {
+    const el = gl.domElement;
+    const touches = new Map<number, [number, number]>();
+    let last = 0;
+    const span = () => {
+      const [a, b] = [...touches.values()];
+      return a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 0;
+    };
+    const down = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      touches.set(e.pointerId, [e.clientX, e.clientY]);
+      last = span();
+    };
+    const move = (e: PointerEvent) => {
+      if (!touches.has(e.pointerId)) return;
+      touches.set(e.pointerId, [e.clientX, e.clientY]);
+      const now = span();
+      if (!controls || touches.size !== 2 || !last || !now) return;
+      orbit(camera, controls, 0, 0, last / now);
+      last = now;
+      invalidate();
+    };
+    const up = (e: PointerEvent) => {
+      touches.delete(e.pointerId);
+      last = span();
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    return () => {
+      el.removeEventListener("pointerdown", down);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+    };
   }, [gl, camera, controls, invalidate]);
 
   const lastNudge = useRef(nudge?.n ?? 0);

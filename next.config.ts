@@ -43,7 +43,7 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  serverExternalPackages: ["pg", "node-pg-migrate"],
+  serverExternalPackages: ["pg", "node-pg-migrate", "manifold-3d"],
   // Migrations are read from disk at start-up, so they must travel with the standalone build.
   // The example concept's documents (seed/) are loaded into its Files at start-up the same way.
   outputFileTracingIncludes: { "/**": ["./migrations/**/*", "./seed/**/*"] },

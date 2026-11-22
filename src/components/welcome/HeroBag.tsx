@@ -1,6 +1,6 @@
 "use client";
 
-// The hero's picture: the suitcase rolling along, the puck, and a speech bubble that types the bag's lines one
+// The hero's picture: the suitcase rolling along, the gadget strapped to it, and a speech bubble that types the bag's lines one
 // after another. The server renders the first line whole, so the picture is complete before any script runs.
 // When a new line lands the bag gives a small nod and its wheels hurry for a moment. It all stops under reduced
 // motion. Screen readers get one still sentence, not a stream of letters.
@@ -31,13 +31,13 @@ export function HeroBag() {
   }, [running, typing, at]);
 
   return (
-    <div className="mx-auto w-full max-w-[360px]">
+    <div className="mx-auto w-full max-w-[480px]">
       <p className="sr-only">
-        A drawing of a suitcase with a round puck strapped to it. The puck says, {BAG_LINES[HERO_LINES[0]!].where}: &ldquo;{BAG_LINES[HERO_LINES[0]!].line}&rdquo;
+        A drawing of a suitcase on wheels with a small orange box strapped to it. The box says, {BAG_LINES[HERO_LINES[0]!].where}: &ldquo;{BAG_LINES[HERO_LINES[0]!].line}&rdquo;
       </p>
       {/* on a phone the bag stands beside its bubble; from sm up the bubble sits over it */}
       <div className="flex items-center gap-3 sm:flex-col-reverse">
-        <div key={at.i} className={`w-[30%] shrink-0 sm:w-[50%] ${running && at.n !== null ? "wl-nod" : ""}`}>
+        <div key={at.i} className={`w-[34%] shrink-0 sm:w-[70%] ${running && at.n !== null ? "wl-nod" : ""}`}>
           <Bag speaking={running && typing} hurry={running && at.n !== null && shown < 14} className="block h-auto w-full" />
         </div>
         <div className="relative min-w-0 flex-1 rounded-xl sm:w-full sm:flex-none border border-hairline bg-surface px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5" aria-hidden="true">

@@ -173,7 +173,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
   return (
     <>
       <Animator progress={progress} explode={explode} onLabels={setLabelsOn} />
-      <CameraRig resetToken={resetToken} boundsOf={boundsOf} focusKey={focusKey} focusBoundsOf={focusBoundsOf} />
+      <CameraRig resetToken={resetToken} boundsOf={boundsOf} focusKey={focusKey} focusBoundsOf={focusBoundsOf} closer={props.showcase?.closer} />
       <hemisphereLight args={[dark ? "#c9d1dc" : "#ffffff", dark ? "#1a1c20" : "#d9d2c6", dark ? 1.1 : 1.25]} />
       <directionalLight position={[120, 220, 160]} intensity={dark ? 1.4 : 1.6} />
       <directionalLight position={[-160, 90, -120]} intensity={0.45} />
@@ -242,6 +242,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
       {/* with `showcase` (the public welcome page) a plain wheel scrolls the page; Showcase zooms on Ctrl or Cmd + wheel */}
       <OrbitControls makeDefault enableDamping dampingFactor={0.12} enableZoom={!props.showcase} />
       {props.showcase && <Showcase {...props.showcase} />}
+      {props.showcase?.children}
     </>
   );
 }

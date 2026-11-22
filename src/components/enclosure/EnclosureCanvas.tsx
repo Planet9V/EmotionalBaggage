@@ -19,6 +19,10 @@ export type PreviewProps = {
   label: string;
   /** y of the underside of the base, so the grid sits under it. */
   floorY: number;
+  /** Drawn inside the canvas after the meshes; the public welcome page passes its turntable and print animation. */
+  children?: React.ReactNode;
+  /** False leaves the wheel to the page (the welcome page zooms on Ctrl or Cmd + wheel itself). Default true. */
+  wheelZoom?: boolean;
 };
 
 function geometryOf(m: GeneratedMesh) {
@@ -62,7 +66,7 @@ function Fit({ meshes }: { meshes: PreviewMesh[] }) {
   return null;
 }
 
-export default function EnclosureCanvas({ meshes, lift, dark, label, floorY }: PreviewProps) {
+export default function EnclosureCanvas({ meshes, lift, dark, label, floorY, children, wheelZoom = true }: PreviewProps) {
   return (
     <div role="img" aria-label={label} className="h-full w-full">
       <Canvas frameloop="demand" dpr={[1, 2]} gl={{ antialias: true, alpha: true }} camera={{ fov: 40, near: 1, far: 5000, position: [120, 100, 170] }} style={{ touchAction: "none" }}>
@@ -74,7 +78,8 @@ export default function EnclosureCanvas({ meshes, lift, dark, label, floorY }: P
           <Part key={m.id} mesh={m.mesh} kind={m.kind} lift={m.kind === "lid" ? lift : 0} dark={dark} />
         ))}
         <Grid args={[400, 400]} cellSize={10} sectionSize={50} cellColor={dark ? "#2A2F37" : "#D8D3CC"} sectionColor={dark ? "#3A414B" : "#B9B2A8"} fadeDistance={500} infiniteGrid position={[0, floorY - 0.05, 0]} />
-        <OrbitControls makeDefault enableDamping={false} />
+        <OrbitControls makeDefault enableDamping={false} enableZoom={wheelZoom} />
+        {children}
       </Canvas>
     </div>
   );

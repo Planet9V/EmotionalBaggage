@@ -9,6 +9,8 @@ export type CanvasPart = {
   geometry: PartGeometry;
   /** scene-space triangles of an attached STL or STEP file, centred on the part's position, in mm; null shows its bounding box */
   shape?: Float32Array | null;
+  /** A colour for this part in place of the palette's (the welcome page colours parts by kind). A selected part is still orange. */
+  color?: string;
 };
 
 export type TransformMode = "off" | "translate" | "rotate";

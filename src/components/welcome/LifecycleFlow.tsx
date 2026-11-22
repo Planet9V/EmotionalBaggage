@@ -6,14 +6,19 @@
 //
 // Loaded by LifecycleMap once the page runs (React Flow needs a browser to measure and lay out). The page's scrolling is never taken: no zoom on scroll, and on a phone no pan or zoom at all (a fitted, still
 // layout). The dashes on the path and on the lit edges keep flowing, and a pick sends a pulse down through
-// everything that depends on it, one step after another; never under reduced motion.
+// everything that depends on it, one step after another. Until the visitor picks, the map picks for itself every
+// few seconds, so the pulses never stop; never under reduced motion.
 import "@xyflow/react/dist/style.css";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useInView } from "motion/react";
 import { Handle, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import { useAnimated } from "./useAnimated";
 import { MAP, MAP_LABEL as LABEL } from "./content";
 
 const ORANGE = "#E05A10";
+// what the map picks by itself, in turn, while the visitor has picked nothing
+const TOUR = ["parts", "claims", "story", "unitcost", "schematic", "enclosure", "pricing"];
+const TOUR_MS = 4200;
 
 const OWNER = new Map<string, string>(MAP.stages.flatMap((s) => s.makes.map(([id]) => [id, s.key] as [string, string])));
 
@@ -147,17 +152,32 @@ export default function LifecycleFlow({ tall }: { tall: boolean }) {
   const animated = useAnimated();
   const [picked, setPicked] = useState<string | null>(null);
   const [pulse, setPulse] = useState(0);
+  // Until the visitor picks something the map picks for itself, one thing after another, so the pulses keep
+  // running down the feeds. A pick by the visitor takes over; un-picking hands it back.
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box, { amount: 0.3 });
+  const [tour, setTour] = useState(0);
+  const touring = animated && seen && picked === null;
+  useEffect(() => {
+    if (!touring) return;
+    const t = window.setInterval(() => {
+      setTour((n) => n + 1);
+      setPulse((n) => n + 1);
+    }, TOUR_MS);
+    return () => window.clearInterval(t);
+  }, [touring]);
+  const shown = picked ?? (animated ? TOUR[tour % TOUR.length]! : null);
   const { nodes, edges } = useMemo(
     () =>
-      build(tall, picked, animated, pulse, (id) => {
+      build(tall, shown, animated, pulse, (id) => {
         setPicked((p) => (p === id ? null : id));
         setPulse((n) => n + 1);
       }),
-    [tall, picked, animated, pulse],
+    [tall, shown, animated, pulse],
   );
   return (
     <>
-      <div className={tall ? "h-[700px]" : "h-[230px]"}>
+      <div ref={box} className={tall ? "h-[700px]" : "h-[230px]"}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -180,8 +200,8 @@ export default function LifecycleFlow({ tall }: { tall: boolean }) {
           aria-label="The seven stages, what each produces and what feeds what"
         />
       </div>
-      <p aria-live="polite" className="mt-4 min-h-[4.5rem] rounded-lg border border-hairline bg-surface px-4 py-3 text-sm leading-relaxed text-primary lg:min-h-[3rem]">
-        {caption(picked)}
+      <p aria-live={picked ? "polite" : "off"} className="mt-4 min-h-[6.5rem] rounded-lg border border-hairline bg-surface px-4 py-3 text-sm leading-relaxed text-primary lg:min-h-[4.5rem]">
+        {caption(shown)}
       </p>
     </>
   );
