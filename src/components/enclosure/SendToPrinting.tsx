@@ -4,7 +4,7 @@
 // stores them as concept files (Z up, on z = 0, STL and one 3MF), named with the generator and the parameter
 // hash. "Send to printing" then opens New print job with the 3MF chosen. The last stored set is shown with
 // its checks when the page loads. Nothing is sliced or sent here.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Download, Printer, Save } from "lucide-react";
@@ -28,7 +28,7 @@ const newJobHref = (fileId: number) => `/s/prototype/printing?newJob=${fileId}#n
 const PIECE: Record<string, string> = { base: "Base", lid: "Lid, outer face down", both: "Base and lid together" };
 
 /** `beforeSend` saves the generator and settings on screen first, so what is built is what is shown. */
-export function SendToPrinting({ projectId, disabled, reason, beforeSend }: { projectId: string; disabled: boolean; reason: string; beforeSend: () => Promise<void> }) {
+export function SendToPrinting({ projectId, disabled, reason, beforeSend }: { projectId: string; disabled: boolean; reason: ReactNode; beforeSend: () => Promise<void> }) {
   const qc = useQueryClient();
   const router = useRouter();
   const stored = useQuery({ queryKey: storedKey(projectId), queryFn: () => api<{ stored: StoredEnclosure | null }>(`/api/projects/${enc(projectId)}/enclosure/print`).then((r) => r.stored) });

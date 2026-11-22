@@ -10,7 +10,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/lib/client";
 import { messageOf } from "@/lib/queries";
-import { storeHref as sectionHref } from "@/lib/menuLookup";
 import { buildSpec, enclosureOffered, validateSpec } from "@/lib/enclosure/spec";
 import { validateParams, withDefaults } from "@/lib/enclosure/validate";
 import { DEFAULT_PARAMS, GENERATORS, GENERATOR_KEYS, type EnclosureParams, type GeneratorKey } from "@/lib/enclosure/types";
@@ -25,10 +24,21 @@ import { EmptyState, ErrorLine, LoadError, LoadingBlocks, NotSetUp } from "@/com
 import { Panel } from "@/components/ui/panel";
 import { fileSlug } from "@/lib/format";
 import { useDark } from "@/lib/useDark";
+import { focusHash } from "@/components/process/DeepLinkFocus";
+import { fixFor, noBoxFix, GENERATE_ANCHOR, GENERATOR_ANCHOR, PART_PICK_ANCHOR, PARAMETERS_ANCHOR, type Fix } from "@/lib/enclosure/fixes";
 
 const BOM = "design/bom";
 const SAVE_STORE = "design/enclosure";
 
+
+/** The link to where a blocking message is fixed: another page, or a control on this one (which gets the focus). */
+function FixLink({ fix }: { fix: Fix }) {
+  return (
+    <Link href={fix.href} onClick={() => window.setTimeout(() => focusHash(new URL(fix.href, window.location.href).hash), 50)} className="text-link underline">
+      {fix.label}
+    </Link>
+  );
+}
 
 const mm = (n: number) => `${Math.round(n * 10) / 10}`;
 
@@ -121,6 +131,8 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
   const options = GENERATOR_KEYS.map((k) => ({ key: k, ...GENERATORS[k] }));
   const busy = running !== null;
   const blocked = errors.length > 0;
+  // What holds Generate and Send to printing: the first problem in words, and where it is fixed.
+  const why = blocked ? <>{errors[0].message} <FixLink fix={fixFor(errors[0], spec.parts)} /></> : null;
   const shown = GENERATOR_KEYS.filter((k) => held[k]);
   const both = !!(held.casemaker && held.yapp);
   const visible: GeneratorKey[] = both && compare ? shown : shown.includes(generator) ? [generator] : shown.slice(0, 1);
@@ -138,7 +150,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
         }
       >
         {!chosen ? <p className="mb-2 text-sm text-secondary" data-testid="generator-not-saved">No generator is chosen: not saved yet. Choose one, or generate with one, and it is saved.</p> : null}
-        <div role="radiogroup" aria-label="Enclosure generator" className="grid gap-3 md:grid-cols-2">
+        <div id={GENERATOR_ANCHOR} role="radiogroup" aria-label="Enclosure generator" className="grid gap-3 md:grid-cols-2">
           {options.map((o) => {
             const on = chosen === o.key;
             const st = stat?.[o.key];
@@ -181,11 +193,16 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
             </button>
           </p>
         ) : null}
+        {yappDown ? (
+          <p className="mt-3 text-sm text-secondary">
+            YAPP_Box runs in the planner service, which cannot be reached. <Link href="/admin?tab=services#planner-url" className="text-link underline">Set the planner address in Admin</Link>.
+          </p>
+        ) : null}
         {saveState === "failed" ? <ErrorLine>The settings were not saved. {saved.writeError}</ErrorLine> : null}
-        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => { setGenerator(generator); return persist(generator, usable); }} disabled={blocked || paramIssues.length > 0} reason="Fix the problems listed below first." /></div>
+        <div className="mt-3"><SendToPrinting projectId={project.id} beforeSend={() => { setGenerator(generator); return persist(generator, usable); }} disabled={blocked || paramIssues.length > 0} reason={why} /></div>
       </Panel>
 
-      <Panel compact title="Parameters" description="Defaults are shown under each field. The checks hold the result to the clearance you set." actions={
+      <Panel compact id={PARAMETERS_ANCHOR} title="Parameters" description="Defaults are shown under each field. The checks hold the result to the clearance you set." actions={
         <Button variant="outline" size="sm" onClick={() => setDraft(toDraft(DEFAULT_PARAMS))}>
           Reset to defaults
         </Button>
@@ -205,14 +222,14 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
         {errors.length ? (
           <ul role="alert" className="mb-3 space-y-1 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
             {errors.map((i, n) => (
-              <li key={n}>{i.message}</li>
+              <li key={n}>{i.message} <FixLink fix={fixFor(i, spec.parts)} /></li>
             ))}
           </ul>
         ) : null}
         {warnings.length ? (
           <ul className="mb-3 space-y-1 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">
             {warnings.map((i, n) => (
-              <li key={n}>{i.message}</li>
+              <li key={n}>{i.message} <FixLink fix={fixFor(i, spec.parts)} /></li>
             ))}
           </ul>
         ) : null}
@@ -257,9 +274,9 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           const item = chosen ? bom.items.find((i) => i.id === chosen.id) ?? null : null;
           return (
             <div className="mt-4 space-y-3 border-t border-hairline pt-3">
-              <label className="block max-w-sm text-xs font-medium text-secondary" htmlFor="enclosure-part-pick">
+              <label className="block max-w-sm text-xs font-medium text-secondary" htmlFor={PART_PICK_ANCHOR}>
                 Change a part&apos;s opening{spec.standoffs ? " or the board's mounting holes" : ""}
-                <NativeSelect id="enclosure-part-pick" className="mt-1" value={editPart ?? ""} onChange={(e) => setEditPart(e.target.value ? Number(e.target.value) : null)}>
+                <NativeSelect id={PART_PICK_ANCHOR} className="mt-1" value={editPart ?? ""} onChange={(e) => setEditPart(e.target.value ? Number(e.target.value) : null)}>
                   <option value="">Choose a part</option>
                   {editable.map((p) => <option key={p.id} value={p.id}>{p.ref ? `${p.ref} ` : ""}{p.title}</option>)}
                 </NativeSelect>
@@ -271,7 +288,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
       </Panel>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => void run([generator])} disabled={busy || blocked || (generator === "yapp" && yappDown)}>
+        <Button id={GENERATE_ANCHOR} onClick={() => void run([generator])} disabled={busy || blocked || (generator === "yapp" && yappDown)}>
           {running ? `Generating with ${running.map((k) => GENERATORS[k].label).join(" and ")}` : `Generate with ${GENERATORS[generator].label}`}
         </Button>
         <Button variant="outline" onClick={() => void run(yappDown ? ["casemaker"] : [...GENERATOR_KEYS])} disabled={busy || blocked || yappDown}>
@@ -282,7 +299,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
             {running!.includes("yapp") ? "YAPP_Box takes about a minute. The page stays usable." : "Working."}
           </span>
         ) : null}
-        {blocked ? <span className="text-sm text-secondary">Fix the problems above first.</span> : null}
+        {blocked ? <span className="text-sm text-secondary">{why}</span> : null}
         {both ? (
           <Button variant="ghost" onClick={() => setCompare((c) => !c)} aria-pressed={compare}>
             {compare ? "Show one result" : "Show both side by side"}
@@ -341,20 +358,12 @@ export function EnclosureView({ project }: ViewProps) {
   const onlyPrinted = bom.items.filter((i) => (i.data as { geometry?: unknown }).geometry).every((i) => (i.data as { geometry?: { print?: boolean } }).geometry?.print === true);
   if (notice && onlyPrinted) return notice;
   if (!enclosureOffered(bom.items)) {
-    const layout = sectionHref(BOM);
     if (notice) return notice;
+    const fix = noBoxFix(bom.items);
     return (
       <EmptyState title="No part has a box yet">
         An enclosure is built around the parts, so it needs their sizes and places.{" "}
-        {layout ? (
-          <>
-            Add them in{" "}
-            <Link href={layout} className="text-link underline">
-              Physical layout
-            </Link>
-            .
-          </>
-        ) : null}{" "}
+        <FixLink fix={fix} />.{" "}
         A product with no parts that have boxes (a service, a software product) gets no enclosure option.
       </EmptyState>
     );

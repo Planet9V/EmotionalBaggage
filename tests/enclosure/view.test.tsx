@@ -110,3 +110,40 @@ describe("Enclosure section", () => {
     await waitFor(() => expect(screen.getAllByRole("alert").some((a) => /is 40 mm tall/i.test(a.textContent ?? ""))).toBe(true), { timeout: 3000 });
   });
 });
+
+describe("Enclosure section: every blocking message names its cause and links to where it is fixed", () => {
+  it("sends 'no part has a box' to the first part without one, in Physical layout (not the parts list)", async () => {
+    adminServer([...items([row(part(1, "S", "Sign-up form", null), 0)]), status({ available: false })]);
+    renderWithClient(<EnclosureView {...props} />);
+    await screen.findByText("No part has a box yet");
+    expect(screen.getByRole("link", { name: /Physical layout/ }).getAttribute("href")).toBe("/s/design/layout?item=1");
+  });
+
+  it("links a parameter problem, and the disabled Send to printing, to the field that fixes it", async () => {
+    const saved = [row({ section: "design/enclosure", title: "Enclosure settings", data: { enclosureGenerator: "casemaker", params: { wallThickness: 99 } } }, 50)];
+    adminServer([...items(example, saved), status({ available: true })]);
+    renderWithClient(<EnclosureView {...props} />);
+    await screen.findByRole("radio", { name: /CaseMaker/ });
+    const fixes = screen.getAllByRole("link", { name: /Change wall thickness/ });
+    expect(fixes.length).toBeGreaterThanOrEqual(2);
+    for (const a of fixes) expect(a.getAttribute("href")).toBe("/s/design/enclosure#enc-wallThickness");
+  });
+
+  it("says why generating is blocked and where to fix it when a part does not fit", async () => {
+    const saved = [row({ section: "design/enclosure", title: "Enclosure settings", data: { enclosureGenerator: "casemaker", params: { clearance: 5 } } }, 50)];
+    adminServer([...items(example, saved), status({ available: true })]);
+    renderWithClient(<EnclosureView {...props} />);
+    await screen.findByRole("radio", { name: /CaseMaker/ });
+    const links = screen.getAllByRole("link", { name: /in Physical layout/ });
+    expect(links.length).toBeGreaterThan(0);
+    for (const a of links) expect(a.getAttribute("href")).toMatch(/^\/s\/design\/layout\?item=\d+$/);
+  });
+
+  it("links 'No generator is chosen' to the generator choice, and the planner message to Admin", async () => {
+    adminServer([...items(example), status({ available: false, reason: "The planner service is not set up." })]);
+    renderWithClient(<EnclosureView {...props} />);
+    await screen.findByText(/No generator is chosen/);
+    expect(screen.getByRole("radiogroup", { name: "Enclosure generator" }).id).toBe("enclosure-generator");
+    expect(await screen.findByRole("link", { name: /Set the planner address in Admin/ })).toBeTruthy();
+  });
+});

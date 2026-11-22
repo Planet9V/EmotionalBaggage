@@ -4,7 +4,7 @@
  * Design > Physical layout: a 2D drag-and-drop editor for where each part sits inside the envelope.
  * It edits data.geometry on the BOM parts, the same data the 3D model draws.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, LayoutGrid, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, useFilesChanged, useItems } from "@/lib/client";
@@ -40,6 +40,7 @@ import { fileSlug } from "@/lib/format";
 import { EmptyState, LoadingBlocks } from "@/components/ui/states";
 import { PlacedParts } from "@/components/layout/PlacedParts";
 import { Card } from "@/components/ui/Card";
+import { FromUrl } from "@/components/drafts/FromUrl";
 import { channelName } from "@/lib/channels/registry";
 
 const BOM_STORE = "design/bom";
@@ -290,6 +291,8 @@ export function LayoutView({ project }: ViewProps) {
 
   return (
     <div id="layout-workspace" role="group" aria-label="Layout: arrow keys move the selected part" className="flex flex-col gap-4 outline-hidden focus-visible:ring-2 focus-visible:ring-dutchOrange" tabIndex={0} onKeyDown={onKeyDown}>
+      {/* ?item=<id> selects that part, so a link (a blocking message on the Enclosure page) can point at one row. */}
+      <Suspense fallback={null}><FromUrl names={["item"]} onParams={(v) => setSelectedId(Number(v.item) || null)} /></Suspense>
       {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       {notice && (
         <p role="status" className={`rounded-md px-3 py-2 text-sm ${notice.tone === "ok" ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>

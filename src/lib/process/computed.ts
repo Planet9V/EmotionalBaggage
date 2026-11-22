@@ -9,6 +9,7 @@ import { readBatch } from "@/lib/economics/read";
 import { STORE_BATCHES, STORE_CHANNELS, STORE_COMPLIANCE, STORE_ECONOMICS, STORE_METHODS, STORE_SUPPLIERS } from "@/lib/economics/schemas";
 import { buildSpec, enclosureOffered } from "@/lib/enclosure/spec";
 import { withDefaults } from "@/lib/enclosure/validate";
+import { ENCLOSURE_HREF, GENERATE_ANCHOR, GENERATOR_ANCHOR, LAYOUT_HREF } from "@/lib/enclosure/fixes";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
@@ -55,16 +56,16 @@ export function electricalCheck(facts: GateFacts, rows: Item[] = []): Computed {
 
 /** The enclosure's checks, as last measured on the saved choice, against today's parts and settings. */
 export function enclosureCheck(rows: Item[]): Computed {
-  const href = "/s/design/enclosure";
+  const href = ENCLOSURE_HREF;
   const bom = rows.filter((r) => r.section === "design/bom");
-  if (!enclosureOffered(bom)) return { met: false, detail: "No part has a box, so there is no enclosure to check.", action: "Place the parts in Physical layout", href: "/s/design/layout" };
+  if (!enclosureOffered(bom)) return { met: false, detail: "No part has a box, so there is no enclosure to check.", action: "Place the parts in Physical layout", href: LAYOUT_HREF };
   const saved = rows.find((r) => r.section === ENCLOSURE_STORE);
   const d = (saved?.data ?? {}) as { enclosureGenerator?: string; params?: Record<string, unknown>; checked?: Record<string, EnclosureChecked> };
-  if (!saved || !d.enclosureGenerator) return { met: false, detail: "No enclosure generator is chosen.", action: "Choose an enclosure generator", href };
+  if (!saved || !d.enclosureGenerator) return { met: false, detail: "No enclosure generator is chosen.", action: "Choose an enclosure generator", href: `${href}#${GENERATOR_ANCHOR}` };
   const record = d.checked?.[d.enclosureGenerator];
-  if (!record) return { met: false, detail: `The chosen generator (${d.enclosureGenerator}) has not been run, so its checks are not measured.`, action: "Generate the enclosure to measure its checks", href };
+  if (!record) return { met: false, detail: `The chosen generator (${d.enclosureGenerator}) has not been run, so its checks are not measured.`, action: "Generate the enclosure to measure its checks", href: `${href}#${GENERATE_ANCHOR}` };
   const now = specFingerprint(buildSpec({ items: bom, params: withDefaults(d.params) }));
-  if (record.fingerprint !== now) return { met: false, detail: "The parts or the settings changed after the checks were measured.", action: "Generate the enclosure again", href };
+  if (record.fingerprint !== now) return { met: false, detail: "The parts or the settings changed after the checks were measured.", action: "Generate the enclosure again", href: `${href}#${GENERATE_ANCHOR}` };
   const failed = record.checks.filter((c) => !c.ok);
   return {
     met: record.checks.length > 0 && failed.length === 0,
