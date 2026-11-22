@@ -12,6 +12,7 @@ import { sceneOf } from "../scenes";
 import { bagVoice } from "../speech";
 import { E, bump, clamp01, kf, mix } from "./ease";
 import { buttonCast, scaleCast } from "./castScale";
+import { hallExtras } from "./extras";
 import { A, BAG_TOP, Bag, Built, C, Contact, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure } from "./people";
 
@@ -371,6 +372,8 @@ function ScaleSet({ button }: { button: boolean }) {
   };
   const cue = { bag, scene, setDown: SET_DOWN, display: [DISPLAY[0], SCREEN_Y, DISPLAY[2]] as V3, pop: POP };
   const { agent, host } = button ? buttonCast(cue) : scaleCast(cue);
+  // at the end of the day the hall is empty; in the day, people pass
+  const extras = button ? [] : hallExtras(bag);
   return (
     <>
       <Stage look={button ? EVENING : LOOK} />
@@ -397,6 +400,9 @@ function ScaleSet({ button }: { button: boolean }) {
       {button ? null : <Huff top={(t) => [bag(t).p[0] - 0.06 * Math.max(0, kf(t, [[7480, 0], [8150, 1]])), PLATE + BAG_TOP, BAG_Z]} />}
       <Figure pose={agent} role="agent" />
       <Figure pose={host} role="owner" tall={1.03} />
+      {extras.map((x, i) => (
+        <Figure key={i} pose={x.pose} role={x.role} tall={x.tall} seed={30 + i * 4.3} />
+      ))}
     </>
   );
 }

@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { C, type Kit, type Skin, type V3 } from "./kit";
 import type { SpringDef } from "./springs";
 
-export type Role = "agent" | "handler" | "owner" | "bystander" | "traveller";
+export type Role = "agent" | "handler" | "owner" | "bystander" | "traveller" | "pax" | "pax2";
 type Costume = { coat: string; legs: string; skin: string; hair: string; sleeve: string };
 export const WEAR: Record<Role, Costume> = {
   agent: { coat: "#2b4a8a", legs: "#1f2f4f", skin: "#c99a78", hair: "#2a2320", sleeve: "#2b4a8a" },
@@ -14,6 +14,9 @@ export const WEAR: Record<Role, Costume> = {
   owner: { coat: "#2f6b62", legs: "#39414f", skin: "#e6c3a0", hair: "#5a3d2b", sleeve: "#2f6b62" },
   bystander: { coat: "#8a4a6c", legs: "#3b4660", skin: "#8f6247", hair: "#1e1b1c", sleeve: "#8a4a6c" },
   traveller: { coat: "#c9b6d6", legs: "#56617a", skin: "#d9ad88", hair: "#7a5a3a", sleeve: "#c9b6d6" },
+  // passers-by in the background: muted, so they never pull the eye from the bag
+  pax: { coat: "#7d8796", legs: "#4a5160", skin: "#c79a7a", hair: "#3a332e", sleeve: "#7d8796" },
+  pax2: { coat: "#a89c86", legs: "#5b5f66", skin: "#e0b896", hair: "#6e6a66", sleeve: "#a89c86" },
 };
 
 /** The bones, by number. Left and right pairs are next to each other: left first. */
@@ -51,6 +54,8 @@ const SPRINGS: Record<Role, [BoneDef, BoneDef, BoneDef]> = {
   owner: [{ parent: BONE.chest, at: [0, 1.34, -0.14] }, { parent: BONE.hips, at: [0, 0.9, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
   bystander: [{ parent: BONE.head, at: [0, HEAD_C + 0.05, -0.05] }, { parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
   traveller: [{ parent: BONE.head, at: [0, HEAD_C + 0.02, -0.15] }, { parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
+  pax: [{ parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
+  pax2: [{ parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }, { parent: BONE.chest, at: [0, 1.3, 0] }],
 };
 
 /** How each role's loose parts swing: a scarf end and lanyard that flick, a heavy backpack, a stiff bun, a hem. */
@@ -60,6 +65,8 @@ export const SPRING_DEFS: Record<Role, [SpringDef | null, SpringDef | null, Spri
   owner: [{ rest: [0, -0.26, -0.08], k: 60, c: 5, max: 0.32 }, { rest: [0, -0.36, 0], k: 160, c: 12, max: 0.08 }, null],
   bystander: [{ rest: [0, -0.06, -0.05], k: 300, c: 16, max: 0.1 }, null, null],
   traveller: [{ rest: [0, -0.26, -0.04], k: 70, c: 5.5, max: 0.4 }, null, null],
+  pax: [null, null, null],
+  pax2: [null, null, null],
 };
 
 /** The rest pose of every bone, for one role: its parent and where it is in the figure. */

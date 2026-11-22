@@ -12,6 +12,7 @@ import { useFrame } from "@react-three/fiber";
 import { sceneOf } from "../scenes";
 import { bagVoice } from "../speech";
 import { hallCast } from "./castHall";
+import { carouselExtras } from "./extras";
 import { bump, clamp01, kf, mix } from "./ease";
 import { A, Bag, Built, C, Contact, Sign, Stage, luggage, trolley, useClock, type BagKind, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure } from "./people";
@@ -359,15 +360,12 @@ function rideBag(t: number): BagPose {
   };
 }
 
-const { stranger, host, watcher } = hallCast({
-  bag: rideBag,
-  scene: CAROUSEL,
-  againAt: AGAIN_AT,
-  belt: (d) => {
-    const at = spot(d);
-    return [at.x, TOP, at.z];
-  },
-});
+const belt = (d: number): V3 => {
+  const at = spot(d);
+  return [at.x, TOP, at.z];
+};
+const { stranger, host, watcher } = hallCast({ bag: rideBag, scene: CAROUSEL, againAt: AGAIN_AT, belt });
+const HALL_EXTRAS = carouselExtras(rideBag, belt);
 
 /** A stadium-shaped slab: half the straight is `HS`, the ends have radius `r`. */
 function stadium(k: Kit, r: number, h: number, c: string, y: number) {
@@ -498,6 +496,9 @@ function CarouselSet() {
       <Figure pose={stranger} role="traveller" />
       <Figure pose={host} role="owner" tall={1.03} phone />
       <Figure pose={watcher} role="bystander" tall={0.97} />
+      {HALL_EXTRAS.map((x, i) => (
+        <Figure key={i} pose={x.pose} role={x.role} tall={x.tall} seed={40 + i * 4.3} />
+      ))}
     </>
   );
 }

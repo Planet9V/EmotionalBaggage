@@ -43,6 +43,3 @@ export const shake = (t: number, amount: number) => amount * (0.6 * Math.sin(t /
 
 /** A slow, uneven shift of the weight from foot to foot, for someone standing about: across, in metres. */
 export const fidget = (t: number, seed: number) => 0.02 * Math.sin(t / 1900 + seed) + 0.01 * Math.sin(t / 830 + seed * 2);
-
-/** A point between two points. */
-export const between = (a: V3, b: V3, p: number): V3 => [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p, a[2] + (b[2] - a[2]) * p];
