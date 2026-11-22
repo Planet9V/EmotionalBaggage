@@ -1,7 +1,7 @@
 {
   "concept": "baggage-claims",
   "source": "Google Drive folder \"Emotional baggage\" (folder id 1sZKy5ufsLNeoXnfCleQHMe6eWv9fcCPb), downloaded by the owner as a zip on 21 Nov 2026",
-  "note": "Every file here is the original, byte for byte. Until 21 Nov 2026 sixteen of them were copies made from the Drive preview (text without Markdown marks, the two PDFs as text, the schematic as a screen capture); each of those entries keeps the sha256 of the copy it replaced, so an install seeded with the copies can be brought up to the originals. Drive's zip names the naming note 'What clever names for this _.md'; its name in Drive, kept here, ends in ' ?.md'.",
+  "note": "Every file here is the original, byte for byte. Until 21 Nov 2026 sixteen of them were copies made from the Drive preview (text without Markdown marks, the two PDFs as text, the schematic as a screen capture); each of those entries keeps the sha256 of the copy it replaced, so an install seeded with the copies can be brought up to the originals. Drive's zip names the naming note 'What clever names for this _.md'; its name in Drive, kept here, ends in ' ?.md'. On 22 Nov 2026 the owner uploaded five more files for the enclosure (entries with addedOn): the generator script, the materials table and the two voxel arrays are his originals, byte for byte. His STL, BaggageClaims_PiP_Clamshell_RevA.stl, is 121,253,284 bytes (sha256 0a97e63db654dccbca84a77c20b9a9989fafbf39255bc449fca2364f5901ecec): over the app's 25 MB a file and GitHub's 100 MB, so it is not in the repository; BaggageClaims_PiP_Clamshell_RevA_reduced.stl is a reduced copy of it (499,936 of 2,425,064 triangles, same bounding box, within 0.001 mm of the original surface; see its reducedFrom). The uploaded launch-script-summary.txt is not added: it is the text of 'Write the script for the launch video.md', which is already here as the original.",
   "files": [
     {
       "file": "I have an idea for a quick gag and potential quick.md",
@@ -291,6 +291,103 @@
       "copy": "the original file, byte for byte, from the owner's download of the Drive folder (21 Nov 2026)",
       "readOn": "2026-11-21",
       "replacedCopySha256": "1fe4bee80845e4fcc504a3f09537e129dd77c6896afe9ef6cd9429b294507df2"
+    },
+    {
+      "file": "pip_clamshell_gen.py",
+      "title": "pip_clamshell_gen.py",
+      "folder": "Design and build",
+      "what": "The owner's parametric generator for the print-in-place clamshell enclosure, Rev A: Python with numpy and scikit-image, 0.2 mm voxels, for a Bambu Lab A1 in PETG. Kept to read; the app does not run it.",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 4229,
+      "sha256": "bdaa59398237bc7ac083ce2bcec6a7e596a0e8584a014866655e1aa9d232820f",
+      "copy": "the original file, byte for byte, as the owner uploaded it (22 Nov 2026)",
+      "readOn": "2026-11-22",
+      "origin": "Uploaded by the owner on 22 Nov 2026 with his enclosure work: the original file, byte for byte.",
+      "addedOn": "2026-11-22"
+    },
+    {
+      "file": "Part-Material-Why-Cost.csv",
+      "title": "Part-Material-Why-Cost.csv",
+      "folder": "Design and build",
+      "what": "Enclosure materials: the PETG shell, the TPU 95A boot variant and the collector edition, each with why and its cost per unit.",
+      "kind": "spreadsheet",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 339,
+      "sha256": "b931ef3ddc656d2187a71a0c20e00064b9fa9069e42ea8751cd2619e6c22875a",
+      "copy": "the original file, byte for byte, as the owner uploaded it (22 Nov 2026)",
+      "readOn": "2026-11-22",
+      "origin": "Uploaded by the owner on 22 Nov 2026 with his enclosure work: the original file, byte for byte.",
+      "addedOn": "2026-11-22"
+    },
+    {
+      "file": "_B.npy",
+      "title": "_B.npy",
+      "folder": "Design and build",
+      "what": "Voxel array B of the clamshell generator (the bottom half with the hinge pin and latch lip): 470 x 361 x 136 cells of 0.2 mm, true where there is material. A NumPy boolean array.",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 23075248,
+      "sha256": "a0baba46d6b9f428ce4a8311b0467ab23cdf6cebae74cc690e35fca9b2f4c464",
+      "copy": "the original file, byte for byte, as the owner uploaded it (22 Nov 2026)",
+      "readOn": "2026-11-22",
+      "origin": "Uploaded by the owner on 22 Nov 2026 with his enclosure work: the original file, byte for byte.",
+      "addedOn": "2026-11-22"
+    },
+    {
+      "file": "_T.npy",
+      "title": "_T.npy",
+      "folder": "Design and build",
+      "what": "Voxel array T of the clamshell generator (the top half with the grille, hinge socket and latch): 470 x 357 x 125 cells of 0.2 mm, true where there is material. A NumPy boolean array.",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 20973878,
+      "sha256": "133981236e047bb634bf7080b00c371f249dd290bc0ccf9c084c94b446d20bb4",
+      "copy": "the original file, byte for byte, as the owner uploaded it (22 Nov 2026)",
+      "readOn": "2026-11-22",
+      "origin": "Uploaded by the owner on 22 Nov 2026 with his enclosure work: the original file, byte for byte.",
+      "addedOn": "2026-11-22"
+    },
+    {
+      "file": "BaggageClaims_PiP_Clamshell_RevA_reduced.stl",
+      "title": "BaggageClaims_PiP_Clamshell_RevA_reduced.stl",
+      "folder": "Design and build",
+      "what": "The print-in-place clamshell, Rev A, as a binary STL. A reduced copy of the owner's file: 499,936 triangles instead of 2,425,064, the same four bodies and bounding box, and within 0.001 mm of the original surface where measured.",
+      "kind": "other",
+      "driveFileId": "",
+      "driveSize": "",
+      "size": 24996884,
+      "sha256": "e788fed9f5942113c144cf40eb095fc72f610250a42ec24c369c8cacf61d9f1f",
+      "copy": "a reduced copy made on 22 Nov 2026 (triangles merged on flat faces); the owner's original is 121,253,284 bytes, over the 25 MB a file may be here, and is not stored",
+      "readOn": "2026-11-22",
+      "origin": "A reduced copy, made on 22 Nov 2026, of the STL the owner uploaded that day. His original (121,253,284 bytes, sha256 0a97e63db654dccbca84a77c20b9a9989fafbf39255bc449fca2364f5901ecec) is over the 25 MB limit and is not stored here.",
+      "addedOn": "2026-11-22",
+      "reducedFrom": {
+        "file": "BaggageClaims_PiP_Clamshell_RevA.stl",
+        "size": 121253284,
+        "sha256": "0a97e63db654dccbca84a77c20b9a9989fafbf39255bc449fca2364f5901ecec",
+        "triangles": 2425064,
+        "reducedTriangles": 499936,
+        "boundingBoxMm": [
+          [
+            0.1,
+            -1.3,
+            0.1
+          ],
+          [
+            90.3,
+            141.1,
+            26.1
+          ]
+        ],
+        "maxDeviationMm": 0.0006,
+        "method": "quadric edge collapse (fast-simplification 0.2.0), then 64 zero-area triangles removed; every edge still joins two faces (nine join four, twenty in the original)",
+        "deviationMeasured": "120,000 vertices of each mesh against the other's surface"
+      }
     }
   ]
 }

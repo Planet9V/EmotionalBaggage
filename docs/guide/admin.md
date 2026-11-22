@@ -191,7 +191,7 @@ The **Railway** page under Documentation walks through running the three service
 
 ## Loading files into a concept
 
-The example concept loads its story and its 21 documents once per database at start-up, also on an install seeded earlier. To load a folder of files into any concept: `node scripts/import-files.mjs <folder> --concept <id> --url <address>`. It asks for a sign-in, or takes `--cookie`, and sub-folders become folders.
+The example concept loads its story and its documents (the 21 of the owner's Drive folder, and five enclosure files he added on 22 November 2026) once per database at start-up, also on an install seeded earlier; a file added to the example later arrives once at the next start, and is not put back if you remove it. To load a folder of files into any concept: `node scripts/import-files.mjs <folder> --concept <id> --url <address>`. It asks for a sign-in, or takes `--cookie`, and sub-folders become folders.
 
 ## Backups
 

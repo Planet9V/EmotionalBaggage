@@ -16,7 +16,7 @@ const DRIVE = "The owner's Google Drive folder \"Emotional baggage\".";
 
 type SeedSource = { key: string; title: string; what: string; kind: SourceData["kind"] };
 
-/** The 21 files of the folder, by the names they have there. */
+/** The 21 files of the Drive folder, by the names they have there. Files the owner added later are listed in the manifest only (seedFiles.ts). */
 export const SEED_SOURCES: SeedSource[] = [
   { key: "idea", title: "I have an idea for a quick gag and potential quick.md", what: "The owner's original idea, and the first proposal with the ranked gag catalogue.", kind: "chat" },
   { key: "prd", title: "BaggageClaims_PRD_Business_Proposal_RevA.pdf", what: "Product requirements document and full business proposal, Rev A: 6 pages, 13 sections.", kind: "document" },
