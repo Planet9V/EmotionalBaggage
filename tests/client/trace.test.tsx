@@ -472,6 +472,9 @@ describe("the why (process review 3)", () => {
     const buttons = await screen.findAllByRole("button", { name: "Add reason" });
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Save reason" }));
+    expect((await screen.findByText("Type the reason.")).getAttribute("role")).toBe("alert");
+    expect(calls.some((c) => c.path === "/api/items/1/reason")).toBe(false);
     fireEvent.change(screen.getByLabelText("Why (kept in the history)"), { target: { value: "Agreed with the client" } });
     fireEvent.click(screen.getByRole("button", { name: "Save reason" }));
     await waitFor(() => expect(calls.find((c) => c.path === "/api/items/1/reason")?.body).toEqual({ why: "Agreed with the client", forEvent: 4 }));

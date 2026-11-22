@@ -2,7 +2,10 @@
 
 // The slicer service's address, saved in Admin with the SLICER_URL environment variable as the
 // fallback, and a Test button: the same pattern as the planner address in the Models tab.
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,29 +25,25 @@ export function SlicerAddress() {
   return <SlicerSection settings={settings.data} />;
 }
 
+const schema = z.object({ url: httpUrl });
+
 function SlicerSection({ settings }: { settings: AdminSettings }) {
-  const [url, setUrl] = useState(settings.slicerUrl ?? "");
-  const [error, setError] = useState("");
+  const { register, handleSubmit, trigger, getValues, setValue, formState: { errors } } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: { url: settings.slicerUrl ?? "" },
+  });
+  const error = errors.url?.message ? `Address ${errors.url.message}.` : "";
   const [saveError, setSaveError] = useState("");
   const [justSaved, markSaved] = useFlag();
   const save = useSaveSettings();
   const test = useConnectionTest();
   const eff = settings.slicerEffective ?? { url: null, source: null };
 
-  const parsed = () => {
-    const r = httpUrl.safeParse(url);
-    if (!r.success) {
-      setError(`Address ${r.error.issues[0].message}.`);
-      return null;
-    }
-    setError("");
-    return r.data;
-  };
   const run = async (slicerUrl: string | null) => {
     setSaveError("");
     try {
       await save.mutateAsync({ slicerUrl });
-      if (slicerUrl === null) setUrl("");
+      if (slicerUrl === null) setValue("url", "");
       markSaved();
     } catch (err) {
       const m = messageOf(err);
@@ -52,22 +51,22 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
       toast.error(m);
     }
   };
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const v = parsed();
-    if (v) void run(v);
+  const submit = handleSubmit((v) => void run(v.url));
+  const testAddress = async () => {
+    if (!getValues("url").trim()) return test.mutate({ kind: "slicer" });
+    if (await trigger("url")) test.mutate({ kind: "slicer", url: httpUrl.parse(getValues("url")) });
   };
 
   return (
     <Panel title="Slicer address" description="The OrcaSlicer service that slices print jobs into files a printer can run.">
-      <form onSubmit={submit} noValidate className="space-y-4" aria-busy={save.isPending || undefined} aria-label="Slicer address">
+      <form onSubmit={(e) => void submit(e)} noValidate className="space-y-4" aria-busy={save.isPending || undefined} aria-label="Slicer address">
         <p className="text-sm text-secondary">
           {eff.url
             ? `In use: ${eff.url}, ${eff.source === "admin" ? "saved here" : "from the SLICER_URL environment variable (a fallback)"}.`
             : "No address is saved here and SLICER_URL is not set, so print jobs can be queued but not sliced."}
         </p>
         <Field id="slicer-url" label="Address" error={error} hint="For example http://slicer:8000 inside Docker Compose.">
-          <Input id="slicer-url" value={url} spellCheck={false} onChange={(e) => setUrl(e.target.value)} {...describe("slicer-url", { hint: true, error })} />
+          <Input id="slicer-url" spellCheck={false} {...describe("slicer-url", { hint: true, error })} {...register("url")} />
         </Field>
         <SaveError message={saveError} />
         <div className="flex flex-wrap items-center gap-2">
@@ -77,11 +76,7 @@ function SlicerSection({ settings }: { settings: AdminSettings }) {
             variant="outline"
             size="sm"
             disabled={test.isPending}
-            onClick={() => {
-              if (!url.trim()) return test.mutate({ kind: "slicer" });
-              const v = parsed();
-              if (v) test.mutate({ kind: "slicer", url: v });
-            }}
+            onClick={() => void testAddress()}
           >
             Test
           </Button>

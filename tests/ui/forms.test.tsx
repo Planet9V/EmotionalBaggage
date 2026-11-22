@@ -8,6 +8,8 @@ import { ComplianceDialog } from "@/components/compliance/ComplianceDialog";
 import { CostLineDialog } from "@/components/economics/CostLineDialog";
 import { FirstConnection } from "@/components/schematic/FirstConnection";
 import type { Part } from "@/components/schematic/model";
+import { PinDialog } from "@/components/schematic/PinDialog";
+import { AddItemDialog } from "@/components/items/AddItemDialog";
 
 afterEach(cleanup);
 
@@ -78,3 +80,48 @@ describe("FirstConnection", () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ from: "P1", to: "P2", fromPin: "GND", toPin: "GND" })));
   });
 });
+
+describe("PinDialog", () => {
+  it("says why beside the pin name, and sends the trimmed name once it is new", async () => {
+    const onSave = vi.fn(async () => {});
+    const onClose = vi.fn();
+    render(<PinDialog title="Add pin" description="Name the pin." existing={["GND"]} submitLabel="Add pin" onClose={onClose} onSave={onSave} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add pin" }));
+    await waitFor(() => expect(screen.getByText("Type a pin name, as printed on the board or in the datasheet.")).toBeTruthy());
+    expect(screen.getByLabelText("Pin name").getAttribute("aria-invalid")).toBe("true");
+    fireEvent.change(screen.getByLabelText("Pin name"), { target: { value: " GND " } });
+    fireEvent.click(screen.getByRole("button", { name: "Add pin" }));
+    await waitFor(() => expect(screen.getByText("This part already has a pin called GND.")).toBeTruthy());
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Pin name"), { target: { value: " GPIO5 " } });
+    fireEvent.click(screen.getByRole("button", { name: "Add pin" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith("GPIO5"));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("keeps the dialog open with the server's reason when the save is refused", async () => {
+    const onClose = vi.fn();
+    render(<PinDialog title="Add pin" description="Name the pin." existing={[]} submitLabel="Add pin" onClose={onClose} onSave={async () => { throw new Error("The part is gone."); }} />);
+    fireEvent.change(screen.getByLabelText("Pin name"), { target: { value: "VCC" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add pin" }));
+    await waitFor(() => expect(screen.getByText("The part is gone.")).toBeTruthy());
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe("AddItemDialog", () => {
+  it("needs a title, then sends the row trimmed with only the columns that were filled in", async () => {
+    const onCreate = vi.fn(async () => {});
+    render(<AddItemDialog open onOpenChange={() => {}} label="Add a supplier" sectionLabel="Suppliers" columns={[{ key: "url", label: "Web address" }, { key: "location", label: "Location" }]} statuses={["candidate", "approved"]} onCreate={onCreate} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(screen.getByText("Give it a title.")).toBeTruthy());
+    expect(screen.getByLabelText("Title").getAttribute("aria-invalid")).toBe("true");
+    expect(onCreate).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "  Acme  " } });
+    fireEvent.change(screen.getByLabelText("Location"), { target: { value: " Leeds " } });
+    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "approved" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith({ title: "Acme", body: "", status: "approved", data: { location: "Leeds" } }));
+  });
+});
+

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +15,9 @@ import { exportHref, useDeleteConcept, type Concept, type DeletedConcept } from 
 import { WhyField } from "@/components/trace/WhyField";
 import { ConceptDialog, FormError, fieldLabel } from "./ConceptDialog";
 import { plural } from "@/lib/format";
+
+// Delete stays disabled until the exact name is typed, so the form never submits a wrong one.
+const schema = z.object({ typed: z.string(), why: z.string() });
 
 /**
  * Says what will go, offers the JSON export first, and deletes only once the exact name is typed.
@@ -29,9 +35,8 @@ export function DeleteConceptDialog({
 }) {
   const [open, setOpen] = useState(true);
   const del = useDeleteConcept();
-  const [typed, setTyped] = useState("");
-  const [why, setWhy] = useState("");
-  const [error, setError] = useState("");
+  const { register, control, handleSubmit, setError, formState: { errors } } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { typed: "", why: "" } });
+  const typed = useWatch({ control, name: "typed" });
   // Once the delete has gone through, nothing may ask for the concept again (it would answer 404).
   const live = !del.isPending && !del.isSuccess;
   const files = useQuery({ ...queries.files(concept.id), enabled: live });
@@ -40,18 +45,16 @@ export function DeleteConceptDialog({
   const matchesName = typed === concept.name;
   const busy = del.isPending;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!matchesName || busy) return;
-    setError("");
+  const submit = handleSubmit(async ({ typed: confirm, why }) => {
+    if (confirm !== concept.name || busy) return;
     try {
-      const d = await del.mutateAsync({ id: concept.id, confirm: typed, why });
+      const d = await del.mutateAsync({ id: concept.id, confirm, why });
       onDone(d);
       setOpen(false);
     } catch (err) {
-      setError(messageOf(err) || "The concept was not deleted.");
+      setError("root", { message: messageOf(err) || "The concept was not deleted." });
     }
-  };
+  });
 
   const count = (q: { isPending: boolean; error: unknown }, n: number | undefined, one: string, many?: string) =>
     q.isPending ? (
@@ -71,7 +74,7 @@ export function DeleteConceptDialog({
       title={`Delete "${concept.name}"?`}
       description="This cannot be undone."
     >
-      <form onSubmit={submit} noValidate>
+      <form onSubmit={(e) => void submit(e)} noValidate>
         <p className="text-sm text-secondary">This deletes the concept and everything in it:</p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-primary" aria-live="polite">
           <li>{plural(concept.rowCount, "row")}</li>
@@ -100,18 +103,17 @@ export function DeleteConceptDialog({
           <Input
             id="delete-confirm"
             className="mt-1"
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
             spellCheck={false}
             aria-describedby="delete-confirm-name"
             data-autofocus
+            {...register("typed")}
           />
         </div>
         <div className="mt-4">
-          <WhyField id="delete-why" value={why} onChange={setWhy} hint="Kept in the audit log with the deletion." />
+          <Controller control={control} name="why" render={({ field }) => <WhyField id="delete-why" value={field.value} onChange={field.onChange} hint="Kept in the audit log with the deletion." />} />
         </div>
-        <FormError message={error} />
+        <FormError message={errors.root?.message ?? ""} />
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
           <Button type="submit" variant="destructive" disabled={!matchesName || busy} aria-busy={busy}>
