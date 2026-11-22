@@ -24,13 +24,18 @@ describe("the seeded example's links", () => {
     expect(checks("Carry")).toEqual(["Detect: Handle grab"]);
     expect(checks("Idle")).toEqual(["Detect: Dark idle"]);
     expect(checks("Sleep current")).toEqual(["Power"]);
-    expect(t.orphanTests).toHaveLength(0);
+    // the five bench checks entered from the build guide on 22 Nov name no requirement in the documents, so they are linked to none
+    expect(t.orphanTests.map((x) => x.title).sort()).toEqual(["3.3 V rail", "Events appear in the log", "First power-on: no heat", "No shorts on the rails", "Power rail voltage"]);
   });
 
   it("requirements nobody has written a test for stay untested: the gaps are real", async () => {
     const t = traceOf(await rows());
     expect(t.untested.map((r) => r.title).sort()).toEqual(
-      ["Controls", "Detect: Carousel", "Detect: Conveyor", "Detect: Free-fall", "Detect: Inverted", "Enclosure", "Firmware sketch compiles", "Governor"].sort()
+      [
+        "Controls", "Detect: Carousel", "Detect: Conveyor", "Detect: Free-fall", "Detect: Inverted", "Enclosure", "Firmware sketch compiles", "Governor",
+        // the eight requirements entered from the documents on 22 Nov: no test is written for any of them
+        "Audio command interface", "Content ships independently of firmware", "Feature extraction", "Idle false positives under one a day", "Loudness limit", "Radios off", "Rigid sensor mount", "Service and debug port",
+      ].sort()
     );
   });
 
