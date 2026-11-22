@@ -17,11 +17,13 @@ const isLong = (...v: unknown[]) => v.some((x) => {
   return t.length > 70 || t.includes("\n");
 });
 
+// A long value scrolls inside its box, so the box takes keyboard focus (and is named by its label) to be scrollable without a mouse.
 function Block({ label, value }: { label: string; value: unknown }) {
+  const labelId = useId();
   return (
     <div className="min-w-0">
-      <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{label}</p>
-      <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-hairline bg-subtle p-2 font-sans text-xs text-primary wrap-anywhere">{valueText(value) || "empty"}</pre>
+      <p id={labelId} className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">{label}</p>
+      <pre tabIndex={0} role="region" aria-labelledby={labelId} className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-hairline bg-subtle p-2 font-sans text-xs text-primary wrap-anywhere focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-dutch">{valueText(value) || "empty"}</pre>
     </div>
   );
 }
