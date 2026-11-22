@@ -37,7 +37,7 @@ const humanize = (s: string) => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
-export const labelOf = (field: string) => LABELS[field] ?? humanize(field.replace(/^data\./, ""));
+const labelOf = (field: string) => LABELS[field] ?? humanize(field.replace(/^data\./, ""));
 
 /** Written by code that computes a result, not by a person: shown nowhere. */
 const HIDDEN = new Set(["disputed"]);

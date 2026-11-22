@@ -49,7 +49,7 @@ const listOr = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 // The label lookups are shared (src/lib/menuLookup.ts); re-exported because the gate and stage routes import them from here.
-export { sectionLabel, stageLabel } from "@/lib/menuLookup";
+export { stageLabel } from "@/lib/menuLookup";
 
 /** Rows of the store a section path shows (Sourcing shows the parts list, so its rows are design/bom). */
 function rowsOf(rows: Item[], path: string): Item[] {
@@ -90,7 +90,7 @@ function opensItem(path: string): boolean {
  * The address of the control that fixes a check: the first row that stops it (`?item=<id>`) when the page opens
  * rows from the address, otherwise the control named by the check's anchor (`#<anchor>`), otherwise the page.
  */
-export function fixHref(path: string, opts: { row?: Item; anchor?: string } = {}): string {
+function fixHref(path: string, opts: { row?: Item; anchor?: string } = {}): string {
   // A section with a page of its own (the concept story, the sources) is fixed there.
   const own = findSection(...(path.split("/") as [string, string]))?.section.href;
   if (own) return opts.anchor && !opts.row ? `${own}#${opts.anchor}` : own;
@@ -348,7 +348,7 @@ export function gatePassed(definition: ProcessDefinition, state: ProcessState, s
 }
 
 /** The stage after `stage`, or null for the last one. */
-export function stageAfter(stage: string): string | null {
+function stageAfter(stage: string): string | null {
   const i = STAGES.findIndex((s) => s.key === stage);
   return i >= 0 && i < STAGES.length - 1 ? STAGES[i + 1].key : null;
 }

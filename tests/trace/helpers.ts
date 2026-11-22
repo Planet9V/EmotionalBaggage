@@ -26,7 +26,7 @@ export async function remove(id: number) {
   return read<{ ok: boolean } & Err>(await removeItem(json("DELETE"), ctx(String(id))));
 }
 
-export type Line = { id: number; actor: string; action: string; summary: string; detail: Record<string, unknown> };
+type Line = { id: number; actor: string; action: string; summary: string; detail: Record<string, unknown> };
 
 /** The audit lines of one concept, oldest first. */
 export async function lines(project: string) {

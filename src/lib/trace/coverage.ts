@@ -17,7 +17,7 @@ const tokenOf = (i: Pick<Item, "id" | "data">) => keyOf(i.data) || `#${i.id}`;
  * the requirement's `tests`/`parts` list, or a test's or part's `requirements` list (what drafting writes). Both
  * count, so a fully drafted chain shows its coverage even where only one end was written.
  */
-export function linksOf(items: Pick<Item, "id" | "section" | "data">[]): (req: Pick<Item, "data">) => ReqLinks {
+function linksOf(items: Pick<Item, "id" | "section" | "data">[]): (req: Pick<Item, "data">) => ReqLinks {
   const back = new Map<string, ReqLinks>();
   for (const { field, section } of MIRRORED) {
     for (const row of items) {
@@ -52,7 +52,6 @@ export function coverageText(c: Coverage): string {
   return `${plural(c.tests, "test")}, ${plural(c.parts, "part")}`;
 }
 
-export type Trace = ReturnType<typeof traceOf>;
 
 export function traceOf(items: Item[]) {
   const inSection = (s: string) => items.filter((i) => i.section === s).sort((a, b) => a.sort - b.sort || a.id - b.id);

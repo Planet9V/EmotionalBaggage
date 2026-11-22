@@ -3,7 +3,7 @@ import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Item } from "@/lib/types";
 
-export type Call = { method: string; path: string; body: unknown };
+type Call = { method: string; path: string; body: unknown };
 type Rule = { method: string; match: (path: string, body: unknown) => boolean; status?: number; delay?: number; hold?: Promise<void> };
 
 /**

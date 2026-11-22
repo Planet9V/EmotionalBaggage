@@ -135,7 +135,7 @@ export type XOptions = FailureOptions & {
 
 const XD: XOptions = { clientId: "stand-in-x-client", codes: {}, access: [], refresh: "x-refresh-token-stand-in-0001", userId: "1500000000000000001", username: "baggageclaims", posts: [], mentions: [], throttlePosts: 0 };
 
-export const s256 = (verifier: string) => createHash("sha256").update(verifier).digest("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const s256 = (verifier: string) => createHash("sha256").update(verifier).digest("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 export function startX(options?: Partial<XOptions>) {
   return startStandIn<XOptions>({ ...XD, codes: {}, access: [], posts: [], mentions: [] }, (req, o) => {

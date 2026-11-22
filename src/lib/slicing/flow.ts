@@ -24,7 +24,7 @@ async function loadJob(id: number, forUpdate = false, c?: { query: <T extends ob
   return rows[0];
 }
 
-export const jobData = (row: ItemRow): PrintJobData => {
+const jobData = (row: ItemRow): PrintJobData => {
   const parsed = printJobData.safeParse(row.data);
   return (parsed.success ? parsed.data : row.data) as PrintJobData;
 };

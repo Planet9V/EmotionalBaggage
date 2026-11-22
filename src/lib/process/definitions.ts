@@ -10,24 +10,6 @@ import { PRODUCT_TYPES, sectionVisible, type ProductType } from "@/lib/productTy
 // page that fixes it. A check may only name a section its product type shows: a printed part or
 // a wooden toy has no schematic, so its gates cannot ask for one. That is enforced at load.
 
-export type CheckKind =
-  | "min-rows"
-  | "all-status"
-  | "decision-made"
-  | "no-open"
-  | "claims-verified"
-  | "field-set"
-  | "electrical"
-  | "enclosure"
-  | "production-ready"
-  | "content-proof"
-  | "positioning"
-  | "campaign-budget"
-  | "tracked-links"
-  | "campaign-results"
-  | "content-approved"
-  | "build-passed";
-
 /** Concept fields a `field-set` check can ask for. */
 export type ConceptField = "name" | "oneLiner";
 
@@ -101,7 +83,7 @@ export type ProcessDefinition = { productType: ProductType; stages: Gate[] };
 export const OPEN_STATUSES = ["open", "blocked"];
 
 /** The decision every concept settles before it leaves the Concept stage. */
-export const GO_DECISION = "go";
+const GO_DECISION = "go";
 
 // Checks shared by every type, stage by stage.
 const conceptGate: Check[] = [

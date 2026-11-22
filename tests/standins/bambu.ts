@@ -43,7 +43,7 @@ export type BambuStandInOptions = {
   partial: boolean;
 };
 
-export type Recorded = { kind: "connect" | "refused" | "subscribe" | "message" | "ftp-login" | "ftp-refused" | "ftp-upload"; detail: Record<string, unknown> };
+type Recorded = { kind: "connect" | "refused" | "subscribe" | "message" | "ftp-login" | "ftp-refused" | "ftp-upload"; detail: Record<string, unknown> };
 
 let certDir: string | null = null;
 function certificate() {

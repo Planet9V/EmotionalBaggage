@@ -10,7 +10,7 @@ import { sectionVisible } from "@/lib/productTypes";
 
 export type GateRow = { stage: string; status: string; overridden: boolean; note: string; decided_by: string; decided_at: Date | null };
 
-export const toGate = (r: GateRow): GateRecord => ({
+const toGate = (r: GateRow): GateRecord => ({
   stage: r.stage,
   status: r.status,
   overridden: r.overridden,
@@ -20,7 +20,7 @@ export const toGate = (r: GateRow): GateRecord => ({
 });
 
 /** The kinds of event the Process page lists as its history. */
-export const PROCESS_EVENT_KINDS = ["gate.overridden", "gate.override-withdrawn", "stage.advanced", "stage.moved-back"] as const;
+const PROCESS_EVENT_KINDS = ["gate.overridden", "gate.override-withdrawn", "stage.advanced", "stage.moved-back"] as const;
 
 export type ProcessEvent = { id: number; kind: string; summary: string; data: Record<string, unknown>; createdAt: string };
 

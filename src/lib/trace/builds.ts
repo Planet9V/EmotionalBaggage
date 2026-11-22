@@ -5,7 +5,7 @@ import { keyOf, listOf, TEST_DONE } from "./spec";
 type Row = { title: string; status: string; data: Record<string, unknown> };
 
 export type Criterion = { text: string; met: boolean };
-export type BuildTest = { key: string; title: string | null; status: string | null; done: boolean };
+type BuildTest = { key: string; title: string | null; status: string | null; done: boolean };
 
 export function criteriaOf(data: Record<string, unknown>): Criterion[] {
   const v = data.criteria;

@@ -11,7 +11,7 @@ import type { ItemRow } from "@/lib/db";
 export type Fields = Record<string, unknown>;
 
 /** The fields of a row as the record keeps them. */
-export function itemFields(r: Pick<ItemRow, "title" | "body" | "status" | "sort" | "data">): Fields {
+function itemFields(r: Pick<ItemRow, "title" | "body" | "status" | "sort" | "data">): Fields {
   const out: Fields = { title: r.title, body: r.body, status: r.status, sort: r.sort };
   for (const [k, v] of Object.entries(r.data ?? {})) out[`data.${k}`] = v;
   return out;

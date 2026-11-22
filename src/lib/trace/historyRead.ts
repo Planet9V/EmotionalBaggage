@@ -64,7 +64,7 @@ export async function readItemHistory(projectId: string, itemId: number, f: z.in
 }
 
 /** What the Activity page can filter by: the part of an action before the dot. */
-export const ACTIVITY_KINDS = ["item", "claim", "file", "research", "chat", "project"] as const;
+const ACTIVITY_KINDS = ["item", "claim", "file", "research", "chat", "project"] as const;
 
 export const activityQuery = historyQuery.extend({
   section: z.string().trim().max(80).optional(),
