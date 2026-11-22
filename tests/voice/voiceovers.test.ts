@@ -16,6 +16,9 @@ import { CAST, INTRO, INTRO_CUE, VOICE_CUES } from "@/components/welcome/scenes/
 import { GET as serve } from "@/app/api/voiceovers/[cue]/route";
 import { GET as list, POST as act } from "@/app/api/admin/voiceovers/route";
 import { GET as takeGet } from "@/app/api/admin/voiceovers/take/[cue]/route";
+import { GET as modelsGet } from "@/app/api/admin/voiceovers/models/route";
+import { CUE_DIRECTIONS, SPEAKER_NOTE } from "@/components/welcome/scenes/voiceDirections";
+import { draftReading } from "@/lib/voice/direction";
 import { anonymous, json, read } from "../api/helpers";
 import { toneWav } from "./helpers";
 
@@ -24,9 +27,10 @@ const hook = vi.hoisted(() => ({ admin: true }));
 vi.mock("@/lib/admin/platformAdminHook", () => ({ platformAdminFromAuth2: async () => hook.admin }));
 
 // The voice service is a stand-in: it answers a short WAV and records what it was asked to say and with which voice.
-const speech = vi.hoisted(() => ({ configured: true, asked: [] as { text: string; choice: Record<string, unknown> }[], audio: null as Uint8Array | null, type: "audio/wav" }));
+const speech = vi.hoisted(() => ({ configured: true, asked: [] as { text: string; choice: Record<string, unknown>; opts: Record<string, unknown> }[], audio: null as Uint8Array | null, type: "audio/wav" }));
 vi.mock("@/lib/voice/speech", async (orig) => ({
   ...(await orig<typeof import("@/lib/voice/speech")>()),
+  readVoiceSettings: async () => (speech.configured ? { provider: "kokoro", baseUrl: "http://speech.test/v1", model: "kokoro", voice: "af_heart", speed: 1 } : { provider: "none" }),
   getVoiceSettings: async () => (speech.configured ? { configured: true, provider: "kokoro", baseUrl: "http://speech.test/v1", model: "kokoro", voice: "af_heart", speed: 1 } : { configured: false, reason: "No voice is set up, so narration is off. Choose a provider in Admin, Voice." }),
   getSpeechSynthesizer: async (choice: { model?: string; voice?: string; speed?: number } = {}) =>
     speech.configured
@@ -34,8 +38,8 @@ vi.mock("@/lib/voice/speech", async (orig) => ({
           configured: true,
           settings: { provider: "kokoro", baseUrl: "http://speech.test/v1", model: choice.model ?? "kokoro", voice: choice.voice ?? "af_heart", speed: choice.speed ?? 1 },
           synth: {
-            synthesize: async (text: string) => {
-              speech.asked.push({ text, choice });
+            synthesize: async (text: string, opts: Record<string, unknown> = {}) => {
+              speech.asked.push({ text, choice, opts });
               return { audio: speech.audio!, contentType: speech.type };
             },
           },
@@ -148,7 +152,8 @@ describe("the clips that come with the example", () => {
   it("never replace a clip an administrator published, when a batch is applied over it", async () => {
     await wipe();
     await seedVoiceovers(pool());
-    expect((await post({ action: "generate", cue: "scale-fat" })).status).toBe(200);
+    expect((await post({ action: "generate", cue: "scale-fat", count: 1 })).status).toBe(200);
+    // "accept", the earlier name of publish, publishes a cue's only take
     expect((await post({ action: "accept", cue: "scale-fat" })).status).toBe(200);
     const mine = (await readVoiceovers()).clips["scale-fat"]!;
     expect(mine.seed).toBeUndefined();
@@ -253,36 +258,45 @@ describe("Admin, Voice-overs", () => {
     await wipe();
     await seedVoiceovers(pool());
   });
-  type View = { rows: { cue: string; speaker: string; text: string; window: number | null; clip: { url: string; voice: string; seeded: boolean; seconds: number } | null; take: { url: string; voice: string; speed: number; say: string; seconds: number } | null; versions: number }[]; cast: Record<string, unknown>; voice: { configured: boolean; reason?: string; model?: string }; canWrite: boolean };
+  type Take = { id: string; url: string; voice: string; speed: number; say: string; seconds: number; starred: boolean; via: string; lufs: number | null; peak: number | null; direction: string | null };
+  type View = { rows: { cue: string; speaker: string; text: string; window: number | null; direction: string; inlineTags: string; directionEdited: boolean; clip: { url: string; voice: string; seeded: boolean; seconds: number } | null; takes: Take[]; versions: number }[]; cast: Record<string, unknown>; notes: Record<string, string>; voice: { configured: boolean; reason?: string; model?: string }; canWrite: boolean };
   const view = async () => (await read<View>(await list(json("GET", undefined, "http://test.local/api/admin/voiceovers")))).body;
   const row = async (cue: string) => (await view()).rows.find((r) => r.cue === cue)!;
 
-  it("lists every cue with its words, speaker and published clip", async () => {
+  it("lists every cue with its words, speaker, direction and published clip", async () => {
     const v = await view();
     expect(v.rows.map((r) => r.cue)).toEqual(VOICE_CUES.map((c) => c.key));
     expect(v.canWrite).toBe(true);
     expect(v.voice).toMatchObject({ configured: true, model: "kokoro" });
     const fat = v.rows.find((r) => r.cue === "scale-fat")!;
-    expect(fat).toMatchObject({ speaker: "bag", text: "Are you... calling me FAT?", window: 2.8, take: null, versions: 0, clip: { seeded: true, voice: CAST.bag.voice } });
+    expect(fat).toMatchObject({ speaker: "bag", text: "Are you... calling me FAT?", window: 2.8, takes: [], versions: 0, clip: { seeded: true, voice: CAST.bag.voice }, direction: CUE_DIRECTIONS["scale-fat"]!.direction, inlineTags: CUE_DIRECTIONS["scale-fat"]!.inlineTags, directionEdited: false });
+    expect(v.notes.bag).toBe(SPEAKER_NOTE.bag);
     expect(v.rows.find((r) => r.cue === "intro")!.window).toBeNull();
   });
 
   it("is the platform administrator's only: anyone else reads what is published and changes nothing", async () => {
-    await post({ action: "generate", cue: "hold-dark" });
+    await post({ action: "generate", cue: "hold-dark", count: 1 });
+    const id = (await row("hold-dark")).takes[0]!.id;
     hook.admin = false;
     for (const body of [
       { action: "generate", cue: "scale-fat" },
+      { action: "star", cue: "hold-dark", take: id },
+      { action: "publish", cue: "hold-dark", take: id },
       { action: "accept", cue: "hold-dark" },
       { action: "discard", cue: "hold-dark" },
+      { action: "direct", cue: "hold-dark", direction: "Shout it.", inlineTags: "In the dark." },
+      { action: "reset-direction", cue: "hold-dark" },
+      { action: "estimate" },
       { action: "cast", speaker: "bag", model: "kokoro", voice: "af_sky", speed: 1 },
     ]) {
       expect(await read(await post(body)), body.action).toEqual({ status: 403, body: { error: PLATFORM_ADMIN_NOTICE } });
     }
-    expect((await takeGet(json("GET", undefined, "http://test.local/api/admin/voiceovers/take/hold-dark"), ctx("hold-dark"))).status).toBe(403);
+    expect((await takeGet(json("GET", undefined, `http://test.local/api/admin/voiceovers/take/hold-dark?id=${id}`), ctx("hold-dark"))).status).toBe(403);
+    expect((await modelsGet(json("GET", undefined, "http://test.local/api/admin/voiceovers/models"))).status).toBe(403);
     const v = await view();
     expect(v.canWrite).toBe(false);
     expect(v.voice).toEqual({ configured: true, provider: "kokoro" });
-    expect(v.rows.every((r) => r.take === null)).toBe(true);
+    expect(v.rows.every((r) => r.takes.length === 0)).toBe(true);
     expect(v.rows.find((r) => r.cue === "hold-dark")!.clip).not.toBeNull();
     // signed out: nothing at all
     expect((await list(anonymous("GET", undefined, "http://test.local/api/admin/voiceovers"))).status).toBe(401);
@@ -297,46 +311,72 @@ describe("Admin, Voice-overs", () => {
     expect(r.status).toBe(409);
     expect(r.body.error).toMatch(/^Voice is not configured\. Set it in Admin, Voice\./);
     expect((await view()).voice).toMatchObject({ configured: false });
-    expect((await row("scale-fat")).take).toBeNull();
+    expect((await row("scale-fat")).takes).toEqual([]);
   });
 
-  it("generates a take with the speaker's voice, measured and stored but not published", async () => {
+  it("generates three takes by default with the speaker's voice, measured and stored but not published; Kokoro gets the plain subtitle and no direction", async () => {
     const published = (await get("scale-fat")).headers.get("etag");
     expect((await post({ action: "cast", speaker: "bag", model: "kokoro", voice: "af_nicole", speed: 0.9 })).status).toBe(200);
     expect((await view()).cast).toEqual({ bag: { model: "kokoro", voice: "af_nicole", speed: 0.9 } });
-    const r = await read<{ ok: boolean; seconds: number; voice: string }>(await post({ action: "generate", cue: "scale-fat" }));
-    expect(r).toEqual({ status: 200, body: { ok: true, seconds: 0.1, voice: "af_nicole" } });
-    // the shaped text was sent, with the cast's choice
-    expect(speech.asked.at(-1)).toEqual({ text: VOICE_CUES.find((c) => c.key === "scale-fat")!.say, choice: { model: "kokoro", voice: "af_nicole", speed: 0.9 } });
-    const take = (await row("scale-fat")).take!;
-    expect(take).toMatchObject({ voice: "af_nicole", speed: 0.9, seconds: 0.1 });
-    const stored = (await files()).find((f) => f.meta.cue === "scale-fat" && f.meta.state === "take")!;
-    expect(stored.name).toBe("scale-fat.wav");
+    const r = await read<{ ok: boolean; via: string; takes: { seconds: number; voice: string }[] }>(await post({ action: "generate", cue: "scale-fat" }));
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ ok: true, via: "none" });
+    expect(r.body.takes).toHaveLength(3);
+    // Kokoro takes no direction and would read brackets aloud: the subtitle only, capitals as a word
+    expect(speech.asked).toHaveLength(3);
+    for (const a of speech.asked) {
+      expect(a).toEqual({ text: "Are you... calling me fat?", choice: { model: "kokoro", voice: "af_nicole", speed: 0.9 }, opts: { timeoutMs: 60_000 } });
+      expect(a.text).not.toMatch(/[[\]]/);
+    }
+    const takes = (await row("scale-fat")).takes;
+    expect(takes).toHaveLength(3);
+    expect(takes[0]).toMatchObject({ voice: "af_nicole", speed: 0.9, seconds: 0.1, starred: false, via: "none", direction: null });
+    expect(takes[0]!.peak).toBeCloseTo(-0.8, 0);
+    expect(typeof takes[0]!.lufs).toBe("number");
+    const stored = (await files()).filter((f) => f.meta.cue === "scale-fat" && f.meta.state === "take");
+    expect(stored).toHaveLength(3);
+    expect(stored[0]!.name).toBe("scale-fat.wav");
     // the envelope was worked out on the server from the decoded audio: silent, full, 6 dB down, full, silent
-    const e = [...decodeEnvelope(stored.meta.envelope)];
+    const e = [...decodeEnvelope(stored[0]!.meta.envelope)];
     expect([e[0], e[1], e[3], e[4]]).toEqual([0, 255, 255, 0]);
     expect(e[2]! / 255).toBeCloseTo(0.8, 1);
-    // the administrator can hear it; the public still gets the published clip
-    const heard = await takeGet(json("GET", undefined, "http://test.local/api/admin/voiceovers/take/scale-fat"), ctx("scale-fat"));
+    // the administrator can hear each; the public still gets the published clip
+    const heard = await takeGet(json("GET", undefined, `http://test.local${takes[1]!.url}`), ctx("scale-fat"));
     expect(heard.status).toBe(200);
     expect(heard.headers.get("cache-control")).toBe("no-store");
     expect(Buffer.from(await heard.arrayBuffer()).equals(Buffer.from(speech.audio!))).toBe(true);
+    expect((await takeGet(json("GET", undefined, "http://test.local/api/admin/voiceovers/take/scale-fat?id=nosuchtake"), ctx("scale-fat"))).status).toBe(404);
     expect((await get("scale-fat")).headers.get("etag")).toBe(published);
     expect((await fresh())["scale-fat"]!.url).toContain(published!.slice(1, 17));
   });
 
-  it("a line's own voice, speed and shaped text replace the speaker's; another take replaces the first", async () => {
-    await post({ action: "generate", cue: "scale-fat", voice: "bf_emma", speed: 1.2, say: "Are you... calling me, FAT?!" });
-    expect(speech.asked.at(-1)).toEqual({ text: "Are you... calling me, FAT?!", choice: { model: "kokoro", voice: "bf_emma", speed: 1.2 } });
-    expect((await row("scale-fat")).take).toMatchObject({ voice: "bf_emma", speed: 1.2, say: "Are you... calling me, FAT?!" });
-    expect((await files()).filter((f) => f.meta.cue === "scale-fat" && f.meta.state === "take")).toHaveLength(1);
+  it("a line's own voice and speed replace the speaker's; more takes are added beside the first, up to nine", async () => {
+    await post({ action: "generate", cue: "scale-fat", voice: "bf_emma", speed: 1.2, count: 2 });
+    expect(speech.asked.at(-1)!.choice).toEqual({ model: "kokoro", voice: "bf_emma", speed: 1.2 });
+    const takes = (await row("scale-fat")).takes;
+    expect(takes).toHaveLength(5);
+    expect(takes.at(-1)).toMatchObject({ voice: "bf_emma", speed: 1.2 });
+    await post({ action: "star", cue: "scale-fat", take: takes[0]!.id });
+    await post({ action: "generate", cue: "scale-fat", count: 6 });
+    const after = (await row("scale-fat")).takes;
+    expect(after).toHaveLength(9);
+    // the oldest unstarred takes went, with their files; the starred one stayed
+    expect(after[0]).toMatchObject({ id: takes[0]!.id, starred: true });
+    expect((await files()).filter((f) => f.meta.cue === "scale-fat" && f.meta.state === "take")).toHaveLength(9);
+    expect((await post({ action: "generate", cue: "scale-fat", count: 7 })).status).toBe(400);
   });
 
-  it("accepting a take publishes it, with its envelope, and keeps the clip it replaces as a version", async () => {
+  it("starring is one take at a time; publishing the starred take keeps the clip it replaces as a version and leaves the other takes", async () => {
     const before = (await readVoiceovers()).clips["scale-fat"]!;
-    expect(await read(await post({ action: "accept", cue: "scale-fat" }))).toEqual({ status: 200, body: { ok: true, seconds: 0.1 } });
+    const takes = (await row("scale-fat")).takes;
+    const pick = takes[4]!;
+    expect((await read<{ starred: boolean }>(await post({ action: "star", cue: "scale-fat", take: pick.id }))).body.starred).toBe(true);
+    expect((await row("scale-fat")).takes.filter((t) => t.starred).map((t) => t.id)).toEqual([pick.id]);
+    expect(await read(await post({ action: "publish", cue: "scale-fat" }))).toEqual({ status: 200, body: { ok: true, seconds: 0.1 } });
     const r = await row("scale-fat");
-    expect(r).toMatchObject({ take: null, versions: 1, clip: { voice: "bf_emma", seeded: false, seconds: 0.1 } });
+    expect(r).toMatchObject({ versions: 1, clip: { voice: pick.voice, seeded: false, seconds: 0.1 } });
+    expect(r.takes).toHaveLength(8);
+    expect(r.takes.some((t) => t.id === pick.id)).toBe(false);
     const res = await get("scale-fat");
     expect(res.headers.get("content-type")).toBe("audio/wav");
     expect(Buffer.from(await res.arrayBuffer()).equals(Buffer.from(speech.audio!))).toBe(true);
@@ -347,31 +387,67 @@ describe("Admin, Voice-overs", () => {
     const old = (await files()).find((f) => Number(f.id) === before.fileId)!;
     expect(old.meta.state).toBe("version");
     expect((await readVoiceovers()).versions["scale-fat"]![0]).toMatchObject({ fileId: before.fileId, sha256: before.sha256 });
-    const line = await q<{ summary: string; detail: { before: { sha256: string }; after: { voice: string } } }>("SELECT summary, detail FROM audit_log WHERE action='voiceover.published' ORDER BY id DESC LIMIT 1");
-    expect(line[0]!.detail).toMatchObject({ before: { sha256: before.sha256 }, after: { voice: "bf_emma" } });
-    // nothing is left to accept
-    expect((await post({ action: "accept", cue: "scale-fat" })).status).toBe(404);
+    const line = await q<{ detail: { before: { sha256: string }; after: { voice: string; id: string } } }>("SELECT detail FROM audit_log WHERE action='voiceover.published' ORDER BY id DESC LIMIT 1");
+    expect(line[0]!.detail).toMatchObject({ before: { sha256: before.sha256 }, after: { id: pick.id } });
+    // publishing a named take replaces that one in turn, and the first published is a second version
+    expect((await post({ action: "publish", cue: "scale-fat", take: r.takes[0]!.id })).status).toBe(200);
+    expect((await row("scale-fat")).versions).toBe(2);
+    // with several takes and none starred, there is nothing to publish without a name
+    expect((await post({ action: "publish", cue: "scale-fat" })).status).toBe(404);
   });
 
-  it("discarding a take removes it and leaves the published clip", async () => {
+  it("discarding one take removes it and its file; discarding the cue removes the rest; the published clip stays", async () => {
     const published = (await get("hold-dark")).headers.get("etag");
-    await post({ action: "generate", cue: "hold-dark" });
+    await post({ action: "generate", cue: "hold-dark", count: 2 });
+    const takes = (await row("hold-dark")).takes;
     const n = (await files()).length;
-    expect((await read<{ ok: boolean }>(await post({ action: "discard", cue: "hold-dark" }))).body.ok).toBe(true);
+    expect((await read<{ discarded: number }>(await post({ action: "discard", cue: "hold-dark", take: takes[0]!.id }))).body.discarded).toBe(1);
     expect(await files()).toHaveLength(n - 1);
-    expect((await row("hold-dark")).take).toBeNull();
+    expect((await row("hold-dark")).takes.map((t) => t.id)).toEqual([takes[1]!.id]);
+    expect((await read<{ discarded: number }>(await post({ action: "discard", cue: "hold-dark" }))).body.discarded).toBe(1);
+    expect((await row("hold-dark")).takes).toEqual([]);
     expect((await get("hold-dark")).headers.get("etag")).toBe(published);
     expect((await read<{ ok: boolean }>(await post({ action: "discard", cue: "hold-dark" }))).body.ok).toBe(false);
+  });
+
+  it("a cue's own direction is saved, refused when its bracket cues change the words, and reset to the script's", async () => {
+    const own = { direction: "Barely a whisper, then a sob on dark. Do not shout.", inlineTags: "[whispering] In the [sob] dark." };
+    expect((await post({ action: "direct", cue: "hold-dark", ...own })).status).toBe(200);
+    expect(await row("hold-dark")).toMatchObject({ ...own, directionEdited: true });
+    for (const inlineTags of ["[whispering] In the darkness.", "In the dark. [sigh] Again.", "[whispering In the dark.", `[${"x".repeat(70)}] In the dark.`]) {
+      const r = await read<{ error: string }>(await post({ action: "direct", cue: "hold-dark", direction: "x", inlineTags }));
+      expect(r.status, inlineTags).toBe(400);
+    }
+    // a take with this cue's own bracket cues changing the words is refused too, and nothing is spoken
+    const asked = speech.asked.length;
+    expect((await post({ action: "generate", cue: "hold-dark", inlineTags: "[sigh] In the dark, again." })).status).toBe(400);
+    expect(speech.asked.length).toBe(asked);
+    expect((await post({ action: "reset-direction", cue: "hold-dark" })).status).toBe(200);
+    expect(await row("hold-dark")).toMatchObject({ direction: CUE_DIRECTIONS["hold-dark"]!.direction, directionEdited: false });
+    const audit = await q<{ action: string }>("SELECT action FROM audit_log WHERE action='voiceover.direction'");
+    expect(audit.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("estimates the cost of takes for every cue before any is made: Kokoro is free", async () => {
+    const asked = speech.asked.length;
+    const r = await read<{ takes: number; characters: number; cost: number | null; lines: { cue: string; via: string }[] }>(await post({ action: "estimate", count: 2 }));
+    expect(r.status).toBe(200);
+    expect(r.body.takes).toBe(VOICE_CUES.length * 2);
+    expect(r.body.cost).toBe(0);
+    expect(r.body.characters).toBe(VOICE_CUES.reduce((a, c) => a + draftReading(c.text).length * 2, 0));
+    expect(r.body.lines.every((l) => l.via === "none")).toBe(true);
+    expect(speech.asked.length).toBe(asked);
   });
 
   it("refuses a cue the film does not have, a speed out of range, and audio that cannot be measured", async () => {
     expect((await post({ action: "generate", cue: "scale-nothing" })).status).toBe(404);
     expect((await post({ action: "generate", cue: "../etc" })).status).toBe(400);
     expect((await post({ action: "generate", cue: "scale-fat", speed: 9 })).status).toBe(400);
+    expect((await post({ action: "generate", cue: "scale-fat", mode: "loud" })).status).toBe(400);
     expect((await post({ action: "cast", speaker: "pilot", model: "kokoro", voice: "x", speed: 1 })).status).toBe(400);
     speech.audio = new TextEncoder().encode("<html>an error page</html>");
     const r = await read<{ error: string }>(await post({ action: "generate", cue: "toss-ow" }));
     expect(r).toEqual({ status: 502, body: { error: "The voice-over must be MP3 or WAV to be measured and stored. Ask the speech service for MP3." } });
-    expect((await row("toss-ow")).take).toBeNull();
+    expect((await row("toss-ow")).takes).toEqual([]);
   });
 });
