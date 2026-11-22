@@ -845,3 +845,30 @@ The chat documents also cite 65 web addresses in footnotes. I did not open any o
 - Dates are missing throughout: the documents give weeks and months counted from 19 Nov 2026, never calendar dates, so no launch date, batch date or build date is proposed.
 - Several things the plans depend on are simply not written anywhere, and I did not write them: the 128 lines per voice pack, the Hotline's fragment lines, any email text, a press release, an Amazon listing, colours, type or a logo. The rows that mention them say "none written".
 - The owner's stated direction (Amazon first, 20 Nov) is in the app but in no document; I did not re-run the margin model on that basis.
+
+## Entered on 22 Nov
+
+Your ruling of 22 Nov 2026 (option B): enter the rows that are plain facts from your documents and need no judgement; bring you only the rows where the documents disagree or a choice is needed. 115 of the 491 rows were entered; 376 are in `baggage-claims-owner-decisions.md` (and its `.csv`), grouped so you can answer with ids and letters.
+
+**Entered, by stage and action.**
+
+| Stage | add | enrich | add-claim | replace | total |
+|---|---|---|---|---|---|
+| Concept | 13 | 8 | 0 | 0 | 21 |
+| Research | 0 | 4 | 30 | 0 | 34 |
+| Design | 8 | 14 | 0 | 0 | 22 |
+| Prototype | 15 | 4 | 0 | 0 | 19 |
+| Production | 1 | 1 | 0 | 0 | 2 |
+| Marketing | 12 | 5 | 0 | 0 | 17 |
+| Sales | 0 | 0 | 0 | 0 | 0 |
+| Total | 49 | 36 | 30 | 0 | 115 |
+
+**Left for you, by group.** (a) Conflicts between your documents: 112 (54 conflicts, and 58 rows that state one side of a conflict and wait on it). (b) Choices needed: 146. (c) Superseded by the decisions of 22 Nov (the tag, 80 x 60 x 42 mm, colours and taglines): 47. (d) Low or medium confidence, or not borne out when checked against the document: 23. (e) The product's own website platform: 48, one question.
+
+**How a row qualified.** All of these held: not marked for your decision in the sheet; not a conflict; high confidence; its excerpt found in the named document (the two PDFs through their text); every number and quotation in it found in your documents; nothing about the strap, the puck, the enclosure size, colours or taglines; nothing that states one side of a conflict; nothing that would change a figure the app works out (unit cost, price, margin); its section exists in the app. All 490 excerpts that name a text document were found; the one that names `schematic.png` (P246) could not be checked by text and was already marked for you.
+
+**How the rows were entered.** Through the seed, so every install gets the same content: `seed/concepts/baggage-claims/content/2026-11-22.json`, applied once per database by `src/lib/seedContentDb.ts` on a fresh install and on one seeded earlier. A row you have changed is left alone, a row whose title is already there is not entered twice, and nothing is deleted. Claims are unverified with their source document; every other row has the lowest status of its section; no decision was decided. Each row keeps the sheet id and the document and place it came from. `seed/concepts/baggage-claims/content-proposal-map.json` says where each of the 491 rows went.
+
+**Wording.** The sheet's text is entered as written, with three mechanical changes: an instruction to the person entering ("Add to body:", "Status: open", "Minutes not stated") is not part of the text; the first letter of a row's text is a capital; text added to a row follows the row's own text as a new sentence. Parts get the cell of `BOM_shopping_list.csv` that the sheet row names.
+
+**What changed in the app's figures.** The gates of all seven stages count the same checks met as before (Concept 4 of 6, Research 1 of 2, Design 4 of 6, Prototype 2 of 7, Production 2 of 3, Marketing 2 of 17, Sales 2 of 4). On the status page only the claims figure moved, from 0 / 9 to 0 / 39; unit cost ($64.80 at 5 units), price and margin, parts (16), open questions (5) and decisions are as they were.
