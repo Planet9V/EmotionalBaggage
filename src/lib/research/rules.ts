@@ -3,14 +3,16 @@
 //
 // 1. A claim's data.evidence changes only through POST and DELETE /api/research/evidence.
 // 2. A claim's status may be set by hand only to a value its evidence does not contradict:
-//    - verified needs at least one supporting source and no contradicting source;
+//    - verified needs at least one supporting source that stands behind the claim (a saved answer and
+//      a quote from the named source: standsBehind in ./status.ts) and no contradicting source;
 //    - wrong is refused while sources support the claim and none contradicts it;
 //    - unverified is always allowed (it claims nothing).
 //    With no evidence at all, unverified and wrong are allowed and verified is not.
 import { HttpError } from "@/lib/api/route";
 import { CLAIMS_SECTION } from "./schemas";
+import { standsBehind } from "./status";
 
-type HasVerdict = { verdict?: unknown };
+type HasVerdict = { verdict?: unknown; url?: unknown; quote?: unknown; researchId?: unknown };
 
 export const EVIDENCE_ONLY_THROUGH_ROUTES =
   "A claim's evidence cannot be changed here. Add a source in Research, Ask (Use as evidence beside the source), or remove one on the Claims to verify board; through the API, use POST or DELETE /api/research/evidence.";
@@ -30,6 +32,9 @@ export function manualStatusRefusal(status: string, evidence: readonly HasVerdic
       return evidence.length
         ? "This claim cannot be marked verified: no source supports it yet, only unclear ones. Add a supporting source as evidence and the status follows."
         : "This claim cannot be marked verified: no source supports it yet. Add a supporting source as evidence and the status follows.";
+    }
+    if (!evidence.some(standsBehind)) {
+      return `This claim cannot be marked verified: ${sources(s)} ${s === 1 ? "supports" : "support"} it, but none with a saved answer and a quote from the source. In Research, Ask, use a source of a saved answer as evidence and quote what it says; the status follows.`;
     }
   }
   if (status === "wrong" && s > 0 && c === 0) {

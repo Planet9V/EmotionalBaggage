@@ -15,6 +15,7 @@ import type { StandIn } from "../standins/core";
 import type { OpenAIOptions } from "../standins/openai";
 import { anonymous, ctx, json, read } from "../api/helpers";
 import { chooseReasoning, clearModelRows } from "../ai/setup";
+import { VERIFIED } from "../research/verified";
 
 const P = "zz-market-gen";
 let s: StandIn<OpenAIOptions>;
@@ -53,7 +54,7 @@ beforeAll(async () => {
   await q("DELETE FROM projects WHERE id=$1", [P]);
   await q("INSERT INTO projects (id, name, one_liner) VALUES ($1, 'ZZ Market', 'A bag that weighs itself')", [P]);
   ids.brief = await insert("concept/brief", "Travellers over 50 kg", "open", {}, "Frequent flyers who pay overweight fees");
-  ids.verified = await insert("research/claims", "Overweight fees average high", "verified");
+  ids.verified = await insert("research/claims", "Overweight fees average high", "verified", VERIFIED);
   ids.unverified = await insert("research/claims", "Nobody checks weight at home", "unverified");
   ids.test = await insert("prototype/tests", "Weighs within 100 g", "pass", { key: "t1" });
   ids.req = await insert("design/requirements", "Shows weight in kg", "open");

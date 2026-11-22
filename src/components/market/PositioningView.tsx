@@ -50,7 +50,7 @@ export function PositioningView({ project, store }: ViewProps) {
 
   const rows = useMemo(() => {
     const m = new Map<number, ProofRow>();
-    for (const i of [...claims.items, ...tests.items, ...reqs.items]) m.set(i.id, { id: i.id, section: i.section, title: i.title, status: i.status, key: typeof i.data.key === "string" ? i.data.key : undefined });
+    for (const i of [...claims.items, ...tests.items, ...reqs.items]) m.set(i.id, { id: i.id, section: i.section, title: i.title, status: i.status, data: i.data, key: typeof i.data.key === "string" ? i.data.key : undefined });
     return m;
   }, [claims.items, tests.items, reqs.items]);
 

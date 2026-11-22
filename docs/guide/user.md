@@ -219,9 +219,9 @@ After the wizard you land on the overview. The app does not yet tell you what to
 | Ask | Put a question to Perplexity and keep the answer with its sources. Needs a Perplexity key. Each question is billed to your Perplexity account; Perplexity's own estimate of the cost is shown after the answer. |
 | Claims to verify | The claims the concept rests on, each unverified, verified or wrong. |
 
-**Checking a claim.** Open a saved answer in Ask, choose **Use as evidence** beside one of its sources, pick the claim, and say whether that source supports it, contradicts it, or is unclear. You can add a quote.
+**Checking a claim.** Open a saved answer in Ask, choose **Use as evidence** beside one of its sources, pick the claim, and say whether that source supports it, contradicts it, or is unclear. Add the quote: the words in the source that bear on the claim. A supporting source verifies a claim only when it comes from a saved answer and carries a quote; only a claim verified that way counts as proof for positioning, copy and the landing page.
 
-- A claim becomes **verified** when at least one source supports it and none contradicts it.
+- A claim becomes **verified** when at least one supporting source comes from a saved answer and carries a quote, and no source contradicts it.
 - It becomes **wrong** when a source contradicts it and none supports it.
 - Otherwise it stays **unverified**. When sources disagree it is shown as *Disputed: sources disagree*.
 

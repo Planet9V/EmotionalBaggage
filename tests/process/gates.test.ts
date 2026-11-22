@@ -5,6 +5,7 @@ import { checkSection, PROCESS_DEFINITIONS, processFor, type Check } from "@/lib
 import { evaluateCheck, evaluateGate, gateOf, nextStep, type ProcessState } from "@/lib/process/evaluate";
 import { lockingDecisions } from "@/lib/process/unlocks";
 import type { Item } from "@/lib/types";
+import { VERIFIED } from "../research/verified";
 
 let nextId = 1;
 const row = (section: string, status: string, data: Record<string, unknown> = {}, title = `row ${nextId}`): Item => ({
@@ -78,12 +79,15 @@ describe("check kinds", () => {
   it("claims-verified compares the verified share with the threshold; no claims is not met", () => {
     const c = check({ id: "a", label: "Claims", kind: "claims-verified", params: { share: 0.8 } });
     expect(evaluateCheck(c, [])).toMatchObject({ met: false, detail: "No claims recorded yet.", href: "/s/research/claims" });
-    const five = ["verified", "verified", "verified", "unverified", "wrong"].map((s) => row("research/claims", s));
+    const five = ["verified", "verified", "verified", "unverified", "wrong"].map((s) => row("research/claims", s, s === "verified" ? VERIFIED : {}));
+    // a status of verified with no quoted source behind it is not counted
+    expect(evaluateCheck(c, [row("research/claims", "verified")])).toMatchObject({ met: false, detail: "0 of 1 claim verified (0%), 80% needed." });
     const r = evaluateCheck(c, five);
     expect(r).toMatchObject({ met: false, detail: "3 of 5 claims verified (60%), 80% needed.", action: `Verify "${five[3].title}" in Research, Ask` });
     // the link is "Verify this" for the first claim not verified: Research, Ask with the claim as the question, attached to it
     expect(r.href).toBe(`/s/research/ask?ask=${encodeURIComponent(five[3].title).replace(/%20/g, "+")}&item=${five[3].id}&claim=${five[3].id}`);
     five[3].status = "verified";
+    five[3].data = VERIFIED;
     expect(evaluateCheck(c, five).met).toBe(true);
   });
 

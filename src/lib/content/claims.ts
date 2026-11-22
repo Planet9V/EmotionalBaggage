@@ -5,6 +5,7 @@
 // The check is a pure function of the copy and the linked rows; the server runs it again on every
 // edit and approval, so a stored flag is never trusted.
 import { toInputText } from "@/lib/economics/money";
+import { isVerifiedClaim } from "@/lib/research/status";
 
 export type ProofRow = { id: number; section: string; title: string; body: string; status: string; data: Record<string, unknown> };
 export type Flag = { field: string; text: string; kind: "number" | "superlative"; reason: string };
@@ -18,7 +19,7 @@ const SUPER_RE = new RegExp(`(?:^|[^\\w])(${SUPERLATIVES.map((s) => s.replace(/[
 export type ProofState = "verified claim" | "passing test" | "requirement" | "approved price" | "not proof";
 
 export function proofStateOf(r: ProofRow): ProofState {
-  if (r.section === "research/claims") return r.status === "verified" ? "verified claim" : "not proof";
+  if (r.section === "research/claims") return isVerifiedClaim(r) ? "verified claim" : "not proof";
   if (r.section === "prototype/tests") return r.status === "pass" ? "passing test" : "not proof";
   if (r.section === "design/requirements") return "requirement";
   if (r.section === "marketing/pricing" && r.data?.kind === "price" && r.status === "approved") return "approved price";

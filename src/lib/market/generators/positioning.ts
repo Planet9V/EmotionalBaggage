@@ -3,6 +3,7 @@
 // requirements); the model cannot invent a link, and a message with none is flagged on screen.
 import { z } from "zod";
 import { PROOF_SECTIONS } from "../proof";
+import { isVerifiedClaim } from "@/lib/research/status";
 import { lineTitle, positioningLine } from "../positioning";
 import { lines, stampOf, GROUNDING, type Entry, type Generator, type SourceRef, type ToRows } from "./types";
 
@@ -30,7 +31,7 @@ const generator: Generator<typeof schema> = {
     return { ok: true };
   },
   buildPrompt: (c) => {
-    const verified = c.claims.filter((x) => x.status === "verified");
+    const verified = c.claims.filter(isVerifiedClaim);
     const passing = c.tests.filter((x) => x.status === "pass");
     const personas = c.personas.map((p) => `- [id ${p.id}, ${p.status}] ${p.title}: job: ${String(p.data.job ?? "")}; trigger: ${String(p.data.trigger ?? "")}; objection: ${String(p.data.objection ?? "")}`).join("\n");
     const comps = c.competitors
@@ -48,7 +49,7 @@ const generator: Generator<typeof schema> = {
 const toRows: ToRows<typeof schema> = (out, c, stamp) => {
   const notes: string[] = [];
   const proofById = new Map<number, { item: (typeof c.claims)[number]; ok: boolean }>();
-  for (const i of c.claims) proofById.set(i.id, { item: i, ok: i.status === "verified" });
+  for (const i of c.claims) proofById.set(i.id, { item: i, ok: isVerifiedClaim(i) });
   for (const i of c.tests) proofById.set(i.id, { item: i, ok: i.status === "pass" });
   for (const i of c.requirements) proofById.set(i.id, { item: i, ok: true });
   const messages = out.messages.map((m, n) => {

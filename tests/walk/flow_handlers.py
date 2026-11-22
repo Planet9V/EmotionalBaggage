@@ -38,6 +38,7 @@ def verify(pg, label, href):
     pg.get_by_role("button", name="Ask").click(); pg.wait_for_timeout(3500)
     pg.get_by_role("button", name="Use as evidence").first.click(); pg.wait_for_timeout(400)
     pg.get_by_label(re.compile("^Supports")).first.check()
+    pg.get_by_label(re.compile("^Quote from the source")).first.fill("The source states this in its own words.")
     pg.get_by_role("button", name="Save evidence").click(); pg.wait_for_timeout(1500)
     log("     (UI) asked from Verify this, judged the first source as supporting; claim now", [x["status"] for x in items("research/claims")])
 

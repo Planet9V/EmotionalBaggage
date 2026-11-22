@@ -38,7 +38,7 @@ export const POST = route(async (req: Request, { params }: Ctx) => {
         [id, proofIds]
       )
     : [];
-  const byId = new Map<number, ProofRow>(proofRows.map((r) => [Number(r.id), { id: Number(r.id), section: r.section, title: r.title, status: r.status }]));
+  const byId = new Map<number, ProofRow>(proofRows.map((r) => [Number(r.id), { id: Number(r.id), section: r.section, title: r.title, status: r.status, data: r.data ?? {} }]));
   const checked = checkProof(data.messages ?? [], byId);
   const shown = [
     `Positioning line: ${positioningLine(data, project.name)}`,

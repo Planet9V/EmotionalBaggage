@@ -8,10 +8,11 @@ import { toCsvText } from "@/lib/csv";
 import { esc } from "@/lib/html";
 import { contrastReport, renderPage, type LandingSection, type RenderEnv } from "@/lib/content/landing";
 import type { Item } from "@/lib/types";
+import { VERIFIED } from "../research/verified";
 
 const cell = (v: unknown) => toCsvText([[v]], { trailingNewline: false });
 
-const row = (over: Partial<ProofRow> = {}): ProofRow => ({ id: 1, section: "research/claims", title: "Battery lasts 7 days", body: "", status: "verified", data: {}, ...over });
+const row = (over: Partial<ProofRow> = {}): ProofRow => ({ id: 1, section: "research/claims", title: "Battery lasts 7 days", body: "", status: "verified", data: VERIFIED, ...over });
 
 describe("channel specs", () => {
   it("covers the seven ad platforms the plan names", () => {

@@ -20,6 +20,7 @@ import { SectionLockBanner } from "@/components/process/SectionLockBanner";
 import { processView } from "@/lib/process/client";
 import type { ProcessResponse } from "@/lib/process/state";
 import type { Item } from "@/lib/types";
+import { VERIFIED } from "../research/verified";
 
 beforeEach(shimBrowser);
 afterEach(() => {
@@ -75,7 +76,7 @@ describe("ProcessStepper", () => {
   });
 
   it("a met gate needs no override", () => {
-    const rows = [row("research/claims", "verified")];
+    const rows = [row("research/claims", "verified", VERIFIED)];
     renderWithClient(<ProcessStepper projectId="toy" view={processView(base(), rows)} />);
     expect(within(screen.getByTestId("stage-research")).getByText("Met")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Override with a reason" })).toBeNull();

@@ -8,6 +8,7 @@ import { withDefaults } from "@/lib/enclosure/validate";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
 import type { Item } from "@/lib/types";
 import { exampleParts } from "../enclosure/helpers";
+import { VERIFIED } from "../research/verified";
 
 let nextId = 1000;
 const row = (section: string, status: string, data: Record<string, unknown> = {}, title = `row ${nextId}`, body = ""): Item => ({
@@ -85,7 +86,7 @@ describe("gates that read other features' checks", () => {
     const r = evaluateCheck(c, [ad("approved")]);
     expect(r).toMatchObject({ met: false, href: "/s/marketing/ads" });
     expect(r.detail).toContain("Meta: best");
-    const claim = row("research/claims", "verified", {}, "Buyers rate it best in a test of 40");
+    const claim = row("research/claims", "verified", VERIFIED, "Buyers rate it best in a test of 40");
     expect(evaluateCheck(c, [claim, ad("approved", [{ itemId: claim.id }])]).met).toBe(true);
   });
 });

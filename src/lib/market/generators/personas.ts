@@ -1,5 +1,6 @@
 // 8.1 Personas drafted from the brief, the verified claims and saved research answers.
 import { z } from "zod";
+import { isVerifiedClaim } from "@/lib/research/status";
 import { squash, lines, stampOf, GROUNDING, type Entry, type Generator, type SourceRef, type ToRows } from "./types";
 
 const schema = z.object({
@@ -29,7 +30,7 @@ const generator: Generator<typeof schema> = {
   to: "marketing/personas",
   applies: (c) => (c.brief.length ? { ok: true } : { ok: false, reason: "The brief is empty. Add what the product is and who it is for on the Brief page first." }),
   buildPrompt: (c) => {
-    const verified = c.claims.filter((x) => x.status === "verified");
+    const verified = c.claims.filter(isVerifiedClaim);
     const research = c.research.slice(0, 8).map((r) => `[research id ${r.id}] Question: ${r.query}\nAnswer: ${r.answer.slice(0, 2500)}`).join("\n\n");
     const n = typeof c.params.count === "number" ? Math.min(Math.max(1, c.params.count), 5) : 3;
     return {

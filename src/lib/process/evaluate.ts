@@ -6,6 +6,7 @@ import type { Item } from "@/lib/types";
 import { checkSection, OPEN_STATUSES, type Check, type ConceptField, type Gate, type ProcessDefinition } from "./definitions";
 import { buildPassedCheck, campaignBudgetCheck, contentApprovedCheck, contentProofCheck, countCheck, electricalCheck, enclosureCheck, positioningCheck, productionCheck, type GateFacts } from "./computed";
 import { plural } from "@/lib/format";
+import { isVerifiedClaim } from "@/lib/research/status";
 import { sectionLabel, stageLabel } from "@/lib/menuLookup";
 
 export type { GateFacts } from "./computed";
@@ -214,7 +215,7 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
     }
     case "claims-verified": {
       const xs = rowsOf(rows, check.params.section ?? "research/claims");
-      const verified = xs.filter((r) => r.status === "verified").length;
+      const verified = xs.filter(isVerifiedClaim).length;
       const share = check.params.share;
       const pct = (x: number) => `${Math.round(x * 100)}%`;
       if (xs.length === 0) {
@@ -224,7 +225,7 @@ function evaluateOne(check: Check, rows: Item[], concept: ConceptFields, facts: 
       const needed = Math.max(0, Math.ceil(share * xs.length - 1e-9) - verified);
       // The control that verifies a claim is Research, Ask with the claim as the question ("Verify this"):
       // the answer is attached to the claim and each source is judged there.
-      const first = xs.find((r) => r.status !== "verified");
+      const first = xs.find((r) => !isVerifiedClaim(r));
       const ask = first ? `/s/research/ask?${new URLSearchParams({ ask: [first.title, first.body].filter(Boolean).join(": ").slice(0, 600), item: String(first.id), claim: String(first.id) }).toString()}` : base.href;
       return {
         ...base,

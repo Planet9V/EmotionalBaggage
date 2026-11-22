@@ -45,7 +45,7 @@ export function proofRows(ctx: GenContext): ProofRow[] {
 export function messagesBlock(ctx: GenContext): string {
   const ms = approvedMessages(ctx);
   const rows = new Map<number, MarketProofRow>(
-    [...(ctx.rows["research/claims"] ?? []), ...(ctx.rows["prototype/tests"] ?? []), ...(ctx.rows["design/requirements"] ?? [])].map((i) => [i.id, { id: i.id, section: i.section, title: i.title, status: i.status }])
+    [...(ctx.rows["research/claims"] ?? []), ...(ctx.rows["prototype/tests"] ?? []), ...(ctx.rows["design/requirements"] ?? [])].map((i) => [i.id, { id: i.id, section: i.section, title: i.title, status: i.status, data: i.data }])
   );
   return (
     "Approved messages (each piece you write is tied to exactly ONE of these; give its id in \"messageId\"):\n" +

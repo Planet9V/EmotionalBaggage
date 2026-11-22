@@ -104,7 +104,7 @@ describe("Verify this on the example concept", () => {
     expect(forged.status).toBe(400);
     expect((await claim(claims[0])).status).toBe("unverified");
 
-    const ev = await read<{ status: string }>(await EVIDENCE(json("POST", { claimId: claims[0], url: "https://cite.example/rival", researchId, verdict: "supports" })));
+    const ev = await read<{ status: string }>(await EVIDENCE(json("POST", { claimId: claims[0], url: "https://cite.example/rival", researchId, quote: "The rival sells at 24.99.", verdict: "supports" })));
     expect(ev.status).toBe(201);
     expect(ev.body.status).toBe("verified");
     expect((await claim(claims[0])).status).toBe("verified");

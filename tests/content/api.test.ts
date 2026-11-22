@@ -21,6 +21,7 @@ import type { StandIn } from "../standins/core";
 import type { OpenAIOptions } from "../standins/openai";
 import { addItem as insert, approve, edit, itemsOf, makeConcept, run } from "../drafts/helpers";
 import { CONTENT_GENERATORS } from "@/lib/content/generators";
+import { VERIFIED } from "../research/verified";
 
 /** Tracked links may only go to hosts on the concept's list (kept on its marketing plan row). */
 async function allowLinkHost(projectId: string, host: string) {
@@ -44,7 +45,7 @@ let reply = "{}";
 
 beforeAll(async () => {
   await makeConcept(P, "Bag2Go", "physical", "A bag that weighs itself");
-  claim = await insert(P, "research/claims", "Battery lasts 7 days", {}, "Measured over three trips.", "verified");
+  claim = await insert(P, "research/claims", "Battery lasts 7 days", VERIFIED, "Measured over three trips.", "verified");
   const pos = await insert(P, "marketing/positioning", "Main", { messages: [{ text: "Know the weight before the airport", proof: [] }] }, "", "approved");
   message = { positioningId: pos, index: 0, text: "Know the weight before the airport" };
   s = await start({ prefix: "/v1", reply: () => reply });

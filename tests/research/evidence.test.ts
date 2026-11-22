@@ -132,10 +132,20 @@ describe("adding evidence", () => {
     const e = await lastEvent();
     expect(e.kind).toBe("item.status");
     // the next evidence change recomputes the status from the evidence
-    const r = await add({ claimId, url: A, researchId, verdict: "supports" });
+    const r = await add({ claimId, url: A, researchId, quote: "Carry-on limit is 7 kg.", verdict: "supports" });
     expect(r.body.status).toBe("verified");
     expect((await lastEvent()).data.before.status).toBe("wrong");
     await remove({ claimId, url: A });
+  });
+
+  it("a supporting source with no quote, or not from a saved answer, is kept but verifies nothing", async () => {
+    const noQuote = await add({ claimId, url: A, researchId, verdict: "supports" });
+    expect(noQuote.status).toBe(201);
+    expect(noQuote.body.status).toBe("unverified");
+    await remove({ claimId, url: A });
+    const noAnswer = await add({ claimId, url: "https://manual.example/page", quote: "Carry-on limit is 7 kg.", verdict: "supports" });
+    expect(noAnswer.body.status).toBe("unverified");
+    await remove({ claimId, url: "https://manual.example/page" });
   });
 
   it("leaves a claim alone whose stored evidence is not in the expected shape", async () => {

@@ -121,7 +121,7 @@ const CAPABILITY: Record<string, string> = { send: "post and reply", inbox: "rea
 
 function market(d: ExampleData): MarketData {
   // positioning: the proof check, as the Positioning page runs it, on the rows a message could link to today
-  const proofRows = new Map<number, ProofRow>([...d.claims, ...d.tests, ...d.requirements].map((i) => [i.id, { id: i.id, section: i.section, title: i.title, status: i.status }]));
+  const proofRows = new Map<number, ProofRow>([...d.claims, ...d.tests, ...d.requirements].map((i) => [i.id, { id: i.id, section: i.section, title: i.title, status: i.status, data: i.data }]));
   const stateOf = (rows: Item[]): ProofState => {
     const first = rows[0];
     if (!first) return "missing";

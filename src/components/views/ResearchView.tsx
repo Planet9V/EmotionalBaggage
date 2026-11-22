@@ -302,7 +302,8 @@ function EvidenceForm({ claims, source, researchId, projectId, preferClaim = "",
     setErr("");
     try {
       const r = await add.mutateAsync({ claimId: claim.id, url: source.url, title: source.title?.trim() || undefined, quote: quote.trim() || undefined, researchId, verdict });
-      onDone(`Saved as evidence on "${claim.title}". The claim is now ${r.status}${r.disputed ? " (disputed: sources disagree)" : ""}.`);
+      const noQuote = verdict === "supports" && r.status !== "verified" && !quote.trim();
+      onDone(`Saved as evidence on "${claim.title}". The claim is now ${r.status}${r.disputed ? " (disputed: sources disagree)" : ""}${noQuote ? ": a supporting source verifies it only with a quote. Remove this source on the Claims to verify board and add it again with the words it says" : ""}.`);
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -327,8 +328,9 @@ function EvidenceForm({ claims, source, researchId, projectId, preferClaim = "",
         ))}
       </fieldset>
       <div className="space-y-1">
-        <label htmlFor={`${base}-quote`} className="text-xs font-medium text-primary">Quote from the source (optional)</label>
-        <Textarea id={`${base}-quote`} rows={2} value={quote} onChange={(e) => setQuote(e.target.value)} />
+        <label htmlFor={`${base}-quote`} className="text-xs font-medium text-primary">Quote from the source</label>
+        <Textarea id={`${base}-quote`} rows={2} value={quote} onChange={(e) => setQuote(e.target.value)} aria-describedby={`${base}-quote-hint`} />
+        <p id={`${base}-quote-hint`} className="text-[11px] text-muted">The words in the source that bear on the claim. A supporting source verifies a claim only with a quote; without one it is kept, and the claim stays unverified.</p>
       </div>
       <div className="flex gap-2">
         <Button size="sm" disabled={!claimId || !verdict || add.isPending} onClick={() => void save()}>{add.isPending ? "Saving" : "Save evidence"}</Button>

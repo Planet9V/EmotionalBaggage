@@ -14,6 +14,7 @@ import { positioningLine } from "@/lib/market/positioning";
 import { positioningFingerprint } from "@/lib/market/critique";
 import { assertMarketChange, assertNewMarket } from "@/lib/market/rules";
 import type { Item } from "@/lib/types";
+import { VERIFIED } from "../research/verified";
 
 const item = (over: Partial<Item> & Pick<Item, "section">): Item => ({ id: 1, projectId: "p", title: "t", body: "", data: {}, status: "draft", sort: 0, ...over });
 
@@ -208,11 +209,11 @@ describe("name checks", () => {
 
 describe("proof check", () => {
   const rows = new Map<number, ProofRow>([
-    [1, { id: 1, section: "research/claims", title: "Claim A", status: "verified" }],
-    [2, { id: 2, section: "research/claims", title: "Claim B", status: "unverified" }],
-    [3, { id: 3, section: "prototype/tests", title: "Test", status: "pass" }],
-    [4, { id: 4, section: "prototype/tests", title: "Test 2", status: "fail" }],
-    [5, { id: 5, section: "design/requirements", title: "Req", status: "open" }],
+    [1, { id: 1, section: "research/claims", title: "Claim A", status: "verified", data: VERIFIED }],
+    [2, { id: 2, section: "research/claims", title: "Claim B", status: "unverified", data: {} }],
+    [3, { id: 3, section: "prototype/tests", title: "Test", status: "pass", data: {} }],
+    [4, { id: 4, section: "prototype/tests", title: "Test 2", status: "fail", data: {} }],
+    [5, { id: 5, section: "design/requirements", title: "Req", status: "open", data: {} }],
   ]);
   const ref = (itemId: number) => ({ itemId, section: "x" });
   it("counts a verified claim, a passing test and a requirement", () => {

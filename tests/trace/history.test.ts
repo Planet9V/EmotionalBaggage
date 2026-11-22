@@ -124,7 +124,9 @@ describe("every write path records before and after", () => {
   it("evidence records the status and the evidence list before and after", async () => {
     const claim = await add(project, "research/claims", "History claim");
     const url = "https://cite.example/h";
-    const body = { claimId: claim.body.item.id, url, verdict: "supports" };
+    // a supporting source verifies a claim only from a saved answer, with a quote
+    const researchId = Number((await q<{ id: string }>("INSERT INTO research (project_id, query, answer, citations, model) VALUES ($1,'test: history evidence','a',$2,'m') RETURNING id", [project, JSON.stringify([url])]))[0].id);
+    const body = { claimId: claim.body.item.id, url, researchId, quote: "It says so.", verdict: "supports" };
     expect((await addEvidence(json("POST", body))).status).toBe(201);
     const a = await last("claim.evidence.added");
     expect(a.title).toBe("History claim");

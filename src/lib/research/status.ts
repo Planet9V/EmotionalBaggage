@@ -1,24 +1,47 @@
 // A claim's status follows from its evidence, and from nothing else.
 export type ClaimStatus = "verified" | "wrong" | "unverified";
 
-type HasVerdict = { verdict: "supports" | "contradicts" | "unclear" };
+type HasVerdict = { verdict?: unknown; url?: unknown; quote?: unknown; researchId?: unknown };
+
+const supportsIt = (e: HasVerdict) => e?.verdict === "supports";
+const contradictsIt = (e: HasVerdict) => e?.verdict === "contradicts";
 
 /**
- * verified: at least one source supports it and none contradicts it.
+ * A supporting source that can carry a claim: it is named (its address), it came from a saved
+ * research answer, and the words it says are quoted. A verdict with none of that behind it is an
+ * opinion about a source, not evidence anyone can check.
+ */
+export function standsBehind(e: HasVerdict): boolean {
+  return supportsIt(e) && typeof e.url === "string" && e.url.trim() !== "" && typeof e.researchId === "number" && typeof e.quote === "string" && e.quote.trim() !== "";
+}
+
+/**
+ * verified: at least one supporting source stands behind it (saved answer, quote, named source) and none contradicts it.
  * wrong: at least one source contradicts it and none supports it.
- * unverified: anything else, including no evidence, only unclear sources, and mixed evidence.
+ * unverified: anything else, including no evidence, only unclear sources, a supporting verdict
+ * with no quote or no saved answer, and mixed evidence.
  */
 export function claimStatus(evidence: readonly HasVerdict[]): ClaimStatus {
-  const supports = evidence.some((e) => e.verdict === "supports");
-  const contradicts = evidence.some((e) => e.verdict === "contradicts");
-  if (supports && !contradicts) return "verified";
+  const supports = evidence.some(supportsIt);
+  const contradicts = evidence.some(contradictsIt);
+  if (!contradicts && evidence.some(standsBehind)) return "verified";
   if (contradicts && !supports) return "wrong";
   return "unverified";
 }
 
+/**
+ * Whether a claim row is verified, for everything that treats a claim as proof (positioning, copy,
+ * the landing page, the Research gate, the drafting prompts). The stored status is a copy: it
+ * counts only while the evidence on the row still gives it.
+ */
+export function isVerifiedClaim(row: { status: string; data?: Record<string, unknown> | null }): boolean {
+  const stored = row.data?.evidence;
+  return row.status === "verified" && claimStatus(Array.isArray(stored) ? (stored as HasVerdict[]) : []) === "verified";
+}
+
 /** Sources disagree: at least one supports and at least one contradicts. Shown as "Disputed". */
 export function isDisputed(evidence: readonly HasVerdict[]): boolean {
-  return evidence.some((e) => e.verdict === "supports") && evidence.some((e) => e.verdict === "contradicts");
+  return evidence.some(supportsIt) && evidence.some(contradictsIt);
 }
 
 const sources = (n: number) => `${n} source${n === 1 ? "" : "s"}`;
@@ -31,6 +54,7 @@ function evidenceSummary(evidence: readonly HasVerdict[]): string {
   const u = evidence.filter((e) => e.verdict === "unclear").length;
   if (!evidence.length) return "no source judged yet";
   if (s && c) return `sources disagree (${s} ${verb(s, "supports", "support")}, ${c} ${verb(c, "contradicts", "contradict")})`;
+  if (s && !evidence.some(standsBehind)) return `${sources(s)} ${verb(s, "supports", "support")} it, but none with a saved answer and a quote from the source`;
   if (s) return `${sources(s)} ${verb(s, "supports", "support")} it, none contradicts`;
   if (c) return `${sources(c)} ${verb(c, "contradicts", "contradict")} it, none supports`;
   return `${sources(u)} judged, ${verb(u, "it is", "all")} unclear`;

@@ -3,7 +3,9 @@ import { claimStatus, isDisputed, statusReason } from "@/lib/research/status";
 import { claimEvidence, evidenceAdd } from "@/lib/research/schemas";
 
 type V = "supports" | "contradicts" | "unclear";
-const ev = (...vs: V[]) => vs.map((verdict) => ({ verdict }));
+// A supporting source here is one that stands behind the claim: named, from a saved answer, quoted.
+const ev = (...vs: V[]) => vs.map((verdict) => (verdict === "supports" ? { verdict, url: "https://s.example", researchId: 1, quote: "It says so." } : { verdict }));
+const bare = (...vs: V[]) => vs.map((verdict) => ({ verdict }));
 
 describe("claimStatus", () => {
   // Every combination of which verdicts are present (none, S, C, U and their unions).
@@ -22,6 +24,15 @@ describe("claimStatus", () => {
   it.each(cases)("%j → %s (disputed %s)", (vs, status, disputed) => {
     expect(claimStatus(ev(...vs))).toBe(status);
     expect(isDisputed(ev(...vs))).toBe(disputed);
+  });
+});
+
+describe("a supporting verdict with no saved answer or no quote", () => {
+  it("does not verify, but still stops the claim being wrong and still disputes", () => {
+    expect(claimStatus(bare("supports"))).toBe("unverified");
+    expect(claimStatus(bare("supports", "contradicts"))).toBe("unverified");
+    expect(isDisputed(bare("supports", "contradicts"))).toBe(true);
+    expect(statusReason("unverified", bare("supports", "supports"))).toBe("Unverified: 2 sources support it, but none with a saved answer and a quote from the source");
   });
 });
 

@@ -7,6 +7,7 @@ import { channelOf } from "./channelName";
 import { z } from "zod";
 import { brandText, findKit } from "@/lib/market/brandKit";
 import type { Item } from "@/lib/types";
+import { isVerifiedClaim } from "@/lib/research/status";
 import type { GenContext, Generator } from "@/lib/ai/drafts/types";
 import { RULES, basedOn, block, clip, conceptHeader } from "@/lib/ai/drafts/prompt";
 import { CHANNEL, SENTIMENTS } from "./schemas";
@@ -72,7 +73,7 @@ const replies: Generator<z.infer<typeof replyRow>> = {
       block("Mentions and comments to answer", unanswered(ctx, CHANNEL.inbox)),
       block("Reviews and questions to answer", unanswered(ctx, CHANNEL.reviews)),
       block("FAQ", ctx.rows["concept/faq"]),
-      block("Checked claims", (ctx.rows["research/claims"] ?? []).filter((c) => c.status === "verified")),
+      block("Checked claims", (ctx.rows["research/claims"] ?? []).filter(isVerifiedClaim)),
     ].join("\n\n"),
   }),
   schema: replyRow,
