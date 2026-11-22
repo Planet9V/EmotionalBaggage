@@ -24,7 +24,7 @@ const HOLD_LOOK: Look = {
   sky: ["#020409", "#060a14"],
   fog: ["#04070e", 5, 17],
   floor: "#151d30",
-  key: { c: "#7f9de0", i: 0.55, p: [2.2, 5.5, 4.6] },
+  key: { c: "#7f9de0", i: 0.22, p: [2.2, 5.5, 4.6] },
   fill: { sky: "#25365c", ground: "#05070c", i: 0.42 },
   rim: { c: "#6d8fd0", i: 0.45, p: [-4, 3, -5] },
   env: 0.05,
@@ -32,7 +32,7 @@ const HOLD_LOOK: Look = {
 };
 
 /** The seam the one shaft of light falls through, high on the right, and where it lands: on the bag. */
-const SEAM: V3 = [1.5, 5.4, 0.9];
+const SEAM: V3 = [1.35, 5.2, 2.1];
 const LANDS: V3 = [0, DECK + 0.45, 0];
 
 function holdBag(t: number): BagPose {
@@ -123,7 +123,7 @@ function poolTexture() {
 function Shaft() {
   const { pos, quat, len } = useMemo(() => {
     const a = new THREE.Vector3(...SEAM);
-    const b = new THREE.Vector3(...LANDS).add(new THREE.Vector3(0, -0.5, 0));
+    const b = new THREE.Vector3(...LANDS).add(new THREE.Vector3(0.06, 0.32, 0.05));
     const d = b.clone().sub(a);
     return { pos: a.clone().add(b).multiplyScalar(0.5), quat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), d.clone().normalize()), len: d.length() };
   }, []);
@@ -246,14 +246,14 @@ function HoldSet() {
   const clock = useClock();
   useFrame(() => {
     // the seam's light is the only light left once the door shuts: a cool white, so the shell keeps its cream
-    if (spot.current) spot.current.intensity = 26 + 30 * dark(clock.t);
+    if (spot.current) spot.current.intensity = 60 + 75 * dark(clock.t);
   });
   return (
     <>
       {/* before the door shuts there is still daylight in here; after, the look as written */}
-      <Stage look={HOLD_LOOK} level={(t) => ({ key: 1 + 3.5 * (1 - dark(t)), fill: 1 + 5 * (1 - dark(t)), env: 1 + 8 * (1 - dark(t)) })} />
+      <Stage look={HOLD_LOOK} level={(t) => ({ key: 1 + 8 * (1 - dark(t)), fill: 1 + 5 * (1 - dark(t)), env: 1 + 8 * (1 - dark(t)) })} />
       <Built make={hold} cast={false} />
-      <spotLight ref={spot} position={SEAM} angle={0.2} penumbra={0.75} decay={2} distance={0} color="#f1f3ff" intensity={40} />
+      <spotLight ref={spot} position={SEAM} angle={0.3} penumbra={0.55} decay={2} distance={0} color="#ffffff" intensity={60} />
       <Shaft />
       <Motes />
       {/* where it lands: a pale ellipse on the cart, and a fainter one spilling onto the floor */}
@@ -269,7 +269,7 @@ function HoldSet() {
         </mesh>
       </A>
       <Contact at={() => ({ p: [0, DECK, 0], w: 0.85, d: 0.55, o: 0.6 })} tint="#000000" />
-      <Bag pose={holdBag} speaking={(t) => bagSpeaking(HOLD, t)} lamp={0.05} />
+      <Bag pose={holdBag} speaking={(t) => bagSpeaking(HOLD, t)} lamp={0.035} />
       {[0, 1, 2].map((i) => (
         <Z key={i} i={i} />
       ))}
