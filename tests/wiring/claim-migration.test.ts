@@ -1,4 +1,4 @@
-// Migration 0040: stored claim statuses the verified rule no longer gives go back to unverified, with an event.
+// Migration 0031: stored claim statuses the verified rule no longer gives go back to unverified, with an event.
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { pool, q, ready } from "@/lib/db";
