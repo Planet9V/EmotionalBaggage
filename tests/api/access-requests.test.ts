@@ -9,7 +9,7 @@ import { ACCESS_CONFIRMATION, ACCESS_LEVELS, ACCESS_LEVEL_LABEL } from "@/lib/ac
 import { LEVELS } from "@/components/welcome/content";
 import { POST } from "@/app/api/access-requests/route";
 import { GET as LIST } from "@/app/api/admin/access-requests/route";
-import { PATCH } from "@/app/api/admin/access-requests/[id]/route";
+import { DELETE, PATCH } from "@/app/api/admin/access-requests/[id]/route";
 import { GET as EXPORT } from "@/app/api/admin/access-requests/export/route";
 import { ctx, json, read } from "./helpers";
 
@@ -224,6 +224,7 @@ describe("Admin: access requests", () => {
     expect(list.body.error).toMatch(/published demo password/);
     expect((await PATCH(json("PATCH", { status: "contacted" }, "http://test.local/api/admin/access-requests/1"), ctx("1"))).status).toBe(403);
     expect((await EXPORT(json("GET", undefined, "http://test.local/api/admin/access-requests/export"))).status).toBe(403);
+    expect((await DELETE(json("DELETE", undefined, "http://test.local/api/admin/access-requests/1"), ctx("1"))).status).toBe(403);
   });
 
   it("lists every request newest first for the owner", async () => {
@@ -265,6 +266,28 @@ describe("Admin: access requests", () => {
     expect((await PATCH(asOwner("PATCH", `http://test.local/api/admin/access-requests/${row!.id}`, { status: "spam" }), ctx(row!.id))).status).toBe(400);
     expect((await PATCH(asOwner("PATCH", "http://test.local/api/admin/access-requests/999999", { status: "new" }), ctx("999999"))).status).toBe(404);
     expect((await PATCH(asOwner("PATCH", "http://test.local/api/admin/access-requests/abc", { status: "new" }), ctx("abc"))).status).toBe(404);
+  });
+
+  it("deletes a request, records it by its number and status only, and leaves the CSV and the others alone", async () => {
+    await q("INSERT INTO access_requests (name, email, building, level) VALUES ('Del Person', 'del@x.test', 'Delete me please, thank you', 'free')");
+    const [row] = await q<{ id: string }>("SELECT id FROM access_requests WHERE name = 'Del Person'");
+    const id = row!.id;
+    const others = (await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests"))[0]!.n - 1;
+    const res = await read<{ ok: boolean }>(await DELETE(asOwner("DELETE", `http://test.local/api/admin/access-requests/${id}`), ctx(id)));
+    expect(res).toEqual({ status: 200, body: { ok: true } });
+    expect(await q("SELECT 1 FROM access_requests WHERE id = $1", [id])).toHaveLength(0);
+    expect((await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests"))[0]!.n).toBe(others);
+    const lines = await auditSince("access.deleted");
+    expect(lines.at(-1)).toMatchObject({ actor: OWNER, detail: { id: Number(id), status: "new" } });
+    expect(JSON.stringify(lines)).not.toMatch(/Del Person|del@x\.test/);
+    const csv = await (await EXPORT(asOwner("GET", "http://test.local/api/admin/access-requests/export"))).text();
+    expect(csv).not.toContain("del@x.test");
+    expect(csv.trimEnd().split("\r\n")).toHaveLength(others + 1);
+  });
+
+  it("answers 404 for a request that is not there, and 404 for a number that is not one", async () => {
+    expect((await DELETE(asOwner("DELETE", "http://test.local/api/admin/access-requests/999999"), ctx("999999"))).status).toBe(404);
+    expect((await DELETE(asOwner("DELETE", "http://test.local/api/admin/access-requests/abc"), ctx("abc"))).status).toBe(404);
   });
 
   it("downloads CSV with a header row, newest first, with formulas neutralised, and records the copy", async () => {

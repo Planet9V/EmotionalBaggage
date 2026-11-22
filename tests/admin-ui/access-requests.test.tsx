@@ -53,6 +53,37 @@ describe("Admin, Access requests", () => {
     await waitFor(() => expect(select.value).toBe("contacted"));
   });
 
+  it("deletes a request only after the confirmation, and takes it out of the list", async () => {
+    let list = [row({ id: 2, name: "Bea Newer", email: "bea@example.test" }), row({ id: 1 })];
+    const { calls } = adminServer([
+      on("GET", "/api/admin/access-requests", () => ({ body: { requests: list } })),
+      on("DELETE", "/api/admin/access-requests/1", () => {
+        list = list.filter((r) => r.id !== 1);
+        return { body: { ok: true } };
+      }),
+    ]);
+    renderWithClient(<AccessRequestsTab />);
+    fireEvent.click(await screen.findByRole("button", { name: "Delete request 1 from Ada Tester" }));
+    expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+    expect(screen.getByRole("dialog", { name: "Delete this request?" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Delete request" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "DELETE" && c.path === "/api/admin/access-requests/1")).toBe(true));
+    await waitFor(() => expect(screen.queryByText("Ada Tester")).toBeNull());
+    expect(screen.getByText("Bea Newer")).toBeTruthy();
+  });
+
+  it("keeps the request and shows the server's reason when the delete is refused", async () => {
+    adminServer([
+      on("GET", "/api/admin/access-requests", () => ({ body: { requests: [row({ id: 5 })] } })),
+      on("DELETE", "/api/admin/access-requests/5", () => ({ status: 404, body: { error: "That access request was not found." } })),
+    ]);
+    renderWithClient(<AccessRequestsTab />);
+    fireEvent.click(await screen.findByRole("button", { name: "Delete request 5 from Ada Tester" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete request" }));
+    expect(await screen.findByText("That access request was not found.")).toBeTruthy();
+    expect(screen.getByText("Ada Tester")).toBeTruthy();
+  });
+
   it("puts the status back and shows the server's reason when a change is refused", async () => {
     adminServer([
       on("GET", "/api/admin/access-requests", () => ({ body: { requests: [row({ id: 5 })] } })),

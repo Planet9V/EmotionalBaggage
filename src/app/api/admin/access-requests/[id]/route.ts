@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { body, recordId, sessionOf } from "@/lib/api/route";
 import { ACCESS_STATUSES } from "@/lib/accessRequests/shared";
-import { refuseWhileDefaultPassword, setAccessStatus } from "@/lib/accessRequests/store";
+import { deleteAccessRequest, refuseWhileDefaultPassword, setAccessStatus } from "@/lib/accessRequests/store";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,4 +15,11 @@ export const PATCH = adminRoute(async (req: Request, { params }: Ctx) => {
   const id = recordId((await params).id, "That access request");
   const { status } = await body(req, StatusChange);
   return NextResponse.json({ request: await setAccessStatus(id, status) });
+});
+
+/** Deletes a request, recorded by its number and status only. Refused while the account uses the published demo password, like the other actions. */
+export const DELETE = adminRoute(async (req: Request, { params }: Ctx) => {
+  refuseWhileDefaultPassword(sessionOf(req).usingDefaultPassword);
+  await deleteAccessRequest(recordId((await params).id, "That access request"));
+  return NextResponse.json({ ok: true });
 });

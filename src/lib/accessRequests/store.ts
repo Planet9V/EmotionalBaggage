@@ -107,6 +107,15 @@ export async function setAccessStatus(id: number, status: AccessStatus): Promise
   });
 }
 
+/** Deletes a request and records it, by its number and status only: the log keeps no name or email. */
+export async function deleteAccessRequest(id: number): Promise<void> {
+  await tx(async (c) => {
+    const r = await c.query<{ status: AccessStatus }>("DELETE FROM access_requests WHERE id = $1 RETURNING status", [id]);
+    if (!r.rows.length) throw notFound("That access request");
+    await auditIn(c, { action: "access.deleted", summary: `Access request ${id} was deleted`, detail: { id, status: r.rows[0]!.status } });
+  });
+}
+
 const CSV_HEADER = ["id", "received", "status", "level", "name", "email", "company", "building"] as const;
 
 /** The requests as CSV, newest first. Taking a copy is recorded, with the number of rows only. */

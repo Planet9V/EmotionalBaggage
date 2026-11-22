@@ -41,6 +41,15 @@ export function useSetAccessStatus() {
   });
 }
 
+/** Deletes one request. It leaves the list when the server has deleted it. */
+export function useDeleteAccessRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<{ ok: true }>(`/api/admin/access-requests/${id}`, { method: "DELETE" }),
+    onSuccess: (_r, id) => qc.setQueryData<AccessRequestRow[]>(key(), (list) => list?.filter((r) => r.id !== id)),
+  });
+}
+
 /** Downloads every request as CSV through the server (which records the copy). Answers the file name. */
 export async function downloadAccessRequests(): Promise<string> {
   const res = await fetch("/api/admin/access-requests/export");

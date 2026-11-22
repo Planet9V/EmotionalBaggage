@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Panel } from "@/components/ui/panel";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,12 +15,13 @@ import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui
 import { ApiError } from "@/lib/http";
 import { messageOf } from "@/lib/queries";
 import { fmtDateTime } from "@/lib/format";
-import { downloadAccessRequests, useAccessRequests, useSetAccessStatus } from "@/lib/accessRequests/client";
+import { downloadAccessRequests, useAccessRequests, useDeleteAccessRequest, useSetAccessStatus } from "@/lib/accessRequests/client";
 import { ACCESS_LEVEL_LABEL, ACCESS_STATUSES, ACCESS_STATUS_LABEL, type AccessStatus } from "@/lib/accessRequests/shared";
 
 export function AccessRequestsTab() {
   const list = useAccessRequests();
   const setStatus = useSetAccessStatus();
+  const remove = useDeleteAccessRequest();
   const [rowError, setRowError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const refused = list.error instanceof ApiError && list.error.status === 403;
@@ -29,6 +31,16 @@ export function AccessRequestsTab() {
     try {
       await setStatus.mutateAsync({ id, status });
       toast.success(`Request ${id} marked ${ACCESS_STATUS_LABEL[status].toLowerCase()}.`);
+    } catch (e) {
+      setRowError(messageOf(e));
+    }
+  };
+
+  const del = async (id: number) => {
+    setRowError("");
+    try {
+      await remove.mutateAsync(id);
+      toast.success(`Request ${id} deleted.`);
     } catch (e) {
       setRowError(messageOf(e));
     }
@@ -91,6 +103,7 @@ export function AccessRequestsTab() {
                   <TableHead className="w-28">Level</TableHead>
                   <TableHead className="min-w-64">Wants to build</TableHead>
                   <TableHead className="w-44">Status</TableHead>
+                  <TableHead className="w-24"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,6 +132,16 @@ export function AccessRequestsTab() {
                           </option>
                         ))}
                       </NativeSelect>
+                    </TableCell>
+                    <TableCell className="align-top">
+                      <ConfirmButton
+                        label={<><span aria-hidden>Delete</span><span className="sr-only">Delete request {r.id} from {r.name}</span></>}
+                        title="Delete this request?"
+                        body={<>Request {r.id} from {r.name} is removed from this list and from the CSV. The audit log keeps that it was deleted, by number only. This cannot be undone.</>}
+                        confirmLabel="Delete request"
+                        onConfirm={() => void del(r.id)}
+                        disabled={remove.isPending}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
