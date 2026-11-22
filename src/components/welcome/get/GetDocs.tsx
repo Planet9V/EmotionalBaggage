@@ -100,7 +100,7 @@ export function GetBrief({ get }: { get: GetData }) {
             ))}
           </ol>
         </div>
-        <aside className="wl-in self-start lg:sticky lg:top-0" style={stagger(2)}>
+        <div className="wl-in self-start lg:sticky lg:top-0" style={stagger(2)}>
           <p className={H}>{c.statusTitle}</p>
           <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-white/10" aria-hidden>
             <span className="wl-bar bg-[var(--success)]" style={{ width: `${(done / Math.max(1, get.brief.length)) * 100}%` }} />
@@ -112,7 +112,7 @@ export function GetBrief({ get }: { get: GetData }) {
             <dd className="text-right text-primary"><CountTo value={get.brief.length - done} format={(n) => String(Math.round(n))} /></dd>
           </dl>
           <p className="mt-4 border-t border-hairline pt-3 text-[12.5px] leading-relaxed text-secondary">{c.decisions(get.decisions)}</p>
-        </aside>
+        </div>
       </div>
     </Body>
   );
