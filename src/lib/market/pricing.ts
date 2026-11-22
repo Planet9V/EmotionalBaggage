@@ -3,7 +3,7 @@
 //
 // The unit cost and the currency are not this module's: both come from the unit economics
 // (src/lib/economics), so pricing, campaigns, content and the report quote one figure.
-import { channelFeeMinor, channelFeeRates, type ChannelFees, type UnitCost as EconomicsUnitCost } from "@/lib/economics/compute";
+import { channelTakeRates, marginAt, type ChannelCosts, type UnitCost as EconomicsUnitCost } from "@/lib/economics/compute";
 
 /**
  * What one unit costs to make, as pricing reads it. `known` is false when the number is
@@ -19,6 +19,7 @@ export function pricingUnitCost(u: EconomicsUnitCost): UnitCost {
 
 export type Margin = {
   priceMinor: number;
+  /** everything the channel takes from the sale: fees, fulfilment, returns allowance, advertising per order */
   feeMinor: number;
   marginMinor: number;
   /** margin as a share of the price, or null when the price is zero */
@@ -27,29 +28,25 @@ export type Margin = {
   partial: boolean;
 };
 
-/** Margin per unit for one price in one channel: price less unit cost less the channel's fees. */
-export function margin(priceMinor: number, unit: UnitCost, channel: ChannelFees): Margin {
-  // The fee arithmetic is the economics' own (sales/channels rows), so both screens show the same fee.
-  const feeMinor = channelFeeMinor(channel, priceMinor, unit.currency).total;
-  const marginMinor = priceMinor - unit.minor - feeMinor;
-  return {
-    priceMinor,
-    feeMinor,
-    marginMinor,
-    marginPercent: priceMinor > 0 ? (marginMinor / priceMinor) * 100 : null,
-    partial: !unit.known,
-  };
+/**
+ * Margin per unit for one price in one channel: price less unit cost less what the channel takes.
+ * The arithmetic is the economics' own (marginAt), so this page and Unit economics show one margin.
+ */
+export function margin(priceMinor: number, unit: UnitCost, channel: ChannelCosts): Margin {
+  const m = marginAt(priceMinor, unit.minor, channel, unit.currency);
+  return { priceMinor, feeMinor: m.take.total, marginMinor: m.margin, marginPercent: m.marginPercent, partial: !unit.known };
 }
 
 /**
- * Cost plus: the price at which the margin, as a share of the price and after the channel's
- * fees, is the target. null when the fees and target leave nothing (they add to 100 percent or more).
+ * Cost plus: the price at which the margin, as a share of the price and after everything the
+ * channel takes, is the target. null when the channel's share and the target leave nothing (they
+ * add to 100 percent or more).
  */
-export function costPlusPrice(unit: UnitCost, targetMarginPercent: number, channel: ChannelFees): number | null {
-  const fees = channelFeeRates(channel, unit.currency);
-  const share = 1 - fees.percent / 100 - targetMarginPercent / 100;
+export function costPlusPrice(unit: UnitCost, targetMarginPercent: number, channel: ChannelCosts): number | null {
+  const take = channelTakeRates(channel, unit.currency);
+  const share = 1 - take.percent / 100 - targetMarginPercent / 100;
   if (share <= 0) return null;
-  return Math.ceil((unit.minor + fees.fixedMinor) / share);
+  return Math.ceil((unit.minor + take.fixedMinor) / share);
 }
 
 export type Competitor = { name: string; priceMinor: number; currency: string; sourced: boolean };

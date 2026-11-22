@@ -14,7 +14,7 @@ import { InlineEdit } from "@/components/parts/InlineEdit";
 import { saveOrMessage, useItems } from "@/lib/client";
 import { competitorRange, costPlusPrice, margin, position, pricingUnitCost, type Competitor } from "@/lib/market/pricing";
 import { useEconomicsRows, useProductionSettings } from "@/lib/economics/client";
-import { NO_FEES, channelFeeRates, referenceUnitCost, type ChannelFees } from "@/lib/economics/compute";
+import { NO_FEES, channelTakeRates, referenceUnitCost, type ChannelCosts } from "@/lib/economics/compute";
 import { formatMoney, parseMinor, toInputText, toMinor } from "@/lib/economics/money";
 import { readChannel, readEconomics } from "@/lib/economics/read";
 import { pricingData } from "@/lib/market/schemas";
@@ -26,7 +26,7 @@ import { EmptyState, ErrorLine, LoadError, LoadingBlocks } from "@/components/ui
 import { Field } from "@/components/ui/field";
 
 type PriceRow = { item: Item; priceMinor: number; approach: string; note: string; currency: string };
-type ChannelCol = ChannelFees & { id: number | null; name: string };
+type ChannelCol = ChannelCosts & { id: number | null; name: string };
 
 export function PricingView({ project, store }: ViewProps) {
   const pricing = useItems(project.id, store);
@@ -109,17 +109,20 @@ export function PricingView({ project, store }: ViewProps) {
 
       <section aria-labelledby="channels" className="space-y-2">
         <h2 id="channels" className="text-sm font-semibold text-primary">Channels and what each takes</h2>
-        <p className="text-sm text-secondary">The channels and their fees are the ones on <Link className="text-link underline" href="/s/sales/channels">Sales channels</Link>: the platform fee and the payment fee, each a percent of the price plus a fixed amount per unit. Change a fee there and every margin here follows.</p>
+        <p className="text-sm text-secondary">The channels and their fees are the ones on <Link className="text-link underline" href="/s/sales/channels">Sales channels</Link>: the platform fee and the payment fee, each a percent of the price plus a fixed amount per unit, then fulfilment, a returns allowance and advertising per order. Change one there and every margin here follows; a margin here is the margin Unit economics shows for the same price.</p>
         <Card variant="outlined" hoverEffect={false} innerClassName="space-y-3 p-4">
           {channelRows.length > 0 ? (
             <Table aria-label="Channels">
-              <TableHeader><TableRow><TableHead>Channel</TableHead><TableHead>Platform fee</TableHead><TableHead>Payment fee</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Channel</TableHead><TableHead>Platform fee</TableHead><TableHead>Payment fee</TableHead><TableHead>Fulfilment</TableHead><TableHead>Returns</TableHead><TableHead>Advertising</TableHead></TableRow></TableHeader>
               <TableBody>
                 {channelRows.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>{c.name}</TableCell>
                     <TableCell className="font-mono text-sm">{feeText(c.platformPercent, c.platformFixed, currency)}</TableCell>
                     <TableCell className="font-mono text-sm">{feeText(c.paymentPercent, c.paymentFixed, currency)}</TableCell>
+                    <TableCell className="font-mono text-sm">{feeText(null, c.fulfilment, currency)}</TableCell>
+                    <TableCell className="font-mono text-sm">{c.returnsPercent === null ? "not entered" : `${c.returnsPercent}%`}</TableCell>
+                    <TableCell className="font-mono text-sm">{feeText(null, c.adCost, currency)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -136,7 +139,7 @@ export function PricingView({ project, store }: ViewProps) {
         <div className="space-y-3">
           <Card variant="outlined" hoverEffect={false} innerClassName="space-y-2 p-4">
             <h3 className="text-sm font-medium text-primary">1. Cost plus</h3>
-            <p className="text-xs text-muted">The price that leaves your target margin, as a share of the price, after the channel&apos;s fees.</p>
+            <p className="text-xs text-muted">The price that leaves your target margin, as a share of the price, after everything the channel takes.</p>
             <div className="flex flex-wrap items-end gap-3">
               <div><span className="mb-1 block text-xs font-medium text-secondary">Target margin, percent (click to change)</span><InlineEdit label="Target margin" mono placeholder="Set a target" value={target === null ? "" : String(target)} onSave={(v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n < 100 ? saveOrMessage(Promise.resolve(setAssumption({ targetMarginPercent: n }))) : "Enter a percent from 0 to 99."; }} /></div>
             </div>
@@ -205,7 +208,7 @@ export function PricingView({ project, store }: ViewProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Price</TableHead>
-                  {cols.map((c) => { const f = channelFeeRates(c, currency); return <TableHead key={c.id ?? c.name}>{c.name}<span className="block text-[10px] font-normal text-muted">{f.percent}%{f.fixedMinor ? ` + ${formatMoney(f.fixedMinor, currency)}` : ""} fee</span></TableHead>; })}
+                  {cols.map((c) => { const f = channelTakeRates(c, currency); return <TableHead key={c.id ?? c.name}>{c.name}<span className="block text-[10px] font-normal text-muted">{f.percent}%{f.fixedMinor ? ` + ${formatMoney(f.fixedMinor, currency)}` : ""} per sale</span></TableHead>; })}
                   <TableHead>Against competitors</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -258,7 +261,7 @@ export function PricingView({ project, store }: ViewProps) {
 }
 
 const feeText = (percent: number | null, fixed: number | null, currency: string) =>
-  percent === null && fixed === null ? "not entered" : `${percent ?? 0}%${fixed ? ` + ${formatMoney(toMinor(fixed, currency), currency)}` : ""}`;
+  percent === null && fixed === null ? "not entered" : percent === null ? formatMoney(toMinor(fixed ?? 0, currency), currency) : `${percent}%${fixed ? ` + ${formatMoney(toMinor(fixed, currency), currency)}` : ""}`;
 
 function PriceForm({ currency, onAdd }: { currency: string; onAdd: (minor: number) => Promise<unknown> }) {
   const [v, setV] = useState("");

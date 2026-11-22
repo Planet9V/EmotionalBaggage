@@ -307,28 +307,44 @@ export type ChannelResult = {
   how: string[];
 };
 
-/** The fee columns of a sales channel row: the one definition of what a channel takes. */
-export type ChannelFees = Pick<ChannelRow, "platformPercent" | "platformFixed" | "paymentPercent" | "paymentFixed">;
+/** Everything a sales channel row takes from one sale: its two fees, fulfilment, the returns allowance and advertising per order. */
+export type ChannelCosts = Pick<ChannelRow, "platformPercent" | "platformFixed" | "paymentPercent" | "paymentFixed" | "fulfilment" | "returnsPercent" | "adCost">;
 
 /** A channel that takes nothing (the margin with no channel chosen). */
-export const NO_FEES: ChannelFees = { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0 };
+export const NO_FEES: ChannelCosts = { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0, fulfilment: 0, returnsPercent: 0, adCost: 0 };
 
-const feePart = (percent: number | null, fixed: number | null, price: number | null, currency: string) =>
-  (percent === null || price === null ? 0 : roundHalfUp((price * percent) / 100)) + (fixed === null ? 0 : toMinor(fixed, currency));
+const pctOf = (percent: number | null, price: number | null) => (percent === null || price === null ? 0 : roundHalfUp((price * percent) / 100));
+const fixedOf = (v: number | null, currency: string) => (v === null ? 0 : toMinor(v, currency));
 
-/** What a channel takes from one sale at `priceMinor`: the platform's fee and the payment fee, in minor units. */
-export function channelFeeMinor(c: ChannelFees, priceMinor: number | null, currency: string): { platform: number; payment: number; total: number } {
-  const platform = feePart(c.platformPercent, c.platformFixed, priceMinor, currency);
-  const payment = feePart(c.paymentPercent, c.paymentFixed, priceMinor, currency);
-  return { platform, payment, total: platform + payment };
+type ChannelTake = { platform: number; payment: number; fulfilment: number; returns: number; adCost: number; total: number };
+
+/**
+ * What a channel takes from one sale at `priceMinor`, in minor units. The one definition: Unit
+ * economics, Pricing, campaigns and the report all work a margin out as price less unit cost less
+ * this total, so the same price on the same channel never shows two margins.
+ */
+function channelTakeMinor(c: ChannelCosts, priceMinor: number | null, currency: string): ChannelTake {
+  const platform = pctOf(c.platformPercent, priceMinor) + fixedOf(c.platformFixed, currency);
+  const payment = pctOf(c.paymentPercent, priceMinor) + fixedOf(c.paymentFixed, currency);
+  const fulfilment = fixedOf(c.fulfilment, currency);
+  const returns = pctOf(c.returnsPercent, priceMinor);
+  const adCost = fixedOf(c.adCost, currency);
+  return { platform, payment, fulfilment, returns, adCost, total: platform + payment + fulfilment + returns + adCost };
 }
 
-/** The channel's fees as a share of the price and a fixed amount per unit (minor), for pricing from a target margin. */
-export function channelFeeRates(c: ChannelFees, currency: string): { percent: number; fixedMinor: number } {
+/** What the channel takes as a share of the price and a fixed amount per unit (minor), for pricing from a target margin. */
+export function channelTakeRates(c: ChannelCosts, currency: string): { percent: number; fixedMinor: number } {
   return {
-    percent: (c.platformPercent ?? 0) + (c.paymentPercent ?? 0),
-    fixedMinor: channelFeeMinor({ ...NO_FEES, platformFixed: c.platformFixed, paymentFixed: c.paymentFixed }, 0, currency).total,
+    percent: (c.platformPercent ?? 0) + (c.paymentPercent ?? 0) + (c.returnsPercent ?? 0),
+    fixedMinor: channelTakeMinor(c, 0, currency).total,
   };
+}
+
+/** Margin per unit for one price on one channel: price less unit cost less everything the channel takes. */
+export function marginAt(priceMinor: number, unitCostMinor: number, c: ChannelCosts, currency: string): { take: ChannelTake; margin: number; marginPercent: number | null } {
+  const take = channelTakeMinor(c, priceMinor, currency);
+  const margin = priceMinor - unitCostMinor - take.total;
+  return { take, margin, marginPercent: priceMinor > 0 ? (margin / priceMinor) * 100 : null };
 }
 
 /** Margin per unit and break-even for each sales channel, at one unit cost and one set of fixed costs. */
@@ -343,12 +359,8 @@ export function channelResults(channels: ChannelRow[], unit: UnitCost, fixed: Fi
     if (price === null) note("enter the selling price.", "no price");
     if (c.platformPercent === null && c.platformFixed === null) note("enter the platform fee as a percent, a fixed amount, or 0 if there is none.", "platform fee not entered");
 
-    const pct = (p: number | null, of: number | null) => (p === null || of === null ? 0 : roundHalfUp((of * p) / 100));
-    const fix = (v: number | null) => (v === null ? 0 : toMinor(v, currency));
-    const { platform: platformFee, payment: paymentFee } = channelFeeMinor(c, price, currency);
-    const fulfilment = fix(c.fulfilment);
-    const returns = pct(c.returnsPercent, price);
-    const adCost = fix(c.adCost);
+    const fix = (v: number | null) => fixedOf(v, currency);
+    const { platform: platformFee, payment: paymentFee, fulfilment, returns, adCost } = channelTakeMinor(c, price, currency);
 
     if (price !== null) {
       how.push(`Price ${fm(price, currency)}`);
@@ -373,8 +385,7 @@ export function channelResults(channels: ChannelRow[], unit: UnitCost, fixed: Fi
     let marginPercent: number | null = null;
     let breakEven: BreakEven | null = null;
     if (price !== null) {
-      margin = price - unit.total - platformFee - paymentFee - fulfilment - returns - adCost;
-      marginPercent = price > 0 ? (margin / price) * 100 : null;
+      ({ margin, marginPercent } = marginAt(price, unit.total, c, currency));
       how.push(`Margin = ${fm(price, currency)} - ${fm(unit.total, currency)} - ${fm(platformFee, currency)} - ${fm(paymentFee, currency)} - ${fm(fulfilment, currency)} - ${fm(returns, currency)} - ${fm(adCost, currency)} = ${fm(margin, currency)}`);
       if (fixed.total === 0) {
         breakEven = { units: 0, reason: "No fixed costs are entered." };

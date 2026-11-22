@@ -80,23 +80,23 @@ describe("pricing arithmetic", () => {
   const unit = { known: true, minor: 1000, currency: "USD", missing: [] };
 
   it("works out margin per unit after percent and fixed fees", () => {
-    const m = margin(2500, unit, { platformPercent: 15, platformFixed: 0.5, paymentPercent: 0, paymentFixed: 0 });
+    const m = margin(2500, unit, { platformPercent: 15, platformFixed: 0.5, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null });
     expect(m.feeMinor).toBe(375 + 50);
     expect(m.marginMinor).toBe(2500 - 1000 - 425);
     expect(m.marginPercent).toBeCloseTo(43.0, 5);
     expect(m.partial).toBe(false);
   });
   it("shows a loss as a negative margin and marks an incomplete cost", () => {
-    const m = margin(1000, { known: false, minor: 1200, currency: "USD", missing: ["Case"] }, { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0 });
+    const m = margin(1000, { known: false, minor: 1200, currency: "USD", missing: ["Case"] }, { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null });
     expect(m.marginMinor).toBe(-200);
     expect(m.marginPercent).toBeCloseTo(-20, 5);
     expect(m.partial).toBe(true);
   });
   it("has no percent at a price of zero", () => {
-    expect(margin(0, unit, { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0 }).marginPercent).toBeNull();
+    expect(margin(0, unit, { platformPercent: 0, platformFixed: 0, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null }).marginPercent).toBeNull();
   });
   it("cost plus returns the price that gives the target after fees, and inverts margin()", () => {
-    const ch = { platformPercent: 15, platformFixed: 0.5, paymentPercent: 0, paymentFixed: 0 };
+    const ch = { platformPercent: 15, platformFixed: 0.5, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null };
     const p = costPlusPrice(unit, 30, ch)!;
     // (1000 + 50) / (1 - 0.15 - 0.30) = 1909.09..., rounded up
     expect(p).toBe(1910);
@@ -105,8 +105,8 @@ describe("pricing arithmetic", () => {
     expect(back.marginPercent!).toBeLessThan(30.2);
   });
   it("cost plus has no answer when fees and target take everything", () => {
-    expect(costPlusPrice(unit, 90, { platformPercent: 10, platformFixed: 0, paymentPercent: 0, paymentFixed: 0 })).toBeNull();
-    expect(costPlusPrice(unit, 85, { platformPercent: 15, platformFixed: 0, paymentPercent: 0, paymentFixed: 0 })).toBeNull();
+    expect(costPlusPrice(unit, 90, { platformPercent: 10, platformFixed: 0, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null })).toBeNull();
+    expect(costPlusPrice(unit, 85, { platformPercent: 15, platformFixed: 0, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null })).toBeNull();
   });
   it("finds low, median and high of competitor prices in one currency only", () => {
     const list = [
@@ -324,15 +324,15 @@ describe("pricing uses the economics' fee arithmetic", () => {
   it("platform and payment fees add, and agree with the sales channel's own result", async () => {
     const { channelResults } = await import("@/lib/economics/compute");
     const unit = { known: true, minor: 1000, currency: "USD", missing: [] };
-    const fees = { platformPercent: 8, platformFixed: 0.3, paymentPercent: 2.9, paymentFixed: 0.3 };
+    const fees = { platformPercent: 8, platformFixed: 0.3, paymentPercent: 2.9, paymentFixed: 0.3, fulfilment: null, returnsPercent: null, adCost: null };
     const m = margin(2499, unit, fees);
-    const row = { id: 1, title: "Shop", status: "planned", price: 24.99, fulfilment: null, returnsPercent: null, adCost: null, ...fees };
+    const row = { id: 1, title: "Shop", status: "planned", price: 24.99, ...fees };
     const r = channelResults([row], { total: 1000, complete: true, currency: "USD", missing: [], lines: [] } as never, { total: 0, lines: [], missing: [] })[0];
     expect(m.feeMinor).toBe(r.platformFee + r.paymentFee);
     expect(m.marginMinor).toBe(r.margin);
   });
   it("JPY has no minor digits: a fixed fee of 30 yen is 30", () => {
-    const m = margin(1000, { known: true, minor: 400, currency: "JPY", missing: [] }, { platformPercent: 10, platformFixed: 30, paymentPercent: 0, paymentFixed: 0 });
+    const m = margin(1000, { known: true, minor: 400, currency: "JPY", missing: [] }, { platformPercent: 10, platformFixed: 30, paymentPercent: 0, paymentFixed: 0, fulfilment: null, returnsPercent: null, adCost: null });
     expect(m.feeMinor).toBe(130);
   });
 });
