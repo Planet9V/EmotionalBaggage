@@ -73,7 +73,7 @@ describe("POST /api/events", () => {
 
   it("records nothing for Do Not Track, Global Privacy Control, a crawler or no browser string, and answers the same 204", async () => {
     const base = { event: "page_view", visit: VISIT };
-    for (const h of [{ dnt: "1" }, { "sec-gpc": "1" }, { "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)" }, { "user-agent": "curl/8.0" }, { "user-agent": "" }]) {
+    for (const h of [{ dnt: "1" } as Record<string, string>, { "sec-gpc": "1" }, { "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)" }, { "user-agent": "curl/8.0" }, { "user-agent": "" }]) {
       expect((await POST(ev(base, h))).status).toBe(204);
     }
     expect(await rows()).toHaveLength(0);

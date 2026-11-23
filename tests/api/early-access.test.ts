@@ -14,8 +14,10 @@ import { EARLY_COOKIE } from "@/lib/accessRequests/noScript";
 import { json, read } from "./helpers";
 
 // The platform administrator exists only in the new sign-in; the hook is stood in, as in tests/admin/platform.test.ts.
-const hook = vi.hoisted(() => ({ admin: false }));
+const hook = vi.hoisted(() => ({ admin: false, cookie: "" }));
 vi.mock("@/lib/admin/platformAdminHook", () => ({ platformAdminFromAuth2: async () => hook.admin }));
+// the confirmation page reads its cookie through next/headers; a test has no request scope, so the cookie is stood in
+vi.mock("next/headers", async (orig) => ({ ...(await orig<typeof import("next/headers")>()), cookies: async () => ({ get: (n: string) => (n === "c2r_early" && hook.cookie ? { name: n, value: hook.cookie } : undefined) }) }));
 
 let address = 0;
 const claim = (email: string, over: Partial<Parameters<typeof claimEarlyAccess>[0]> = {}) =>
@@ -136,6 +138,27 @@ describe("the open route", () => {
       expect(new URL(r.headers.get("location")!).searchParams.get("r")).toBe("listed");
       expect(r.headers.get("set-cookie")).toBeNull();
     }
+  });
+
+  it("without script: the confirmation page shows the place and the details form, or the refusal and the form again", async () => {
+    await fresh(10);
+    const { default: Page } = await import("@/app/welcome/early/page");
+    const { renderToString } = await import("react-dom/server");
+    const res = await POST(formPost({ email: "page@x.test", building: "A shelf", placement: "hero" }));
+    hook.cookie = /=([^;]+);/.exec(res.headers.get("set-cookie")!)![1]!;
+    const html = renderToString(await Page({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain("You have place number 1. We open workspaces in order and write to this address.");
+    expect(html).toContain('action="/api/access-requests/details"');
+    expect(html).toContain(`value="${hook.cookie}"`);
+    const saved = renderToString(await Page({ searchParams: Promise.resolve({ saved: "1" }) }));
+    expect(saved).toContain("Your details are saved");
+    expect(saved).not.toContain('action="/api/access-requests/details"');
+    hook.cookie = "";
+    const refused = renderToString(await Page({ searchParams: Promise.resolve({ e: "email" }) }));
+    expect(refused).toContain("Enter a working email address.");
+    expect(refused).toContain('action="/api/access-requests"');
+    const listed = renderToString(await Page({ searchParams: Promise.resolve({ r: "listed" }) }));
+    expect(listed).toContain("You are on the list.");
   });
 
   it("the confirmation step adds name, company and plan by token only; an unknown or lapsed token is 410", async () => {

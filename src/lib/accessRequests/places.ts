@@ -20,7 +20,7 @@ import type { AccessRequestParsed, EarlyAccessCount, EarlyAccessOutcome } from "
 
 /** The settings row that holds the number of early-access places. */
 export const EARLY_ACCESS_LIMIT_KEY = "earlyAccess.limit";
-export const DEFAULT_EARLY_ACCESS_LIMIT = 50;
+const DEFAULT_EARLY_ACCESS_LIMIT = 50;
 export const MAX_EARLY_ACCESS_LIMIT = 100_000;
 /** Any fixed number: the key of the advisory lock every place change takes. */
 const EARLY_ACCESS_LOCK = 4_212_025_022;
@@ -33,7 +33,7 @@ const hashToken = (token: string) => createHash("sha256").update(token).digest("
 const validLimit = (v: unknown): number | null => (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= MAX_EARLY_ACCESS_LIMIT ? v : null);
 
 /** The limit in force: the saved setting, or 50. */
-export async function earlyAccessLimit(): Promise<number> {
+async function earlyAccessLimit(): Promise<number> {
   return validLimit(await getSetting<unknown>(EARLY_ACCESS_LIMIT_KEY, null)) ?? DEFAULT_EARLY_ACCESS_LIMIT;
 }
 

@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit c5fc509 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit a339311 by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -224,6 +224,7 @@ From `package.json` "devDependencies": used to build, check and test the code; n
 | @types/react-dom | 19.3.0 | MIT |
 | @types/three | 0.187.0 | MIT |
 | aedes | 1.2.0 | MIT |
+| axe-core | 4.14.1 | MPL-2.0 |
 | eslint | 9.39.5 | MIT |
 | eslint-config-next | 16.4.6 | MIT |
 | ftp-srv | 4.6.3 | MIT |

@@ -29,7 +29,7 @@ export const ACCESS_LIMITS = { name: 120, email: 254, building: 2000, company: 1
 export const MAKING_MAX = 300;
 
 /** Where on the welcome page the early-access form was sent from (migration 0041). "page": /welcome/early itself. */
-export const PLACEMENTS = ["hero", "pricing", "close", "page"] as const;
+const PLACEMENTS = ["hero", "pricing", "close", "page"] as const;
 export type Placement = (typeof PLACEMENTS)[number];
 
 const email = z
@@ -70,7 +70,7 @@ export const AccessRequestDetails = z.object({
   company: company.optional().default(""),
   level: level.optional().default(""),
 });
-export type AccessRequestDetailsValues = z.input<typeof AccessRequestDetails>;
+
 
 /** What a request got: a place, a place on the waiting list, or (a repeat of an address already listed) "listed". */
 export type EarlyAccessOutcome = { kind: "place"; place: number } | { kind: "waiting"; position: number } | { kind: "listed" };

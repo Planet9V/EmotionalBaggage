@@ -38,7 +38,7 @@ function storage(): Storage | null {
 }
 
 /** The browser asked not to be tracked. */
-export function trackingRefused(): boolean {
+function trackingRefused(): boolean {
   if (typeof navigator === "undefined") return true;
   const n = navigator as Navigator & { globalPrivacyControl?: boolean; msDoNotTrack?: string };
   const w = window as Window & { doNotTrack?: string };
@@ -130,7 +130,7 @@ export function TrackSection({ id, children, className }: { id: string; children
  * `data-track="plan:maker"` a plan_click, `data-track="example:hero"` an example_open, `data-track="sound:film"` a
  * sound_on. The section comes from the nearest TrackSection (data-track-section) around the element.
  */
-export const TRACK_KINDS = {
+const TRACK_KINDS = {
   cta: { event: "cta_click", key: "cta" },
   plan: { event: "plan_click", key: "plan" },
   example: { event: "example_open", key: "from" },

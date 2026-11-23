@@ -11,7 +11,7 @@ import { HttpError } from "@/lib/api/route";
 import { cleanDetail, cleanPath, type EventDetail, type EventName, type FunnelCounts, type FunnelReport } from "./shared";
 
 export const RETENTION_KEY = "events.retentionDays";
-export const DEFAULT_RETENTION_DAYS = 180;
+const DEFAULT_RETENTION_DAYS = 180;
 export const MAX_RETENTION_DAYS = 3650;
 
 /** Crawlers, link previewers, monitors and command-line clients: not visitors. An empty browser string counts as one. */
@@ -57,7 +57,7 @@ let lastCleanup = 0;
 
 const validDays = (v: unknown): number | null => (typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= MAX_RETENTION_DAYS ? v : null);
 
-export async function retentionDays(): Promise<number> {
+async function retentionDays(): Promise<number> {
   return validDays(await getSetting<unknown>(RETENTION_KEY, null)) ?? DEFAULT_RETENTION_DAYS;
 }
 
@@ -117,7 +117,7 @@ export async function recordServerEvent(req: Request, e: { event: EventName; sec
 // visit of its own that sent a form. Days are UTC days, by the visit's first event.
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-export const MAX_RANGE_DAYS = 366;
+const MAX_RANGE_DAYS = 366;
 
 type Agg = { visits: number; pricing: number; started: number; sent: number; claimed: number };
 const counts = (r: Agg): FunnelCounts => ({ visits: r.visits, reachedPricing: r.pricing, startedForm: r.started, sentForm: r.sent, claimedPlace: r.claimed });

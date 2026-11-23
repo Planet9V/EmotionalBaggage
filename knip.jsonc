@@ -32,7 +32,10 @@
     // HELD for the welcome page restructure (ws22b-page): LEVELS, SHOW_PRICES and Level are no longer read since the
     // plan catalogue's built-in tiers moved into src/lib/admin/planSchema.ts (two plans, 22 Nov). The page work owns
     // content.ts and removes them; this line leaves with them.
-    "src/components/welcome/content.ts": ["exports", "types"]
+    "src/components/welcome/content.ts": ["exports", "types"],
+    // HELD for the same page work: the tracking helpers it mounts (useTrackView beside <TrackSection> and <Tracker />,
+    // docs/design/early-access.md). This line leaves once the page imports them.
+    "src/components/welcome/early/track.tsx": ["exports"]
   },
   // Used from CSS (@import / @plugin in globals.css), not from code, or only named in a type comment.
   "ignoreDependencies": ["@fontsource-variable/inter", "@fontsource-variable/jetbrains-mono", "tailwindcss", "tw-animate-css", "postcss-load-config"],

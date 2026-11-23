@@ -10,7 +10,7 @@ import { HttpError } from "@/lib/api/route";
 
 /** The cookie that carries the confirmation token to /welcome/early (only after a form sent without script). */
 export const EARLY_COOKIE = "c2r_early";
-export const EARLY_PAGE = "/welcome/early";
+const EARLY_PAGE = "/welcome/early";
 const COOKIE_SECONDS = 24 * 60 * 60;
 
 /** The codes the confirmation page explains; anything else reads as "could not be sent". */

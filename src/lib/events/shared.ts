@@ -13,7 +13,7 @@ export type EventName = (typeof EVENT_NAMES)[number];
 export const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 /** A detail value: short text, a number or a flag. */
-export type DetailValue = string | number | boolean;
+type DetailValue = string | number | boolean;
 export type EventDetail = Record<string, DetailValue>;
 
 const MAX_DETAIL_KEYS = 12;
@@ -32,10 +32,10 @@ export const EventBody = z.object({
     .refine((d) => Object.keys(d).length <= MAX_DETAIL_KEYS, `at most ${MAX_DETAIL_KEYS} details`)
     .default({}),
 });
-export type EventInput = z.input<typeof EventBody>;
+
 
 /** Only the host of a referrer address; "" for none, for this site, or for anything that is not an address. */
-export function referrerHost(referrer: string, ownHost = ""): string {
+function referrerHost(referrer: string, ownHost = ""): string {
   if (!referrer) return "";
   try {
     const h = new URL(referrer).hostname.toLowerCase();
