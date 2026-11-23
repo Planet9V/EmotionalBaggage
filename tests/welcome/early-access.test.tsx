@@ -63,8 +63,11 @@ describe("EarlyAccess", () => {
     expect(screen.getByLabelText(/^Email/)).toBeTruthy();
     expect(screen.getByLabelText(/^What do you want to make\?/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Claim an early-access place" })).toBeTruthy();
-    expect(screen.getByText("After early access: Maker $20 a month, Studio $40 a month.")).toBeTruthy();
-    expect(!!screen.queryByText(/counted on our own server/)).toBe(placement === "close");
+    // in the pricing block the plan cards under the form carry the prices, so the line is not said twice
+    expect(!!screen.queryByText("After early access: Maker $20 a month, Studio $40 a month.")).toBe(placement !== "pricing");
+    // the welcome page says the privacy sentence once, in its footer; only the confirmation page's own block carries it
+    expect(screen.queryByText(/counted on our own server/)).toBeNull();
+    expect(!!screen.queryByText(/We open workspaces in the order places were claimed/)).toBe(placement === "close");
     await noViolations(container);
   });
 

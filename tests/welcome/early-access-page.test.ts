@@ -47,8 +47,8 @@ describe("the plans the page sells", () => {
     const built = levelsOf(builtInCatalogue());
     const plans = paidPlans(built.levels, built.showPrices);
     expect(plans.map((p) => [p.name, p.price, p.per])).toEqual([["Maker", "$20", "a month"], ["Studio", "$40", "a month"]]);
-    expect(plans[1]!.note).toBe("Team seats open after early access.");
-    expect(plans[0]!.note).toBe("");
+    // the catalogue itself says when Studio's team seats open; the page adds no line of its own
+    expect(plans[1]!.includes.join(" ")).toMatch(/Team seats, opening after early access/);
   });
 
   it("take every price from the catalogue, and draw no card while it keeps prices off the page", () => {

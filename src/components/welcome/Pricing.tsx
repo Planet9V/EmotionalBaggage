@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button";
 import type { PublicLevel } from "@/lib/admin/planSchema";
 import { ACTION, PRICING } from "./content";
 
-export type PaidPlan = { key: string; name: string; price: string; per: string; who: string; what: string; includes: string[]; note: string };
+export type PaidPlan = { key: string; name: string; price: string; per: string; who: string; what: string; includes: string[] };
 
 /** The plans the page sells, with the price each card shows. */
 export function paidPlans(levels: PublicLevel[], showPrices: boolean): PaidPlan[] {
   if (!showPrices) return [];
   return levels
     .filter((l) => l.paid && (l.priceMonthly ?? 0) > 0 && l.price !== "")
-    .map((l) => ({ key: l.key, name: l.name, price: l.price, per: l.per || PRICING.per, who: l.who, what: l.what, includes: l.includes, note: PRICING.notes[l.key] ?? "" }));
+    .map((l) => ({ key: l.key, name: l.name, price: l.price, per: l.per || PRICING.per, who: l.who, what: l.what, includes: l.includes }));
 }
 
 /** `href` is the form the cards' action goes to. */
@@ -44,12 +44,6 @@ export function PlanCards({ plans, href }: { plans: PaidPlan[]; href: string }) 
                 ))}
               </ul>
             </>
-          ) : null}
-          {p.note ? (
-            <p className="mt-4 flex items-start gap-2 text-[13px] leading-snug text-primary">
-              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
-              {p.note}
-            </p>
           ) : null}
           <div className="mt-auto pt-5">
             <Button asChild variant="outline" className="h-10 w-full rounded-lg">

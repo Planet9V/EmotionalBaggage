@@ -539,8 +539,6 @@ export const PRICING = {
   plansTitle: "After early access",
   includes: "Includes",
   per: "a month",
-  /** shown on a plan's card, by plan key */
-  notes: { studio: "Team seats open after early access." } as Record<string, string>,
   first: "Early-access members are asked first when paid plans open.",
   questionsTitle: "What else should I ask?",
 };

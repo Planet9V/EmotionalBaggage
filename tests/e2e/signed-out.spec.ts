@@ -26,9 +26,11 @@ test("the welcome page has one action, early access, in reach from the header, a
   await page.goto("/welcome");
   // the header's action goes to the form in the hero; the same words are the action of every block
   await page.getByRole("banner").getByRole("link", { name: "Claim an early-access place" }).click();
-  await expect(page).toHaveURL(`${baseURL}/welcome#early`);
+  await expect(page).toHaveURL(`${baseURL}/welcome#early-access-hero`);
   await expect(page.getByRole("heading", { level: 1, name: "Your product idea, built and on sale." })).toBeInViewport();
-  for (const where of ["get", "proof", "pricing-maker", "pricing-studio"]) await expect(page.locator(`a[data-track="cta:${where}"]`)).toHaveText("Claim an early-access place");
+  for (const track of ["cta:get", "cta:proof", "plan:maker", "plan:studio"]) await expect(page.locator(`a[data-track="${track}"]`)).toHaveText("Claim an early-access place");
+  // every action is a link to a form that is on the page
+  for (const href of await page.locator('a[href^="#early-access-"]').evaluateAll((as) => as.map((a) => a.getAttribute("href")!))) await expect(page.locator(href)).toHaveCount(1);
   // the nine blocks, by their stable ids (the builder block shows only once the owner's name and text are saved)
   for (const id of ["hero", "origin", "problem", "get", "proof", "pricing", "faq", "close"]) await expect(page.locator(`section#${id}`)).toHaveCount(1);
   await page.getByRole("link", { name: "See the worked example" }).click();
@@ -37,7 +39,7 @@ test("the welcome page has one action, early access, in reach from the header, a
   // pricing: Maker and Studio, each with a price; no card that costs nothing and none for running it yourself
   const pricing = page.locator("section#pricing");
   await expect(pricing.getByRole("heading", { level: 4 })).toHaveText(["Maker", "Studio"]);
-  await expect(pricing.getByText("Team seats open after early access.")).toBeVisible();
+  await expect(pricing.getByText("Team seats, opening after early access")).toBeVisible();
   await expect(pricing.getByText("Price to be announced")).toHaveCount(0);
   // nothing the page says of the service claims it costs nothing, points at the source, or offers the shared demo
   // (the example's own rows, shown in "What you get" and the proof, are its data and are not read here)
@@ -50,6 +52,19 @@ test("the welcome page has one action, early access, in reach from the header, a
   await expect(page.getByRole("contentinfo")).toContainText("Visits to this page are counted on our own server. Nothing is sent to anyone else.");
   await page.getByRole("contentinfo").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(`${baseURL}/sign-in`);
+});
+
+test("a visitor claims an early-access place from the welcome page and is then asked for the optional details", async ({ page }) => {
+  await page.goto("/welcome");
+  const form = page.locator("#early-access-close");
+  await expect(form.locator("[data-early-count]")).toContainText(/early-access places left|Early access is full/);
+  await form.getByLabel(/^Email/).fill(`e2e-${Date.now()}@example.test`);
+  await form.getByLabel(/What do you want to make/).fill("A bike light that brakes brighter.");
+  const answer = page.waitForResponse((r) => r.url().endsWith("/api/access-requests") && r.request().method() === "POST");
+  await form.getByRole("button", { name: /Claim an early-access place|Join the waiting list/ }).click();
+  expect((await answer).status()).toBe(201);
+  await expect(form.locator("[data-early-answer]")).toBeVisible();
+  await expect(form.getByText("Tell us a little more")).toBeVisible();
 });
 
 for (const theme of ["light", "dark"] as const) {

@@ -5,7 +5,7 @@
  * It shows: the count line from the database ("N of 50 early-access places left", or "Early access is full. Join
  * the waiting list." at zero), the form (./EarlyAccessForm.tsx: works without script), and the price line from the
  * plan catalogue ("After early access: Maker $20 a month, Studio $40 a month."). "hero" is compact; "close" adds
- * what happens next and the privacy sentence. Nothing here throws: with the database unreadable the form still
+ * what happens next; the confirmation page ("page") also the privacy sentence, which the welcome page has in its footer. Nothing here throws: with the database unreadable the form still
  * shows, without the count.
  */
 import { cache } from "react";
@@ -50,15 +50,17 @@ export async function EarlyAccessBlock({ placement }: { placement: Placement }) 
   const compact = placement === "hero";
   const full = count !== null && count.left === 0;
   return (
-    <div data-early-access={placement} id={`early-access-${placement}`} className={cn("grid scroll-mt-24", compact ? "gap-2" : "gap-4")}>
+    <div data-early-access={placement} id={`early-access-${placement}`} className={cn("group/early grid scroll-mt-24", compact ? "gap-2" : "gap-4")}>
+      {/* the count was read when the page was drawn: once this form has given its answer, the answer stands alone */}
       {line ? (
-        <p className={cn("flex items-center gap-2 font-medium", compact ? "text-sm text-secondary" : "text-base text-primary")} data-early-count={count?.left ?? ""}>
+        <p className={cn("flex items-center gap-2 font-semibold text-primary group-has-[[data-early-answer]]/early:hidden", compact ? "text-[15px]" : "text-base")} data-early-count={count?.left ?? ""}>
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
           {line}
         </p>
       ) : null}
       <EarlyAccessForm placement={placement} full={full} compact={compact} />
-      {prices ? <p className="text-sm text-secondary">{prices}</p> : null}
+      {/* in the pricing block the plan cards under the form carry the prices */}
+      {prices && placement !== "pricing" ? <p className="text-sm text-secondary">{prices}</p> : null}
       {placement === "close" || placement === "page" ? (
         <>
           <ol className="grid gap-1 text-sm text-secondary sm:grid-cols-3 sm:gap-4">
@@ -66,7 +68,8 @@ export async function EarlyAccessBlock({ placement }: { placement: Placement }) 
             <li><span className="font-mono text-link">2</span> We open workspaces in the order places were claimed.</li>
             <li><span className="font-mono text-link">3</span> We write to that address when yours is ready.</li>
           </ol>
-          <p className="text-xs text-muted">{PRIVACY}</p>
+          {/* the welcome page says this once, in its footer; the confirmation page has no footer */}
+          {placement === "page" ? <p className="text-xs text-muted">{PRIVACY}</p> : null}
         </>
       ) : null}
     </div>

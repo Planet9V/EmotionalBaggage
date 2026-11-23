@@ -20,8 +20,8 @@ export async function sendEarlyAccessConfirmation(to: string, outcome: EarlyAcce
     const mail = await getMailSender({ timeoutMs: 10_000 });
     if (!mail.configured) return false;
     const line = outcomeMessage(outcome);
-    const text = `${line}\n\nEarly access costs nothing and takes no payment.\n\nIf you did not ask for this, ignore this email; nothing else will be sent.`;
-    await mail.sender.send({ to, subject: SUBJECT[outcome.kind], text, html: `<p>${escapeHtml(line)}</p><p>Early access costs nothing and takes no payment.</p><p>If you did not ask for this, ignore this email; nothing else will be sent.</p>` });
+    const text = `${line}\n\nEarly access takes no payment.\n\nIf you did not ask for this, ignore this email; nothing else will be sent.`;
+    await mail.sender.send({ to, subject: SUBJECT[outcome.kind], text, html: `<p>${escapeHtml(line)}</p><p>Early access takes no payment.</p><p>If you did not ask for this, ignore this email; nothing else will be sent.</p>` });
     return true;
   } catch (e) {
     console.warn(`[early access] the confirmation email was not sent: ${(e as Error)?.name ?? "error"}`);

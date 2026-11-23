@@ -59,7 +59,6 @@ export const AccessRequestForm = z.object({
   website: z.string().max(500).optional().default(""),
   visit: z.string().regex(/^[A-Za-z0-9_-]{8,40}$/).optional().catch(undefined),
 });
-export type AccessRequestValues = z.input<typeof AccessRequestForm>;
 export type AccessRequestParsed = z.output<typeof AccessRequestForm>;
 
 /** The confirmation step: the optional fields, tied to the request by the token its answer carried. */

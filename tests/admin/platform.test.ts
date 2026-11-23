@@ -118,13 +118,16 @@ describe("with empty settings and credentials tables, nothing is a blocker", () 
     ]);
   });
 
-  it("the welcome page renders, with the levels section and the two plans' prices", async () => {
+  it("the welcome page renders, with the pricing section and the two plans' prices", async () => {
     const { default: WelcomePage } = await import("@/app/welcome/page");
-    const { renderToString } = await import("react-dom/server");
+    // the page holds async server components (the early-access offer), so it is rendered as a stream and read whole
+    const { renderToReadableStream } = await import("react-dom/server.edge");
     const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
     const { createElement } = await import("react");
-    const html = renderToString(createElement(QueryClientProvider, { client: new QueryClient() }, await WelcomePage()));
-    const start = html.indexOf('id="levels"');
+    const stream = await renderToReadableStream(createElement(QueryClientProvider, { client: new QueryClient() }, await WelcomePage()));
+    await stream.allReady;
+    const html = await new Response(stream).text();
+    const start = html.indexOf('<section id="pricing"');
     expect(start).toBeGreaterThan(0);
     const levels = html.slice(start, html.indexOf("</section>", start));
     expect(levels).toContain("$20");
