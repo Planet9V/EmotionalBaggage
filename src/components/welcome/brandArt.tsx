@@ -88,7 +88,7 @@ export function SocialCard() {
   return (
     <div style={{ position: "relative", width: 1200, height: 630, overflow: "hidden", background: "#0b0c0e", color: "#fff", fontFamily: "'Inter Variable', Inter, system-ui, sans-serif" }}>
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 38% 62% at 76% 52%, rgba(214,138,82,0.3), rgba(214,138,82,0.07) 55%, transparent 80%)" }} />
-      {/* the line from Idea to On sale */}
+      {/* the line from Idea to Ready to sell */}
       <div style={{ position: "absolute", left: 72, right: 72, top: 78, display: "flex", alignItems: "center", gap: 20, fontSize: 24, fontWeight: 500 }}>
         <span>{HERO_STAGE.from}</span>
         <span style={{ flex: 1, height: 4, borderRadius: 2, background: "#e05a10" }} />

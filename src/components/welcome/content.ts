@@ -212,10 +212,11 @@ export const ENGINEERING = {
   note: "As the app says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
   model: {
     modes: { translucent: "Translucent", solid: "Solid", wireframe: "Wireframe", exploded: "Exploded" },
-    wiresHidden: "The solid lid is closed, so the wires and the labels of the parts inside are not drawn.",
-    /** `drawn` is null before the live view has worked the wires out */
-    counts: (placed: number, parts: number, drawn: number | null, wires: number) =>
-      `${placed} of ${parts} parts have a size and are placed${drawn === null ? `; ${wires} wires` : `; ${drawn} of ${wires} wires run between placed parts and are drawn`}`,
+    wiresHidden: "The finished tag is closed, so the wires and the names of the parts inside are not drawn.",
+    label: (name: string) => `${name} in 3D. Drag to turn it, or use the arrow keys or the buttons.`,
+    still: (name: string) => `${name}: the front of the tag, drawn.`,
+    hint: "Drag to turn. The buttons turn, tilt and zoom.",
+    counts: (placed: number, parts: number, joins: number, wires: number) => `${placed} of ${parts} parts have a place and are drawn; the ${wires} wires join ${joins} pairs of them`,
   },
   schematic: {
     views: { symbols: "Symbols", pins: "Pins and wires" },
@@ -272,7 +273,7 @@ export const GET_STAGE_EVENT = "c2r:get-stage";
 
 /** The hero's picture: the example's product on the line from an idea to a sale, with four of its outputs. */
 export const HERO_STAGE = {
-  label: (name: string) => `${name}, the worked example: a slim leather-look luggage tag on its strap, hanging on a line that runs from an idea typed as one line to a product on sale. Beside it, four of its outputs: the schematic, the unit cost, an ad and the marketplace listing.`,
+  label: (name: string) => `${name}, the worked example: a slim leather-look luggage tag on its strap, hanging on a line that runs from an idea typed as one line to a product ready to sell. Beside it, four of its outputs: the schematic, the unit cost, an ad and the marketplace listing.`,
   tag: (name: string, w: number, h: number, t: number) => `${name}: a saddle-tan luggage tag, ${w} by ${h} by ${t} mm, with cream stitching, a perforated speaker panel and its name stamped in an oval.`,
   turn: "The tag in 3D, turning. Drag it, or use the arrow keys, to turn it yourself.",
   modesLabel: "How the tag is drawn",
@@ -280,7 +281,7 @@ export const HERO_STAGE = {
   inside: "Look inside",
   field: "Your idea, in one line",
   from: "Idea",
-  to: "On sale",
+  to: "Ready to sell",
   cards: {
     schematic: "Schematic",
     cost: "Unit cost",
@@ -516,7 +517,7 @@ export const PROOF = {
     sell: { label: "Sell it", sub: "Seven marketing and sales views, built on the same rows as the engineering." },
   },
   noscript: "Script is off, so the switch cannot change. The Sell it views are set out below.",
-  enclosureNote: "The 3D view draws the enclosure to the outline of the example's own case, which is designed by hand. Enclosure and print shows the box the app generates around the same parts.",
+  enclosureNote: "3D is the app's view of the example: its own case design, and each part at the size and place its row gives; the board's chips have no layout rows yet and are set out for illustration. Enclosure and print shows the box the app generates around the same parts.",
   status: {
     title: "What did it tell us?",
     lead: `What we did not want to hear, before we spent a dollar. At prototype cost, ${EXAMPLE.badNews.costAtOne} a unit, all five channels lose money. At 100 units our own site leaves about ${EXAMPLE.badNews.ownSiteLeaves} a unit and wholesale still loses. So the tag is designed and costed, not yet built or sold. Here are its checks, stage by stage.`,

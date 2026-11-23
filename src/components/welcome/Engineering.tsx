@@ -3,7 +3,7 @@
 // The engineering stage: one dark panel with six tabs, each the app's own view running on the worked example's
 // rows. The rows come from the server (exampleData.ts) as props; nothing here calls the API, and nothing can be
 // saved: every view is given its read-only form.
-//   3D                  ModelCanvas + useSceneModel (EngModel)
+//   3D                  the example's own model, part by part (EngModel, on product/*)
 //   Schematic           SymbolCanvas and SchematicCanvas + the circuit and layout derivations (EngSchematic)
 //   Physical layout     ThreeView, three times (EngLayout)
 //   Enclosure and print EnclosureCanvas on the meshes the app's generator built on the server (EngEnclosure)
@@ -23,7 +23,9 @@ import { sequence, toWires } from "@/components/buildsheet/derive";
 import type { ExampleEnclosure } from "./exampleData";
 import { Shot } from "./Shot";
 import { useHydrated } from "./useAnimated";
-import { ENGINEERING, FEATURES } from "./content";
+import { joinedPairs, type Product } from "./product/model";
+import { TagArt } from "./TagArt";
+import { ENGINEERING, EXAMPLE, FEATURES } from "./content";
 import { StageBar, StageFoot, StageView, Waiting } from "./StageParts";
 
 const loading = () => <Waiting label={ENGINEERING.loading} />;
@@ -97,7 +99,7 @@ function BomTable({ parts, sortable }: { parts: Part[]; sortable: boolean }) {
   );
 }
 
-export function Engineering({ parts: partItems, wires, enclosure }: { parts: Item[]; wires: Item[]; enclosure: ExampleEnclosure | null }) {
+export function Engineering({ parts: partItems, wires, enclosure, product }: { parts: Item[]; wires: Item[]; enclosure: ExampleEnclosure | null; /** the example as a product, for the 3D tab */ product: Product }) {
   const stage = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const hydrated = useHydrated();
@@ -165,15 +167,14 @@ export function Engineering({ parts: partItems, wires, enclosure }: { parts: Ite
         ) : !live ? (
           <>
             <StageBar path="/s/design/model" />
-            <StageView className="flex items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,#171a20_0%,#0b0c0e_72%)]">
-              <div className="w-full max-w-[1100px] opacity-90">
-                <Shot name="model" theme="dark" alt={altOf("model")} />
-              </div>
+            {/* until the stage nears the window: the tag as a drawing, where the model will stand */}
+            <StageView className="flex items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_62%_58%_at_50%_46%,#2a211b_0%,#15120f_45%,#0b0c0e_82%)] p-8">
+              <TagArt strap={10} margin={4} label={ENGINEERING.model.still(EXAMPLE.name)} className="h-full max-h-[440px] w-auto" />
             </StageView>
-            <StageFoot hint={ENGINEERING.still}>{ENGINEERING.model.counts(parts.filter((p) => p.geometry).length, parts.length, null, wires.length)}</StageFoot>
+            <StageFoot hint={ENGINEERING.still}>{ENGINEERING.model.counts(product.parts.filter((p) => p.body).length, product.parts.length, joinedPairs(product), wires.length)}</StageFoot>
           </>
         ) : tab === "model" ? (
-          <EngModel parts={partItems} wires={wires} />
+          <EngModel product={product} wires={wires.length} />
         ) : tab === "schematic" ? (
           <EngSchematic parts={partItems} wires={wires} />
         ) : tab === "layout" ? (

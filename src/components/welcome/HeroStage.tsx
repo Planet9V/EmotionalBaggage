@@ -1,7 +1,7 @@
 "use client";
 
 // The hero's picture: the product itself. The worked example's tag (Rev D, A1 "Saddle") hangs by its strap from the
-// line that runs from "Idea" to "On sale"; the idea is typed as one line above it (the owner's own first note), and
+// line that runs from "Idea" to "Ready to sell"; the idea is typed as one line above it (the owner's own first note), and
 // four of the example's outputs stand beside it, in the order the stages make them: the schematic and the unit cost
 // on the making side, an ad and the listing on the selling side. Every word and number is one of the example's
 // seeded rows (storyData.ts).
@@ -20,6 +20,7 @@ import { ARTEFACT_KEYS, Artefact } from "./Artefacts";
 import { TagArt } from "./TagArt";
 import type { HeroFacts } from "./storyData";
 import { useAnimated, useHydrated } from "./useAnimated";
+import { canDraw3d } from "./product/capable";
 import { filmMode, paceVerdict } from "./scenes/pace";
 import { TAG_MM } from "./scenes/film/tagShape";
 import { BLEED, MARGIN, STRAP_UP } from "./hero/frame";
@@ -39,14 +40,6 @@ const PLACE = ["sm:col-start-1 sm:row-start-1", "sm:col-start-1 sm:row-start-2",
 /** The stops on the line, as shares of its length: two before the strap and two after it. */
 const STOPS = [0.2, 0.36, 0.64, 0.8];
 
-function hasWebGl() {
-  try {
-    const c = document.createElement("canvas");
-    return Boolean(c.getContext("webgl2") ?? c.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
 // the page's own record of the hero's 3D, for the checks that read it (draw calls, pace): not React's to keep
 function note(el: HTMLElement | null, key: string, value: string) {
   el?.setAttribute(key, value);
@@ -70,7 +63,7 @@ export function HeroStage({ idea, facts, product }: { idea: string; facts: HeroF
   const [ready, setReady] = useState(false);
   const [sharp, setSharp] = useState(true);
   const [slow, setSlow] = useState(false);
-  const capable = useMemo(() => hydrated && hasWebGl(), [hydrated]);
+  const capable = useMemo(() => hydrated && canDraw3d(), [hydrated]);
   const mode = useMemo(() => (hydrated ? filmMode(window.location.search) : "normal"), [hydrated]);
   const live = capable && animated && idle && !slow && boxPx > 0;
 
@@ -127,7 +120,7 @@ export function HeroStage({ idea, facts, product }: { idea: string; facts: HeroF
   const typed = running ? lap.typed : idea.length;
   const shown = running ? lap.shown : N;
   const typing = running && typed < idea.length;
-  // the line is drawn as far as the last output that has arrived; all four, and it reaches "On sale"
+  // the line is drawn as far as the last output that has arrived; all four, and it reaches "Ready to sell"
   const reach = shown === 0 ? 0 : shown === N ? 1 : STOPS[shown - 1]!;
 
   // opens the product viewer in "What do I end up with?" (WhatYouGet listens), and the link goes there
@@ -159,7 +152,7 @@ export function HeroStage({ idea, facts, product }: { idea: string; facts: HeroF
         </p>
       </div>
 
-      {/* the line from Idea to On sale: the rail the product hangs from */}
+      {/* the line from Idea to Ready to sell: the rail the product hangs from */}
       <div className="relative mt-4 flex h-6 items-center gap-3 text-[13px] font-medium" aria-hidden="true">
         <span className="text-primary">{HERO_STAGE.from}</span>
         <span className="relative h-[3px] min-w-0 flex-1 rounded-full bg-[var(--border-hairline)]">

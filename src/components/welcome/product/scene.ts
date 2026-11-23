@@ -41,6 +41,7 @@ export class ProductScene {
   private mode: ViewerMode = "solid";
   private chosen: string | null = null;
   private doors = { coinDoor: 0, trackerDoor: 0 };
+  private allWires = false;
   private byRef: Map<string, ProductPart>;
 
   constructor(product: Product, strapUp: number, strapLoop: boolean) {
@@ -126,6 +127,25 @@ export class ProductScene {
     this.paint();
     this.join();
   }
+  /** Every net of the schematic drawn at once, part to part, while no part is chosen. */
+  setWires(on: boolean) {
+    this.allWires = on;
+    this.join();
+  }
+  private pairs(from: ProductPart[]) {
+    const seen = new Set<string>();
+    const out: { a: string; b: string; netClass: string }[] = [];
+    for (const p of from)
+      for (const n of p.nets)
+        for (const to of n.to) {
+          const key = [p.ref, to].sort().join("|");
+          if (seen.has(key) || !this.byRef.has(to)) continue;
+          seen.add(key);
+          out.push({ a: p.ref, b: to, netClass: n.netClass });
+        }
+    return out;
+  }
+
   /** How far apart the parts are (0 to 1) and how far each door is open (0 to 1); the speaker's light, 0 to 1. */
   pose(explode: number, coin: number, tracker: number, glow: number) {
     const moved = explode !== this.uExplode.value || coin !== this.doors.coinDoor || tracker !== this.doors.trackerDoor;
@@ -139,7 +159,7 @@ export class ProductScene {
       if (door) m.position.add(new THREE.Vector3(...DOOR_OUT[p.look as "coinDoor"]).multiplyScalar(door * MM));
     }
     for (const u of this.looks) tagPerform(u, 0, 0, glow);
-    if (moved && this.chosen) this.join();
+    if (moved && (this.chosen || this.allWires)) this.join();
   }
   /** The line drawing's and the joins' lines are drawn in pixels: they need the canvas's size. */
   resize(w: number, h: number) {
@@ -197,26 +217,21 @@ export class ProductScene {
     this.edges.visible = mode === "wireframe" || !!chosen;
   }
 
-  /** The lines from the chosen part to each part a net joins it to, coloured by the net's class. */
+  /** The lines from the chosen part to each part a net joins it to (or, with none chosen and wires on, every join), coloured by the net's class. */
   private join() {
     const part = this.chosen ? this.byRef.get(this.chosen) : null;
-    const from = part ? this.middle(part.ref) : null;
     const pos: number[] = [];
     const col: number[] = [];
-    if (part && from) {
-      const seen = new Set<string>();
-      for (const n of part.nets) {
-        const c = new THREE.Color(NET[n.netClass] ?? "#ffffff");
-        for (const to of n.to) {
-          const at = this.middle(to);
-          if (!at || seen.has(`${to}:${n.netClass}`)) continue;
-          seen.add(`${to}:${n.netClass}`);
-          pos.push(from.x, from.y, from.z, at.x, at.y, at.z);
-          col.push(c.r, c.g, c.b, c.r, c.g, c.b);
-        }
-      }
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    for (const j of part ? this.pairs([part]) : this.allWires ? this.pairs(this.parts) : []) {
+      if (!this.middle(j.a, a) || !this.middle(j.b, b)) continue;
+      const c = new THREE.Color(NET[j.netClass] ?? "#ffffff");
+      pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
+      col.push(c.r, c.g, c.b, c.r, c.g, c.b);
     }
     this.joins.visible = pos.length > 0;
+    this.joinMat.linewidth = part ? 2.5 : 1.6;
     if (!pos.length) return;
     const g = new LineSegmentsGeometry();
     g.setPositions(pos);

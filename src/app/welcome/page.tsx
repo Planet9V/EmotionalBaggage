@@ -214,7 +214,7 @@ export default async function WelcomePage() {
             </div>
             {/* the stage runs wider than the text column; the showcase lays both out */}
             <div className="mt-8">
-              <Showcase parts={example.parts} wires={example.wires} enclosure={example.enclosure} market={story.market} />
+              <Showcase parts={example.parts} wires={example.wires} enclosure={example.enclosure} market={story.market} product={story.product} />
             </div>
             <div className={`${WRAP} mt-12`}>
               <h3 className={H3}>{PROOF.status.title}</h3>
