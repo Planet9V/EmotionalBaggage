@@ -79,11 +79,12 @@ export function IsoRing({ cx = 0, cy = 0, z = 0, r, fill = "none", ...rest }: { 
 }
 
 /**
- * The gadget seen from the front, as it sits on its straps: the real case is a box 80 by 60 mm (42 mm deep) with a
- * round speaker opening in the lid. Drawn upright, 1.5 r wide and 2 r tall, in the accent, with the dark grille.
+ * The gadget seen from the front, as it hangs from the handle: the Rev D tag is a slim slab 62 by 92 mm (12.8 mm
+ * deep) with its speaker behind a perforated panel. Drawn upright, 1.35 r wide and 2 r tall (the tag's 62 to 92), in
+ * the accent, with a round dark grille standing for the panel.
  */
 function DeviceFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
-  const w = r * 1.5;
+  const w = r * 1.35;
   const h = r * 2;
   return (
     <>

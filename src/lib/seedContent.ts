@@ -33,6 +33,7 @@ import batch20261122 from "../../seed/concepts/baggage-claims/content/2026-11-22
 import batch20261122Rulings from "../../seed/concepts/baggage-claims/content/2026-11-22-rulings.json";
 import batchEngineering from "../../seed/concepts/baggage-claims/content/2026-11-22-engineering.json";
 import batchRevD from "../../seed/concepts/baggage-claims/content/2026-11-22-revD.json";
+import batchRevD2 from "../../seed/concepts/baggage-claims/content/2026-11-22-revD-2.json";
 
 type Provenance = { proposal: string; sourceFile: string; sourceLocation: string };
 
@@ -86,7 +87,7 @@ export type ContentRow = ContentAdd | ContentEnrich | ContentRetire | ContentLin
 export type ContentBatch = { batch: string; about: string; from?: string; rows: ContentRow[] };
 
 /** Every batch, oldest first. A new batch is a new file and a new line here. */
-export const CONTENT_BATCHES: ContentBatch[] = [batch20261122 as ContentBatch, batch20261122Rulings as ContentBatch, batchEngineering as ContentBatch, batchRevD as ContentBatch];
+export const CONTENT_BATCHES: ContentBatch[] = [batch20261122 as ContentBatch, batch20261122Rulings as ContentBatch, batchEngineering as ContentBatch, batchRevD as ContentBatch, batchRevD2 as ContentBatch];
 
 /** A row as far as a batch reads or writes it. */
 export type PlainRow = { section: string; title: string; body: string; data: Record<string, unknown>; status: string };
