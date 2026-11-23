@@ -24,7 +24,9 @@ const FOV = 17;
 const TURN = 0.42; // radians a second: a turn in about fifteen seconds
 /** How far the strap's loop rises above the tag standing free, in mm. */
 const STRAP_FREE = 24;
-const REST_AFTER = 1.4; // seconds after a hand lets go before it turns on its own again
+const REST_AFTER = 1.4;
+/** How many tags stay while the tag is turning. */
+const MOVING_TAGS = 5; // seconds after a hand lets go before it turns on its own again
 
 export type Pose = { yaw: number; pitch: number; /** changes when the page asks for this pose again */ key: number };
 export type ProductCanvasProps = {
@@ -38,12 +40,16 @@ export type ProductCanvasProps = {
   chosen: string | null;
   onChoose?: (ref: string | null) => void;
   onHover?: (ref: string | null) => void;
-  /** every net of the schematic drawn at once, part to part */
-  wires?: boolean;
+  /** whether the chosen part's joins are drawn (they are unless this says not) */
+  joins?: boolean;
   /** a turn, tilt or zoom asked for by a button: `n` changes with each press */
   nudge?: { kind: "left" | "right" | "up" | "down" | "in" | "out"; n: number };
-  /** names set on the parts in the picture, each a button that chooses its part */
-  labels?: { ref: string; text: string }[];
+  /**
+   * Tags set on the parts in the picture, each at its part and a button that chooses it, in the order they are
+   * kept when there is not room for all: `text` is the part's name, `note` a few more words shown under the pointer.
+   * A ref written "A>B" is a net's tag instead: set half way between parts A and B.
+   */
+  labels?: { ref: string; text: string; note?: string }[];
   /** the hero: the drawn tag's box in CSS pixels high, and the strap rising to the rail; absent, the tag stands free */
   hang?: { boxPx: number };
   /** how far the strap's loop rises above the tag standing free, in mm */
@@ -77,8 +83,8 @@ class Turner {
   zoom = 1;
   camera: THREE.Camera | null = null;
   hovered: string | null = null;
+  moving = false;
   readonly labels = new Map<string, HTMLElement>();
-  readonly leads = new Map<string, SVGLineElement>();
 
   see(camera: THREE.Camera | null) {
     this.camera = camera;
@@ -128,6 +134,7 @@ class Turner {
   }
   /** One frame on: toward the pose asked for, or round on the turntable, and toward how far apart and open it should be. */
   advance(step: number, p: ProductCanvasProps) {
+    const was = this.yaw;
     this.t += step;
     this.rest += step;
     if (this.toPose) {
@@ -143,35 +150,62 @@ class Turner {
     if (Math.abs(this.explode - p.explode) < 0.002) this.explode = p.explode;
     this.coin = nearer(this.coin, p.open === "coin" ? 1 : 0, step * 5);
     this.tracker = nearer(this.tracker, p.open === "tracker" ? 1 : 0, step * 5);
+    this.moving = Math.abs(this.yaw - was) > 1e-4 || !!this.down;
     return ++this.drawn;
   }
-  /**
-   * Sets the names round the picture, each joined to its part by a line: from left to right they are dealt onto
-   * four rows, two above the picture and two below, and spread along each row, so neighbours do not sit on one
-   * another.
-   */
-  place(at: { ref: string; x: number; y: number }[], width: number, height: number) {
-    at.sort((a, b) => a.x - b.x);
-    const perRow = Math.ceil(at.length / 4);
-    at.forEach((p, i) => {
-      const el = this.labels.get(p.ref);
-      if (!el) return;
-      const row = i % 4;
-      const above = row % 2 === 0;
-      const y = above ? 15 + (row >> 1) * 30 : height - 15 - (row >> 1) * 30;
-      const x = ((Math.floor(i / 4) + 0.5 + (row >> 1) * 0.5 - 0.25) / perRow) * (width - 40) + 20;
-      el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-      const line = this.leads.get(p.ref);
-      if (!line) return;
-      line.setAttribute("x1", String(x));
-      line.setAttribute("y1", String(y + (above ? 11 : -11)));
-      line.setAttribute("x2", String(p.x));
-      line.setAttribute("y2", String(p.y));
-    });
+  /** A tag's size, measured once: its text does not change while it is in the page. */
+  private sizes = new Map<HTMLElement, [number, number]>();
+  private slots = new Map<string, number>();
+  private sizeOf(el: HTMLElement): [number, number] {
+    let s = this.sizes.get(el);
+    if (!s) this.sizes.set(el, (s = [el.offsetWidth, el.offsetHeight]));
+    return s;
   }
-  lead(ref: string, el: SVGLineElement | null) {
-    if (el) this.leads.set(ref, el);
-    else this.leads.delete(ref);
+  /**
+   * Sets each tag beside its own part, in the order given (the first matter most): to the right of the part's dot,
+   * or failing that left, above or below it, never more than a short stub away. A tag that would sit on one already
+   * placed, or run off the picture, is left out (its dot stays) unless its part is chosen or under the pointer; and
+   * while the tag is turning only the first few are shown.
+   */
+  place(at: { ref: string; x: number; y: number }[], width: number, height: number, chosen: string | null) {
+    // every part's dot is kept clear, and tags keep a hair apart
+    const taken: [number, number, number, number][] = at.filter((p) => !p.ref.includes(">")).map((p) => [p.x - 5, p.y - 5, p.x + 5, p.y + 5]);
+    const free = (r: [number, number, number, number]) => r[0] >= 2 && r[1] >= 2 && r[2] <= width - 2 && r[3] <= height - 2 && !taken.some((t) => r[0] < t[2] + 3 && r[2] > t[0] - 3 && r[1] < t[3] + 3 && r[3] > t[1] - 3);
+    let shown = 0;
+    // the chosen part's tag and the one under the pointer are placed first, so they are never the ones left out
+    const first = (ref: string) => Number(ref === chosen || ref === this.hovered);
+    const order = [...at].sort((a, b) => first(b.ref) - first(a.ref));
+    for (const p of order) {
+      const el = this.labels.get(p.ref);
+      const tag = el?.lastElementChild as HTMLElement | null;
+      if (!el || !tag) continue;
+      const wanted = first(p.ref) === 1;
+      // a wanted tag shows its second line, so it is measured as it stands
+      const [w, h] = wanted ? [tag.offsetWidth, tag.offsetHeight] : this.sizeOf(tag);
+      el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+      const spots: [number, number][] = p.ref.includes(">")
+        ? [[-w / 2, -h / 2]]
+        : [[9, -h / 2], [-9 - w, -h / 2], [-w / 2, -h - 9], [-w / 2, 9], [14, -h - 6], [14, 6], [-14 - w, -h - 6], [-14 - w, 6]];
+      const last = Math.min(this.slots.get(p.ref) ?? 0, spots.length - 1);
+      let slot = -1;
+      if (wanted || shown < (this.moving ? MOVING_TAGS : Infinity))
+        for (const k of [last, ...spots.keys()]) {
+          const [dx, dy] = spots[k]!;
+          if (free([p.x + dx, p.y + dy, p.x + dx + w, p.y + dy + h])) {
+            slot = k;
+            break;
+          }
+        }
+      if (slot < 0 && wanted) slot = last;
+      tag.style.visibility = slot < 0 ? "hidden" : "visible";
+      el.style.zIndex = wanted ? "2" : "1";
+      if (slot < 0) continue;
+      const [dx, dy] = spots[slot]!;
+      this.slots.set(p.ref, slot);
+      tag.style.transform = `translate(${dx}px, ${dy}px)`;
+      taken.push([p.x + dx, p.y + dy, p.x + dx + w, p.y + dy + h]);
+      shown++;
+    }
   }
 }
 
@@ -254,14 +288,28 @@ function Drive({ scene, hand, p }: { scene: ProductScene; hand: Turner; p: Produ
 
     if (h.labels.size && turn.current) {
       const on: { ref: string; x: number; y: number }[] = [];
-      for (const ref of h.labels.keys()) {
+      const group = turn.current;
+      const seen = (ref: string) => {
         const mid = scene.middle(ref, at);
-        if (!mid) continue;
+        if (!mid) return null;
         mid.y -= pivot;
-        turn.current.localToWorld(mid).project(camera);
-        on.push({ ref, x: ((mid.x + 1) / 2) * size.width, y: ((1 - mid.y) / 2) * size.height });
+        group.localToWorld(mid).project(camera);
+        return [((mid.x + 1) / 2) * size.width, ((1 - mid.y) / 2) * size.height] as const;
+      };
+      // in the order the tags were given: the first matter most
+      for (const l of p.labels ?? []) {
+        if (l.ref.includes(">")) {
+          // a net's tag: half way along the line between the two parts it joins
+          const [a, b] = l.ref.split(">") as [string, string];
+          const pa = seen(a);
+          const pb = seen(b);
+          if (pa && pb) on.push({ ref: l.ref, x: (pa[0] + pb[0]) / 2, y: (pa[1] + pb[1]) / 2 });
+          continue;
+        }
+        const mid = seen(l.ref);
+        if (mid) on.push({ ref: l.ref, x: mid[0], y: mid[1] });
       }
-      h.place(on, size.width, size.height);
+      h.place(on, size.width, size.height, p.chosen);
     }
     // by the third frame two have been drawn, the first of them with the shaders' compile: the drawing may give way
     if (drawn === 3) p.onReady();
@@ -292,7 +340,8 @@ export default function ProductCanvas(p: ProductCanvasProps) {
   useEffect(() => () => scene.dispose(), [scene]);
   useEffect(() => scene.setMode(mode), [scene, mode]);
   useEffect(() => scene.setChosen(chosen), [scene, chosen]);
-  useEffect(() => scene.setWires(!!p.wires), [scene, p.wires]);
+  const joins = p.joins ?? true;
+  useEffect(() => scene.setJoins(joins), [scene, joins]);
   const [hand] = useState(() => new Turner());
   // a pose asked for again (a view chosen) is eased to; the first is where it starts
   useEffect(() => hand.askPose(), [hand, p.pose.key]);
@@ -373,25 +422,32 @@ export default function ProductCanvas(p: ProductCanvasProps) {
         </Environment>
         <Drive scene={scene} hand={hand} p={p} />
       </Canvas>
-      {p.labels ? (
-        <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-          {p.labels.map((l) => (
-            <line key={l.ref} ref={(el) => hand.lead(l.ref, el)} stroke={chosen === l.ref ? "#ff8a3d" : "#ffffff"} strokeOpacity={chosen === l.ref ? 0.95 : 0.45} strokeWidth={1} />
-          ))}
-        </svg>
-      ) : null}
-      {p.labels?.map((l) => (
-        <button
-          key={l.ref}
-          type="button"
-          ref={(el) => hand.label(l.ref, el)}
-          onClick={() => p.onChoose?.(l.ref)}
-          aria-pressed={chosen === l.ref}
-          className={`absolute left-0 top-0 max-w-[150px] truncate rounded-full border px-2 py-0.5 text-[13px] leading-tight shadow-[0_2px_10px_rgba(0,0,0,0.5)] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ${chosen === l.ref ? "border-transparent bg-action text-white" : "border-white/25 bg-black/75 text-white hover:border-dutchOrange"}`}
-        >
-          {l.text}
-        </button>
-      ))}
+      {p.labels?.map((l) => {
+        const net = l.ref.includes(">");
+        const on = chosen === l.ref;
+        return (
+          <div key={l.ref} ref={(el) => hand.label(l.ref, el)} className="pointer-events-none absolute left-0 top-0 h-0 w-0">
+            {/* the dot on the part; then its tag, set beside it each frame */}
+            {net ? null : <span className={`absolute -left-[3px] -top-[3px] h-1.5 w-1.5 rounded-full ring-1 ring-black/60 ${on ? "bg-dutchOrange" : "bg-white"}`} aria-hidden />}
+            {net ? (
+              <span className="absolute left-0 top-0 whitespace-nowrap rounded border border-white/20 bg-black/80 px-1 py-px font-mono text-[11px] leading-tight text-white">{l.text}</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => p.onChoose?.(l.ref)}
+                aria-pressed={on}
+                aria-label={l.note ? `${l.text}, ${l.note}` : l.text}
+                className={`group pointer-events-auto absolute left-0 top-0 flex flex-col whitespace-nowrap rounded-md border px-1.5 py-0.5 text-left text-[13px] leading-tight shadow-[0_2px_10px_rgba(0,0,0,0.5)] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ${on ? "border-transparent bg-action text-white" : "border-white/20 bg-black/75 text-white hover:border-dutchOrange"}`}
+              >
+                <span>
+                  {l.text} <span className={`font-mono text-[11px] ${on ? "text-white/80" : "text-dutchOrange-300"}`}>{l.ref}</span>
+                </span>
+                {l.note ? <span className={`text-[12px] ${on ? "block text-white/85" : "hidden text-zinc-300 group-hover:block group-focus-visible:block"}`}>{l.note}</span> : null}
+              </button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

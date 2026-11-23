@@ -20,10 +20,10 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { partPrice, partSource, sumLine, toPart, type Part } from "@/lib/domain";
 import type { Item } from "@/lib/types";
 import { sequence, toWires } from "@/components/buildsheet/derive";
-import type { ExampleEnclosure } from "./exampleData";
 import { Shot } from "./Shot";
 import { useHydrated } from "./useAnimated";
 import { joinedPairs, type Product } from "./product/model";
+import type { Printed } from "./product/printed";
 import { TagArt } from "./TagArt";
 import { ENGINEERING, EXAMPLE, FEATURES } from "./content";
 import { StageBar, StageFoot, StageView, Waiting } from "./StageParts";
@@ -32,7 +32,7 @@ const loading = () => <Waiting label={ENGINEERING.loading} />;
 const EngModel = dynamic(() => import("./EngModel"), { ssr: false, loading });
 const EngSchematic = dynamic(() => import("./EngSchematic"), { ssr: false, loading });
 const EngLayout = dynamic(() => import("./EngLayout"), { ssr: false, loading });
-const EngEnclosure = dynamic(() => import("./EngEnclosure"), { ssr: false, loading });
+const EngPrinted = dynamic(() => import("./EngPrinted"), { ssr: false, loading });
 const EngBuildSheet = dynamic(() => import("./EngBuildSheet"), { ssr: false, loading });
 
 type Tab = keyof typeof ENGINEERING.tabs;
@@ -99,7 +99,7 @@ function BomTable({ parts, sortable }: { parts: Part[]; sortable: boolean }) {
   );
 }
 
-export function Engineering({ parts: partItems, wires, enclosure, product }: { parts: Item[]; wires: Item[]; enclosure: ExampleEnclosure | null; /** the example as a product, for the 3D tab */ product: Product }) {
+export function Engineering({ parts: partItems, wires, product, printed }: { parts: Item[]; wires: Item[]; /** the example as a product, for the 3D tab */ product: Product; /** its enclosure as the app holds it, for the Enclosure and print tab */ printed: Printed | null }) {
   const stage = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const hydrated = useHydrated();
@@ -180,8 +180,8 @@ export function Engineering({ parts: partItems, wires, enclosure, product }: { p
         ) : tab === "layout" ? (
           <EngLayout parts={partItems} />
         ) : tab === "enclosure" ? (
-          enclosure ? (
-            <EngEnclosure enclosure={enclosure} />
+          printed ? (
+            <EngPrinted printed={printed} />
           ) : (
             <StageView>
               <Waiting label={ENGINEERING.enclosure.missing} />
