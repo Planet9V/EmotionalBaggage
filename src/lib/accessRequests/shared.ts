@@ -91,6 +91,26 @@ export type AccessRequestAnswer = { ok: true; message: string; outcome: EarlyAcc
 /** The count line above the form. */
 export type EarlyAccessCount = { limit: number; held: number; left: number; waiting: number };
 
+/** What a visitor may know of the count: places left, the limit, and whether it is full. Nothing else is public. */
+export type PublicPlaces = { left: number; limit: number; full: boolean };
+
+export const publicPlaces = (c: Pick<EarlyAccessCount, "left" | "limit">): PublicPlaces => ({ left: c.left, limit: c.limit, full: c.left === 0 });
+
+/** The count line's sentence, word for word as the page shows it. */
+export const countLine = (p: PublicPlaces): string => (p.full ? "Early access is full. Join the waiting list." : `${p.left} of ${p.limit} early-access places left`);
+
+/** What the other forms on the page say once one of them has an answer, so nobody claims twice by mistake. */
+export function claimedLine(o: EarlyAccessOutcome): string {
+  switch (o.kind) {
+    case "place":
+      return `You have place number ${o.place}.`;
+    case "waiting":
+      return `You are number ${o.position} on the waiting list.`;
+    case "listed":
+      return "You are on the list.";
+  }
+}
+
 export const ACTION_LABEL = { claim: "Claim an early-access place", wait: "Join the waiting list" } as const;
 
 export type AccessRequestRow = {

@@ -24,7 +24,7 @@ function serve(answer: (s: Sent) => { status?: number; body: unknown }) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const s = { url: String(input), body: JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown> };
+      const s = { url: String(input), body: JSON.parse(typeof init?.body === "string" ? init.body : "{}") as Record<string, unknown> };
       sent.push(s);
       const r = answer(s);
       return new Response(r.status === 204 ? null : JSON.stringify(r.body), { status: r.status ?? 200 });
@@ -32,7 +32,8 @@ function serve(answer: (s: Sent) => { status?: number; body: unknown }) {
   );
 }
 const events = () => sent.filter((s) => s.url === "/api/events").map((s) => s.body.event);
-const forms = () => sent.filter((s) => s.url !== "/api/events");
+// the count is read again after an answer (places.ts): not a form
+const forms = () => sent.filter((s) => s.url !== "/api/events" && s.url !== "/api/access-requests/count");
 
 async function noViolations(container: HTMLElement) {
   const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
@@ -143,6 +144,7 @@ describe("EarlyAccess", () => {
     expect(await screen.findByText("Too many requests from here. Try again in 4 seconds.")).toBeTruthy();
     expect((screen.getByLabelText(/^Email/) as HTMLInputElement).value).toBe("ada@example.test");
     cleanup();
+    sessionStorage.clear();
     serve((s) => (s.url === "/api/events" ? { status: 204, body: null } : { status: 201, body: { ok: true, message: "Early access is full. You are number 2 on the waiting list. We write to this address when a place opens.", outcome: { kind: "waiting", position: 2 }, token: "tok_abcdefghijklmnopqrstuvwxyz012345" } }));
     render(await EarlyAccess({ placement: "pricing" }));
     fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: "bea@example.test" } });

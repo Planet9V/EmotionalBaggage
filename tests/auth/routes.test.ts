@@ -13,7 +13,9 @@ const METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as 
 // off every address under it is a 404 (tests/auth2/switch.test.ts).
 // /api/voiceovers/[cue] is the welcome film's sound, read by a signed-out visitor: a read route that serves only the
 // published voice-over clip of a cue of the film (tests/voice/voiceovers.test.ts).
-const OPEN = new Set(["/api/auth/sign-in", "/api/auth/sign-out", "/api/auth/me", "/api/health", "/api/access-requests", "/api/access-requests/details", "/api/events", "/api/auth2/[...all]", "/api/voiceovers/[cue]"]);
+// /api/access-requests/count is the welcome page's count of places: it answers only { left, limit, full }
+// (tests/api/access-count.test.ts).
+const OPEN = new Set(["/api/auth/sign-in", "/api/auth/sign-out", "/api/auth/me", "/api/health", "/api/access-requests", "/api/access-requests/count", "/api/access-requests/details", "/api/events", "/api/auth2/[...all]", "/api/voiceovers/[cue]"]);
 
 /** Every route.ts under src/app/api, as its URL path, found on disk so a new route cannot be missed. */
 function routeFiles(dir = API_DIR): { file: string; path: string }[] {

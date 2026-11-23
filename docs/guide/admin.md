@@ -111,7 +111,7 @@ The first request brings the database up to date, turns on pgvector and loads th
 
 ## Signing in
 
-A new install has one account: user `demo`, password `demo`. Opening the app takes you to the sign-in page, which reminds you of the default account while it is still in use. After signing in, the sidebar shows "Change the default password" until you do.
+A new install has one account: user `demo`, password `demo`. Opening the app takes you to the sign-in page, which says that the default account is still in use while it is, without printing the name or the password (the page is linked from the public welcome page). After signing in, the sidebar shows "Change the default password" until you do.
 
 **Changing the password.** Choose "Change the default password", or your user name at the foot of the sidebar, to open Account. Enter the current password and the new one twice. The new password must be at least 8 characters and cannot be `demo`. Every other browser signed in to the account is signed out; this one stays signed in.
 
