@@ -2,14 +2,14 @@
 // viewer where the live model cannot (no script, no WebGL, a device too slow for it). Drawn from the same numbers
 // as the tag everywhere else (TagArt, tagShape) and, for what is inside, from the parts' own sizes and places
 // (model.ts). The one exception is the tag on a suitcase handle, which is a render from the example's CAD.
-import { ExplodedStill } from "../get/ModelStill";
-import type { Still } from "../get/projection";
 import { FACE, SLOT, STRAP, TAG_MM, tagPath } from "../scenes/film/tagShape";
 import { TagArt, tagViewBox } from "../TagArt";
 import type { Product, ProductPart } from "./model";
 import type { View } from "./views";
 
 const { w: W, h: H, t: T } = TAG_MM;
+/** The exploded render the example keeps in Files, as the copy this page serves. */
+const EXPLODED_RENDER = "/landing/BaggageClaims_Tag_RevD_A_exploded.webp";
 const TAN = "#b0703f";
 const EDGE = "#7a4722";
 const BOX = tagViewBox(6, 4);
@@ -39,7 +39,7 @@ function Outline({ fill, stroke, opacity = 1 }: { fill: string; stroke: string; 
 
 const TAG = "block h-full w-full";
 
-export function ViewArt({ view, product, still, big = false, label }: { view: View; product: Product; still?: Still; /** the viewer's own picture rather than a thumbnail: with its grain and shadow */ big?: boolean; label?: string }) {
+export function ViewArt({ view, product, big = false, label }: { view: View; product: Product; /** the viewer's own picture rather than a thumbnail: with its grain and shadow */ big?: boolean; label?: string }) {
   const rich = { shadow: big, grain: big, strap: 6, margin: 4, label, className: TAG } as const;
   switch (view.key) {
     case "front":
@@ -76,7 +76,9 @@ export function ViewArt({ view, product, still, big = false, label }: { view: Vi
       );
     }
     case "exploded":
-      if (big && still) return <ExplodedStill still={still} label={label ?? ""} className="max-h-full" />;
+      // the viewer's own picture where the live model cannot run: the design's exploded render, with its parts named
+      // eslint-disable-next-line @next/next/no-img-element -- a small static copy in public/, at the size it is shown
+      if (big) return <img src={EXPLODED_RENDER} alt={label ?? ""} loading="lazy" decoding="async" className="h-full w-full rounded-[inherit] object-contain" />;
       return (
         <svg viewBox="-46 -52 92 104" className={TAG} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
           {[-1, 0, 1].map((k) => (

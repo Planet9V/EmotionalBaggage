@@ -235,11 +235,14 @@ describe("the Rev D batch: the enclosure and its print jobs", () => {
     }
   });
 
-  it("lets the app's own generator build its box around the same parts on the welcome page, every check met", async () => {
+  it("gives the welcome page the authored design itself (no generated box): its size, and every one of its own checks met", async () => {
     const { exampleData } = await import("@/components/welcome/exampleData");
+    const { authoredOf } = await import("@/lib/enclosure/authored");
     const d = await exampleData();
-    expect(d.enclosure?.outer).toEqual([62, 12.8, 92]);
-    expect(d.enclosure?.checks.filter((c) => !c.ok).map((c) => c.detail)).toEqual([]);
+    const authored = authoredOf(d.enclosureRow?.data);
+    expect(authored?.size).toEqual([62, 92, 12.8]);
+    expect(authored?.checks.length).toBeGreaterThan(0);
+    expect(authored?.checks.filter((c) => !c.ok).map((c) => c.label)).toEqual([]);
     // the Design gate reads the authored design's own checks
     expect(d.gates.design.checks.find((c) => c.id === "design.enclosure")?.met).toBe(true);
   }, 60_000);

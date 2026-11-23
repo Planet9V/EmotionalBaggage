@@ -52,7 +52,7 @@ function plainInside(g: THREE.BufferGeometry, inside: (nz: number, z: number) =>
   g.setAttribute("surface", new THREE.BufferAttribute(s, 1));
   return g;
 }
-function leather(parts: THREE.BufferGeometry[], inside: (nz: number, z: number) => boolean) {
+function leather(parts: THREE.BufferGeometry[], inside: (nz: number, z: number) => boolean, film = true) {
   const flat = parts.map((g) => {
     const f = g.index ? g.toNonIndexed() : g;
     f.deleteAttribute("uv");
@@ -65,7 +65,7 @@ function leather(parts: THREE.BufferGeometry[], inside: (nz: number, z: number) 
   const c = new Float32Array(s.count * 3);
   for (let i = 0; i < s.count; i++) c.set(s.getX(i) < 1.5 ? [plain.r, plain.g, plain.b] : [col.r, col.g, col.b], i * 3);
   g.setAttribute("color", new THREE.BufferAttribute(c, 3));
-  return toFilm(g);
+  return film ? toFilm(g) : g;
 }
 
 const plate = FACE.plate;
@@ -73,7 +73,7 @@ const slotY = H / 2 - SLOT.down;
 const trackerAt: P2 = [-FACE.tracker.x, FACE.tracker.y];
 
 /** The body: its rim all round (bevelled, as the film's), open at the back where the plate drops in, and the front skin with the coin door's opening. */
-function shellGeometry() {
+function shellGeometry(film = true) {
   const rim = new THREE.Shape(v2(tagOutline(BEVEL)));
   rim.holes.push(roundRect(plate.x0, plate.y0, plate.x1, plate.y1, 3));
   rim.holes.push(roundRect(-SLOT.w / 2, slotY - SLOT.h / 2, SLOT.w / 2, slotY + SLOT.h / 2, SLOT.h / 2 - 0.1));
@@ -83,27 +83,47 @@ function shellGeometry() {
   face.holes.push(circle(FACE.door.x, FACE.door.y, FACE.door.r));
   const skin = new THREE.ExtrudeGeometry(face, { depth: SKIN, bevelEnabled: false, curveSegments: 24 }).translate(0, 0, T / 2 - SKIN);
   // inside: the skin's back and the opening's walls; the rim's own back face is the tag's back
-  return leather([ring, skin], (nz, z) => nz < -0.6 && z > -T / 2 + 0.5);
+  return leather([ring, skin], (nz, z) => nz < -0.6 && z > -T / 2 + 0.5, film);
 }
-function plateGeometry() {
+function plateGeometry(film = true) {
   const s = new THREE.Shape();
   s.curves = roundRect(plate.x0 + 0.15, plate.y0 + 0.15, plate.x1 - 0.15, plate.y1 - 0.15, 2.9).curves;
   s.holes.push(circle(trackerAt[0], trackerAt[1], FACE.tracker.r));
-  return leather([new THREE.ExtrudeGeometry(s, { depth: 2, bevelEnabled: false, curveSegments: 32 }).translate(0, 0, -T / 2)], (nz) => nz > 0.6);
+  return leather([new THREE.ExtrudeGeometry(s, { depth: 2, bevelEnabled: false, curveSegments: 32 }).translate(0, 0, -T / 2)], (nz) => nz > 0.6, film);
 }
-function doorGeometry(at: P2, r: number, z0: number, depth: number, front: boolean) {
+function doorGeometry(at: P2, r: number, z0: number, depth: number, front: boolean, film = true) {
   const s = new THREE.Shape();
   s.curves = circle(at[0], at[1], r - 0.15).curves;
-  return leather([new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 32 }).translate(0, 0, z0)], (nz) => (front ? nz < -0.6 : nz > 0.6));
+  return leather([new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 32 }).translate(0, 0, z0)], (nz) => (front ? nz < -0.6 : nz > 0.6), film);
 }
 
 /** The printed pieces that wear the film's leather material, by the part's look. */
-function leatherGeometry(look: ProductPart["look"]): THREE.BufferGeometry | null {
-  if (look === "shell") return shellGeometry();
-  if (look === "plate") return plateGeometry();
-  if (look === "trackerDoor") return doorGeometry(trackerAt, FACE.tracker.r, -T / 2, 2, false);
-  if (look === "coinDoor") return doorGeometry([FACE.door.x, FACE.door.y], FACE.door.r, T / 2 - SKIN, SKIN, true);
+function leatherGeometry(look: ProductPart["look"], film = true): THREE.BufferGeometry | null {
+  if (look === "shell") return shellGeometry(film);
+  if (look === "plate") return plateGeometry(film);
+  if (look === "trackerDoor") return doorGeometry(trackerAt, FACE.tracker.r, -T / 2, 2, false, film);
+  if (look === "coinDoor") return doorGeometry([FACE.door.x, FACE.door.y], FACE.door.r, T / 2 - SKIN, SKIN, true, film);
   return null;
+}
+
+/**
+ * A printed piece as it lies on the print bed, in mm: its outside face down on the bed (y = 0), as the design
+ * prints the body, the plate and the doors, and its middle over (0, 0). The strap is its flat strip, `size` wide
+ * and long. Returns the triangles' corners (three numbers each, no index) and the piece's height.
+ */
+export function printedPieceOnBed(look: ProductPart["look"], size: number[]): { positions: Float32Array; height: number } | null {
+  const front = look === "shell" || look === "coinDoor";
+  const g = look === "strap" ? new THREE.BoxGeometry(size[0], size[1], size[2] ?? STRAP.t).toNonIndexed() : leatherGeometry(look, false);
+  if (!g) return null;
+  // a piece of the front is turned over onto its face; a piece of the back already has its outside toward -z
+  if (front) g.rotateY(Math.PI);
+  g.rotateX(-Math.PI / 2);
+  g.computeBoundingBox();
+  const b = g.boundingBox!;
+  g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+  const positions = Float32Array.from(g.getAttribute("position").array);
+  g.dispose();
+  return { positions, height: b.max.y - b.min.y };
 }
 
 // ---- everything else: boxes and cylinders in mm, with a colour and a finish --------------------------------------

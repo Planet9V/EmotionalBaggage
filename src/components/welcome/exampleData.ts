@@ -5,24 +5,17 @@
 // the client as plain props.
 //
 // Nothing here is a stored picture or a typed figure:
-//  - the enclosure is built by the app's own generator (CaseMaker on Manifold, the one the Enclosure page runs)
-//    from the seeded parts, with the settings of the example's enclosure row, and measured by the app's own checks
-//    (the example's chosen enclosure is an authored design; this is the generator's box around the same parts);
+//  - the enclosure is the concept's own enclosure row: an authored design, kept as files (product/printed.ts
+//    reads its pieces, checks and renders);
 //  - each stage's gate is worked out by the app's own gate rules (evaluateGate) on these rows, so the journey
 //    shows every check as it truly stands for the example;
 //  - the unit cost is the app's own build-up (referenceUnitCost).
-// The enclosure takes about a tenth of a second and is built once per server process.
 import { SEED_ADDITIONS, SEED_ITEMS, SEED_PROJECT } from "@/lib/seed";
 import { applySeedContent, storyRow } from "@/lib/seedContent";
 import { SEED_SOURCES, SEED_STORY } from "@/lib/story/seed";
 import { SOURCES_STORE } from "@/lib/story/parts";
 import { readManifest } from "@/lib/story/seedFiles";
 import { STORE } from "@/lib/domain";
-import { buildSpec, validateSpec } from "@/lib/enclosure/spec";
-import { generateCaseMaker } from "@/lib/enclosure/casemaker";
-import { computeChecks } from "@/lib/enclosure/checks";
-import { withDefaults } from "@/lib/enclosure/validate";
-import type { EnclosureParams } from "@/lib/enclosure/types";
 import { ENCLOSURE_STORE } from "@/lib/process/computed";
 import { processFor } from "@/lib/process/definitions";
 import { evaluateGate } from "@/lib/process/evaluate";
@@ -53,44 +46,6 @@ function seedRows(storedFiles: ReadonlySet<string>): Item[] {
   return applySeedContent(out);
 }
 
-/** A mesh as plain numbers (positions in mm to 0.001, triangle indices), so it can cross to the browser as a prop. */
-export type PlainMesh = { positions: number[]; indices: number[] };
-export type ExampleEnclosure = {
-  base: PlainMesh;
-  lid: PlainMesh;
-  /** outer size in mm: width (x), height (y), depth (z) */
-  outer: [number, number, number];
-  version: string;
-  checks: { key: string; label: string; ok: boolean; detail: string }[];
-};
-
-const plain = (m: { positions: Float32Array; indices: Uint32Array }): PlainMesh => ({ positions: Array.from(m.positions, (v) => Math.round(v * 1000) / 1000), indices: Array.from(m.indices) });
-
-async function generateEnclosure(parts: Item[], saved: Item | undefined): Promise<ExampleEnclosure | null> {
-  try {
-    // with the settings the concept's enclosure row keeps (for an authored design: the ones to compare it with)
-    const params = withDefaults((saved?.data as { params?: Partial<EnclosureParams> } | undefined)?.params);
-    const spec = buildSpec({ items: parts, params });
-    if (validateSpec(spec).some((i) => i.severity === "error")) return null;
-    const out = await generateCaseMaker(spec, SEED_PROJECT.name);
-    const checks = await computeChecks(spec, out);
-    const { min, max } = spec.outer;
-    return {
-      base: plain(out.base),
-      lid: plain(out.lid),
-      outer: [max[0] - min[0], max[1] - min[1], max[2] - min[2]],
-      version: out.version,
-      checks: checks.map((c) => ({ key: c.key, label: c.label, ok: c.ok, detail: c.detail })),
-    };
-  } catch {
-    // the page still reads in full; the Enclosure tab says the generator did not run
-    return null;
-  }
-}
-
-let enclosure: Promise<ExampleEnclosure | null> | null = null;
-
-/** A stage's gate as the app's own rules find it on the seeded rows. */
 export type ExampleGate = { met: number; total: number; checks: { id: string; label: string; met: boolean; /** what was found, for a check that is not met */ detail: string }[] };
 
 function gates(all: Item[]): Record<string, ExampleGate> {
@@ -113,7 +68,6 @@ function gates(all: Item[]): Record<string, ExampleGate> {
 export type ExampleData = {
   parts: Item[];
   wires: Item[];
-  enclosure: ExampleEnclosure | null;
   /** the concept's enclosure row: for the example, the design made outside the app's generators */
   enclosureRow: Item | null;
   /** the seeded rows the journey shows */
@@ -146,11 +100,9 @@ export async function exampleData(): Promise<ExampleData> {
   const all = seedRows(new Set(((await readManifest()) ?? []).map((e) => e.title)));
   const of = (section: string) => all.filter((r) => r.section === section);
   const parts = of(STORE.parts);
-  enclosure ??= generateEnclosure(parts, of(ENCLOSURE_STORE)[0]);
   return {
     parts,
     wires: of(STORE.wiring),
-    enclosure: await enclosure,
     enclosureRow: of(ENCLOSURE_STORE)[0] ?? null,
     decisions: of("concept/decisions"),
     claims: of("research/claims"),

@@ -14,18 +14,17 @@
 // arrives the stage holds a still of it; without script the stills, the parts list and the first build steps are
 // all in the page (the <noscript> block).
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useInView } from "motion/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { partPrice, partSource, sumLine, toPart, type Part } from "@/lib/domain";
 import type { Item } from "@/lib/types";
 import { sequence, toWires } from "@/components/buildsheet/derive";
-import { Shot } from "./Shot";
 import { useHydrated } from "./useAnimated";
 import { joinedPairs, type Product } from "./product/model";
 import type { Printed } from "./product/printed";
 import { TagArt } from "./TagArt";
-import { ENGINEERING, EXAMPLE, FEATURES } from "./content";
+import { ENGINEERING, EXAMPLE, PROOF_TAB_EVENT } from "./content";
 import { StageBar, StageFoot, StageView, Waiting } from "./StageParts";
 
 const loading = () => <Waiting label={ENGINEERING.loading} />;
@@ -38,7 +37,6 @@ const EngBuildSheet = dynamic(() => import("./EngBuildSheet"), { ssr: false, loa
 type Tab = keyof typeof ENGINEERING.tabs;
 const TABS = Object.keys(ENGINEERING.tabs) as Tab[];
 const HEIGHT: Record<Tab, string> = { model: "h-[560px]", schematic: "h-[520px]", layout: "h-[1040px]", enclosure: "h-[600px]", bom: "h-[600px]", build: "h-[600px]" };
-const altOf = (shot: string) => FEATURES.find((f) => f.shot === shot)?.alt ?? "";
 
 type SortKey = keyof typeof ENGINEERING.bom.columns;
 const COLUMNS = Object.keys(ENGINEERING.bom.columns) as SortKey[];
@@ -107,6 +105,16 @@ export function Engineering({ parts: partItems, wires, product, printed }: { par
   const [tab, setTab] = useState<Tab>("model");
   const parts = useMemo(() => partItems.map(toPart), [partItems]);
   const live = hydrated && near;
+
+  // another part of the page can open a tab (the hero's schematic card opens Schematic)
+  useEffect(() => {
+    const open = (e: Event) => {
+      const to = (e as CustomEvent<string>).detail as Tab;
+      if (TABS.includes(to)) setTab(to);
+    };
+    window.addEventListener(PROOF_TAB_EVENT, open);
+    return () => window.removeEventListener(PROOF_TAB_EVENT, open);
+  }, []);
 
   const onKey = (e: KeyboardEvent) => {
     const i = TABS.indexOf(tab);
@@ -197,8 +205,17 @@ export function Engineering({ parts: partItems, wires, product, printed }: { par
         <div className="border-t border-hairline">
           <p className="px-4 py-3 text-[13px] text-secondary">{ENGINEERING.noscript}</p>
           <div className="grid gap-px sm:grid-cols-2">
-            <Shot name="schematic" theme="dark" alt={altOf("schematic")} eager />
-            <Shot name="enclosure" theme="dark" alt={altOf("enclosure")} eager />
+            {/* eslint-disable @next/next/no-img-element -- small static files in public/, shown at their own size */}
+            <img src="/landing/schematic-rev-d.webp" alt={ENGINEERING.noscriptSchematic(new Set(wires.flatMap((w) => [String(w.data.from), String(w.data.to)])).size, wires.length)} width={1200} height={700} className="block h-auto w-full" />
+            <div className="grid grid-cols-2 gap-px self-start">
+              {(printed?.renders ?? []).slice(0, 2).map((r) => (
+                <figure key={r.src}>
+                  <img src={r.src} alt={r.label} width={1100} height={880} className="block h-auto w-full" />
+                  <figcaption className="px-3 py-2 text-[13px] text-secondary">{r.label}. {ENGINEERING.enclosure.renderNote}</figcaption>
+                </figure>
+              ))}
+            </div>
+            {/* eslint-enable @next/next/no-img-element */}
           </div>
           <div className="overflow-x-auto">
             <BomTable parts={parts} sortable={false} />

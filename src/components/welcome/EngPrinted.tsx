@@ -9,47 +9,14 @@
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 import { TONE_CLASS, statusTone } from "@/lib/statusTones";
-import type { Printed, PrintedPiece } from "./product/printed";
+import { PLATE_GAP, filamentColour as swatch, plateLayout, type Printed, type PrintedPiece } from "./product/printed";
 import { FACE, SLOT, TAG_MM, tagPath } from "./scenes/film/tagShape";
 import { ENGINEERING } from "./content";
 import { StageBar, StageFoot, StageView } from "./StageParts";
 
 const C = ENGINEERING.enclosure;
-const { w: W, h: H } = TAG_MM;
-/** A filament's colour in the drawing, by the colour its name says. */
-const swatch = (name: string) => (/brown|saddle|tan/i.test(name) ? "#a8683a" : /cream|ivory|white/i.test(name) ? "#f1e4c3" : /black/i.test(name) ? "#1d1f23" : "#8a9099");
+const { h: H } = TAG_MM;
 const mm = (n: number) => String(Math.round(n * 10) / 10);
-
-/** Where each piece lies on its plate, in mm: the body, the back plate beside it, the two doors in a column; the strap on a plate of its own. */
-const PLATE_GAP = 6;
-function layout(pieces: PrintedPiece[]) {
-  const at = new Map<string, { x: number; y: number }>();
-  const body = pieces.find((p) => p.look === "shell");
-  const plate = pieces.find((p) => p.look === "plate");
-  const doors = pieces.filter((p) => p.look === "trackerDoor" || p.look === "coinDoor");
-  const strap = pieces.find((p) => p.look === "strap");
-  let x = 0;
-  if (body) {
-    at.set(body.ref, { x: W / 2, y: H / 2 });
-    x = W + PLATE_GAP;
-  }
-  if (plate) {
-    at.set(plate.ref, { x: x + plate.size[0]! / 2, y: plate.size[1]! / 2 });
-    x += plate.size[0]! + PLATE_GAP;
-  }
-  let y = 0;
-  let wide = 0;
-  for (const d of doors) {
-    at.set(d.ref, { x: x + d.size[0]! / 2, y: y + d.size[0]! / 2 });
-    y += d.size[0]! + PLATE_GAP;
-    wide = Math.max(wide, d.size[0]!);
-  }
-  const first = { x0: -PLATE_GAP, x1: x + wide + PLATE_GAP };
-  // (wide enough for its own heading)
-  const second = strap ? { x0: first.x1 + PLATE_GAP * 2, x1: first.x1 + PLATE_GAP * 2 + Math.max(36, strap.size[0]! + PLATE_GAP * 2) } : null;
-  if (strap && second) at.set(strap.ref, { x: (second.x0 + second.x1) / 2, y: strap.size[1]! / 2 });
-  return { at, first, second };
-}
 
 function Piece({ p, at, colours, on, onPick }: { p: PrintedPiece; at: { x: number; y: number }; colours: string[]; on: boolean; onPick: () => void }) {
   const [main, second] = [swatch(colours[0] ?? ""), swatch(colours[1] ?? colours[0] ?? "")];
@@ -103,7 +70,7 @@ function Piece({ p, at, colours, on, onPick }: { p: PrintedPiece; at: { x: numbe
 export default function EngPrinted({ printed }: { printed: Printed }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [render, setRender] = useState<number | null>(null);
-  const { at, first, second } = layout(printed.pieces);
+  const { at, first, second } = plateLayout(printed.pieces);
   const piece = printed.pieces.find((p) => p.ref === picked) ?? null;
   const ok = printed.checks.filter((c) => c.ok).length;
   const grams = printed.pieces.reduce((a, p) => a + (p.grams ?? 0), 0);

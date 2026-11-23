@@ -202,7 +202,7 @@ function Curve({ rows, at, currency }: { rows: { label: string; size: number; co
       ))}
       <path d={d} fill="none" stroke="#E05A10" strokeWidth="2" strokeLinejoin="round" />
       {rows.map((r, i) => (
-        <g key={r.label}>
+        <g key={`${r.label}-${i}`}>
           <circle cx={X(Math.log10(r.size))} cy={Y(r.cost)} r={i === at ? 5 : 3.2} fill={i === at ? "#E05A10" : "#0b0c0e"} stroke="#E05A10" strokeWidth="1.6" />
           <text x={X(Math.log10(r.size))} y={Hh - 8} textAnchor="middle" className={`font-mono text-[9.5px] ${i === at ? "fill-[#e8eaed]" : "fill-[#8b919b]"}`}>
             {r.label}

@@ -41,21 +41,6 @@ export function Segmented<T extends string>({ label, value, options, onChange }:
   );
 }
 
-/** Any of several: the layers drawn. Each says how many parts it holds. */
-export function Layers<T extends string>({ label, on, options, onChange }: { label: string; on: T[]; options: { value: T; label: string; count?: number; swatch?: string }[]; onChange: (v: T[]) => void }) {
-  return (
-    <ToggleGroup type="multiple" aria-label={label} value={on} onValueChange={(v) => onChange(v as T[])} className="flex-wrap gap-1">
-      {options.map((o) => (
-        <ToggleGroupItem key={o.value} value={o.value} className={`${ITEM} rounded-md! gap-1.5 data-[state=on]:border-hairline data-[state=on]:bg-white/8 data-[state=on]:text-primary data-[state=off]:opacity-60`}>
-          <span className="h-2 w-2 shrink-0 rounded-[2px]" style={{ background: o.swatch ? `var(${o.swatch})` : "currentColor" }} aria-hidden />
-          {o.label}
-          {o.count !== undefined ? <span className="tabular-nums text-muted">{o.count}</span> : null}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  );
-}
-
 /** On or off: tags, wires. */
 export function Switch({ label, on, onChange, disabled }: { label: string; on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (

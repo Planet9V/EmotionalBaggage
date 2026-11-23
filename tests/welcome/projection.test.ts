@@ -1,53 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { project, stillOf, toneOf } from "@/components/welcome/get/projection";
-import { netWheel } from "@/components/welcome/get/heroArt";
+import { schematicCrop } from "@/components/welcome/get/heroArt";
 import { shellOutlineFor } from "@/components/welcome/get/tagShell";
 import { TAG_MM } from "@/components/welcome/scenes/film/tagShape";
 
-const box = (id: number, pos: [number, number, number], size: [number, number, number], step = 0) => ({ id, ref: `P${id}`, title: `part ${id}`, kind: "module", step, geometry: { shape: "box" as const, basis: "doc" as const, size, pos, explode: [0, 20, 0] as [number, number, number] } });
-
-describe("the model as a vector drawing", () => {
-  it("projects up as up on screen and the nearer corner as nearer", () => {
-    expect(project([0, 10, 0]).y).toBeLessThan(project([0, 0, 0]).y);
-    expect(project([10, 10, 10]).depth).toBeGreaterThan(project([-10, -10, -10]).depth);
-  });
-  it("keeps only the three faces of a box that face the viewer, inside its box", () => {
-    const s = stillOf([box(1, [0, 0, 0], [20, 10, 30])]);
-    expect(s.faces).toHaveLength(3);
-    for (const f of s.faces) {
-      const nums = f.d.match(/-?\d+(\.\d+)?/g)!.map(Number);
-      for (let i = 0; i < nums.length; i += 2) {
-        expect(nums[i]!).toBeGreaterThanOrEqual(s.box[0]);
-        expect(nums[i]!).toBeLessThanOrEqual(s.box[0] + s.box[2]);
-      }
-    }
-  });
-  it("draws far parts before near ones", () => {
-    const s = stillOf([box(1, [0, 0, 60], [10, 10, 10]), box(2, [0, 0, -60], [10, 10, 10])]);
-    expect(s.faces[0]!.part).toBe(2);
-    expect(s.faces.at(-1)!.part).toBe(1);
-  });
-  it("gives each part its tone, step and the screen direction it explodes in", () => {
-    const s = stillOf([box(1, [0, 0, 0], [10, 10, 10], 3)]);
-    expect(s.parts[0]).toMatchObject({ tone: "--net-signal", step: 3 });
-    expect(s.parts[0]!.explode[1]).toBeLessThan(0); // up the screen
-    expect(toneOf("", "BAT")).toBe("--net-power");
-    expect(toneOf("enclosure", "ENC1")).toBe("--accent-orange");
-  });
-  it("draws a counted cylinder once per body, and a shell with its far faces, behind and in front", () => {
-    const cyl = { id: 3, ref: "BAT", title: "cells", kind: "", step: 0, geometry: { shape: "cylinder" as const, basis: "doc" as const, size: [14, 50] as [number, number], pos: [0, 10, 0] as [number, number, number], explode: [0, 0, 0] as [number, number, number], count: 3 } };
-    const shell = { id: 4, ref: "ENC1", title: "case", kind: "enclosure", step: 0, geometry: { shape: "shell" as const, basis: "doc" as const, size: [80, 42, 60] as [number, number, number], pos: [0, 21, 0] as [number, number, number], explode: [0, 0, 0] as [number, number, number] } };
-    const s = stillOf([cyl, shell]);
-    expect(s.faces.filter((f) => f.part === 3).length % 3).toBe(0);
-    const sh = s.faces.filter((f) => f.shell);
-    expect(sh).toHaveLength(6);
-    expect(s.faces[0]!.shell).toBe(true);
-    expect(s.faces.at(-1)!.shell).toBe(true);
-  });
-});
-
 describe("a shell with an outline of its own (the example's tag)", () => {
-  const shell = (size: [number, number, number]) => ({ id: 9, ref: "ENC1", title: "Tag body", kind: "enclosure", step: 0, geometry: { shape: "shell" as const, basis: "doc" as const, size, pos: [0, size[1] / 2, 0] as [number, number, number], explode: [0, 0, 0] as [number, number, number] } });
   it("gives the tag's outline to an enclosure of the tag's size, and none to any other", () => {
     const o = shellOutlineFor([TAG_MM.w, TAG_MM.t, TAG_MM.h])!;
     const xs = o.outer.map((p) => p[0]);
@@ -61,41 +17,32 @@ describe("a shell with an outline of its own (the example's tag)", () => {
     expect(shellOutlineFor([80, 42, 60])).toBeUndefined();
     expect(shellOutlineFor(undefined)).toBeUndefined();
   });
-  it("draws the shell as its outline: a lid, a floor, a wall under each edge and the strap slot", () => {
-    const size: [number, number, number] = [TAG_MM.w, TAG_MM.t, TAG_MM.h];
-    const o = shellOutlineFor(size, true)!;
-    const s = stillOf([shell(size)], 6, (sz) => shellOutlineFor(sz, true));
-    expect(s.faces).toHaveLength(2 + o.outer.length + 1);
-    expect(s.faces.filter((f) => f.lid)).toHaveLength(2); // the lid and the slot through it
-    // the same enclosure without an outline is the six faces of its box
-    expect(stillOf([shell(size)]).faces).toHaveLength(6);
-  });
-  it("pulled apart, lifts the lid clear of every part and makes room for it", () => {
-    const size: [number, number, number] = [TAG_MM.w, TAG_MM.t, TAG_MM.h];
-    const s = stillOf([shell(size), box(1, [0, 6, 0], [20, 3, 20])], 6, (sz) => shellOutlineFor(sz, true));
-    expect(s.lift).toBeGreaterThan(0);
-    expect(s.apart[1]).toBeLessThan(s.box[1]);
-    expect(s.apart[3]).toBeGreaterThan(s.box[3]);
-  });
 });
 
-describe("the hero's netlist wheel", () => {
-  const wires = [
-    { from: "BT1", to: "S1", netClass: "power" as const },
-    { from: "S1", to: "U1", netClass: "power" as const },
-    { from: "U1", to: "U2", netClass: "signal" as const },
-    { from: "U1", to: "U2", netClass: "signal" as const },
-    { from: "U1", to: "SPK1", netClass: "audio" as const },
-  ];
-  it("puts the hub in the middle and every other part on the ring, one line per wire", () => {
-    const w = netWheel(wires, "U1", 100);
-    const hub = w.nodes.find((n) => n.hub)!;
-    expect(hub).toMatchObject({ ref: "U1", x: 50, y: 50 });
-    expect(w.nodes.map((n) => n.ref).sort()).toEqual(["BT1", "S1", "SPK1", "U1", "U2"]);
-    for (const n of w.nodes.filter((x) => !x.hub)) expect(Math.hypot(n.x - 50, n.y - 50)).toBeCloseTo(38, 0);
-    expect(w.links).toHaveLength(5);
-    // two wires between the same parts bow apart
-    const twins = w.links.filter((l) => l.a === "U1" && l.b === "U2");
-    expect(twins[0]!.d).not.toBe(twins[1]!.d);
+describe("the hero's schematic: a crop of the real one", () => {
+  it("draws the controller, the chip beside it, the amplifier and the speaker with the app's symbols, and the nets between them", async () => {
+    const { exampleData } = await import("@/components/welcome/exampleData");
+    const d = await exampleData();
+    const crop = schematicCrop(d.parts, d.wires)!;
+    expect(crop.symbols.map((s) => s.ref)).toEqual(["U1", "U2", "U4", "SPK1"]);
+    // the chips are boxes with a stub for every pin; the speaker is its drawn symbol
+    expect(crop.symbols[0]!.rect).not.toBeNull();
+    expect(crop.symbols[0]!.stubs.length).toBeGreaterThan(10);
+    expect(crop.symbols[3]!.rect).toBeNull();
+    expect(crop.symbols[3]!.strokes.length).toBeGreaterThan(0);
+    // the nets are the schematic's own, by name and class: the audio pair to the speaker, the buses to the chips
+    const nets = new Map(crop.routes.map((r) => [r.net, r.netClass]));
+    expect(nets.get("SPK_P")).toBe("audio");
+    expect(nets.get("SPK_N")).toBe("audio");
+    for (const n of ["I2S_BCLK", "I2S_LRCK", "I2S_DIN", "IMU_SCK", "IMU_MOSI", "IMU_CS"]) expect(nets.get(n), n).toBe("signal");
+    expect(crop.nets).toBe(crop.routes.length);
+    expect(crop.of).toBeGreaterThan(crop.nets);
+    // no two lines turn in the same channel, and a few are named
+    const turns = crop.routes.filter((r) => !r.net.startsWith("SPK")).map((r) => /H(-?[\d.]+)V/.exec(r.d)![1]);
+    expect(new Set(turns).size).toBe(turns.length);
+    expect(crop.routes.filter((r) => r.name).length).toBeGreaterThanOrEqual(1);
+    // every line stays inside the picture
+    const [x, , w] = crop.box;
+    for (const r of crop.routes) for (const m of r.d.matchAll(/[MH](-?[\d.]+)/g)) expect(Number(m[1])).toBeLessThanOrEqual(x + w);
   });
 });

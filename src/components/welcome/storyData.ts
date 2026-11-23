@@ -6,14 +6,11 @@
 //   market  the seven tabs of the market stage
 import type { Item } from "@/lib/types";
 import { toPart } from "@/lib/domain";
-import { hubRef, sequence, toWires } from "@/components/buildsheet/derive";
+import { sequence, toWires } from "@/components/buildsheet/derive";
 import { assemblySteps, layerHeightOf, layerOf, type Phase, type SolderStep } from "@/components/three/showcaseLogic";
-import type { PartGeometry } from "@/components/three/layout";
-import { stillOf, type Still } from "./get/projection";
-import { shellOutlineFor } from "./get/tagShell";
 import { productOf, type Product } from "./product/model";
 import { printedOf, type Printed } from "./product/printed";
-import { netWheel, type Wheel } from "./get/heroArt";
+import { schematicCrop, type SchematicCrop } from "./get/heroArt";
 import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningLine } from "@/lib/market/positioning";
 import { findKit, readKit } from "@/lib/market/brandKit";
@@ -35,8 +32,8 @@ export type HeroFacts = {
   cost: { rows: { title: string; volume: string; cogs: string }[]; status: string };
   ad: { text: string; status: string; count: number };
   channel: { title: string; price: string; net: string; status: string };
-  /** the netlist as a wheel, drawn from the real wires (get/heroArt.ts) */
-  wheel: Wheel;
+  /** a crop of the real schematic: the app's own circuit and symbols (get/heroArt.ts) */
+  schematic: SchematicCrop | null;
 };
 
 /** What "What you get" shows of each stage's output, beyond the market's rows: all from the seeded rows. */
@@ -51,8 +48,6 @@ export type GetData = {
   /** the layer height the main print job names, in mm */
   layerMm: number | null;
   volumes: { title: string; volume: string; cogs: string; status: string }[];
-  /** the model as a vector drawing, from the parts' geometry rows (get/projection.ts) */
-  still: Still;
   /** how many steps the assembly takes, in the build sheet's order (showcaseLogic.ts assemblySteps) */
   steps: number;
 };
@@ -96,13 +91,12 @@ export type MarketData = {
 function hero(d: ExampleData): HeroFacts {
   const ad = d.ads[0];
   const channel = d.channels[0];
-  const ws = toWires(d.wires);
   return {
     wires: d.wires.length,
     cost: { rows: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).slice(0, 3).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs) })), status: d.economics[0]?.status ?? "" },
     ad: { text: ad?.title ?? "", status: ad?.status ?? "", count: d.ads.length },
     channel: { title: channel?.title ?? "", price: str(channel?.data.price), net: str(channel?.data.net), status: channel?.status ?? "" },
-    wheel: netWheel(ws, hubRef(ws)),
+    schematic: schematicCrop(d.parts, d.wires),
   };
 }
 
@@ -117,7 +111,6 @@ function get(d: ExampleData): GetData {
     solder,
     phases,
   );
-  const stepOf = (id: number) => Math.max(0, steps.findIndex((s) => s.ids.includes(id)));
   const main = d.printing[d.printing.length - 1];
   return {
     brief: d.brief.map((r) => ({ title: r.title, body: r.body, status: r.status })),
@@ -129,7 +122,6 @@ function get(d: ExampleData): GetData {
     layerMm: layerHeightOf(str(main?.data.settings)),
     volumes: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs), status: r.status })),
     steps: steps.length,
-    still: stillOf(shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, kind: kind(p), geometry: p.geometry as PartGeometry, step: stepOf(p.item.id) })), 6, (size) => shellOutlineFor(size, true)),
   };
 }
 

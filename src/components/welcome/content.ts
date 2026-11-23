@@ -83,76 +83,6 @@ export const STAGES: { n: string; name: string; text: string; /** one line, for 
 export const GATES_NOTE =
   "Each stage ends in a gate: the checks that show it is done. Gates warn; they never lock you out. Going past one needs a written reason, and the Process page keeps it.";
 
-export type Feature = { shot: string; stage: string; title: string; text: string; alt: string; note?: string };
-
-/** The screenshots, in the order a product moves. `alt` says what the picture shows. */
-export const FEATURES: Feature[] = [
-  {
-    shot: "schematic",
-    stage: "03 Design",
-    title: "A schematic that checks itself",
-    text: "Drag from pin to pin to add a wire. Switch between symbols and a pins-and-wires view; select a wire and it lights up in both. Electrical checks list what they find, worst first. Export a KiCad 10 schematic, a netlist and a wiring table.",
-    alt: "The Schematic page of the example concept: symbols for the MCU board, IMU sensor, audio module, speaker, switch and battery, joined by colour-coded wires, with the list of 14 nets on 20 wires beside it.",
-  },
-  {
-    shot: "model",
-    stage: "03 Design",
-    title: "Your parts, placed in 3D",
-    text: "Parts are drawn as boxes and cylinders from the sizes you enter, or from an STL or STEP file you attach. Move and rotate them, cut a section, measure, explode the assembly, and route the wires around the parts.",
-    alt: "The 3D model page: a see-through enclosure holding the board, sensor, speaker and three batteries, with the parts list and their sizes on the left.",
-  },
-  {
-    shot: "enclosure",
-    stage: "03 Design",
-    title: "A printable enclosure, with its checks measured",
-    text: "Generate a base and a lid around your parts with CaseMaker in a few seconds, or with YAPP_Box in OpenSCAD. Five checks are worked out on the result: both pieces watertight, the lid closes, every part fits with your clearance, every opening lines up. Download STL and 3MF files.",
-    alt: "The Enclosure page after generating with CaseMaker: a 3D preview of the box with an orange lid, and five checks below it, each marked met with its measurements.",
-  },
-  {
-    shot: "wiring",
-    stage: "04 Prototype",
-    title: "A build sheet made from the schematic",
-    text: "The order to solder in, which pins each wire joins, a cut list with lengths and gauge, and a tick box for every joint. Print it, or keep it open on the bench.",
-    alt: "The Wiring and soldering page: a numbered soldering sequence, each step naming the two pins a wire joins and the check to make after it.",
-  },
-  {
-    shot: "process",
-    stage: "Whole concept",
-    title: "Always know the next step",
-    text: "Each stage has a gate of real checks: decisions made, electrical checks passed, enclosure checks met, parts priced. The next step names the row in the way and opens the control that fixes it.",
-    alt: "The Process page: the next step as an orange button, and the Concept gate with two checks met and two still open, each with a link to the row that settles it.",
-  },
-  {
-    shot: "plan",
-    stage: "Whole concept",
-    title: "The build order, worked out",
-    text: "Give a step a key, what it waits on and how long it takes. The planner orders the steps into waves with NetworkX and marks the critical path in orange. Steps that wait on each other in a loop are marked blocked, never guessed around.",
-    alt: "The Order of operations page: a graph of steps and decisions in waves, with the critical path from bench setup to pack-out drawn in orange.",
-  },
-  {
-    shot: "social",
-    stage: "06 Marketing",
-    title: "Marketing drafted from what you approved",
-    text: "Posts per channel within each channel's limits, on a board or a calendar. Ads, the landing page, the launch email and the listing are drafted from your approved positioning and wait for your approval. Nothing is posted until you confirm the exact text and the account.",
-    alt: "The Social page: a board with draft, approved, scheduled and posted columns, and draft short-video posts in the first column.",
-  },
-  {
-    shot: "launch",
-    stage: "06 Marketing",
-    title: "A launch plan whose dates move with you",
-    text: "Pick a template (Kickstarter, Amazon, your own site, retail outreach or a soft launch) and a launch date. Every step gets a due date counted back from it. Move the date and every step moves.",
-    alt: "The Launch plan page: five launch templates, Kickstarter chosen, with a launch date field and a button to start the launch.",
-  },
-  {
-    shot: "chat",
-    stage: "Whole concept",
-    title: "Ask the concept, and see the sources",
-    text: "Chat answers from the concept's own rows and saved research, with numbered sources that open the section holding each one. If nothing recorded covers the question, it says so.",
-    note: "Chat needs a model you choose. This screenshot is what a fresh install shows before one is chosen: it says what is missing instead of making an answer up.",
-    alt: "The Chat page on a fresh install: notices that no reasoning model and no embedding model are chosen yet, with buttons to Admin, and three suggested questions about the concept.",
-  },
-];
-
 export const CLOSING = {
   title: "What would your idea cost to make?",
   text: "Find out before you spend on it. Claim one of the 50 early-access places with an email address and one line about what you want to make. You get the same seven stages our own idea went through, and the numbers for yours.",
@@ -169,23 +99,6 @@ export const FOOTER = {
  */
 export const EXAMPLE = {
   name: "Baggage Claims MK1",
-  what: "a gadget that straps to a suitcase and heckles the trip",
-  documents: 21,
-  decisions: 8,
-  parts: 16,
-  partsCost: 64.8,
-  /** every line of the parts list (BOM_shopping_list.csv), in its order; they add up to partsCost */
-  partLines: [
-    ["MCU dev board", 8.99], ["IMU sensor", 6.99], ["Audio module", 5.5], ["Speaker", 1.75], ["Battery holder", 2.0], ["Batteries", 2.5],
-    ["Power switch", 1.0], ["Mode button", 0.5], ["Resistor", 0.05], ["Resistor", 0.05], ["Storage", 5.99], ["Wire and headers", 8.99],
-    ["Carrier", 4.5], ["Mounting", 6.99], ["Enclosure", 5.0], ["Mount strap", 4.0],
-  ] as [string, number][],
-  pitch: "A gadget that gives a suitcase a voice.",
-  wires: 20,
-  /** one step per wire on the build sheet: the app numbers them 1 to 20 (two pairs share an order number in the seed, 18 distinct) */
-  solderSteps: 20,
-  build: "7 h 10 min",
-  voicePacks: ["Family", "Salty", "New Yorker"],
   /**
    * What the example's economics said, as the cost view of "What you get" works it out from the Rev D rows
    * (seed/concepts/baggage-claims/content/2026-11-22-revD-2.json: $30.01 for one unit, $17.67 a unit at 100, parts
@@ -205,8 +118,9 @@ export const ENGINEERING = {
   tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
   loading: "Loading the view",
   badge: "Live views, in the app's dark theme",
-  still: "A still of the 3D view; the live one loads as you reach it.",
-  noscript: "Script is off, so the views cannot run. Here are stills of the schematic and the enclosure, the whole parts list and the first soldering steps.",
+  still: "A drawing of the tag; the live 3D view loads as you reach it.",
+  noscript: "Script is off, so the views cannot run. Here are a still of the schematic, two renders of the enclosure, the whole parts list and the first soldering steps.",
+  noscriptSchematic: (parts: number, wires: number) => `A still of the Schematic tab: the example's ${parts} parts on the board as symbols, joined by its ${wires} wires, coloured by net class.`,
   hintMouse: "Drag to turn. Ctrl or Cmd + wheel to zoom.",
   hintTouch: "Tap, then drag to turn. Pinch to zoom.",
   tap: "Tap to explore",
@@ -281,6 +195,9 @@ export const NAV: { href: string; label: string }[] = [
  * note, taken from the story's origin part (storyData.ts reads it from src/lib/story/seed.ts); the outputs are
  * the example's seeded rows (Artefacts.tsx).
  */
+/** Sent on the window to open a tab of the proof block's engineering stage (the hero's schematic card opens Schematic). */
+export const PROOF_TAB_EVENT = "c2r:proof-tab";
+
 /** Sent on the window to open a stage of "What do I end up with?" (the hero's "Look inside" opens the product). */
 export const GET_STAGE_EVENT = "c2r:get-stage";
 
@@ -301,6 +218,8 @@ export const HERO_STAGE = {
     ad: "Ad",
     listing: "Listing",
     wires: (n: number) => `${n} wires, checked`,
+    schematicAlt: (parts: string[], nets: number, of: number) => `Part of the example's schematic: ${parts.join("; ")}, with ${nets} of its ${of} nets drawn between them.`,
+    schematicOpen: "The schematic: see all of it in the worked example",
     from: (volume: string) => `At ${volume}:`,
     at: (volume: string) => `at ${volume}`,
     each: (volume: string) => `a unit, at ${volume}`,
@@ -368,7 +287,7 @@ export const GET_VIEWS = {
     counts: (shaped: number, parts: number, wires: number, steps: number) => `${shaped} of ${parts} parts with a shape, ${wires} wires, ${steps} assembly steps`,
     hint: "Build-sheet order: base, board, each soldering step, integration.",
   },
-  views: { product: "The product", model: "3D model", schematic: "Schematic" },
+  views: { product: "The product", schematic: "Schematic" },
   /** the example as a product: every angle, every part, drawn live from its parts list and its schematic */
   product: {
     path: "/s/design/model",
@@ -421,9 +340,11 @@ export const GET_VIEWS = {
   },
   print: {
     path: "/s/prototype/printing",
-    label: "The enclosure's base and lid on the print bed, cut at the layer being printed.",
+    label: "The example's printed pieces on the print bed, cut at the layer being printed.",
     lookLabel: "Drawn as",
     looks: { wireframe: "Wireframe", translucent: "See-through", solid: "Solid" },
+    plateLabel: "Print plate",
+    plate: (n: number, material: string) => `Plate ${n} · ${material}`,
     layer: "Layer",
     reset: "Start the print and the turn again",
     jobsTitle: "The example's print jobs",
@@ -433,9 +354,9 @@ export const GET_VIEWS = {
     none: "not given",
     valueText: (n: number, total: number, mm: string) => `layer ${n} of ${total}, ${mm} millimetres`,
     honest: (job: string, mm: number, fromRow: boolean) =>
-      fromRow ? `Layers of ${mm} mm, as the job "${job}" sets them. The pieces are the app's own generator's, from the parts list; nothing has been printed yet.` : `No layer height is set on a print job, so the slicer's default of ${mm} mm is shown.`,
+      fromRow ? `Layers of ${mm} mm, as the job "${job}" sets them. The pieces are the example's own design, each outside-face down as it prints, so its second colour is in the first layers, against the bed. Nothing has been sliced or printed yet.` : `No layer height is set on a print job, so the slicer's default of ${mm} mm is shown.`,
     hint: "Drag the layer slider to stop the print at any layer.",
-    counts: (checks: number, of: number, version: string) => `${checks} of ${of} enclosure checks met, ${version}`,
+    counts: (pieces: number, jobs: number, checks: number, of: number) => `${pieces} printed pieces on ${jobs} plates; ${checks} of ${of} design checks pass (the design's own, not measured by this app)`,
   },
   brief: {
     path: "/s/concept/brief",
