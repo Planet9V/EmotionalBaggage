@@ -10,7 +10,7 @@ const strings = (v: unknown): string[] => (typeof v === "string" ? [v] : Array.i
 
 describe("the welcome page's words", () => {
   const plans = paidPlans(levelsOf(builtInCatalogue()).levels, true);
-  const words = strings([ACTION, HERO, META, NAV, PROBLEM, GET, MECHANISM, PROOF, PRICING, CLOSING, FOOTER, questions(plans), PROOF.status.count(1, 2), PROOF.status.open(3)]).join("\n");
+  const words = strings([ACTION, HERO, META, NAV, PROBLEM, GET, MECHANISM, PROOF, PRICING, CLOSING, FOOTER, questions(plans), PROOF.lead(34, 52), PROOF.status.count(1, 2), PROOF.status.open(3)]).join("\n");
 
   it.each(["free", "faster", "demo", "github", "open source", "open-source", "self-host", "docker", "apache", "being built", "run it yourself", "request access"])("never say %s", (word) => {
     expect(words.toLowerCase()).not.toContain(word);

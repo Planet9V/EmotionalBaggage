@@ -97,7 +97,7 @@ export function SocialCard() {
       <div style={{ position: "absolute", left: 72, top: 204, width: 660 }}>
         <div style={{ fontSize: 26, fontWeight: 600, color: "#ffa370" }}>{PRODUCT}</div>
         <div style={{ marginTop: 18, fontSize: 70, fontWeight: 600, lineHeight: 1.06, letterSpacing: "-0.03em" }}>{HERO.title}</div>
-        <div style={{ marginTop: 30, fontSize: 25, lineHeight: 1.4, color: "#a1a1aa" }}>{`The worked example: ${EXAMPLE.name}. Planned, not yet built or sold.`}</div>
+        <div style={{ marginTop: 30, fontSize: 25, lineHeight: 1.4, color: "#a1a1aa" }}>{`A costed parts list, a checked schematic and a launch plan. Shown: ${EXAMPLE.name}, designed and costed, not yet built or sold.`}</div>
       </div>
       <div style={{ position: "absolute", left: 742, top: 92, width: 330 }}>
         <TagArt strap={12} margin={6} className="tag" />

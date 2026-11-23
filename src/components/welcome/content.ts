@@ -4,7 +4,9 @@
  * repository: no user counts, no benchmarks, no time savings.
  *
  * The welcome page is the early-access page (owner, 22 Nov): one action, "Claim an early-access place", nine
- * blocks, and nothing about running the software yourself. Its words are HERO, PROBLEM, GET, MECHANISM, PROOF,
+ * blocks, and nothing about running the software yourself. The words were rewritten on 23 Nov (owner: sell the full
+ * process, the example is only the proof; docs/research/landing/copy-v2-2026-11-23.md): each block opens with the
+ * visitor's question and answers it in its first sentence. Its words are HERO, PROBLEM, GET, MECHANISM, PROOF,
  * PRICING, BUILDER, questions(), CLOSING and FOOTER. The plans and their prices are the plan catalogue's
  * (src/lib/admin/planSchema.ts), never typed here.
  */
@@ -16,20 +18,20 @@ export const ACTION = { label: "Claim an early-access place", short: "Early acce
 
 export const HERO = {
   eyebrow: "For makers, first-time founders and small product firms",
-  title: "Your product idea, built and on sale.",
-  sub: "One workbench carries a physical product from a one-line idea to a costed prototype, a launch plan and a marketplace listing. AI drafts each stage from the last. You decide what stands.",
+  title: "Finally take that product idea to market.",
+  sub: "Type the idea in one line. Get a costed parts list, a checked schematic, your margin on each sales channel and a launch plan. AI drafts every stage and you approve it, so you know the numbers before you spend a dollar. Our first idea got that far in one weekend.",
   secondary: "See the worked example",
 };
 
 export const META = {
-  title: "Concept to Realization: take a product idea to a prototype, a launch and a listing",
+  title: "Concept to Realization: take your product idea to market",
   description:
-    "One workbench for makers, first-time founders and small product firms: AI drafts each stage from the last, from brief to parts list, print files, unit cost, ads and a marketplace listing, and you decide. Early access is limited to 50 places.",
+    "Type a product idea in one line. Get a costed parts list, a checked schematic, your margin by sales channel and a launch plan. 50 early-access places, no payment.",
 };
 
 /** The problem, as before and after pairs. The "after" side is what the app does, word for word from the guides. */
 export const PROBLEM = {
-  title: "One product, ten tools that never talk to each other",
+  title: "Why is the idea still in the drawer?",
   before: "Elsewhere",
   after: "Here",
   /** the pairs the welcome page shows, by index */
@@ -37,23 +39,27 @@ export const PROBLEM = {
   /** the tools the lead names, as the block's picture shows them */
   tools: ["Notes app", "Parts spreadsheet", "CAD file", "Schematic tool", "Slicer", "Cost sheet", "Task board", "Ad manager"],
   art: "Elsewhere: a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager, each on its own. Here: one line from the idea to the sale, with the seven stages on it.",
-  lead: "A hardware idea usually lives in a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager. Change one part and the wiring, the enclosure, the cost and the launch copy go stale without telling you.",
+  lead: "Because nothing shows you the way from here to a product. The idea lives in a notes app, a parts spreadsheet, a drawing tool and a dozen browser tabs. None of them says what it would cost to make, or whether it would earn money. So you spend first and find out later, or you wait.",
   pairs: [
     {
-      before: "The parts list is a spreadsheet nothing else reads.",
-      after: "The parts list drives the schematic, the 3D model, the enclosure, the build sheet and the unit cost.",
+      before: "You find out what it costs after you have paid for it.",
+      after: "You see the unit cost at each batch size, and what each sales channel leaves you, before you order a part.",
     },
     {
       before: "A guessed price quietly becomes a fact.",
       after: "A part with no price is named and left out of the total. It is never counted as zero.",
     },
     {
-      before: "You find out what a change broke when the build fails.",
-      after: "Change a part, a requirement or a decision and a notice lists the rows it affects.",
+      before: "You learn what a change broke when the build fails.",
+      after: "Change a part, a requirement or a decision and a notice lists everything that depends on it.",
     },
     {
       before: "An AI tool writes confident copy with numbers nobody checked.",
-      after: "A marketing line with a number or a word like \"best\" needs a linked proof row before it can be approved.",
+      after: "Every claim is listed with its source and marked verified or unverified. An ad line with a number needs proof before you can approve it.",
+    },
+    {
+      before: "The parts list is a spreadsheet nothing else reads.",
+      after: "The parts list drives the schematic, the 3D model, the enclosure, the build sheet and the unit cost.",
     },
     {
       before: "Nobody can say what to do next.",
@@ -146,8 +152,8 @@ export const FEATURES: Feature[] = [
 ];
 
 export const CLOSING = {
-  title: "Ready to get your idea out?",
-  text: "An idea that is not pursued is never realised. Put yours through the same stages as the example: AI drafts, you decide, and the next step is always named.",
+  title: "What would your idea cost to make?",
+  text: "Find out before you spend on it. Claim one of the 50 early-access places with an email address and one line about what you want to make. You get the same seven stages our own idea went through, and the numbers for yours.",
 };
 
 export const FOOTER = {
@@ -178,6 +184,13 @@ export const EXAMPLE = {
   solderSteps: 20,
   build: "7 h 10 min",
   voicePacks: ["Family", "Salty", "New Yorker"],
+  /**
+   * What the example's economics said, as the cost view of "What you get" works it out from the Rev D rows
+   * (seed/concepts/baggage-claims/content/2026-11-22-revD-2.json: $30.01 for one unit, $17.67 a unit at 100, parts
+   * and filament only) against the channels' nets (src/lib/seed.ts: own site $21.95, wholesale $14.50; the dearest
+   * net of the five, $21.95, is under $30.01). $21.95 - $17.67 = $4.28; $17.67 - $14.50 = $3.17. Estimates, as the rows say.
+   */
+  badNews: { costAtOne: "$30.01", ownSiteLeaves: "$4" },
 } as const;
 
 /**
@@ -189,14 +202,14 @@ export const ENGINEERING = {
   title: "Make it: the engineering views",
   tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
   loading: "Loading the view",
-  badge: "Live views, in the workbench's dark theme",
+  badge: "Live views, in the app's dark theme",
   still: "A still of the 3D view; the live one loads as you reach it.",
   noscript: "Script is off, so the views cannot run. Here are stills of the schematic and the enclosure, the whole parts list and the first soldering steps.",
   hintMouse: "Drag to turn. Ctrl or Cmd + wheel to zoom.",
   hintTouch: "Tap, then drag to turn. Pinch to zoom.",
   tap: "Tap to explore",
   panTouch: "Tap, then drag to pan. Pinch or the buttons zoom.",
-  note: "As the workbench says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
+  note: "As the app says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
   model: {
     modes: { translucent: "Translucent", solid: "Solid", wireframe: "Wireframe", exploded: "Exploded" },
     wiresHidden: "The solid lid is closed, so the wires and the labels of the parts inside are not drawn.",
@@ -234,7 +247,7 @@ export const ENGINEERING = {
   build: {
     heading: "The first soldering steps",
     hint: "The order to solder in, from the schematic's wires.",
-    more: (n: number) => `And ${n} more, in the same order, on the build sheet in the workbench.`,
+    more: (n: number) => `And ${n} more, in the same order, on the build sheet in the app.`,
   },
 };
 
@@ -280,17 +293,17 @@ export const HERO_STAGE = {
     variants: (n: number) => `1 of ${n} variants`,
     net: (net: string) => `${net} net of fees`,
   },
-  caption: `The worked example: ${EXAMPLE.name}, shown in its own rows as they stand today. It is planned, not yet built or sold.`,
+  caption: `The worked example: ${EXAMPLE.name}, shown in its own rows as they stand today. It is designed and costed, not yet built or sold.`,
 };
 
 /** "What you get": the thing you walk away with at each stage. Every line is a section of the app today (src/lib/menu.ts). */
 export const GET = {
   eyebrow: "What you get",
   title: "What do I end up with?",
-  lead: "Something you can use at the end of each of seven stages: a working document, a file or a figure. The next stage is built on it. Pick a stage to see what it leaves you with.",
+  lead: "Something you can use at the end of every stage. Seven stages leave you a brief, sourced answers, a costed parts list, print files, your margin on each channel, ads and a marketplace listing. Each is built from the one before. Pick a stage to see it.",
   note: `Each output shown is one of ${EXAMPLE.name}'s own rows, the example this page follows.`,
   label: "The seven stages, in two lanes",
-  holds: "In the workbench this stage holds",
+  holds: "In the app this stage holds",
   more: (n: number) => `and ${n} more`,
   see: { engineering: "See it running below", market: "See it open below" },
   groups: [
@@ -310,7 +323,7 @@ export const GET = {
       title: "Sell it",
       sub: "From a unit cost to a listing",
       items: [
-        { n: "05", stage: "Production", art: "cost", get: "A unit cost and a margin per channel", also: "Batch plans with the cash each needs, suppliers, and a compliance checklist for your own checking." },
+        { n: "05", stage: "Production", art: "cost", get: "Your unit cost, and your margin on each channel", also: "Batch plans with the cash each needs, suppliers, and a compliance checklist for your own checking." },
         { n: "06", stage: "Marketing", art: "ad", get: "Ads written to each channel's limits", also: "Positioning with its proof, a brand kit, a landing page, social posts and a dated launch plan." },
         { n: "07", stage: "Sales", art: "channel", get: "A listing ready for the marketplace", also: "Channels with their fees, reviews turned into requirements, and a sales monitor." },
       ],
@@ -477,12 +490,12 @@ export const GET_VIEWS = {
  * saving, percentage or "faster" is claimed, because none has been measured.
  */
 export const MECHANISM = {
-  title: "AI drafts each stage. You approve it. The next stage starts from there.",
+  title: "How does it work? Three steps, seven times: AI drafts a stage, you approve it, the next stage starts from there.",
   guarantees: [
-    { title: "Publishing and spending wait for you", text: "A post, a message or a purchase goes out only when you confirm it in the app. The app places no orders." },
-    { title: "Numbers come from your rows", text: "A missing price is named and left out of the total. Print time and material come from the slicer's own output." },
-    { title: "Claims need proof", text: "A marketing line with a number or a superlative needs a linked proof row before it can be approved." },
-    { title: "Changes are recorded", text: "Each concept keeps its activity, and the audit log is read only." },
+    { title: "Nothing is posted or bought without you", text: "A post, a message or a purchase goes out only when you confirm it in the app. The app places no orders." },
+    { title: "No number is made up", text: "A missing price is named and left out of the total. Print time and material come from the slicer's own output." },
+    { title: "Every claim shows its source", text: "Each claim is listed with where it came from and marked verified or unverified. An ad line with a number or a superlative needs linked proof before you can approve it." },
+    { title: "You see what a change touches", text: "Change a part, a requirement or a decision and a notice lists everything that depends on it. Every change is kept in a read-only log." },
   ],
 };
 
@@ -493,18 +506,20 @@ export const MECHANISM = {
  */
 export const PROOF = {
   eyebrow: `The worked example: ${EXAMPLE.name}`,
-  title: "One real product, taken through it",
-  lead: `${EXAMPLE.name} is ${EXAMPLE.what}, and the first idea put through the workbench. These are its own rows in the workbench's own views: the engineering under Make it, marketing and sales under Sell it. Where the example has nothing yet, the view says so.`,
+  title: "Has it worked on a real idea?",
+  /** the counts are the example's own rows, handed in by the page, so the sentence cannot drift from the views under it */
+  lead: (parts: number, wires: number) =>
+    `Yes, on ours. We had a joke idea on the way to an airport: a luggage tag that heckles its trip. Over one weekend, one of us took that line to a costed list of ${parts} parts and a checked ${wires}-wire schematic. Then a 3D model, margins for five sales channels and a launch plan. This app was built to do it. Its own data is below.`,
   switch: "Which half of the example to show",
   groups: {
     make: { label: "Make it", sub: "Six engineering views, live: turn the model, pan the schematic, watch the case print." },
     sell: { label: "Sell it", sub: "Seven marketing and sales views, built on the same rows as the engineering." },
   },
   noscript: "Script is off, so the switch cannot change. The Sell it views are set out below.",
-  enclosureNote: "The 3D view draws the enclosure to the outline of the example's own case, which is designed by hand. Enclosure and print shows the box the workbench generates around the same parts.",
+  enclosureNote: "The 3D view draws the enclosure to the outline of the example's own case, which is designed by hand. Enclosure and print shows the box the app generates around the same parts.",
   status: {
-    title: "Where does the example stand today?",
-    lead: "Each stage ends in a gate of checks. These counts are worked out by the workbench's own rules on the example's rows. It is designed and costed, not yet manufactured or sold.",
+    title: "What did it tell us?",
+    lead: `What we did not want to hear, before we spent a dollar. At prototype cost, ${EXAMPLE.badNews.costAtOne} a unit, all five channels lose money. At 100 units our own site leaves about ${EXAMPLE.badNews.ownSiteLeaves} a unit and wholesale still loses. So the tag is designed and costed, not yet built or sold. Here are its checks, stage by stage.`,
     label: "The seven stages of the example, each with its checks met",
     count: (met: number, total: number) => `${met} of ${total} checks met`,
     open: (n: number) => `What is still open (${n} ${n === 1 ? "check" : "checks"})`,
@@ -527,7 +542,7 @@ export const MARKET = {
   positioning: {
     path: "/s/marketing/positioning",
     lineTitle: "The line",
-    lineHint: "The workbench composes one sentence from six parts. The brackets are the parts the example has not filled.",
+    lineHint: "The app composes one sentence from six parts. The brackets are the parts the example has not filled.",
     notesTitle: "What the example holds",
     messagesTitle: "Three messages, each tied to proof",
     messagesHint: "A message can be approved only when it links to something the concept holds. This is what a link to the example's rows would count as today, by the app's own check.",
@@ -575,7 +590,7 @@ export const MARKET = {
     foot: "Each step is due a set number of days before or after launch day.",
     needs: (gate: string) => `needs the ${gate} gate`,
     steps: (n: number) => `${n} steps`,
-    honest: (launches: number) => (launches === 0 ? `${EXAMPLE.name} has no launch date yet, so no step has a due date. Set one in the workbench and every step is dated, counted back from it. Move the date and every step moves.` : `${EXAMPLE.name} has ${launches} launch planned.`),
+    honest: (launches: number) => (launches === 0 ? `${EXAMPLE.name} has no launch date yet, so no step has a due date. Set one in the app and every step is dated, counted back from it. Move the date and every step moves.` : `${EXAMPLE.name} has ${launches} launch planned.`),
   },
   listing: {
     path: "/s/sales/listing",
@@ -606,15 +621,15 @@ export const MARKET = {
 export const PRICING = {
   eyebrow: "Pricing",
   title: "What does it cost?",
-  lead: "Early access is limited to 50 people and takes no payment.",
-  plansLead: "After those places are gone, the workbench is by monthly subscription, on one of the plans below.",
+  lead: "Nothing is charged during early access, and no card is asked for. There are 50 places.",
+  plansLead: "After those are gone it is a monthly subscription, on one of the two plans below.",
   offerTitle: "Early access: 50 places",
-  offerText: "Give an email address and one line about what you want to make. The count beside the form is the real number of places left.",
+  offerText: "Give an email address and one line about what you want to make. Workspaces open in the order places were claimed. The count beside the form is the real number of places left.",
   plansTitle: "After early access",
   includes: "Includes",
   per: "a month",
   first: "Early-access members are asked first when paid plans open.",
-  questionsTitle: "What else should I ask?",
+  questionsTitle: "What might stop you?",
 };
 
 /** "Who built it": shown only when the setting BUILDER.setting holds a name and a text (builder.ts). */
@@ -632,29 +647,29 @@ type Question = { q: string; a: string };
  */
 export function questions(plans: { name: string; price: string; per: string }[]): Question[] {
   const prices = plans.map((p) => `${p.name} at ${p.price} ${p.per}`).join(" and ");
-  const then = prices ? ` After the 50 early-access places, the workbench is by subscription: ${prices}.` : "";
+  const then = prices ? ` After the 50 early-access places it is a subscription: ${prices}.` : "";
   return [
-    { q: "What does it cost?", a: `Early access takes no payment.${then} ${PRICING.first}` },
+    { q: "What does it cost?", a: `Nothing during early access, and no card is asked for.${then} ${PRICING.first}` },
     {
-      q: "What is early access, and why 50?",
-      a: `Early access is a place among the first 50 people to put an idea of their own through the workbench. You claim one with an email address and one line about what you want to make. Fifty is a fixed limit, and the count on this page is the real number of places left.${prices ? " When they are gone, the way in is a paid plan." : ""}`,
+      q: "Is the limit of 50 real?",
+      a: `Yes. Fifty is a fixed limit, and the count on this page is read from our database each time the page loads. A place puts you among the first 50 people to take an idea of their own through the seven stages. When the places are gone the form becomes a waiting list${prices ? ", and the way in is a paid plan" : ""}.`,
     },
     { q: "Who can see my idea?", a: "Your ideas are kept in your own workspace and are not shared with others." },
     {
-      q: "Do I need electronics or CAD skills?",
-      a: "No CAD skills: parts are drawn as boxes and cylinders from the sizes you enter, or from an STL or STEP file you attach, and the enclosure is generated around them. Some electronics knowledge helps, because you approve every draft and build the prototype yourself. The electrical checks list what they find, worst first, and the build sheet gives the order to solder in.",
+      q: "I am not an engineer. Can I still use it?",
+      a: "For the drawing, yes. Parts are drawn from the sizes you enter, or from an STL or STEP file, and the enclosure is generated around them, so you need no CAD skills. For electronics, some knowledge helps: you approve every draft and you build the prototype yourself. The electrical checks list what they find, worst first, and the build sheet gives the order to solder in.",
     },
     {
-      q: "Is it only for electronics?",
-      a: "No. A concept is one of three kinds: electronics in an enclosure, a printed part, or a physical product with no electronics. The sections that do not apply, such as the schematic for a printed part, are hidden.",
+      q: "My product has no electronics. Is this for me?",
+      a: "Yes. A concept is one of three kinds: electronics in an enclosure, a printed part, or a physical product with no electronics. The sections that do not apply, such as the schematic for a printed part, are hidden.",
     },
     {
-      q: "Does the AI make things up?",
-      a: "It drafts, and a draft counts for nothing until you approve it. Every draft is kept with the rows it came from. A part with no price is named and left out of the total, never counted as zero. A marketing line with a number or a superlative needs a linked proof row before it can be approved.",
+      q: "Can I trust what the AI writes?",
+      a: "Trust it as a draft, never as a fact. A draft counts for nothing until you approve it. Every claim is listed with its source and marked verified or unverified. A part with no price is named and left out of the total, never counted as zero. On our own idea it showed that every channel lost money at prototype cost.",
     },
     {
       q: "What is not finished yet?",
-      a: `Connections to outside services (Amazon, X, Instagram and printers) are built to each service's published documentation and tested against stand-ins; they have not yet been run on live accounts. Team workspaces open after early access. The worked example, ${EXAMPLE.name}, is designed and costed, not yet manufactured or sold.`,
+      a: `Connections to outside services (Amazon, X, Instagram and printers) are built to each service's published documentation and tested against stand-ins; they have not yet been run on live accounts. Team workspaces open after early access. Our own example, ${EXAMPLE.name}, is designed and costed, not yet built or sold. And nobody can promise a product will sell. This shows you the numbers so you can decide.`,
     },
   ];
 }

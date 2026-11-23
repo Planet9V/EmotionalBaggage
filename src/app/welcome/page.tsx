@@ -35,7 +35,7 @@ export const generateMetadata = () => publicPageMetadata({ title: META.title, de
  *  0. Header, sticky: the brand, four section links from 1024 px, Sign in, and the action at every width.
  *  1. hero     The proposition, the early-access form (EarlyAccess) and the transformation itself (HeroFlow).
  *  2. origin   Where the first idea came from: the film (OriginScenes), which loads only as it nears the window.
- *  3. problem  One product, ten tools: three before-and-after pairs.
+ *  3. problem  Why the idea is still in the drawer: three before-and-after pairs.
  *  4. get      What each stage leaves you with (WhatYouGet), and how: AI drafts, you approve; the four guarantees.
  *  5. proof    One showcase of the example, Make it and Sell it (Showcase), then where it stands (StageStatus).
  *  6. pricing  The early-access offer, then the paid plans of the catalogue in force (Pricing.tsx).
@@ -210,7 +210,7 @@ export default async function WelcomePage() {
             <div className={WRAP}>
               <p className={EYEBROW}>{PROOF.eyebrow}</p>
               <h2 id="proof-title" className={H2}>{PROOF.title}</h2>
-              <p className={LEAD}>{PROOF.lead}</p>
+              <p className={LEAD}>{PROOF.lead(example.parts.length, example.wires.length)}</p>
             </div>
             {/* the stage runs wider than the text column; the showcase lays both out */}
             <div className="mt-8">
