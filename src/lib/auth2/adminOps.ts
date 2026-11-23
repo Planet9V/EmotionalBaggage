@@ -66,7 +66,7 @@ export type WorkspaceRow = { id: string; name: string; createdAt: string; member
 export type WorkspaceDetail = { workspace: WorkspaceRow; members: { memberId: string; userId: string; email: string; name: string; role: "owner" | "admin" | "member"; platformAdmin: boolean; joinedAt: string }[] };
 
 export type UserFilter = { q?: string; role?: "member" | "admin"; state?: "active" | "invited" | "disabled" | "locked" | "reset"; page?: number; pageSize?: number };
-export type UserPage = { users: UserState[]; total: number; page: number; pageSize: number };
+export type UserPage = { users: UserState[]; total: number; page: number; pageSize: number; /** accounts locked now, whatever the filter */ locked: number };
 
 /** The SHA-256 name key of ./signInWait.ts, worked out in SQL from an address. */
 const NAME_KEY_SQL = (col: string) => `translate(rtrim(encode(sha256(convert_to(lower(trim(${col})), 'UTF8')), 'base64'), '='), '+/', '-_')`;
@@ -195,7 +195,8 @@ export function adminOps(ctx: Ctx) {
           sessions: u.sessions,
         };
       });
-      return { users, total, page, pageSize };
+      const locked = (await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM "user" u WHERE EXISTS (SELECT 1 FROM auth2_sign_in_waits w WHERE w.client = '' AND w.name_key = ${NAME_KEY_SQL("u.email")} AND w.locked_until > now())`)).rows[0]!.n;
+      return { users, total, page, pageSize, locked };
     },
 
     /**

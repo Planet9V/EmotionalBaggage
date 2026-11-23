@@ -47,6 +47,9 @@ export default async function AccountPage() {
         </p>
       </section>
       <AccountActions />
+      <p className="text-xs text-muted" data-testid="view-as-notice">
+        Platform administrators may view your account as you see it to help with a problem; every such session is recorded.
+      </p>
     </Frame>
   );
 }

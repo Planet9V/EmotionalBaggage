@@ -39,7 +39,7 @@ export function AccountRulesPanel({ rules, canWrite }: { rules: AccountRules; ca
   const [days, setDays] = useState(String(rules.inviteExpiryDays));
   const [max, setMax] = useState(String(rules.maxFailures));
   const [untilUnlock, setUntilUnlock] = useState(rules.lockMinutes === 0);
-  const [minutes, setMinutes] = useState(String(rules.lockMinutes || 30));
+  const [minutes, setMinutes] = useState(String(rules.lockMinutes || 15));
   const [minLength, setMinLength] = useState(String(rules.password.minLength));
   const [flags, setFlags] = useState<Record<Flags, boolean>>({ upper: rules.password.upper, lower: rules.password.lower, digit: rules.password.digit, symbol: rules.password.symbol, notEmailOrName: rules.password.notEmailOrName, notCommon: rules.password.notCommon });
   const [signUpOpen, setSignUpOpen] = useState(rules.signUpOpen);
@@ -75,11 +75,11 @@ export function AccountRulesPanel({ rules, canWrite }: { rules: AccountRules; ca
           <Field id="rules-max" label="Failed sign-ins in a row before the lock" hint="3 to 20. Default 7. A right password sets the count back to 0.">
             <Input id="rules-max" type="number" inputMode="numeric" min={3} max={20} value={max} onChange={(e) => setMax(e.target.value)} {...describe("rules-max", { hint: true })} />
           </Field>
-          <Field id="rules-minutes" label="Minutes the lock lasts" hint="5 to 1,440. Default 30. A password reset or an administrator lifts it at once.">
+          <Field id="rules-minutes" label="Minutes the lock lasts" hint="5 to 1,440. Default 15. A password reset or an administrator lifts it at once.">
             <Input id="rules-minutes" type="number" inputMode="numeric" min={5} max={1440} value={minutes} disabled={untilUnlock || !canWrite} onChange={(e) => setMinutes(e.target.value)} {...describe("rules-minutes", { hint: true })} />
           </Field>
           <div className="self-end pb-2">
-            <Check id="rules-until" label="Until an administrator unlocks it (platform administrators are always unlocked after the minutes above)" checked={untilUnlock} onChange={setUntilUnlock} disabled={!canWrite} />
+            <Check id="rules-until" label="Until an administrator unlocks it (platform administrators are always unlocked after 15 minutes at most)" checked={untilUnlock} onChange={setUntilUnlock} disabled={!canWrite} />
           </div>
         </fieldset>
 
@@ -112,20 +112,24 @@ export function AccountRulesPanel({ rules, canWrite }: { rules: AccountRules; ca
 }
 
 /** Admin, Email: where requests for an account and early-access requests are announced (setting notify.signupRequestsTo). */
-export function NotifyPanel({ to, mail, canWrite }: { to: string | null; mail: boolean; canWrite: boolean }) {
+export function NotifyPanel({ to, lockTo, mail, canWrite }: { to: string | null; lockTo: string | null; mail: boolean; canWrite: boolean }) {
   const [value, setValue] = useState(to ?? "");
+  const [lockValue, setLockValue] = useState(lockTo ?? "");
   const [error, setError] = useState("");
   const save = useSaveSignIn();
   const submit = (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    save.mutate({ rules: { notifySignupRequestsTo: value.trim() } }, { onSuccess: () => toast.success("Saved."), onError: (err) => setError(messageOf(err)) });
+    save.mutate({ rules: { notifySignupRequestsTo: value.trim(), notifyLockAlertsTo: lockValue.trim() } }, { onSuccess: () => toast.success("Saved."), onError: (err) => setError(messageOf(err)) });
   };
   return (
-    <Panel title="Sign-up requests" description="Each request for early access or for an account is listed in Access requests and, when mail is set up, announced by email to this address. The email says who asked and what they want to make, with a link to Admin; nothing secret.">
+    <Panel title="Notices to the owner" description="Each request for early access or for an account is listed in Access requests, and each sign-in lock in the Audit log; when mail is set up they are also emailed to these addresses, with a link to Admin and nothing secret.">
       <form onSubmit={submit} noValidate className="space-y-3">
         <Field id="notify-to" label="Send sign-up requests to" hint="Default jim@eigenia.nl. Leave empty to send none.">
           <Input id="notify-to" type="email" autoCapitalize="none" spellCheck={false} value={value} disabled={!canWrite} onChange={(e) => setValue(e.target.value)} {...describe("notify-to", { hint: true })} />
+        </Field>
+        <Field id="notify-lock" label="Send sign-in lock alerts to" hint="Default jim@eigenia.nl. One email per lock, at most 20 an hour (then one notice to read the audit log). Leave empty to send none.">
+          <Input id="notify-lock" type="email" autoCapitalize="none" spellCheck={false} value={lockValue} disabled={!canWrite} onChange={(e) => setLockValue(e.target.value)} {...describe("notify-lock", { hint: true })} />
         </Field>
         {!mail ? <p role="note" className="rounded-md bg-info-soft px-3 py-2 text-sm text-info">No mail server is set up, so nothing is sent yet; requests are still listed in Access requests.</p> : null}
         {error ? <SaveError message={error} /> : null}
