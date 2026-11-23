@@ -4,12 +4,13 @@ import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Html, TransformControls } from "@react-three/drei";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { bodyOffsets, totalExtent } from "./layout";
 import { type Mesh, type ShellParams } from "./stl";
 import { bodyGeometry, sceneGeometry, shellGeometries, soupToGeometry } from "@/lib/geometry/shapes";
 import { degToRad, radToDeg, snap, wrapDegrees } from "@/lib/geometry/rotation";
 import { ORANGE, Progress, ToolContext, applyFade, clickSelect, palette, setCursor, setOpacity, setSegment, useDispose } from "./canvasShared";
-import { CanvasPart, ModelCanvasProps, ShellView } from "./canvasTypes";
+import { CanvasPart, ModelCanvasProps, ShellOutline, ShellView } from "./canvasTypes";
 import { ShowcaseLook } from "./canvasShowcase";
 
 export type LabelInfo = { side: 1 | -1; column: number };
@@ -164,7 +165,27 @@ export function BodyPart({ part, progress, selected, onSelect, onFocusPart, colo
   );
 }
 
-export function ShellPart({ part, progress, selected, onSelect, onFocusPart, colors, view, params, lift }: {
+/**
+ * An enclosure with an outline of its own: a tray (floor and walls) and a flat lid, each the outline pushed up
+ * through its height. The tray stands on y = 0 and the lid hangs from y = 0, as the box shell's two bodies do.
+ */
+function outlinedShell(o: ShellOutline, height: number, wall: number): { tray: THREE.BufferGeometry; lid: THREE.BufferGeometry } {
+  // drawn in (x, -z) and laid flat, so the outline's z runs along the scene's z and the push is upward
+  const path = <T extends THREE.Path>(target: T, pts: readonly (readonly [number, number])[]) => target.setFromPoints(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const flat = (shape: THREE.Shape, depth: number, y: number) => new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 4 }).rotateX(-Math.PI / 2).translate(0, y, 0);
+  const floor = flat(path(new THREE.Shape(), o.outer), wall, 0);
+  const ring = path(new THREE.Shape(), o.outer);
+  ring.holes.push(path(new THREE.Path(), o.inner));
+  const walls = flat(ring, Math.max(0.1, height - wall * 2), wall);
+  const top = path(new THREE.Shape(), o.outer);
+  for (const h of o.lidHoles ?? []) top.holes.push(path(new THREE.Path(), h));
+  const tray = mergeGeometries([floor, walls]) ?? floor;
+  if (tray !== floor) floor.dispose();
+  walls.dispose();
+  return { tray, lid: flat(top, wall, -wall) };
+}
+
+export function ShellPart({ part, progress, selected, onSelect, onFocusPart, colors, view, params, outline, lift }: {
   part: CanvasPart;
   progress: Progress;
   selected: boolean;
@@ -173,6 +194,7 @@ export function ShellPart({ part, progress, selected, onSelect, onFocusPart, col
   colors: ReturnType<typeof palette>;
   view: ShellView;
   params: ShellParams;
+  outline?: ShellOutline;
   lift: number;
 }) {
   const g = part.geometry;
@@ -180,7 +202,7 @@ export function ShellPart({ part, progress, selected, onSelect, onFocusPart, col
   const { wallMm, clearanceMm, lipMm } = params;
   const cuttingNow = React.useContext(ToolContext).cutting;
   // A shell too small for the wall settings still shows as its envelope, so it never disappears.
-  const { tray, lid } = useMemo(() => shellGeometries([sx, sy, sz], { wallMm, clearanceMm, lipMm }), [sx, sy, sz, wallMm, clearanceMm, lipMm]);
+  const { tray, lid } = useMemo(() => (outline ? outlinedShell(outline, sy, wallMm) : shellGeometries([sx, sy, sz], { wallMm, clearanceMm, lipMm })), [outline, sx, sy, sz, wallMm, clearanceMm, lipMm]);
   useDispose(tray);
   useDispose(lid);
   const edgesOf = (geo: THREE.BufferGeometry) => (geo.getAttribute("position") ? new THREE.EdgesGeometry(geo, 20) : new THREE.BufferGeometry());

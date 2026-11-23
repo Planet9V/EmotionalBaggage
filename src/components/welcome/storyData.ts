@@ -10,6 +10,7 @@ import { hubRef, sequence, toWires } from "@/components/buildsheet/derive";
 import { assemblySteps, layerHeightOf, layerOf, type Phase, type SolderStep } from "@/components/three/showcaseLogic";
 import type { PartGeometry } from "@/components/three/layout";
 import { stillOf, type Still } from "./get/projection";
+import { shellOutlineFor } from "./get/tagShell";
 import { netWheel, type Wheel } from "./get/heroArt";
 import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningLine } from "@/lib/market/positioning";
@@ -126,7 +127,7 @@ function get(d: ExampleData): GetData {
     layerMm: layerHeightOf(str(main?.data.settings)),
     volumes: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs), status: r.status })),
     steps: steps.length,
-    still: stillOf(shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, kind: kind(p), geometry: p.geometry as PartGeometry, step: stepOf(p.item.id) }))),
+    still: stillOf(shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, kind: kind(p), geometry: p.geometry as PartGeometry, step: stepOf(p.item.id) })), 6, (size) => shellOutlineFor(size, true)),
   };
 }
 

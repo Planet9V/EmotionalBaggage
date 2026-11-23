@@ -15,6 +15,7 @@ import { PartTags, TagLayer } from "@/components/three/canvasTags";
 import { SHELL_DEFAULTS } from "@/components/three/stl";
 import { useSceneModel } from "@/components/views/model/useSceneModel";
 import { TapToExplore } from "./TapToExplore";
+import { TAG_TONE, shellOutlineFor } from "./get/tagShell";
 import { useAnimated } from "./useAnimated";
 import { ENGINEERING } from "./content";
 import { CHIP, CHIP_OFF, CHIP_ON, ICON, StageBar, StageFoot, StageView } from "./StageParts";
@@ -65,10 +66,12 @@ export default function EngModel({ parts: partItems, wires }: { parts: Item[]; w
     if (!el) return;
     const style = getComputedStyle(el);
     // the token values exist only in the browser, so they are read once the stage is in the page
-    setColors(new Map(parts.map((p) => [p.item.id, style.getPropertyValue(tokenOf(p.item, p.ref)).trim()])));
+    // the enclosure that takes the tag's outline takes its colour too; every other part its kind's theme colour
+    setColors(new Map(parts.map((p) => [p.item.id, p.geometry?.shape === "shell" && shellOutlineFor(p.geometry.size) ? TAG_TONE : style.getPropertyValue(tokenOf(p.item, p.ref)).trim()])));
     setNarrow(el.clientWidth < 640);
   }, [parts]);
 
+  const outline = useMemo(() => shellOutlineFor(parts.find((p) => p.geometry?.shape === "shell")?.geometry?.size), [parts]);
   const canvasParts = useMemo(() => scene.canvasParts.map((c) => ({ id: c.id, ref: c.ref, title: c.title, geometry: c.geometry, shape: c.shape, color: colors.get(c.id) || undefined })), [scene.canvasParts, colors]);
   const labelParts = useMemo(() => canvasParts.map((c) => ({ id: c.id, ref: c.ref, title: c.title })), [canvasParts]);
   // a closed, solid lid hides the wires inside it, so they are not drawn over it
@@ -126,6 +129,7 @@ export default function EngModel({ parts: partItems, wires }: { parts: Item[]; w
             labels={false}
             shellView={mode === "solid" ? "solid" : "clear"}
             shellParams={SHELL_DEFAULTS}
+            shellOutline={outline}
             resetToken={resetToken + (narrow ? 1000 : 0)}
             dark
             uploaded={null}
