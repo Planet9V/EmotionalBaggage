@@ -43,7 +43,7 @@ const FILE_NAME = /^[^/]+\.[A-Za-z0-9]{1,8}$/;
 /** Paths a signed-out browser may open: the sign-in page, the welcome page, the API (route() answers 401 itself), short tracked links and static files. */
 export function isPublicPath(pathname: string): boolean {
   if (pathname === SIGN_IN_PATH || pathname.startsWith(`${SIGN_IN_PATH}/`)) return true;
-  // the welcome page and its printable one-page overview (/welcome/overview)
+  // the welcome page and its early-access confirmation page (/welcome/early)
   if (pathname === WELCOME_PATH || pathname.startsWith(`${WELCOME_PATH}/`)) return true;
   if (pathname === "/api" || pathname.startsWith("/api/")) return true;
   // Next.js's build output and image optimiser; in development also its hot reload and error overlay

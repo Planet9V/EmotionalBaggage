@@ -39,8 +39,8 @@ async function strangerAndAdmin(tag: string) {
 
 describe("B1: access requests are the platform administrator's while the new sign-in is on", () => {
   it("a self-signed-up account cannot list, export, change or delete them; the platform administrator can; off is as before", async () => {
-    const { createAccessRequest } = await import("@/lib/accessRequests/store");
-    const id = await createAccessRequest({ name: "Prospect Person", email: "prospect@zz-auth2.test", building: "x", company: "Acme", level: "" });
+    const { claimEarlyAccess } = await import("@/lib/accessRequests/places");
+    const id = (await claimEarlyAccess({ name: "Prospect Person", email: "prospect@zz-auth2.test", building: "x", company: "Acme", level: "", placement: "" })).id!;
     const { GET: list } = await import("@/app/api/admin/access-requests/route");
     const { GET: exportCsv } = await import("@/app/api/admin/access-requests/export/route");
     const { PATCH: patch, DELETE: remove } = await import("@/app/api/admin/access-requests/[id]/route");

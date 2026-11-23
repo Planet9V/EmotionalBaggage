@@ -96,7 +96,7 @@ describe("Pricing and tiers", () => {
     expect(calls.some((c) => c.method === "PUT")).toBe(false);
   });
 
-  it("sends the whole catalogue with the prices switch on", async () => {
+  it("sends the whole catalogue with the prices switch turned off", async () => {
     const { calls } = adminServer([
       asPlatformAdmin,
       on("GET", "/api/admin/plans", () => ({ body: { catalogue: builtInCatalogue(), source: "built-in", limits: [] } })),
@@ -107,9 +107,9 @@ describe("Pricing and tiers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save the catalogue" }));
     await waitFor(() => expect(calls.find((c) => c.method === "PUT")).toBeTruthy());
     const sent = calls.find((c) => c.method === "PUT")!.body as ReturnType<typeof builtInCatalogue>;
-    expect(sent.showPrices).toBe(true);
-    expect(sent.tiers.map((t) => t.key)).toEqual(["free", "maker", "studio", "self"]);
-    expect(sent.tiers[1].priceMonthly).toBe(29);
+    expect(sent.showPrices).toBe(false);
+    expect(sent.tiers.map((t) => t.key)).toEqual(["maker", "studio"]);
+    expect(sent.tiers[0].priceMonthly).toBe(20);
   });
 });
 

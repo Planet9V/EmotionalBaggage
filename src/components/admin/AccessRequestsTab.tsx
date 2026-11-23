@@ -16,7 +16,7 @@ import { ApiError } from "@/lib/http";
 import { messageOf } from "@/lib/queries";
 import { fmtDateTime } from "@/lib/format";
 import { downloadAccessRequests, useAccessRequests, useDeleteAccessRequest, useSetAccessStatus } from "@/lib/accessRequests/client";
-import { ACCESS_LEVEL_LABEL, ACCESS_STATUSES, ACCESS_STATUS_LABEL, type AccessStatus } from "@/lib/accessRequests/shared";
+import { STORED_LEVEL_LABEL, ACCESS_STATUSES, ACCESS_STATUS_LABEL, type AccessRequestRow, type AccessStatus } from "@/lib/accessRequests/shared";
 
 export function AccessRequestsTab() {
   const list = useAccessRequests();
@@ -63,7 +63,7 @@ export function AccessRequestsTab() {
       title="Access requests"
       description={
         <>
-          Requests sent from the public <Link href="/welcome" className="text-link underline underline-offset-2">welcome page</Link> for a workspace of one&apos;s own, newest first. No email is sent by the app: reply from your own mail, then set the status here.
+          Early-access requests from the public <Link href="/welcome" className="text-link underline underline-offset-2">welcome page</Link>, newest first, with the place each holds or its position on the waiting list. Declining a request frees its place for the first on the waiting list. A confirmation email is sent only when a mail server is set up in Email; otherwise reply from your own mail, then set the status here.
         </>
       }
       actions={
@@ -99,9 +99,10 @@ export function AccessRequestsTab() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-36">Received</TableHead>
+                  <TableHead className="w-28">Place</TableHead>
                   <TableHead>Who</TableHead>
                   <TableHead className="w-28">Level</TableHead>
-                  <TableHead className="min-w-64">Wants to build</TableHead>
+                  <TableHead className="min-w-64">Wants to make</TableHead>
                   <TableHead className="w-44">Status</TableHead>
                   <TableHead className="w-24"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
@@ -110,20 +111,23 @@ export function AccessRequestsTab() {
                 {rows.map((r) => (
                   <TableRow key={r.id} className="align-top" data-testid={`access-${r.id}`}>
                     <TableCell className="align-top font-mono text-xs text-muted">{fmtDateTime(r.createdAt)}</TableCell>
+                    <TableCell className="align-top text-sm" data-testid={`access-place-${r.id}`}>
+                      <PlaceCell row={r} />
+                    </TableCell>
                     <TableCell className="align-top text-sm">
-                      <span className="block font-medium text-primary wrap-anywhere">{r.name}</span>
+                      {r.name ? <span className="block font-medium text-primary wrap-anywhere">{r.name}</span> : <span className="block text-muted">No name given</span>}
                       <a href={`mailto:${r.email}`} className="block text-xs text-link underline-offset-2 hover:underline wrap-anywhere">
                         {r.email}
                       </a>
                       {r.company ? <span className="block text-xs text-secondary wrap-anywhere">{r.company}</span> : null}
                     </TableCell>
                     <TableCell className="align-top text-sm text-secondary" data-testid={`access-level-${r.id}`}>
-                      {r.level ? ACCESS_LEVEL_LABEL[r.level] : <span className="text-muted">Not chosen</span>}
+                      {r.level ? STORED_LEVEL_LABEL[r.level] : <span className="text-muted">Not chosen</span>}
                     </TableCell>
                     <TableCell className="align-top whitespace-pre-wrap text-sm text-secondary wrap-anywhere">{r.building}</TableCell>
                     <TableCell className="align-top">
                       <label htmlFor={`access-status-${r.id}`} className="sr-only">
-                        Status of request {r.id} from {r.name}
+                        Status of request {r.id} from {r.name || r.email}
                       </label>
                       <NativeSelect id={`access-status-${r.id}`} value={r.status} onChange={(e) => void change(r.id, e.target.value as AccessStatus)}>
                         {ACCESS_STATUSES.map((s) => (
@@ -135,9 +139,9 @@ export function AccessRequestsTab() {
                     </TableCell>
                     <TableCell className="align-top">
                       <ConfirmButton
-                        label={<><span aria-hidden>Delete</span><span className="sr-only">Delete request {r.id} from {r.name}</span></>}
+                        label={<><span aria-hidden>Delete</span><span className="sr-only">Delete request {r.id} from {r.name || r.email}</span></>}
                         title="Delete this request?"
-                        body={<>Request {r.id} from {r.name} is removed from this list and from the CSV. The audit log keeps that it was deleted, by number only. This cannot be undone.</>}
+                        body={<>Request {r.id} from {r.name || r.email} is removed from this list and from the CSV. The audit log keeps that it was deleted, by number only. This cannot be undone.</>}
                         confirmLabel="Delete request"
                         onConfirm={() => void del(r.id)}
                         disabled={remove.isPending}
@@ -155,4 +159,12 @@ export function AccessRequestsTab() {
       )}
     </Panel>
   );
+}
+
+/** The early-access place, the waiting-list position, or a dash for a declined request without a place. */
+function PlaceCell({ row }: { row: AccessRequestRow }) {
+  if (row.place !== null && row.status !== "declined") return <span className="font-mono text-primary">Place {row.place}</span>;
+  if (row.waitingPosition !== null) return <span className="text-secondary">Waiting, {row.waitingPosition}</span>;
+  if (row.place !== null) return <span className="text-muted">Was place {row.place}</span>;
+  return <span className="text-muted">None</span>;
 }

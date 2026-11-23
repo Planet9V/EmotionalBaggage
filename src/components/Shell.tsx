@@ -60,7 +60,7 @@ const NO_PROJECTS: Project[] = [];
 export function Shell({ children, auth2 = false }: { children: React.ReactNode; auth2?: boolean }) {
   const path = usePathname();
   // The landing page preview (/p/<concept id>) is the page as a visitor would see it, so it gets no sidebar.
-  // The public welcome page (/welcome, /welcome/overview) is for visitors who are not signed in, so it gets no sidebar either.
+  // The public welcome page (/welcome, /welcome/early) is for visitors who are not signed in, so it gets no sidebar either.
   // The new sign-in's screens (/auth/...) are for people who are not signed in to the shell, so they are bare while
   // AUTH2 is on. With it off they do not exist, and their "not found" page has the shell like any other.
   const bare = path === "/sign-in" || path === "/welcome" || path.startsWith("/welcome/") || path.startsWith("/p/") || (auth2 && path.startsWith("/auth/"));

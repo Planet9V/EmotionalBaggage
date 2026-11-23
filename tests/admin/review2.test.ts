@@ -69,8 +69,8 @@ describe("S2: the plan catalogue", () => {
   it("anyone but the platform administrator reads only what /welcome shows", async () => {
     const cat = builtInCatalogue();
     cat.showPrices = false;
-    cat.tiers[1] = { ...cat.tiers[1], priceMonthly: 19, stripePriceMonthly: "price_SECRETPLAN1" };
-    cat.tiers[2] = { ...cat.tiers[2], shown: false, name: "HiddenTier", priceMonthly: 777 };
+    cat.tiers[0] = { ...cat.tiers[0], priceMonthly: 19, stripePriceMonthly: "price_SECRETPLAN1" };
+    cat.tiers[1] = { ...cat.tiers[1], shown: false, name: "HiddenTier", priceMonthly: 777 };
     await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', $1)", [JSON.stringify(cat)]);
     const plain = await (await plansGet(json("GET", undefined, U("/api/admin/plans")))).text();
     for (const secret of ["price_SECRETPLAN1", "HiddenTier", "777", '"priceMonthly":19']) expect(plain, secret).not.toContain(secret);

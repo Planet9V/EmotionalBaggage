@@ -20,7 +20,7 @@ describe("the proxy's redirect rules", () => {
     expect(pageGate("/plan", "", true)).toBeNull();
   });
 
-  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/vendor/occt/occt-import-js.wasm", "/landing/og.jpg", "/l/abcd2345", "/welcome", "/welcome/overview", "/landing/schematic-dark.webp"])(
+  it.each(["/sign-in", "/sign-in/", "/api/projects", "/api/auth/me", "/api/auth/sign-in", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/vendor/occt/occt-import-js.wasm", "/landing/og.jpg", "/l/abcd2345", "/welcome", "/welcome/early", "/landing/schematic-dark.webp"])(
     "lets %s through signed out",
     (path) => {
       expect(isPublicPath(path)).toBe(true);

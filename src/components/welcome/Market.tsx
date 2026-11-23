@@ -19,6 +19,29 @@ import { MARKET } from "./content";
 
 const TABS = Object.keys(MARKET.tabs) as MarketTab[];
 
+/** Tabs set out one under another, for a reader without script. It holds no <noscript> of its own, so it can sit inside one. */
+function MarketTabsFlat({ tabs, data }: { tabs: MarketTab[]; data: MarketData }) {
+  return (
+    <>
+      {tabs.map((t) => (
+        <section key={t} aria-label={MARKET.tabs[t]} className="flex flex-col border-t border-hairline">
+          <p className="px-4 pt-4 text-base font-semibold text-primary">{MARKET.tabs[t]}</p>
+          <MarketPanel tab={t} data={data} />
+        </section>
+      ))}
+    </>
+  );
+}
+
+/** The whole market stage without script: every tab, in the stage's frame. Used where the stage itself is not on the page (Showcase). */
+export function MarketNoScript({ data }: { data: MarketData }) {
+  return (
+    <div className="dark overflow-hidden rounded-xl border border-hairline bg-[#0b0c0e] text-primary">
+      <MarketTabsFlat tabs={TABS} data={data} />
+    </div>
+  );
+}
+
 export function Market({ data }: { data: MarketData }) {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [tab, setTab] = useState<MarketTab>("positioning");
@@ -71,12 +94,7 @@ export function Market({ data }: { data: MarketData }) {
         <noscript>
           <div className="border-t border-hairline">
             <p className="px-4 py-3 text-[13px] text-secondary">{MARKET.noscript}</p>
-            {TABS.slice(1).map((t) => (
-              <section key={t} aria-label={MARKET.tabs[t]} className="flex flex-col border-t border-hairline">
-                <p className="px-4 pt-4 text-base font-semibold text-primary">{MARKET.tabs[t]}</p>
-                <MarketPanel tab={t} data={data} />
-              </section>
-            ))}
+            <MarketTabsFlat tabs={TABS.slice(1)} data={data} />
           </div>
         </noscript>
       </div>

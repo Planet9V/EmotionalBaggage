@@ -29,7 +29,7 @@ import { escapeIdentifier, escapeLiteral, type Pool, type PoolClient } from "pg"
 export const APP_TABLES = [
   "access_requests", "campaign_results", "chat_messages", "chats", "credentials", "drafts", "embeddings", "events", "files", "gates",
   "items", "link_clicks", "messages", "pins", "printers", "projects", "research", "settings", "sign_in_attempts", "sessions",
-  "source_chunks", "tracked_links", "users",
+  "site_events", "source_chunks", "tracked_links", "users",
 ] as const;
 /** Read and add to, never change. */
 export const APPEND_ONLY = ["audit_log"] as const;

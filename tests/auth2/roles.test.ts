@@ -120,6 +120,23 @@ describe("two roles (DATABASE_APP_URL set)", () => {
     await db.q("DELETE FROM projects WHERE id=$1", [id]);
   });
 
+  it("the request role claims early-access places and writes, counts and deletes funnel events", async () => {
+    process.env.DATABASE_APP_URL = APP_URL;
+    const db = await import("@/lib/db");
+    await db.ready();
+    const { claimEarlyAccess } = await import("@/lib/accessRequests/places");
+    const { cleanupEvents, funnelReport } = await import("@/lib/events/store");
+    const email = `zz-roles-${process.pid}@x.test`;
+    const r = await claimEarlyAccess({ email, building: "Roles test", name: "", company: "", level: "", placement: "hero" });
+    expect(r.outcome.kind).not.toBe("listed");
+    await db.q("INSERT INTO site_events (event, visit) VALUES ('page_view', 'zzRolesVisit1234')");
+    const today = new Date().toISOString().slice(0, 10);
+    expect((await funnelReport(today, today)).total.visits).toBeGreaterThanOrEqual(1);
+    await cleanupEvents();
+    await db.q("DELETE FROM site_events WHERE visit = 'zzRolesVisit1234'");
+    await db.q("DELETE FROM access_requests WHERE email = $1", [email]);
+  });
+
   it("the request role cannot read the credential tables or change the audit log", async () => {
     process.env.DATABASE_APP_URL = APP_URL;
     const db = await import("@/lib/db");

@@ -3,7 +3,6 @@
 // every word and number is a seeded row, a rule the app enforces (a channel's limits, a listing's limits, a
 // launch template's steps, the proof check, the contrast check) or a count of rows.
 //   hero    the nine small artefacts of the hero's idea-in, outputs-out visual
-//   chain   one seeded row per step of the drafting chain (brief, requirement, part, wire, assembly, test, ad)
 //   market  the seven tabs of the market stage
 import type { Item } from "@/lib/types";
 import { toPart, partPrice, sumLine } from "@/lib/domain";
@@ -28,8 +27,6 @@ import { EXAMPLE } from "./content";
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const money = (n: number | null) => (n === null ? "no price" : `$${n.toFixed(2)}`);
-/** A seeded title with its dash set as a colon ("Phase 2 — Electronics" reads "Phase 2: Electronics"). */
-const plain = (s: string) => s.replace(/\s+—\s+/g, ": ");
 const row = (rows: Item[], title: string) => rows.find((r) => r.title === title) ?? rows[0];
 
 export type HeroFacts = {
@@ -65,8 +62,6 @@ export type GetData = {
   /** how many steps the assembly takes, in the build sheet's order (showcaseLogic.ts assemblySteps) */
   steps: number;
 };
-
-export type ChainStep = { key: string; stage: string; kind: string; title: string; body: string };
 
 export type MarketData = {
   positioning: {
@@ -128,25 +123,6 @@ function hero(d: ExampleData): HeroFacts {
     })(),
     layers: d.enclosure ? printLayers(d.enclosure.outer, layerHeightOf(str(print?.data.settings)) ?? 0.2, 20) : null,
   };
-}
-
-function chain(d: ExampleData): ChainStep[] {
-  const brief = row(d.brief, "How it works");
-  const req = row(d.requirements, "Controls");
-  const part = d.parts.map(toPart).find((p) => p.ref === "S2");
-  const wire = toWires(d.wires).find((w) => w.from === "S2" || w.to === "S2");
-  const step = d.assembly.find((r) => str(r.data.key) === "p2") ?? d.assembly[0];
-  const test = row(d.tests, "Carry");
-  const ad = d.ads[0];
-  return [
-    { key: "brief", stage: "01 Concept", kind: "Brief line", title: brief?.title ?? "", body: brief?.body ?? "" },
-    { key: "requirement", stage: "03 Design", kind: "Requirement", title: req?.title ?? "", body: req?.body ?? "" },
-    { key: "part", stage: "03 Design", kind: "Part", title: part ? `${part.ref} ${part.title}` : "", body: part ? `${part.spec}. ${money(partPrice(part).line)}.` : "" },
-    { key: "wire", stage: "03 Design", kind: "Wire", title: wire?.name ?? "", body: wire ? `${wire.from}.${wire.fromPin} to ${wire.to}.${wire.toPin}, net ${wire.net}.` : "" },
-    { key: "assembly", stage: "04 Prototype", kind: "Assembly step", title: plain(step?.title ?? ""), body: step?.body ?? "" },
-    { key: "test", stage: "04 Prototype", kind: "Acceptance test", title: test?.title ?? "", body: str(test?.data.pass) },
-    { key: "ad", stage: "06 Marketing", kind: "Ad", title: ad?.title ?? "", body: str(ad?.data.channel) ? `${str(ad?.data.channel)}. ${str(ad?.data.rule)}.` : "" },
-  ];
 }
 
 function get(d: ExampleData): GetData {
@@ -285,9 +261,9 @@ function origin(): { sentences: string[]; idea: string } {
 /** What each stage holds in the workbench: its sections, by the names the menu gives them (src/lib/menu.ts). */
 const holds = (): Record<string, string[]> => Object.fromEntries(STAGES.map((s) => [String(s.n).padStart(2, "0"), [...new Set(s.sections.map((x) => x.label))]]));
 
-export type StoryData = { hero: HeroFacts; chain: ChainStep[]; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
+export type StoryData = { hero: HeroFacts; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
 
 export function storyData(d: ExampleData): StoryData {
   const g = get(d);
-  return { hero: { ...hero(d), still: g.still }, chain: chain(d), market: market(d), origin: origin(), holds: holds(), get: g };
+  return { hero: { ...hero(d), still: g.still }, market: market(d), origin: origin(), holds: holds(), get: g };
 }

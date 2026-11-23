@@ -1,7 +1,9 @@
 "use client";
 
 import { prefersDark } from "@/lib/theme";
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -119,6 +121,11 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
             {busy ? "Signing in…" : "Sign in"}
           </Button>
         </form>
+        <p className="mt-5 text-sm">
+          <Link href="/welcome" className="inline-flex items-center gap-1.5 font-medium text-link underline-offset-4 hover:underline">
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Back to the welcome page
+          </Link>
+        </p>
       </div>
     </main>
   );

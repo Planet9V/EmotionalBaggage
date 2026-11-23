@@ -45,12 +45,12 @@ test.describe("signed out", () => {
     expect([...f.critical, ...f.serious]).toEqual([]);
   });
 
-  // The public welcome page and its one-page overview, as a visitor with no session sees them, in both themes.
+  // The public welcome page and its early-access page, as a visitor with no session sees them, in both themes.
   for (const theme of ["light", "dark"] as const) {
-    test(`the welcome page and the overview have no critical or serious accessibility violations in the ${theme} theme`, async ({ page }, info) => {
+    test(`the welcome page and its early-access page have no critical or serious accessibility violations in the ${theme} theme`, async ({ page }, info) => {
       await page.addInitScript((t) => window.localStorage.setItem("c2r.theme", t), theme);
       const problems: string[] = [];
-      for (const path of ["/welcome", "/welcome/overview"]) {
+      for (const path of ["/welcome", "/welcome/early"]) {
         const f = await test.step(`${theme} ${path}`, () => audit(page, path, info));
         if (theme === "dark") await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
         problems.push(...f.critical, ...f.serious);

@@ -109,28 +109,30 @@ describe("with empty settings and credentials tables, nothing is a blocker", () 
     expect(s.body.settings.voice).toEqual({ provider: "none" });
   });
 
-  it("the welcome page's levels are the built-in four, prices hidden, exactly as content.ts had them", async () => {
+  it("the welcome page's levels are the built-in two, Maker $20 and Studio $40 a month, prices shown (owner, 22 Nov)", async () => {
     const l = await freshLevels();
-    expect(l.showPrices).toBe(false);
-    expect(l.levels.map((x) => [x.key, x.name, x.paid, x.action])).toEqual([
-      ["free", "Free", false, "request"],
-      ["maker", "Maker", true, "request"],
-      ["studio", "Studio", true, "request"],
-      ["self", "Self-hosted", false, "run"],
+    expect(l.showPrices).toBe(true);
+    expect(l.levels.map((x) => [x.key, x.name, x.paid, x.action, x.price, x.per])).toEqual([
+      ["maker", "Maker", true, "request", "$20", "a month"],
+      ["studio", "Studio", true, "request", "$40", "a month"],
     ]);
   });
 
-  it("the welcome page renders, with the levels section and prices hidden", async () => {
+  it("the welcome page renders, with the pricing section and the two plans' prices", async () => {
     const { default: WelcomePage } = await import("@/app/welcome/page");
-    const { renderToString } = await import("react-dom/server");
+    // the page holds async server components (the early-access offer), so it is rendered as a stream and read whole
+    const { renderToReadableStream } = await import("react-dom/server.edge");
     const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
     const { createElement } = await import("react");
-    const html = renderToString(createElement(QueryClientProvider, { client: new QueryClient() }, await WelcomePage()));
-    const start = html.indexOf('id="levels"');
+    const stream = await renderToReadableStream(createElement(QueryClientProvider, { client: new QueryClient() }, await WelcomePage()));
+    await stream.allReady;
+    const html = await new Response(stream).text();
+    const start = html.indexOf('<section id="pricing"');
     expect(start).toBeGreaterThan(0);
     const levels = html.slice(start, html.indexOf("</section>", start));
-    expect(levels).toContain("Self-hosted");
-    expect(levels).toContain("Price to be announced");
+    expect(levels).toContain("$20");
+    expect(levels).toContain("$40");
+    expect(levels).not.toContain("Self-hosted");
     expect(levels).not.toContain("$29");
   }, 60_000);
 
@@ -258,7 +260,7 @@ describe("anyone but the platform administrator (every account of the old sign-i
       await refusedAll();
       expect(await state()).toEqual(before);
       expect((await freshLevels()).levels.map((l) => l.name)).toEqual(levels.levels.map((l) => l.name));
-      expect((await freshLevels()).showPrices).toBe(false);
+      expect((await freshLevels()).showPrices).toBe(levels.showPrices);
     } finally {
       await q("UPDATE users SET password_hash=$2, password_changed_at=$3 WHERE id=$1", [user.id, user.password_hash, user.password_changed_at]);
     }
@@ -284,15 +286,15 @@ describe("Pricing and tiers", () => {
 
   it("refuses negative prices, duplicate keys and a catalogue with no tier shown, naming the field", async () => {
     const neg = good();
-    neg.tiers[1].priceMonthly = -1;
+    neg.tiers[0].priceMonthly = -1;
     let r = await read<{ issues: { field: string }[] }>(await call(plansPut, "PUT", "/api/admin/plans", neg));
     expect(r.status).toBe(400);
-    expect(r.body.issues[0].field).toBe("tiers.1.priceMonthly");
+    expect(r.body.issues[0].field).toBe("tiers.0.priceMonthly");
     const dup = good();
-    dup.tiers[2].key = "maker";
+    dup.tiers[1].key = "maker";
     r = await read(await call(plansPut, "PUT", "/api/admin/plans", dup));
     expect(r.status).toBe(400);
-    expect(r.body.issues[0].field).toBe("tiers.2.key");
+    expect(r.body.issues[0].field).toBe("tiers.1.key");
     const hidden = good();
     for (const t of hidden.tiers) t.shown = false;
     r = await read(await call(plansPut, "PUT", "/api/admin/plans", hidden));
@@ -302,27 +304,27 @@ describe("Pricing and tiers", () => {
 
   it("a saved catalogue is what the public page shows, with before and after in the audit log; reset goes back", async () => {
     const c = good();
-    c.showPrices = true;
-    c.tiers[1].priceMonthly = 19;
-    c.tiers[1].stripePriceMonthly = "price_TestMaker1";
-    c.tiers[2].shown = false;
+    c.showPrices = false;
+    c.tiers[0].priceMonthly = 19;
+    c.tiers[0].stripePriceMonthly = "price_TestMaker1";
+    c.tiers[1].shown = false;
     const r = await read<{ source: string }>(await call(plansPut, "PUT", "/api/admin/plans", c));
     expect(r.status).toBe(200);
     expect(r.body.source).toBe("database");
     const l = await freshLevels();
-    expect(l.showPrices).toBe(true);
-    expect(l.levels.map((x) => x.key)).toEqual(["free", "maker", "self"]);
-    expect(l.levels[1]).toMatchObject({ price: "$19", per: "a month" });
+    expect(l.showPrices).toBe(false);
+    expect(l.levels.map((x) => x.key)).toEqual(["maker"]);
+    expect(l.levels[0]).toMatchObject({ price: "$19", per: "a month" });
     const line = await q<{ detail: { before: unknown; after: { showPrices: boolean } } }>("SELECT detail FROM audit_log WHERE action='setting.changed' AND detail->>'key'='plans.catalogue' ORDER BY id DESC LIMIT 1");
-    expect(line[0].detail.after.showPrices).toBe(true);
+    expect(line[0].detail.after.showPrices).toBe(false);
     expect(line[0].detail.before).toBeTruthy();
     expect((await call(plansDelete, "DELETE", "/api/admin/plans")).status).toBe(200);
-    expect((await freshLevels()).showPrices).toBe(false);
+    expect((await freshLevels()).showPrices).toBe(true);
   });
 
   it("a saved document that no longer validates falls back to the built-in catalogue instead of breaking the page", async () => {
     await q("INSERT INTO settings (key, value) VALUES ('plans.catalogue', '{\"tiers\": 5}')");
-    expect((await freshLevels()).levels).toHaveLength(4);
+    expect((await freshLevels()).levels).toHaveLength(2);
   });
 });
 
