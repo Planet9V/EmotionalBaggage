@@ -11,6 +11,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useFrame, useThree, type ThreeElements } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
+import { SPEAKER_AT, STRAP_INK, STRAP_T, TAG_ARM, band, tagBuild, tagMaterial, tagPerform } from "./tag";
 
 export type V3 = [number, number, number];
 export type Clock = { t: number };
@@ -18,11 +19,10 @@ const ClockCtx = createContext<Clock>({ t: 0 });
 export const ClockProvider = ClockCtx.Provider;
 export const useClock = () => useContext(ClockCtx);
 
-/** The colours every set shares: the bag is cream and the gadget orange in every scene; nothing else may be either. */
+/** The colours every set shares: the bag is cream in every scene (the gadget is the saddle leather tag, tag.ts). */
 export const C = {
   shell: "#ecdcb6",
   rib: "#d3c193",
-  orange: "#f0641a",
   ink: "#23262d",
   tyre: "#2f333b",
   steel: "#9aa4b1",
@@ -428,15 +428,10 @@ export const HANDLE_Y = BASE + BH + 0.155;
 /** The top of the shell, above its base. */
 export const BAG_TOP = BASE + BH;
 const TAG_X = 0.075;
-/**
- * The gadget: a luggage tag that hangs from the handle on a loop. One set of numbers describes it (width, height,
- * thickness, corner radius, loop length), so the real enclosure's dimensions can be dropped in. It is thick on
- * purpose: it holds a speaker, a board and batteries. The proportions are the owner's own enclosure (a hinged
- * clamshell about 90 by 68 mm, 42 mm thick when closed), shown larger than life so it reads on a stage.
- */
-const TAG = { w: 0.17, h: 0.225, t: 0.105, r: 0.03, loop: 0.045 };
-/** From the loop's pivot to the middle of the tag: the length of the pendulum. */
-const TAG_ARM = TAG.loop + TAG.h / 2;
+/** The carry handle on the top, near the front edge: the tag's strap is looped round its grip. */
+const GRIP = { x: 0.01, y: BASE + BH + 0.03, z: 0.085, len: 0.2 };
+/** Where the strap leaves the shell's front edge and the tag hangs from it (it stands off the ribs). */
+const PIVOT: V3 = [TAG_X, BASE + BH - 0.055, BD / 2 + 0.018];
 
 export type BagPose = {
   p: V3;
@@ -455,7 +450,7 @@ export type BagPose = {
   tumble?: number;
   /** the tag turning on its loop; where it swings is not posed: it is a weight on a loop, and follows the bag */
   tagTwist?: number;
-  /** the gadget's own light, 0 to 1 */
+  /** the gadget's own light (through its perforated panel), 0 to 1 */
   glow?: number;
 };
 
@@ -467,10 +462,10 @@ function bagBody(k: Kit) {
   // the trolley handle: two posts and a grip
   [-0.1, 0.1].forEach((x) => k.cyl(0.012, 0.15, C.steel, [x, BASE + BH + 0.07, -0.03], { seg: 8 }));
   k.box([0.27, 0.036, 0.042], C.ink, [0, HANDLE_Y - 0.012, -0.03], { r: 0.016, seg: 2 });
-  k.box([0.16, 0.022, 0.05], C.rib, [-0.08, BASE + BH + 0.008, 0.02], { r: 0.01, seg: 1 });
-  // the loop goes round the handle and over the top edge; the tag hangs from it against the front
-  k.box([0.03, 0.012, BD / 2 + 0.07], C.ink, [TAG_X, BASE + BH + 0.012, (BD / 2 + 0.01) / 2 - 0.015]);
-  k.box([0.034, 0.12, 0.012], C.ink, [TAG_X, HANDLE_Y - 0.07, -0.03]);
+  // the carry handle: a grip on two feet, near the front edge
+  k.box([GRIP.len, 0.02, 0.024], C.rib, [GRIP.x, GRIP.y, GRIP.z], { r: 0.008, seg: 2 });
+  [-1, 1].forEach((side) => k.box([0.024, 0.032, 0.024], C.rib, [GRIP.x + side * (GRIP.len / 2 - 0.012), BASE + BH + 0.014, GRIP.z], { r: 0.006, seg: 1 }));
+  tagStrap(k);
   [-0.19, 0.19].forEach((x) =>
     [-0.09, 0.09].forEach((z) => {
       k.box([0.075, 0.034, 0.075], C.steel, [x, BASE - 0.004, z], { r: 0.012, seg: 1 });
@@ -478,57 +473,27 @@ function bagBody(k: Kit) {
     }),
   );
 }
-function tagBody(k: Kit) {
-  const { w, h, t, r, loop } = TAG;
-  k.box([0.034, loop + 0.03, 0.012], C.ink, [0, -loop / 2, 0]);
-  k.at([0, -loop - h / 2, t / 2], ZERO, () => {
-    // a hinged clamshell in two colours: the dark base behind (the orange lid is its own mesh, so it can glow)
-    k.box([w, h, t * 0.5], "#2b2f38", [0, 0, -t * 0.25], { r: r * 0.8 });
-    [-0.3, 0.3].forEach((y) => k.cyl(0.011, h * 0.2, C.ink, [-w / 2 - 0.004, h * y, 0.002], { seg: 8 }));
-    k.box([0.05, 0.016, t + 0.004], C.ink, [0, h / 2 - 0.022, 0]);
-    // on the back: a round lidded pocket, the size of a coin-shaped tracker
-    k.cyl(w * 0.33, 0.01, "#b8480b", [0, -h * 0.12, -t / 2 - 0.006], { rot: [Math.PI / 2, 0, 0], seg: 24 });
-  });
-}
-function tagLid(k: Kit) {
-  const { w, h, t, r, loop } = TAG;
-  k.box([w, h, t * 0.46], "#ffffff", [0, -loop - h / 2, t / 2 + t * 0.27], { r: r * 0.8 });
-}
-
-let tagFace: THREE.CanvasTexture | null = null;
-/** The lid's face, drawn once: the name card behind its window, the working name inlaid, the speaker holes. */
-function tagFaceTexture() {
-  if (!tagFace) {
-    const W = 340;
-    const H = 450;
-    const c = Object.assign(document.createElement("canvas"), { width: W, height: H });
-    const g = c.getContext("2d");
-    if (g) {
-      g.fillStyle = "#f3ecdd";
-      g.beginPath();
-      g.roundRect(48, 76, W - 96, 108, 10);
-      g.fill();
-      g.fillStyle = "#8d93a0";
-      [100, 128, 156].forEach((y, i) => g.fillRect(70, y, i ? 130 : 180, 9));
-      g.fillStyle = "#fff3e2";
-      g.font = `800 34px ${SIGN_FONT}`;
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.fillText("BAGGAGE CLAIMS", W / 2, 228, W - 44);
-      g.fillStyle = "#23262d";
-      [-1.5, -0.5, 0.5, 1.5].forEach((gx) =>
-        [-1, 0, 1].forEach((gy) => {
-          g.beginPath();
-          g.arc(W / 2 + gx * 52, 346 + gy * 52, 17, 0, Math.PI * 2);
-          g.fill();
-        }),
-      );
-    }
-    tagFace = new THREE.CanvasTexture(c);
-    tagFace.colorSpace = THREE.SRGBColorSpace;
-    tagFace.anisotropy = 4;
-  }
-  return tagFace;
+/**
+ * The tag's strap, from the grip to where the tag hangs: a loop round the grip, then over the shell's rounded front
+ * edge (the shell's corner is a 0.07 radius) to the pivot, standing off the ribs. The rest of the strap swings with
+ * the tag (tag.ts).
+ */
+function tagStrap(k: Kit) {
+  const s = STRAP_T;
+  const top = BASE + BH;
+  const hy = 0.01 + s / 2;
+  const hz = 0.012 + s / 2;
+  const ring: [number, number][] = [
+    [GRIP.y + hy, GRIP.z - hz],
+    [GRIP.y + hy, GRIP.z + hz],
+    [GRIP.y - hy, GRIP.z + hz],
+    [GRIP.y - hy, GRIP.z - hz],
+  ];
+  ring.forEach((p, i) => band(k, p, ring[(i + 1) % ring.length]!, STRAP_INK, undefined, undefined, TAG_X));
+  const R = 0.07 + s / 2;
+  const arc = (deg: number): [number, number] => [top - 0.07 + R * Math.cos((deg * Math.PI) / 180), 0.07 + R * Math.sin((deg * Math.PI) / 180)];
+  const path: [number, number][] = [[GRIP.y - hy, GRIP.z + hz], arc(30), arc(42), arc(55), [PIVOT[1], PIVOT[2]]];
+  path.slice(1).forEach((p, i) => band(k, path[i]!, p, STRAP_INK, undefined, undefined, TAG_X));
 }
 
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -548,15 +513,12 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
   const lean = useRef<THREE.Group>(null);
   const anchor = useRef<THREE.Group>(null);
   const tag = useRef<THREE.Group>(null);
-  const ring = useRef<THREE.Mesh>(null);
-  const ringMat = useRef<THREE.MeshBasicMaterial>(null);
-  const grilleMat = useRef<THREE.MeshBasicMaterial>(null);
-  const lid = useRef<THREE.MeshStandardMaterial>(null);
   const light = useRef<THREE.PointLight>(null);
   const clock = useClock();
   const body = useBuilt(bagBody);
-  const tagGeo = useBuilt(tagBody);
-  const lidGeo = useBuilt(tagLid);
+  const tagGeo = useBuilt(tagBuild);
+  const look = useMemo(() => tagMaterial(), []);
+  useEffect(() => () => look.mat.dispose(), [look]);
   const state = useRef<{ t: number; p: THREE.Vector3; was: THREE.Vector3; a: THREE.Vector3; d: THREE.Vector3; inv: THREE.Matrix4 } | null>(null);
 
   useFrame(() => {
@@ -596,17 +558,14 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
     tag.current.quaternion.setFromUnitVectors(DOWN, sim.d);
     tag.current.rotateY(q.tagTwist ?? 0);
 
-    // the gadget performs its line: the grille pulses with each syllable, the lamp follows the voice, and it leans
+    // the gadget performs its line: the perforated panel lights from inside with each syllable, and the tag leans
     // toward us while it speaks (and swells a hair on each syllable)
     const v = voice?.(now) ?? { level: 0, on: 0 };
-    ring.current?.scale.setScalar(1 + 0.1 * v.on + 0.38 * v.level);
-    if (ringMat.current) ringMat.current.opacity = 0.2 * v.on + 0.6 * v.level;
-    if (grilleMat.current) grilleMat.current.opacity = 0.32 * v.level;
     tag.current.rotateX(-0.16 * v.on);
     tag.current.scale.setScalar(1 + 0.035 * v.level);
-    const glow = (q.glow ?? 0) + 0.12 * v.on + 0.45 * v.level;
-    if (lid.current) lid.current.emissiveIntensity = 0.06 + glow * 0.75;
-    if (light.current) light.current.intensity = glow * lamp;
+    const glow = q.glow ?? 0;
+    tagPerform(look.u, v.level, v.on, glow);
+    if (light.current) light.current.intensity = (glow + 0.12 * v.on + 0.45 * v.level) * lamp;
 
     function swingTo(t: number) {
       const dt = (own(t) - own(t - STEP_MS)) / 1000;
@@ -615,7 +574,8 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
         // the scene's time is stopped: the tag hangs where it was, in the air
         return q2;
       }
-      const keep = Math.exp(-2.1 * dt);
+      // a leather tag on a strap: a little more drag than a weight on a cord
+      const keep = Math.exp(-2.8 * dt);
       sim.d.subVectors(sim.p, sim.was).multiplyScalar(keep);
       sim.was.copy(sim.p);
       sim.p.add(sim.d);
@@ -623,7 +583,7 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
       // the loop holds it at arm's length; the shell stops it swinging through the bag
       sim.inv.copy(frame!.matrixWorld).invert();
       sim.d.copy(sim.p).applyMatrix4(sim.inv).sub(pivot!.position);
-      if (sim.d.z < 0.004) sim.d.z = 0.004;
+      if (sim.d.z < 0.003) sim.d.z = 0.003;
       sim.d.add(pivot!.position).applyMatrix4(frame!.matrixWorld);
       sim.d.sub(sim.a).setLength(TAG_ARM);
       sim.p.copy(sim.a).add(sim.d);
@@ -631,8 +591,6 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
     }
   });
 
-  const { w, h, t, loop } = TAG;
-  const face = t / 2 + t * 0.5 + 0.0015;
   return (
     <group ref={root}>
       <group position={[0, BAG_MID, 0]}>
@@ -645,27 +603,10 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
                     <meshStandardMaterial vertexColors roughness={0.62} metalness={0} />
                   </mesh>
                   {children}
-                  <group ref={anchor} position={[TAG_X, BASE + BH + 0.01, BD / 2 + 0.012]}>
+                  <group ref={anchor} position={PIVOT}>
                     <group ref={tag}>
-                      <mesh geometry={tagGeo} castShadow>
-                        <meshStandardMaterial vertexColors roughness={0.7} metalness={0} />
-                      </mesh>
-                      <mesh geometry={lidGeo} castShadow>
-                        <meshStandardMaterial ref={lid} color={C.orange} roughness={0.5} metalness={0} emissive={C.orange} emissiveIntensity={0.06} />
-                      </mesh>
-                      <mesh position={[0, -loop - h / 2, face]}>
-                        <planeGeometry args={[w * 0.94, h * 0.94]} />
-                        <meshBasicMaterial map={tagFaceTexture()} transparent toneMapped={false} depthWrite={false} />
-                      </mesh>
-                      <mesh ref={ring} position={[0, -loop - h / 2 - h * 0.27, face + 0.006]}>
-                        <torusGeometry args={[w * 0.3, 0.007, 6, 28]} />
-                        <meshBasicMaterial ref={ringMat} color="#ffffff" transparent opacity={0} depthWrite={false} toneMapped={false} />
-                      </mesh>
-                      <mesh position={[0, -loop - h / 2 - h * 0.27, face + 0.003]}>
-                        <circleGeometry args={[w * 0.29, 28]} />
-                        <meshBasicMaterial ref={grilleMat} color="#ffd9b0" transparent opacity={0} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} />
-                      </mesh>
-                      {lamp > 0 ? <pointLight ref={light} color="#ff8a3d" intensity={0} distance={1.5} decay={2} position={[0, -loop - h / 2, 0.32]} /> : null}
+                      <mesh geometry={tagGeo} material={look.mat} castShadow />
+                      {lamp > 0 ? <pointLight ref={light} color="#ff9a4d" intensity={0} distance={1.2} decay={2} position={SPEAKER_AT} /> : null}
                     </group>
                   </group>
                 </group>

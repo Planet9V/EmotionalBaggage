@@ -5,6 +5,7 @@
 // "sensed" label are set over them as real text by the stage.
 import type { ReactNode } from "react";
 import type { SceneId } from "./scenes";
+import { FACE, SLOT, TAG_MM, tagPath } from "./film/tagShape";
 
 const INK = "#1c2740";
 const PAPER = "#eef2f6";
@@ -14,24 +15,59 @@ const PALE = "#cfdcee";
 const GREY = "#aab4c0";
 const SHELL = "#ecdcb6";
 const RIB = "#cdb98a";
-const ORANGE = "#f0641a";
+const SADDLE = "#b0703f";
+const SADDLE_DARK = "#8a522a";
+const THREAD = "#f1e4c3";
+const GLOW = "#ffb15e";
 const RED = "#e5484d";
 const YELLOW = "#f5c518";
 const MONO = "var(--font-mono)";
 const FLOOR = 372;
 
-/** The suitcase, standing on (0, 0), with the gadget hanging from its handle. `swing` turns the tag on its loop. */
+// the tag, the owner's Rev D A1 "Saddle", in drawing units: half as large again as on the bag, so its shape reads
+// on the card (the film has it at the bag's true scale)
+const S = 0.4;
+const TAG_OUTLINE = tagPath(S);
+const TAG_STITCH = tagPath(S, 3);
+const TH = TAG_MM.h * S;
+/** A point on the tag's face (mm about its middle, y up) in the tag's drawing units (top middle at 0, 0). */
+const at = (x: number, y: number) => [x * S, TH / 2 - y * S] as const;
+const PANEL = { x: at(FACE.panel.x0, FACE.panel.y1), w: (FACE.panel.x1 - FACE.panel.x0) * S, h: (FACE.panel.y1 - FACE.panel.y0) * S };
+const DOOR = at(FACE.door.x, FACE.door.y);
+const SPEAKER = { x: at(FACE.speaker.x0, FACE.speaker.y1), w: (FACE.speaker.x1 - FACE.speaker.x0) * S, h: (FACE.speaker.y1 - FACE.speaker.y0) * S };
+const OVAL = at(FACE.oval.x, FACE.oval.y);
+const SLOT_AT = at(0, TAG_MM.h / 2 - SLOT.down);
+
+/** The tag, hanging from (0, 0): its strap, the shouldered outline, the stitch line, the perforated panel, the stamp. */
+function Tag() {
+  return (
+    <g>
+      <path d={`M0 0V${3 + SLOT_AT[1]}`} strokeWidth="4" />
+      <g transform="translate(0 3)" strokeWidth="1.5">
+        <path d={TAG_OUTLINE} fill={SADDLE} />
+        <path d={TAG_STITCH} fill="none" stroke={THREAD} strokeWidth="0.9" strokeDasharray="1.4 1.3" />
+        <rect x={PANEL.x[0]} y={PANEL.x[1]} width={PANEL.w} height={PANEL.h} rx="1.2" fill={SADDLE_DARK} stroke="none" opacity="0.45" />
+        <circle cx={DOOR[0]} cy={DOOR[1]} r={FACE.door.r * S} fill="none" stroke={SADDLE_DARK} strokeWidth="0.8" />
+        <rect x={SPEAKER.x[0]} y={SPEAKER.x[1]} width={SPEAKER.w} height={SPEAKER.h} rx="1" fill={SADDLE_DARK} stroke="none" />
+        <ellipse cx={OVAL[0]} cy={OVAL[1]} rx={FACE.oval.rx * S} ry={FACE.oval.ry * S} fill="none" stroke={SADDLE_DARK} strokeWidth="0.9" />
+        <rect x={-(SLOT.w * S) / 2} y={SLOT_AT[1] - (SLOT.h * S) / 2} width={SLOT.w * S} height={SLOT.h * S} rx={(SLOT.h * S) / 2} fill={INK} stroke="none" />
+      </g>
+    </g>
+  );
+}
+
+/** The suitcase, standing on (0, 0), with the tag strapped to its carry handle. `swing` turns the tag on its strap. */
 function Bag({ swing = 6 }: { swing?: number }) {
   return (
     <g>
       <path d="M-16 -168v-22a5 5 0 0 1 5-5h22a5 5 0 0 1 5 5v22" fill="none" />
       <rect x="-54" y="-168" width="108" height="150" rx="16" fill={SHELL} />
       <path d="M-32 -150v114M-16 -150v114M16 -150v114M32 -150v114" stroke={RIB} />
-      <g transform={`rotate(${swing} 16 -190)`}>
-        <path d="M16 -192v30" strokeWidth="5" />
-        <rect x="-5" y="-166" width="42" height="58" rx="9" fill={ORANGE} />
-        <rect x="3" y="-158" width="26" height="12" rx="2" fill={CARD} stroke="none" />
-        <circle cx="16" cy="-126" r="8" fill={INK} stroke="none" />
+      {/* the carry handle on the top, and the tag's strap from it over the front edge */}
+      <path d="M-12 -168v-6h48v6" fill="none" strokeWidth="2.5" />
+      <path d="M26 -175V-156" strokeWidth="4" />
+      <g transform={`translate(26 -156) rotate(${swing})`}>
+        <Tag />
       </g>
       <circle cx="-30" cy="-9" r="9" fill={INK} />
       <circle cx="30" cy="-9" r="9" fill={INK} />
@@ -123,7 +159,7 @@ const FRAMES: Record<SceneId, { dark?: boolean; art: ReactNode }> = {
         <rect x="350" y={FLOOR - 26} width="270" height="16" rx="4" fill="#0b101c" stroke="#44557c" />
         <circle cx="400" cy={FLOOR - 2} r="11" fill="#0b101c" stroke="#44557c" />
         <circle cx="570" cy={FLOOR - 2} r="11" fill="#0b101c" stroke="#44557c" />
-        <circle cx="506" cy={FLOOR - 164} r="62" fill={ORANGE} opacity="0.25" stroke="none" />
+        <circle cx="521" cy={FLOOR - 160} r="40" fill={GLOW} opacity="0.22" stroke="none" />
         <g transform={`translate(486 ${FLOOR - 26}) rotate(4)`} stroke="#0b101c">
           <Bag swing={0} />
         </g>
