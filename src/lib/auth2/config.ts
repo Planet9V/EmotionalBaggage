@@ -45,6 +45,7 @@ export const AUTH2_SETTING = {
   signUpOpen: "signUp.open",
   viewAsMinutes: "impersonation.minutes",
   viewAsNotifyUser: "impersonation.notifyUser",
+  notifyLockAlertsTo: "notify.lockAlertsTo",
 } as const;
 
 const isProduction = () => process.env.NODE_ENV === "production";

@@ -66,7 +66,7 @@ describe("Admin, Sign-in", () => {
     const { container } = renderWithClient(<SignInTab />);
     expect(((await screen.findByLabelText("Days an invitation works")) as HTMLInputElement).value).toBe("7");
     expect((screen.getByLabelText("Failed sign-ins in a row before the lock") as HTMLInputElement).value).toBe("7");
-    expect((screen.getByLabelText("Minutes the lock lasts") as HTMLInputElement).value).toBe("30");
+    expect((screen.getByLabelText("Minutes the lock lasts") as HTMLInputElement).value).toBe("15");
     expect((screen.getByLabelText("Shortest password") as HTMLInputElement).value).toBe("12");
     expect((screen.getByLabelText("Anyone may create an account themselves") as HTMLInputElement).checked).toBe(false);
     expect(await axeViolations(container)).toEqual([]);

@@ -5,8 +5,8 @@
  *
  * 1. The lock, per address name across every network address. Each password try at a name is counted before the
  *    password is checked. When `signIn.maxFailures` (default 7) wrong passwords in a row have been given, the name
- *    is locked for `signIn.lockMinutes` (default 30; 0 means until an administrator unlocks it, except that a
- *    platform administrator's name is always unlocked after 30 minutes, so an installation can never lock out
+ *    is locked for `signIn.lockMinutes` (default 15, owner's answer of 23 Nov; 0 means until an administrator unlocks
+ *    it, except that a platform administrator's name is always unlocked after 15 minutes, so an installation can never lock out
  *    its administrators). A right password sets the count back to 0. The count is forgotten after 24 hours with
  *    no try. While locked, every try is refused without checking the password, with one sentence that says neither
  *    whether the address has an account nor for how long. A password reset by email link, an administrator's new
@@ -30,14 +30,15 @@ import { createHash, createHmac } from "node:crypto";
 import { APIError } from "better-auth/api";
 import type { Pool, PoolClient } from "pg";
 import { auditIn } from "@/lib/db";
+import { sendLockAlert } from "./lockAlerts";
 import { readRules } from "./rules";
 
 export const PAIR_FREE = 3;
 const PAIR_MAX_MS = 15 * 60 * 1000;
 const RESET_MS = 60 * 60 * 1000;
 const NAME_RESET_MS = 24 * 60 * 60 * 1000;
-/** A platform administrator's lock always ends after this long, whatever the setting says. */
-const ADMIN_LOCK_MINUTES = 30;
+/** A platform administrator's lock always ends after this long, whatever the setting says (owner, 23 Nov: 15). */
+const ADMIN_LOCK_MINUTES = 15;
 const ALL = "";
 
 export const nameKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("base64url");
@@ -130,7 +131,8 @@ export async function failedTry(db: Pool, email: string, now = new Date()): Prom
   const rules = await readRules(db);
   const account = await db.query<{ email: string; platformAdmin: boolean }>('SELECT email, "platformAdmin" FROM "user" WHERE lower(email) = $1', [email.trim().toLowerCase()]);
   const a = account.rows[0];
-  const minutes = rules.lockMinutes === 0 && a?.platformAdmin ? ADMIN_LOCK_MINUTES : rules.lockMinutes;
+  // A platform administrator is never locked for longer than ADMIN_LOCK_MINUTES, so the install keeps its administrators.
+  const minutes = a?.platformAdmin ? (rules.lockMinutes === 0 ? ADMIN_LOCK_MINUTES : Math.min(rules.lockMinutes, ADMIN_LOCK_MINUTES)) : rules.lockMinutes;
   const c = await db.connect();
   try {
     await c.query("BEGIN");
@@ -139,15 +141,18 @@ export async function failedTry(db: Pool, email: string, now = new Date()): Prom
         WHERE name_key = $1 AND client = '' AND failures >= $4 AND (locked_until IS NULL OR locked_until <= $2) RETURNING failures`,
       [key, now, minutes, rules.maxFailures]
     );
-    if (r.rowCount && a) {
-      await auditIn(c, {
-        actor: a.email,
-        action: "account.locked",
-        summary: `Locked after ${r.rows[0]!.failures} failed sign-ins in a row (${minutes === 0 ? "until an administrator unlocks it" : `for ${minutes} minutes`})`,
-        detail: { failures: r.rows[0]!.failures, minutes },
-      });
+    const failures = r.rows[0]?.failures ?? 0;
+    const how = minutes === 0 ? "until an administrator unlocks it" : `for ${minutes} minutes`;
+    // Every lock is in Admin, Audit log (owner, 23 Nov: "this is logged in the admin console"). An address with no
+    // account is not named, nor its hash.
+    if (r.rowCount) {
+      await auditIn(c, a
+        ? { actor: a.email, action: "account.locked", summary: `Account locked after ${failures} failed sign-ins: ${a.email} (${how})`, detail: { failures, minutes } }
+        : { actor: "", action: "account.locked_unknown", summary: `An address with no account was locked after ${failures} failed sign-ins (${how})`, detail: { failures, minutes } });
     }
     await c.query("COMMIT");
+    // Then the alert email, once per lock; never holds up the answer (./lockAlerts.ts).
+    if (r.rowCount) void sendLockAlert(db, { email: a?.email ?? null, failures, minutes, at: now });
   } catch (e) {
     await c.query("ROLLBACK").catch(() => undefined);
     throw e;

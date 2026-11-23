@@ -7,9 +7,10 @@
  * |-----------------------------|------------------|-----------------------------------------|---------------------------------|
  * | invites.expiryDays          | 7                | 1 to 30                                 | account and workspace invitations |
  * | signIn.maxFailures          | 7                | 3 to 20                                 | the lock (./signInWait.ts)      |
- * | signIn.lockMinutes          | 30               | 5 to 1440, or 0: until an administrator unlocks | the lock                |
+ * | signIn.lockMinutes          | 15               | 5 to 1440, or 0: until an administrator unlocks | the lock                |
  * | password.policy             | ./passwordPolicy.ts DEFAULT_PASSWORD_POLICY | minimum length 8 to 64 | every new password |
- * | notify.signupRequestsTo     | jim@eigenia.nl   | an address, or "" for none              | ./notify.ts                     |
+ * | notify.signupRequestsTo     | jim@eigenia.nl   | an address, or "" for none              | src/lib/accessRequests/notify.ts |
+ * | notify.lockAlertsTo         | jim@eigenia.nl   | an address, or "" for none              | ./lockAlerts.ts                 |
  * | signUp.open                 | false            | true or false                           | the sign-up endpoint and page   |
  * | impersonation.minutes       | 60               | 5 to 240                                | "view as" (./viewAs.ts)         |
  * | impersonation.notifyUser    | false            | true or false                           | "view as": email the person     |
@@ -34,6 +35,8 @@ export type AccountRules = {
   password: PasswordPolicy;
   /** null: no notification is sent */
   notifySignupRequestsTo: string | null;
+  /** null: no lock alert is sent */
+  notifyLockAlertsTo: string | null;
   signUpOpen: boolean;
   viewAsMinutes: number;
   viewAsNotifyUser: boolean;
@@ -42,9 +45,10 @@ export type AccountRules = {
 export const DEFAULT_RULES: AccountRules = {
   inviteExpiryDays: 7,
   maxFailures: 7,
-  lockMinutes: 30,
+  lockMinutes: 15,
   password: DEFAULT_PASSWORD_POLICY,
   notifySignupRequestsTo: "jim@eigenia.nl",
+  notifyLockAlertsTo: "jim@eigenia.nl",
   signUpOpen: false,
   viewAsMinutes: 60,
   viewAsNotifyUser: false,
@@ -59,11 +63,12 @@ const clampInt = (v: unknown, [lo, hi]: readonly [number, number], dflt: number)
 export async function readRules(db: Queryable): Promise<AccountRules> {
   const rows = await db.query<{ key: string; value: unknown }>(
     "SELECT key, value FROM auth2_settings WHERE key = ANY($1::text[])",
-    [[AUTH2_SETTING.inviteExpiryDays, AUTH2_SETTING.maxFailures, AUTH2_SETTING.lockMinutes, AUTH2_SETTING.passwordPolicy, AUTH2_SETTING.notifySignupRequestsTo, AUTH2_SETTING.signUpOpen, AUTH2_SETTING.viewAsMinutes, AUTH2_SETTING.viewAsNotifyUser]]
+    [[AUTH2_SETTING.inviteExpiryDays, AUTH2_SETTING.maxFailures, AUTH2_SETTING.lockMinutes, AUTH2_SETTING.passwordPolicy, AUTH2_SETTING.notifySignupRequestsTo, AUTH2_SETTING.signUpOpen, AUTH2_SETTING.viewAsMinutes, AUTH2_SETTING.viewAsNotifyUser, AUTH2_SETTING.notifyLockAlertsTo]]
   );
   const v = new Map(rows.rows.map((r) => [r.key, r.value]));
   const lock = v.get(AUTH2_SETTING.lockMinutes);
   const notify = v.get(AUTH2_SETTING.notifySignupRequestsTo);
+  const lockTo = v.get(AUTH2_SETTING.notifyLockAlertsTo);
   return {
     inviteExpiryDays: clampInt(v.get(AUTH2_SETTING.inviteExpiryDays), RULE_BOUNDS.inviteExpiryDays, DEFAULT_RULES.inviteExpiryDays),
     maxFailures: clampInt(v.get(AUTH2_SETTING.maxFailures), RULE_BOUNDS.maxFailures, DEFAULT_RULES.maxFailures),
@@ -71,6 +76,7 @@ export async function readRules(db: Queryable): Promise<AccountRules> {
     password: v.has(AUTH2_SETTING.passwordPolicy) ? normalizePolicy(v.get(AUTH2_SETTING.passwordPolicy)) : DEFAULT_RULES.password,
     notifySignupRequestsTo: notify === undefined ? DEFAULT_RULES.notifySignupRequestsTo : typeof notify === "string" && notify ? notify : null,
     signUpOpen: v.get(AUTH2_SETTING.signUpOpen) === true,
+    notifyLockAlertsTo: lockTo === undefined ? DEFAULT_RULES.notifyLockAlertsTo : typeof lockTo === "string" && lockTo ? lockTo : null,
     viewAsMinutes: clampInt(v.get(AUTH2_SETTING.viewAsMinutes), RULE_BOUNDS.viewAsMinutes, DEFAULT_RULES.viewAsMinutes),
     viewAsNotifyUser: v.get(AUTH2_SETTING.viewAsNotifyUser) === true,
   };
@@ -82,6 +88,7 @@ export type RulesChange = Partial<{
   lockMinutes: unknown;
   password: unknown;
   notifySignupRequestsTo: unknown;
+  notifyLockAlertsTo: unknown;
   signUpOpen: unknown;
   viewAsMinutes: unknown;
   viewAsNotifyUser: unknown;
@@ -110,6 +117,10 @@ export async function writeRules(c: PoolClient, change: RulesChange, actor: stri
   if (change.notifySignupRequestsTo !== undefined) {
     const raw = change.notifySignupRequestsTo;
     set.push([AUTH2_SETTING.notifySignupRequestsTo, raw === "" || raw === null ? "" : cleanEmail(raw)]);
+  }
+  if (change.notifyLockAlertsTo !== undefined) {
+    const raw = change.notifyLockAlertsTo;
+    set.push([AUTH2_SETTING.notifyLockAlertsTo, raw === "" || raw === null ? "" : cleanEmail(raw)]);
   }
   if (change.signUpOpen !== undefined) {
     if (typeof change.signUpOpen !== "boolean") throw bad("INVALID_SETTING", "Choose open or closed.");
