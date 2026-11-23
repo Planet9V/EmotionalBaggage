@@ -36,8 +36,8 @@ export function safeNext(next: string | null | undefined): string {
  * file inside one of them is static; any other path with a dot in it is a page and is checked (cut-over review N1).
  */
 export const PUBLIC_FOLDERS = ["landing", "vendor"] as const;
-/** Files the app serves at the top level (src/app/favicon.ico; robots.txt and sitemap.xml if they are ever added). */
-const PUBLIC_FILES = new Set(["/favicon.ico", "/robots.txt", "/sitemap.xml"]);
+/** Files the app serves at the top level (the icons in src/app: favicon.ico, icon.svg, apple-icon.png; robots.txt and sitemap.xml if they are ever added). */
+const PUBLIC_FILES = new Set(["/favicon.ico", "/icon.svg", "/apple-icon.png", "/robots.txt", "/sitemap.xml"]);
 const FILE_NAME = /^[^/]+\.[A-Za-z0-9]{1,8}$/;
 
 /** Paths a signed-out browser may open: the sign-in page, the welcome page, the API (route() answers 401 itself), short tracked links and static files. */

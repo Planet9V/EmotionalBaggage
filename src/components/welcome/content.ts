@@ -34,6 +34,9 @@ export const PROBLEM = {
   after: "Here",
   /** the pairs the welcome page shows, by index */
   shown: [0, 2, 3],
+  /** the tools the lead names, as the block's picture shows them */
+  tools: ["Notes app", "Parts spreadsheet", "CAD file", "Schematic tool", "Slicer", "Cost sheet", "Task board", "Ad manager"],
+  art: "Elsewhere: a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager, each on its own. Here: one line from the idea to the sale, with the seven stages on it.",
   lead: "A hardware idea usually lives in a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager. Change one part and the wiring, the enclosure, the cost and the launch copy go stale without telling you.",
   pairs: [
     {
@@ -251,11 +254,32 @@ export const NAV: { href: string; label: string }[] = [
  * note, taken from the story's origin part (storyData.ts reads it from src/lib/story/seed.ts); the outputs are
  * the example's seeded rows (Artefacts.tsx).
  */
-export const HERO_FLOW = {
-  label: "An idea typed as one line goes in. Nine outputs come out, one per step, from a brief to a sales channel.",
+/** Sent on the window to open a stage of "What do I end up with?" (the hero's "Look inside" opens the product). */
+export const GET_STAGE_EVENT = "c2r:get-stage";
+
+/** The hero's picture: the example's product on the line from an idea to a sale, with four of its outputs. */
+export const HERO_STAGE = {
+  label: (name: string) => `${name}, the worked example: a slim leather-look luggage tag on its strap, hanging on a line that runs from an idea typed as one line to a product on sale. Beside it, four of its outputs: the schematic, the unit cost, an ad and the marketplace listing.`,
+  tag: (name: string, w: number, h: number, t: number) => `${name}: a saddle-tan luggage tag, ${w} by ${h} by ${t} mm, with cream stitching, a perforated speaker panel and its name stamped in an oval.`,
+  turn: "The tag in 3D, turning. Drag it, or use the arrow keys, to turn it yourself.",
+  modesLabel: "How the tag is drawn",
+  modes: { solid: "Finished", translucent: "See-through", wireframe: "Wireframe" },
+  inside: "Look inside",
   field: "Your idea, in one line",
   from: "Idea",
   to: "On sale",
+  cards: {
+    schematic: "Schematic",
+    cost: "Unit cost",
+    ad: "Ad",
+    listing: "Listing",
+    wires: (n: number) => `${n} wires, checked`,
+    from: (volume: string) => `At ${volume}:`,
+    at: (volume: string) => `at ${volume}`,
+    each: (volume: string) => `a unit, at ${volume}`,
+    variants: (n: number) => `1 of ${n} variants`,
+    net: (net: string) => `${net} net of fees`,
+  },
   caption: `The worked example: ${EXAMPLE.name}, shown in its own rows as they stand today. It is planned, not yet built or sold.`,
 };
 
@@ -298,7 +322,7 @@ export const GET = {
 export const GET_VIEWS = {
   badge: "The example's rows, live",
   loading: "Loading the view",
-  still: "A drawing of the model from its parts list; the live 3D view loads as you reach it.",
+  exploded: (parts: string[]) => `An exploded drawing of the example, from the sizes and places in its parts list: the tag pulled apart, each part numbered. ${parts.join("; ")}. The live 3D view loads as you reach it.`,
   looks: { wireframe: "Wireframe", translucent: "See-through", solid: "Solid" },
   model: {
     path: "/s/design/model",
@@ -318,6 +342,56 @@ export const GET_VIEWS = {
     hint: "Build-sheet order: base, board, each soldering step, integration.",
   },
   views: { model: "3D model", schematic: "Schematic" },
+  /** the example as a product: every angle, every part, drawn live from its parts list and its schematic */
+  product: {
+    path: "/s/design/model",
+    label: (name: string) => `${name} in 3D. Drag to turn it, or use the arrow keys; press a part to choose it.`,
+    viewsLabel: "Views of the product",
+    views: {
+      front: "Front",
+      back: "Back",
+      left: "Three-quarter",
+      right: "Other side",
+      edge: "Edge",
+      top: "Top",
+      handle: "On a handle",
+      coin: "Cell door open",
+      tracker: "Tracker pocket",
+      exploded: "Exploded",
+      inside: "See-through",
+      lines: "Wireframe",
+    },
+    lookLabel: "Drawn as",
+    looks: { solid: "Finished", translucent: "See-through", wireframe: "Wireframe" },
+    apart: "Pulled apart",
+    turn: "Turn",
+    partsTitle: "Parts",
+    search: "Find a part",
+    none: "No part of that name.",
+    groups: { enclosure: "Enclosure", board: "Board and chips", power: "Power", audio: "Audio", controls: "Controls" },
+    all: "All parts",
+    close: "Close",
+    does: "What it does",
+    size: "Size",
+    qty: "Quantity",
+    cost: "Cost",
+    costNote: "estimate",
+    source: "From",
+    joins: "Joined to",
+    noJoins: "No net in the schematic joins this part.",
+    netClass: { power: "power", ground: "ground", signal: "signal", audio: "audio" },
+    illustrative: "Its place on the board is illustrative: the board's components have no layout rows yet.",
+    listOnly: "Not drawn: this row has no body of its own in the tag.",
+    render: "A render from the example's own CAD (Rev D, colourway A1), on a suitcase handle. Not a photograph: no tag has been built.",
+    renderAlt: "The tag hanging by its black strap from the handle of a dark suitcase, front toward the viewer.",
+    caption: {
+      size: (w: number, h: number, t: number) => `${w} x ${h} x ${t} mm`,
+      parts: (n: number, illustrative: number) => `${n} parts drawn from the parts list${illustrative ? `; ${illustrative} on the board placed for illustration` : ""}`,
+    },
+    alt: (parts: number, joined: number) => `The product has ${parts} parts in its parts list, ${joined} of them joined by nets of the schematic. The list beside the picture names each part; choosing one shows what it does, its size, its cost and the parts it is joined to.`,
+    hint: "Drag to turn. Press a part, or pick it in the list, to see what it does and what it joins.",
+    counts: (parts: number, wires: number) => `${parts} parts, ${wires} wires, from the example's rows`,
+  },
   print: {
     path: "/s/prototype/printing",
     label: "The enclosure's base and lid on the print bed, cut at the layer being printed.",
@@ -427,7 +501,7 @@ export const PROOF = {
     sell: { label: "Sell it", sub: "Seven marketing and sales views, built on the same rows as the engineering." },
   },
   noscript: "Script is off, so the switch cannot change. The Sell it views are set out below.",
-  enclosureNote: "The enclosure in these views is the box the workbench generates around the example's parts. The example's final case is designed by hand.",
+  enclosureNote: "The 3D view draws the enclosure to the outline of the example's own case, which is designed by hand. Enclosure and print shows the box the workbench generates around the same parts.",
   status: {
     title: "Where does the example stand today?",
     lead: "Each stage ends in a gate of checks. These counts are worked out by the workbench's own rules on the example's rows. It is designed and costed, not yet manufactured or sold.",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FACE, TAG_MM, tagOutline, tagPath } from "@/components/welcome/scenes/film/tagShape";
+import { FACE, HOLE, TAG_MM, perforationRuns, stitchRuns, tagOutline, tagPath } from "@/components/welcome/scenes/film/tagShape";
 
 const bounds = (pts: [number, number][]) => ({
   x0: Math.min(...pts.map((p) => p[0])),
@@ -47,5 +47,31 @@ describe("the A1 tag's outline", () => {
     const ys = [...d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => Number(m[2]));
     expect(Math.min(...ys)).toBeCloseTo(0, 1);
     expect(Math.max(...ys)).toBeCloseTo(TAG_MM.h, 1);
+  });
+
+  it("stitches evenly round the stitch line: one stitch about every 3.4 mm, each 2.2 mm long", () => {
+    const line = tagOutline(3, 6);
+    const round = line.reduce((a, p, i) => a + Math.hypot(line[(i + 1) % line.length]![0] - p[0], line[(i + 1) % line.length]![1] - p[1]), 0);
+    const runs = stitchRuns(line, 3.4, 2.2, 0.49);
+    expect(runs).toHaveLength(Math.round(round / 3.4));
+    for (const [a, b] of runs) expect(Math.hypot(b[0] - a[0], b[1] - a[1])).toBeCloseTo(2.2, 5);
+  });
+
+  it("perforates the panel on its lattice: whole holes only, none on the coin door's line, through over the speaker", () => {
+    const holes = perforationRuns().flatMap((r) => Array.from({ length: r.n }, (_, i) => ({ x: r.x + i * HOLE.pitch, y: r.y, through: r.through })));
+    expect(holes.length).toBeGreaterThan(180);
+    const { panel: p, door: d, speaker: s } = FACE;
+    for (const h of holes) {
+      expect(h.x - HOLE.r).toBeGreaterThan(p.x0);
+      expect(h.x + HOLE.r).toBeLessThan(p.x1);
+      expect(h.y - HOLE.r).toBeGreaterThan(p.y0);
+      expect(h.y + HOLE.r).toBeLessThan(p.y1);
+      expect(Math.abs(Math.hypot(h.x - d.x, h.y - d.y) - d.r)).toBeGreaterThanOrEqual(0.95 - 1e-9);
+      expect(h.through).toBe(h.x >= s.x0 && h.x <= s.x1 && h.y >= s.y0 && h.y <= s.y1);
+    }
+    // no two holes share a place, and one sits at the door's middle row either side of its coin slot
+    expect(new Set(holes.map((h) => `${h.x.toFixed(2)} ${h.y.toFixed(2)}`)).size).toBe(holes.length);
+    expect(holes.some((h) => h.through)).toBe(true);
+    expect(holes.some((h) => !h.through)).toBe(true);
   });
 });

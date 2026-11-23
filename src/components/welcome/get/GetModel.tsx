@@ -15,6 +15,7 @@ import ModelCanvas from "@/components/three/ModelCanvas";
 import type { ShowcaseNudge } from "@/components/three/canvasShowcase";
 import { PartTags, TagLayer } from "@/components/three/canvasTags";
 import { SHELL_DEFAULTS } from "@/components/three/stl";
+import { TAG_TONE, shellOutlineFor } from "./tagShell";
 import { LAYERS, assemblySteps, hiddenByLayers, layerOf, type Layer } from "@/components/three/showcaseLogic";
 import { useSceneModel } from "@/components/views/model/useSceneModel";
 import { TapToExplore } from "../TapToExplore";
@@ -85,11 +86,13 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
     const el = box.current;
     if (!el) return;
     const style = getComputedStyle(el);
-    // the enclosure keeps the viewer's own neutral shell colour, so the parts inside read through it in theirs
-    setColors(new Map(parts.filter((p) => p.geometry?.shape !== "shell").map((p) => [p.item.id, style.getPropertyValue(toneOf(kindOf(p), p.ref)).trim()])));
+    // an enclosure drawn as its box keeps the viewer's own neutral shell colour, so the parts inside read through
+    // it in theirs; the one that takes the tag's outline takes its colour too
+    setColors(new Map(parts.filter((p) => p.geometry?.shape !== "shell" || shellOutlineFor(p.geometry.size)).map((p) => [p.item.id, p.geometry?.shape === "shell" ? TAG_TONE : style.getPropertyValue(toneOf(kindOf(p), p.ref)).trim()])));
     setNarrow(el.clientWidth < 640);
   }, [parts]);
 
+  const outline = useMemo(() => shellOutlineFor(parts.find((p) => p.geometry?.shape === "shell")?.geometry?.size), [parts]);
   const canvasParts = useMemo(() => scene.canvasParts.map((x) => ({ ...x, color: colors.get(x.id) || undefined })), [scene.canvasParts, colors]);
   const tagParts = useMemo(() => canvasParts.map((x) => ({ id: x.id, ref: x.ref, title: x.title })), [canvasParts]);
   const off = useMemo(() => new Set(LAYERS.filter((l) => !layersOn.includes(l))), [layersOn]);
@@ -162,6 +165,7 @@ export default function GetModel({ parts: partItems, wires, get }: { parts: Item
               labels={false}
               shellView={look === "solid" ? "solid" : "clear"}
               shellParams={SHELL_DEFAULTS}
+              shellOutline={outline}
               resetToken={resetToken + (narrow ? 1000 : 0)}
               dark
               uploaded={null}

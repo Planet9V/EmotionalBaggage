@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Create the owner · Concept to Reali
 
 /**
  * "Create the owner", for a self-hosted install with no account yet (src/lib/auth2/firstRun.ts). Not found once any
- * account exists. The introduction beside the form is the welcome page's own hero (HeroFlow), drawn from the
+ * account exists. The introduction beside the form is the welcome page's own hero (HeroStage), drawn from the
  * example's seeded rows: no new imagery.
  */
 export default async function FirstRunPage() {
@@ -24,5 +24,5 @@ export default async function FirstRunPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto")?.split(",")[0].trim() || (host.startsWith("localhost") ? "http" : "https");
   const story = storyData(await exampleData());
-  return <FirstRun email={form.email} address={form.needsAddress ? `${proto}://${host}` : null} idea={story.origin.idea} facts={story.hero} />;
+  return <FirstRun email={form.email} address={form.needsAddress ? `${proto}://${host}` : null} idea={story.origin.idea} facts={story.hero} product={story.product} />;
 }

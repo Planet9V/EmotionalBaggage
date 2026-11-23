@@ -29,6 +29,11 @@ export type RoutedDraw = {
   radius: number;
 };
 export type ShellView = "clear" | "solid";
+/**
+ * An enclosure drawn to its own outline instead of as a box: the outline of its walls seen from above, in mm about
+ * the shell's middle ([x across, z along]), the same outline one wall in, and any openings through the lid.
+ */
+export type ShellOutline = { outer: readonly (readonly [number, number])[]; inner: readonly (readonly [number, number])[]; lidHoles?: readonly (readonly (readonly [number, number])[])[] };
 /** A wire to draw: one line between the centres of two parts. */
 export type CanvasWire = {
   id: number;
@@ -49,6 +54,8 @@ export type ModelCanvasProps = {
   labels: boolean;
   shellView: ShellView;
   shellParams: ShellParams;
+  /** Draws the enclosure to this outline rather than as the box of its size (the welcome page's example). */
+  shellOutline?: ShellOutline;
   resetToken: number;
   dark: boolean;
   uploaded: { mesh: Mesh; key: string } | null;

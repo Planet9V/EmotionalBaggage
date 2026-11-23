@@ -11,13 +11,15 @@ export function StageStatus({ gates }: { gates: Record<string, ExampleGate> }) {
   const open = rows.reduce((n, r) => n + (r.gate.total - r.gate.met), 0);
   return (
     <div>
-      <ol aria-label={PROOF.status.label} className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-hairline bg-[var(--border-hairline)] sm:grid-cols-4 lg:grid-cols-7">
+      <ol aria-label={PROOF.status.label} className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-hairline bg-[var(--border-hairline)] shadow-[var(--shadow-card)] sm:grid-cols-4 lg:grid-cols-7">
         {rows.map((r) => (
-          <li key={r.n} className="bg-surface px-3.5 py-3 last:col-span-2 lg:last:col-span-1">
-            <p className="font-mono text-[11px] text-link">{r.n}</p>
-            <p className="mt-0.5 text-sm font-semibold text-primary">{r.name}</p>
-            <p className="mt-1.5 font-mono text-[11px] tabular-nums text-secondary">{PROOF.status.count(r.gate.met, r.gate.total)}</p>
-            <span className="mt-2 block h-1 overflow-hidden rounded-full bg-subtle" aria-hidden>
+          <li key={r.n} className="bg-surface px-4 py-4 last:col-span-2 lg:last:col-span-1">
+            <p className="flex items-baseline gap-2">
+              <span className="text-[13px] font-medium tabular-nums text-link">{r.n}</span>
+              <span className="text-base font-semibold text-primary">{r.name}</span>
+            </p>
+            <p className="mt-1 text-[13px] tabular-nums text-secondary">{PROOF.status.count(r.gate.met, r.gate.total)}</p>
+            <span className="mt-3 block h-1.5 overflow-hidden rounded-full bg-subtle" aria-hidden>
               <span className="block h-full rounded-full bg-dutchOrange" style={{ width: `${r.gate.total ? Math.round((r.gate.met / r.gate.total) * 100) : 0}%` }} />
             </span>
           </li>
@@ -25,10 +27,10 @@ export function StageStatus({ gates }: { gates: Record<string, ExampleGate> }) {
       </ol>
 
       {open === 0 ? (
-        <p className="mt-3 text-sm text-secondary">{PROOF.status.none}</p>
+        <p className="mt-3 text-base text-secondary">{PROOF.status.none}</p>
       ) : (
         <details className="group mt-3 rounded-xl border border-hairline bg-surface">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3.5 text-base font-medium text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
             <ChevronRight className="h-4 w-4 shrink-0 text-muted transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
             {PROOF.status.open(open)}
           </summary>
@@ -39,15 +41,15 @@ export function StageStatus({ gates }: { gates: Record<string, ExampleGate> }) {
                 .filter((r) => r.gate.met < r.gate.total)
                 .map((r) => (
                   <div key={r.n}>
-                    <dt className="text-sm font-semibold text-primary">
-                      <span className="font-mono text-[11px] font-normal text-link">{r.n}</span> {r.name}
+                    <dt className="text-base font-semibold text-primary">
+                      <span className="text-[13px] font-medium tabular-nums text-link">{r.n}</span> {r.name}
                     </dt>
                     <dd className="mt-1.5">
                       <ul className="space-y-1.5">
                         {r.gate.checks
                           .filter((c) => !c.met)
                           .map((c) => (
-                            <li key={c.id} className="text-[13px] leading-snug text-secondary">
+                            <li key={c.id} className="text-[15px] leading-snug text-secondary">
                               <span className="text-primary">{c.label}.</span> {c.detail}
                             </li>
                           ))}
