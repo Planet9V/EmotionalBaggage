@@ -13,7 +13,7 @@ import { refuse } from "./workspaces/store";
 
 const CLIENT = "step-up";
 
-export const stepUpRequired = () =>
+const stepUpRequired = () =>
   refuse("FORBIDDEN", "STEP_UP_REQUIRED", "Enter your own password to confirm this change: it reaches another platform administrator or gives that role.");
 
 /** Refuses unless `password` is the acting administrator's own current password. */

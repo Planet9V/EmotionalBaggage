@@ -10,7 +10,8 @@
 ALTER TABLE auth2_settings DROP CONSTRAINT IF EXISTS auth2_settings_key_check;
 ALTER TABLE auth2_settings ADD CONSTRAINT auth2_settings_key_check CHECK (key IN (
   'auth2.enabled', 'auth2.baseUrl', 'auth2.trustedOrigins', 'auth2.platformAdminAddress',
-  'invites.expiryDays', 'signIn.maxFailures', 'signIn.lockMinutes', 'password.policy', 'notify.signupRequestsTo', 'signUp.open'
+  'invites.expiryDays', 'signIn.maxFailures', 'signIn.lockMinutes', 'password.policy', 'notify.signupRequestsTo', 'signUp.open',
+  'impersonation.minutes', 'impersonation.notifyUser'
 ));
 
 -- The first-run page no longer suggests admin@oxot.nl: the platform administrator is whoever is created there
@@ -31,6 +32,12 @@ ALTER TABLE "user"
 -- The lock (src/lib/auth2/signInWait.ts): the name-wide row of auth2_sign_in_waits (client = '') counts failed
 -- passwords in a row and holds the lock. 'infinity' is "until an administrator unlocks".
 ALTER TABLE auth2_sign_in_waits ADD COLUMN locked_until timestamptz;
+
+-- "View as this user" (owner's addition of 23 Nov, src/lib/auth2/viewAs.ts): a session a platform administrator starts
+-- for another account carries who started it and when it ends, whatever Better Auth's sliding life would say.
+ALTER TABLE "session"
+  ADD COLUMN "impersonatedBy" text REFERENCES "user" ("id") ON DELETE CASCADE,
+  ADD COLUMN "impersonationEndsAt" timestamptz;
 
 -- Invitations to create an account, sent by a platform administrator (src/lib/auth2/accountInvitations.ts). The
 -- account exists from the invitation on, with no password; the link sets one. Only the SHA-256 of the link's
@@ -54,8 +61,9 @@ CREATE INDEX auth2_account_invitations_user_idx ON auth2_account_invitations (us
 
 -- Down Migration
 DROP TABLE IF EXISTS auth2_account_invitations;
+ALTER TABLE "session" DROP COLUMN IF EXISTS "impersonationEndsAt", DROP COLUMN IF EXISTS "impersonatedBy";
 ALTER TABLE auth2_sign_in_waits DROP COLUMN IF EXISTS locked_until;
 ALTER TABLE "user" DROP COLUMN IF EXISTS "resetRequestedAt", DROP COLUMN IF EXISTS "mustChangePassword";
-DELETE FROM auth2_settings WHERE key IN ('invites.expiryDays', 'signIn.maxFailures', 'signIn.lockMinutes', 'password.policy', 'notify.signupRequestsTo', 'signUp.open');
+DELETE FROM auth2_settings WHERE key IN ('invites.expiryDays', 'signIn.maxFailures', 'signIn.lockMinutes', 'password.policy', 'notify.signupRequestsTo', 'signUp.open', 'impersonation.minutes', 'impersonation.notifyUser');
 ALTER TABLE auth2_settings DROP CONSTRAINT IF EXISTS auth2_settings_key_check;
 ALTER TABLE auth2_settings ADD CONSTRAINT auth2_settings_key_check CHECK (key IN ('auth2.enabled', 'auth2.baseUrl', 'auth2.trustedOrigins', 'auth2.platformAdminAddress'));

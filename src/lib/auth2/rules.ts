@@ -11,6 +11,8 @@
  * | password.policy             | ./passwordPolicy.ts DEFAULT_PASSWORD_POLICY | minimum length 8 to 64 | every new password |
  * | notify.signupRequestsTo     | jim@eigenia.nl   | an address, or "" for none              | ./notify.ts                     |
  * | signUp.open                 | false            | true or false                           | the sign-up endpoint and page   |
+ * | impersonation.minutes       | 60               | 5 to 240                                | "view as" (./viewAs.ts)         |
+ * | impersonation.notifyUser    | false            | true or false                           | "view as": email the person     |
  *
  * The defaults are the engineer's (labelled as defaults in docs/TASKS.md), except 7 days, 7 tries and the address,
  * which are the owner's words.
@@ -33,6 +35,8 @@ export type AccountRules = {
   /** null: no notification is sent */
   notifySignupRequestsTo: string | null;
   signUpOpen: boolean;
+  viewAsMinutes: number;
+  viewAsNotifyUser: boolean;
 };
 
 export const DEFAULT_RULES: AccountRules = {
@@ -42,9 +46,11 @@ export const DEFAULT_RULES: AccountRules = {
   password: DEFAULT_PASSWORD_POLICY,
   notifySignupRequestsTo: "jim@eigenia.nl",
   signUpOpen: false,
+  viewAsMinutes: 60,
+  viewAsNotifyUser: false,
 };
 
-export const RULE_BOUNDS = { inviteExpiryDays: [1, 30], maxFailures: [3, 20], lockMinutes: [5, 1440] } as const;
+const RULE_BOUNDS = { inviteExpiryDays: [1, 30], maxFailures: [3, 20], lockMinutes: [5, 1440], viewAsMinutes: [5, 240] } as const;
 
 const clampInt = (v: unknown, [lo, hi]: readonly [number, number], dflt: number) =>
   typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : dflt;
@@ -53,7 +59,7 @@ const clampInt = (v: unknown, [lo, hi]: readonly [number, number], dflt: number)
 export async function readRules(db: Queryable): Promise<AccountRules> {
   const rows = await db.query<{ key: string; value: unknown }>(
     "SELECT key, value FROM auth2_settings WHERE key = ANY($1::text[])",
-    [[AUTH2_SETTING.inviteExpiryDays, AUTH2_SETTING.maxFailures, AUTH2_SETTING.lockMinutes, AUTH2_SETTING.passwordPolicy, AUTH2_SETTING.notifySignupRequestsTo, AUTH2_SETTING.signUpOpen]]
+    [[AUTH2_SETTING.inviteExpiryDays, AUTH2_SETTING.maxFailures, AUTH2_SETTING.lockMinutes, AUTH2_SETTING.passwordPolicy, AUTH2_SETTING.notifySignupRequestsTo, AUTH2_SETTING.signUpOpen, AUTH2_SETTING.viewAsMinutes, AUTH2_SETTING.viewAsNotifyUser]]
   );
   const v = new Map(rows.rows.map((r) => [r.key, r.value]));
   const lock = v.get(AUTH2_SETTING.lockMinutes);
@@ -65,6 +71,8 @@ export async function readRules(db: Queryable): Promise<AccountRules> {
     password: v.has(AUTH2_SETTING.passwordPolicy) ? normalizePolicy(v.get(AUTH2_SETTING.passwordPolicy)) : DEFAULT_RULES.password,
     notifySignupRequestsTo: notify === undefined ? DEFAULT_RULES.notifySignupRequestsTo : typeof notify === "string" && notify ? notify : null,
     signUpOpen: v.get(AUTH2_SETTING.signUpOpen) === true,
+    viewAsMinutes: clampInt(v.get(AUTH2_SETTING.viewAsMinutes), RULE_BOUNDS.viewAsMinutes, DEFAULT_RULES.viewAsMinutes),
+    viewAsNotifyUser: v.get(AUTH2_SETTING.viewAsNotifyUser) === true,
   };
 }
 
@@ -75,6 +83,8 @@ export type RulesChange = Partial<{
   password: unknown;
   notifySignupRequestsTo: unknown;
   signUpOpen: unknown;
+  viewAsMinutes: unknown;
+  viewAsNotifyUser: unknown;
 }>;
 
 const bad = (code: string, message: string) => APIError.from("BAD_REQUEST", { code, message });
@@ -104,6 +114,11 @@ export async function writeRules(c: PoolClient, change: RulesChange, actor: stri
   if (change.signUpOpen !== undefined) {
     if (typeof change.signUpOpen !== "boolean") throw bad("INVALID_SETTING", "Choose open or closed.");
     set.push([AUTH2_SETTING.signUpOpen, change.signUpOpen]);
+  }
+  if (change.viewAsMinutes !== undefined) set.push([AUTH2_SETTING.viewAsMinutes, intIn(change.viewAsMinutes, RULE_BOUNDS.viewAsMinutes, "Minutes a \"view as\" session lasts")]);
+  if (change.viewAsNotifyUser !== undefined) {
+    if (typeof change.viewAsNotifyUser !== "boolean") throw bad("INVALID_SETTING", "Choose whether to email the person.");
+    set.push([AUTH2_SETTING.viewAsNotifyUser, change.viewAsNotifyUser]);
   }
   for (const [k, value] of set) await writeAuth2Setting(c, k as Parameters<typeof writeAuth2Setting>[1], value, actor);
   const after = await readRules(c);

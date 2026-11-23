@@ -194,8 +194,12 @@ describe("with AUTH2 on", () => {
     cleanup();
     const { ResetRequest } = await import("@/app/(account)/auth/reset/ResetRequest");
     render(<ResetRequest mail={false} />);
-    expect(screen.getByText(/Ask an administrator/)).toBeTruthy();
-    expect(screen.queryByLabelText("Email address")).toBeNull();
+    expect(screen.getByText(/Reset by email is not available on this installation yet.*Ask the administrator/)).toBeTruthy();
+    // the address goes to the platform administrator's list, not to a mail service
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "n@example.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Tell the administrator" }));
+    expect((await screen.findByRole("status")).textContent).toMatch(/the administrator sees that you asked/);
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toBe("/api/auth2/account/reset-request");
   });
 
   it("sign-up from an invitation fills the address and comes back to the invitation", async () => {
@@ -296,7 +300,7 @@ describe("with AUTH2 on", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
     // The set-up code is asked for, and where to find it is said.
     expect(await screen.findByText("Enter the set-up code from the server log.")).toBeTruthy();
-    expect(screen.getByText(/docker compose logs web/)).toBeTruthy();
+    expect(screen.getAllByText(/docker compose logs web/).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText("Set-up code"), { target: { value: "ABCD-EFGH-JKLM-NPQR" } });
     fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/account"));

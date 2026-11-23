@@ -59,10 +59,12 @@ export type PrinterInput = { name?: string; family?: string; model?: string; ena
  * The sections of /admin, in the order of the sub-navigation. The section is kept in the address as ?tab=; the
  * first six keys are the ones links across the app already use, so they never change.
  */
-export const ADMIN_TABS = ["setup", "signin", "payments", "pricing", "email", "channels", "models", "voice", "voiceovers", "printers", "services", "credentials", "audit", "access", "funnel"] as const;
+export const ADMIN_TABS = ["setup", "users", "workspaces", "signin", "payments", "pricing", "email", "channels", "models", "voice", "voiceovers", "printers", "services", "credentials", "audit", "access", "funnel"] as const;
 export type AdminTab = (typeof ADMIN_TABS)[number];
 export const ADMIN_TAB_LABEL: Record<AdminTab, string> = {
   setup: "Overview",
+  users: "Users",
+  workspaces: "Workspaces",
   signin: "Sign-in",
   payments: "Payments",
   pricing: "Pricing and tiers",

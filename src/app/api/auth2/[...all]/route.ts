@@ -16,12 +16,23 @@ import { auth2Enabled } from "@/lib/auth2/config";
 import { createOwner, firstRunOpen } from "@/lib/auth2/firstRun";
 import { auth2, SetupRequired } from "@/lib/auth2/server";
 import { ownerPool, ready } from "@/lib/db";
+import { asViewer } from "@/lib/actor";
+import { viewedBy } from "@/lib/auth2/viewAs";
 
 const FIRST_RUN = "/api/auth2/first-run/owner";
 /** Ways in that wait until the owner exists (review B3): nobody slips in before the first-run step. */
 const AFTER_SET_UP = new Set(["/sign-up/email", "/request-password-reset", "/reset-password", "/send-verification-email", "/workspace/invitation/accept", "/account/join", "/account/reset-request", "/account/first-password"].map((p) => `/api/auth2${p}`));
 const notSetUp = () =>
   NextResponse.json({ code: "SETUP_REQUIRED", error: "This installation is not set up yet: its owner has to be created first, on the first-run page." }, { status: 503 });
+
+/** The administrator behind a "view as" session, looked up only when the request carries its cookie. */
+async function viewerOf(auth: Awaited<ReturnType<typeof auth2>>, req: Request): Promise<string | null> {
+  if (!/(?:^|;\s*)[^=;]*admin_session=/.test(req.headers.get("cookie") ?? "")) return null;
+  const s = await auth.api.getSession({ headers: req.headers }).catch(() => null);
+  const by = s ? viewedBy(s.session) : null;
+  if (!by) return null;
+  return (await ownerPool().query<{ email: string }>('SELECT email FROM "user" WHERE id = $1', [by])).rows[0]?.email ?? by;
+}
 
 const handle = route.open(
   async (req: Request) => {
@@ -38,7 +49,11 @@ const handle = route.open(
       if (await firstRunOpen(ownerPool())) return notSetUp();
     }
     try {
-      return (await auth2()).handler(withClientAddress(req));
+      const auth = await auth2();
+      // While an administrator views as someone, everything written is recorded under both names (viewAs.ts).
+      const viewer = await viewerOf(auth, req);
+      if (viewer) return await asViewer(viewer, () => auth.handler(withClientAddress(req)));
+      return auth.handler(withClientAddress(req));
     } catch (e) {
       if (!(e instanceof SetupRequired)) throw e;
       return NextResponse.json({ code: "SETUP_REQUIRED", error: "Sign-in is not set up yet. Open the first-run page to create the owner." }, { status: 503 });

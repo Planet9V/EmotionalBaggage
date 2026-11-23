@@ -23,9 +23,11 @@ import { VoiceoversTab } from "./VoiceoversTab";
 import { ServicesTab } from "./ServicesTab";
 import { SignInTab } from "./SignInTab";
 import { FunnelTab } from "./FunnelTab";
+import { UsersTab } from "./UsersTab";
+import { WorkspacesTab } from "./WorkspacesTab";
 
 /** The sections whose settings are new powers (src/lib/admin/guard.ts): only the platform administrator changes them. */
-const NEW_POWERS = new Set<AdminTab>(["payments", "pricing", "email", "voice", "voiceovers", "funnel"]);
+const NEW_POWERS = new Set<AdminTab>(["users", "workspaces", "payments", "pricing", "email", "voice", "voiceovers", "funnel"]);
 const PLATFORM_ADMIN_NOTICE = "These settings are changed by the platform administrator. That account is created when the new sign-in is switched on.";
 
 export function AdminView() {
@@ -61,6 +63,12 @@ export function AdminView() {
             ) : null}
             <TabsContent value="setup" className="max-w-5xl">
               <SetupTab onOpenTab={go} />
+            </TabsContent>
+            <TabsContent value="users" className="max-w-6xl">
+              {access.platformAdmin ? <UsersTab /> : null}
+            </TabsContent>
+            <TabsContent value="workspaces" className="max-w-6xl">
+              {access.platformAdmin ? <WorkspacesTab /> : null}
             </TabsContent>
             <TabsContent value="signin" className="max-w-4xl">
               <SignInTab />

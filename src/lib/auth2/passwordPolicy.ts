@@ -24,7 +24,7 @@ export type PasswordPolicy = {
   notCommon: boolean;
 };
 
-export const PASSWORD_BOUNDS = { minLength: { min: 8, max: 64 }, maxLength: 128 } as const;
+const PASSWORD_BOUNDS = { minLength: { min: 8, max: 64 }, maxLength: 128 } as const;
 
 /** Defaults chosen by the engineer on 23 Nov (labelled as defaults in docs/TASKS.md). */
 export const DEFAULT_PASSWORD_POLICY: PasswordPolicy = {

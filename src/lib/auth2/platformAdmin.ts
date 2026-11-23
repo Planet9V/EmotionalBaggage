@@ -30,6 +30,8 @@ export async function requirePlatformAdmin(headers: Headers) {
   const { ownerPool } = await import("@/lib/db");
   const s = await auth2Session(headers);
   if (!s) throw new NotPlatformAdmin(401);
+  // A "view as" session is the person's, never an administrator's, whoever started it (./viewAs.ts).
+  if ((s.session as { impersonatedBy?: string | null }).impersonatedBy) throw new NotPlatformAdmin(403);
   if (!(await isPlatformAdmin(ownerPool(), s.user.id))) throw new NotPlatformAdmin(403);
   return s;
 }

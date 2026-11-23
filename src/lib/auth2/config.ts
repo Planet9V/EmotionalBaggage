@@ -43,6 +43,8 @@ export const AUTH2_SETTING = {
   passwordPolicy: "password.policy",
   notifySignupRequestsTo: "notify.signupRequestsTo",
   signUpOpen: "signUp.open",
+  viewAsMinutes: "impersonation.minutes",
+  viewAsNotifyUser: "impersonation.notifyUser",
 } as const;
 
 const isProduction = () => process.env.NODE_ENV === "production";

@@ -67,7 +67,10 @@ export function FirstRun({ email, address, idea, facts, policy }: { email: strin
         </section>
         <section aria-labelledby="owner-h" className="rounded-xl border border-hairline bg-surface p-5">
           <h2 id="owner-h" className="text-lg font-semibold tracking-tight text-primary">Create the owner</h2>
-          <p className="mt-1 text-sm text-secondary">This account administers the installation and gets a workspace of its own. It is ready at once: no confirmation email is needed. The set-up code proves you run this installation.</p>
+          <p role="note" className="mt-2 rounded-md bg-info-soft px-3 py-2 text-sm text-info" data-testid="setup-code-where">
+            <strong className="font-semibold">Where is the set-up code?</strong> It is printed in the server log when the app starts; it is not emailed. With Docker: <code className="font-mono">docker compose logs web</code>; on Railway, the service&rsquo;s deploy logs.
+          </p>
+          <p className="mt-2 text-sm text-secondary">This account is the platform administrator: it administers the installation and gets a workspace of its own. It is ready at once: no confirmation email is needed. The set-up code proves you run this installation.</p>
           <form method="post" onSubmit={(e) => void submit(e)} noValidate className="mt-4 space-y-4">
             <Message id="first-run-message" error={errors.root?.message} />
             <Field
@@ -81,7 +84,7 @@ export function FirstRun({ email, address, idea, facts, policy }: { email: strin
             <Field id="fr-name" label="Your name" error={errors.name?.message}>
               <Input id="fr-name" autoComplete="name" autoFocus {...register("name")} {...describe("fr-name", { error: errors.name?.message })} />
             </Field>
-            <Field id="fr-email" label="Email address" hint="The administrator's address. You can change it now; later only an administrator can." error={errors.email?.message}>
+            <Field id="fr-email" label="Email address" hint="Your own address: you become the platform administrator." error={errors.email?.message}>
               <Input id="fr-email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} {...register("email")} {...describe("fr-email", { hint: true, error: errors.email?.message })} />
             </Field>
             <NewPasswordFields register={register} errors={errors} policy={policy} value={pw} who={{ email: typedEmail, name: typedName }} label="Password" />

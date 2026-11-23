@@ -61,6 +61,10 @@ export type UserState = {
   sessions: number;
 };
 
+/** One workspace as Admin, Workspaces lists it. */
+export type WorkspaceRow = { id: string; name: string; createdAt: string; members: number; owners: string[]; personal: boolean; twoFactorRequired: boolean };
+export type WorkspaceDetail = { workspace: WorkspaceRow; members: { memberId: string; userId: string; email: string; name: string; role: "owner" | "admin" | "member"; platformAdmin: boolean; joinedAt: string }[] };
+
 export type UserFilter = { q?: string; role?: "member" | "admin"; state?: "active" | "invited" | "disabled" | "locked" | "reset"; page?: number; pageSize?: number };
 export type UserPage = { users: UserState[]; total: number; page: number; pageSize: number };
 
@@ -461,10 +465,15 @@ export function adminOps(ctx: Ctx) {
      * refused and names them: `transfer` gives a workspace to another of its members as owner, `deleteWorkspaces`
      * deletes the rest. The last platform administrator cannot be deleted.
      */
-    async deleteUser(userId: unknown, opts: { transfer?: Record<string, string>; deleteWorkspaces?: boolean } = {}) {
+    async deleteUser(userId: unknown, opts: { transfer?: Record<string, string>; deleteWorkspaces?: boolean; confirmEmail?: unknown } = {}) {
       const actor = await admin(ctx);
       if (userId === ctx.actorId) throw refuse("FORBIDDEN", "NOT_YOURSELF", "You cannot delete your own account. Another platform administrator can.");
-      await stepUpFor(await userRow(db, userId));
+      const target = await userRow(db, userId);
+      // From the Users tab the address is typed again (scripts and tests on the owner's connection may leave it out).
+      if (opts.confirmEmail !== undefined && (typeof opts.confirmEmail !== "string" || opts.confirmEmail.trim().toLowerCase() !== target.email.toLowerCase())) {
+        throw refuse("BAD_REQUEST", "CONFIRM_EMAIL_MISMATCH", `Type the address ${target.email} exactly to delete this account.`);
+      }
+      await stepUpFor(target);
       await inTx(db, async (c) => {
         await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
         // All administrators' rows (in id order), then the actor again.
@@ -578,6 +587,53 @@ export function adminOps(ctx: Ctx) {
     },
 
     // --- workspaces ----------------------------------------------------------------------------------------------
+
+    /** Every workspace, newest first, searched by its name or a member's address or name. */
+    async listOrganizations(rawQ?: unknown, onlyId?: string): Promise<WorkspaceRow[]> {
+      await admin(ctx);
+      const q = typeof rawQ === "string" ? rawQ.trim().toLowerCase().slice(0, 200) : "";
+      const like = q ? `%${q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%` : null;
+      const r = await db.query<{ id: string; name: string; slug: string; createdAt: Date; n: number; owners: string[] | null; tf: boolean | null }>(
+        `SELECT o.id, o.name, o.slug, o."createdAt",
+                (SELECT count(*)::int FROM member m WHERE m."organizationId" = o.id) AS n,
+                (SELECT array_agg(u.email ORDER BY u.email) FROM member m JOIN "user" u ON u.id = m."userId" WHERE m."organizationId" = o.id AND m.role LIKE '%owner%') AS owners,
+                (SELECT p.two_factor_required FROM auth2_workspace_policy p WHERE p.organization_id = o.id) AS tf
+           FROM organization o
+          WHERE ($2::text IS NULL OR o.id = $2) AND ($1::text IS NULL OR lower(o.name) LIKE $1 OR EXISTS (SELECT 1 FROM member m JOIN "user" u ON u.id = m."userId" WHERE m."organizationId" = o.id AND (lower(u.email) LIKE $1 OR lower(u.name) LIKE $1)))
+          ORDER BY o."createdAt" DESC, o.id LIMIT 500`,
+        [like, onlyId ?? null]
+      );
+      return r.rows.map((w) => ({ id: w.id, name: w.name, createdAt: new Date(w.createdAt).toISOString(), members: w.n, owners: w.owners ?? [], personal: w.slug.startsWith("ws-"), twoFactorRequired: w.tf === true }));
+    },
+
+    /** One workspace with its members. */
+    async organization(workspaceId: unknown): Promise<WorkspaceDetail> {
+      await admin(ctx);
+      await existing(db, workspaceId);
+      const id = workspaceId as string;
+      const [row] = await this.listOrganizations(undefined, id);
+      if (!row) throw store.notFound();
+      const m = await db.query<{ id: string; userId: string; email: string; name: string; role: string; platformAdmin: boolean; createdAt: Date }>(
+        `SELECT m.id, m."userId", u.email, u.name, m.role, u."platformAdmin", m."createdAt" FROM member m JOIN "user" u ON u.id = m."userId" WHERE m."organizationId" = $1 ORDER BY m."createdAt", m.id`,
+        [id]
+      );
+      return { workspace: row, members: m.rows.map((x) => ({ memberId: x.id, userId: x.userId, email: x.email, name: x.name, role: asRole(x.role), platformAdmin: x.platformAdmin, joinedAt: new Date(x.createdAt).toISOString() })) };
+    },
+
+    /** Makes one member the workspace's only owner; the owners before become admins. One transaction, audited. */
+    async transferOwnership(workspaceId: string, memberId: unknown) {
+      const actor = await admin(ctx);
+      await existing(db, workspaceId);
+      await tx(async (c) => {
+        const name = await store.lockWorkspace(c, workspaceId);
+        const t = await c.query<{ id: string; email: string }>(`SELECT m.id, u.email FROM member m JOIN "user" u ON u.id = m."userId" WHERE m.id = $1 AND m."organizationId" = $2`, [memberId, workspaceId]);
+        if (!t.rows[0]) throw refuse("NOT_FOUND", "MEMBER_NOT_FOUND", "That person is not a member of this workspace.");
+        const before = await c.query<{ email: string }>(`SELECT u.email FROM member m JOIN "user" u ON u.id = m."userId" WHERE m."organizationId" = $1 AND m.role LIKE '%owner%' AND m.id <> $2`, [workspaceId, t.rows[0].id]);
+        await c.query(`UPDATE member SET role = 'owner' WHERE id = $1`, [t.rows[0].id]);
+        await c.query(`UPDATE member SET role = 'admin' WHERE "organizationId" = $1 AND role LIKE '%owner%' AND id <> $2`, [workspaceId, t.rows[0].id]);
+        await audit(c, actor, "workspace_transferred", `Made ${t.rows[0].email} the only owner of "${name}"${before.rows.length ? `; ${before.rows.map((r) => r.email).join(", ")} became admin` : ""}`, { workspaceId, memberId: t.rows[0].id, formerOwners: before.rows.map((r) => r.email) });
+      });
+    },
 
     async createOrganization(name: unknown, ownerUserId: unknown): Promise<{ id: string }> {
       const actor = await admin(ctx);

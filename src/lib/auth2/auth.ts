@@ -38,6 +38,7 @@ import { currentMailSender, render, type MailSender } from "./mail";
 import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims, wellFormed } from "./guards";
 import { workspaces } from "./workspaces/plugin";
 import { accounts } from "./accountsPlugin";
+import { blockedWhileViewing, viewAs, viewedBy, viewingRefusal } from "./viewAs";
 import { createPersonal } from "./workspaces/store";
 import { proofOwed, proofSpent, requiredFor } from "./workspaces/twoFactor";
 import { claimRefusal, claimTry, clearTries, failedTry, hasTag, KNOWN_DEVICE_COOKIE, unlock, withTag } from "./signInWait";
@@ -91,6 +92,7 @@ const THROTTLE = {
   "/account/first-password": { window: 10, max: 3 },
   "/account/join": { window: 60, max: 10 },
   "/account/reset-request": { window: 60, max: 3 },
+  "/view-as/start": { window: 60, max: 5 },
   // Each of these sends an email (or makes a link): per network address, besides the per-workspace limits.
   "/workspace/invite": { window: 60, max: 10 },
   "/workspace/invitation/resend": { window: 60, max: 5 },
@@ -167,6 +169,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
     session: {
       expiresIn: SESSION_DAYS * 24 * 60 * 60,
       updateAge: 24 * 60 * 60,
+      // "View as" (./viewAs.ts): who started the session and when it ends; never set from a request.
+      additionalFields: {
+        impersonatedBy: { type: "string", required: false, input: false },
+        impersonationEndsAt: { type: "date", required: false, input: false },
+      },
     },
     verification: { storeIdentifier: "hashed" },
     emailAndPassword: {
@@ -184,6 +191,8 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       onPasswordReset: async ({ user }: { user: { id: string; email: string } }) => {
         await unlock(db, user.email);
         await db.query('UPDATE "user" SET "mustChangePassword" = false, "resetRequestedAt" = NULL WHERE id = $1', [user.id]);
+        // Recorded under the account's own address (the request has no session to name it).
+        await auditAs(user.email, "/reset-password");
       },
       password: { hash: hashPassword, verify: ({ hash, password }: { hash: string; password: string }) => verifyPassword(password, hash) },
       sendResetPassword: async ({ user, token }: { user: { id: string; email: string; name: string }; token: string }) => {
@@ -240,6 +249,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         const body = (ctx.body ?? {}) as Record<string, unknown>;
+        // A "view as" session may not touch the person's password, address, two-step sign-in or sessions.
+        if (blockedWhileViewing(ctx.path)) {
+          const s = await getSessionFromCtx(ctx);
+          if (s && viewedBy(s.session)) throw viewingRefusal();
+        }
         // No lone surrogates in any text field (review B1): PostgreSQL would refuse them halfway through the work.
         if (!Object.values(body).every(wellFormed)) throw APIError.from("BAD_REQUEST", { code: "INVALID_TEXT", message: "A field holds characters that are not valid text." });
         // The password rules (./passwordPolicy.ts), before Better Auth's own length check.
@@ -316,8 +330,8 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
             });
           }
         }
-        // Sign-up is recorded by the user-created database hook instead (review F2).
-        if (!AUDITED[ctx.path] || ctx.path === "/sign-up/email") return;
+        // Sign-up is recorded by the user-created database hook instead (review F2), a reset by onPasswordReset.
+        if (!AUDITED[ctx.path] || ctx.path === "/sign-up/email" || ctx.path === "/reset-password") return;
         const returned = ctx.context.returned;
         if (returned instanceof Error || (returned instanceof Response && !returned.ok)) return;
         // The actor is the account the request acted on, never an address taken from the request body.
@@ -336,6 +350,7 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       organization(ORGANIZATION_OPTIONS),
       workspaces(db, { mailer, link }),
       accounts(db, { mailer }),
+      viewAs(db, { mailer }),
     ],
   } satisfies BetterAuthOptions;
   return { options };
