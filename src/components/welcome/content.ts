@@ -219,7 +219,7 @@ export const HERO_STAGE = {
     listing: "Listing",
     wires: (n: number) => `${n} wires, checked`,
     schematicAlt: (parts: string[], nets: number, of: number) => `Part of the example's schematic: ${parts.join("; ")}, with ${nets} of its ${of} nets drawn between them.`,
-    schematicOpen: "The schematic: see all of it in the worked example",
+    schematicOpen: "See all of the schematic in the worked example",
     from: (volume: string) => `At ${volume}:`,
     at: (volume: string) => `at ${volume}`,
     each: (volume: string) => `a unit, at ${volume}`,

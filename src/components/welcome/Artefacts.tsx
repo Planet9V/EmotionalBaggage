@@ -102,10 +102,11 @@ export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFac
     case "schematic":
       return (
         // the card is the way in to the whole schematic: the proof block, on its Schematic tab
-        <a href="#proof" data-track="example:hero-schematic" aria-label={c.schematicOpen} onClick={() => window.dispatchEvent(new CustomEvent(PROOF_TAB_EVENT, { detail: "schematic" }))} className="block h-full rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
+        <a href="#proof" data-track="example:hero-schematic" onClick={() => window.dispatchEvent(new CustomEvent(PROOF_TAB_EVENT, { detail: "schematic" }))} className="block h-full rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
           <Card name={c.schematic} foot={c.wires(f.wires)}>
             {f.schematic ? <Schematic crop={f.schematic} /> : null}
           </Card>
+          <span className="sr-only">{c.schematicOpen}</span>
         </a>
       );
     case "cost": {
