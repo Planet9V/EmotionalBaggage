@@ -10,6 +10,9 @@ const SHOULDER = 12.4;
 /** The strap slot, 18 by 3.2, its middle this far below the top edge. */
 export const SLOT = { w: 18, h: 3.2, down: 7 };
 
+/** The strap: black TPU, 16 wide and 2.4 thick as the film and the drawn tag show it. */
+export const STRAP = { w: 16, t: 2.4 };
+
 export type P2 = [number, number];
 
 /** A polygon with each corner rounded by its own radius (a fillet), sampled with `n` points per corner. */
@@ -95,3 +98,70 @@ export const FACE = {
   tracker: { x: -6.2, y: -23.1, r: 18 },
 };
 
+
+/**
+ * Saddle stitches along a closed path: a dash every `pitch` mm, `len` long, each turned `slant` off the path. The
+ * film paints them on the tag's face (tag.ts) and the drawn tag strokes them (TagArt.tsx): the same stitches.
+ */
+export function stitchRuns(path: P2[], pitch: number, len: number, slant: number): [P2, P2][] {
+  const segs = path.map((p, i) => [p, path[(i + 1) % path.length]!] as const);
+  const total = segs.reduce((a, [p, q]) => a + Math.hypot(q[0] - p[0], q[1] - p[1]), 0);
+  const count = Math.round(total / pitch);
+  const step = total / count;
+  const out: [P2, P2][] = [];
+  let s = step / 2;
+  let walked = 0;
+  for (const [p, q] of segs) {
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    while (s <= walked + l) {
+      const f = (s - walked) / l;
+      const x = p[0] + (q[0] - p[0]) * f;
+      const y = p[1] + (q[1] - p[1]) * f;
+      const a = Math.atan2(q[1] - p[1], q[0] - p[0]) + slant;
+      out.push([
+        [x - (Math.cos(a) * len) / 2, y - (Math.sin(a) * len) / 2],
+        [x + (Math.cos(a) * len) / 2, y + (Math.sin(a) * len) / 2],
+      ]);
+      s += step;
+    }
+    walked += l;
+  }
+  return out;
+}
+
+/** The perforations: 1.3 mm holes on a 2.6 mm hexagonal lattice centred on the coin door (the film's shader has the same rule). */
+export const HOLE = { r: 0.65, pitch: 2.6, row: 2.25165 };
+
+/**
+ * The holes of the perforated panel as runs along each row of the lattice: `n` holes from (x, y), `pitch` apart,
+ * in mm about the tag's middle (y up). `through` runs lie over the speaker and go right through the skin; the rest
+ * are blind. No hole sits on the coin door's parting line or its coin slot, or within 1.4 mm of the panel's edge.
+ */
+export function perforationRuns(): { x: number; y: number; n: number; through: boolean }[] {
+  const { panel: p, door: d, speaker: s } = FACE;
+  const inside = (x: number, y: number, x0: number, x1: number, y0: number, y1: number) => x >= x0 && x <= x1 && y >= y0 && y <= y1;
+  const runs: { x: number; y: number; n: number; through: boolean }[] = [];
+  const j0 = Math.ceil((p.y0 - d.y) / HOLE.row);
+  const j1 = Math.floor((p.y1 - d.y) / HOLE.row);
+  for (let j = j0; j <= j1; j++) {
+    const y = d.y + j * HOLE.row;
+    const shift = j % 2 === 0 ? 0 : HOLE.pitch / 2;
+    let run: { x: number; y: number; n: number; through: boolean } | null = null;
+    const i0 = Math.ceil((p.x0 - d.x - shift) / HOLE.pitch);
+    const i1 = Math.floor((p.x1 - d.x - shift) / HOLE.pitch);
+    for (let i = i0; i <= i1; i++) {
+      const x = d.x + shift + i * HOLE.pitch;
+      const keep =
+        inside(x, y, p.x0 + 1.4, p.x1 - 1.4, p.y0 + 1.4, p.y1 - 1.4) &&
+        Math.abs(Math.hypot(x - d.x, y - d.y) - d.r) >= 0.95 &&
+        !inside(x - d.x, y - d.y, -5.2, 5.2, -1.6, 1.6);
+      const through = inside(x, y, s.x0, s.x1, s.y0, s.y1);
+      if (keep && run && run.through === through) run.n++;
+      else {
+        run = keep ? { x, y, n: 1, through } : null;
+        if (run) runs.push(run);
+      }
+    }
+  }
+  return runs;
+}

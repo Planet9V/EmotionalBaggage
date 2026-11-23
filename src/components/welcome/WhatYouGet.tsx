@@ -25,11 +25,13 @@ import type { UnitCost } from "@/lib/economics/compute";
 import type { GetData, MarketData } from "./storyData";
 import type { ExampleEnclosure } from "./exampleData";
 import { useAnimated, useHydrated } from "./useAnimated";
-import { GET, GET_VIEWS } from "./content";
+import { GET, GET_STAGE_EVENT, GET_VIEWS } from "./content";
 import { StageFoot, Waiting } from "./StageParts";
 import { GetAd, GetBrief, GetChannel, GetClaim, GetCost } from "./get/GetDocs";
-import { ModelStill } from "./get/ModelStill";
+import { ExplodedStill, ModelStill } from "./get/ModelStill";
 import { Segmented } from "./get/ViewControls";
+import { ProductViewer } from "./product/ProductViewer";
+import type { Product } from "./product/model";
 
 const loading = () => <Waiting label={GET_VIEWS.loading} />;
 const GetModel = dynamic(() => import("./get/GetModel"), { ssr: false, loading });
@@ -51,8 +53,10 @@ export type GetProps = {
   parts: Item[];
   wires: Item[];
   enclosure: ExampleEnclosure | null;
+  /** the example as a product, part by part (product/model.ts) */
+  product: Product;
 };
-type Sub = "model" | "schematic";
+type Sub = "product" | "model" | "schematic";
 
 function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a canvas may be mounted */ live: boolean; active: boolean; sub: Sub }) {
   const shaped = p.parts.filter((x) => (x.data as { geometry?: unknown }).geometry).length;
@@ -73,13 +77,29 @@ function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a can
       );
     case "03":
       if (sub === "schematic") return live ? <EngSchematic parts={p.parts} wires={p.wires} /> : <Waiting label={GET_VIEWS.loading} />;
+      if (sub === "product")
+        return (
+          <>
+            <ProductViewer product={p.product} still={p.get.still} wires={p.wires.length} live={live} seen={active} />
+            <StageFoot hint={GET_VIEWS.product.hint}>{GET_VIEWS.product.counts(p.product.parts.length, p.wires.length)}</StageFoot>
+          </>
+        );
       return (
         <>
           {live ? (
             <GetModel parts={p.parts} wires={p.wires} get={p.get} />
           ) : (
-            <div className="relative flex min-h-[340px] flex-1 items-center justify-center bg-[radial-gradient(ellipse_at_50%_45%,#1a1e25_0%,#0b0c0e_70%)] p-6">
-              <ModelStill still={p.get.still} label={GET_VIEWS.still} className="max-h-full max-w-[640px]" />
+            <div className="relative flex min-h-[340px] flex-1 flex-col items-center justify-center gap-5 bg-[radial-gradient(ellipse_at_50%_45%,#1a1e25_0%,#0b0c0e_70%)] p-5 md:flex-row md:gap-8 md:p-8">
+              {/* the example pulled apart, drawn from its parts list, with the key to its numbers */}
+              <ExplodedStill still={p.get.still} label={GET_VIEWS.exploded(p.get.still.parts.map((x) => x.title))} className="max-h-[420px] min-h-0 max-w-[420px] flex-1" />
+              <ol className="grid shrink-0 gap-x-6 gap-y-1.5 text-[13px] leading-snug text-secondary max-md:grid-cols-2 md:max-w-[240px]">
+                {p.get.still.parts.map((x, i) => (
+                  <li key={x.id} className="flex gap-2">
+                    <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white/80 text-[11px] font-bold leading-none text-primary" aria-hidden>{i + 1}</span>
+                    <span><span className="sr-only">{i + 1}: </span>{x.title}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
           <StageFoot hint={GET_VIEWS.model.hint}>{GET_VIEWS.model.counts(shaped, p.parts.length, p.wires.length, p.get.steps)}</StageFoot>
@@ -129,19 +149,19 @@ function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a can
 function Heading({ n, holds }: { n: string; holds: Record<string, string[]> }) {
   const it = ITEMS.find((x) => x.n === n)!;
   return (
-    <div className="lg:min-h-[8.25rem]">
-      <p className="font-mono text-[11px] text-muted">
+    <div className="lg:min-h-[9.5rem]">
+      <p className="text-[13px] text-muted">
         <span className="text-link">{it.n}</span> {it.stage}
       </p>
-      <h3 className="mt-1 text-xl font-semibold leading-snug tracking-tight text-primary sm:text-[1.375rem]">{it.get}</h3>
-      <p className="mt-1.5 max-w-[78ch] text-sm leading-relaxed text-secondary">{it.also}</p>
+      <h3 className="mt-1 text-[1.375rem] font-semibold leading-snug tracking-tight text-primary sm:text-2xl">{it.get}</h3>
+      <p className="mt-1.5 max-w-[70ch] text-base leading-relaxed text-secondary">{it.also}</p>
       {/* one row on a wide screen: the first sections, then how many more */}
       <p className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 font-mono text-[11px] text-muted">{GET.holds}</span>
+        <span className="mr-1 text-[13px] text-muted">{GET.holds}</span>
         {(holds[n] ?? []).slice(0, HOLDS_SHOWN).map((s) => (
-          <span key={s} className="rounded-md border border-hairline bg-subtle px-1.5 py-0.5 text-[11px] text-secondary">{s}</span>
+          <span key={s} className="rounded-md border border-hairline bg-subtle px-2 py-0.5 text-[13px] text-secondary">{s}</span>
         ))}
-        {(holds[n] ?? []).length > HOLDS_SHOWN ? <span className="font-mono text-[11px] text-muted">{GET.more((holds[n] ?? []).length - HOLDS_SHOWN)}</span> : null}
+        {(holds[n] ?? []).length > HOLDS_SHOWN ? <span className="text-[13px] text-muted">{GET.more((holds[n] ?? []).length - HOLDS_SHOWN)}</span> : null}
       </p>
     </div>
   );
@@ -158,7 +178,7 @@ export function WhatYouGet(props: GetProps) {
   const near = useInView(stage, { margin: "150px 0px" });
   const [at, setAt] = useState(0);
   const [chosen, setChosen] = useState(false);
-  const [sub, setSub] = useState<Sub>("model");
+  const [sub, setSub] = useState<Sub>("product");
   const walking = animated && seen && !chosen;
   const now = ITEMS[at]!;
 
@@ -172,6 +192,18 @@ export function WhatYouGet(props: GetProps) {
     setChosen(true);
     setAt(i);
   };
+  // another part of the page can open a stage (the hero's "Look inside" opens the product)
+  useEffect(() => {
+    const open = (e: Event) => {
+      const i = ITEMS.findIndex((x) => x.n === (e as CustomEvent<string>).detail);
+      if (i < 0) return;
+      setChosen(true);
+      setAt(i);
+      setSub("product");
+    };
+    window.addEventListener(GET_STAGE_EVENT, open);
+    return () => window.removeEventListener(GET_STAGE_EVENT, open);
+  }, []);
   const onKey = (e: KeyboardEvent) => {
     const to = e.key === "ArrowRight" || e.key === "ArrowDown" ? (at + 1) % ITEMS.length : e.key === "ArrowLeft" || e.key === "ArrowUp" ? (at + ITEMS.length - 1) % ITEMS.length : e.key === "Home" ? 0 : e.key === "End" ? ITEMS.length - 1 : -1;
     if (to < 0) return;
@@ -189,7 +221,7 @@ export function WhatYouGet(props: GetProps) {
         {GET.groups.map((g) => (
           <div key={g.key}>
             <p className="text-base font-semibold tracking-tight text-primary">{g.title}</p>
-            <p className="text-xs text-secondary">{g.sub}</p>
+            <p className="text-[13px] text-secondary">{g.sub}</p>
             <div className="relative mt-2.5 grid gap-1.5">
               <span className="absolute bottom-4 left-[15px] top-4 w-0.5 bg-[var(--border-hairline)]" aria-hidden />
               {g.items.map((it) => {
@@ -208,7 +240,7 @@ export function WhatYouGet(props: GetProps) {
                     className={`relative flex min-h-11 items-center gap-3 overflow-hidden rounded-lg border px-1.5 py-1.5 text-left transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ${on ? "border-hairline bg-surface shadow-[var(--shadow-card)]" : "border-transparent hover:bg-surface"}`}
                   >
                     <span className={`relative z-10 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border font-mono text-[10px] transition-colors duration-200 ${on ? "border-transparent bg-action text-white" : "border-hairline bg-canvas text-secondary"}`}>{it.n}</span>
-                    <span className={`text-sm ${on ? "font-semibold text-primary" : "text-secondary"}`}>{it.stage}</span>
+                    <span className={`text-[15px] ${on ? "font-semibold text-primary" : "text-secondary"}`}>{it.stage}</span>
                     {/* how long until the walk moves on */}
                     {on && walking ? <span key={at} className="wl-progress absolute inset-x-0 bottom-0 h-0.5 bg-dutchOrange" style={{ animationDuration: `${DWELL[it.n] ?? 6000}ms` }} aria-hidden /> : null}
                   </button>
@@ -224,14 +256,14 @@ export function WhatYouGet(props: GetProps) {
         <div ref={stage} className="mt-4 rounded-[18px] border border-hairline bg-bezel p-1.5 shadow-plate sm:p-2">
           <div id="get-stage" className="dark overflow-hidden rounded-xl border border-black/60 bg-[#0b0c0e] text-primary shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
             <div className="flex min-h-[45px] items-center gap-3 border-b border-hairline px-3 sm:px-4">
-              <p className="mr-auto truncate font-mono text-[11px] text-muted">{now.n === "03" && sub === "schematic" ? "/s/design/schematic" : PATH[now.n]}</p>
+              <p className="mr-auto truncate text-[13px] text-muted">{now.n === "03" && sub === "schematic" ? "/s/design/schematic" : PATH[now.n]}</p>
               {now.n === "03" ? <Segmented<Sub> label="Which view of the design" value={sub} onChange={(v) => { setChosen(true); setSub(v); }} options={(Object.keys(GET_VIEWS.views) as Sub[]).map((k) => ({ value: k, label: GET_VIEWS.views[k] }))} /> : null}
-              <p className="hidden shrink-0 items-center gap-2 font-mono text-[11px] text-muted xl:flex">
+              <p className="hidden shrink-0 items-center gap-2 text-[13px] text-muted xl:flex">
                 <span className="h-1.5 w-1.5 rounded-full bg-dutchOrange" aria-hidden />
                 {GET_VIEWS.badge}
               </p>
             </div>
-            <div id="get-panel" role="region" aria-label={`${now.stage}: ${now.get}`} className={`flex flex-col ${tall ? "h-[640px] sm:h-[620px]" : "h-[680px] sm:h-[620px]"} lg:h-[620px]`}>
+            <div id="get-panel" role="region" aria-label={`${now.stage}: ${now.get}`} onPointerDownCapture={() => setChosen(true)} onKeyDownCapture={() => setChosen(true)} className={`flex flex-col ${tall ? "h-[640px] sm:h-[620px]" : "h-[680px] sm:h-[620px]"} lg:h-[620px]`}>
               <Output key={now.n} n={now.n} p={props} live={live} active={seen} sub={sub} />
             </div>
           </div>
@@ -240,11 +272,11 @@ export function WhatYouGet(props: GetProps) {
           {ITEMS.slice(1).map((it) => (
             <div key={it.n} className="dark mt-6 overflow-hidden rounded-xl border border-hairline bg-[#0b0c0e] text-primary">
               <p className="border-b border-hairline px-4 py-3 text-base font-semibold">
-                <span className="mr-2 font-mono text-xs text-link">{it.n}</span>
+                <span className="mr-2 text-[13px] font-medium tabular-nums text-link">{it.n}</span>
                 {it.get}
               </p>
               <div className="flex flex-col">
-                <Output n={it.n} p={props} live={false} active={false} sub="model" />
+                <Output n={it.n} p={props} live={false} active={false} sub="product" />
               </div>
             </div>
           ))}

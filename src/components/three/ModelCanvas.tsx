@@ -23,7 +23,7 @@ import { Showcase, ShowcaseLook } from "./canvasShowcase";
 import { assemblyTargets, combineFade } from "./showcaseLogic";
 
 function Scene(props: ModelCanvasProps & { progress: Progress }) {
-  const { parts, selectedId, onSelect, explode, labels, shellView, shellParams, resetToken, dark, uploaded, progress, wires, wiresOn, fade, weights, focusIds, onFocusPart, transform, onTransform, section, measure, onMeasure, routed } = props;
+  const { parts, selectedId, onSelect, explode, labels, shellView, shellParams, shellOutline, resetToken, dark, uploaded, progress, wires, wiresOn, fade, weights, focusIds, onFocusPart, transform, onTransform, section, measure, onMeasure, routed } = props;
   const colors = palette(dark);
   const invalidate = useThree((s) => s.invalidate);
   const [labelsOn, setLabelsOn] = useState(false);
@@ -219,6 +219,7 @@ function Scene(props: ModelCanvasProps & { progress: Progress }) {
             colors={colors}
             view={shellView}
             params={shellParams}
+            outline={shellOutline}
             lift={shellLift.get(p.id) ?? 20}
           />
         ) : (

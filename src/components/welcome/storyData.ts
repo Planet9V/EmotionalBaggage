@@ -2,15 +2,17 @@
 // (exampleData.ts) and the app's own rules, and handed to the page as plain values. Nothing here is typed in:
 // every word and number is a seeded row, a rule the app enforces (a channel's limits, a listing's limits, a
 // launch template's steps, the proof check, the contrast check) or a count of rows.
-//   hero    the nine small artefacts of the hero's idea-in, outputs-out visual
+//   hero    the four outputs the hero shows beside the product
 //   market  the seven tabs of the market stage
 import type { Item } from "@/lib/types";
-import { toPart, partPrice, sumLine } from "@/lib/domain";
+import { toPart } from "@/lib/domain";
 import { hubRef, sequence, toWires } from "@/components/buildsheet/derive";
 import { assemblySteps, layerHeightOf, layerOf, type Phase, type SolderStep } from "@/components/three/showcaseLogic";
 import type { PartGeometry } from "@/components/three/layout";
 import { stillOf, type Still } from "./get/projection";
-import { netWheel, printLayers, type PrintLayers, type Wheel } from "./get/heroArt";
+import { shellOutlineFor } from "./get/tagShell";
+import { productOf, type Product } from "./product/model";
+import { netWheel, type Wheel } from "./get/heroArt";
 import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningLine } from "@/lib/market/positioning";
 import { findKit, readKit } from "@/lib/market/brandKit";
@@ -26,23 +28,14 @@ import type { ExampleData } from "./exampleData";
 import { EXAMPLE } from "./content";
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
-const money = (n: number | null) => (n === null ? "no price" : `$${n.toFixed(2)}`);
-const row = (rows: Item[], title: string) => rows.find((r) => r.title === title) ?? rows[0];
 
 export type HeroFacts = {
-  brief: { title: string; body: string; lines: number };
-  claim: { title: string; source: string; status: string; count: number };
-  parts: { rows: { ref: string; title: string; line: string }[]; more: number; total: string };
   wires: number;
-  case: { w: number; h: number; d: number } | null;
-  print: { material: string; settings: string };
   cost: { rows: { title: string; volume: string; cogs: string }[]; status: string };
   ad: { text: string; status: string; count: number };
-  channel: { title: string; price: string; net: string; status: string; listing: string };
-  /** drawings from real geometry: the model, the netlist wheel and the case's print layers (get/) */
-  still: Still | null;
+  channel: { title: string; price: string; net: string; status: string };
+  /** the netlist as a wheel, drawn from the real wires (get/heroArt.ts) */
   wheel: Wheel;
-  layers: PrintLayers | null;
 };
 
 /** What "What you get" shows of each stage's output, beyond the market's rows: all from the seeded rows. */
@@ -100,28 +93,15 @@ export type MarketData = {
 };
 
 function hero(d: ExampleData): HeroFacts {
-  const parts = d.parts.map(toPart);
-  const one = row(d.brief, "One-liner");
-  const claim = d.claims[0];
-  const print = d.printing[d.printing.length - 1];
   const ad = d.ads[0];
   const channel = d.channels[0];
+  const ws = toWires(d.wires);
   return {
-    brief: { title: one?.title ?? "", body: one?.body ?? "", lines: d.brief.length },
-    claim: { title: claim?.title ?? "", source: str(claim?.data.source), status: claim?.status ?? "", count: d.claims.length },
-    parts: { rows: parts.slice(0, 3).map((p) => ({ ref: p.ref, title: p.title, line: money(partPrice(p).line) })), more: Math.max(0, parts.length - 3), total: money(sumLine(parts)) },
     wires: d.wires.length,
-    case: d.enclosure ? { w: d.enclosure.outer[0], h: d.enclosure.outer[1], d: d.enclosure.outer[2] } : null,
-    print: { material: str(print?.data.material).split(",")[0] ?? "", settings: str(print?.data.settings).split(",").slice(0, 2).join(",") },
     cost: { rows: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).slice(0, 3).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs) })), status: d.economics[0]?.status ?? "" },
     ad: { text: ad?.title ?? "", status: ad?.status ?? "", count: d.ads.length },
-    channel: { title: channel?.title ?? "", price: str(channel?.data.price), net: str(channel?.data.net), status: channel?.status ?? "", listing: d.listing[0]?.title ?? "" },
-    still: null,
-    wheel: (() => {
-      const ws = toWires(d.wires);
-      return netWheel(ws, hubRef(ws));
-    })(),
-    layers: d.enclosure ? printLayers(d.enclosure.outer, layerHeightOf(str(print?.data.settings)) ?? 0.2, 20) : null,
+    channel: { title: channel?.title ?? "", price: str(channel?.data.price), net: str(channel?.data.net), status: channel?.status ?? "" },
+    wheel: netWheel(ws, hubRef(ws)),
   };
 }
 
@@ -148,7 +128,7 @@ function get(d: ExampleData): GetData {
     layerMm: layerHeightOf(str(main?.data.settings)),
     volumes: d.economics.filter((r) => /^\d/.test(str(r.data.volume))).map((r) => ({ title: r.title, volume: str(r.data.volume), cogs: str(r.data.cogs), status: r.status })),
     steps: steps.length,
-    still: stillOf(shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, kind: kind(p), geometry: p.geometry as PartGeometry, step: stepOf(p.item.id) }))),
+    still: stillOf(shaped.map((p) => ({ id: p.item.id, ref: p.ref, title: p.title, kind: kind(p), geometry: p.geometry as PartGeometry, step: stepOf(p.item.id) })), 6, (size) => shellOutlineFor(size, true)),
   };
 }
 
@@ -261,9 +241,9 @@ function origin(): { sentences: string[]; idea: string } {
 /** What each stage holds in the workbench: its sections, by the names the menu gives them (src/lib/menu.ts). */
 const holds = (): Record<string, string[]> => Object.fromEntries(STAGES.map((s) => [String(s.n).padStart(2, "0"), [...new Set(s.sections.map((x) => x.label))]]));
 
-export type StoryData = { hero: HeroFacts; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
+export type StoryData = { product: Product; hero: HeroFacts; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
 
 export function storyData(d: ExampleData): StoryData {
   const g = get(d);
-  return { hero: { ...hero(d), still: g.still }, market: market(d), origin: origin(), holds: holds(), get: g };
+  return { product: productOf(d.parts, d.wires), hero: hero(d), market: market(d), origin: origin(), holds: holds(), get: g };
 }

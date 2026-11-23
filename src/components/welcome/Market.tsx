@@ -80,7 +80,7 @@ export function Market({ data }: { data: MarketData }) {
               </button>
             ))}
           </div>
-          <p className="hidden shrink-0 items-center gap-2 border-l border-hairline px-4 font-mono text-[11px] text-muted xl:flex">
+          <p className="hidden shrink-0 items-center gap-2 border-l border-hairline px-4 text-[13px] text-muted xl:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-dutchOrange" aria-hidden />
             {MARKET.badge}
           </p>

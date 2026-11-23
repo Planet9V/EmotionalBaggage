@@ -11,14 +11,13 @@
 // bag's scale (a 55 cm carry-on is 0.7 units tall, so a millimetre is 1.25 thousandths of a unit).
 import * as THREE from "three";
 import type { Kit, V3 } from "./kit";
-import { FACE, SLOT, TAG_MM, rounded, tagOutline, type P2 } from "./tagShape";
+import { FACE, SLOT, STRAP, TAG_MM, rounded, stitchRuns, tagOutline, type P2 } from "./tagShape";
 
 const { h: H, t: T } = TAG_MM;
 
 /** One millimetre of the real tag, in the film's units (the bag's scale). */
 const MM = 1.25 / 1000;
 const BEVEL = 1.0;
-const STRAP = { w: 16, t: 2.4 };
 /** The strap's thickness, in units. */
 export const STRAP_T = STRAP.t * MM;
 /** From the strap's pivot (where it leaves the bag) to the tag's top edge. */
@@ -94,30 +93,15 @@ const TAGLINE = "rgba(66, 34, 12, 0.75)";
 const STAMP_LIT = "rgba(255, 226, 190, 0.28)";
 
 function stitches(g: CanvasRenderingContext2D, path: P2[], pitch: number, len: number, slant: number) {
-  // walk the closed path, a dash every `pitch` mm, each turned `slant` off the path as a saddle stitch is
-  const segs = path.map((p, i) => [p, path[(i + 1) % path.length]!] as const);
-  const total = segs.reduce((a, [p, q]) => a + Math.hypot(q[0] - p[0], q[1] - p[1]), 0);
-  const count = Math.round(total / pitch);
-  const step = total / count;
+  // a dash every `pitch` mm along the closed path, each turned `slant` off it as a saddle stitch is (tagShape.ts)
   g.strokeStyle = CREAM;
   g.lineWidth = 1.0;
   g.lineCap = "round";
-  let s = step / 2;
-  let walked = 0;
-  for (const [p, q] of segs) {
-    const l = Math.hypot(q[0] - p[0], q[1] - p[1]);
-    while (s <= walked + l) {
-      const f = (s - walked) / l;
-      const x = p[0] + (q[0] - p[0]) * f;
-      const y = p[1] + (q[1] - p[1]) * f;
-      const a = Math.atan2(q[1] - p[1], q[0] - p[0]) + slant;
-      g.beginPath();
-      g.moveTo(x - (Math.cos(a) * len) / 2, y - (Math.sin(a) * len) / 2);
-      g.lineTo(x + (Math.cos(a) * len) / 2, y + (Math.sin(a) * len) / 2);
-      g.stroke();
-      s += step;
-    }
-    walked += l;
+  for (const [a, b] of stitchRuns(path, pitch, len, slant)) {
+    g.beginPath();
+    g.moveTo(a[0], a[1]);
+    g.lineTo(b[0], b[1]);
+    g.stroke();
   }
 }
 

@@ -1,39 +1,33 @@
-// The stage outputs as small artefacts: a brief line, a claim with its source, the top of the parts list with its
-// total, the netlist as a wheel, the 3D model, the printed case, the unit cost and its fall with volume, an ad draft
-// and a sales channel. Each is drawn in markup or vector SVG from the worked example's seeded rows (HeroFacts,
-// storyData.ts): the words and numbers are the example's own, and the drawings come from its real geometry (the
-// parts' sizes and places, the wires, the enclosure's outer size and the print job's layer height), so they are
-// sharp at any pixel density. Used by the hero's idea-in, outputs-out visual. No script; the model assembles and
-// the print rises in CSS, and both stand finished under reduced motion.
-import type { CSSProperties, ReactNode } from "react";
+// Four outputs of the worked example, as the hero shows them beside the product: the schematic, the unit cost, an
+// ad and the marketplace listing. Each is drawn in markup or vector SVG from the example's seeded rows (HeroFacts,
+// storyData.ts): the words and numbers are the example's own, and the schematic is its real netlist, so nothing
+// here is typed in and everything is sharp at any pixel density. No script.
+import type { ReactNode } from "react";
 import { TONE_CLASS, approvalStatusTone } from "@/lib/statusTones";
 import type { HeroFacts } from "./storyData";
-import { ModelStill } from "./get/ModelStill";
-import type { NetClassName, PrintLayers, Wheel } from "./get/heroArt";
+import type { NetClassName, Wheel } from "./get/heroArt";
+import { HERO_STAGE } from "./content";
 
-export const ARTEFACT_KEYS = ["brief", "claim", "parts", "schematic", "model", "print", "cost", "ad", "channel"] as const;
+export const ARTEFACT_KEYS = ["schematic", "cost", "ad", "listing"] as const;
 export type ArtefactKey = (typeof ARTEFACT_KEYS)[number];
 
-
 function Pill({ children }: { children: string }) {
-  return <span className={`inline-flex h-[18px] shrink-0 items-center whitespace-nowrap rounded-full px-1.5 font-mono text-[10px] ${TONE_CLASS[approvalStatusTone(children)]}`}>{children}</span>;
+  return <span className={`inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full border px-1.5 text-[13px] leading-none ${TONE_CLASS[approvalStatusTone(children)]}`}>{children}</span>;
 }
 
-function Frame({ stage, kind, status, children }: { stage: string; kind: string; status?: string; children: ReactNode }) {
+/** One output: what it is, where it stands, the thing itself, and a line under it. */
+function Card({ name, status, foot, children }: { name: string; status?: string; foot: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex h-full min-h-[112px] flex-col overflow-hidden rounded-lg border border-hairline bg-surface text-left shadow-[var(--shadow-card)]">
-      <p className="flex h-6 shrink-0 items-center gap-1.5 border-b border-hairline bg-subtle px-2 font-mono text-[10px] text-muted">
-        <span className="text-link">{stage}</span>
-        <span className="min-w-0 flex-1 truncate text-secondary">{kind}</span>
+    <div className="flex h-full flex-col rounded-xl border border-hairline bg-surface/85 p-3 text-left sm:p-3.5 shadow-[0_18px_40px_-22px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)] backdrop-blur-[2px]">
+      <p className="flex items-center justify-between gap-1.5">
+        <span className="whitespace-nowrap text-[13px] font-medium text-secondary">{name}</span>
         {status ? <Pill>{status}</Pill> : null}
       </p>
-      <div className="flex min-h-0 flex-1 flex-col justify-center px-2 py-1.5">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center py-2">{children}</div>
+      <p className="text-[13px] leading-snug text-muted">{foot}</p>
     </div>
   );
 }
-
-const BODY = "text-[11px] leading-snug text-primary";
-const FOOT = "mt-1 truncate font-mono text-[10px] text-muted";
 
 const NET_STYLE: Record<NetClassName, { stroke: string; width: number; dash?: string }> = {
   power: { stroke: "var(--net-power)", width: 1.6 },
@@ -45,15 +39,15 @@ const NET_STYLE: Record<NetClassName, { stroke: string; width: number; dash?: st
 /** The netlist as a wheel: every wire of the example, the hub part in the middle, by net class (colour and line). */
 function NetWheel({ wheel }: { wheel: Wheel }) {
   return (
-    <svg viewBox={`0 0 ${wheel.size} ${wheel.size}`} className="mx-auto h-auto w-full max-w-[150px]" role="img" aria-label={`The example's ${wheel.links.length} wires, part to part, by net class.`}>
+    <svg viewBox={`4 4 ${wheel.size - 8} ${wheel.size - 8}`} className="mx-auto h-auto w-full max-w-[168px]" role="img" aria-label={`The example's ${wheel.links.length} wires, part to part, by net class.`}>
       {wheel.links.map((l, i) => {
         const st = NET_STYLE[l.netClass] ?? NET_STYLE.signal;
         return <path key={i} d={l.d} fill="none" stroke={st.stroke} strokeWidth={st.width} strokeDasharray={st.dash} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9} />;
       })}
       {wheel.nodes.map((n) => (
         <g key={n.ref}>
-          <rect x={n.x - (n.hub ? 12 : 9)} y={n.y - 5} width={n.hub ? 24 : 18} height={10} rx={2} fill="var(--bg-surface, #131519)" stroke={n.hub ? "var(--accent-orange)" : "currentColor"} className="text-secondary" strokeWidth={0.8} vectorEffect="non-scaling-stroke" />
-          <text x={n.x} y={n.y + 2.4} textAnchor="middle" fontSize="6.2" fontFamily="var(--font-mono, monospace)" className="fill-current text-primary">
+          <rect x={n.x - (n.hub ? 12 : 9.5)} y={n.y - 5.5} width={n.hub ? 24 : 19} height={11} rx={2.5} fill="var(--bg-surface, #131519)" stroke={n.hub ? "var(--accent-orange)" : "currentColor"} className="text-muted" strokeWidth={n.hub ? 1.4 : 0.8} vectorEffect="non-scaling-stroke" />
+          <text x={n.x} y={n.y + 2.5} textAnchor="middle" fontSize="6.6" fontWeight="600" fontFamily="var(--font-mono, monospace)" className="fill-current text-primary">
             {n.ref}
           </text>
         </g>
@@ -62,130 +56,66 @@ function NetWheel({ wheel }: { wheel: Wheel }) {
   );
 }
 
-/** The case on the print bed: its outline, and every tenth printed layer rising through it (CSS only). */
-function PrintedCase({ layers }: { layers: PrintLayers }) {
-  const [x, y, w, h] = layers.box;
-  return (
-    <svg viewBox={`${x} ${y} ${w} ${h}`} className="mx-auto h-auto w-full max-w-[150px]" aria-hidden="true">
-      <defs>
-        <clipPath id="wl-print-clip">
-          <rect className="wl-layers" style={{ transformBox: "view-box", "--asm-lap": "7s" } as CSSProperties} x={x} y={y} width={w} height={h} />
-        </clipPath>
-      </defs>
-      <path d={layers.outline} fill="none" stroke="currentColor" className="text-muted" strokeWidth={0.8} strokeDasharray="2 2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-      <g clipPath="url(#wl-print-clip)">
-        <path d={layers.outline} fill="var(--accent-orange)" fillOpacity={0.12} stroke="var(--accent-orange)" strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-        {layers.levels.map((d, i) => (
-          <path key={i} d={d} fill="none" stroke="var(--accent-orange)" strokeOpacity={0.55} strokeWidth={0.7} vectorEffect="non-scaling-stroke" />
-        ))}
-      </g>
-    </svg>
-  );
-}
+const num = (s: string) => Number((/[\d.]+/.exec(s.replace(/,/g, "")) ?? ["0"])[0]);
 
 /** The unit cost at each volume as a falling line, its points the example's own estimates. */
 function CostLine({ rows }: { rows: { volume: string; cogs: string }[] }) {
-  const pts = rows.map((r) => ({ v: Number(r.volume.replace(/,/g, "")), c: Number((/[\d.]+/.exec(r.cogs.replace(/,/g, "")) ?? ["0"])[0]) })).filter((p) => p.v > 0 && p.c > 0);
+  const pts = rows.map((r) => ({ v: num(r.volume), c: num(r.cogs) })).filter((p) => p.v > 0 && p.c > 0);
   if (pts.length < 2) return null;
   const lx = pts.map((p) => Math.log10(p.v));
   const max = Math.max(...pts.map((p) => p.c));
-  const X = (i: number) => 4 + ((lx[i]! - lx[0]!) / Math.max(1e-6, lx[lx.length - 1]! - lx[0]!)) * 112;
-  const Y = (c: number) => 4 + (1 - c / max) * 22;
+  const X = (i: number) => 5 + ((lx[i]! - lx[0]!) / Math.max(1e-6, lx[lx.length - 1]! - lx[0]!)) * 110;
+  const Y = (c: number) => 5 + (1 - c / max) * 40;
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(p.c).toFixed(1)}`).join("");
   return (
-    <svg viewBox="0 0 120 30" className="mt-1 h-auto w-full" aria-hidden="true">
-      <path d={pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(p.c).toFixed(1)}`).join("")} fill="none" stroke="var(--accent-orange)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+    <svg viewBox="0 0 120 36" className="mt-2 h-auto w-full" aria-hidden="true">
+      <path d={`${line}L${X(pts.length - 1).toFixed(1)} 36L${X(0).toFixed(1)} 36Z`} fill="var(--accent-orange)" fillOpacity={0.12} />
+      <path d={line} fill="none" stroke="var(--accent-orange)" strokeWidth={1.8} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p, i) => (
-        <circle key={i} cx={X(i)} cy={Y(p.c)} r={1.8} fill="var(--accent-orange)" />
+        <circle key={i} cx={X(i)} cy={Y(p.c)} r={2.2} fill="var(--bg-surface, #131519)" stroke="var(--accent-orange)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" />
       ))}
     </svg>
   );
 }
 
+const FIGURE = "text-[1.75rem] font-semibold leading-none tracking-tight tabular-nums text-primary";
+
 export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFacts }) {
+  const c = HERO_STAGE.cards;
   switch (kind) {
-    case "brief":
-      return (
-        <Frame stage="01" kind="Brief" status="done">
-          <p className={`${BODY} line-clamp-3`}>{f.brief.body}</p>
-          <p className={FOOT}>{f.brief.lines} lines in the brief</p>
-        </Frame>
-      );
-    case "claim":
-      return (
-        <Frame stage="02" kind="Claim and source" status={f.claim.status}>
-          <p className={`${BODY} line-clamp-3`}>{f.claim.title}</p>
-          <p className={FOOT}>Stated in: {f.claim.source}</p>
-        </Frame>
-      );
-    case "parts":
-      return (
-        <Frame stage="03" kind="Parts list">
-          <ul className="font-mono text-[10px] leading-[1.45] text-secondary">
-            {f.parts.rows.map((r) => (
-              <li key={r.ref} className="flex gap-1.5">
-                <span className="w-5 shrink-0 text-link">{r.ref}</span>
-                <span className="min-w-0 flex-1 truncate">{r.title}</span>
-                <span className="tabular-nums text-primary">{r.line}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1 flex items-baseline justify-between border-t border-hairline pt-1 font-mono text-[10px] text-muted">
-            <span>and {f.parts.more} more</span>
-            <span className="text-[13px] font-semibold tabular-nums text-primary">{f.parts.total}</span>
-          </p>
-        </Frame>
-      );
     case "schematic":
       return (
-        <Frame stage="03" kind="Schematic">
+        <Card name={c.schematic} foot={c.wires(f.wires)}>
           <NetWheel wheel={f.wheel} />
-          <p className={FOOT}>{f.wires} wires, checked</p>
-        </Frame>
+        </Card>
       );
-    case "model":
+    case "cost": {
+      const [first, then] = f.cost.rows;
       return (
-        <Frame stage="03" kind="3D model">
-          {f.still ? <ModelStill still={f.still} assemble className="mx-auto max-w-[156px]" /> : null}
-          <p className={FOOT}>{f.case ? `${f.case.w} × ${f.case.d} × ${f.case.h} mm` : "Enclosure"}</p>
-        </Frame>
-      );
-    case "print":
-      return (
-        <Frame stage="04" kind="Printed part" status="queued">
-          {f.layers ? <PrintedCase layers={f.layers} /> : null}
-          <p className={FOOT}>{[f.print.material, f.print.settings].filter(Boolean).join(", ")}</p>
-        </Frame>
-      );
-    case "cost":
-      return (
-        <Frame stage="05" kind="Unit cost" status={f.cost.status}>
-          <ul className="font-mono text-[10px] leading-[1.5] text-secondary">
-            {f.cost.rows.map((r, i) => (
-              <li key={r.title} className="flex items-baseline gap-1.5">
-                <span className="min-w-0 flex-1 truncate">at {r.volume}</span>
-                <span className={`tabular-nums text-primary ${i === 0 ? "text-[13px] font-semibold" : ""}`}>{r.cogs}</span>
-              </li>
-            ))}
-          </ul>
+        <Card name={c.cost} status={f.cost.status} foot={then ? c.each(then.volume) : first ? c.each(first.volume) : ""}>
+          {first && then ? (
+            <p className="text-[15px] tabular-nums text-muted">
+              <span className="sr-only">{c.from(first.volume)} </span>
+              <s className="decoration-[var(--accent-orange)] decoration-2">{first.cogs}</s> <span aria-hidden>{c.at(first.volume)}</span>
+            </p>
+          ) : null}
+          <p className={`mt-1 ${FIGURE}`}>{(then ?? first)?.cogs}</p>
           <CostLine rows={f.cost.rows} />
-        </Frame>
+        </Card>
       );
+    }
     case "ad":
       return (
-        <Frame stage="06" kind="Ad" status={f.ad.status}>
-          <p className={`${BODY} line-clamp-3 font-medium`}>&ldquo;{f.ad.text}&rdquo;</p>
-          <p className={FOOT}>1 of {f.ad.count} variants</p>
-        </Frame>
+        <Card name={c.ad} status={f.ad.status} foot={c.variants(f.ad.count)}>
+          <p className="text-[15px] font-medium leading-snug text-primary">&ldquo;{f.ad.text}&rdquo;</p>
+        </Card>
       );
-    case "channel":
+    case "listing":
       return (
-        <Frame stage="07" kind="Listing and channel" status={f.channel.status}>
-          <p className={`${BODY} font-medium`}>{f.channel.title}</p>
-          <p className="mt-0.5 flex items-baseline gap-2 font-mono text-[10px] text-muted">
-            <span className="text-[13px] font-semibold tabular-nums text-primary">{f.channel.price}</span>
-            net {f.channel.net}
-          </p>
-        </Frame>
+        <Card name={c.listing} status={f.channel.status} foot={c.net(f.channel.net)}>
+          <p className="text-[15px] leading-snug text-secondary">{f.channel.title}</p>
+          <p className={`mt-1.5 ${FIGURE}`}>{f.channel.price}</p>
+        </Card>
       );
   }
 }

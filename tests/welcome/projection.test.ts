@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { project, stillOf, toneOf } from "@/components/welcome/get/projection";
-import { netWheel, printLayers } from "@/components/welcome/get/heroArt";
+import { netWheel } from "@/components/welcome/get/heroArt";
+import { shellOutlineFor } from "@/components/welcome/get/tagShell";
+import { TAG_MM } from "@/components/welcome/scenes/film/tagShape";
 
 const box = (id: number, pos: [number, number, number], size: [number, number, number], step = 0) => ({ id, ref: `P${id}`, title: `part ${id}`, kind: "module", step, geometry: { shape: "box" as const, basis: "doc" as const, size, pos, explode: [0, 20, 0] as [number, number, number] } });
 
@@ -44,7 +46,40 @@ describe("the model as a vector drawing", () => {
   });
 });
 
-describe("the hero's netlist wheel and print layers", () => {
+describe("a shell with an outline of its own (the example's tag)", () => {
+  const shell = (size: [number, number, number]) => ({ id: 9, ref: "ENC1", title: "Tag body", kind: "enclosure", step: 0, geometry: { shape: "shell" as const, basis: "doc" as const, size, pos: [0, size[1] / 2, 0] as [number, number, number], explode: [0, 0, 0] as [number, number, number] } });
+  it("gives the tag's outline to an enclosure of the tag's size, and none to any other", () => {
+    const o = shellOutlineFor([TAG_MM.w, TAG_MM.t, TAG_MM.h])!;
+    const xs = o.outer.map((p) => p[0]);
+    const zs = o.outer.map((p) => p[1]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(TAG_MM.w, 5);
+    expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo(TAG_MM.h, 5);
+    // the strap's end is at -z, as in the example's layout: the slot is there, and the shoulders narrow that end
+    expect(Math.max(...o.lidHoles![0]!.map((p) => p[1]))).toBeLessThan(-30);
+    const narrow = o.outer.filter((p) => p[1] < -45.9).map((p) => p[0]);
+    expect(Math.max(...narrow) - Math.min(...narrow)).toBeLessThan(40);
+    expect(shellOutlineFor([80, 42, 60])).toBeUndefined();
+    expect(shellOutlineFor(undefined)).toBeUndefined();
+  });
+  it("draws the shell as its outline: a lid, a floor, a wall under each edge and the strap slot", () => {
+    const size: [number, number, number] = [TAG_MM.w, TAG_MM.t, TAG_MM.h];
+    const o = shellOutlineFor(size, true)!;
+    const s = stillOf([shell(size)], 6, (sz) => shellOutlineFor(sz, true));
+    expect(s.faces).toHaveLength(2 + o.outer.length + 1);
+    expect(s.faces.filter((f) => f.lid)).toHaveLength(2); // the lid and the slot through it
+    // the same enclosure without an outline is the six faces of its box
+    expect(stillOf([shell(size)]).faces).toHaveLength(6);
+  });
+  it("pulled apart, lifts the lid clear of every part and makes room for it", () => {
+    const size: [number, number, number] = [TAG_MM.w, TAG_MM.t, TAG_MM.h];
+    const s = stillOf([shell(size), box(1, [0, 6, 0], [20, 3, 20])], 6, (sz) => shellOutlineFor(sz, true));
+    expect(s.lift).toBeGreaterThan(0);
+    expect(s.apart[1]).toBeLessThan(s.box[1]);
+    expect(s.apart[3]).toBeGreaterThan(s.box[3]);
+  });
+});
+
+describe("the hero's netlist wheel", () => {
   const wires = [
     { from: "BT1", to: "S1", netClass: "power" as const },
     { from: "S1", to: "U1", netClass: "power" as const },
@@ -62,11 +97,5 @@ describe("the hero's netlist wheel and print layers", () => {
     // two wires between the same parts bow apart
     const twins = w.links.filter((l) => l.a === "U1" && l.b === "U2");
     expect(twins[0]!.d).not.toBe(twins[1]!.d);
-  });
-  it("draws every tenth layer of the case's real height", () => {
-    const p = printLayers([80, 42, 60], 0.2);
-    expect(p.layers).toBe(210);
-    expect(p.levels).toHaveLength(20);
-    expect(p.box[2]).toBeGreaterThan(0);
   });
 });

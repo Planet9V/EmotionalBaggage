@@ -62,12 +62,12 @@ function BomTable({ parts, sortable }: { parts: Part[]; sortable: boolean }) {
           {COLUMNS.map((k) => (
             <th key={k} scope="col" aria-sort={sort?.key === k ? (sort.down ? "descending" : "ascending") : sortable ? "none" : undefined} className={`px-3 py-0 font-normal sm:px-4 ${numeric(k) ? "text-right" : ""} ${k === "spec" ? "hidden md:table-cell" : k === "source" ? "hidden sm:table-cell" : ""}`}>
               {sortable ? (
-                <button type="button" onClick={() => setSort((s) => ({ key: k, down: s?.key === k ? !s.down : false }))} className={`inline-flex h-9 items-center gap-1 font-mono text-[11px] transition-colors duration-150 hover:text-primary ${sort?.key === k ? "text-primary" : "text-muted"}`}>
+                <button type="button" onClick={() => setSort((s) => ({ key: k, down: s?.key === k ? !s.down : false }))} className={`inline-flex h-9 items-center gap-1 text-[13px] transition-colors duration-150 hover:text-primary ${sort?.key === k ? "text-primary" : "text-muted"}`}>
                   {ENGINEERING.bom.columns[k]}
                   {sort?.key === k ? sort.down ? <ChevronDown className="h-3 w-3" aria-hidden /> : <ChevronUp className="h-3 w-3" aria-hidden /> : null}
                 </button>
               ) : (
-                <span className="inline-flex h-9 items-center font-mono text-[11px] text-muted">{ENGINEERING.bom.columns[k]}</span>
+                <span className="inline-flex h-9 items-center text-[13px] text-muted">{ENGINEERING.bom.columns[k]}</span>
               )}
             </th>
           ))}
@@ -87,9 +87,9 @@ function BomTable({ parts, sortable }: { parts: Part[]; sortable: boolean }) {
       </tbody>
       <tfoot>
         <tr>
-          <th scope="row" colSpan={3} className="px-3 py-2.5 text-right sm:hidden"><span className="font-mono text-[11px] font-normal text-muted">{ENGINEERING.bom.total}</span></th>
-          <th scope="row" colSpan={4} className="hidden px-4 py-2.5 text-right sm:table-cell md:hidden"><span className="font-mono text-[11px] font-normal text-muted">{ENGINEERING.bom.total}</span></th>
-          <th scope="row" colSpan={5} className="hidden px-4 py-2.5 text-right font-mono text-[11px] font-normal text-muted md:table-cell">{ENGINEERING.bom.total}</th>
+          <th scope="row" colSpan={3} className="px-3 py-2.5 text-right sm:hidden"><span className="text-[13px] font-normal text-muted">{ENGINEERING.bom.total}</span></th>
+          <th scope="row" colSpan={4} className="hidden px-4 py-2.5 text-right sm:table-cell md:hidden"><span className="text-[13px] font-normal text-muted">{ENGINEERING.bom.total}</span></th>
+          <th scope="row" colSpan={5} className="hidden px-4 py-2.5 text-right text-[13px] font-normal text-muted md:table-cell">{ENGINEERING.bom.total}</th>
           <td className="px-4 py-2.5 text-right font-mono text-base font-semibold tabular-nums text-primary">{money(sumLine(parts))}</td>
         </tr>
       </tfoot>
@@ -143,7 +143,7 @@ export function Engineering({ parts: partItems, wires, enclosure }: { parts: Ite
         ))}
       </div>
 
-        <p className="hidden shrink-0 items-center gap-2 border-l border-hairline px-4 font-mono text-[11px] text-muted lg:flex">
+        <p className="hidden shrink-0 items-center gap-2 border-l border-hairline px-4 text-[13px] text-muted lg:flex">
           <span className="h-1.5 w-1.5 rounded-full bg-dutchOrange" aria-hidden />
           {ENGINEERING.badge}
         </p>
@@ -155,7 +155,7 @@ export function Engineering({ parts: partItems, wires, enclosure }: { parts: Ite
         {tab === "bom" ? (
           <>
             <StageBar path="/s/design/bom">
-              <p className="font-mono text-[11px] text-muted">{ENGINEERING.bom.sort}</p>
+              <p className="text-[13px] text-muted">{ENGINEERING.bom.sort}</p>
             </StageBar>
             <StageView className="overflow-auto" tabIndex={0} label={ENGINEERING.bom.caption}>
               <BomTable parts={parts} sortable />

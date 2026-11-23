@@ -272,16 +272,16 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
   };
 
   return (
-    <section ref={section} id="origin" aria-labelledby="origin-title" className={`scroll-mt-4 ${bare ? "" : "border-b border-hairline py-9 sm:py-11"} ${className}`}>
+    <section ref={section} id="origin" aria-labelledby="origin-title" className={`scroll-mt-4 ${bare ? "" : "border-b border-hairline py-10 sm:py-14"} ${className}`}>
       <div className={bare ? "" : "mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8"}>
         <div className="grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <p className="mb-2 font-mono text-xs text-link">{ORIGIN.eyebrow}</p>
-            <h2 id="origin-title" className="text-2xl font-semibold leading-tight tracking-tight text-primary sm:text-[1.75rem]">
+            <p className="mb-2.5 text-[13px] font-medium text-link">{ORIGIN.eyebrow}</p>
+            <h2 id="origin-title" className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.02em] text-primary sm:text-[2.125rem]">
               {ORIGIN.title}
             </h2>
           </div>
-          <div className="order-last max-w-[68ch] text-[15px] leading-relaxed text-secondary sm:text-base lg:order-none lg:col-span-8">
+          <div className="order-last max-w-[64ch] text-base leading-relaxed text-secondary sm:text-[17px] lg:order-none lg:col-span-8">
             {ORIGIN.body.map((p) => (
               <p key={p} className="mb-2">
                 {p}
@@ -293,7 +293,7 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
           {/* the stage: its own colours, whatever the page's theme */}
           <div className="dark lg:col-span-12">
             <p className="sr-only">{ORIGIN.stageLabel}</p>
-            <div ref={frame} id="origin-stage" data-film={film ? "film" : "stills"} className="sc-stage relative mx-auto aspect-[4/3] w-full max-w-[1040px] scroll-mt-6 overflow-hidden rounded-xl bg-black ring-1 ring-hairline sm:aspect-video">
+            <div ref={frame} id="origin-stage" data-film={film ? "film" : "stills"} className="sc-stage relative mx-auto aspect-[4/3] w-full max-w-[1040px] scroll-mt-6 overflow-hidden rounded-2xl bg-black shadow-plate ring-1 ring-hairline sm:aspect-video">
               <Still scene={scene.id} n={cut.idx + 1} />
               {film ? (
                 <div className={`absolute inset-0 motion-safe:transition-opacity motion-safe:duration-500 ${ready ? "opacity-100" : "opacity-0"}`}>
@@ -353,7 +353,7 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
           {/* said plainly beside the sound control: the voices are synthetic; and the introduction in words. Outside the
               stage's dark scope, so it takes the page's own colours. */}
           <div className="-mt-3 lg:col-span-12">
-            <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-start gap-x-4 gap-y-1 text-xs text-secondary">
+            <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-start gap-x-4 gap-y-1 text-[13px] text-secondary">
               <p>{SOUND.synthetic}</p>
               <details className="min-w-0">
                 <summary className="cursor-pointer text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">{SOUND.transcript}</summary>

@@ -509,7 +509,7 @@ describe("N1: only real static paths pass the proxy without a session", () => {
     expect(await page("/api/../admin", demo)).toBe(signIn("/admin"));
     expect(await page("/%2e%2e/admin", demo)).toBe(signIn("/admin"));
     expect(await page("/admin", "c2r2.session_token=a.b; __Secure-c2r2.session_token=a.b")).toBe(signIn("/admin"));
-    for (const p of ["/l/abc", "/welcome", "/landing/og.jpg", "/vendor/occt/occt-import-js.wasm"]) expect(await page(p, demo), p).toBeNull();
+    for (const p of ["/l/abc", "/welcome", "/landing/og.png", "/vendor/occt/occt-import-js.wasm"]) expect(await page(p, demo), p).toBeNull();
     expect(await page("/", demo)).toBe(`${BASE}/welcome`);
   });
 });
