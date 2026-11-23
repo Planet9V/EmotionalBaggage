@@ -3,6 +3,7 @@
 // While the new sign-in is off nobody is the platform administrator: it is first turned on from inside the
 // container (`node scripts/sign-in.mjs on`); after that the platform administrator turns it off or on here.
 import { AUTH2_SETTING, auth2Enabled, override, readAuth2Setting, resolveAddresses } from "@/lib/auth2/config";
+import { readRules, type AccountRules } from "@/lib/auth2/rules";
 import { ownerPool, ready } from "@/lib/db";
 
 /** What the platform administrator reads of Admin, Sign-in. */
@@ -17,6 +18,8 @@ export type SignInStatus = {
     warnings: string[];
     mail: boolean;
   };
+  /** The account rules of 23 Nov (src/lib/auth2/rules.ts): invitations, the lock, passwords, sign-up, notifications. */
+  rules: AccountRules;
   /** Said plainly on the screen (slice 3 scopes concepts per workspace). */
   sharedConcepts: string;
 };
@@ -42,6 +45,7 @@ export async function signInStatus(viewer: { platformAdmin: boolean }): Promise<
     on,
     switchFrom: override() === null ? "database" : "environment",
     sharedConcepts: SHARED_CONCEPTS,
+    rules: await readRules(db),
     detail: {
       baseURL: config.baseURL,
       trustedOrigins: config.trustedOrigins.filter((o) => !config.baseURL || o !== new URL(config.baseURL).origin),

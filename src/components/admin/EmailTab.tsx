@@ -14,7 +14,8 @@ import { Panel } from "@/components/ui/panel";
 import { LoadError, LoadingBlocks, SaveError, SavedNote, useFlag } from "@/components/ui/states";
 import { messageOf } from "@/lib/queries";
 import { mailSettings } from "@/lib/admin/schemas";
-import { useAdminAccess, useAdminSettings, useConnectionTest, useSaveSettings, type MailSettings } from "@/lib/admin/client";
+import { useAdminAccess, useAdminSettings, useConnectionTest, useSaveSettings, useSignInStatus, type MailSettings } from "@/lib/admin/client";
+import { NotifyPanel } from "./AccountRulesPanel";
 import { CredentialsTab } from "./CredentialsTab";
 import { TestOutcome } from "./shared";
 
@@ -52,8 +53,17 @@ export function EmailTab() {
           <TestMessage defaultTo={saved.fromAddress} />
         </>
       ) : null}
+      <SignupNotify mail={saved.mode === "smtp"} />
     </div>
   );
+}
+
+/** The address sign-up requests are announced to; it is one of the sign-in's settings (Admin, Sign-in route). */
+function SignupNotify({ mail }: { mail: boolean }) {
+  const status = useSignInStatus();
+  const admin = useAdminAccess().platformAdmin;
+  if (!status.data || !("rules" in status.data)) return null;
+  return <NotifyPanel to={status.data.rules.notifySignupRequestsTo} mail={mail} canWrite={admin} />;
 }
 
 function ServerForm({ saved }: { saved: MailSettings }) {

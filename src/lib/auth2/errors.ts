@@ -56,6 +56,19 @@ const SENTENCES: Record<string, string> = {
   RESET_LIMIT: "This person's two-step sign-in has been reset as often today as it may be. Try again tomorrow, or ask a platform administrator.",
   REENROL_PROOF_REQUIRED: "Your two-step sign-in was reset. Use the link we emailed you, or the code from whoever reset it.",
   REENROL_INVALID: "That address, password and code or link do not match. Check them, or ask for a new reset.",
+  SIGN_UP_CLOSED: "Accounts are made by invitation on this installation. Ask for one below, or use the link in your invitation.",
+  SIGN_IN_LOCKED: "Too many failed sign-ins for this address, so it is locked for now. To get in at once, choose a new password with \"Forgotten your password?\", or ask an administrator to unlock it.",
+  PASSWORD_CHANGE_REQUIRED: "An administrator set this password. Choose a password of your own to sign in.",
+  PASSWORD_CHANGE_NOT_REQUIRED: "This account's password does not have to be changed. Sign in as usual.",
+  STEP_UP_REQUIRED: "Enter your own password to confirm this change.",
+  STEP_UP_WRONG: "That is not your password. It counts as a failed sign-in.",
+  NOT_YOURSELF: "You cannot do this to your own account. Another platform administrator can.",
+  VIEW_AS_NOT_ALLOWED: "While viewing as someone, their password, address, two-step sign-in and sessions cannot be changed. Use Stop in the banner to go back to your own account.",
+  VIEW_AS_ADMIN: "You cannot view as another platform administrator.",
+  VIEW_AS_INVITED: "This person has not chosen a password yet, so there is nothing of theirs to see.",
+  INVITATION_ACCEPTED: "This invitation has been accepted: the account is in use.",
+  INVITATION_REVOKED: "This invitation was revoked. Ask the administrator for a new one.",
+  USE_RESET_LINK: "Mail is set up: ask for a reset link instead.",
   SIGN_IN_WAIT: "Too many tries for this account in a short time. Wait a minute, then try again.",
   ACCOUNT_DISABLED: "This account has been disabled by an administrator of this installation.",
   NOT_PLATFORM_ADMIN: "Only a platform administrator may do this.",
@@ -80,6 +93,9 @@ const SENTENCES: Record<string, string> = {
 /** The sentence for an answer that was not ok. */
 export function plainError(status: number, body: unknown): string {
   const code = body && typeof body === "object" && typeof (body as { code?: unknown }).code === "string" ? (body as { code: string }).code : "";
+  // The password rules are the administrator's setting: the server's own sentence names the rule broken.
+  const message = body && typeof body === "object" ? (body as { message?: unknown }).message : undefined;
+  if (code === "PASSWORD_RULE" && typeof message === "string" && message) return message;
   if (code && SENTENCES[code]) return SENTENCES[code];
   if (status === 429) return "Too many tries in a short time. Wait a minute, then try again.";
   if (status === 403) return "This request was refused. Reload the page and try again.";

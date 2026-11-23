@@ -1,4 +1,4 @@
-import { currentActor } from "./actor";
+import { currentActor, currentViewer } from "./actor";
 import { join } from "node:path";
 import { runner } from "node-pg-migrate";
 import { Pool, type PoolClient } from "pg";
@@ -368,7 +368,13 @@ const detailOf = (data: unknown) =>
   JSON.stringify(data && typeof data === "object" && !Array.isArray(data) ? data : data === undefined ? {} : { value: data });
 
 type AuditEntry = { action: string; summary: string; detail?: unknown; projectId?: string; projectName?: string; actor?: string };
-const auditArgs = (e: AuditEntry) => [e.actor ?? currentActor(), e.projectId ?? "", e.projectName ?? "", e.action, e.summary, detailOf(e.detail)];
+/** The actor of a line; while an administrator views as someone, both names ("admin as person"). */
+function actorOf(e: AuditEntry): string {
+  const a = e.actor ?? currentActor();
+  const v = currentViewer();
+  return v && a !== v && !a.startsWith(`${v} as `) ? `${v} as ${a}` : a;
+}
+const auditArgs = (e: AuditEntry) => [actorOf(e), e.projectId ?? "", e.projectName ?? "", e.action, e.summary, detailOf(e.detail)];
 
 /**
  * Writes one line to the install-wide audit log. Use it directly for work that belongs to no concept

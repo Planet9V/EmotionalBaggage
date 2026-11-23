@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { currentMailSender } from "@/lib/auth2/mail";
+import { readRules } from "@/lib/auth2/rules";
 import { membersView } from "@/lib/auth2/workspaces/view";
 import { ownerPool } from "@/lib/db";
 import { requireWorkspace } from "../gate";
@@ -11,5 +12,5 @@ export const metadata: Metadata = { title: "Workspace members · Concept to Real
 export default async function WorkspacePage() {
   const { user, active } = await requireWorkspace("/auth/workspace");
   const view = await membersView(ownerPool(), user, active);
-  return <MembersScreen view={view} mail={(await currentMailSender()) !== null} />;
+  return <MembersScreen view={view} mail={(await currentMailSender()) !== null} days={(await readRules(ownerPool())).inviteExpiryDays} />;
 }

@@ -75,13 +75,13 @@ describe("B2: signing up an address before its owner does", () => {
   it("the owner's later sign-up replaces the attacker's password and name, and only the new link works", async () => {
     const victim = email("victim");
     const attacker = browser(route);
-    const first = await attacker.post<{ token: null; user: Record<string, unknown> }>("/sign-up/email", { name: "Attacker", email: victim, password: "attacker password" });
+    const first = await attacker.post<{ token: null; user: Record<string, unknown> }>("/sign-up/email", { name: "Attacker", email: victim, password: "Attacker password 4!" });
     expect(first.status).toBe(200);
     const oldLink = lastMail("confirm-email", victim).token;
 
     const owner = browser(route);
     const before = sent.length;
-    const again = await owner.post<{ token: null; user: Record<string, unknown> }>("/sign-up/email", { name: "Victim", email: victim, password: "victim password" });
+    const again = await owner.post<{ token: null; user: Record<string, unknown> }>("/sign-up/email", { name: "Victim", email: victim, password: "Victim password 3!" });
     // The same answer as a new sign-up: status, shape, and no session.
     expect(again.status).toBe(200);
     expect(Object.keys(again.body).sort()).toEqual(Object.keys(first.body).sort());
@@ -95,8 +95,8 @@ describe("B2: signing up an address before its owner does", () => {
 
     expect((await owner.get(`/verify-email?token=${encodeURIComponent(oldLink)}`)).status).toBe(401);
     expect((await owner.get(`/verify-email?token=${encodeURIComponent(newLink)}`)).status).toBe(200);
-    expect((await browser(route).post("/sign-in/email", { email: victim, password: "attacker password" })).status).toBe(401);
-    expect((await browser(route).post("/sign-in/email", { email: victim, password: "victim password" })).status).toBe(200);
+    expect((await browser(route).post("/sign-in/email", { email: victim, password: "Attacker password 4!" })).status).toBe(401);
+    expect((await browser(route).post("/sign-in/email", { email: victim, password: "Victim password 3!" })).status).toBe(200);
     const u = await db.query<{ name: string }>('SELECT name FROM "user" WHERE email=$1', [victim]);
     expect(u.rows[0].name).toBe("Victim");
   });
@@ -104,13 +104,13 @@ describe("B2: signing up an address before its owner does", () => {
   it("a sign-up for a confirmed address answers the same and changes nothing", async () => {
     const a = await newAccount(route, "settled");
     const before = sent.length;
-    const res = await browser(route).post<{ token: null }>("/sign-up/email", { name: "Someone else", email: a.email, password: "other password 1" });
+    const res = await browser(route).post<{ token: null }>("/sign-up/email", { name: "Someone else", email: a.email, password: "Other password 1!" });
     expect(res.status).toBe(200);
     expect(res.body.token).toBeNull();
     await new Promise((r) => setTimeout(r, 1500));
     expect(sent.length).toBe(before);
     expect((await browser(route).post("/sign-in/email", { email: a.email, password: PASSWORD })).status).toBe(200);
-    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "other password 1" })).status).toBe(401);
+    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "Other password 1!" })).status).toBe(401);
   });
 });
 
@@ -190,7 +190,7 @@ describe("F2: audit lines name the account, not the request", () => {
     const a = await newAccount(route, "audited");
     const count = async () => (await db.query("SELECT 1 FROM audit_log WHERE actor=$1 AND action='account.signed_up'", [a.email])).rowCount;
     expect(await count()).toBe(1);
-    await browser(route).post("/sign-up/email", { name: "Mallory", email: a.email, password: "other password 1" });
+    await browser(route).post("/sign-up/email", { name: "Mallory", email: a.email, password: "Other password 1!" });
     await new Promise((r) => setTimeout(r, 300));
     expect(await count()).toBe(1);
   });

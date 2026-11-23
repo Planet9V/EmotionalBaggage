@@ -17,6 +17,7 @@ import { LoadError, LoadingBlocks, SaveError } from "@/components/ui/states";
 import { messageOf } from "@/lib/queries";
 import { useAdminAccess, useSaveSignIn, useSignInStatus } from "@/lib/admin/client";
 import type { SignInStatus } from "@/lib/admin/signIn";
+import { AccountRulesPanel } from "./AccountRulesPanel";
 
 const SWITCH_COMMAND = "docker compose exec web node scripts/sign-in.mjs on";
 
@@ -55,6 +56,7 @@ export function SignInTab() {
         </div>
       </Panel>
       {s ? <Details detail={s.detail} canWrite={admin} /> : on ? <p className="text-sm text-secondary">The addresses are shown to the platform administrator only.</p> : null}
+      {s ? <AccountRulesPanel rules={s.rules} canWrite={admin} /> : null}
     </div>
   );
 }

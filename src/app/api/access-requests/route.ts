@@ -6,6 +6,7 @@ import { auditRefusedRequest } from "@/lib/accessRequests/store";
 import { claimEarlyAccess } from "@/lib/accessRequests/places";
 import { forgetCachedPlaces } from "@/lib/accessRequests/publicCount";
 import { sendEarlyAccessConfirmation } from "@/lib/accessRequests/confirmMail";
+import { notifySignupRequest } from "@/lib/accessRequests/notify";
 import { backToPage, errorCode, isFormPost, readEither } from "@/lib/accessRequests/noScript";
 import { recordServerEvent } from "@/lib/events/store";
 
@@ -58,7 +59,11 @@ export const POST = route.open(
       // counted in the funnel here, not by the page, so a form sent without script is counted too
       await recordServerEvent(req, { event: "form_submit", section: fields.placement, visit: v.visit, detail: { placement: fields.placement || "page", outcome: claim.outcome.kind, script: !plain } });
       // after the answer is decided; a slow or absent mail server never holds it up
-      if (claim.outcome.kind !== "listed") void sendEarlyAccessConfirmation(fields.email, claim.outcome);
+      if (claim.outcome.kind !== "listed") {
+        void sendEarlyAccessConfirmation(fields.email, claim.outcome);
+        // The owner hears of every new request (owner's ruling of 23 Nov); a repeat is not announced again.
+        void notifySignupRequest({ kind: fields.placement === "signup" ? "account" : "early-access", ...fields, outcome: claim.outcome.kind === "place" ? "an early-access place" : "the waiting list" });
+      }
       if (plain) return backToPage(req, claim.token ? { token: claim.token } : { query: { r: "listed" } });
       return NextResponse.json(answer(claim.outcome, claim.token), { status: claim.outcome.kind === "listed" ? 200 : 201, headers: { "cache-control": "no-store" } });
     } catch (e) {

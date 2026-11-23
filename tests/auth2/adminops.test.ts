@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Pool } from "pg";
 import { adminOps } from "@/lib/auth2/adminOps";
 import { requirePlatformAdmin, NotPlatformAdmin } from "@/lib/auth2/platformAdmin";
-import { addMember, auditOf, authenticatorCode, browser, cleanUp, email, newAccount, PASSWORD, sent, useAuth2 } from "./helpers";
+import { addMember, auditOf, authenticatorCode, browser, cleanUp, email, newAccount, PASSWORD, sent, useAuth2, waitForMail } from "./helpers";
 
 let db: Pool;
 let route: Awaited<ReturnType<typeof useAuth2>>["route"];
@@ -21,10 +21,14 @@ afterAll(async () => {
   delete process.env.AUTH2;
 });
 
+/** Mail from the operations goes where the sign-in instance's goes in these tests: the captured list. */
+const capture = async () => ({ send: async (m: (typeof sent)[number]) => void sent.push(m) });
+
 async function anAdmin(tag: string) {
   const a = await newAccount(route, tag);
   await db.query('UPDATE "user" SET "platformAdmin" = true WHERE id = $1', [a.userId]);
-  return { ...a, ops: adminOps({ db, auth, actorId: a.userId, baseURL: BASE }) };
+  // Each administrator confirms changes to other administrators with their own password (step-up).
+  return { ...a, ops: adminOps({ db, auth, actorId: a.userId, baseURL: BASE, stepUp: PASSWORD, mailer: capture }), bare: adminOps({ db, auth, actorId: a.userId, baseURL: BASE, mailer: capture }) };
 }
 const signIn = (who: string, password = PASSWORD) => browser(route).post<{ code?: string; twoFactorRedirect?: boolean }>("/sign-in/email", { email: who, password });
 const sessions = async (userId: string) => (await db.query('SELECT 1 FROM "session" WHERE "userId" = $1', [userId])).rowCount;
@@ -53,18 +57,22 @@ describe("accounts", () => {
   it("creates an account with a password (can sign in) or without one, confirmed or not; lists it with its state", async () => {
     const adm = await anAdmin("ops-create");
     const withPw = email("made-pw");
-    const { id } = await adm.ops.createUser({ email: withPw, name: "Made Pw", password: "made password 1", confirmed: true });
-    expect((await signIn(withPw, "made password 1")).status).toBe(200);
+    const { id } = await adm.ops.createUser({ email: withPw, name: "Made Pw", password: "Made password 1!", confirmed: true });
+    // A temporary password: no session until the person chooses their own (owner's ruling of 23 Nov).
+    const first = await signIn(withPw, "Made password 1!");
+    expect([first.status, first.body.code]).toEqual([403, "PASSWORD_CHANGE_REQUIRED"]);
+    expect((await browser(route).post("/account/first-password", { email: withPw, password: "Made password 1!", newPassword: "My own password 2!" })).status).toBe(200);
+    expect((await signIn(withPw, "My own password 2!")).status).toBe(200);
     const without = email("made-nopw");
     const r2 = await adm.ops.createUser({ email: without, name: "No Pw" });
     expect((await signIn(without, "anything at all")).status).toBe(401);
     await expect(adm.ops.createUser({ email: withPw, name: "Again" })).rejects.toMatchObject({ body: { code: "USER_EXISTS" } });
-    const list = await adm.ops.listUsers();
+    const list = (await adm.ops.listUsers()).users;
     expect(list.find((u) => u.id === id)).toMatchObject({ confirmed: true, platformAdmin: false, disabled: false, workspaces: 1 });
     expect(list.find((u) => u.id === r2.id)?.confirmed).toBe(false);
     const line = (await auditOf(db, adm.email)).find((l) => l.action === "platform.user_created");
     expect(line?.summary).toContain(withPw);
-    expect(JSON.stringify(await db.query("SELECT * FROM audit_log WHERE actor = $1", [adm.email]))).not.toContain("made password 1");
+    expect(JSON.stringify(await db.query("SELECT * FROM audit_log WHERE actor = $1", [adm.email]))).not.toContain("Made password 1!");
   });
 
   it("confirms an address without sending mail", async () => {
@@ -79,15 +87,21 @@ describe("accounts", () => {
     expect((await signIn(who)).status).toBe(200);
   });
 
-  it("sets a password and ends that account's sessions", async () => {
+  it("sets a temporary password, ends that account's sessions, and the person must change it before a session starts", async () => {
     const adm = await anAdmin("ops-pw");
     const t = await newAccount(route, "ops-pw-target");
     expect(await sessions(t.userId)).toBe(1);
-    await adm.ops.setPassword(t.userId, "brand new password");
+    await adm.ops.setPassword(t.userId, "Brand new password 1!");
     expect(await sessions(t.userId)).toBe(0);
     expect((await signIn(t.email)).status).toBe(401);
-    expect((await signIn(t.email, "brand new password")).status).toBe(200);
-    await expect(adm.ops.setPassword(t.userId, "short")).rejects.toMatchObject({ body: { code: "PASSWORD_TOO_SHORT" } });
+    expect((await signIn(t.email, "Brand new password 1!")).body.code).toBe("PASSWORD_CHANGE_REQUIRED");
+    expect(await sessions(t.userId)).toBe(0);
+    // the same temporary password again is refused; a wrong one counts as a failed sign-in
+    expect((await browser(route).post("/account/first-password", { email: t.email, password: "Brand new password 1!", newPassword: "Brand new password 1!" })).body.code).toBe("PASSWORD_RULE");
+    expect((await browser(route).post("/account/first-password", { email: t.email, password: "not it", newPassword: "Mine at last 3!" })).status).toBe(401);
+    expect((await browser(route).post("/account/first-password", { email: t.email, password: "Brand new password 1!", newPassword: "Mine at last 3!" })).status).toBe(200);
+    expect((await signIn(t.email, "Mine at last 3!")).status).toBe(200);
+    await expect(adm.ops.setPassword(t.userId, "short")).rejects.toMatchObject({ body: { code: "PASSWORD_RULE" } });
   });
 
   it("requires, resets and turns off two-factor", async () => {
@@ -128,8 +142,12 @@ describe("the last platform administrator", () => {
     await db.query('UPDATE "user" SET "platformAdmin" = false');
     const adm = await anAdmin("ops-last");
     await expect(adm.ops.setPlatformAdmin(adm.userId, false)).rejects.toMatchObject({ body: { code: "LAST_PLATFORM_ADMIN" } });
-    await expect(adm.ops.setDisabled(adm.userId, true)).rejects.toMatchObject({ body: { code: "LAST_PLATFORM_ADMIN" } });
-    await expect(adm.ops.deleteUser(adm.userId, { deleteWorkspaces: true })).rejects.toMatchObject({ body: { code: "LAST_PLATFORM_ADMIN" } });
+    // and nobody may disable or delete themselves, the last one least of all (owner's rule of 23 Nov)
+    await expect(adm.ops.setDisabled(adm.userId, true)).rejects.toMatchObject({ body: { code: "NOT_YOURSELF" } });
+    await expect(adm.ops.deleteUser(adm.userId, { deleteWorkspaces: true })).rejects.toMatchObject({ body: { code: "NOT_YOURSELF" } });
+    // nor be left owing a proof after a reset of their two-step sign-in
+    await expect(adm.ops.resetTwoFactor(adm.userId)).rejects.toMatchObject({ body: { code: "LAST_PLATFORM_ADMIN" } });
+
     expect((await flags(adm.userId)).platformAdmin).toBe(true);
   });
 
@@ -147,7 +165,7 @@ describe("the last platform administrator", () => {
     const t = await newAccount(route, "ops-grant-target");
     await a.ops.setPlatformAdmin(t.userId, true);
     const tOps = adminOps({ db, auth, actorId: t.userId, baseURL: BASE });
-    expect(Array.isArray(await tOps.listUsers())).toBe(true);
+    expect(Array.isArray((await tOps.listUsers()).users)).toBe(true);
     expect((await auditOf(db, a.email)).map((l) => l.action)).toContain("platform.admin_granted");
   });
 });
@@ -250,7 +268,7 @@ describe("F7: the actor is checked again inside the transaction", () => {
     try {
       await hold.query("BEGIN");
       await hold.query('SELECT 1 FROM "user" WHERE id = $1 FOR UPDATE', [c0.userId]);
-      const pending = c0.ops.setPassword(t.userId, "stale new password").then(() => "ok", (e: { body?: { code?: string } }) => e.body?.code);
+      const pending = c0.ops.setPassword(t.userId, "Stale new password 1!").then(() => "ok", (e: { body?: { code?: string } }) => e.body?.code);
       await new Promise((r) => setTimeout(r, 400));
       await hold.query('UPDATE "user" SET "disabledAt" = now() WHERE id = $1', [c0.userId]);
       await hold.query("COMMIT");
@@ -288,3 +306,71 @@ describe("N14: no password reset for a disabled account", () => {
   });
 });
 
+
+describe("users tab operations (owner's ruling of 23 Nov)", () => {
+  it("step-up: a change to another administrator, or making one, needs the actor's own password; a wrong one counts as a failed sign-in", async () => {
+    const a = await anAdmin("su-a");
+    const b = await anAdmin("su-b");
+    const plain = await newAccount(route, "su-plain");
+    await expect(a.bare.setDisabled(b.userId, true)).rejects.toMatchObject({ body: { code: "STEP_UP_REQUIRED" } });
+    await expect(a.bare.setPlatformAdmin(plain.userId, true)).rejects.toMatchObject({ body: { code: "STEP_UP_REQUIRED" } });
+    const wrong = adminOps({ db, auth, actorId: a.userId, baseURL: BASE, stepUp: "not my password" });
+    await expect(wrong.updateName(b.userId, "Renamed")).rejects.toMatchObject({ body: { code: "STEP_UP_WRONG" } });
+    const w = await db.query<{ failures: number }>("SELECT failures FROM auth2_sign_in_waits WHERE client = '' AND name_key = $1", [(await import("@/lib/auth2/signInWait")).nameKey(a.email)]);
+    expect(w.rows[0]?.failures).toBe(1);
+    // no step-up for an ordinary account or for oneself
+    await a.bare.updateName(plain.userId, "Plain Renamed");
+    await a.bare.updateName(a.userId, "Myself");
+    await a.ops.setDisabled(b.userId, true);
+    expect((await flags(b.userId)).disabledAt).not.toBeNull();
+  });
+
+  it("list: search, role and state filters, paging, and the states shown", async () => {
+    const adm = await anAdmin("ul-admin");
+    const tag = `ul${Date.now().toString(36)}`;
+    const one = await adm.ops.createUser({ email: email(`${tag}-inv`), name: `${tag} Invited`, invite: true });
+    const two = await adm.ops.createUser({ email: email(`${tag}-tmp`), name: `${tag} Temp`, password: "Temporary pass 1!", confirmed: true });
+    await adm.ops.setDisabled(two.id, true);
+    const found = await adm.ops.listUsers({ q: tag });
+    expect(found.total).toBe(2);
+    expect(found.users.find((u) => u.id === one.id)).toMatchObject({ state: "invited", hasPassword: false, invitation: { status: "pending" } });
+    expect(found.users.find((u) => u.id === two.id)).toMatchObject({ state: "disabled", mustChangePassword: true, hasPassword: true });
+    expect((await adm.ops.listUsers({ q: tag, state: "invited" })).users.map((u) => u.id)).toEqual([one.id]);
+    expect((await adm.ops.listUsers({ q: tag, state: "disabled" })).users.map((u) => u.id)).toEqual([two.id]);
+    expect((await adm.ops.listUsers({ q: tag, role: "admin" })).total).toBe(0);
+    const p1 = await adm.ops.listUsers({ q: tag, pageSize: 1, page: 1 });
+    const p2 = await adm.ops.listUsers({ q: tag, pageSize: 1, page: 2 });
+    expect([p1.users.length, p2.users.length, p1.users[0]!.id === p2.users[0]!.id]).toEqual([1, 1, false]);
+    // LIKE wildcards in the search are taken literally
+    expect((await adm.ops.listUsers({ q: "%" })).total).toBe(0);
+  });
+
+  it("edit name and email: audited with before and after; a new address must be confirmed unless marked; sessions end", async () => {
+    const adm = await anAdmin("ue-admin");
+    const t = await newAccount(route, "ue-target");
+    await adm.ops.updateName(t.userId, "New Name");
+    const to = email("ue-new");
+    const before = sent.length;
+    expect(await adm.ops.changeEmail(t.userId, to)).toEqual({ confirmationSent: true });
+    expect(sent.slice(before).some((m) => m.to === to && /^Confirm your email address/.test(m.subject))).toBe(true);
+    expect(await sessions(t.userId)).toBe(0);
+    expect((await flags(t.userId)).emailVerified).toBe(false);
+    const to2 = email("ue-new2");
+    await adm.ops.changeEmail(t.userId, to2, { markVerified: true });
+    expect((await flags(t.userId)).emailVerified).toBe(true);
+    expect((await signIn(to2)).status).toBe(200);
+    const lines = await auditOf(db, adm.email);
+    expect(lines.find((l) => l.action === "platform.user_renamed")?.summary).toContain('to "New Name"');
+    expect(lines.filter((l) => l.action === "platform.email_changed").map((l) => l.summary).join(" ")).toContain(to2);
+  });
+
+  it("end all sessions, require two-step at next sign-in, and a reset link by email", async () => {
+    const adm = await anAdmin("us-admin");
+    const t = await newAccount(route, "us-target");
+    expect(await adm.ops.endAllSessions(t.userId)).toEqual({ ended: 1 });
+    await adm.ops.setTwoFactorRequired(t.userId, true);
+    expect((await flags(t.userId)).twoFactorRequired).toBe(true);
+    expect(await adm.ops.sendResetLink(t.userId)).toEqual({ sent: true });
+    await waitForMail("reset-password", t.email, 1);
+  });
+});
