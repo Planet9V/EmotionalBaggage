@@ -2126,6 +2126,994 @@
         "title": "Enclosure print: about 75 g of PETG, about $1.50 of filament (estimate)"
       },
       "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): about 37 g of PETG with the purge and 6.3 g of TPU, about $1.00 of filament (estimate, not sliced)."
+    },
+    {
+      "op": "add",
+      "proposal": "D103",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell to the off switch",
+      "body": "",
+      "data": {
+        "from": "BT1",
+        "fromPin": "+",
+        "to": "S1",
+        "toPin": "2",
+        "net": "CELL",
+        "netClass": "power",
+        "order": 1
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D104",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Off switch to the reverse-cell MOSFET",
+      "body": "",
+      "data": {
+        "from": "S1",
+        "fromPin": "1",
+        "to": "Q1",
+        "toPin": "D",
+        "net": "CELL_SW",
+        "netClass": "power",
+        "order": 2
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D105",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Reverse-cell MOSFET to the cell rail",
+      "body": "",
+      "data": {
+        "from": "Q1",
+        "fromPin": "S",
+        "to": "U1",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 3
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D106",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Reverse-cell MOSFET gate to ground",
+      "body": "",
+      "data": {
+        "from": "Q1",
+        "fromPin": "G",
+        "to": "BT1",
+        "toPin": "-",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 4
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D107",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Controller ground",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "GND",
+        "to": "BT1",
+        "toPin": "-",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 5
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D108",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "U2",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 6
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D109",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the motion sensor's I/O supply",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "VDD",
+        "to": "U2",
+        "toPin": "VDDIO",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 7
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D110",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Motion sensor ground",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 8
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D111",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the flash",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "U3",
+        "toPin": "VCC",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 9
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D112",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Flash ground",
+      "body": "",
+      "data": {
+        "from": "U3",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 10
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D113",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail capacitor C1",
+      "body": "",
+      "data": {
+        "from": "C1",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 11
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D114",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "C1 to ground",
+      "body": "",
+      "data": {
+        "from": "C1",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 12
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D115",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail capacitor C2",
+      "body": "",
+      "data": {
+        "from": "C2",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 13
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D116",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "C2 to ground",
+      "body": "",
+      "data": {
+        "from": "C2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 14
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D117",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI clock to the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "IMU_SCK",
+        "to": "U2",
+        "toPin": "SPC",
+        "net": "IMU_SCK",
+        "netClass": "signal",
+        "order": 15
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D118",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data out to the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "IMU_MOSI",
+        "to": "U2",
+        "toPin": "SDI",
+        "net": "IMU_MOSI",
+        "netClass": "signal",
+        "order": 16
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D119",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data in from the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "SDO",
+        "to": "U1",
+        "toPin": "IMU_MISO",
+        "net": "IMU_MISO",
+        "netClass": "signal",
+        "order": 17
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D120",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI clock to the flash",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "FLASH_SCK",
+        "to": "U3",
+        "toPin": "SCLK",
+        "net": "FLASH_SCK",
+        "netClass": "signal",
+        "order": 18
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D121",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data out to the flash",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "FLASH_MOSI",
+        "to": "U3",
+        "toPin": "SI",
+        "net": "FLASH_MOSI",
+        "netClass": "signal",
+        "order": 19
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D122",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data in from the flash",
+      "body": "",
+      "data": {
+        "from": "U3",
+        "fromPin": "SO",
+        "to": "U1",
+        "toPin": "FLASH_MISO",
+        "net": "FLASH_MISO",
+        "netClass": "signal",
+        "order": 20
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D123",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Motion sensor select",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "IMU_CS",
+        "to": "U2",
+        "toPin": "CS",
+        "net": "IMU_CS",
+        "netClass": "signal",
+        "order": 21
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D124",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Flash select",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "FLASH_CS",
+        "to": "U3",
+        "toPin": "CS",
+        "net": "FLASH_CS",
+        "netClass": "signal",
+        "order": 22
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D125",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Wake-up interrupt",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "INT1",
+        "to": "U1",
+        "toPin": "IMU_INT1",
+        "net": "IMU_INT1",
+        "netClass": "signal",
+        "order": 23
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D126",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "FIFO interrupt",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "INT2",
+        "to": "U1",
+        "toPin": "IMU_INT2",
+        "net": "IMU_INT2",
+        "netClass": "signal",
+        "order": 24
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D127",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the charge switch",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "Q2",
+        "toPin": "S",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 25
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D128",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Charge switch to the charge resistor",
+      "body": "",
+      "data": {
+        "from": "Q2",
+        "fromPin": "D",
+        "to": "R1",
+        "toPin": "1",
+        "net": "VCHG",
+        "netClass": "power",
+        "order": 26
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D129",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Charge switch gate",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "CHG_EN",
+        "to": "Q2",
+        "toPin": "G",
+        "net": "CHG_EN",
+        "netClass": "signal",
+        "order": 27
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D130",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Charge resistor to the supercapacitor",
+      "body": "",
+      "data": {
+        "from": "R1",
+        "fromPin": "2",
+        "to": "SC1",
+        "toPin": "+",
+        "net": "V_SC",
+        "netClass": "power",
+        "order": 28
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D131",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Supercapacitor ground",
+      "body": "",
+      "data": {
+        "from": "SC1",
+        "fromPin": "-",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 29
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D132",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Supercapacitor to the boost input",
+      "body": "",
+      "data": {
+        "from": "SC1",
+        "fromPin": "+",
+        "to": "U5",
+        "toPin": "VIN",
+        "net": "V_SC",
+        "netClass": "power",
+        "order": 30
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D133",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost ground",
+      "body": "",
+      "data": {
+        "from": "U5",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 31
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D134",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost enable",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "BOOST_EN",
+        "to": "U5",
+        "toPin": "EN",
+        "net": "BOOST_EN",
+        "netClass": "signal",
+        "order": 32
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D135",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost enable to its pull-down",
+      "body": "",
+      "data": {
+        "from": "U5",
+        "fromPin": "EN",
+        "to": "R6",
+        "toPin": "1",
+        "net": "BOOST_EN",
+        "netClass": "signal",
+        "order": 33
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D136",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost pull-down to ground",
+      "body": "",
+      "data": {
+        "from": "R6",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 34
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D137",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost output to the amplifier",
+      "body": "",
+      "data": {
+        "from": "U5",
+        "fromPin": "VOUT",
+        "to": "U4",
+        "toPin": "VDD",
+        "net": "3V3A",
+        "netClass": "power",
+        "order": 35
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D138",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Amplifier ground",
+      "body": "",
+      "data": {
+        "from": "U4",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 36
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D139",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "I2S bit clock",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "I2S_SCK",
+        "to": "U4",
+        "toPin": "BCLK",
+        "net": "I2S_BCLK",
+        "netClass": "signal",
+        "order": 37
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D140",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "I2S word select",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "I2S_LRCK",
+        "to": "U4",
+        "toPin": "LRCLK",
+        "net": "I2S_LRCK",
+        "netClass": "signal",
+        "order": 38
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D141",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "I2S data",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "I2S_SDOUT",
+        "to": "U4",
+        "toPin": "DIN",
+        "net": "I2S_DIN",
+        "netClass": "signal",
+        "order": 39
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D142",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Amplifier enable",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "AMP_SD",
+        "to": "U4",
+        "toPin": "SD_MODE",
+        "net": "AMP_SD",
+        "netClass": "signal",
+        "order": 40
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D143",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Speaker lead +",
+      "body": "",
+      "data": {
+        "from": "U4",
+        "fromPin": "OUTP",
+        "to": "SPK1",
+        "toPin": "+",
+        "net": "SPK_P",
+        "netClass": "audio",
+        "order": 41
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D144",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Speaker lead -",
+      "body": "",
+      "data": {
+        "from": "U4",
+        "fromPin": "OUTN",
+        "to": "SPK1",
+        "toPin": "-",
+        "net": "SPK_N",
+        "netClass": "audio",
+        "order": 42
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D145",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense, upper",
+      "body": "",
+      "data": {
+        "from": "SC1",
+        "fromPin": "+",
+        "to": "R2",
+        "toPin": "1",
+        "net": "V_SC",
+        "netClass": "power",
+        "order": 43
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D146",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense midpoint",
+      "body": "",
+      "data": {
+        "from": "R2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "ADC_VSC",
+        "net": "V_SC_SENSE",
+        "netClass": "signal",
+        "order": 44
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D147",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense, lower",
+      "body": "",
+      "data": {
+        "from": "R3",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "ADC_VSC",
+        "net": "V_SC_SENSE",
+        "netClass": "signal",
+        "order": 45
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D148",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense lower to ground",
+      "body": "",
+      "data": {
+        "from": "R3",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 46
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D149",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense, upper",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "R4",
+        "toPin": "1",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 47
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D150",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense midpoint",
+      "body": "",
+      "data": {
+        "from": "R4",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "ADC_VCELL",
+        "net": "V_CELL_SENSE",
+        "netClass": "signal",
+        "order": 48
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D151",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense, lower",
+      "body": "",
+      "data": {
+        "from": "R5",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "ADC_VCELL",
+        "net": "V_CELL_SENSE",
+        "netClass": "signal",
+        "order": 49
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D152",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense lower to ground",
+      "body": "",
+      "data": {
+        "from": "R5",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 50
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D153",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Mode button to the controller",
+      "body": "",
+      "data": {
+        "from": "S2",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "MODE",
+        "net": "MODE",
+        "netClass": "signal",
+        "order": 51
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D154",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Mode button to ground",
+      "body": "",
+      "data": {
+        "from": "S2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 52
+      },
+      "status": "to solder"
     }
   ]
 }

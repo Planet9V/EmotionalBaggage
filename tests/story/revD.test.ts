@@ -142,3 +142,35 @@ describe("the Rev D batch, in a database", () => {
     await q(`DELETE FROM events WHERE project_id='${P}' AND kind='seed.content' AND data->>'batch'='2099-03-01'`);
   });
 });
+
+describe("the Rev D batch: schematic", () => {
+  const items = after.map((r, i) => ({ id: i + 1, projectId: "baggage-claims", sort: i, ...r }));
+  const parts = items.filter((r) => r.section === "design/bom");
+  const wires = items.filter((r) => r.section === "design/wiring");
+
+  it("passes the app's electrical checks with no error and no warning", async () => {
+    const { buildCircuit } = await import("@/lib/parts/circuit");
+    const { checkCircuit } = await import("@/lib/parts/erc");
+    const findings = checkCircuit(buildCircuit(parts, wires, []), {});
+    expect(findings.filter((f) => f.severity !== "info").map((f) => `${f.rule}: ${f.text}`)).toEqual([]);
+    // no part with pins is left out of the circuit
+    expect(findings.filter((f) => f.rule === "idle-part").map((f) => f.refs[0])).toEqual([]);
+  });
+
+  it("makes the nets of the Rev D note: the cell rail, the capacitor, the boosted rail and one ground", async () => {
+    const { buildCircuit } = await import("@/lib/parts/circuit");
+    const c = buildCircuit(parts, wires, []);
+    const net = (ref: string, pin: string) => c.netOf.get(`${ref}\u0000${pin}`);
+    expect(net("U1", "VDD")?.name).toBe("VCELL");
+    expect(net("SC1", "+")?.name).toBe("V_SC");
+    expect(net("U5", "VIN")).toBe(net("SC1", "+"));
+    expect(net("U4", "VDD")?.name).toBe("3V3A");
+    // the cell never drives the speaker: the amplifier's rail is not the cell rail
+    expect(net("U4", "VDD")).not.toBe(net("U1", "VDD"));
+    const grounds = new Set(["U1", "U2", "U3", "U4", "U5", "SC1", "BT1"].map((r) => net(r, r === "SC1" || r === "BT1" ? "-" : "GND")));
+    expect(grounds.size).toBe(1);
+    // every wire lands on a part of the Rev D design
+    const refs = new Set(parts.map((p) => String(p.data.ref)));
+    for (const w of wires) expect(refs.has(String(w.data.from)) && refs.has(String(w.data.to)), w.title).toBe(true);
+  });
+});

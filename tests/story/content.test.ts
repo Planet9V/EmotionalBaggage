@@ -212,7 +212,10 @@ describe("the content batches, in a database", () => {
       CONTENT_BATCHES.slice(CONTENT_BATCHES.findIndex((b) => b.rows.includes(r)) + 1).some((b) =>
         b.rows.some((x) => x.op === "retire" && x.section === r.section && (x.match.ref !== undefined ? r.op === "add" && x.match.ref === r.data.ref : x.match.title === (r.op === "add" ? r.title : ""))),
       );
-    for (const r of allAdds) expect(await count(`AND section='${r.section}' AND title=$$${r.title}$$`), r.proposal).toBe(retiredLater(r) ? 0 : 1);
+    // (a later batch may add a row of the same title in its place: the Rev D wiring reuses five wire names)
+    const addedLater = (r: (typeof allAdds)[number]) =>
+      CONTENT_BATCHES.slice(CONTENT_BATCHES.findIndex((b) => b.rows.includes(r)) + 1).some((b) => b.rows.some((x) => x.op === "add" && x.section === r.section && x.title === (r.op === "add" ? r.title : "")));
+    for (const r of allAdds) expect(await count(`AND section='${r.section}' AND title=$$${r.title}$$`), r.proposal).toBe(retiredLater(r) && !addedLater(r) ? 0 : 1);
     // the rulings: a decided row holds the owner's words, and the row it decides has the status and the option
     for (const r of rulings.rows) {
       if (r.op !== "add" && r.op !== "enrich") continue;
