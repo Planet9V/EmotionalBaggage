@@ -186,7 +186,7 @@ export function HeroStage({ idea, facts }: { idea: string; facts: HeroFacts }) {
         {ARTEFACT_KEYS.map((k, i) => (
           <div
             key={k}
-            className={`min-h-[168px] transition-[opacity,transform] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${PLACE[i]} ${i < shown ? "translate-y-0 scale-100 opacity-100 duration-500" : "translate-y-1.5 scale-[0.985] opacity-25 duration-300"}`}
+            className={`min-h-[168px] transition-[opacity,transform] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${PLACE[i]} ${i < shown ? "translate-y-0 scale-100 opacity-100 duration-500" : "translate-y-3 scale-[0.97] opacity-0 duration-300"}`}
           >
             <Artefact kind={k} facts={facts} />
           </div>
