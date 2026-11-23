@@ -21,6 +21,10 @@ const enriches = batch.rows.filter((r) => r.op === "enrich");
 const rulings = CONTENT_BATCHES[1];
 /** the engineering batch of 22 Nov (the 2 x AA design): the first to retire rows, link rows and set a status */
 const eng = CONTENT_BATCHES[2];
+/** the Rev D batch of 22 Nov (the slim tag the owner approved at 19:00): its rows come from the Rev D documents */
+const revD = CONTENT_BATCHES[3];
+/** batches whose rows come from a design document in the repository, not from the review sheet */
+const fromDesign = (b: ContentBatch) => b === eng || b === revD;
 const allRows = CONTENT_BATCHES.flatMap((b) => b.rows);
 const allAdds = allRows.filter((r) => r.op === "add");
 const allEnriches = allRows.filter((r) => r.op === "enrich");
@@ -47,7 +51,7 @@ describe("the content batches, as data", () => {
       for (const r of CONTENT_BATCHES[n].rows) {
         expect(r.section in STORE_STATUSES, `${r.proposal} ${r.section}`).toBe(true);
         // P: a row of the review sheet; E: a row of the engineering design note
-        expect(r.proposal).toMatch(CONTENT_BATCHES[n] === eng ? /^E\d{3}$/ : /^P\d{3}$/);
+        expect(r.proposal).toMatch(CONTENT_BATCHES[n] === eng ? /^E\d{3}$/ : CONTENT_BATCHES[n] === revD ? /^D\d{3}$/ : /^P\d{3}$/);
         expect(r.sourceFile.length > 0 && r.sourceLocation.length > 0, r.proposal).toBe(true);
         const was = r.op === "enrich" || r.op === "retire" ? before.find((x) => matches(x, r)) : undefined;
         expect(() => checkContentRow(r, was), r.proposal).not.toThrow();
@@ -160,14 +164,14 @@ describe("the content batches, as data", () => {
     const manifest = JSON.parse(readFileSync(join("seed", "concepts", P, "manifest.json"), "utf8")) as { files: { file: string }[] };
     const files = new Set(manifest.files.map((f) => f.file));
     // the engineering batch names the design note in this repository, which says where each figure comes from
-    for (const r of allRows) expect(eng.rows.includes(r) ? existsSync(r.sourceFile) : files.has(r.sourceFile), `${r.proposal} ${r.sourceFile}`).toBe(true);
+    for (const b of CONTENT_BATCHES) for (const r of b.rows) expect(fromDesign(b) ? existsSync(r.sourceFile) : files.has(r.sourceFile), `${r.proposal} ${r.sourceFile}`).toBe(true);
     type Entry = { entered: boolean; batch?: string; group?: string; reason?: string; resolution?: { how: string; note: string; with?: string } };
     const map = JSON.parse(readFileSync(join("seed", "concepts", P, "content-proposal-map.json"), "utf8")) as { rows: Record<string, Entry>; added: Record<string, { batch: string }> };
     expect(Object.keys(map.rows)).toHaveLength(491);
     // every sheet row a batch entered is marked entered with its batch; rows that come from the rulings alone are under `added`
     const entered = Object.entries(map.rows).filter(([, v]) => v.entered).map(([k]) => k);
     // the engineering batch's rows (E...) come from the design note, not the sheet, so the map does not list them
-    const sheetBatches = CONTENT_BATCHES.filter((b) => b !== eng);
+    const sheetBatches = CONTENT_BATCHES.filter((b) => !fromDesign(b));
     const sheetRows = sheetBatches.flatMap((b) => b.rows);
     const fromSheet = new Set(sheetRows.map((r) => r.proposal).filter((id) => id in map.rows));
     expect(entered.sort()).toEqual([...fromSheet].sort());
@@ -186,7 +190,8 @@ describe("the content batches, as data", () => {
   });
 
   it("leave the owner's settled facts alone: no strap, no colour, no tagline, no other enclosure size", () => {
-    const text = JSON.stringify(allRows).toLowerCase();
+    // until the Rev D tag, which the owner approved with its strap, colours and lines (its own tests are below)
+    const text = JSON.stringify(CONTENT_BATCHES.filter((b) => b !== revD).flatMap((b) => b.rows)).toLowerCase();
     for (const word of ["strap", "velcro", "puck", "tagline", "colour", "90 x 68", "80 x 60 x 40"]) expect(text.includes(word), word).toBe(false);
   });
 });
@@ -322,7 +327,8 @@ describe("the content batches, in a database", () => {
 // The engineering batch of 22 Nov 2026 (the 2 x AA design): the first batch that changes parts, retires rows of the
 // seeded design and links requirements to tests and parts.
 describe("the engineering batch (the 2 x AA design)", () => {
-  const after = applyBatches(seededRows());
+  // as the engineering batch left the rows: the Rev D batch after it retires this design (tested below)
+  const after = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, 3));
   const partsNow = after.filter((r) => r.section === "design/bom");
   const part = (ref: string) => partsNow.find((r) => r.data.ref === ref);
 

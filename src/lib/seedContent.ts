@@ -9,7 +9,8 @@
 // it on the seed modules' rows, and src/lib/seedContentDb.ts uses the same functions to bring a database up to
 // date, so a fresh install, an upgraded install and the public welcome page hold the same content.
 //
-//  - "add": a new row. Nothing is added when the section already has a row of that title.
+//  - "add": a new row. Nothing is added when the section already has a row of that title, or (a part) when the
+//    parts list already has a part of that reference: a part a person kept from a retired design keeps its ref.
 //  - "enrich": an existing row keeps its text and gains what the batch lists. It is applied only while the row
 //    still reads as the seed (and the batches before this one) left it: a row a person has changed is left alone.
 //  - a ruling: a question or a decision is recorded as decided only where the owner's own words decide it.
@@ -31,6 +32,7 @@ import { STORY_STORE, storyPart } from "@/lib/story/parts";
 import batch20261122 from "../../seed/concepts/baggage-claims/content/2026-11-22.json";
 import batch20261122Rulings from "../../seed/concepts/baggage-claims/content/2026-11-22-rulings.json";
 import batchEngineering from "../../seed/concepts/baggage-claims/content/2026-11-22-engineering.json";
+import batchRevD from "../../seed/concepts/baggage-claims/content/2026-11-22-revD.json";
 
 type Provenance = { proposal: string; sourceFile: string; sourceLocation: string };
 
@@ -84,7 +86,7 @@ export type ContentRow = ContentAdd | ContentEnrich | ContentRetire | ContentLin
 export type ContentBatch = { batch: string; about: string; from?: string; rows: ContentRow[] };
 
 /** Every batch, oldest first. A new batch is a new file and a new line here. */
-export const CONTENT_BATCHES: ContentBatch[] = [batch20261122 as ContentBatch, batch20261122Rulings as ContentBatch, batchEngineering as ContentBatch];
+export const CONTENT_BATCHES: ContentBatch[] = [batch20261122 as ContentBatch, batch20261122Rulings as ContentBatch, batchEngineering as ContentBatch, batchRevD as ContentBatch];
 
 /** A row as far as a batch reads or writes it. */
 export type PlainRow = { section: string; title: string; body: string; data: Record<string, unknown>; status: string };
@@ -122,6 +124,11 @@ export function enrichedRow(was: PlainRow, r: ContentEnrich): PlainRow {
   const row: PlainRow = { ...was, body: r.setBody ?? (r.appendBody ? joined(was.body, r.appendBody) : was.body), data, status: r.decide ? "decided" : (r.setStatus ?? was.status) };
   return { ...row, data: withFlags(row) };
 }
+
+/** Whether `rows` already hold the row an "add" would make: one of that title in its section, or a part of its reference. */
+const PARTS = "design/bom";
+export const alreadyThere = (rows: Pick<PlainRow, "section" | "title" | "data">[], r: Pick<ContentAdd, "section" | "title" | "data">) =>
+  rows.some((x) => x.section === r.section && (x.title === r.title || (r.section === PARTS && typeof r.data.ref === "string" && x.data?.ref === r.data.ref)));
 
 /** Whether a row is the one an enrichment names. */
 export const matches = (row: Pick<PlainRow, "section" | "title" | "data">, r: Pick<ContentEnrich, "section" | "match">) =>
@@ -171,7 +178,7 @@ export function applyBatches(rows: PlainRow[], batches: ContentBatch[] = CONTENT
   for (const b of batches) {
     for (const r of b.rows) {
       if (r.op === "add") {
-        if (!out.some((x) => x.section === r.section && x.title === r.title)) out.push(addedRow(r));
+        if (!alreadyThere(out, r)) out.push(addedRow(r));
         continue;
       }
       if (r.op === "link") continue;

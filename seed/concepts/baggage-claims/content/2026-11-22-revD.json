@@ -1,0 +1,262 @@
+{
+  "batch": "2026-11-22-revD",
+  "from": "the Rev D slim tag (BaggageClaims_Tag_RevD_Engineering.md and _Design.md in Files)",
+  "about": "The Rev D slim leather-look tag the owner approved on 22 Nov 2026 at 19:00 (\"yes this is perfect, a perfect design\"): direction A Heritage, colourway A1 Saddle, one CR2032 with a 1 F supercapacitor, an nRF52832 on a custom board. The 2 x AA design's parts and wires are retired only while they still read as seeded; requirements and tests tied to two AA cells are brought to Rev D's figures, each an estimate where it is one. Every row names the Rev D document and section it comes from.",
+  "rows": [
+    {
+      "op": "add",
+      "proposal": "D001",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 1, what you are choosing; section 4, direction A",
+      "section": "concept/decisions",
+      "title": "Which enclosure design ships?",
+      "body": "Rev D, the slim leather-look tag, offered in three directions and two colourways each, every one 62 x 92 x 12.8 mm with the same inside and passing the same 20 of 20 checks of its own generator. Chosen: direction A, Heritage (square shoulders cut at 45 degrees, saddle stitching in the thread colour, a blind-stamped oval maker's mark, a perforated panel across the top), colourway A1, Saddle: Bambu Lab PETG HF Peanut Brown body, Bambu Lab PETG HF Cream thread and lettering, Bambu Lab TPU for AMS Black strap. Renders, the assembly and the two print plates are in Files, folder Design and build.",
+      "data": {
+        "key": "enclosure-design",
+        "parent": "enclosure",
+        "options": [
+          {
+            "id": "A1",
+            "label": "A1 Heritage, Saddle",
+            "outcome": "Tan body, cream thread, black strap: the archetype. About $1.00 of filament (estimate)."
+          },
+          {
+            "id": "A2",
+            "label": "A2 Heritage, Black",
+            "outcome": "Black body, beige thread: the business-class version."
+          },
+          {
+            "id": "B1",
+            "label": "B1 Edge, Navy",
+            "outcome": "Square-cut slab with a black TPU edge bumper; about $1.14 of filament (estimate)."
+          },
+          {
+            "id": "B2",
+            "label": "B2 Edge, Espresso",
+            "outcome": "As B1 in dark brown with beige lettering."
+          },
+          {
+            "id": "C1",
+            "label": "C1 Envelope, Oxblood",
+            "outcome": "Clipped corners and a stitched welt, inlaid name; about $1.02 of filament (estimate)."
+          },
+          {
+            "id": "C2",
+            "label": "C2 Envelope, Cognac",
+            "outcome": "As C1 in brown with beige thread."
+          }
+        ],
+        "chosen": "A1",
+        "dependsOn": [
+          "enclosure"
+        ],
+        "unlocks": [
+          "design/enclosure",
+          "prototype/printing"
+        ],
+        "source": "Rev D design, sections 1 and 4"
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, 19:00, of Rev D direction A Heritage in colourway A1 Saddle: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "add",
+      "proposal": "D002",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 0, summary; section 5, mechanical consequences",
+      "section": "concept/decisions",
+      "title": "Which form factor ships?",
+      "body": "A slim leather-look luggage tag, 62 x 92 x 12.8 mm, about 62 to 64 g with the tracker (estimate), hanging about 10 mm under the handle on a TPU strap, with a pocket for an AirTag-style tracker behind a bayonet door and a name card in the back. It replaces the 80 x 60 x 42 mm box and the 2 x AA design (Rev B, and Rev C's box): about a third of the box's volume and 30 % of its thickness. The tracker's 8.0 mm sets the thickness.",
+      "data": {
+        "key": "form-factor",
+        "parent": "enclosure",
+        "options": [
+          {
+            "id": "box-2xaa",
+            "label": "80 x 60 x 42 mm box on two AA cells (Rev B, Rev C)",
+            "outcome": "About 80 dB at 1 m and about 6 months on a pair of cells; a large object dangling from the handle."
+          },
+          {
+            "id": "slim-tag",
+            "label": "Slim tag, 62 x 92 x 12.8 mm, on one CR2032 (Rev D)",
+            "outcome": "About 70 dB at 1 m and about 9 months on a cell (estimates); a custom circuit board replaces the breakout boards."
+          }
+        ],
+        "chosen": "slim-tag",
+        "dependsOn": [],
+        "unlocks": [
+          "design/bom",
+          "design/enclosure"
+        ],
+        "source": "Rev D engineering, sections 0 and 5; Rev D design, section 2"
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, in his direction for Rev D: \"more like a leather-looking, high-quality baggage tag ... change the double-A batteries to a watch battery to make it smaller ... We cannot have a large dangling object. It must have a pocket to fit an AirTag and be a little larger\"; and at 19:00, of the Rev D tag: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "add",
+      "proposal": "D003",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 1, name and tagline",
+      "section": "concept/decisions",
+      "title": "Which lines go on the tag?",
+      "body": "As rendered and approved with the design: on the front, BAGGAGE CLAIMS / MK1 in the stamp and the tagline \"Your luggage finally talks back.\" (the launch video script's line under the title card, 0:06); on the tracker door in the back, \"FRAGILE — and emotionally unstable.\" (the owner's line, word for word). Lettering Montserrat Bold, an open-licence placeholder until a brand kit exists. No third-party name or logo anywhere.",
+      "data": {
+        "key": "tag-lines",
+        "parent": "enclosure-design",
+        "options": [
+          {
+            "id": "talks-back",
+            "label": "Front: \"Your luggage finally talks back.\"; back: \"FRAGILE — and emotionally unstable.\"",
+            "outcome": "As on the Rev D renders."
+          },
+          {
+            "id": "name-only",
+            "label": "The name and MK1 only",
+            "outcome": "No tagline on the tag."
+          }
+        ],
+        "chosen": "talks-back",
+        "dependsOn": [
+          "enclosure-design"
+        ],
+        "unlocks": [
+          "marketing/brand"
+        ],
+        "source": "Rev D design, section 1, name and tagline"
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, 19:00, of Rev D as rendered, with these lines on it: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "add",
+      "proposal": "D004",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules; section 2.1, options compared",
+      "section": "concept/decisions",
+      "title": "Which cell powers the tag?",
+      "body": "One CR2032 lithium coin cell with a 1 F, 2.7 V supercapacitor that carries the speaker's bursts: the cell never drives the speaker; it refills the capacitor at up to 2.6 mA through 470 ohm, inside its 3 mA continuous rating, and the capacitor gives the 1 W peaks through a boost converter. 0.07 g of lithium metal, under the 0.3 g under which a device may stay on in checked baggage. No port, no charger; the user changes one CR2032 about every nine months (estimate).",
+      "data": {
+        "key": "power",
+        "parent": "form-factor",
+        "options": [
+          {
+            "id": "2xaa",
+            "label": "Two AA alkaline cells, 3.3 V boost (Rev B)",
+            "outcome": "Not lithium; needs a 2 x 46 mm battery bay and the 20 mm deep speaker: the box."
+          },
+          {
+            "id": "cr2032",
+            "label": "One CR2032 straight to the amplifier",
+            "outcome": "About 53 dB at 1 m: inaudible in a terminal."
+          },
+          {
+            "id": "cr2032-supercap",
+            "label": "One CR2032 and a 1 F supercapacitor buffer",
+            "outcome": "About 70 dB at 1 m, about 9 months (estimates); 0.07 g lithium."
+          },
+          {
+            "id": "cr2450-supercap",
+            "label": "One CR2450 and the same buffer",
+            "outcome": "About 26 months, about 0.19 g lithium (estimate); the 24.5 mm cell does not fit beside the speaker without a wider tag."
+          },
+          {
+            "id": "lir2450",
+            "label": "LIR2450 rechargeable and USB-C",
+            "outcome": "0.43 Wh; a charging port in the face, a charger and a protection chip, and no louder."
+          },
+          {
+            "id": "lipo",
+            "label": "Flat 150 mAh LiPo and USB-C",
+            "outcome": "0.56 Wh; a pouch cell in a bag that is thrown and crushed."
+          }
+        ],
+        "chosen": "cr2032-supercap",
+        "dependsOn": [
+          "form-factor"
+        ],
+        "unlocks": [
+          "design/bom",
+          "design/wiring"
+        ],
+        "source": "Rev D engineering, sections 1 and 2",
+        "note": "The airline rules, as read on 22 Nov 2026 (Rev D engineering, section 1). IATA Dangerous Goods Regulations, 66th edition, Table 2.3.A (https://www.iata.org/contentassets/6fea26dd84d24b26a7a1fd5788561d6e/dgr-66-en-2.3.a.pdf): baggage with installed lithium batteries may go as checked baggage only if the batteries \"contain no more than 0.3 g lithium metal or for lithium ion must not exceed 2.7 Wh\"; portable electronic devices: \"Devices in checked baggage must be completely switched off and must be protected from damage\". IATA Guidance Document for Passengers Travelling with Lithium Batteries 2026 (https://www.iata.org/contentassets/6fea26dd84d24b26a7a1fd5788561d6e/passengers_travelling_with_lithium_batteries.pdf): in checked baggage \"the device must be completely switched off (not in sleep or hibernation mode)\", with a footnote exempting devices of 0.3 g or less of lithium metal, or 2.7 Wh or less. FAA PackSafe, Baggage Equipped with Lithium Batteries (https://www.faa.gov/hazmat/packsafe/baggage-with-lithium-batteries): \"lithium content not exceeding 0.3 grams\" or \"a Watt-hour rating not exceeding 2.7 Wh\"; \"If you choose to equip a checked bag with a baggage tracking device, then it must meet the size limits above\"; \"Check with the airline before traveling with these devices\". FAA PackSafe, Portable Electronic Devices Containing Batteries (https://www.faa.gov/hazmat/packsafe/portable-electronic-devices-with-batteries): devices in checked bags \"must be completely powered off and protected to prevent unintentional activation or damage\"; spare lithium batteries \"are always prohibited in checked baggage\". FAA PackSafe, Lithium Batteries (https://www.faa.gov/hazmat/packsafe/lithium-batteries): lithium metal \"limited to 2 grams of lithium content per battery\". The CR2032's 0.07 g: the Duracell CR2032 sheet (https://www.duracell.com/wp-content/uploads/2021/06/CR2032CH_225mAh.pdf). The IATA documents were read through a web reader. Still to watch: airlines may set stricter rules, and no rule names a device that talks."
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, in his direction for Rev D: \"change the double-A batteries to a watch battery to make it smaller\"; and at 19:00, of Rev D with its CR2032 and supercapacitor: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D005",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3, one construction for all three directions",
+      "section": "concept/decisions",
+      "match": {
+        "title": "Which enclosure build?"
+      },
+      "appendList": {
+        "options": [
+          {
+            "id": "rev-d-tag",
+            "label": "Rev D slim tag: one two-colour PETG print and a TPU strap",
+            "outcome": "Body, back plate, tracker door and coin door in one PETG job, the strap in TPU; no screws, no glue, no paint, about 15 minutes to assemble."
+          }
+        ]
+      },
+      "appendBody": "Decided on 22 Nov 2026 with the Rev D tag: the three Rev A builds are superseded by Rev D's one construction (Decisions, \"Which form factor ships?\" and \"Which enclosure design ships?\").",
+      "decide": {
+        "ruling": "Owner, 22 Nov 2026, 19:00, of the Rev D tag: \"yes this is perfect, a perfect design\".",
+        "on": "2026-11-22",
+        "chosen": "rev-d-tag"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D006",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, options compared",
+      "section": "concept/questions",
+      "match": {
+        "title": "Batteries: two AA alkaline cells"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): one CR2032 coin cell with a 1 F supercapacitor buffer (Decisions, \"Which cell powers the tag?\")."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D007",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected",
+      "section": "concept/questions",
+      "match": {
+        "title": "Motion sensor: the Adafruit MPU6050 breakout"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): an LSM6DSO-class sensor on the tag's own circuit board; the breakout is a third of the tag's inside and needs more than a coin cell gives. The owner's MPU-6050 stays the reference on the bench: the detection logic does not depend on the chip."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D008",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, what follows for this product",
+      "section": "concept/questions",
+      "match": {
+        "title": "In the hold: it performs, and an off switch exists"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): Rev D runs on a CR2032, which is lithium: 0.07 g of lithium metal, under the 0.3 g under which IATA and the FAA let a device stay on in checked baggage. The off switch stays."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D009",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 2, size",
+      "section": "concept/questions",
+      "match": {
+        "title": "Enclosure: 80 x 60 x 42 mm, a tag on the handle"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): a slim tag of 62 x 92 x 12.8 mm, still with the name card and the tracker pocket (Decisions, \"Which form factor ships?\")."
+    }
+  ]
+}
