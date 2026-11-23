@@ -19,7 +19,8 @@ import type { NetClassName } from "../get/heroArt";
 export type V3 = [number, number, number];
 /** How a part is drawn (product/build.ts): its geometry and its material. */
 type PartLook = "shell" | "plate" | "trackerDoor" | "coinDoor" | "strap" | "board" | "cell" | "supercap" | "speaker" | "gasket" | "tracker" | "switch" | "button" | "spring" | "chip" | "passive";
-type PartGroup = "enclosure" | "board" | "power" | "audio" | "controls";
+export type PartGroup = "enclosure" | "board" | "power" | "audio" | "controls";
+export const PART_GROUPS: PartGroup[] = ["enclosure", "board", "power", "audio", "controls"];
 
 
 export type PartBody = { shape: "box" | "cylinder" | "design"; /** box: x, y, z; cylinder: diameter, length */ size: number[]; axis: "x" | "y" | "z"; at: V3 };

@@ -341,7 +341,7 @@ export const GET_VIEWS = {
     counts: (shaped: number, parts: number, wires: number, steps: number) => `${shaped} of ${parts} parts with a shape, ${wires} wires, ${steps} assembly steps`,
     hint: "Build-sheet order: base, board, each soldering step, integration.",
   },
-  views: { model: "3D model", schematic: "Schematic" },
+  views: { product: "The product", model: "3D model", schematic: "Schematic" },
   /** the example as a product: every angle, every part, drawn live from its parts list and its schematic */
   product: {
     path: "/s/design/model",
