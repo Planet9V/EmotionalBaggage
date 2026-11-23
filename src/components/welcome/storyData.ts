@@ -12,6 +12,7 @@ import type { PartGeometry } from "@/components/three/layout";
 import { stillOf, type Still } from "./get/projection";
 import { shellOutlineFor } from "./get/tagShell";
 import { productOf, type Product } from "./product/model";
+import { printedOf, type Printed } from "./product/printed";
 import { netWheel, type Wheel } from "./get/heroArt";
 import { checkProof, type ProofRow, type ProofState } from "@/lib/market/proof";
 import { positioningLine } from "@/lib/market/positioning";
@@ -241,9 +242,10 @@ function origin(): { sentences: string[]; idea: string } {
 /** What each stage holds in the workbench: its sections, by the names the menu gives them (src/lib/menu.ts). */
 const holds = (): Record<string, string[]> => Object.fromEntries(STAGES.map((s) => [String(s.n).padStart(2, "0"), [...new Set(s.sections.map((x) => x.label))]]));
 
-export type StoryData = { product: Product; hero: HeroFacts; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
+export type StoryData = { product: Product; printed: Printed | null; hero: HeroFacts; market: MarketData; origin: { sentences: string[]; idea: string }; holds: Record<string, string[]>; get: GetData };
 
 export function storyData(d: ExampleData): StoryData {
   const g = get(d);
-  return { product: productOf(d.parts, d.wires), hero: hero(d), market: market(d), origin: origin(), holds: holds(), get: g };
+  const product = productOf(d.parts, d.wires);
+  return { product, printed: printedOf(d.enclosureRow, product, d.printing), hero: hero(d), market: market(d), origin: origin(), holds: holds(), get: g };
 }

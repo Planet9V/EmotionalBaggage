@@ -7,9 +7,9 @@
 // Make it is open, with its own no-script stills, and the Sell it views are set out under it.
 import { useState } from "react";
 import type { Item } from "@/lib/types";
-import type { ExampleEnclosure } from "./exampleData";
 import type { MarketData } from "./storyData";
 import type { Product } from "./product/model";
+import type { Printed } from "./product/printed";
 import { Engineering } from "./Engineering";
 import { Market, MarketNoScript } from "./Market";
 import { ENGINEERING, MARKET, PROOF } from "./content";
@@ -20,7 +20,7 @@ const GROUPS = Object.keys(PROOF.groups) as Group[];
 const TEXT = "mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8";
 const WIDE = "mx-auto w-full max-w-[90rem] px-2 sm:px-6 lg:px-8";
 
-export function Showcase({ parts, wires, enclosure, market, product }: { parts: Item[]; wires: Item[]; enclosure: ExampleEnclosure | null; market: MarketData; product: Product }) {
+export function Showcase({ parts, wires, market, product, printed }: { parts: Item[]; wires: Item[]; market: MarketData; product: Product; printed: Printed | null }) {
   const [group, setGroup] = useState<Group>("make");
   return (
     <div>
@@ -43,7 +43,7 @@ export function Showcase({ parts, wires, enclosure, market, product }: { parts: 
       </div>
 
       <div className={`${WIDE} mt-5`}>
-        {group === "make" ? <Engineering parts={parts} wires={wires} enclosure={enclosure} product={product} /> : <Market data={market} />}
+        {group === "make" ? <Engineering parts={parts} wires={wires} product={product} printed={printed} /> : <Market data={market} />}
       </div>
       <div className={TEXT}>
         <p className="mt-4 max-w-[80ch] text-[13px] leading-relaxed text-muted">{group === "make" ? `${PROOF.enclosureNote} ${ENGINEERING.note}` : MARKET.note}</p>

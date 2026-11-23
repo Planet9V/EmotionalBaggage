@@ -114,6 +114,8 @@ export type ExampleData = {
   parts: Item[];
   wires: Item[];
   enclosure: ExampleEnclosure | null;
+  /** the concept's enclosure row: for the example, the design made outside the app's generators */
+  enclosureRow: Item | null;
   /** the seeded rows the journey shows */
   decisions: Item[];
   claims: Item[];
@@ -149,6 +151,7 @@ export async function exampleData(): Promise<ExampleData> {
     parts,
     wires: of(STORE.wiring),
     enclosure: await enclosure,
+    enclosureRow: of(ENCLOSURE_STORE)[0] ?? null,
     decisions: of("concept/decisions"),
     claims: of("research/claims"),
     positioning: of("marketing/positioning"),

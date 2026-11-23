@@ -40,6 +40,11 @@ type Props = {
   view: ViewDef;
   parts: LayoutPart[];
   shells: LayoutPart[];
+  /**
+   * An enclosure whose outline from above is not its box: the outline and the same one wall in, in mm about the
+   * shell's middle ([x across, z along]), by the shell's id. Drawn in the view from above in place of the box.
+   */
+  shellOutlines?: ReadonlyMap<number, { outer: readonly (readonly [number, number])[]; inner: readonly (readonly [number, number])[] }>;
   markers: Marker[];
   wall: number;
   /** y of the floor, for placing draft markers in side views */
@@ -60,7 +65,7 @@ type Props = {
 };
 
 export function ThreeView({
-  view, parts, shells, markers, wall, floor, selectedId, overlapping, snapOn, step, heightClass,
+  view, parts, shells, shellOutlines, markers, wall, floor, selectedId, overlapping, snapOn, step, heightClass,
   onSelect, onActivate, onMove, onCommit, onDropDraft, readOnly = false,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -245,7 +250,7 @@ export function ThreeView({
           onPointerCancel={(e) => endGesture(e, true)}
         >
           <Scene
-            view={view} cam={cam} size={size} parts={ordered} shells={shells} markers={markers} wall={wall} floor={floor}
+            view={view} cam={cam} size={size} parts={ordered} shells={shells} shellOutlines={shellOutlines} markers={markers} wall={wall} floor={floor}
             selectedId={selectedId} overlapping={overlapping} dragging={!!readout} readOnly={readOnly}
           />
         </svg>
@@ -275,9 +280,9 @@ export function ThreeView({
 }
 
 function Scene({
-  view, cam, size, parts, shells, markers, wall, floor, selectedId, overlapping, dragging, readOnly,
+  view, cam, size, parts, shells, shellOutlines, markers, wall, floor, selectedId, overlapping, dragging, readOnly,
 }: {
-  view: ViewDef; cam: Cam; size: { w: number; h: number }; parts: LayoutPart[]; shells: LayoutPart[]; markers: Marker[];
+  view: ViewDef; cam: Cam; size: { w: number; h: number }; parts: LayoutPart[]; shells: LayoutPart[]; shellOutlines?: Props["shellOutlines"]; markers: Marker[];
   wall: number; floor: number; selectedId: number | null; overlapping: Set<number>; dragging: boolean; readOnly: boolean;
 }) {
   const { ppm } = cam;
@@ -359,6 +364,18 @@ function Scene({
         const inner = innerBox(s.geometry, wallMm);
         const f = boxRect(view, inner);
         const showInner = wallMm > 0 && inner.max[0] > inner.min[0] && inner.max[1] > inner.min[1] && inner.max[2] > inner.min[2];
+        const own = view.omitted === 1 ? shellOutlines?.get(s.id) : undefined;
+        if (own) {
+          // seen from above, a shell with an outline of its own is drawn to it (x across, z down the view)
+          const d = (pts: readonly (readonly [number, number])[]) => `M${pts.map(([x, z]) => `${s.geometry.pos[0] + x} ${s.geometry.pos[2] + z}`).join("L")}Z`;
+          return (
+            <g key={s.id} pointerEvents="none">
+              <path d={d(own.outer)} className="fill-canvas stroke-primary" fillOpacity={0.7} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+              <path d={d(own.inner)} className="fill-none stroke-muted" strokeWidth={1} strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
+              <text x={b.x + px(4)} y={b.y + px(13)} fontSize={fs} className="fill-secondary font-mono">{s.label}</text>
+            </g>
+          );
+        }
         return (
           <g key={s.id} pointerEvents="none">
             <rect x={b.x} y={b.y} width={b.w} height={b.h} className="fill-canvas stroke-primary" fillOpacity={0.7} strokeWidth={2} vectorEffect="non-scaling-stroke" />

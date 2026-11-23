@@ -13,14 +13,15 @@
 // the foot of the stage.
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { List, RotateCw, X } from "lucide-react";
+import { List, RotateCw } from "lucide-react";
 import type { Still } from "../get/projection";
 import { Range, Segmented, Switch } from "../get/ViewControls";
 import { canDraw3d } from "./capable";
 import { filmMode, paceVerdict } from "../scenes/pace";
 import { useAnimated, useHydrated } from "../useAnimated";
 import { EXAMPLE, GET_VIEWS } from "../content";
-import { PART_GROUPS, type Product, type ProductPart } from "./model";
+import type { Product, ProductPart } from "./model";
+import { PartsPanel, tagsFor } from "./PartsPanel";
 import type { Pose } from "./ProductCanvas";
 import type { ViewerMode } from "./scene";
 import { ViewArt } from "./ViewArt";
@@ -29,8 +30,6 @@ import { VIEWS, type View } from "./views";
 const ProductCanvas = dynamic(() => import("./ProductCanvas"), { ssr: false });
 const C = GET_VIEWS.product;
 const MODES: ViewerMode[] = ["solid", "translucent", "wireframe"];
-const NET_TONE: Record<string, string> = { power: "border-[#f0a04a]/60 text-[#f6b877]", ground: "border-white/25 text-secondary", signal: "border-[#6ea8ff]/60 text-[#9cc3ff]", audio: "border-[#c5a7f5]/60 text-[#d6c1f8]" };
-const short = (title: string) => title.split(",")[0]!.replace(/\s*\(.*$/, "");
 
 
 function caption(view: View, product: Product): string {
@@ -61,80 +60,6 @@ function caption(view: View, product: Product): string {
   }
 }
 
-function Card({ part, product, onChoose, onClose }: { part: ProductPart; product: Product; onChoose: (ref: string) => void; onClose: () => void }) {
-  const title = (ref: string) => product.parts.find((p) => p.ref === ref)?.title ?? ref;
-  const row = "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 border-t border-hairline py-2 text-[13px] leading-snug";
-  return (
-    <div className="flex min-h-0 flex-1 flex-col" data-part-card={part.ref}>
-      <div className="flex items-start gap-2 border-b border-hairline px-4 py-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] text-muted">
-            <span className="font-mono font-semibold text-dutchOrange-300">{part.ref}</span> · {C.groups[part.group]}
-          </p>
-          <h4 className="mt-0.5 text-base font-semibold leading-snug text-primary">{part.title}</h4>
-        </div>
-        <button type="button" onClick={onClose} aria-label={C.all} className="-mr-2 -mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-secondary hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
-          <X className="h-4 w-4" aria-hidden />
-        </button>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-        <p className="py-3 text-[15px] leading-relaxed text-secondary">{part.does}</p>
-        <dl>
-          {part.spec ? (
-            <div className={row}>
-              <dt className="text-muted">{C.size}</dt>
-              <dd className="tabular-nums text-primary">{part.spec}</dd>
-            </div>
-          ) : null}
-          {part.qty !== null && part.qty > 1 ? (
-            <div className={row}>
-              <dt className="text-muted">{C.qty}</dt>
-              <dd className="tabular-nums text-primary">{part.qty}</dd>
-            </div>
-          ) : null}
-          {part.cost ? (
-            <div className={row}>
-              <dt className="text-muted">{C.cost}</dt>
-              <dd className="tabular-nums text-primary">
-                {part.cost}
-                {part.costAt ? <span className="text-secondary">, {part.costAt}</span> : null} <span className="text-muted">({C.costNote})</span>
-              </dd>
-            </div>
-          ) : null}
-          {part.source ? (
-            <div className={row}>
-              <dt className="text-muted">{C.source}</dt>
-              <dd className="text-primary">{part.source}</dd>
-            </div>
-          ) : null}
-        </dl>
-        <p className="mt-3 border-t border-hairline pt-3 text-[13px] font-medium text-muted">{C.joins}</p>
-        {part.nets.length === 0 ? (
-          <p className="mt-1.5 text-[13px] text-secondary">{C.noJoins}</p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {part.nets.map((n) => (
-              <li key={n.net} className="flex flex-wrap items-center gap-1.5">
-                <span className={`rounded border px-1.5 py-0.5 font-mono text-[12px] leading-none ${NET_TONE[n.netClass] ?? NET_TONE.signal}`} title={C.netClass[n.netClass]}>
-                  {n.net}
-                </span>
-                <span className="sr-only">({C.netClass[n.netClass]}) to</span>
-                {n.to.map((ref) => (
-                  <button key={ref} type="button" onClick={() => onChoose(ref)} title={title(ref)} aria-label={`${ref}, ${title(ref)}`} className="inline-flex min-h-8 items-center rounded-md border border-hairline px-2 font-mono text-[12px] text-primary hover:border-dutchOrange focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus max-md:min-h-11 max-md:px-3">
-                    {ref}
-                  </button>
-                ))}
-              </li>
-            ))}
-          </ul>
-        )}
-        {part.placed === "illustrative" ? <p className="mt-3 text-[13px] leading-snug text-muted">{C.illustrative}</p> : null}
-        {!part.body ? <p className="mt-3 text-[13px] leading-snug text-muted">{C.listOnly}</p> : null}
-      </div>
-    </div>
-  );
-}
-
 export function ProductViewer({ product, still, wires, live, seen }: { product: Product; still: Still; wires: number; /** the canvas may be mounted */ live: boolean; /** the stage is on screen */ seen: boolean }) {
   const hydrated = useHydrated();
   const animated = useAnimated();
@@ -145,7 +70,6 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
   const [turning, setTurning] = useState(true);
   const [chosen, setChosen] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
   const [sheet, setSheet] = useState(false);
   const [ready, setReady] = useState(false);
   const [sharp, setSharp] = useState(true);
@@ -154,7 +78,6 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
   const film = useMemo(() => (hydrated ? filmMode(window.location.search) : "normal"), [hydrated]);
   const canvas = live && capable && !slow && !view.render;
   const part = chosen ? product.parts.find((p) => p.ref === chosen) ?? null : null;
-  const drawn = product.parts.filter((p) => p.body);
 
   const pick = (v: View) => {
     setView(v);
@@ -177,9 +100,7 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
     else if (verdict === "stills") setSlow(true);
   };
 
-  const labels = useMemo(() => (apart > 0.6 && view.labels ? drawn.filter((p) => p.placed !== "illustrative").map((p) => ({ ref: p.ref, text: short(p.title) })) : undefined), [apart, view.labels, drawn]);
-  const q = query.trim().toLowerCase();
-  const groups = PART_GROUPS.map((g) => ({ g, parts: product.parts.filter((p) => p.group === g && (!q || `${p.ref} ${p.title}`.toLowerCase().includes(q))) })).filter((x) => x.parts.length);
+  const labels = useMemo(() => tagsFor(product, apart > 0.6 && !!view.labels, chosen), [product, apart, view.labels, chosen]);
   const joined = product.parts.filter((p) => p.nets.length).length;
   const text = caption(view, product);
 
@@ -225,7 +146,7 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
           </div>
           {hovered && hovered !== chosen ? (
             <p className="pointer-events-none absolute left-1/2 top-14 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/80 px-3 py-1 text-[13px] text-white" aria-hidden>
-              <span className="font-mono text-dutchOrange-300">{hovered}</span> {short(product.parts.find((p) => p.ref === hovered)?.title ?? "")}
+              <span className="font-mono text-dutchOrange-300">{hovered}</span> {product.parts.find((p) => p.ref === hovered)?.name ?? ""}
             </p>
           ) : null}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
@@ -243,37 +164,7 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
 
         {/* its parts: beside the picture from 768 px, a sheet over its foot on a phone */}
         <div className={`z-10 flex min-h-0 flex-col border-hairline bg-[#101216] md:static md:w-[300px] md:shrink-0 md:border-l ${part || sheet ? "absolute inset-x-0 bottom-0 max-h-[56%] rounded-t-2xl border-t shadow-[0_-18px_40px_rgba(0,0,0,0.6)] md:max-h-none md:rounded-none md:border-t-0 md:shadow-none" : "hidden md:flex"}`}>
-          {part ? (
-            <Card part={part} product={product} onChoose={choose} onClose={() => setChosen(null)} />
-          ) : (
-            <>
-              <div className="flex items-center gap-2 border-b border-hairline px-3 py-2">
-                <label className="sr-only" htmlFor="product-part-search">{C.search}</label>
-                <input id="product-part-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={C.search} className="h-9 min-w-0 flex-1 rounded-md border border-hairline bg-[#0b0c0e] px-2.5 text-[15px] text-primary placeholder:text-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus max-md:h-11" />
-                <button type="button" onClick={() => setSheet(false)} aria-label={C.close} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-secondary hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus md:hidden">
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3" data-product-parts>
-                {groups.length === 0 ? <p className="px-2 py-3 text-[13px] text-secondary">{C.none}</p> : null}
-                {groups.map(({ g, parts }) => (
-                  <div key={g}>
-                    <p className="px-2 pb-1 pt-3 text-[13px] font-medium text-muted">{C.groups[g]}</p>
-                    <ul>
-                      {parts.map((p) => (
-                        <li key={p.ref}>
-                          <button type="button" onClick={() => choose(p.ref)} onPointerEnter={() => setHovered(p.ref)} onPointerLeave={() => setHovered(null)} className="flex min-h-9 w-full items-center gap-2.5 rounded-md px-2 py-1 text-left text-[13px] leading-snug text-secondary hover:bg-white/5 hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus max-md:min-h-11">
-                            <span className="w-10 shrink-0 font-mono text-[12px] text-dutchOrange-300">{p.ref}</span>
-                            <span className="min-w-0 flex-1 truncate">{p.title}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <PartsPanel product={product} part={part} onChoose={choose} onHover={setHovered} onClose={() => setSheet(false)} searchId="product-part-search" />
         </div>
       </div>
       <p className="sr-only">{C.alt(product.parts.length, joined)} {C.counts(product.parts.length, wires)}</p>
