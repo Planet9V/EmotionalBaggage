@@ -28,7 +28,7 @@ const fromDesign = (b: ContentBatch) => b === eng || b === revD;
 const allRows = CONTENT_BATCHES.flatMap((b) => b.rows);
 const allAdds = allRows.filter((r) => r.op === "add");
 const allEnriches = allRows.filter((r) => r.op === "enrich");
-const LOWEST = ["open", "draft", "candidate", "unverified", "not run", "planned", "estimate", "to buy", "to solder"];
+const LOWEST = ["open", "draft", "candidate", "unverified", "not run", "planned", "estimate", "to buy", "to solder", "to print"];
 /** the batches up to and including the first: what the tests of the first batch's own behaviour apply */
 const FIRST = [batch];
 /** whether a later batch changes or retires the row a first-batch row adds or adds to */
@@ -207,7 +207,12 @@ describe("the content batches, in a database", () => {
     // one marker per batch (the rulings batch's was taken out above, so it is now the last one written)
     expect(m.map((e) => e.data.batch).sort()).toEqual(CONTENT_BATCHES.map((b) => b.batch).sort());
     // (the counts in the marker are checked below, where the test sets the database up itself)
-    for (const r of allAdds) expect(await count(`AND section='${r.section}' AND title=$$${r.title}$$`), r.proposal).toBe(1);
+    // every added row once, unless a later batch retired it (the Rev D batch retires the 2 x AA design's parts)
+    const retiredLater = (r: (typeof allAdds)[number]) =>
+      CONTENT_BATCHES.slice(CONTENT_BATCHES.findIndex((b) => b.rows.includes(r)) + 1).some((b) =>
+        b.rows.some((x) => x.op === "retire" && x.section === r.section && (x.match.ref !== undefined ? r.op === "add" && x.match.ref === r.data.ref : x.match.title === (r.op === "add" ? r.title : ""))),
+      );
+    for (const r of allAdds) expect(await count(`AND section='${r.section}' AND title=$$${r.title}$$`), r.proposal).toBe(retiredLater(r) ? 0 : 1);
     // the rulings: a decided row holds the owner's words, and the row it decides has the status and the option
     for (const r of rulings.rows) {
       if (r.op !== "add" && r.op !== "enrich") continue;
@@ -227,9 +232,9 @@ describe("the content batches, in a database", () => {
     // the links to the story's sources, which a batch does not know, are kept
     expect(story.data.sourceIds.length).toBeGreaterThan(0);
     const want = applyBatches(seededRows());
-    const gone = eng.rows.filter((r) => r.op === "retire");
+    const gone = later.filter((r) => r.op === "retire");
     for (const r of enriches) {
-      // a row the engineering batch retired afterwards is no longer there to compare
+      // a row a later batch retired afterwards (the engineering batch, the Rev D batch) is no longer there to compare
       if (gone.some((g) => g.section === r.section && JSON.stringify(g.match) === JSON.stringify(r.match))) continue;
       const w = want.find((x) => matches(x, r))!;
       const got = (await q<{ body: string; data: Record<string, unknown> }>(`SELECT body, data FROM items WHERE project_id='${P}' AND section=$1 AND ${named(r)}=$2`, [w.section, nameOf(r)]))[0];
@@ -368,7 +373,8 @@ describe("the engineering batch (the 2 x AA design)", () => {
 
   it("in a database: retired rows are gone with the reason in the history, and the links are written at both ends", async () => {
     await ready();
-    for (const ref of ["R1", "SD1"]) expect(await count(`AND section='design/bom' AND data->>'ref'='${ref}'`), ref).toBe(0);
+    // (the Rev D batch after it adds a resistor R1 of its own: only the Rev D rows may hold these references)
+    for (const ref of ["R1", "SD1"]) expect(await count(`AND section='design/bom' AND data->>'ref'='${ref}' AND coalesce(data->>'proposal','') NOT LIKE 'D%'`), ref).toBe(0);
     const removed = await q<{ summary: string; data: { reason: string; proposal: string; before: Record<string, unknown> } }>(`SELECT summary, data FROM events WHERE project_id='${P}' AND kind='item.removed' AND data->>'batch'=$1`, [eng.batch]);
     expect(removed).toHaveLength(eng.rows.filter((r) => r.op === "retire").length);
     expect(removed.every((e) => e.data.reason.length > 10 && e.data.before)).toBe(true);
@@ -378,26 +384,31 @@ describe("the engineering batch (the 2 x AA design)", () => {
     const test = (await q<{ data: { key: string; requirements: string[] } }>(`SELECT data FROM items WHERE project_id='${P}' AND section='prototype/tests' AND title='Off switch disconnect'`))[0];
     expect(req.data.tests).toEqual([test.data.key]);
     expect(test.data.requirements).toEqual([req.data.key]);
-    expect(req.data.parts).toEqual(["s1"]);
+    // the 2 x AA design's switch it linked was retired by the Rev D batch, and its link went with it: every part the
+    // requirement lists is a part that is there
+    const there = await q<{ key: string }>(`SELECT data->>'key' AS key FROM items WHERE project_id='${P}' AND section='design/bom' AND data->>'key' = ANY($1)`, [req.data.parts]);
+    expect(there.map((r) => r.key).sort()).toEqual([...req.data.parts].sort());
     const m = (await marker()).find((e) => e.data.batch === eng.batch)!;
     expect(m.data).toMatchObject({ retired: 7, skipped: [] });
   });
 
   it("in a database: a row a person changed is not retired; the same row as seeded is, once", async () => {
     await ready();
-    const title = "Sensor ground";
-    const retire = (name: string): ContentBatch => ({ batch: name, about: "test", from: "a test", rows: [{ op: "retire", section: "design/wiring", match: { title }, why: "a test retires it", proposal: "E998", sourceFile: "x", sourceLocation: "x" }] });
-    const row = (await q<{ id: string; body: string; data: Record<string, unknown>; status: string; sort: number }>(`SELECT id, body, data, status, sort FROM items WHERE project_id='${P}' AND section='design/wiring' AND title=$1`, [title]))[0];
+    // a row of the design as the last batch leaves it (the Rev D batch retired the 2 x AA wiring)
+    const section = "design/bom";
+    const title = "Speaker gasket and chamber foam";
+    const retire = (name: string): ContentBatch => ({ batch: name, about: "test", from: "a test", rows: [{ op: "retire", section, match: { title }, why: "a test retires it", proposal: "E998", sourceFile: "x", sourceLocation: "x" }] });
+    const row = (await q<{ id: string; body: string; data: Record<string, unknown>; status: string; sort: number }>(`SELECT id, body, data, status, sort FROM items WHERE project_id='${P}' AND section=$2 AND title=$1`, [title, section]))[0];
     await q("UPDATE items SET body='My own note.' WHERE id=$1", [row.id]);
     await seedContent(pool(), [...CONTENT_BATCHES, retire("2099-02-01")]);
-    expect(await count(`AND section='design/wiring' AND title='${title}'`)).toBe(1);
+    expect(await count(`AND section='${section}' AND title='${title}'`)).toBe(1);
     expect((await marker()).find((e) => e.data.batch === "2099-02-01")!.data.skipped).toEqual([{ proposal: "E998", why: "the row has been changed since it was seeded" }]);
     await q("UPDATE items SET body=$2 WHERE id=$1", [row.id, row.body]);
     await seedContent(pool(), [...CONTENT_BATCHES, retire("2099-02-02")]);
     await seedContent(pool(), [...CONTENT_BATCHES, retire("2099-02-02")]);
-    expect(await count(`AND section='design/wiring' AND title='${title}'`)).toBe(0);
-    // put the wire back as it was: the test database is shared with the other files
-    await q(`INSERT INTO items (project_id, section, title, body, data, status, sort) VALUES ('${P}','design/wiring',$1,$2,$3,$4,$5)`, [title, row.body, JSON.stringify(row.data), row.status, row.sort]);
+    expect(await count(`AND section='${section}' AND title='${title}'`)).toBe(0);
+    // put the row back as it was: the test database is shared with the other files
+    await q(`INSERT INTO items (project_id, section, title, body, data, status, sort) VALUES ('${P}',$6,$1,$2,$3,$4,$5)`, [title, row.body, JSON.stringify(row.data), row.status, row.sort, section]);
     await q(`DELETE FROM events WHERE project_id='${P}' AND kind='seed.content' AND data->>'batch' LIKE '2099-02-%'`);
   });
 });

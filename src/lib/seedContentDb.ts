@@ -31,7 +31,7 @@ const COLS = "id, project_id, section, title, body, data, status, sort";
 type Row = { id: string; project_id: string; section: string; title: string; body: string; data: Record<string, unknown>; status: string; sort: number };
 
 /** Statuses a batch may give a new row: the ones that claim nothing has been done, checked or approved. */
-const LOWEST = new Set(["open", "draft", "candidate", "unverified", "not run", "planned", "estimate", "to check", "queued", "to buy", "to solder"]);
+const LOWEST = new Set(["open", "draft", "candidate", "unverified", "not run", "planned", "estimate", "to check", "queued", "to buy", "to solder", "to print"]);
 
 /**
  * Throws when a batch row would not be accepted from a person typing it in the app. `was` is the row an
@@ -74,6 +74,16 @@ export function checkContentRow(r: ContentRow, was?: PlainRow): PlainRow {
   // a claim's status does not change and its evidence is not touched
   assertClaimChange({ section: was.section, status: was.status, data: was.data }, r.setStatus !== undefined ? { status: r.setStatus } : {});
   return { ...row, data };
+}
+
+/**
+ * A print job names the file it prints by its name in Files (`fileName`); the file's id differs per database, so it
+ * is looked up here. A job whose file is not in Files is entered without one, as a person would enter it.
+ */
+async function withStoredFile(c: PoolClient, id: string, row: PlainRow): Promise<PlainRow> {
+  if (row.section !== "prototype/printing" || typeof row.data.fileName !== "string" || row.data.fileId !== undefined) return row;
+  const f = (await c.query<{ id: string }>("SELECT (data->>'fileId')::bigint AS id FROM items WHERE project_id=$1 AND section='concept/files' AND title=$2 AND data ? 'fileId' ORDER BY id LIMIT 1", [id, row.data.fileName])).rows[0];
+  return f?.id ? { ...row, data: { ...row.data, fileId: Number(f.id) } } : row;
 }
 
 const done = async (q: Pool | PoolClient, id: string) => new Set((await q.query<{ batch: string }>("SELECT data->>'batch' AS batch FROM events WHERE project_id=$1 AND kind=$2", [id, EVENT])).rows.map((r) => r.batch));
@@ -124,7 +134,12 @@ async function applyBatch(c: PoolClient, id: string, b: ContentBatch, expected: 
         skipped.push({ proposal: r.proposal, why: "a row of that title is already there" });
         continue;
       }
-      const row = checkContentRow(r);
+      // a part a person kept from a retired design still holds its reference: two parts may not share one
+      if (r.section === "design/bom" && typeof r.data.ref === "string" && (await c.query("SELECT 1 FROM items WHERE project_id=$1 AND section=$2 AND data->>'ref'=$3 LIMIT 1", [id, r.section, r.data.ref])).rowCount) {
+        skipped.push({ proposal: r.proposal, why: "a part of that reference is already there" });
+        continue;
+      }
+      const row = await withStoredFile(c, id, checkContentRow(r));
       const res = await c.query<Row>(
         `INSERT INTO items (project_id, section, title, body, data, status, sort)
          VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort),0)+1 FROM items WHERE project_id=$1)) RETURNING ${COLS}`,
