@@ -3114,6 +3114,625 @@
         "order": 52
       },
       "status": "to solder"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D155",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 2.4, current budget",
+      "section": "design/requirements",
+      "match": {
+        "title": "Power"
+      },
+      "setBody": "One CR2032 lithium coin cell (the owner's \"watch battery\", 22 Nov 2026) with a 1 F, 2.7 V supercapacitor that carries the speaker's bursts. The cell runs the controller, the motion sensor and the flash directly (2.0 to 3.2 V) and refills the capacitor through 470 ohm at up to 2.6 mA, inside its 3 mA continuous rating; a boost converter, enabled only for a clip, raises the capacitor to 3.3 V for the amplifier. Asleep: about 12.5 uA at the cell (22.5 uA while the capacitor is kept full, the first 2 h after motion); awake about 0.74 mA. These are estimates from recalled data-sheet figures, not measured. The 2 x AA design (two AA cells and a 3.3 V boost for everything, about 0.25 mA asleep) is superseded.",
+      "setData": {
+        "response": "Sleep with the RAM kept; wake on the motion sensor's interrupt or the button"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D156",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget and battery life",
+      "section": "design/requirements",
+      "match": {
+        "title": "Battery life"
+      },
+      "setBody": "Estimate, for the 2 x AA design's travel day (3 h awake, six clips of 3 s, 21 h asleep): about 3.0 mAh a travel day and 0.30 mAh a day at home switched on. With 180 mAh usable from a CR2032 down to 2.0 V, allowing for cold (225 mAh nominal on the maker's sheet): about 9 months at four travel days a month, about 6 at eight, about 20 switched on and never moved, and about 4 if the carousel keeps it awake 8 h more each travel day. The cell's self-discharge is not counted. The motion sensor's awake current is three quarters of the budget; keeping the gyro off until the accelerometer sees handling would take the four-day figure over a year (estimate). The 2 x AA design's figure was about 6 months."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D157",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, loudness, honestly",
+      "section": "design/requirements",
+      "match": {
+        "title": "Loudness limit"
+      },
+      "setBody": "No more than 85 dBA at 1 m, \"to stay a novelty, not a nuisance\" (the documents). Rev D: about 70 dB at 1 m at full level (67 to 73), 65 dB one step down: calculated from the speaker maker's 76.5 dBA at 3 W and 1 m, less 1.5 dB for a small sealed box and a perforated skin (estimate), with 1 W peaks into 4 ohm. That is 10 dB quieter than the 2 x AA design's 80 dB, about half as loud to the ear: a clear voice at arm's length (about 79 dB at 0.35 m) and at the carousel, not across a busy hall. The loss is the 28 mm speaker, not the cell. Not measured."
+    },
+    {
+      "op": "add",
+      "proposal": "D158",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer, designed",
+      "section": "design/requirements",
+      "title": "Clips from the capacitor buffer",
+      "body": "The speaker's bursts come from the supercapacitor, so loud clips are rationed by its refill. From a full capacitor (2.6 V) about 2.5 full-level clips play back to back (two or three); after that one full-level clip every about 154 s, or one 5 dB down every about 49 s; empty to full takes about 8.5 minutes. Before a clip the firmware reads the capacitor: under 2.2 V it plays 5 dB down, at 1.9 V or under it skips the clip and logs it as busy. All figures are calculated (0.69 J a clip: 1 W peaks, 6 to 1 peak to average, 3 s, 72 % through the boost and the amplifier), not measured.",
+      "data": {
+        "trigger": "A gag allowed by the governor",
+        "response": "Play at full level, 5 dB down under 2.2 V, or skip at 1.9 V"
+      },
+      "status": "open"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D159",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, S1; section 1, what follows",
+      "section": "design/requirements",
+      "match": {
+        "title": "Off switch is a true disconnect"
+      },
+      "setBody": "The owner's ruling of 22 Nov: a physical OFF switch, in case the airport asks. Rev D: a side-actuated slide switch on the board's right-hand edge, its lever 0.5 mm under the edge surface in a slot so a knock cannot move it, in the cell's lead before everything: off, the cell is disconnected and the tag is completely switched off in the sense of IATA's portable-device row and FAA PackSafe. The supercapacitor keeps its charge, but nothing can draw it: the boost converter's enable comes from the unpowered controller and has a pull-down. With 0.07 g of lithium the tag may stay on in the hold; the switch is for when it is asked to be off."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D160",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 6; section 2.2, refill time",
+      "section": "design/requirements",
+      "match": {
+        "title": "Low battery"
+      },
+      "setBody": "The cell is read through a switched divider under the 2 mA charge load, so a tired cell shows. Thresholds about 2.7, 2.5 and 2.3 V (estimates, to be set on the bench), in place of the 2 x AA design's 2.4, 2.2 and 2.0 V: below the first clips are quieter, below the second the low-battery line plays once, below the third no clips, sleep only. The capacitor is read before each clip (Clips from the capacitor buffer). The brown-out counter of the 2 x AA design goes.",
+      "setData": {
+        "trigger": "Cell under about 2.7 / 2.5 / 2.3 V under load"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D161",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, brown-out; section 2.3",
+      "section": "design/requirements",
+      "match": {
+        "title": "Reverse battery and brown-out"
+      },
+      "setBody": "A coin cell fitted the wrong way must do no harm: the P-channel MOSFET Q1 in the cell's lead blocks it. No brown-out is expected: the controller runs from the cell and the audio from the supercapacitor, and 100 uF and 10 uF on the cell rail carry the controller's bursts. The capacitor-voltage gate replaces the 2 x AA design's brown-out count.",
+      "setData": {
+        "trigger": "Cell reversed",
+        "response": "No damage; works when the cell is put in the right way"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D162",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 3; section 2.3, U2",
+      "section": "design/requirements",
+      "match": {
+        "title": "Sensor configuration"
+      },
+      "setBody": "An LSM6DSO-class sensor on the board at 104 samples a second (not 100: the windows counted in samples scale by 1.04, or the driver resamples), +/-16 g and +/-2000 degrees a second, read in batches from its FIFO on a watermark interrupt (INT2). Asleep: the accelerometer alone in low-power mode at 12.5 Hz with its wake-up interrupt (INT1). The axes are set again for the board's orientation (the board flat in the tag, +Y toward the strap). The owner's MPU-6050 stays the reference for the bench prototype; the detection rules take g and degrees a second and do not depend on the chip. The gyro's zero offset is learnt at rest and never from a steady turn."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D163",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 8, drop survival",
+      "section": "design/requirements",
+      "match": {
+        "title": "Drop survival"
+      },
+      "setBody": "The tag on a suitcase handle must still work after the case is dropped 1.0 m onto concrete, six times, one on each face (an estimate of rough handling; the documents say shocks to 40 g survival). Rev D: rim 3.0 mm all round, outside corners R 4 or more, a 1.6 mm front skin and a 2.4 mm back plate that sits inside the body's rim (a knock on the edge reaches the body, not the joint) on eight snap hooks; the tracker, the cell and the capacitor held through their own centres; the board clamped between posts and pads; both doors bayonets bearing on a lip; nothing hinged; the strap TPU. Not tested."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D164",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 2, size; section 3, one construction",
+      "section": "design/requirements",
+      "match": {
+        "title": "Enclosure"
+      },
+      "setBody": "Rev D, direction A Heritage, colourway A1 Saddle: a slim tag, 62 x 92 x 12.8 mm, PETG in two colours with a TPU strap, a strap slot, the perforated speaker panel, a tracker pocket behind a bayonet door and a name-card pocket in the back. The motion sensor is on the board, which is clamped rigidly between printed posts and pads, never foam mounted. The 80 x 60 x 42 mm box is superseded."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D165",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 4, the board",
+      "section": "design/requirements",
+      "match": {
+        "title": "Rigid sensor mount"
+      },
+      "appendBody": "Rev D: the motion sensor is soldered on the custom board, and the board is clamped between four printed posts and four pads on the back plate; the breakout and its screws are gone."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D166",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.5, clip storage; section 3, firmware item 5",
+      "section": "design/requirements",
+      "match": {
+        "title": "Audio command interface"
+      },
+      "appendBody": "Rev D: the clips are in an 8 MB SPI flash (U3) as 16 kHz PCM (about 245 s) or 4-bit IMA-ADPCM (about 980 s), decoded by the controller and sent over I2S at 16 kHz; the boost converter and the amplifier are enabled only for the clip."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D167",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 7",
+      "section": "design/requirements",
+      "match": {
+        "title": "Content ships independently of firmware"
+      },
+      "appendBody": "Rev D has no USB port: a pack goes in as a flash image through the programming pads at the maker, or through a later variant with USB (nRF52840). The USB-drive idea is not possible on Rev D."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D168",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, USB-C",
+      "section": "design/requirements",
+      "match": {
+        "title": "Service and debug port"
+      },
+      "appendBody": "Rev D has no USB-C: firmware and clips go in through SWD pads (a Tag-Connect TC2030 footprint). Where the debug log comes out on Rev D is not yet decided."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D169",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, U1",
+      "section": "design/requirements",
+      "match": {
+        "title": "Radios off"
+      },
+      "appendBody": "Rev D: the nRF52832's radio is never started and no antenna is fitted."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D170",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware: what changes",
+      "section": "design/requirements",
+      "match": {
+        "title": "Firmware sketch compiles"
+      },
+      "appendBody": "Rev D: this sketch is for the XIAO ESP32S3, which Rev D does not have; it needs the changes in \"Firmware changes for Rev D\" before it can build for the nRF52832 board. Not proved for Rev D."
+    },
+    {
+      "op": "add",
+      "proposal": "D171",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules",
+      "section": "design/requirements",
+      "title": "Lithium within the checked-baggage limit",
+      "body": "The tag's own lithium is at most 0.3 g of lithium metal (or 2.7 Wh of lithium ion), so it may stay on in checked baggage: IATA Dangerous Goods Regulations, 66th edition, Table 2.3.A, and FAA PackSafe, Baggage Equipped with Lithium Batteries (both read 22 Nov 2026). Rev D's CR2032 holds 0.07 g (Duracell's sheet). A CR2477 (about 0.31 g, estimate) would be over. The tracker in the pocket is its own device with its own cell. FAA PackSafe also says to check with the airline; airlines may set stricter rules.",
+      "data": {
+        "trigger": "-",
+        "response": "-"
+      },
+      "status": "open"
+    },
+    {
+      "op": "add",
+      "proposal": "D172",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware: what changes",
+      "section": "design/requirements",
+      "title": "Firmware changes for Rev D",
+      "body": "The firmware for the 2 x AA design (BaggageClaims_MK1_RevB.ino with bc_detect.h and bc_detect.cpp) is not rewritten; Rev D needs these changes to it (Rev D engineering, section 3): (1) Board and core: the nRF52832 (Arduino nRF5 or Adafruit nRF52 core, or Zephyr), not the ESP32 core. Preferences becomes the nRF's own flash store; LittleFS goes on the external SPI flash. (2) Pins: a new pin map on the custom board, fixed with the layout: SPI to the motion sensor and to the flash (a bus each on the schematic), the sensor's INT1 (wake-up) and INT2 (FIFO mark), I2S (SCK, LRCK, SDOUT) to the amplifier, AMP_SD, BOOST_EN, CHG_EN, two ADC inputs (V_CELL, V_SC), MODE, SWD. (3) Sensor driver: the MPU-6050 register code is replaced by the LSM6DSO class at 104 Hz, +/-16 g, +/-2000 degrees a second, FIFO with a watermark interrupt and a wake-up interrupt with its own threshold units; new scale factors; the up axis set again for the board. (4) Sleep: System ON idle with the clock and a pin sense on INT1 (no deep-sleep restart; state stays in RAM); the two-hour dark wake is a clock compare. Optional: gyro off until the accelerometer sees handling. (5) Audio path: read V_SC before a clip; at 1.9 V or under skip it (logged busy), under 2.2 V play 5 dB down; enable the boost, wait about 2 ms, enable the amplifier, stream from the flash through an ADPCM or PCM decoder to I2S at 16 kHz; then amplifier off, boost off, charging on until 2.6 V. The full level keeps peaks at 1 W into 4 ohm. (6) Battery policy: the cell thresholds (about 2.7, 2.5, 2.3 V under the 2 mA charge load, set on the bench) replace the AA thresholds; the brown-out counter goes and the capacitor gate replaces it. (7) Loading clips: through SWD at the maker as a flash image, or a later USB variant (nRF52840); no USB drive. (8) Unchanged: the event rules, the governor, the picker, the clip naming, the counts and the button meanings. None is made yet.",
+      "data": {
+        "trigger": "-",
+        "response": "-",
+        "changes": [
+          "Board and core: the nRF52832 (Arduino nRF5 or Adafruit nRF52 core, or Zephyr), not the ESP32 core. Preferences becomes the nRF's own flash store; LittleFS goes on the external SPI flash.",
+          "Pins: a new pin map on the custom board, fixed with the layout: SPI to the motion sensor and to the flash (a bus each on the schematic), the sensor's INT1 (wake-up) and INT2 (FIFO mark), I2S (SCK, LRCK, SDOUT) to the amplifier, AMP_SD, BOOST_EN, CHG_EN, two ADC inputs (V_CELL, V_SC), MODE, SWD.",
+          "Sensor driver: the MPU-6050 register code is replaced by the LSM6DSO class at 104 Hz, +/-16 g, +/-2000 degrees a second, FIFO with a watermark interrupt and a wake-up interrupt with its own threshold units; new scale factors; the up axis set again for the board.",
+          "Sleep: System ON idle with the clock and a pin sense on INT1 (no deep-sleep restart; state stays in RAM); the two-hour dark wake is a clock compare. Optional: gyro off until the accelerometer sees handling.",
+          "Audio path: read V_SC before a clip; at 1.9 V or under skip it (logged busy), under 2.2 V play 5 dB down; enable the boost, wait about 2 ms, enable the amplifier, stream from the flash through an ADPCM or PCM decoder to I2S at 16 kHz; then amplifier off, boost off, charging on until 2.6 V. The full level keeps peaks at 1 W into 4 ohm.",
+          "Battery policy: the cell thresholds (about 2.7, 2.5, 2.3 V under the 2 mA charge load, set on the bench) replace the AA thresholds; the brown-out counter goes and the capacitor gate replaces it.",
+          "Loading clips: through SWD at the maker as a flash image, or a later USB variant (nRF52840); no USB drive.",
+          "Unchanged: the event rules, the governor, the picker, the clip naming, the counts and the button meanings."
+        ]
+      },
+      "status": "open"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D173",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Sleep current"
+      },
+      "setData": {
+        "pass": "Rev D: meter in series with the cell, 2 h after the last motion (the capacitor no longer kept full): at or under 25 uA, against an estimate of about 12.5 uA. In the first 2 h the estimate is about 22.5 uA. The documents' 200 uA and the 2 x AA design's 0.25 mA are superseded."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D174",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Awake current"
+      },
+      "setData": {
+        "pass": "Rev D: awake and being moved, no clip, the capacitor full: under 1.5 mA at the cell, averaged over 10 s (estimate about 0.74 mA). The 2 x AA design's 15 mA is superseded."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D175",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Power rail voltage"
+      },
+      "setData": {
+        "pass": "Rev D: with a CR2032 in and the switch on, the cell rail (VCELL) reads 2.0 to 3.2 V (a new cell about 3.0 V); switch off, 0 V. The supercapacitor charges to about 2.6 V and stops."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D176",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "prototype/tests",
+      "match": {
+        "title": "3.3 V rail"
+      },
+      "setData": {
+        "pass": "Rev D: the 3.3 V rail (3V3A) feeds the amplifier only: about 3.3 V while a clip plays, 0 V between clips with the boost converter off."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D177",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, off switch S1",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Off switch disconnect"
+      },
+      "setData": {
+        "pass": "Rev D: switch off, meter in series with the cell on its most sensitive range: 0 uA (under the meter's resolution), the cell rail at 0 V, and no clip can play with the capacitor charged."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D178",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, loudness, honestly",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Loudness at 1 m"
+      },
+      "setData": {
+        "pass": "Rev D: loudest clip at full level with the capacitor full (2.6 V), sound level meter (A-weighted, fast) at 1 m on the perforated panel's axis: record the peak. Pass under 85 dBA; record it against the estimate of about 70 dB (67 to 73)."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D179",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 6",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Low battery behaviour"
+      },
+      "setData": {
+        "pass": "Rev D: on a bench supply in place of the cell, set the thresholds (about 2.7, 2.5 and 2.3 V under the 2 mA charge load, estimates): below the first clips are quieter, below the second the low-battery line plays once, below the third no clip plays; no reset loop from 3.2 V down to 1.8 V."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D180",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, Q1",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Reverse battery"
+      },
+      "setData": {
+        "pass": "Rev D: a CR2032 fitted upside down in its cup for one minute, then correctly: no current over 1 mA while reversed, and the tag works afterwards."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D181",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 8, drop survival",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Drop survival"
+      },
+      "setData": {
+        "pass": "Rev D: tag on a packed case, dropped 1.0 m onto concrete, once on each of six faces: the back plate stays on its hooks, both doors stay locked, nothing rattles, and it still passes the Drop and Weigh-in tests."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D182",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 4, the board",
+      "section": "prototype/tests",
+      "match": {
+        "title": "First power-on: no heat"
+      },
+      "setData": {
+        "pass": "Rev D: with a CR2032 in and the switch on, no hot spot by touch after 30 s, and the controller answers on the programming pads (SWD)."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D183",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "prototype/tests",
+      "match": {
+        "title": "No shorts on the rails"
+      },
+      "setData": {
+        "pass": "Rev D: with the cell out, VCELL, V_SC and 3V3A each read open to ground; continuity on every net matches the schematic."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D184",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware: what changes",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Sketch builds for the board"
+      },
+      "appendBody": "Rev D: this test is for the 2 x AA design's board. The nRF52832 build waits for the firmware changes (requirement \"Firmware changes for Rev D\")."
+    },
+    {
+      "op": "add",
+      "proposal": "D185",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, refill time",
+      "section": "prototype/tests",
+      "title": "Clip recharge from the capacitor",
+      "body": "",
+      "data": {
+        "pass": "Rev D: from a full capacitor, play full-level clips back to back: two or three play (estimate 2.5), then the next plays 5 dB down or is skipped and logged busy; about 154 s later one full-level clip plays again (estimate). Log V_SC before each clip."
+      },
+      "status": "not run"
+    },
+    {
+      "op": "add",
+      "proposal": "D186",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules",
+      "section": "prototype/tests",
+      "title": "Lithium on paper",
+      "body": "",
+      "data": {
+        "pass": "The fitted cell's own data sheet states 0.3 g of lithium metal or less (a CR2032: 0.07 g on Duracell's sheet), and no second lithium cell is fitted in the tag."
+      },
+      "status": "not run"
+    },
+    {
+      "op": "link",
+      "proposal": "D187",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "design/requirements",
+      "requirement": "Clips from the capacitor buffer",
+      "tests": [
+        "Clip recharge from the capacitor",
+        "Loudness at 1 m"
+      ],
+      "parts": [
+        "SC1",
+        "U5",
+        "R1",
+        "Q2",
+        "SPK1"
+      ],
+      "because": "The Rev D design gives the clips to the supercapacitor; the recharge test measures how many and how often, and the loudness test the level."
+    },
+    {
+      "op": "link",
+      "proposal": "D188",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules",
+      "section": "design/requirements",
+      "requirement": "Lithium within the checked-baggage limit",
+      "tests": [
+        "Lithium on paper"
+      ],
+      "parts": [
+        "BAT"
+      ],
+      "because": "The lithium limit is met by the cell chosen; the test reads its data sheet."
+    },
+    {
+      "op": "link",
+      "proposal": "D189",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, off switch S1",
+      "section": "design/requirements",
+      "requirement": "Off switch is a true disconnect",
+      "tests": [],
+      "parts": [
+        "S1",
+        "R6"
+      ],
+      "because": "Rev D's off switch is S1 in the cell's lead; R6 keeps the boost off with the controller unpowered."
+    },
+    {
+      "op": "link",
+      "proposal": "D190",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "design/requirements",
+      "requirement": "Power",
+      "tests": [],
+      "parts": [
+        "BAT",
+        "BT1",
+        "Q1",
+        "SC1",
+        "U5"
+      ],
+      "because": "Rev D's supply: the cell, its contacts, the reverse-cell MOSFET, the supercapacitor and the boost converter."
+    },
+    {
+      "op": "link",
+      "proposal": "D191",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4",
+      "section": "design/requirements",
+      "requirement": "Battery life",
+      "tests": [],
+      "parts": [
+        "BAT"
+      ],
+      "because": "The life is the CR2032's."
+    },
+    {
+      "op": "link",
+      "proposal": "D192",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1",
+      "section": "design/requirements",
+      "requirement": "Loudness limit",
+      "tests": [],
+      "parts": [
+        "SPK1",
+        "U4",
+        "GSK"
+      ],
+      "because": "The level is set by the 28 mm speaker, the amplifier and the gasket that seals its chamber."
+    },
+    {
+      "op": "link",
+      "proposal": "D193",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, S2",
+      "section": "design/requirements",
+      "requirement": "Controls",
+      "tests": [],
+      "parts": [
+        "S2"
+      ],
+      "because": "Rev D's mode button."
+    },
+    {
+      "op": "link",
+      "proposal": "D194",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3",
+      "section": "design/requirements",
+      "requirement": "Enclosure",
+      "tests": [],
+      "parts": [
+        "ENC1",
+        "TRK"
+      ],
+      "because": "The printed body is the enclosure; its pocket is sized to the tracker."
+    },
+    {
+      "op": "link",
+      "proposal": "D195",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 4, the board",
+      "section": "design/requirements",
+      "requirement": "Rigid sensor mount",
+      "tests": [],
+      "parts": [
+        "PCB1",
+        "U2"
+      ],
+      "because": "The sensor is soldered to the board, which is clamped in the body."
+    },
+    {
+      "op": "link",
+      "proposal": "D196",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, item 6",
+      "section": "design/requirements",
+      "requirement": "Low battery",
+      "tests": [],
+      "parts": [
+        "R4",
+        "R5",
+        "R2",
+        "R3"
+      ],
+      "because": "The cell and the capacitor are read through these dividers."
+    },
+    {
+      "op": "link",
+      "proposal": "D197",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3",
+      "section": "design/requirements",
+      "requirement": "Reverse battery and brown-out",
+      "tests": [],
+      "parts": [
+        "Q1",
+        "C1",
+        "C2"
+      ],
+      "because": "Q1 blocks a reversed cell; C1 and C2 carry the controller's bursts."
+    },
+    {
+      "op": "link",
+      "proposal": "D198",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, U2",
+      "section": "design/requirements",
+      "requirement": "Sensor configuration",
+      "tests": [],
+      "parts": [
+        "U2"
+      ],
+      "because": "Rev D's motion sensor."
+    },
+    {
+      "op": "link",
+      "proposal": "D199",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 8",
+      "section": "design/requirements",
+      "requirement": "Drop survival",
+      "tests": [],
+      "parts": [
+        "ENC1",
+        "ENC2",
+        "ENC3",
+        "ENC4",
+        "STR1"
+      ],
+      "because": "The printed parts carry the drop."
+    },
+    {
+      "op": "link",
+      "proposal": "D200",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3",
+      "section": "design/requirements",
+      "requirement": "Firmware changes for Rev D",
+      "tests": [
+        "Sketch builds for the board"
+      ],
+      "parts": [
+        "U1",
+        "U3"
+      ],
+      "because": "The firmware has to be ported to the nRF52832 and the external flash before it builds."
     }
   ]
 }

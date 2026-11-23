@@ -174,3 +174,35 @@ describe("the Rev D batch: schematic", () => {
     for (const w of wires) expect(refs.has(String(w.data.from)) && refs.has(String(w.data.to)), w.title).toBe(true);
   });
 });
+
+describe("the Rev D batch: requirements and tests", () => {
+  const req = (title: string) => row("design/requirements", title)!;
+  const test = (title: string) => row("prototype/tests", title)!;
+
+  it("brings the requirements tied to two AA cells to Rev D's figures, each still open", () => {
+    expect(req("Power").body).toContain("CR2032");
+    expect(req("Battery life").body).toContain("about 9 months");
+    expect(req("Loudness limit").body).toContain("about 70 dB at 1 m");
+    expect(req("Off switch is a true disconnect").body).toContain("side-actuated slide switch");
+    expect(req("Clips from the capacitor buffer").body).toMatch(/about 2\.5 full-level clips.*every about 154 s/);
+    expect(req("Lithium within the checked-baggage limit").body).toMatch(/0\.07 g.*0\.3 g|0\.3 g.*0\.07 g/s);
+    for (const t of ["Power", "Battery life", "Loudness limit", "Off switch is a true disconnect", "Low battery", "Clips from the capacitor buffer", "Lithium within the checked-baggage limit", "Firmware changes for Rev D", "Firmware sketch compiles"]) expect(req(t).status, t).toBe("open");
+    for (const t of ["Power", "Battery life", "Loudness limit", "Clips from the capacitor buffer"]) expect(req(t).body, t).toMatch(/estimate|calculated/i);
+  });
+
+  it("lists the firmware changes and rewrites no firmware", () => {
+    const fw = req("Firmware changes for Rev D");
+    expect((fw.data.changes as string[]).length).toBe(8);
+    expect(fw.body).toContain("None is made yet.");
+    expect(req("Firmware sketch compiles").body).toContain("Not proved for Rev D.");
+    // the batch adds no file: the firmware in Files is still the 2 x AA design's
+    expect(revD.rows.some((r) => r.op === "add" && r.section === "concept/files")).toBe(false);
+  });
+
+  it("gives the bench tests Rev D's pass marks, all still not run", () => {
+    expect(String(test("Sleep current").data.pass)).toContain("12.5 uA");
+    expect(String(test("Loudness at 1 m").data.pass)).toContain("about 70 dB");
+    expect(String(test("Clip recharge from the capacitor").data.pass)).toContain("154 s");
+    for (const t of ["Sleep current", "Awake current", "Loudness at 1 m", "Off switch disconnect", "Clip recharge from the capacitor", "Lithium on paper", "Low battery behaviour"]) expect(test(t).status, t).toBe("not run");
+  });
+});
