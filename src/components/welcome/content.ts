@@ -254,10 +254,17 @@ export const NAV: { href: string; label: string }[] = [
  * note, taken from the story's origin part (storyData.ts reads it from src/lib/story/seed.ts); the outputs are
  * the example's seeded rows (Artefacts.tsx).
  */
+/** Sent on the window to open a stage of "What do I end up with?" (the hero's "Look inside" opens the product). */
+export const GET_STAGE_EVENT = "c2r:get-stage";
+
 /** The hero's picture: the example's product on the line from an idea to a sale, with four of its outputs. */
 export const HERO_STAGE = {
   label: (name: string) => `${name}, the worked example: a slim leather-look luggage tag on its strap, hanging on a line that runs from an idea typed as one line to a product on sale. Beside it, four of its outputs: the schematic, the unit cost, an ad and the marketplace listing.`,
   tag: (name: string, w: number, h: number, t: number) => `${name}: a saddle-tan luggage tag, ${w} by ${h} by ${t} mm, with cream stitching, a perforated speaker panel and its name stamped in an oval.`,
+  turn: "The tag in 3D, turning. Drag it, or use the arrow keys, to turn it yourself.",
+  modesLabel: "How the tag is drawn",
+  modes: { solid: "Finished", translucent: "See-through", wireframe: "Wireframe" },
+  inside: "Look inside",
   field: "Your idea, in one line",
   from: "Idea",
   to: "On sale",
@@ -335,6 +342,56 @@ export const GET_VIEWS = {
     hint: "Build-sheet order: base, board, each soldering step, integration.",
   },
   views: { model: "3D model", schematic: "Schematic" },
+  /** the example as a product: every angle, every part, drawn live from its parts list and its schematic */
+  product: {
+    path: "/s/design/model",
+    label: (name: string) => `${name} in 3D. Drag to turn it, or use the arrow keys; press a part to choose it.`,
+    viewsLabel: "Views of the product",
+    views: {
+      front: "Front",
+      back: "Back",
+      left: "Three-quarter",
+      right: "Other side",
+      edge: "Edge",
+      top: "Top",
+      handle: "On a handle",
+      coin: "Cell door open",
+      tracker: "Tracker pocket",
+      exploded: "Exploded",
+      inside: "See-through",
+      lines: "Wireframe",
+    },
+    lookLabel: "Drawn as",
+    looks: { solid: "Finished", translucent: "See-through", wireframe: "Wireframe" },
+    apart: "Pulled apart",
+    turn: "Turn",
+    partsTitle: "Parts",
+    search: "Find a part",
+    none: "No part of that name.",
+    groups: { enclosure: "Enclosure", board: "Board and chips", power: "Power", audio: "Audio", controls: "Controls" },
+    all: "All parts",
+    close: "Close",
+    does: "What it does",
+    size: "Size",
+    qty: "Quantity",
+    cost: "Cost",
+    costNote: "estimate",
+    source: "From",
+    joins: "Joined to",
+    noJoins: "No net in the schematic joins this part.",
+    netClass: { power: "power", ground: "ground", signal: "signal", audio: "audio" },
+    illustrative: "Its place on the board is illustrative: the board's components have no layout rows yet.",
+    listOnly: "Not drawn: this row has no body of its own in the tag.",
+    render: "A render from the example's own CAD (Rev D, colourway A1), on a suitcase handle. Not a photograph: no tag has been built.",
+    renderAlt: "The tag hanging by its black strap from the handle of a dark suitcase, front toward the viewer.",
+    caption: {
+      size: (w: number, h: number, t: number) => `${w} x ${h} x ${t} mm`,
+      parts: (n: number, illustrative: number) => `${n} parts drawn from the parts list${illustrative ? `; ${illustrative} on the board placed for illustration` : ""}`,
+    },
+    alt: (parts: number, joined: number) => `The product has ${parts} parts in its parts list, ${joined} of them joined by nets of the schematic. The list beside the picture names each part; choosing one shows what it does, its size, its cost and the parts it is joined to.`,
+    hint: "Drag to turn. Press a part, or pick it in the list, to see what it does and what it joins.",
+    counts: (parts: number, wires: number) => `${parts} parts, ${wires} wires, from the example's rows`,
+  },
   print: {
     path: "/s/prototype/printing",
     label: "The enclosure's base and lid on the print bed, cut at the layer being printed.",

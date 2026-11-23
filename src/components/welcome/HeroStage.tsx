@@ -9,8 +9,9 @@
 // The server sends the finished picture: the line typed, the four outputs in place and the tag drawn in SVG
 // (TagArt). That is what stays without script, under reduced motion, without WebGL and on a device too slow for 3D.
 // Otherwise, once the page has painted and gone idle, the tag is replaced in place by the film's own 3D tag
-// (hero/HeroTag3D, a separate chunk): same frame, same pose, so nothing jumps, and its box never changes size, so
-// nothing on the page moves. The idea then types itself and the outputs arrive one after another; only opacity and
+// (product/ProductCanvas, a separate chunk): same frame, same pose, so nothing jumps, and its box never changes
+// size, so nothing on the page moves. It turns slowly on its strap, can be turned by hand, and can be drawn
+// finished, see-through or as a line drawing. The idea then types itself and the outputs arrive one after another; only opacity and
 // transform change. There is no pause control (owner, 22 Nov).
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -22,9 +23,12 @@ import { useAnimated, useHydrated } from "./useAnimated";
 import { filmMode, paceVerdict } from "./scenes/pace";
 import { TAG_MM } from "./scenes/film/tagShape";
 import { BLEED, MARGIN, STRAP_UP } from "./hero/frame";
-import { EXAMPLE, HERO_STAGE } from "./content";
+import { EXAMPLE, GET_STAGE_EVENT, HERO_STAGE } from "./content";
+import type { Product } from "./product/model";
+import type { Pose } from "./product/ProductCanvas";
+import type { ViewerMode } from "./product/scene";
 
-const HeroTag3D = dynamic(() => import("./hero/HeroTag3D"), { ssr: false });
+const ProductCanvas = dynamic(() => import("./product/ProductCanvas"), { ssr: false });
 
 const N: number = ARTEFACT_KEYS.length;
 const TYPE_MS = 30; // per two characters
@@ -48,10 +52,13 @@ function note(el: HTMLElement | null, key: string, value: string) {
   el?.setAttribute(key, value);
 }
 
-export function HeroStage({ idea, facts }: { idea: string; facts: HeroFacts }) {
+const MODES: ViewerMode[] = ["solid", "translucent", "wireframe"];
+const REST: Pose = { yaw: 0, pitch: 0, key: 0 };
+
+export function HeroStage({ idea, facts, product }: { idea: string; facts: HeroFacts; product: Product }) {
   const ref = useRef<HTMLElement>(null);
   const box = useRef<HTMLDivElement>(null);
-  const pointer = useRef({ x: 0, y: 0 });
+  const [look, setLook] = useState<ViewerMode>("solid");
   const hydrated = useHydrated();
   const animated = useAnimated();
   const seen = useInView(ref, { amount: 0.25 });
@@ -123,15 +130,8 @@ export function HeroStage({ idea, facts }: { idea: string; facts: HeroFacts }) {
   // the line is drawn as far as the last output that has arrived; all four, and it reaches "On sale"
   const reach = shown === 0 ? 0 : shown === N ? 1 : STOPS[shown - 1]!;
 
-  const onPointer = (e: React.PointerEvent) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    pointer.current.x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
-    pointer.current.y = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height) * 2 - 1));
-  };
-  const onLeave = () => {
-    pointer.current.x = 0;
-    pointer.current.y = 0;
-  };
+  // opens the product viewer in "What do I end up with?" (WhatYouGet listens), and the link goes there
+  const lookInside = () => window.dispatchEvent(new CustomEvent(GET_STAGE_EVENT, { detail: "03" }));
   const onPace = (ms: number, calls: number) => {
     note(ref.current, "data-hero-3d", `${Math.round(ms)}ms ${calls}calls`);
     const verdict = paceVerdict(ms, sharp, mode);
@@ -140,7 +140,7 @@ export function HeroStage({ idea, facts }: { idea: string; facts: HeroFacts }) {
   };
 
   return (
-    <figure ref={ref} aria-label={HERO_STAGE.label(EXAMPLE.name)} className="relative min-w-0" onPointerMove={onPointer} onPointerLeave={onLeave}>
+    <figure ref={ref} aria-label={HERO_STAGE.label(EXAMPLE.name)} className="relative min-w-0">
       {/* the light the product stands in: warm, from the upper left, falling off into the page */}
       <div className="pointer-events-none absolute -inset-x-6 -bottom-6 top-10 bg-[radial-gradient(ellipse_52%_46%_at_50%_46%,rgba(214,138,82,0.2),rgba(214,138,82,0.06)_55%,transparent_78%)]" aria-hidden />
 
@@ -173,14 +173,27 @@ export function HeroStage({ idea, facts }: { idea: string; facts: HeroFacts }) {
 
       <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,264px)_minmax(0,1fr)] sm:grid-rows-2">
         {/* the product, hanging from the rail: drawn by the server, then live */}
-        <div className="col-span-2 flex items-start justify-center sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1">
+        <div className="col-span-2 flex flex-col items-center sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1">
           <div ref={box} className="relative -mt-3 w-[62%] max-w-[264px] sm:w-full" style={{ aspectRatio: `${TAG_MM.w + MARGIN * 2} / ${TAG_MM.h + STRAP_UP + MARGIN + 3}` }}>
             <TagArt strap={STRAP_UP} margin={MARGIN} label={HERO_STAGE.tag(EXAMPLE.name, TAG_MM.w, TAG_MM.h, TAG_MM.t)} className={`block h-full w-full transition-opacity duration-500 motion-reduce:transition-none ${live && ready ? "opacity-0" : "opacity-100"}`} />
             {live ? (
-              <div className={`pointer-events-none absolute transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`} style={{ left: `${-BLEED.x * 100}%`, right: `${-BLEED.x * 100}%`, top: `${-BLEED.top * 100}%`, bottom: `${-BLEED.bottom * 100}%` }}>
-                <HeroTag3D boxPx={boxPx} playing={seen} sharp={sharp} pointer={pointer} onReady={() => setReady(true)} onPace={onPace} />
+              <div className={`absolute transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`} style={{ left: `${-BLEED.x * 100}%`, right: `${-BLEED.x * 100}%`, top: `${-BLEED.top * 100}%`, bottom: `${-BLEED.bottom * 100}%` }}>
+                <ProductCanvas product={product} mode={look} explode={0} open={null} turning pose={REST} chosen={null} hang={{ boxPx }} playing={seen} sharp={sharp} label={HERO_STAGE.turn} onReady={() => setReady(true)} onPace={onPace} />
               </div>
             ) : null}
+          </div>
+          {/* how the turning tag is drawn, and the way in to its parts; only where it can turn */}
+          <div className={`relative z-10 mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 ${live ? "" : "invisible"}`}>
+            <div role="group" aria-label={HERO_STAGE.modesLabel} className="inline-flex rounded-lg border border-hairline bg-surface/85 p-0.5">
+              {MODES.map((m) => (
+                <button key={m} type="button" aria-pressed={look === m} tabIndex={live ? 0 : -1} onClick={() => setLook(m)} className={`h-8 rounded-md px-2.5 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ${look === m ? "bg-action text-white" : "text-secondary hover:text-primary"}`}>
+                  {HERO_STAGE.modes[m]}
+                </button>
+              ))}
+            </div>
+            <a href="#get" data-track="example:hero-inside" tabIndex={live ? 0 : -1} onClick={lookInside} className="inline-flex h-8 items-center text-[13px] font-medium text-link underline-offset-4 hover:underline">
+              {HERO_STAGE.inside}
+            </a>
           </div>
         </div>
         {ARTEFACT_KEYS.map((k, i) => (

@@ -283,7 +283,7 @@ describe("with AUTH2 on", () => {
     const { storyData } = await import("@/components/welcome/storyData");
     const { exampleData } = await import("@/components/welcome/exampleData");
     const story = storyData(await exampleData());
-    render(<FirstRun email="admin@oxot.nl" address={null} idea={story.origin.idea} facts={story.hero} />);
+    render(<FirstRun email="admin@oxot.nl" address={null} idea={story.origin.idea} facts={story.hero} product={story.product} />);
     expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("admin@oxot.nl");
     expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
     expect(screen.queryByLabelText("Address of this installation")).toBeNull();
@@ -301,7 +301,7 @@ describe("with AUTH2 on", () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/account"));
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "Olive", email: "admin@oxot.nl", password: "long enough", setupCode: "ABCD-EFGH-JKLM-NPQR" });
     cleanup();
-    render(<FirstRun email="admin@oxot.nl" address="https://app.example.test" idea={story.origin.idea} facts={story.hero} />);
+    render(<FirstRun email="admin@oxot.nl" address="https://app.example.test" idea={story.origin.idea} facts={story.hero} product={story.product} />);
     expect((screen.getByLabelText("Address of this installation") as HTMLInputElement).value).toBe("https://app.example.test");
   });
 

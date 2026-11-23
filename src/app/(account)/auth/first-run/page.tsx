@@ -24,5 +24,5 @@ export default async function FirstRunPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto")?.split(",")[0].trim() || (host.startsWith("localhost") ? "http" : "https");
   const story = storyData(await exampleData());
-  return <FirstRun email={form.email} address={form.needsAddress ? `${proto}://${host}` : null} idea={story.origin.idea} facts={story.hero} />;
+  return <FirstRun email={form.email} address={form.needsAddress ? `${proto}://${host}` : null} idea={story.origin.idea} facts={story.hero} product={story.product} />;
 }

@@ -135,7 +135,7 @@ export default async function WelcomePage() {
                   {HERO.secondary} <ArrowRight className="h-4 w-4" aria-hidden />
                 </a>
               </div>
-              <HeroStage idea={story.origin.idea} facts={story.hero} />
+              <HeroStage idea={story.origin.idea} facts={story.hero} product={story.product} />
             </div>
           </section>
         </TrackSection>

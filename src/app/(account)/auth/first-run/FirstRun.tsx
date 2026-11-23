@@ -8,6 +8,7 @@ import { EYEBROW, Field, describe } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { HeroStage } from "@/components/welcome/HeroStage";
 import type { HeroFacts } from "@/components/welcome/storyData";
+import type { Product } from "@/components/welcome/product/model";
 import { call } from "@/lib/auth2/client";
 import { useStoredTheme } from "../_components/Frame";
 import { Message } from "../_components/Message";
@@ -27,7 +28,7 @@ type Values = z.infer<typeof base>;
  * The first-run form beside a short introduction. `address` is shown (and must be confirmed) only when the install
  * has no base address yet; it is the address this page is open at.
  */
-export function FirstRun({ email, address, idea, facts }: { email: string; address: string | null; idea: string; facts: HeroFacts }) {
+export function FirstRun({ email, address, idea, facts, product }: { email: string; address: string | null; idea: string; facts: HeroFacts; product: Product }) {
   useStoredTheme();
   const schema = base.refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The two passwords are not the same." });
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({
@@ -53,7 +54,7 @@ export function FirstRun({ email, address, idea, facts }: { email: string; addre
           </p>
           {/* the hero's picture is lit for a dark ground, as on the welcome page */}
           <div className="dark overflow-hidden rounded-2xl border border-hairline bg-canvas p-5 text-primary sm:p-6">
-            <HeroStage idea={idea} facts={facts} />
+            <HeroStage idea={idea} facts={facts} product={product} />
           </div>
         </section>
         <section aria-labelledby="owner-h" className="rounded-xl border border-hairline bg-surface p-5">

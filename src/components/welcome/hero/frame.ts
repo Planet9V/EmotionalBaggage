@@ -8,5 +8,5 @@ export const STRAP_UP = 22;
 export const MARGIN = 5;
 /** The drawing's box in mm: the tag, its strap above and its margin (TagArt's viewBox). */
 export const BOX_MM = { w: TAG_MM.w + MARGIN * 2, h: TAG_MM.h + STRAP_UP + MARGIN + 3 };
-/** How far the 3D view reaches past the drawing's box on each side, as a share of the box: room for the swing. */
-export const BLEED = { x: 0.3, top: 0.02, bottom: 0.06 };
+/** How far the 3D view reaches past the drawing's box on each side, as a share of the box: room for the turn and the sway. */
+export const BLEED = { x: 0.14, top: 0.02, bottom: 0.06 };
