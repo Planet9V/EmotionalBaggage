@@ -244,3 +244,40 @@ describe("the Rev D batch: the enclosure and its print jobs", () => {
     expect(d.gates.design.checks.find((c) => c.id === "design.enclosure")?.met).toBe(true);
   }, 60_000);
 });
+
+describe("the Rev D files, in a database", () => {
+  it("are in Files, folder Design and build, each file as listed; the renders are images, the 3MFs files to download", async () => {
+    await ready();
+    const rows = await q<{ title: string; status: string; data: { folder: string; mime: string; extract: { method: string } }; size: number }>(
+      "SELECT i.title, i.status, i.data, f.size FROM items i JOIN files f ON f.id = (i.data->>'fileId')::bigint WHERE i.project_id='baggage-claims' AND i.section='concept/files' AND i.title LIKE 'BaggageClaims_Tag_RevD_%' ORDER BY i.sort",
+    );
+    expect(rows).toHaveLength(12);
+    for (const r of rows) {
+      expect(r.status, r.title).toBe("stored");
+      expect(r.data.folder, r.title).toBe("Design and build");
+      expect(r.size, r.title).toBeLessThanOrEqual(25 * 1024 * 1024);
+    }
+    const by = (t: string) => rows.find((r) => r.title === t)!;
+    expect(by("BaggageClaims_Tag_RevD_A1_hero.jpg").data).toMatchObject({ mime: "image/jpeg", extract: { method: "image" } });
+    expect(by("BaggageClaims_Tag_RevD_A_assembly.3mf").data).toMatchObject({ mime: "model/3mf", extract: { method: "binary" } });
+    expect(by("BaggageClaims_Tag_RevD_Engineering.md").data.extract.method).toBe("text");
+    // the authored enclosure names only files that are there
+    const { authoredFiles, authoredOf } = await import("@/lib/enclosure/authored");
+    const saved = after.find((r) => r.section === "design/enclosure")!;
+    for (const f of authoredFiles(authoredOf(saved.data)!)) expect(rows.some((r) => r.title === f), f).toBe(true);
+  });
+
+  it("gives each print job the id of its 3MF in Files", async () => {
+    await ready();
+    // other files in this shared database store the seeded files again under new ids: enter the jobs afresh
+    await q("DELETE FROM items WHERE project_id='baggage-claims' AND section='prototype/printing' AND title LIKE 'Rev D tag%'");
+    await q("DELETE FROM events WHERE project_id='baggage-claims' AND kind='seed.content' AND data->>'batch'=$1", [revD.batch]);
+    await seedContent(pool());
+    const jobs = await q<{ title: string; data: { fileId?: number; fileName: string } }>("SELECT title, data FROM items WHERE project_id='baggage-claims' AND section='prototype/printing' AND title LIKE 'Rev D tag%' ORDER BY title");
+    expect(jobs).toHaveLength(2);
+    for (const j of jobs) {
+      const f = await q<{ name: string }>("SELECT name FROM files WHERE id=$1", [j.data.fileId]);
+      expect(f[0]?.name, j.title).toBe(j.data.fileName);
+    }
+  });
+});

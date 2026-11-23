@@ -28,7 +28,7 @@ export async function readManifest(root = process.cwd()): Promise<ManifestEntry[
   }
 }
 
-const MIME: Record<string, string> = { md: "text/markdown", txt: "text/plain", csv: "text/csv", sql: "application/sql", yml: "application/yaml", png: "image/png", pdf: "application/pdf" };
+const MIME: Record<string, string> = { md: "text/markdown", txt: "text/plain", csv: "text/csv", sql: "application/sql", yml: "application/yaml", json: "application/json", png: "image/png", jpg: "image/jpeg", pdf: "application/pdf" };
 
 /**
  * Seeded files that hold no text to read: kept as files to download, never opened or run. The Files page's own
@@ -37,6 +37,7 @@ const MIME: Record<string, string> = { md: "text/markdown", txt: "text/plain", c
 const BINARY: Record<string, { mime: string; note: string }> = {
   npy: { mime: "application/octet-stream", note: "A NumPy array (binary). It is kept as a file to download; there is no text in it to search." },
   stl: { mime: "model/stl", note: "A 3D model (binary STL). It is kept as a file to download; there is no text in it to search." },
+  "3mf": { mime: "model/3mf", note: "A 3D model and print layout (3MF, a zip). It is kept as a file to download; there is no text in it to search." },
 };
 
 type Loaded = { e: ManifestEntry; bytes: Buffer; mime: string; x: Extracted };
