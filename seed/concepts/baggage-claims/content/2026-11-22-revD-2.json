@@ -1,0 +1,261 @@
+{
+  "batch": "2026-11-22-revD-2",
+  "from": "the Rev D slim tag (BaggageClaims_Tag_RevD_Engineering.md and _Design.md in Files)",
+  "about": "What the first Rev D batch left on the page from the retired 2 x AA design: the prototype assembly steps (perfboard, modules, microSD, clamshell), the listing note's box and cells, the volume costs ($64.80, $43.20 and $19.00), and the story, brief, FAQ and gate rows that still gave two AA cells, the Adafruit MPU6050 breakout or an 80 x 60 x 42 mm box as the design. Each row is changed only while it still reads as the seed and the batches before this one left it. Figures are the Rev D notes' own estimates; the one new figure (1,000 units) is labelled an assumption.",
+  "rows": [
+    {
+      "op": "enrich",
+      "proposal": "D201",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "After printing; engineering section 3, point 7",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 0 — Bench setup"
+      },
+      "setBody": "1. Lay out the parts against the app's parts list (34 lines), not the Rev A CSV: the assembled board PCB1, the 28 mm speaker, the foam gasket, the 1 F supercapacitor, a CR2032 cell, and the printed parts from Phase 1. The tracker is the buyer's own and is not in the list. 2. Tools: tweezers, a multimeter on continuity and volts, a coin (both doors turn 60 degrees with a coin), a Tag-Connect TC2030 cable and an SWD programmer for Phase 4 (the notes name the footprint, not the programmer, so which one is still to choose), and a PC for the firmware tools. 3. No soldering iron: the soldering is on the board, which arrives assembled. About 15 minutes (estimate)."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D202",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "After printing; printed pieces and jobs",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 1 — Print the enclosure"
+      },
+      "setBody": "Print a coupon of the card pocket's 32.6 mm bridge first. Job 1, PETG in two colours (A1 Saddle: Peanut Brown for the parts, Cream for the stitches and lettering): the body, the back plate, the tracker door and the coin-cell door on one bed, about 2.5 hours. Job 2, TPU in black: the strap, about 1 hour. Both are estimates from the design note, not sliced. Nothing to break free: the parts are separate and click together, with no supports, screws, glue or paint. About 3.5 hours unattended in all (estimate), the coupon not counted.",
+      "setData": {
+        "minutes": 210,
+        "time": "210 min"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D203",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials; section 4, the board",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 2 — Electronics"
+      },
+      "setBody": "Order the assembled board PCB1: 24 x 35 mm, two layers, 0.8 mm FR-4, ENIG, with every component on the parts list fitted by the board house (the 0.4 mm-pitch parts are not hand work). The board needs its design and layout first; the app holds the schematic, not the layout. The parts list prices the board at one to five units for hand assembly with the builder's own labour not counted, so a board house's assembly quote at that size is not in the documents (still to get). On arrival: look for solder bridges, then with no cell in, check that the cell rail (VCELL), the capacitor rail (V_SC) and the boosted rail (3V3A) each read open to ground (Tests: No shorts on the rails). About 45 minutes to place the order and check the board (estimate); the board house's lead time is not counted and is not in the documents.",
+      "setData": {
+        "minutes": 45,
+        "time": "45 min"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D204",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 2.4, current budget",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 3 — First power-on"
+      },
+      "setBody": "Put a CR2032 on the board's cell contacts and switch on. Meter the cell rail: 2.0 to 3.2 V (a new cell about 3.0 V), and 0 V with the switch off. The supercapacitor charges to about 2.6 V and stops. Nothing warm by touch after 30 s, and the controller answers on the programming pads (SWD). Switch off. These are Rev D's pass marks in Tests, all not run."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D205",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, USB-C row; section 3, firmware changes",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 4 — Firmware"
+      },
+      "setBody": "Flash the firmware over the board's programming pads: the Tag-Connect TC2030 cable on the J1 footprint and an SWD programmer. Rev D has no USB port, so this is the only way in, and it is done once. The Rev D firmware is not written yet: the 2 x AA design's sketch is for another controller and needs the eight changes in Requirements, Firmware changes for Rev D, before it builds for the nRF52832. This step waits for that. Where the debug log comes out on Rev D is not yet decided."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D206",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.5, clip storage; section 3, point 7",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 5 — Audio"
+      },
+      "setBody": "The clips go into the 8 MB flash on the board as part of the same flash image, over the same pads; there is no card and no USB drive. Save each clip as mono WAV at 16 kHz: 16-bit PCM holds about 245 s, 4-bit IMA-ADPCM about 980 s (calculated). Keep the 2 x AA design's names, which Rev D leaves unchanged: by class and number (/p1/impact_1.wav, /p1/impact_2.wav, /p1/weigh_1.wav, /p1/grab_1.wav, /p1/freefall_1.wav, /p1/throw_1.wav, /p1/carousel_1.wav, /p1/conveyor_1.wav, /p1/inverted_1.wav, /p1/idle_1.wav, /p1/lowbatt_1.wav). Speech needs no content below about 300 Hz: the speaker gives little under its 350 Hz resonance."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D207",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "After printing",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 6 — Integration"
+      },
+      "setBody": "No screws, no glue, no tools but tweezers and a coin; about 15 minutes by the design note's estimate, a few more for the cell and the strap. In this order: (1) lay the gasket and press the speaker under its fingers; (2) lay the supercapacitor in its two saddles; (3) set the board on its four posts, its leads through the wall notches, the switches at the right-hand edge; (4) drop the CR2032 into the front cup and turn the coin door; (5) close the back plate: the eight hooks click; (6) thread the strap through the slot at the top, round the handle, and press the stud through a hole. The tracker is the buyer's own: it drops into its pocket in the back and its door turns 60 degrees with a coin.",
+      "setData": {
+        "minutes": 20,
+        "time": "20 min"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D208",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget; the bench tests of Tests",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 7 — Acceptance tests"
+      },
+      "setBody": "The bench check of the finished tag: the five behaviour tests (Drop, Weigh-in, Carry, Idle and the rest in Tests), then Rev D's own: sleep current at or under 25 uA, awake current, loudness at 1 m (under 85 dBA, against an estimate of about 70 dB), clips from the capacitor, the off switch, a reversed cell, and a 1.0 m drop. Each is not run until someone runs it."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D209",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "After printing",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Phase 8 — Pack-out"
+      },
+      "setBody": "Slide the name card under the lips in the back plate, fit a tracker if there is one (it is the buyer's own and not in the parts list), strap the tag to a suitcase, log build time and reworks."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D210",
+      "sourceFile": "docs/design/baggage-claims-revD.md",
+      "sourceLocation": "The decision; what changed in the example",
+      "section": "sales/listing",
+      "match": {
+        "title": "Amazon listing not started"
+      },
+      "setBody": "The Rev A documents contain no Amazon title, bullets, images or keyword set. The PRD only says 'Amazon listing tuned to gag travel gift keywords'. Raw material the documents hold for whoever writes it: the one-liner; the eight moments and their lines; no app, no pairing, one button; one CR2032 coin cell with a supercapacitor and a side off switch; voice packs and holiday packs; at most six gags an hour; a slim leather-look tag of 62 x 92 x 12.8 mm that hangs from the handle on a strap, with a name card and a pocket for the buyer's own tracker; the PRD's brief, \"tuned to gag travel gift keywords\". Wording such as \"checked-bag legal\" needs checking against Amazon's rules and against the facts first. The Shame Ads are invented reviews and must never be used as customer reviews."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D211",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials; the Rev D design, section 10",
+      "section": "production/economics",
+      "match": {
+        "title": "Prototype"
+      },
+      "setBody": "Rev D, the slim tag, 22 Nov 2026: about $30.01 for one unit and $28.01 a unit for five (estimates): the electronics come to $29.02 and $27.02, and the printed parts to about $0.99 of filament (not sliced). The tracker is the buyer's own and not counted. Not counted either: the builder's own labour at one to five boards (the parts list prices hand assembly), a board house's assembly quote, and the custom board's design and layout (about $20 for the first five boards plus a stencil, estimate). So this is parts and filament, not a landed cost. History: the 2 x AA design's parts came to $72.83 for one unit (estimate) and $62.69 a unit for a hundred, and before that the 16 lines of the Rev A parts list came to $64.80 (the PRD's nine-row table to $64.34 under a total line of $64.80; its cost-table column to $58.80), added up on 22 Nov at the owner's request.",
+      "setData": {
+        "cogs": "$30.01"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D212",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials (the 100 column)",
+      "section": "production/economics",
+      "match": {
+        "title": "Engineering validation batch"
+      },
+      "setBody": "Rev D estimate: about $17.67 a unit at 100: electronics $16.68 (turnkey board assembly at $1.80 a board is in it) plus about $0.99 of filament, not sliced. Parts and filament only: tooling, packaging, freight, scrap, the labour of printing and fitting (about 15 minutes a tag by the design note's estimate) and the board's design are not in it, and the tracker is the buyer's own. It replaces the PRD's $43.20, the 2 x AA design's figure (the PRD gives it as \"hand assembly, printed enclosures\" with no working; none was found in the documents or this repository).",
+      "setData": {
+        "cogs": "$17.67"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D213",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials (the 100 column); an assumption at 1,000",
+      "section": "production/economics",
+      "match": {
+        "title": "Production run"
+      },
+      "setBody": "Estimate, by assumption: about $16.00 a unit at 1,000: the Rev D bill of materials at 100 units ($16.68 of electronics) less 10 % on every bought part ($15.01), plus about $0.99 of filament. The 10 % is an assumption; no maker's price at 1,000 units was read, and the PRD's $19.00 (the 2 x AA design's figure, \"the honest middle of turnkey quotes\") has no working to carry over. Parts and filament only, not a landed cost: tooling, packaging, freight, scrap, labour and the board's design are not in it.",
+      "setData": {
+        "cogs": "$16.00"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D214",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "the old figure, kept as the PRD's",
+      "section": "production/economics",
+      "match": {
+        "title": "Retail run"
+      },
+      "appendBody": "The $11.15 is the PRD's figure for the 2 x AA design with an injection-moulded enclosure, SPI flash and offshore assembly; it has not been estimated again for Rev D."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D215",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "concept/decisions",
+      "match": {
+        "title": "Scale gate: enough emails before launch?"
+      },
+      "setData": {
+        "options": [
+          {
+            "id": "pass",
+            "label": "2,000 or more emails",
+            "outcome": "Green-light the 1,000-unit run at about $16.00 a tag in parts and filament (Rev D estimate; landed cost not estimated)."
+          },
+          {
+            "id": "hold",
+            "label": "Fewer than 2,000",
+            "outcome": "No production run yet."
+          }
+        ]
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D216",
+      "sourceFile": "docs/design/baggage-claims-revD.md",
+      "sourceLocation": "The decision; the power and the airline rules; what changed in the example",
+      "section": "concept/story",
+      "match": {
+        "title": "Decided and still open"
+      },
+      "setBody": "**Decided by the owner on 22 Nov 2026.** The product's own site runs on the stack this app is built on: Next.js, React, Tailwind and PostgreSQL with pgvector, with files and embeddings kept in PostgreSQL. Stripe takes payment on the site and the Amazon marketplace carries the listing; there is no Shopify. Mail goes out through the product's own mail server, whose SMTP details the admin enters in Admin, and referrals run on the engine built into this app. The unit is the Rev D slim tag, which the owner chose at 19:00 the same day in place of the two AA cells and the Adafruit MPU6050 breakout: one CR2032 coin cell with a 1 F supercapacitor, and a motion sensor chip (an LSM6DSO-class part) on a circuit board of its own. It has a side off switch in case the airport asks; at 0.07 g of lithium metal it is under the 0.3 g line below which a device may stay on in checked baggage (as read on 22 Nov; airlines may set stricter rules). It is a leather-look luggage tag that hangs from the handle on a strap, 62 x 92 x 12.8 mm, with a name card and a tracker pocket, printed in PETG in two colours with a TPU strap, with no screws or glue. The detection rules: free-fall is more than 0.3 s; the carousel is circular, periodic motion for about 15 s or more; a handle grab is tilt and quick motion, then sustained tilt plus steady carry; a hard impact is as the design package documents it. The marketing budget is 5,000 USD. More voice packs and holiday packs are to be sold.\n\n**Decided in the documents.** Power that lets the bag talk in the hold (the documents said alkaline AA cells; Rev D's coin cell is under the lithium limit instead). Radios off. No celebrity impressions. Voice packs, sold as add-ons (the documents said on microSD; Rev D has no card or USB port, so a pack goes in as a flash image at the maker). The governor: one gag per moment per phase, three seconds apart, six an hour at most. A cheap test before any launch money is spent.\n\n**Estimated, because nobody knows yet.** A first Rev D build is about 3.5 hours of unattended printing and about 20 minutes of fitting by hand once the printed parts and the assembled board are in hand (estimates, nothing built or sliced). One tag's parts and filament come to about $30 for one unit, $28 a unit for five and $18 at a hundred (estimates, not quotes; the tracker is the buyer's own); the 2 x AA design's parts added up to $72.83 and the Rev A list's 16 lines to $64.80. One printed tag is about 37 g of PETG with the purge and 6.3 g of TPU, about $1.00 of filament. The ask of about $750 is itself an estimate.\n\n**With engineering.** The firmware's details where the documents disagree (the history buffer, the sleep mode, the filter, the boot log, the weigh-in and conveyor rules), the sketch, which exists only inside a chat document and has not been compiled, the parts list for the Rev D tag, the costs at volume, and the wording of the card in the box.\n\n**Still open, for the owner.**\n\n- **The name.** Every document says Baggage Claims; the project is called Emotional Baggage; the naming note ranks Sass Case first for retail and warns that Emotional Baggage \"attracts pre-existing novelty trademarks\". No trademark or domain screen has been run.\n- **A crowdfunding launch, or straight to the listing.** The documents plan a Kickstarter; the channels decided on 22 Nov are Amazon and the product's own site.\n- **Who voices the bag.** A generated voice from this app's voice settings, a contracted voice actor, or one then the other.\n- **The first market.** The United States alone, or with the EU.\n- **The lines.** The owner's own lines are kept as he wrote them; proposals for every sensed moment, and for new moments, wait for his stars and strikes.\n- **The packs.** Which come first, and what the New Yorker pack is called.\n\nThe look, the words on the tag and the launch line are being chosen from the design proposal."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D217",
+      "sourceFile": "docs/design/baggage-claims-revD.md",
+      "sourceLocation": "The decision; power: a coin cell and a buffer; what changed in the example",
+      "section": "concept/story",
+      "match": {
+        "title": "What it is and how it works"
+      },
+      "setBody": "You hang a slim leather-look tag (62 by 92 by 12.8 mm) from the suitcase handle on a strap, switch it on with the side switch, and forget about it. Inside, a motion sensor chip (an LSM6DSO-class part) is read 104 times a second by a small processor (an nRF52832 whose radio is never started). Simple rules recognise eight moments of a journey, and the tag plays a matching clip from its own 8 MB flash through a 28 mm speaker behind a perforated panel.\n\n| The moment | How it is recognised | What the bag says |\n|---|---|---|\n| Heaved onto the belt at check-in | A hard jolt, 8 to 14 g | \"OW! I felt that in my flip-flops!\" |\n| Lifted onto the scale | Lifted, held dead still for 3.5 to 6 seconds, set down | \"Are you calling me FAT?\" |\n| Grabbed by the handle at the curb | Tilted and carried for about 10 seconds | \"Are you gonna buy me dinner first?\" |\n| Thrown from cart to container | A quarter of a second of free-fall, then a thud | Wilhelm scream |\n| Riding the carousel | Turning round and round, a lap every 3 to 12 seconds | \"Wheeee! Again! Again!\" |\n| A long ride on a tarmac cart | A steady rumble for 8 seconds or more | \"Oh sure, I will take the scenic route.\" |\n| Stowed upside down | Upside down for 4 seconds | \"I am inverted. Somebody call Goose.\" |\n| Hours in the dark hold | Two hours without moving | \"Hello?... Anyone? ...Cool, cool.\" then snoring |\n\nA governor keeps it funny rather than annoying: one gag per kind of moment per stage of the journey, three seconds of quiet after each, and never more than six an hour. The PRD calls this \"the single most important UX line in the firmware.\"\n\nThe one button sets the volume with a tap, swaps between three voice packs (Family, Salty and New Yorker) with a hold, and resets the unit after ten seconds. The clips live in the tag's flash as plain numbered files, loaded through the programming pads at the maker, so new voice packs and seasonal editions need no new hardware.\n\nIt runs on one CR2032 coin cell with a 1 F supercapacitor, on purpose. The documents say lithium devices in checked bags must be fully off in the hold, which would kill the joke; Rev D stays under the line where that applies (0.07 g of lithium metal against 0.3 g, as read on 22 Nov; airlines may set stricter rules), and the capacitor, not the cell, drives the speaker. The shell is printed in PETG in two colours, with a TPU strap, in separate parts that click together."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D218",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.5, clip storage",
+      "section": "concept/brief",
+      "match": {
+        "title": "How it works"
+      },
+      "setBody": "An nRF52832 controller with its radio never started, an LSM6DSO-class motion sensor read at 104 Hz, a rule-based classifier for eight travel moments, and clips played from an 8 MB flash through a 28 mm speaker, whose peaks come from a 1 F supercapacitor and a boost converter. One CR2032 coin cell, a side off switch, one button, no app."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D219",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected",
+      "section": "concept/faq",
+      "match": {
+        "title": "Does it need an app or pairing?"
+      },
+      "setBody": "No. No app, no pairing, one button and a side off switch; it runs on one CR2032 coin cell (earlier drafts said three AA cells, then two; the Rev D tag replaces both). The radio is never started."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D220",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget and battery life",
+      "section": "concept/faq",
+      "match": {
+        "title": "How long do the batteries last?"
+      },
+      "setBody": "Not measured. Rev D estimates about 9 months on one CR2032 at four travel days a month (about 6 at eight, about 4 if the carousel keeps it awake 8 h more each travel day), calculated from recalled data-sheet figures; nothing is built. The PRD's 3-6 months was for three AA cells."
+    }
+  ]
+}

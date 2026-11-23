@@ -23,8 +23,10 @@ const rulings = CONTENT_BATCHES[1];
 const eng = CONTENT_BATCHES[2];
 /** the Rev D batch of 22 Nov (the slim tag the owner approved at 19:00): its rows come from the Rev D documents */
 const revD = CONTENT_BATCHES[3];
+/** the Rev D leftovers batch (2026-11-22-revD-2): the rows the Rev D batch left from the 2 x AA design, from the same documents */
+const revD2 = CONTENT_BATCHES[4];
 /** batches whose rows come from a design document in the repository, not from the review sheet */
-const fromDesign = (b: ContentBatch) => b === eng || b === revD;
+const fromDesign = (b: ContentBatch) => b === eng || b === revD || b === revD2;
 const allRows = CONTENT_BATCHES.flatMap((b) => b.rows);
 const allAdds = allRows.filter((r) => r.op === "add");
 const allEnriches = allRows.filter((r) => r.op === "enrich");
@@ -51,7 +53,7 @@ describe("the content batches, as data", () => {
       for (const r of CONTENT_BATCHES[n].rows) {
         expect(r.section in STORE_STATUSES, `${r.proposal} ${r.section}`).toBe(true);
         // P: a row of the review sheet; E: a row of the engineering design note
-        expect(r.proposal).toMatch(CONTENT_BATCHES[n] === eng ? /^E\d{3}$/ : CONTENT_BATCHES[n] === revD ? /^D\d{3}$/ : /^P\d{3}$/);
+        expect(r.proposal).toMatch(CONTENT_BATCHES[n] === eng ? /^E\d{3}$/ : CONTENT_BATCHES[n] === revD || CONTENT_BATCHES[n] === revD2 ? /^D\d{3}$/ : /^P\d{3}$/);
         expect(r.sourceFile.length > 0 && r.sourceLocation.length > 0, r.proposal).toBe(true);
         const was = r.op === "enrich" || r.op === "retire" ? before.find((x) => matches(x, r)) : undefined;
         expect(() => checkContentRow(r, was), r.proposal).not.toThrow();
@@ -191,7 +193,7 @@ describe("the content batches, as data", () => {
 
   it("leave the owner's settled facts alone: no strap, no colour, no tagline, no other enclosure size", () => {
     // until the Rev D tag, which the owner approved with its strap, colours and lines (its own tests are below)
-    const text = JSON.stringify(CONTENT_BATCHES.filter((b) => b !== revD).flatMap((b) => b.rows)).toLowerCase();
+    const text = JSON.stringify(CONTENT_BATCHES.filter((b) => b !== revD && b !== revD2).flatMap((b) => b.rows)).toLowerCase();
     for (const word of ["strap", "velcro", "puck", "tagline", "colour", "90 x 68", "80 x 60 x 40"]) expect(text.includes(word), word).toBe(false);
   });
 });
