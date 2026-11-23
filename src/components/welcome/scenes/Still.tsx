@@ -1,9 +1,10 @@
 // The drawn frames: one per scene, in the manner of an airline safety card (the owner's plan for how the moments
-// are shown): flat colour, one weight of line, pictogram people, a number in the corner, no words in the picture.
+// are shown): flat colour, one weight of line, pictogram people, a number in the corner, no words in the picture
+// beyond what the set carries (the scale's display; the tag's stamp in the button frame's magnified detail).
 // They are what shows before the film has loaded, when the browser has no 3D, when the device cannot keep pace,
 // under reduced motion and without script; small, they are the chapter list's thumbnails. The line and the
 // "sensed" label are set over them as real text by the stage.
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import type { SceneId } from "./scenes";
 import { FACE, SLOT, TAG_MM, tagPath } from "./film/tagShape";
 
@@ -88,7 +89,48 @@ function Person({ fill = BLUE, arm, flip = false }: { fill?: string; arm?: strin
   );
 }
 
-function Scale({ lean }: { lean: number }) {
+// the close-up that opens the button scene, as a safety card draws one: a magnified circle with a leader to the tag
+const DS = 1.25;
+const DETAIL = tagPath(DS);
+const DETAIL_STITCH = tagPath(DS, 3);
+const dAt = (x: number, y: number) => [x * DS, (TAG_MM.h / 2 - y) * DS] as const;
+function TagDetail() {
+  // the frame is drawn more than once on the page (the stage and its thumbnail): each copy clips by its own id
+  const clip = `wl-tag-detail-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const [ox, oy] = dAt(FACE.oval.x, FACE.oval.y);
+  const [, l1] = dAt(0, -33.8);
+  const [, l2] = dAt(0, -38.4);
+  const [px, py] = dAt(FACE.panel.x0, FACE.panel.y1);
+  return (
+    <g>
+      <defs>
+        <clipPath id={clip}>
+          <circle cx="370" cy="182" r="64" />
+        </clipPath>
+      </defs>
+      <path d="M432 198L520 220" strokeWidth="2" strokeDasharray="2 5" />
+      <circle cx="370" cy="182" r="64" fill={CARD} />
+      <g clipPath={`url(#${clip})`}>
+        <g transform={`translate(370 ${182 - 60 * DS})`} strokeWidth="2">
+          <path d={DETAIL} fill={SADDLE} />
+          <path d={DETAIL_STITCH} fill="none" stroke={THREAD} strokeWidth="1.4" strokeDasharray="2.4 2" />
+          <rect x={px} y={py} width={(FACE.panel.x1 - FACE.panel.x0) * DS} height={(FACE.panel.y1 - FACE.panel.y0) * DS} rx="3" fill={SADDLE_DARK} stroke="none" opacity="0.45" />
+          <ellipse cx={ox} cy={oy} rx={FACE.oval.rx * DS} ry={FACE.oval.ry * DS} fill="none" stroke={SADDLE_DARK} strokeWidth="1.2" />
+          <g fill={SADDLE_DARK} stroke="none" fontFamily="var(--font-sans, system-ui)" fontWeight="800" textAnchor="middle">
+            <text x={ox} y={oy - 3} fontSize="7.4" letterSpacing="0.8">BAGGAGE</text>
+            <text x={ox} y={oy + 5.4} fontSize="7.4" letterSpacing="0.8">CLAIMS</text>
+            <text x={ox} y={oy + 12} fontSize="4.6" letterSpacing="1.4">MK1</text>
+            <text x={0} y={l1 + 2} fontSize="5.2">Your luggage</text>
+            <text x={0} y={l2 + 2} fontSize="5.2">finally talks back.</text>
+          </g>
+        </g>
+      </g>
+      <circle cx="370" cy="182" r="64" fill="none" strokeWidth="3" />
+    </g>
+  );
+}
+
+function Scale({ lean, detail = false }: { lean: number; detail?: boolean }) {
   return (
     <>
       <g transform="translate(250 372)">
@@ -107,6 +149,7 @@ function Scale({ lean }: { lean: number }) {
       <text x="782" y="196" fontFamily={MONO} fontSize="20" fill={PALE} stroke="none">lbs</text>
       <circle cx="652" cy="226" r="9" fill={RED} stroke="none" />
       <text x="670" y="233" fontFamily={MONO} fontSize="19" fontWeight="700" fill={RED} stroke="none">OVERWEIGHT</text>
+      {detail ? <TagDetail /> : null}
     </>
   );
 }
@@ -130,7 +173,7 @@ const FRAMES: Record<SceneId, { dark?: boolean; art: ReactNode }> = {
     ),
   },
   scale: { art: <Scale lean={-8} /> },
-  button: { art: <Scale lean={6} /> },
+  button: { art: <Scale lean={6} detail /> },
   toss: {
     art: (
       <>

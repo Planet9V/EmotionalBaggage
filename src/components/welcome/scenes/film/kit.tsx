@@ -11,7 +11,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useFrame, useThree, type ThreeElements } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { SPEAKER_AT, STRAP_INK, STRAP_T, TAG_ARM, band, tagBuild, tagMaterial, tagPerform } from "./tag";
+import { SPEAKER_AT, STAMP_AT, STRAP_INK, STRAP_T, TAG_ARM, band, tagBuild, tagMaterial, tagPerform } from "./tag";
 
 export type V3 = [number, number, number];
 export type Clock = { t: number };
@@ -501,6 +501,40 @@ const STEP_MS = 1000 / 110;
 const PREROLL_MS = 2600;
 
 /**
+ * Where the tag's stamp is this frame, as the swing has really put it, for a camera that frames it (the close-up):
+ * written by the bag each frame, before the camera reads it (the set is mounted before the camera). `t` is the
+ * moment it was written for, so a stale record is never used.
+ */
+const stampNow = { t: NaN, at: new THREE.Vector3() };
+export function stampAt(t: number): V3 | null {
+  return stampNow.t === t ? [stampNow.at.x, stampNow.at.y, stampNow.at.z] : null;
+}
+// the record belongs to the frame loop, not to React: this changes it by name
+function noteStamp(t: number, group: THREE.Object3D) {
+  group.updateWorldMatrix(true, false);
+  stampNow.at.set(...STAMP_AT).applyMatrix4(group.matrixWorld);
+  stampNow.t = t;
+}
+
+const tagM = new THREE.Matrix4();
+const tagE = new THREE.Euler();
+const tagQ = new THREE.Quaternion();
+const tagS = new THREE.Vector3();
+/**
+ * Where the tag's face is for a pose, as it hangs at rest (its swing left out): the middle of its face and the way
+ * the face looks and which way is up on it, in the set. For a camera that comes in close on it. Poses that tumble or hang the bag are not
+ * covered (the close-up has neither).
+ */
+export function tagAt(q: BagPose): { mid: V3; face: V3; up: V3 } {
+  tagM.compose(new THREE.Vector3(), tagQ.setFromEuler(tagE.set(q.pitch ?? 0, 0, q.roll ?? 0)), tagS.set(q.sx ?? 1, q.sy ?? 1, q.sx ?? 1));
+  tagM.premultiply(new THREE.Matrix4().makeRotationY(q.yaw ?? 0));
+  const mid = new THREE.Vector3(PIVOT[0], PIVOT[1] - TAG_ARM, PIVOT[2] + 0.003 + STRAP_T).applyMatrix4(tagM).add(new THREE.Vector3(...q.p));
+  const face = new THREE.Vector3(0, 0, 1).transformDirection(tagM);
+  const up = new THREE.Vector3(0, 1, 0).transformDirection(tagM);
+  return { mid: [mid.x, mid.y, mid.z], face: [face.x, face.y, face.z], up: [up.x, up.y, up.z] };
+}
+
+/**
  * The suitcase. Its pose is a function of the clock. The gadget is not posed: it is a weight on a short loop, and
  * swings from wherever the bag takes its handle (a damped pendulum, stepped at a fixed rate and re-run from a few
  * seconds back whenever the film is cut to a new moment, so a held frame shows the same swing the film would).
@@ -563,6 +597,7 @@ export function Bag({ pose, voice, lamp = 0, time, gravity = 9.8, children }: { 
     const v = voice?.(now) ?? { level: 0, on: 0 };
     tag.current.rotateX(-0.16 * v.on);
     tag.current.scale.setScalar(1 + 0.035 * v.level);
+    noteStamp(now, tag.current);
     const glow = q.glow ?? 0;
     tagPerform(look.u, v.level, v.on, glow);
     if (light.current) light.current.intensity = (glow + 0.12 * v.on + 0.45 * v.level) * lamp;
