@@ -22,20 +22,34 @@ test("a signed-out visit to / is sent to /welcome, and other pages still go to /
   }
 });
 
-test("the welcome page's primary call to action goes to the service levels and the request form, and the demo link opens sign-in", async ({ page, baseURL }) => {
+test("the welcome page has one action, early access, in reach from the header, and sells two paid plans and nothing else", async ({ page, baseURL }) => {
   await page.goto("/welcome");
-  // accounts and payment are not built: the primary action asks for access, and a level names itself above the form
-  // and is preselected in the form's Level field
-  await page.getByRole("link", { name: "Request access" }).first().click();
-  await expect(page).toHaveURL(`${baseURL}/welcome#levels`);
-  await expect(page.getByRole("heading", { level: 2, name: "What does it cost, and how do I start?" })).toBeInViewport();
-  await expect(page.getByText("Price to be announced")).toHaveCount(2);
-  await page.getByRole("link", { name: "Request access: Maker" }).click();
-  await expect(page.getByRole("heading", { level: 3, name: "Request access: Maker" })).toBeVisible();
-  await expect(page.getByLabel("Level", { exact: true })).toHaveValue("maker");
-  await page.getByRole("link", { name: "Try the live demo" }).first().click();
+  // the header's action goes to the form in the hero; the same words are the action of every block
+  await page.getByRole("banner").getByRole("link", { name: "Claim an early-access place" }).click();
+  await expect(page).toHaveURL(`${baseURL}/welcome#early`);
+  await expect(page.getByRole("heading", { level: 1, name: "Your product idea, built and on sale." })).toBeInViewport();
+  for (const where of ["get", "proof", "pricing-maker", "pricing-studio"]) await expect(page.locator(`a[data-track="cta:${where}"]`)).toHaveText("Claim an early-access place");
+  // the nine blocks, by their stable ids (the builder block shows only once the owner's name and text are saved)
+  for (const id of ["hero", "origin", "problem", "get", "proof", "pricing", "faq", "close"]) await expect(page.locator(`section#${id}`)).toHaveCount(1);
+  await page.getByRole("link", { name: "See the worked example" }).click();
+  await expect(page).toHaveURL(`${baseURL}/welcome#proof`);
+  await expect(page.getByRole("heading", { level: 2, name: "One real product, taken through it" })).toBeInViewport();
+  // pricing: Maker and Studio, each with a price; no card that costs nothing and none for running it yourself
+  const pricing = page.locator("section#pricing");
+  await expect(pricing.getByRole("heading", { level: 4 })).toHaveText(["Maker", "Studio"]);
+  await expect(pricing.getByText("Team seats open after early access.")).toBeVisible();
+  await expect(pricing.getByText("Price to be announced")).toHaveCount(0);
+  // nothing the page says of the service claims it costs nothing, points at the source, or offers the shared demo
+  // (the example's own rows, shown in "What you get" and the proof, are its data and are not read here)
+  for (const where of ["header", "section#hero", "section#problem", "section#pricing", "section#faq", "section#close", "footer"]) {
+    const text = (await page.locator(where).innerText()).toLowerCase();
+    for (const word of ["free", "github", "self-host", "docker", "demo", "request access"]) expect(text, `${where}: ${word}`).not.toContain(word);
+  }
+  const all = (await page.locator("body").innerText()).toLowerCase();
+  for (const word of ["github", "self-host", "docker", "try the live demo", "request access", "run it yourself"]) expect(all, word).not.toContain(word);
+  await expect(page.getByRole("contentinfo")).toContainText("Visits to this page are counted on our own server. Nothing is sent to anyone else.");
+  await page.getByRole("contentinfo").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(`${baseURL}/sign-in`);
-  await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
 });
 
 for (const theme of ["light", "dark"] as const) {
@@ -48,27 +62,6 @@ for (const theme of ["light", "dark"] as const) {
     expect(await sessionCookie(page)).toBeUndefined();
   });
 }
-
-test("the welcome page's request form stores a request with the chosen level and says plainly that no email is sent", async ({ page }) => {
-  await page.goto("/welcome");
-  await expect(page.getByText("Stored in this install's database. No email is sent by the app.")).toBeVisible();
-  // the level travels from the card, and can be changed in the form
-  await page.getByRole("link", { name: "Request access: Studio" }).click();
-  await expect(page.getByLabel("Level", { exact: true })).toHaveValue("studio");
-  await page.getByLabel("Level", { exact: true }).selectOption("free");
-  await expect(page.getByRole("heading", { level: 3, name: "Request access: Free" })).toBeVisible();
-  await page.getByRole("button", { name: "Request a workspace" }).click();
-  await expect(page.getByText("Enter your name.")).toBeVisible();
-  await page.getByLabel(/Your name/).fill("E2E Visitor");
-  await page.getByLabel(/^Email/).fill("visitor@example.test");
-  await page.getByLabel(/What do you want to build/).fill("A bike light that brakes brighter.");
-  const answer = page.waitForResponse((r) => r.url().endsWith("/api/access-requests") && r.request().method() === "POST");
-  await page.getByRole("button", { name: "Request a workspace" }).click();
-  const sent = await answer;
-  expect(sent.status()).toBe(201);
-  expect(sent.request().postDataJSON()).toMatchObject({ level: "free" });
-  await expect(page.getByText("We have your request. Nothing is sent by email yet; the owner sees it in Admin.")).toBeVisible();
-});
 
 test("a wrong password shows the error and starts no session", async ({ page, baseURL }) => {
   await page.goto("/sign-in");

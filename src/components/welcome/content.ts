@@ -1,33 +1,40 @@
 /**
- * The words of the public welcome page (/welcome) and its one-page overview (/welcome/overview), in one place
- * so the two never disagree. Every claim here is something the app does today, checked against
- * docs/guide/user.md and docs/guide/admin.md; where something needs a model, a key or a service, it says so.
+ * The words of the public welcome page (/welcome) and its one-page overview (/welcome/overview), in one place.
+ * Every claim here is something the app does today, checked against docs/guide/user.md and docs/guide/admin.md.
  * No figures appear that are not measured in this repository: no user counts, no benchmarks, no time savings.
- * The one exception is LEVELS: the service levels are approved, their prices are proposals the owner has not
- * confirmed, and SHOW_PRICES keeps them off the page until he does.
+ *
+ * The welcome page is the early-access page (owner, 22 Nov): one action, "Claim an early-access place", nine
+ * blocks, and nothing about running the software yourself. Its words are HERO, PROBLEM, GET, MECHANISM, PROOF,
+ * PRICING, BUILDER, questions(), CLOSING and FOOTER. FAQ, RUNS_ON and RUN_COMMANDS are the overview page's only.
+ * LEVELS is the built-in plan catalogue that src/lib/admin/planSchema.ts reads; the page itself shows the paid
+ * plans from the catalogue in force (Pricing.tsx).
  */
 
 export const PRODUCT = "Concept to Realization";
-export const REPO_URL = "https://github.com/Planet9V/EmotionalBaggage";
+
+/** The one action of the page, worded the same everywhere. `short` is the header's label on a phone. */
+export const ACTION = { label: "Claim an early-access place", short: "Early access" };
 
 export const HERO = {
   eyebrow: "For makers, first-time founders and small product firms",
   title: "Your product idea, built and on sale.",
   sub: "One workbench carries a physical product from a one-line idea to a costed prototype, a launch plan and a marketplace listing. AI drafts each stage from the last. You decide what stands.",
-  primary: "Request access",
-  secondary: "Try the live demo",
-  status: "Sign-up with your own workspace is being built. Today you can try the shared demo or request access.",
+  secondary: "See the worked example",
 };
 
 export const META = {
   title: "Concept to Realization: take a product idea to a prototype, a launch and a listing",
   description:
-    "One workbench for makers, first-time founders and small product firms: AI drafts each stage from the last, from brief to parts list, print files, unit cost, ads and a marketplace listing, and you decide. Try the live demo or request access.",
+    "One workbench for makers, first-time founders and small product firms: AI drafts each stage from the last, from brief to parts list, print files, unit cost, ads and a marketplace listing, and you decide. Early access is limited to 50 places.",
 };
 
 /** The problem, as before and after pairs. The "after" side is what the app does, word for word from the guides. */
 export const PROBLEM = {
   title: "One product, ten tools that never talk to each other",
+  before: "Elsewhere",
+  after: "Here",
+  /** the pairs the welcome page shows, by index */
+  shown: [0, 2, 3],
   lead: "A hardware idea usually lives in a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager. Change one part and the wiring, the enclosure, the cost and the launch copy go stale without telling you.",
   pairs: [
     {
@@ -144,22 +151,6 @@ export const PRINCIPLES: { title: string; text: string }[] = [
   { title: "Every change is recorded", text: "Each concept keeps its activity, and the install keeps an audit log that cannot be edited or deleted." },
 ];
 
-export const AUDIENCE = {
-  title: "Is it for someone like me?",
-  lead: "You have an idea for a physical product, often with electronics inside. You want to get from the idea to a working prototype, a parts list with real prices and a plan to sell it, without stitching ten tools together.",
-  fit: [
-    "Makers taking a first hardware product past the bench.",
-    "First-time founders preparing a Kickstarter, Amazon or own-site launch.",
-    "Small product firms that want the cost and the build order worked out, not estimated in someone's head.",
-  ],
-  types: "Three kinds of product are supported: electronics in an enclosure, a printed part, and a physical product with no electronics. Sections that do not apply to yours are hidden, never deleted.",
-  notYet: [
-    "You need precise mechanical CAD. Parts here are boxes, cylinders or the STL and STEP files you attach.",
-    "Several people need their own logins. An install has one account today.",
-    "You want parts ordered for you. The app gives search links and a shopping list; you buy.",
-  ],
-};
-
 export const RUNS_ON: { title: string; text: string }[] = [
   { title: "Free when self-hosted", text: "Apache 2.0. No account with us and no subscription when you run it yourself. You pay only the services you choose to connect, at their own rates." },
   { title: "Your machine", text: "Three containers with Docker Compose: the app, PostgreSQL with pgvector, and the planner. Every concept and file is stored in your database." },
@@ -170,7 +161,7 @@ export const RUNS_ON: { title: string; text: string }[] = [
 
 export const RUN_COMMANDS = ["git clone https://github.com/Planet9V/EmotionalBaggage", "cd EmotionalBaggage", "docker compose up -d --build --wait"];
 
-/** The objections, answered. Used for the FAQ on the page, its FAQPage data, and the overview's quick table. */
+/** The objections as the one-page overview answers them (its quick table). The welcome page asks buying questions: questions(), below. */
 export const FAQ: { q: string; a: string; /** the one-line answer on the printed overview */ short: string; where: string }[] = [
   {
     q: "What does it cost?",
@@ -233,9 +224,9 @@ export const CLOSING = {
   text: "An idea that is not pursued is never realised. Put yours through the same stages as the example: AI drafts, you decide, and the next step is always named.",
 };
 
-/** What the live demo opens on. Beside the demo button in Get started. */
-export const DEMO_NOTE =
-  "The live workbench opens on Baggage Claims MK1, a full example concept with its parts, wiring, decisions, costs and campaigns already entered. Walk through it, then start a concept of your own with the six-step wizard.";
+export const FOOTER = {
+  privacy: "Visits to this page are counted on our own server. Nothing is sent to anyone else.",
+};
 
 /**
  * The worked example's figures, in one place so every section of the page shows the same ones. Each is from this
@@ -264,102 +255,12 @@ export const EXAMPLE = {
 } as const;
 
 /**
- * The bag's own lines, word for word from the owner's gag catalogue for Baggage Claims MK1. They are the only
- * jokes on the page: product copy stays plain. `where` says what is happening to the suitcase when it speaks.
- */
-export const BAG_LINES = {
-  scale: { line: "Are you calling me FAT?", where: "on the check-in scale" },
-  impact: { line: "OW! ...I felt that in my flip-flops.", where: "after a hard landing on the belt" },
-  lifted: { line: "Whoa whoa whoa — are you gonna buy me dinner first?", where: "lifted by the handle" },
-  carousel: { line: "Wheeee! Again! Again!", where: "on the carousel" },
-  conveyor: { line: "Oh sure, I'll take the scenic route.", where: "on the conveyor" },
-  hold: { line: "Hello? ...Anyone? ...Cool, cool. I'll just be here.", where: "two hours into the dark hold" },
-  souvenirs: { line: "Sixty-two pounds? That's mostly SOUVENIRS.", where: "back at the scale" },
-} as const;
-
-type BagLineKey = keyof typeof BAG_LINES;
-
-/**
- * The departures board: where the worked example stands today. Each row is a stage and its gate. The status and
- * the remark are worked out from the gate's true checks (exampleData.ts runs the app's own gate rules on the
- * seeded rows), never typed: a stage reads Departed only when every check of its gate is met, Boarding while at
- * least half are, Delayed while fewer are, and Scheduled when none is. The board runs through its states in a
- * loop: nothing called yet, then each gate called in turn.
- */
-export const BOARD = {
-  title: "Where is the example today?",
-  lead: "Seven gates, one bag. Each row is a stage of the example, with its status worked out from the gate's own checks. Nothing has departed yet, and the board says so.",
-  rule: "Departed means every check of the gate is met. Boarding: at least half are. Delayed: fewer than half. Scheduled: none yet.",
-  flight: EXAMPLE.name,
-  columns: { time: "Time", destination: "Destination", gate: "Gate", status: "Status", remarks: "Remarks" },
-  /** how wide each column is, in flap cells */
-  cells: { time: 5, destination: 10, gate: 2, status: 9, remarks: 18 },
-  rows: [
-    { key: "concept", n: "01", name: "Concept", about: "The idea" },
-    { key: "research", n: "02", name: "Research", about: "The sources" },
-    { key: "design", n: "03", name: "Design", about: "The parts" },
-    { key: "prototype", n: "04", name: "Prototype", about: "The build" },
-    { key: "production", n: "05", name: "Production", about: "The cost" },
-    { key: "marketing", n: "06", name: "Marketing", about: "The launch" },
-    { key: "sales", n: "07", name: "Sales", about: "The listing" },
-  ] as { key: string; n: string; name: string; about: string }[],
-};
-
-type BoardTone = "plain" | "good" | "late";
-export type BoardRow = { time: string; destination: string; gate: string; status: string; remarks: string; tone: BoardTone };
-export type GateCount = { met: number; total: number };
-
-/** A gate's status word, from its checks alone. */
-function gateStatus(g: GateCount): { status: string; tone: BoardTone } {
-  if (g.total > 0 && g.met === g.total) return { status: "Departed", tone: "good" };
-  if (g.met === 0) return { status: "Scheduled", tone: "plain" };
-  return g.met * 2 >= g.total ? { status: "Boarding", tone: "good" } : { status: "Delayed", tone: "late" };
-}
-
-/**
- * Every state of the board for these gates: state 0 is the board before any call, state k has gates 1 to k called.
- * A called row shows its true status and "4 of 6 checks met"; a row not yet called is Scheduled with what it is about.
- */
-export function boardStates(gates: Record<string, GateCount>): BoardRow[][] {
-  const state = (called: number): BoardRow[] =>
-    BOARD.rows.map((r, i) => {
-      const at = i + 1;
-      const base = { destination: r.name, gate: r.n };
-      if (at > called) return { ...base, time: at === called + 1 ? "Next" : "Later", status: "Scheduled", remarks: r.about, tone: "plain" };
-      const g = gates[r.key] ?? { met: 0, total: 0 };
-      return { ...base, time: at === called ? "Now" : "Open", ...gateStatus(g), remarks: `${g.met} of ${g.total} checks met` };
-    });
-  return Array.from({ length: BOARD.rows.length + 1 }, (_, k) => state(k));
-}
-
-export type JourneyStage = {
-  key: string;
-  /** index into STAGES */
-  n: string;
-  name: string;
-  /** what the person does here: the desired state in docs/ux-discovery/journey-idea-to-product.md */
-  does: string;
-  /** where in the app */
-  inApp: string;
-  /** this stage's views run live in the engineering stage above, so it shows no screenshot and links there */
-  live?: boolean;
-  /** index into PROBLEM.pairs, shown as "elsewhere" and "here" */
-  pair?: number;
-  /** figures from this repository: the seed concept, its source documents and the journey document */
-  facts: { figure: string; label: string }[];
-  line: BagLineKey;
-  extras?: ("exploded" | "layers" | "cost" | "ads" | "listing" | "schematic")[];
-};
-
-/**
  * The engineering stage: the app's own views, live on the page, on the example's own rows. Counts that the views
  * work out (parts placed, wires drawn, checks met) are computed where they are shown, never typed here.
  */
 export const ENGINEERING = {
-  eyebrow: "The engineering, live",
-  title: "Is the engineering real?",
-  tagNote: "The tag that ships is an authored design (Rev D, chosen 22 Nov); this enclosure is the app's own generator run on the same parts, for comparison.",
-  lead: `Six of the workbench's own views, running here on ${EXAMPLE.name}'s rows. Turn the model, pan the schematic, watch the case print. Nothing on this page can be saved; in the workbench every one of them is yours to edit.`,
+  /** names the tab list */
+  title: "Make it: the engineering views",
   tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
   loading: "Loading the view",
   badge: "Live views, in the workbench's dark theme",
@@ -369,7 +270,7 @@ export const ENGINEERING = {
   hintTouch: "Tap, then drag to turn. Pinch to zoom.",
   tap: "Tap to explore",
   panTouch: "Tap, then drag to pan. Pinch or the buttons zoom.",
-  note: "The stage is dark whichever theme the page is in: these are the workbench's own views in its dark theme. As the app says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
+  note: "As the workbench says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
   model: {
     modes: { translucent: "Translucent", solid: "Solid", wireframe: "Wireframe", exploded: "Exploded" },
     wiresHidden: "The solid lid is closed, so the wires and the labels of the parts inside are not drawn.",
@@ -411,180 +312,14 @@ export const ENGINEERING = {
   },
 };
 
-/** The journey's panels of seeded rows (StageRows.tsx): their counts are worked out from the rows, never typed. */
-export const ROWS = {
-  claims: {
-    caption: "The example's claims to verify, each with its source and status",
-    count: (n: number, open: number) => `${n} claims, ${open} still to verify`,
-  },
-  positioning: { count: (n: number) => `${n} rows` },
-  decisions: {
-    count: (n: number, decided: number) => `${n} decisions, ${decided} decided`,
-    hint: "The example's decision tree, every branch open. Press a decision to frame it and see where it stands.",
-    still: "The example's decisions, as a list until the tree loads.",
-  },
-  unit: {
-    count: (lines: number, batch: number) => `${lines} lines, at a batch of ${batch}`,
-    honest: "Added up by the app's own calculation from the seeded parts list. Prices are the example's own, from its source documents.",
-  },
-  ads: { count: (n: number) => `${n} drafts, none approved` },
-  listing: {
-    count: (n: number) => `${n} row`,
-    honest: "That is all the example holds here: one row saying the listing is not started. Nothing is drawn in to fill the gap.",
-  },
-  channels: {
-    caption: "The example's planned sales channels, with price, the channel's take and the net",
-    count: (n: number) => `${n} channels, none live`,
-    honest: "Planned figures from the example's own source documents, not results: no channel has been run.",
-  },
-};
-export const GATE = {
-  count: (met: number, total: number) => `Gate: ${met} of ${total} checks met`,
-  met: "met",
-  open: "not met",
-};
-export const LIVE_LINK = "These views run live in the engineering stage above";
-
-export const JOURNEY_INTRO = {
-  title: "What does each gate still need?",
-  lead: `One week of chats about a talking suitcase produced ${EXAMPLE.documents} documents that disagreed with each other. Here is the same idea carried through the workbench, with the example's own rows at each stage. Each gate shows its checks as they truly stand for the example today, worked out by the app's own gate rules: most are still open, and each open one says what is missing.`,
-};
-
-export const JOURNEY: JourneyStage[] = [
-  {
-    key: "concept",
-    n: "01",
-    name: "Concept",
-    does: "Tell the idea once and keep every source with it. Then lay out the choices the idea depends on, and let the gate list what is still missing.",
-    inApp: "Wizard, Concept story, Files, Decision tree",
-    facts: [
-      { figure: String(EXAMPLE.documents), label: "source documents kept with the concept" },
-      { figure: String(EXAMPLE.decisions), label: "decisions laid out, each with its options" },
-    ],
-    line: "scale",
-  },
-  {
-    key: "research",
-    n: "02",
-    name: "Research",
-    does: "Ask the questions that worry you and keep each answer with its sources. A claim becomes verified or wrong from the sources you judged, not from repetition.",
-    inApp: "Research, Claims, Chat",
-    facts: [{ figure: "2", label: "Kickstarter goals, and two build times, in the source documents. This is where they get settled." }],
-    line: "hold",
-  },
-  {
-    key: "design",
-    n: "03",
-    name: "Design",
-    does: "Enter the parts once. The schematic, the physical layout, the 3D model and the enclosure are all drawn from that one list.",
-    inApp: "Parts list, Schematic, Layout, 3D model, Enclosure",
-    live: true,
-    pair: 0,
-    facts: [
-      { figure: String(EXAMPLE.parts), label: "parts on the parts list" },
-      { figure: String(EXAMPLE.wires), label: "wires on the schematic" },
-    ],
-    line: "lifted",
-    extras: ["exploded", "schematic"],
-  },
-  {
-    key: "prototype",
-    n: "04",
-    name: "Prototype",
-    does: "Source the parts, slice and print the case, wire it from a build sheet in order, and record each test.",
-    inApp: "Sourcing, Print jobs, Build sheet, Tests",
-    live: true,
-    facts: [
-      { figure: String(EXAMPLE.solderSteps), label: "soldering steps on the build sheet" },
-      { figure: EXAMPLE.build, label: "to build, along the critical path" },
-    ],
-    line: "impact",
-    extras: ["layers"],
-  },
-  {
-    key: "production",
-    n: "05",
-    name: "Production",
-    does: "Read the unit cost, added up from what you entered. See which parts have no price yet, then plan a batch and the cash it needs.",
-    inApp: "Unit economics, Batch plans, Order of operations",
-    pair: 1,
-    facts: [{ figure: String(EXAMPLE.parts), label: "parts, every one with a price before the total is trusted" }],
-    line: "souvenirs",
-    extras: ["cost"],
-  },
-  {
-    key: "marketing",
-    n: "06",
-    name: "Marketing",
-    does: "Approve drafts built from the brief and the proof: positioning, a brand kit, ads, a landing page and a launch plan whose dates count back from launch day.",
-    inApp: "Positioning, Brand kit, Ads, Launch plan",
-    pair: 3,
-    facts: [{ figure: String(EXAMPLE.voicePacks.length), label: `voice packs to sell: ${EXAMPLE.voicePacks[0]}, ${EXAMPLE.voicePacks[1]} and ${EXAMPLE.voicePacks[2]}` }],
-    line: "carousel",
-    extras: ["ads"],
-  },
-  {
-    key: "sales",
-    n: "07",
-    name: "Sales",
-    does: "List it, post about it, and watch orders and campaign results beside the targets you set. Nothing is posted until you confirm the exact text and the account.",
-    inApp: "Listing, Channels, Social, Sales monitor",
-    facts: [{ figure: "0", label: "real marketplace accounts run so far. These screens are built and tested against stand-ins, and say so." }],
-    line: "conveyor",
-    extras: ["listing"],
-  },
-];
-
-/** Labels of the exploded drawing of the gadget, top to bottom. The parts are on the parts list. */
-export const CASE_LAYERS = ["Lid", "Speaker", "Carrier board", "Battery holder", "Base"];
-export const EXPLODED_TITLE = "The gadget, taken apart";
-
 /** The theme switch on the public pages. Their header and hero stay dark in both themes, so the label names the page. */
 export const TOGGLE = { toDark: "Switch page to dark", toLight: "Switch page to light" };
 
-export const PRINT_NOTE = "The base in PETG, 4 perimeters, 25% infill, as the parts list specifies.";
-export const COST = { value: EXAMPLE.partsCost, label: `prototype parts cost: the ${EXAMPLE.parts} lines of the parts list, stacked` };
-export const ADS_NOTE = "The example holds three ad drafts, all for retargeting. Each waits for approval.";
-export const LISTING_NOTE = "What a listing draft holds. The example's own listing is not started yet; it goes live only when you say so.";
-export const SCHEMATIC_NOTE = "A corner of the schematic: the audio module, its series resistor and the speaker, with the app's net colours.";
-
-/**
- * The whole trip on one map: each stage, what it produces, and what feeds what. The sections are the app's
- * own; the feeds are the ones the guides describe (the parts list drives the schematic, the enclosure and the
- * unit cost; drafts are built from approved positioning; a claim needs proof). Drawn with React Flow.
- */
-export const MAP = {
-  title: "What changes when I change one thing?",
-  lead: "One map of the seven stages: what each one produces, and what feeds what. Pick anything on it to see what depends on it.",
-  idle: "Nothing picked yet. Try the parts list.",
-  note: "A map of what feeds what. Today the app's change notice lists design and cost rows; marketing and assembly rows are being added.",
-  stages: [
-    { key: "concept", n: "01", name: "Concept", makes: [["story", "Concept story"], ["decisions", "Decision tree"]] },
-    { key: "research", n: "02", name: "Research", makes: [["answers", "Sourced answers"], ["claims", "Verified claims"]] },
-    { key: "design", n: "03", name: "Design", makes: [["parts", "Parts list"], ["schematic", "Schematic"], ["enclosure", "Enclosure"]] },
-    { key: "prototype", n: "04", name: "Prototype", makes: [["buildsheet", "Build sheet"], ["prints", "Print jobs"], ["tests", "Acceptance tests"]] },
-    { key: "production", n: "05", name: "Production", makes: [["unitcost", "Unit cost"], ["batch", "Batch plan"]] },
-    { key: "marketing", n: "06", name: "Marketing", makes: [["positioning", "Positioning"], ["pricing", "Pricing"], ["ads", "Ad copy"]] },
-    { key: "sales", n: "07", name: "Sales", makes: [["listing", "Listing"], ["monitor", "Sales monitor"]] },
-  ] as { key: string; n: string; name: string; makes: [id: string, label: string][] }[],
-  feeds: [
-    ["story", "positioning"], ["decisions", "batch"], ["answers", "claims"], ["claims", "positioning"], ["claims", "ads"],
-    ["parts", "schematic"], ["parts", "enclosure"], ["parts", "unitcost"], ["schematic", "buildsheet"], ["enclosure", "prints"],
-    ["buildsheet", "tests"], ["unitcost", "batch"], ["unitcost", "pricing"], ["positioning", "ads"], ["pricing", "listing"],
-    ["ads", "listing"], ["listing", "monitor"],
-  ] as [from: string, to: string][],
-};
-
-/** Every node of the map by id: the stage names and what each stage makes. */
-export const MAP_LABEL = new Map<string, string>(MAP.stages.flatMap((s) => [[s.key, s.name] as [string, string], ...s.makes]));
-
-/** The header's links, in the page's order. */
+/** The header's links, shown from 1024 px. */
 export const NAV: { href: string; label: string }[] = [
   { href: "#get", label: "What you get" },
-  { href: "#fast", label: "How it works" },
-  { href: "#engineering", label: "Engineering" },
-  { href: "#market", label: "To market" },
-  { href: "#levels", label: "Levels" },
+  { href: "#proof", label: "The example" },
+  { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "Questions" },
 ];
 
@@ -741,28 +476,43 @@ export const GET_VIEWS = {
 };
 
 /**
- * "How it goes fast": AI drafts each stage from the last and you decide. No time saving or percentage is claimed,
- * because none has been measured; the copy says what the workbench is built to do.
+ * How it works, as a short strip inside "What you get": AI drafts each stage from the last and you decide. No time
+ * saving, percentage or "faster" is claimed, because none has been measured.
  */
-export const FAST = {
-  eyebrow: "How it goes fast",
-  title: "How does it get me there faster?",
-  lead: "AI drafts the next stage from the one you approved, so no stage starts from a blank page. Here an approved brief line becomes a drafted requirement, which becomes a drafted part, a wire, an assembly step, a test and an ad. Each draft waits for you, and nothing you have not approved is built on.",
-  label: "A chain of seven rows from the example. Each is drafted from the one before and approved before it feeds the next.",
-  draft: "Draft",
-  approve: "Approve",
-  approved: "Approved",
-  waits: "Waits for you",
-  from: "Drafted from the row before",
-  first: "Written by you",
-  note: `Shown on ${EXAMPLE.name}'s own rows. In the workbench the drafting is done by the model you choose, from the rows you approved, and every draft lists the rows it came from. No time saving is claimed here, because none has been measured.`,
-  guaranteesTitle: "What stays my decision?",
+export const MECHANISM = {
+  title: "AI drafts each stage. You approve it. The next stage starts from there.",
   guarantees: [
     { title: "Publishing and spending wait for you", text: "A post, a message or a purchase goes out only when you confirm it in the app. The app places no orders." },
     { title: "Numbers come from your rows", text: "A missing price is named and left out of the total. Print time and material come from the slicer's own output." },
     { title: "Claims need proof", text: "A marketing line with a number or a superlative needs a linked proof row before it can be approved." },
-    { title: "Changes are recorded", text: "Each concept keeps its activity, and the install keeps an audit log that is read only." },
+    { title: "Changes are recorded", text: "Each concept keeps its activity, and the audit log is read only." },
   ],
+};
+
+/**
+ * The proof: one showcase of the worked example in two groups, Make it (the engineering stage, Engineering.tsx) and
+ * Sell it (the market stage, Market.tsx), then one row of the seven stages with their gate counts, worked out by
+ * the app's own gate rules (exampleData.ts), and what is still open behind a disclosure.
+ */
+export const PROOF = {
+  eyebrow: `The worked example: ${EXAMPLE.name}`,
+  title: "One real product, taken through it",
+  lead: `${EXAMPLE.name} is ${EXAMPLE.what}, and the first idea put through the workbench. These are its own rows in the workbench's own views: the engineering under Make it, marketing and sales under Sell it. Where the example has nothing yet, the view says so.`,
+  switch: "Which half of the example to show",
+  groups: {
+    make: { label: "Make it", sub: "Six engineering views, live: turn the model, pan the schematic, watch the case print." },
+    sell: { label: "Sell it", sub: "Seven marketing and sales views, built on the same rows as the engineering." },
+  },
+  noscript: "Script is off, so the switch cannot change. The Sell it views are set out below.",
+  enclosureNote: "The enclosure in these views is the box the workbench generates around the example's parts. The example's final case is designed by hand.",
+  status: {
+    title: "Where does the example stand today?",
+    lead: "Each stage ends in a gate of checks. These counts are worked out by the workbench's own rules on the example's rows. It is designed and costed, not yet manufactured or sold.",
+    label: "The seven stages of the example, each with its checks met",
+    count: (met: number, total: number) => `${met} of ${total} checks met`,
+    open: (n: number) => `What is still open (${n} ${n === 1 ? "check" : "checks"})`,
+    none: "Every check is met.",
+  },
 };
 
 /**
@@ -771,9 +521,8 @@ export const FAST = {
  * a line saying which is which. Counts are worked out from the rows (storyData.ts).
  */
 export const MARKET = {
-  eyebrow: "Then it went to market",
-  title: "Does it get me to market?",
-  lead: `Marketing and sales are stages of the same workbench, built on the same rows as the engineering. Seven of them are open here on ${EXAMPLE.name}. Where the example has rows you see them; where it has none yet you see what the stage produces and the limits it holds you to.`,
+  /** names the tab list */
+  title: "Sell it: the marketing and sales views",
   tabs: { positioning: "Positioning", brand: "Brand kit", ads: "Ads", landing: "Landing page", launch: "Launch plan", listing: "Listing", results: "Channels and results" },
   badge: "The example's rows, read only",
   note: "Connections to Amazon, X and Instagram are built to each service's published documentation and tested against stand-ins. They have not yet been run on live accounts.",
@@ -922,17 +671,65 @@ export const LEVELS: Level[] = [
   },
 ];
 
-export const YOUR_TURN = {
-  eyebrow: "Your turn",
-  title: "What does it cost, and how do I start?",
-  lead: "Four levels, from one idea to a team. A subscription sets concepts, seats and storage and includes monthly AI credits.",
-  honest: "Sign-up with your own workspace is being built, and nothing can be bought yet. Today you can try the shared demo or request access.",
-  tba: "Price to be announced",
-  request: "Request access",
-  run: "Run it yourself",
+/**
+ * Pricing on the welcome page (owner, 22 Nov): early access is limited to 50 places, then two paid plans. The
+ * cards are the paid plans of the catalogue in force (Pricing.tsx, paidPlans). `prices` is what a card shows while
+ * the catalogue keeps its prices hidden or has none for that plan: the working figures for the two plans, until the
+ * catalogue carries them. Early access takes no payment. No discount is promised: none was ruled.
+ */
+export const PRICING = {
+  eyebrow: "Pricing",
+  title: "What does it cost?",
+  lead: "Early access is limited to 50 people and takes no payment. After those places are gone, the workbench is by monthly subscription, on one of the two plans below.",
+  offerTitle: "Early access: 50 places",
+  offerText: "Give an email address and one line about what you want to make. The count beside the form is the real number of places left.",
+  plansTitle: "After early access",
   includes: "Includes",
-  formTitle: (level: string | null) => (level ? `Request access: ${level}` : "Request access"),
-  formLead: (level: string | null) =>
-    `Tell us who you are and what you want to build${level ? `. ${level} is chosen as the level you want; you can change it in the form` : ""}. The request is stored here and the owner reads it in Admin. No email is sent yet, so the reply comes by hand.`,
-  demoTitle: "Or try the live demo now",
+  per: "a month",
+  prices: { maker: "$20", studio: "$40" } as Record<string, string>,
+  /** shown on a plan's card, by plan key */
+  notes: { studio: "Team seats open after early access." } as Record<string, string>,
+  first: "Early-access members are asked first when paid plans open.",
+  questionsTitle: "What else should I ask?",
 };
+
+/** "Who built it": shown only when the setting BUILDER.setting holds a name and a text (builder.ts). */
+export const BUILDER = {
+  setting: "welcome.builder",
+  title: "Who built it?",
+};
+
+type Question = { q: string; a: string };
+
+/**
+ * The buying questions of the welcome page and its FAQPage data. The prices are the ones the pricing cards show,
+ * so the two cannot disagree. Who can see a hosted concept and who owns it is not asked here: the hosted terms
+ * are not written yet, and the page says nothing it cannot stand behind.
+ */
+export function questions(plans: { name: string; price: string; per: string }[]): Question[] {
+  const prices = plans.map((p) => `${p.name} at ${p.price} ${p.per}`).join(" and ");
+  const then = prices ? ` After the 50 early-access places, the workbench is by subscription: ${prices}.` : "";
+  return [
+    { q: "What does it cost?", a: `Early access takes no payment.${then} ${PRICING.first}` },
+    {
+      q: "What is early access, and why 50?",
+      a: `Early access is a place among the first 50 people to put an idea of their own through the workbench. You claim one with an email address and one line about what you want to make. Fifty is a fixed limit, and the count on this page is the real number of places left.${prices ? " When they are gone, the way in is a paid plan." : ""}`,
+    },
+    {
+      q: "Do I need electronics or CAD skills?",
+      a: "No CAD skills: parts are drawn as boxes and cylinders from the sizes you enter, or from an STL or STEP file you attach, and the enclosure is generated around them. Some electronics knowledge helps, because you approve every draft and build the prototype yourself. The electrical checks list what they find, worst first, and the build sheet gives the order to solder in.",
+    },
+    {
+      q: "Is it only for electronics?",
+      a: "No. A concept is one of three kinds: electronics in an enclosure, a printed part, or a physical product with no electronics. The sections that do not apply, such as the schematic for a printed part, are hidden.",
+    },
+    {
+      q: "Does the AI make things up?",
+      a: "It drafts, and a draft counts for nothing until you approve it. Every draft is kept with the rows it came from. A part with no price is named and left out of the total, never counted as zero. A marketing line with a number or a superlative needs a linked proof row before it can be approved.",
+    },
+    {
+      q: "What is not finished yet?",
+      a: `Connections to outside services (Amazon, X, Instagram and printers) are built to each service's published documentation and tested against stand-ins; they have not yet been run on live accounts. Team workspaces open after early access. The worked example, ${EXAMPLE.name}, is designed and costed, not yet manufactured or sold.`,
+    },
+  ];
+}
