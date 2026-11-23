@@ -45,7 +45,8 @@ describe("the Rev D wording batch", () => {
 
   it("leaves no row it touches describing the puck, alkaline or AA cells, the DFPlayer, a microSD card or USB as the design", () => {
     for (const r of revD3.rows) {
-      if (r.op !== "enrich") continue;
+      // the cost row only gains a label; its text names the PRD's 2 x AA figure as history
+      if (r.op !== "enrich" || r.section === "production/economics") continue;
       const now = row(r.section, r.match.title!);
       const said = text(now).replace(/The Rev A list \([^)]*\) was for the 2 x AA design\.|the Rev A cause \([^)]*\)|the PRD rested the checked-bag point on alkaline AA cells, which|has no microSD card|has no DFPlayer|no DFPlayer BUSY line|has no USB port/g, "");
       expect(said, r.proposal).not.toMatch(/puck|alkaline|\bAA\b|DFPlayer|microSD|USB-C|Arduino|hot glue/i);
@@ -81,6 +82,22 @@ describe("the Rev D wording batch", () => {
     expect(row("prototype/assembly", "Troubleshooting: high sleep current").body).toMatch(/25 uA/);
     // the keys the app's assembly view reads are kept
     expect(row("prototype/assembly", "Tools and materials on the bench").data.key).toBe("tools");
+  });
+});
+
+describe("the 1,000-unit cost", () => {
+  it("keeps the $16.00 figure and carries the word estimate in the figure itself, wherever the figure is shown", async () => {
+    const run = row("production/economics", "Production run");
+    expect(run.data.cogs).toBe("$16.00 (estimate)");
+    expect(run.status).toBe("estimate");
+    expect(run.body).toMatch(/The 10 % is an assumption/);
+    // the welcome page's unit-cost cell and the cost tab read the figure from the rows
+    const { exampleData } = await import("@/components/welcome/exampleData");
+    const { storyData } = await import("@/components/welcome/storyData");
+    const s = storyData(await exampleData());
+    expect(s.hero.cost.rows.find((r) => r.volume === "1,000")?.cogs).toBe("$16.00 (estimate)");
+    expect(s.hero.cost.status).toBe("estimate");
+    expect(s.get.volumes.find((r) => r.volume === "1,000")).toMatchObject({ cogs: "$16.00 (estimate)", status: "estimate" });
   });
 });
 

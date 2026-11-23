@@ -1,6 +1,6 @@
 {
   "batch": "2026-11-23-revD-3",
-  "about": "The rows the two Rev D batches left describing the Rev A and 2 x AA device as current: the story's pitch (a palm-sized puck) and its reason why (alkaline cells), the brief's claimed moats and battery risk, the two FAQ answers on TSA and checked bags, the legal pages, the launch step for the compliance mark and the battery statement, and the bench tools and troubleshooting rows (DFPlayer, microSD, battery plus USB). Each is changed only while it still reads as the seed and the batches before this one left it. The airline and security rows state only what the Rev D engineering note's cited rules support (IATA Dangerous Goods Regulations, Table 2.3.A; FAA PackSafe), say that airline and security staff make the final call, and wait for the owner's approval: draft where the section has a draft status, and marked so in the text where it does not.",
+  "about": "The rows the two Rev D batches left describing the Rev A and 2 x AA device as current: the story's pitch (a palm-sized puck) and its reason why (alkaline cells), the brief's claimed moats and battery risk, the two FAQ answers on TSA and checked bags, the legal pages, the launch step for the compliance mark and the battery statement, the bench tools and troubleshooting rows (DFPlayer, microSD, battery plus USB), and the 1,000-unit cost, whose figure ($16.00, resting on an assumed 10 % volume discount nobody quoted) now carries its label wherever it is shown. Each is changed only while it still reads as the seed and the batches before this one left it. The airline and security rows state only what the Rev D engineering note's cited rules support (IATA Dangerous Goods Regulations, Table 2.3.A; FAA PackSafe), say that airline and security staff make the final call, and wait for the owner's approval: draft where the section has a draft status, and marked so in the text where it does not.",
   "from": "the Rev D slim tag (BaggageClaims_Tag_RevD_Engineering.md and _Design.md in Files)",
   "rows": [
     {
@@ -152,6 +152,19 @@
         "title": "Troubleshooting: high sleep current"
       },
       "setBody": "Rev D has no DFPlayer BUSY line. The pass mark is 25 uA or less asleep. Check that the boost converter (BOOST_EN) and the amplifier (AMP_SD) are off between clips, and allow for the supercapacitor's leakage, about 10 uA while it is kept full (estimate); the gyro can stay off until the accelerometer sees handling."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D314",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials (the 100 column); an assumption at 1,000",
+      "section": "production/economics",
+      "match": {
+        "title": "Production run"
+      },
+      "setData": {
+        "cogs": "$16.00 (estimate)"
+      }
     }
   ]
 }
