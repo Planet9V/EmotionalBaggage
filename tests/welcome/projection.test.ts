@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { project, stillOf, toneOf } from "@/components/welcome/get/projection";
-import { netWheel, printLayers } from "@/components/welcome/get/heroArt";
+import { netWheel } from "@/components/welcome/get/heroArt";
 
 const box = (id: number, pos: [number, number, number], size: [number, number, number], step = 0) => ({ id, ref: `P${id}`, title: `part ${id}`, kind: "module", step, geometry: { shape: "box" as const, basis: "doc" as const, size, pos, explode: [0, 20, 0] as [number, number, number] } });
 
@@ -44,7 +44,7 @@ describe("the model as a vector drawing", () => {
   });
 });
 
-describe("the hero's netlist wheel and print layers", () => {
+describe("the hero's netlist wheel", () => {
   const wires = [
     { from: "BT1", to: "S1", netClass: "power" as const },
     { from: "S1", to: "U1", netClass: "power" as const },
@@ -62,11 +62,5 @@ describe("the hero's netlist wheel and print layers", () => {
     // two wires between the same parts bow apart
     const twins = w.links.filter((l) => l.a === "U1" && l.b === "U2");
     expect(twins[0]!.d).not.toBe(twins[1]!.d);
-  });
-  it("draws every tenth layer of the case's real height", () => {
-    const p = printLayers([80, 42, 60], 0.2);
-    expect(p.layers).toBe(210);
-    expect(p.levels).toHaveLength(20);
-    expect(p.box[2]).toBeGreaterThan(0);
   });
 });

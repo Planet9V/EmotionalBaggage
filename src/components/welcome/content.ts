@@ -251,11 +251,25 @@ export const NAV: { href: string; label: string }[] = [
  * note, taken from the story's origin part (storyData.ts reads it from src/lib/story/seed.ts); the outputs are
  * the example's seeded rows (Artefacts.tsx).
  */
-export const HERO_FLOW = {
-  label: "An idea typed as one line goes in. Nine outputs come out, one per step, from a brief to a sales channel.",
+/** The hero's picture: the example's product on the line from an idea to a sale, with four of its outputs. */
+export const HERO_STAGE = {
+  label: (name: string) => `${name}, the worked example: a slim leather-look luggage tag on its strap, hanging on a line that runs from an idea typed as one line to a product on sale. Beside it, four of its outputs: the schematic, the unit cost, an ad and the marketplace listing.`,
+  tag: (name: string, w: number, h: number, t: number) => `${name}: a saddle-tan luggage tag, ${w} by ${h} by ${t} mm, with cream stitching, a perforated speaker panel and its name stamped in an oval.`,
   field: "Your idea, in one line",
   from: "Idea",
   to: "On sale",
+  cards: {
+    schematic: "Schematic",
+    cost: "Unit cost",
+    ad: "Ad",
+    listing: "Listing",
+    wires: (n: number) => `${n} wires, checked`,
+    from: (volume: string) => `At ${volume}:`,
+    at: (volume: string) => `at ${volume}`,
+    each: (volume: string) => `a unit, at ${volume}`,
+    variants: (n: number) => `1 of ${n} variants`,
+    net: (net: string) => `${net} net of fees`,
+  },
   caption: `The worked example: ${EXAMPLE.name}, shown in its own rows as they stand today. It is planned, not yet built or sold.`,
 };
 

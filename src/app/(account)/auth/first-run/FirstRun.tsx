@@ -6,7 +6,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { EYEBROW, Field, describe } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { HeroFlow } from "@/components/welcome/HeroFlow";
+import { HeroStage } from "@/components/welcome/HeroStage";
 import type { HeroFacts } from "@/components/welcome/storyData";
 import { call } from "@/lib/auth2/client";
 import { useStoredTheme } from "../_components/Frame";
@@ -51,7 +51,10 @@ export function FirstRun({ email, address, idea, facts }: { email: string; addre
             It takes a product from a one-line idea to something on sale: AI drafts each stage from the last, and you decide at every step.
             Below is the worked example that ships with it. First, create the owner: the account that runs this installation.
           </p>
-          <HeroFlow idea={idea} facts={facts} />
+          {/* the hero's picture is lit for a dark ground, as on the welcome page */}
+          <div className="dark overflow-hidden rounded-2xl border border-hairline bg-canvas p-5 text-primary sm:p-6">
+            <HeroStage idea={idea} facts={facts} />
+          </div>
         </section>
         <section aria-labelledby="owner-h" className="rounded-xl border border-hairline bg-surface p-5">
           <h2 id="owner-h" className="text-lg font-semibold tracking-tight text-primary">Create the owner</h2>

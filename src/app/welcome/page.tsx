@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/welcome/ThemeToggle";
-import { HeroFlow } from "@/components/welcome/HeroFlow";
+import { HeroStage } from "@/components/welcome/HeroStage";
 import { WhatYouGet } from "@/components/welcome/WhatYouGet";
 import { OriginScenes } from "@/components/welcome/scenes/OriginScenes";
 import { Showcase } from "@/components/welcome/Showcase";
@@ -116,8 +116,8 @@ export default async function WelcomePage() {
       <main id="main">
         {/* 1. Hero: the proposition and the form. Dark in both themes. */}
         <TrackSection id="hero" className="dark bg-canvas text-primary">
-          <section id="hero" aria-labelledby="hero-title" className="border-b border-hairline pb-9 pt-8 sm:pb-11 sm:pt-10">
-            <div className={`${WRAP} grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:gap-12`}>
+          <section id="hero" aria-labelledby="hero-title" className="overflow-x-clip border-b border-hairline pb-9 pt-8 sm:pb-11 sm:pt-10">
+            <div className={`${WRAP} grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,600px)] lg:gap-12`}>
               <div>
                 <p className={EYEBROW}>{HERO.eyebrow}</p>
                 <h1 id="hero-title" className="max-w-[16ch] text-[1.9375rem] font-semibold leading-[1.1] tracking-[-0.025em] text-primary sm:text-4xl lg:text-[2.625rem]">
@@ -131,7 +131,7 @@ export default async function WelcomePage() {
                   {HERO.secondary} <ArrowRight className="h-4 w-4" aria-hidden />
                 </a>
               </div>
-              <HeroFlow idea={story.origin.idea} facts={story.hero} />
+              <HeroStage idea={story.origin.idea} facts={story.hero} />
             </div>
           </section>
         </TrackSection>
