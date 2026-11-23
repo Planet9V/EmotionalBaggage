@@ -127,12 +127,12 @@ export const SLATE_MS = 900;
 /** The owner's first note, quoted exactly where it is quoted. */
 export const ORIGIN = {
   eyebrow: "It started as a joke: the worked example, Baggage Claims MK1",
-  title: "Where did the first idea come from?",
+  title: "Is your idea good enough? Ours was a joke.",
   body: [
     "The first note asked for “a quick gag and potential quick buck”: a device on the luggage that is “the comedic relief of all the airport luggage moments of absurdity”.",
     "The lines were already in it: when the bag is weighed and it is too heavy, “the luggage says ‘are you calling me fat’”.",
   ],
-  bridge: "This is the idea the rest of this page carries from concept to market.",
+  bridge: "One of us took that joke to a costed design in one weekend. The rest of this page shows what came out.",
   chapters: "The circumstances",
   stageLabel: "A short film in six scenes, silent until you turn the sound on: what happens to the suitcase, and what it says back.",
   sensed: "SENSED",

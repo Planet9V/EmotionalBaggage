@@ -213,3 +213,9 @@ function groupOf(look: PartLook, kind: string, nets: ProductPart["nets"]): PartG
   if (look !== "board" && look !== "chip" && nets.length > 0 && nets.every((n) => n.netClass === "power" || n.netClass === "ground")) return "power";
   return "board";
 }
+
+/** How many pairs of drawn parts the schematic's nets join. */
+export function joinedPairs(product: Product): number {
+  const drawn = new Set(product.parts.filter((p) => p.body).map((p) => p.ref));
+  return new Set(product.parts.filter((p) => p.body).flatMap((p) => p.nets.flatMap((n) => n.to.filter((to) => drawn.has(to)).map((to) => [p.ref, to].sort().join("|"))))).size;
+}

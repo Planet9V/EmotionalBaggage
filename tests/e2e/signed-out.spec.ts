@@ -29,7 +29,7 @@ test("the welcome page has one action, early access, in reach from the header, a
   await expect(page).toHaveURL(`${baseURL}/welcome#early-access-hero`);
   // the jump lands on the form itself, clear of the sticky header
   await expect(page.locator("#early-access-hero").getByLabel(/^Email/)).toBeInViewport();
-  await expect(page.getByRole("heading", { level: 1, name: "Your product idea, built and on sale." })).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1, name: "Finally take that product idea to market." })).toHaveCount(1);
   for (const track of ["cta:get", "cta:proof", "plan:maker", "plan:studio"]) await expect(page.locator(`a[data-track="${track}"]`)).toHaveText("Claim an early-access place");
   // every action is a link to a form that is on the page
   for (const href of await page.locator('a[href^="#early-access-"]').evaluateAll((as) => as.map((a) => a.getAttribute("href")!))) await expect(page.locator(href)).toHaveCount(1);
@@ -37,7 +37,7 @@ test("the welcome page has one action, early access, in reach from the header, a
   for (const id of ["hero", "origin", "problem", "get", "proof", "pricing", "faq", "close"]) await expect(page.locator(`section#${id}`)).toHaveCount(1);
   await page.getByRole("link", { name: "See the worked example" }).click();
   await expect(page).toHaveURL(`${baseURL}/welcome#proof`);
-  await expect(page.getByRole("heading", { level: 2, name: "One real product, taken through it" })).toBeInViewport();
+  await expect(page.getByRole("heading", { level: 2, name: "Has it worked on a real idea?" })).toBeInViewport();
   // pricing: Maker and Studio, each with a price; no card that costs nothing and none for running it yourself
   const pricing = page.locator("section#pricing");
   await expect(pricing.getByRole("heading", { level: 4 })).toHaveText(["Maker", "Studio"]);

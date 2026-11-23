@@ -38,6 +38,10 @@ export type ProductCanvasProps = {
   chosen: string | null;
   onChoose?: (ref: string | null) => void;
   onHover?: (ref: string | null) => void;
+  /** every net of the schematic drawn at once, part to part */
+  wires?: boolean;
+  /** a turn, tilt or zoom asked for by a button: `n` changes with each press */
+  nudge?: { kind: "left" | "right" | "up" | "down" | "in" | "out"; n: number };
   /** names set on the parts in the picture, each a button that chooses its part */
   labels?: { ref: string; text: string }[];
   /** the hero: the drawn tag's box in CSS pixels high, and the strap rising to the rail; absent, the tag stands free */
@@ -69,6 +73,8 @@ class Turner {
   tracker = 0;
   t = 0;
   drawn = 0;
+  /** how much nearer than the whole view the camera stands (1 is the whole tag) */
+  zoom = 1;
   camera: THREE.Camera | null = null;
   hovered: string | null = null;
   readonly labels = new Map<string, HTMLElement>();
@@ -89,6 +95,11 @@ class Turner {
   }
   askPose() {
     this.toPose = true;
+    this.zoom = 1;
+  }
+  zoomBy(f: number) {
+    this.zoom = Math.max(0.6, Math.min(3, this.zoom * f));
+    this.rest = 0;
   }
   press(x: number, y: number) {
     this.down = { x, y, moved: false };
@@ -237,7 +248,7 @@ function Drive({ scene, hand, p }: { scene: ProductScene; hand: Turner; p: Produ
       const tall = ((TAG_MM.h + loop) / 2 + 9 + 26 * h.explode) * MM;
       const wide = (TAG_MM.w / 2 + 12 + 30 * h.explode) * MM;
       const half = Math.max(tall, wide / Math.max(0.2, size.width / size.height));
-      placeCamera(camera, (loop / 2) * MM, half / Math.tan((FOV * Math.PI) / 360));
+      placeCamera(camera, (loop / 2) * MM, half / h.zoom / Math.tan((FOV * Math.PI) / 360));
     }
     if (shadow.current) castShadow(shadow.current, h.yaw, 0, h.explode);
 
@@ -281,9 +292,16 @@ export default function ProductCanvas(p: ProductCanvasProps) {
   useEffect(() => () => scene.dispose(), [scene]);
   useEffect(() => scene.setMode(mode), [scene, mode]);
   useEffect(() => scene.setChosen(chosen), [scene, chosen]);
+  useEffect(() => scene.setWires(!!p.wires), [scene, p.wires]);
   const [hand] = useState(() => new Turner());
   // a pose asked for again (a view chosen) is eased to; the first is where it starts
   useEffect(() => hand.askPose(), [hand, p.pose.key]);
+  const nudge = p.nudge;
+  useEffect(() => {
+    if (!nudge || nudge.n === 0) return;
+    if (nudge.kind === "in" || nudge.kind === "out") hand.zoomBy(nudge.kind === "in" ? 1.25 : 0.8);
+    else hand.turnBy(nudge.kind === "left" ? -0.3 : nudge.kind === "right" ? 0.3 : 0, nudge.kind === "up" ? -0.18 : nudge.kind === "down" ? 0.18 : 0);
+  }, [hand, nudge]);
 
   const pickAt = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!hand.camera) return null;

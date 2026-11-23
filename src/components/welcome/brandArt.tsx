@@ -88,7 +88,7 @@ export function SocialCard() {
   return (
     <div style={{ position: "relative", width: 1200, height: 630, overflow: "hidden", background: "#0b0c0e", color: "#fff", fontFamily: "'Inter Variable', Inter, system-ui, sans-serif" }}>
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 38% 62% at 76% 52%, rgba(214,138,82,0.3), rgba(214,138,82,0.07) 55%, transparent 80%)" }} />
-      {/* the line from Idea to On sale */}
+      {/* the line from Idea to Ready to sell */}
       <div style={{ position: "absolute", left: 72, right: 72, top: 78, display: "flex", alignItems: "center", gap: 20, fontSize: 24, fontWeight: 500 }}>
         <span>{HERO_STAGE.from}</span>
         <span style={{ flex: 1, height: 4, borderRadius: 2, background: "#e05a10" }} />
@@ -97,7 +97,7 @@ export function SocialCard() {
       <div style={{ position: "absolute", left: 72, top: 204, width: 660 }}>
         <div style={{ fontSize: 26, fontWeight: 600, color: "#ffa370" }}>{PRODUCT}</div>
         <div style={{ marginTop: 18, fontSize: 70, fontWeight: 600, lineHeight: 1.06, letterSpacing: "-0.03em" }}>{HERO.title}</div>
-        <div style={{ marginTop: 30, fontSize: 25, lineHeight: 1.4, color: "#a1a1aa" }}>{`The worked example: ${EXAMPLE.name}. Planned, not yet built or sold.`}</div>
+        <div style={{ marginTop: 30, fontSize: 25, lineHeight: 1.4, color: "#a1a1aa" }}>{`A costed parts list, a checked schematic and a launch plan. Shown: ${EXAMPLE.name}, designed and costed, not yet built or sold.`}</div>
       </div>
       <div style={{ position: "absolute", left: 742, top: 92, width: 330 }}>
         <TagArt strap={12} margin={6} className="tag" />

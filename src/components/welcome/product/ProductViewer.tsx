@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { List, RotateCw, X } from "lucide-react";
 import type { Still } from "../get/projection";
 import { Range, Segmented, Switch } from "../get/ViewControls";
+import { canDraw3d } from "./capable";
 import { filmMode, paceVerdict } from "../scenes/pace";
 import { useAnimated, useHydrated } from "../useAnimated";
 import { EXAMPLE, GET_VIEWS } from "../content";
@@ -31,14 +32,6 @@ const MODES: ViewerMode[] = ["solid", "translucent", "wireframe"];
 const NET_TONE: Record<string, string> = { power: "border-[#f0a04a]/60 text-[#f6b877]", ground: "border-white/25 text-secondary", signal: "border-[#6ea8ff]/60 text-[#9cc3ff]", audio: "border-[#c5a7f5]/60 text-[#d6c1f8]" };
 const short = (title: string) => title.split(",")[0]!.replace(/\s*\(.*$/, "");
 
-function hasWebGl() {
-  try {
-    const c = document.createElement("canvas");
-    return Boolean(c.getContext("webgl2") ?? c.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
 
 function caption(view: View, product: Product): string {
   const by = (look: ProductPart["look"]) => product.parts.find((p) => p.look === look);
@@ -157,7 +150,7 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
   const [ready, setReady] = useState(false);
   const [sharp, setSharp] = useState(true);
   const [slow, setSlow] = useState(false);
-  const capable = useMemo(() => hydrated && hasWebGl(), [hydrated]);
+  const capable = useMemo(() => hydrated && canDraw3d(), [hydrated]);
   const film = useMemo(() => (hydrated ? filmMode(window.location.search) : "normal"), [hydrated]);
   const canvas = live && capable && !slow && !view.render;
   const part = chosen ? product.parts.find((p) => p.ref === chosen) ?? null : null;

@@ -106,7 +106,7 @@ export function EarlyAccessForm({ placement, full, compact }: { placement: Place
         <Button type="submit" size="lg" disabled={sending} data-track={`cta:early-${placement}`}>
           {sending ? "Sending…" : action}
         </Button>
-        {!compact ? <p className="text-xs text-muted">Early access takes no payment.</p> : null}
+        <p className="text-xs text-muted">No payment. We write to you when your workspace opens.</p>
       </div>
     </form>
   );
