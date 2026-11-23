@@ -28,7 +28,11 @@
     // (step 1) are pure and tested, and are first imported by Admin, Slack and the platform channel in step 2.
     // The whole folder leaves this list when step 2 lands; nothing else should be added to it.
     "src/lib/slack/**": ["files", "exports", "types"],
-    "tests/e2e/helpers.ts": ["exports", "types"]
+    "tests/e2e/helpers.ts": ["exports", "types"],
+    // HELD for the welcome page restructure (ws22b-page): LEVELS, SHOW_PRICES and Level are no longer read since the
+    // plan catalogue's built-in tiers moved into src/lib/admin/planSchema.ts (two plans, 22 Nov). The page work owns
+    // content.ts and removes them; this line leaves with them.
+    "src/components/welcome/content.ts": ["exports", "types"]
   },
   // Used from CSS (@import / @plugin in globals.css), not from code, or only named in a type comment.
   "ignoreDependencies": ["@fontsource-variable/inter", "@fontsource-variable/jetbrains-mono", "tailwindcss", "tw-animate-css", "postcss-load-config"],

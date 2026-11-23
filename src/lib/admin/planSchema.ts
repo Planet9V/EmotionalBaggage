@@ -1,14 +1,15 @@
 // The plan catalogue's shape and rules, safe for the browser (the editor validates with the same schema as the
 // server); reading and saving are in ./plans.ts. The catalogue (Admin, Pricing and tiers) holds the service levels,
 // their prices, limits and Stripe price ids, kept as ONE validated JSON document in the settings row "plans.catalogue", so the admin can change tiers and
-// turn prices on without a deploy. Until something is saved, the catalogue is the one in
-// src/components/welcome/content.ts (LEVELS, with SHOW_PRICES false), exactly as the public page had it.
+// turn prices on without a deploy. Until something is saved, the catalogue is BUILT_IN_TIERS below: two plans, Maker
+// $20 and Studio $40 a month, prices shown (owner, 22 Nov: "nothing free"; "limit early access to 50 only, then
+// convert to 20/month and 40 per month"; "no you cannot run it yourself, remove it"). Migration 0042 brought saved
+// catalogues to the same two plans without overwriting a price an admin had set.
 //
 // Limit names follow docs/research/saas-pricing-and-platform-design.md ("A monthly plan sets concepts, seats and
 // storage and includes a monthly credit allowance; ... slicing draw credits"). null means "not set": no limit is
 // enforced. Nothing enforces limits yet; the billing and limits workstream reads getPlanCatalogue().
 import { z } from "zod";
-import { LEVELS, SHOW_PRICES, type Level } from "@/components/welcome/content";
 
 export const LIMIT_KEYS = ["concepts", "members", "aiCreditsPerMonth", "storageMb", "printJobsPerMonth"] as const;
 export type LimitKey = (typeof LIMIT_KEYS)[number];
@@ -37,7 +38,8 @@ const planTier = z
     who: z.string().trim().max(120),
     what: z.string().trim().max(300),
     includes: z.array(line).max(12, "at most 12 lines"),
-    action: z.enum(["request", "run"]),
+    // what the public card's button does: ask for early access. ("run", Run it yourself, is retired: owner, 22 Nov.)
+    action: z.enum(["request"]),
     limits: z.object(Object.fromEntries(LIMIT_KEYS.map((k) => [k, limit])) as Record<LimitKey, typeof limit>).strict(),
     stripePriceMonthly: stripePrice,
     stripePriceYearly: stripePrice,
@@ -60,32 +62,46 @@ export const planCatalogue = z
 export type PlanCatalogue = z.infer<typeof planCatalogue>;
 
 const NO_LIMITS: Record<LimitKey, number | null> = { concepts: null, members: null, aiCreditsPerMonth: null, storageMb: null, printJobsPerMonth: null };
-/** The only limits content.ts states: Free is 1 concept and 1 person. Everything else waits for the owner. */
-const SEED_LIMITS: Partial<Record<Level["key"], Partial<Record<LimitKey, number>>>> = { free: { concepts: 1, members: 1 } };
 
-const amount = (p: string): number | null => {
-  if (/^free$/i.test(p.trim())) return 0;
-  const n = Number(p.replace(/[^0-9.]/g, ""));
-  return Number.isFinite(n) && p.trim() !== "" ? n : null;
-};
+type SeedTier = Pick<PlanTier, "key" | "name" | "priceMonthly" | "who" | "what" | "includes">;
 
-/** The catalogue as content.ts has it: every tier shown, prices hidden. */
+/**
+ * The two plans until the admin saves a catalogue. Prices: owner, 22 Nov ("then convert to 20/month and 40 per
+ * month"); which is which (Maker $20, Studio $40) and Studio's seats opening after early access are working
+ * assumptions recorded in docs/TASKS.md. Limits wait for the owner, so none are set.
+ */
+const BUILT_IN_TIERS: SeedTier[] = [
+  {
+    key: "maker",
+    name: "Maker",
+    priceMonthly: 20,
+    who: "Makers and first-time founders",
+    what: "One person taking an idea to a prototype and a launch.",
+    includes: ["Several concepts", "Monthly AI credits, with top-ups", "Slicing for your printer", "Exports", "Channels: Amazon, X, Instagram"],
+  },
+  {
+    key: "studio",
+    name: "Studio",
+    priceMonthly: 40,
+    who: "Small product firms",
+    what: "A team with several products in one shared workspace.",
+    includes: ["Everything in Maker", "Team seats, opening after early access", "A shared workspace with roles", "Pooled AI credits", "More concepts and storage"],
+  },
+];
+
+/** The built-in catalogue: Maker and Studio, prices shown, no limits set. */
 export function builtInCatalogue(): PlanCatalogue {
   return {
-    showPrices: SHOW_PRICES,
-    tiers: LEVELS.map((l) => ({
-      key: l.key,
-      name: l.name,
+    showPrices: true,
+    tiers: BUILT_IN_TIERS.map((t) => ({
+      ...t,
+      includes: [...t.includes],
       shown: true,
-      paid: l.paid,
+      paid: true,
       currency: "USD",
-      priceMonthly: amount(l.price),
       priceYearly: null,
-      who: l.who,
-      what: l.what,
-      includes: [...l.includes],
-      action: l.action,
-      limits: { ...NO_LIMITS, ...SEED_LIMITS[l.key] },
+      action: "request",
+      limits: { ...NO_LIMITS },
       stripePriceMonthly: null,
       stripePriceYearly: null,
     })),
@@ -99,7 +115,23 @@ function priceText(amountValue: number | null, currency: string): string | null 
   return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: Number.isInteger(amountValue) ? 0 : 2 }).format(amountValue);
 }
 
-export type PublicLevel = Omit<Level, "key"> & { key: string };
+/** One plan as the public page shows it (the pricing cards and the early-access price line). */
+export type PublicLevel = {
+  key: string;
+  name: string;
+  /** "$20", "Free" for 0, "" when no price is set */
+  price: string;
+  /** what follows the price: "a month", or "" */
+  per: string;
+  paid: boolean;
+  who: string;
+  what: string;
+  includes: string[];
+  action: PlanTier["action"];
+  /** the monthly amount and its currency, for anything that formats it itself; null when not set */
+  priceMonthly: number | null;
+  currency: string;
+};
 export type PublicLevels = { levels: PublicLevel[]; showPrices: boolean };
 
 /** The shown tiers, in order, in the shape the public page's cards take. */
@@ -118,6 +150,8 @@ export function levelsOf(c: PlanCatalogue): PublicLevels {
         what: t.what,
         includes: t.includes,
         action: t.action,
+        priceMonthly: t.priceMonthly,
+        currency: t.currency,
       })),
   };
 }
