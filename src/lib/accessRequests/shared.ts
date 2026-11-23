@@ -27,8 +27,9 @@ export const ACCESS_LIMITS = { name: 120, email: 254, building: 2000, company: 1
 /** The early-access one-liner is short: one line, not a brief. */
 export const MAKING_MAX = 300;
 
-/** Where on the welcome page the early-access form was sent from (migration 0041). "page": /welcome/early itself. */
-const PLACEMENTS = ["hero", "pricing", "close", "page"] as const;
+/** Where on the welcome page the early-access form was sent from (migration 0041). "page": /welcome/early itself;
+ *  "signup": the sign-up page while self sign-up is closed (a request for an account, migration 0044). */
+const PLACEMENTS = ["hero", "pricing", "close", "page", "signup"] as const;
 export type Placement = (typeof PLACEMENTS)[number];
 
 const email = z

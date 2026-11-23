@@ -45,6 +45,7 @@ import { claimRefusal, claimTry, clearTries, failedTry, hasTag, KNOWN_DEVICE_COO
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { checkNewPassword } from "./newPassword";
+import { readRules } from "./rules";
 import { hashSessionTokens } from "./tokenHash";
 
 const APP_NAME = "Concept to Realization";
@@ -256,6 +257,13 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         }
         // No lone surrogates in any text field (review B1): PostgreSQL would refuse them halfway through the work.
         if (!Object.values(body).every(wellFormed)) throw APIError.from("BAD_REQUEST", { code: "INVALID_TEXT", message: "A field holds characters that are not valid text." });
+        // Self sign-up is closed unless Admin, Sign-in opens it (signUp.open, default closed during early access):
+        // only an address with a workspace invitation waiting may create its account here. Everyone else asks for
+        // one on the sign-up page, which files an access request for the owner (src/lib/accessRequests/notify.ts).
+        if (ctx.path === "/sign-up/email" && !(await readRules(db)).signUpOpen) {
+          const invited = typeof body.email === "string" && (await db.query(`SELECT 1 FROM invitation WHERE lower(email) = $1 AND status = 'pending' AND "expiresAt" > now() LIMIT 1`, [body.email.trim().toLowerCase()])).rowCount;
+          if (!invited) throw APIError.from("FORBIDDEN", { code: "SIGN_UP_CLOSED", message: "Accounts are made by invitation on this installation. Ask for one on the sign-up page." });
+        }
         // The password rules (./passwordPolicy.ts), before Better Auth's own length check.
         if (ctx.path === "/sign-up/email") await checkNewPassword(db, body.password, { email: String(body.email ?? ""), name: String(body.name ?? "") });
         if (ctx.path === "/change-password") {

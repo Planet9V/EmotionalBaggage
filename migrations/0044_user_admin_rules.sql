@@ -59,7 +59,15 @@ CREATE TABLE auth2_account_invitations (
 );
 CREATE INDEX auth2_account_invitations_user_idx ON auth2_account_invitations (user_id, created_at DESC);
 
+-- A request for an account from the sign-up page while self sign-up is closed is an access request too, placed
+-- "signup" (src/app/(account)/auth/sign-up).
+ALTER TABLE access_requests DROP CONSTRAINT IF EXISTS access_requests_placement_check;
+ALTER TABLE access_requests ADD CONSTRAINT access_requests_placement_check CHECK (placement IN ('', 'hero', 'pricing', 'close', 'page', 'signup'));
+
 -- Down Migration
+ALTER TABLE access_requests DROP CONSTRAINT IF EXISTS access_requests_placement_check;
+UPDATE access_requests SET placement = 'page' WHERE placement = 'signup';
+ALTER TABLE access_requests ADD CONSTRAINT access_requests_placement_check CHECK (placement IN ('', 'hero', 'pricing', 'close', 'page'));
 DROP TABLE IF EXISTS auth2_account_invitations;
 ALTER TABLE "session" DROP COLUMN IF EXISTS "impersonationEndsAt", DROP COLUMN IF EXISTS "impersonatedBy";
 ALTER TABLE auth2_sign_in_waits DROP COLUMN IF EXISTS locked_until;

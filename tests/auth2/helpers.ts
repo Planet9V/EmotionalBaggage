@@ -9,7 +9,7 @@ const BASE = "http://localhost:3322";
 export const PASSWORD = "Correct horse battery 7!";
 
 /** Switches AUTH2 on for this file, with a fresh secret, and puts an instance with a capturing mailer in place. */
-export async function useAuth2(opts: { rateLimit?: boolean } = {}) {
+export async function useAuth2(opts: { rateLimit?: boolean; signUpOpen?: boolean } = {}) {
   process.env.AUTH2 = "1";
   process.env.BETTER_AUTH_URL = BASE;
   // Generated per run: never a secret written in the repository.
@@ -18,6 +18,8 @@ export async function useAuth2(opts: { rateLimit?: boolean } = {}) {
   await dbm.ready();
   const db = dbm.ownerPool();
   await installDone(db);
+  // Most files make accounts by signing up, so self sign-up is opened for them; it is closed by default (signup.test.ts).
+  await setSignUpOpen(db, opts.signUpOpen ?? true);
   const { makeAuth } = await import("@/lib/auth2/auth");
   const auth = makeAuth(db, { mail: { send: async (m) => void sent.push(m) }, rateLimit: opts.rateLimit });
   (globalThis as unknown as { __c2rAuth2?: unknown }).__c2rAuth2 = { db, auth };
@@ -167,4 +169,9 @@ export async function auditOf(db: Pool, actor: string) {
 export async function installDone(db: Pool) {
   await db.query("INSERT INTO auth2_install (id, claimed_at, completed_at) VALUES (true, now(), now()) ON CONFLICT (id) DO UPDATE SET completed_at = COALESCE(auth2_install.completed_at, now())");
   (await import("@/lib/auth2/firstRun")).forgetFirstRun();
+}
+
+/** Opens or closes self sign-up (setting signUp.open, closed by default during early access). */
+export async function setSignUpOpen(db: Pool, open: boolean) {
+  await db.query(`INSERT INTO auth2_settings (key, value) VALUES ('signUp.open', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [JSON.stringify(open)]);
 }

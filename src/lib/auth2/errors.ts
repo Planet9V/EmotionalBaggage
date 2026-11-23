@@ -56,6 +56,7 @@ const SENTENCES: Record<string, string> = {
   RESET_LIMIT: "This person's two-step sign-in has been reset as often today as it may be. Try again tomorrow, or ask a platform administrator.",
   REENROL_PROOF_REQUIRED: "Your two-step sign-in was reset. Use the link we emailed you, or the code from whoever reset it.",
   REENROL_INVALID: "That address, password and code or link do not match. Check them, or ask for a new reset.",
+  SIGN_UP_CLOSED: "Accounts are made by invitation on this installation. Ask for one below, or use the link in your invitation.",
   SIGN_IN_LOCKED: "Too many failed sign-ins for this address, so it is locked for now. To get in at once, choose a new password with \"Forgotten your password?\", or ask an administrator to unlock it.",
   PASSWORD_CHANGE_REQUIRED: "An administrator set this password. Choose a password of your own to sign in.",
   PASSWORD_CHANGE_NOT_REQUIRED: "This account's password does not have to be changed. Sign in as usual.",
