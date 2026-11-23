@@ -4,16 +4,19 @@
  *
  * It shows: the count line from the database ("N of 50 early-access places left", or "Early access is full. Join
  * the waiting list." at zero), the form (./EarlyAccessForm.tsx: works without script), and the price line from the
- * plan catalogue ("After early access: Maker $20 a month, Studio $40 a month."). "hero" is compact; "close" adds
+ * plan catalogue ("After early access: Maker $20 a month, Studio $40 a month."). In the browser the count lines and
+ * the forms share one store (./places.ts): after one form answers, every count is read again and the other forms say
+ * "You have place number N" (or the waiting-list line) instead of offering the form a second time. "hero" is compact; "close" adds
  * what happens next; the confirmation page ("page") also the privacy sentence, which the welcome page has in its footer. Nothing here throws: with the database unreadable the form still
  * shows, without the count.
  */
 import { cache } from "react";
 import { earlyAccessCount } from "@/lib/accessRequests/places";
 import { publicLevels } from "@/lib/admin/plans";
-import type { EarlyAccessCount, Placement } from "@/lib/accessRequests/shared";
+import { publicPlaces, type EarlyAccessCount, type Placement } from "@/lib/accessRequests/shared";
 import type { PublicLevels } from "@/lib/admin/planSchema";
 import { cn } from "@/lib/utils";
+import { CountLine } from "./CountLine";
 import { EarlyAccessForm } from "./EarlyAccessForm";
 
 export type EarlyAccessPlacement = "hero" | "pricing" | "close";
@@ -32,11 +35,8 @@ function priceLine(levels: PublicLevels | null): string {
   return parts.length ? `After early access: ${parts.join(", ")}.` : "";
 }
 
-/** The count line, or null when the count could not be read. */
-function countLine(c: EarlyAccessCount | null): string | null {
-  if (!c) return null;
-  return c.left > 0 ? `${c.left} of ${c.limit} early-access places left` : "Early access is full. Join the waiting list.";
-}
+/** What happens after a place is claimed, in the close block and on the confirmation page. */
+const NEXT_STEPS = ["You claim a place with your email and one line.", "We open workspaces in the order places were claimed.", "We write to that address when yours is ready."];
 
 export async function EarlyAccess({ placement }: { placement: EarlyAccessPlacement }) {
   return EarlyAccessBlock({ placement });
@@ -45,29 +45,34 @@ export async function EarlyAccess({ placement }: { placement: EarlyAccessPlaceme
 /** The offer for any placement, including the confirmation page's own ("page"). */
 export async function EarlyAccessBlock({ placement }: { placement: Placement }) {
   const [count, levels] = await Promise.all([readCount(), readLevels()]);
-  const line = countLine(count);
+  const places = count ? publicPlaces(count) : null;
   const prices = priceLine(levels);
   const compact = placement === "hero";
-  const full = count !== null && count.left === 0;
+  const full = places?.full ?? false;
+  const stepsId = `early-access-${placement}-next`;
   return (
-    <div data-early-access={placement} id={`early-access-${placement}`} className={cn("group/early grid scroll-mt-24", compact ? "gap-2" : "gap-4")}>
-      {/* the count was read when the page was drawn: once this form has given its answer, the answer stands alone */}
-      {line ? (
-        <p className={cn("flex items-center gap-2 font-semibold text-primary group-has-[[data-early-answer]]/early:hidden", compact ? "text-[15px]" : "text-base")} data-early-count={count?.left ?? ""}>
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
-          {line}
-        </p>
-      ) : null}
+    <div data-early-access={placement} id={`early-access-${placement}`} className={cn("group/early @container grid scroll-mt-24", compact ? "gap-2" : "gap-4")}>
+      {/* every count line on the page follows the latest reading (./places.ts); the block that answered hides its own */}
+      {places ? <CountLine initial={places} compact={compact} /> : null}
       <EarlyAccessForm placement={placement} full={full} compact={compact} />
       {/* in the pricing block the plan cards under the form carry the prices */}
       {prices && placement !== "pricing" ? <p className="text-sm text-secondary">{prices}</p> : null}
       {placement === "close" || placement === "page" ? (
         <>
-          <ol className="grid gap-1 text-sm text-secondary sm:grid-cols-3 sm:gap-4">
-            <li><span className="font-mono text-link">1</span> You claim a place with your email and one line.</li>
-            <li><span className="font-mono text-link">2</span> We open workspaces in the order places were claimed.</li>
-            <li><span className="font-mono text-link">3</span> We write to that address when yours is ready.</li>
-          </ol>
+          {/* one step a row while the block is narrow (the close block's column, a phone); three across from 42rem */}
+          <div className="grid gap-2">
+            <p id={stepsId} className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">What happens next</p>
+            <ol aria-labelledby={stepsId} className="grid gap-2.5 @2xl:grid-cols-3 @2xl:gap-4">
+              {NEXT_STEPS.map((step, i) => (
+                <li key={step} className="flex items-start gap-3 text-sm leading-relaxed text-secondary">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-hairline font-mono text-xs text-link" aria-hidden>
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 max-w-[48ch] text-pretty">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
           {/* the welcome page says this once, in its footer; the confirmation page has no footer */}
           {placement === "page" ? <p className="text-xs text-muted">{PRIVACY}</p> : null}
         </>

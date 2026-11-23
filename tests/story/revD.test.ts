@@ -16,10 +16,9 @@ const row = (section: string, title: string) => after.find((x) => x.section === 
 const APPROVAL = "yes this is perfect, a perfect design";
 
 describe("the Rev D batch: decisions", () => {
-  it("comes after the engineering batch, and the revD-2 leftovers batch comes after it", () => {
+  it("comes after the engineering batch, and the revD-2 leftovers and revD-3 wording batches come after it", () => {
     expect(CONTENT_BATCHES.indexOf(revD)).toBeGreaterThan(CONTENT_BATCHES.findIndex((b) => b.batch === "2026-11-22-engineering"));
-    expect(CONTENT_BATCHES.at(-1)!.batch).toBe("2026-11-22-revD-2");
-    expect(CONTENT_BATCHES.indexOf(revD)).toBe(CONTENT_BATCHES.length - 2);
+    expect(CONTENT_BATCHES.slice(CONTENT_BATCHES.indexOf(revD) + 1).map((b) => b.batch)).toEqual(["2026-11-22-revD-2", "2026-11-23-revD-3"]);
   });
 
   it("decides the design, the form factor, the lines on the tag and the cell, each quoting the owner", () => {

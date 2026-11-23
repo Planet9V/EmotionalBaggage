@@ -70,8 +70,8 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
         <form method="post" onSubmit={submit} noValidate className="mt-6 space-y-4 rounded-xl border border-hairline bg-surface p-5" aria-describedby={showDefault ? "sign-in-default" : undefined}>
           {showDefault && (
             <p id="sign-in-default" className="rounded-md border border-hairline bg-warning-soft px-3 py-2 text-sm text-primary">
-              This install still uses the default account: user <strong className="font-mono">demo</strong>, password{" "}
-              <strong className="font-mono">demo</strong>. Change the password after signing in.
+              {/* the page is linked from the public welcome page: it says the default is in use, never what it is */}
+              This install still uses the default account and its published password. An operator finds both in the Admin guide, under &ldquo;Signing in&rdquo;; change the password after signing in.
             </p>
           )}
 

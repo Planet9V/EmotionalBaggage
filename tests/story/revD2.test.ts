@@ -11,14 +11,16 @@ afterAll(async () => {
 });
 
 const revD2 = CONTENT_BATCHES.find((b) => b.batch === "2026-11-22-revD-2")!;
-const before = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, -1));
-const after = applyBatches(seededRows());
+const at = CONTENT_BATCHES.indexOf(revD2);
+const before = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, at));
+// the rows as this batch leaves them (the Rev D wording batch after it is tested in revD3.test.ts)
+const after = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, at + 1));
 const row = (section: string, title: string) => after.find((x) => x.section === section && x.title === title)!;
 const text = (r: { title: string; body: string; data: Record<string, unknown> }) => `${r.title} ${r.body} ${JSON.stringify(r.data.options ?? "")}`;
 
 describe("the Rev D leftovers batch", () => {
   it("is applied after the Rev D batch, adds no row and removes none: it only brings rows up to Rev D", () => {
-    expect(CONTENT_BATCHES.at(-1)).toBe(revD2);
+    expect(CONTENT_BATCHES[at - 1]!.batch).toBe("2026-11-22-revD");
     expect(revD2.rows.every((r) => r.op === "enrich")).toBe(true);
     expect(after).toHaveLength(before.length);
     // every row names the Rev D document it comes from, and passes the checks a row typed in the app passes
@@ -89,7 +91,8 @@ describe("the Rev D leftovers batch, in a database", () => {
     expect(m?.skipped).toEqual([]);
     expect(m?.enriched).toBe(revD2.rows.length);
     const eco = await q<{ title: string; cogs: string }>(`SELECT title, data->>'cogs' AS cogs FROM items WHERE project_id='${P}' AND section='production/economics' AND title IN ('Prototype','Engineering validation batch','Production run') ORDER BY (data->>'volume')::text`);
-    expect(Object.fromEntries(eco.map((e) => [e.title, e.cogs]))).toEqual({ Prototype: "$30.01", "Engineering validation batch": "$17.67", "Production run": "$16.00" });
+    // the Rev D wording batch after this one labels the 1,000-unit figure an estimate in the figure itself
+    expect(Object.fromEntries(eco.map((e) => [e.title, e.cogs]))).toEqual({ Prototype: "$30.01", "Engineering validation batch": "$17.67", "Production run": "$16.00 (estimate)" });
     const a = await q<{ body: string }>(`SELECT body FROM items WHERE project_id='${P}' AND section='prototype/assembly' AND title='Phase 2 — Electronics'`);
     expect(a[0].body).toMatch(/Order the assembled board PCB1/);
   });
@@ -106,7 +109,7 @@ describe("the Rev D leftovers batch, in a database", () => {
     const r = await q<{ body: string; cogs: string }>(`SELECT body, data->>'cogs' AS cogs FROM items WHERE project_id='${P}' AND section='production/economics' AND title=$1`, [title]);
     expect(r[0]).toEqual({ body: "my own note", cogs: "$12.00" });
     // put the row back as the batch makes it, for the tests that follow in this database
-    const want = row("production/economics", title);
+    const want = applyBatches(seededRows()).find((x) => x.section === "production/economics" && x.title === title)!;
     await q(`UPDATE items SET body=$2, data = data || jsonb_build_object('cogs', $3::text) WHERE project_id='${P}' AND section='production/economics' AND title=$1`, [title, want.body, String(want.data.cogs)]);
   });
 });
