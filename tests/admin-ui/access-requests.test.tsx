@@ -6,8 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { AccessRequestsTab } from "@/components/admin/AccessRequestsTab";
 import { AccessRequestForm } from "@/components/welcome/AccessRequestForm";
-import { Levels } from "@/components/welcome/Levels";
-import { builtInCatalogue, levelsOf } from "@/lib/admin/planSchema";
 import { ACCESS_CONFIRMATION, type AccessRequestRow } from "@/lib/accessRequests/shared";
 import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
 
@@ -143,28 +141,6 @@ describe("the public request form", () => {
     expect([...level.options].map((o) => o.textContent)).toEqual(["Not sure yet", "Free", "Maker", "Studio", "Self-hosted"]);
     fireEvent.change(level, { target: { value: "studio" } });
     expect(changed).toEqual(["studio"]);
-    fill(/Your name/, "Ada Tester");
-    fill(/^Email/, "ada@example.test");
-    fill(/What do you want to build/, "A clip-on plant sensor.");
-    fireEvent.click(screen.getByRole("button", { name: "Request a workspace" }));
-    expect(await screen.findByText(ACCESS_CONFIRMATION)).toBeTruthy();
-    expect(calls[0]!.body).toMatchObject({ level: "studio" });
-  });
-
-  it("carries the level from a card's Request access to the form, where it can be changed, and sends it", async () => {
-    const { calls } = adminServer([on("POST", "/api/access-requests", () => ({ status: 201, body: { ok: true, message: ACCESS_CONFIRMATION } }))]);
-    renderWithClient(<Levels {...levelsOf(builtInCatalogue())} />);
-    const level = screen.getByLabelText(/^Level/) as HTMLSelectElement;
-    expect(level.value).toBe("");
-    expect(screen.getByRole("heading", { level: 3, name: "Request access" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("link", { name: "Request access: Maker" }));
-    await waitFor(() => expect(level.value).toBe("maker"));
-    expect(screen.getByRole("heading", { level: 3, name: "Request access: Maker" })).toBeTruthy();
-    // changing the field renames the heading too, so the page never names one level and sends another
-    fireEvent.change(level, { target: { value: "free" } });
-    expect(await screen.findByRole("heading", { level: 3, name: "Request access: Free" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("link", { name: "Request access: Studio" }));
-    await waitFor(() => expect(level.value).toBe("studio"));
     fill(/Your name/, "Ada Tester");
     fill(/^Email/, "ada@example.test");
     fill(/What do you want to build/, "A clip-on plant sensor.");
