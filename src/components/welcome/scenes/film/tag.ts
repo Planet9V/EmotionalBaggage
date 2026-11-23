@@ -89,6 +89,8 @@ const SPAN_H = 96; // mm down the canvas
 const FONT = "'Inter Variable', Inter, system-ui, sans-serif";
 const CREAM = "#f1e4c3";
 const STAMP = "rgba(74, 40, 16, 0.6)";
+/** The tagline is pressed a little deeper than the mark, so it reads at arm's length (and in the close-up). */
+const TAGLINE = "rgba(66, 34, 12, 0.75)";
 const STAMP_LIT = "rgba(255, 226, 190, 0.28)";
 
 function stitches(g: CanvasRenderingContext2D, path: P2[], pitch: number, len: number, slant: number) {
@@ -120,7 +122,7 @@ function stitches(g: CanvasRenderingContext2D, path: P2[], pitch: number, len: n
 }
 
 /** Blind-stamped words: pressed darker, with a hair of light along the lower lip of the stamp. */
-function stamped(g: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, weight = 700, spacing = 0.6) {
+function stamped(g: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, weight = 700, spacing = 0.6, ink = STAMP) {
   g.font = `${weight} ${size}px ${FONT}`;
   g.textAlign = "center";
   g.textBaseline = "middle";
@@ -129,7 +131,7 @@ function stamped(g: CanvasRenderingContext2D, text: string, x: number, y: number
   if ("letterSpacing" in ctx) ctx.letterSpacing = `${spacing}px`;
   g.fillStyle = STAMP_LIT;
   g.fillText(text, x, y + 0.28);
-  g.fillStyle = STAMP;
+  g.fillStyle = ink;
   g.fillText(text, x, y);
   if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
 }
@@ -180,8 +182,8 @@ function drawFront(g: CanvasRenderingContext2D) {
   g.lineTo(13, 25.6);
   g.stroke();
   // the tagline, stamped below it
-  stamped(g, "Your luggage", 0, 33.8, 4.3, 700, 0.15);
-  stamped(g, "finally talks back.", 0, 38.4, 4.3, 700, 0.15);
+  stamped(g, "Your luggage", 0, 33.8, 4.3, 800, 0.15, TAGLINE);
+  stamped(g, "finally talks back.", 0, 38.4, 4.3, 800, 0.15, TAGLINE);
 }
 
 function drawBack(g: CanvasRenderingContext2D) {
@@ -346,6 +348,7 @@ hole = mix(hole, 0.227, far) * keep * inPanel;
 // the stamp and the card window are pressed smooth; the grain is everywhere else on the faces
 vec2 ov = (mm - vec2(${f(o.x)}, ${f(o.y)})) / vec2(${f(o.rx)}, ${f(o.ry)});
 float smooth_ = max(inPanel, front * step(dot(ov, ov), 1.0));
+smooth_ = max(smooth_, front * tagBox(mm, vec4(-24.0, 24.0, -40.6, -31.4)));
 smooth_ = max(smooth_, back * tagBox(bm, vec4(${f(c.x0)}, ${f(c.x1)}, ${f(c.y0)}, ${f(c.y1)})));
 float grainAmt = (front + back) * (1.0 - smooth_) * (1.0 - smoothstep(0.25, 0.7, fw));
 float grain = tagGrain(mm / 1.8);
@@ -422,3 +425,6 @@ export function tagPerform(u: TagUniforms, level: number, on: number, glow: numb
 
 /** Where the speaker is on the tag, in its group: a light standing in front of it reads as light from the holes. */
 export const SPEAKER_AT: V3 = [((FACE.speaker.x0 + FACE.speaker.x1) / 2) * MM, -TAG_ARM + ((FACE.speaker.y0 + FACE.speaker.y1) / 2) * MM, TAG_HALF_T + 0.3];
+
+/** The point the close-up frames: on the tag's face, between the stamp and the tagline (22 mm below its middle). */
+export const STAMP_AT: V3 = [0, -TAG_ARM - 22 * MM, TAG_HALF_T];
