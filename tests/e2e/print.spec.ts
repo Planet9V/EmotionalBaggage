@@ -29,7 +29,7 @@ function expectPrinted(out: { pages: number; perPage: string[]; text: string }, 
 }
 
 const DOCUMENTS: { path: string; headings: string[]; ready?: string }[] = [
-  { path: "/s/prototype/wiring", headings: ["Wiring and soldering", "Sensor power"], ready: "Sensor power" },
+  { path: "/s/prototype/wiring", headings: ["Wiring and soldering", "Cell rail to the motion sensor"], ready: "Cell rail to the motion sensor" },
   { path: "/report", headings: ["Baggage Claims MK1", "Brief"], ready: "Brief" },
   { path: "/traceability", headings: ["Traceability", "Requirements by test"], ready: "Requirements by test" },
   { path: "/s/production/economics", headings: ["Unit economics", "Unit cost build-up"], ready: "Unit cost build-up" },
@@ -86,6 +86,6 @@ test("a page's own print is not cut down to the schematic after the schematic ha
   await page.locator("aside").getByRole("link", { name: "Wiring and soldering" }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: /Wiring and soldering/ })).toBeVisible();
   await page.waitForLoadState("networkidle");
-  await expect(page.getByText("Sensor power", { exact: true }).first()).toBeVisible();
-  expectPrinted(await pdfOf(page, "wiring-after-schematic"), ["Wiring and soldering", "Sensor power"]);
+  await expect(page.getByText("Cell rail to the motion sensor", { exact: true }).first()).toBeVisible();
+  expectPrinted(await pdfOf(page, "wiring-after-schematic"), ["Wiring and soldering", "Cell rail to the motion sensor"]);
 });
