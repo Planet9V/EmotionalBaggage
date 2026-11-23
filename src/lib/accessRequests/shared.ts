@@ -19,7 +19,6 @@ export const ACCESS_STATUS_LABEL: Record<AccessStatus, string> = { new: "New", c
 export const ACCESS_LEVELS = ["maker", "studio"] as const;
 export type AccessLevel = (typeof ACCESS_LEVELS)[number];
 export const ACCESS_LEVEL_LABEL: Record<AccessLevel, string> = { maker: "Maker", studio: "Studio" };
-export const isAccessLevel = (v: unknown): v is AccessLevel => (ACCESS_LEVELS as readonly unknown[]).includes(v);
 /** A level as stored: the current plans, and the two retired ones older requests may carry. */
 export type StoredLevel = AccessLevel | "free" | "self";
 export const STORED_LEVEL_LABEL: Record<StoredLevel, string> = { ...ACCESS_LEVEL_LABEL, free: "Free (retired)", self: "Self-hosted (retired)" };

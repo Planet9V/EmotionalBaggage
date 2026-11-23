@@ -31,6 +31,7 @@ export function SoundControl({ sound, asked, empty, onToggle, onIntent }: { soun
         <button
           type="button"
           aria-pressed={false}
+          data-track="sound:film"
           onClick={onToggle}
           onPointerEnter={onIntent}
           onFocus={onIntent}
@@ -50,7 +51,7 @@ export function SoundControl({ sound, asked, empty, onToggle, onIntent }: { soun
     <div className="absolute right-3 top-0 z-10 flex h-[7%] min-h-6 items-center gap-2.5 sm:right-5">
       {sound && empty ? <span className="font-mono text-[10px] text-muted sm:text-[11px]">{SOUND.none}</span> : null}
       {sound && !empty ? <Meter /> : null}
-      <button type="button" aria-pressed={sound} onClick={onToggle} data-testid="sound-switch" className="-my-2 inline-flex items-center gap-1.5 rounded px-1.5 py-2 font-mono text-[10px] text-secondary outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-focus sm:text-[11px]">
+      <button type="button" aria-pressed={sound} onClick={onToggle} data-track={sound ? undefined : "sound:film"} data-testid="sound-switch" className="-my-2 inline-flex items-center gap-1.5 rounded px-1.5 py-2 font-mono text-[10px] text-secondary outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-focus sm:text-[11px]">
         {sound ? <VolumeX className="h-3.5 w-3.5" aria-hidden /> : <Volume2 className="h-3.5 w-3.5" aria-hidden />}
         {sound ? SOUND.off : SOUND.on}
       </button>

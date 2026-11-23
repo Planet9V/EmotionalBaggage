@@ -19,6 +19,7 @@ import { SoundControl, VoiceIntro } from "./SoundControl";
 import { Still } from "./Still";
 import { Slate } from "./Slate";
 import { filmMode, paceVerdict } from "./pace";
+import { track, trackOnce } from "../early/track";
 
 const Film = dynamic(() => import("./film/Film"), { ssr: false });
 
@@ -105,6 +106,11 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
   // a held frame: under reduced motion, in the drawn stills, and before the film is ready
   const t = moving && film && ready ? tick : frozen ? tick : scene.stillAt;
   const slate = cut.slate && (playing || frozen);
+
+  // counted once a visit, the first time the film runs (docs/design/early-access.md); it changes nothing here
+  useEffect(() => {
+    if (playing) trackOnce("film_start", "film_start", {}, "origin");
+  }, [playing]);
 
   // the clock: it runs only while the film is on screen
   useEffect(() => {
@@ -367,7 +373,10 @@ export function OriginScenes({ className = "", bare = false, voice = NO_VOICE }:
                   <li key={s.id}>
                     <button
                       type="button"
-                      onClick={() => choose(i)}
+                      onClick={() => {
+                        track("film_scene", { scene: s.id }, "origin");
+                        choose(i);
+                      }}
                       aria-current={on ? "true" : undefined}
                       className={`relative flex min-h-11 w-full items-center gap-2.5 overflow-hidden rounded-lg border p-1.5 text-left text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus lg:flex-col lg:items-stretch lg:gap-1.5 ${on ? "border-dutchOrange bg-surface text-primary" : "border-hairline text-secondary hover:bg-surface hover:text-primary"}`}
                     >

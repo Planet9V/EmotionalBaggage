@@ -50,7 +50,7 @@ export async function EarlyAccessBlock({ placement }: { placement: Placement }) 
   const compact = placement === "hero";
   const full = count !== null && count.left === 0;
   return (
-    <div data-early-access={placement} id={`early-access-${placement}`} className={cn("grid scroll-mt-6", compact ? "gap-2" : "gap-4")}>
+    <div data-early-access={placement} id={`early-access-${placement}`} className={cn("grid scroll-mt-24", compact ? "gap-2" : "gap-4")}>
       {line ? (
         <p className={cn("flex items-center gap-2 font-medium", compact ? "text-sm text-secondary" : "text-base text-primary")} data-early-count={count?.left ?? ""}>
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />

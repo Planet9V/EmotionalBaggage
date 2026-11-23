@@ -8,7 +8,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/http";
 import { downloadFile } from "@/lib/download";
-import type { AccessRequestRow, AccessRequestValues, AccessStatus } from "./shared";
+import type { AccessRequestRow, AccessStatus } from "./shared";
 
 const key = () => ["admin", "access-requests"] as const;
 
@@ -60,11 +60,4 @@ export async function downloadAccessRequests(): Promise<string> {
   const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "access-requests.csv";
   downloadFile(name, await res.blob(), "text/csv");
   return name;
-}
-
-/** Sends the public form. Answers the server's confirmation sentence. */
-export function useSendAccessRequest() {
-  return useMutation({
-    mutationFn: (v: AccessRequestValues) => api<{ ok: true; message: string }>("/api/access-requests", { method: "POST", body: JSON.stringify(v) }).then((r) => r.message),
-  });
 }

@@ -7,7 +7,6 @@
  *   <Tracker />                         once on the page: sends page_view, and handles every click on an element
  *                                       with data-track (see TRACK_KINDS) in one delegated listener
  *   <TrackSection id="pricing">...      wraps a section; sends section_view once per visit when it is first seen
- *   useTrackView("pricing")             the same as a ref callback, for an element the page already has
  *   track("film_scene", { scene: "3" }) any other event, from a client component
  *
  * Nothing is recorded when the browser asks not to be tracked (Do Not Track or Global Privacy Control). The visit id
@@ -95,7 +94,7 @@ export function trackOnce(key: string, event: EventName, detail: EventDetail = {
 }
 
 /** A ref callback: section_view for `id`, once per visit, when at least a quarter of the element is in view. */
-export function useTrackView<T extends Element = HTMLElement>(id: string): (el: T | null) => void | (() => void) {
+function useTrackView<T extends Element = HTMLElement>(id: string): (el: T | null) => void | (() => void) {
   return useCallback(
     (el: T | null) => {
       if (!el || typeof IntersectionObserver === "undefined") return;

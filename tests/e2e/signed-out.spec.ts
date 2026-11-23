@@ -53,11 +53,11 @@ test("the welcome page has one action, early access, in reach from the header, a
 });
 
 for (const theme of ["light", "dark"] as const) {
-  test(`the welcome page and the overview load cleanly signed out in the ${theme} theme`, async ({ page, baseURL }, info) => {
+  test(`the welcome page and its early-access page load cleanly signed out in the ${theme} theme`, async ({ page, baseURL }, info) => {
     await page.addInitScript((t) => window.localStorage.setItem("c2r.theme", t), theme);
     const w = watch(page, baseURL!);
     const problems: string[] = [];
-    for (const path of ["/welcome", "/welcome/overview"]) problems.push(...(await checkPage(page, w, path, theme, info)).map((p) => `${path}: ${p}`));
+    for (const path of ["/welcome", "/welcome/early"]) problems.push(...(await checkPage(page, w, path, theme, info)).map((p) => `${path}: ${p}`));
     expect(problems).toEqual([]);
     expect(await sessionCookie(page)).toBeUndefined();
   });

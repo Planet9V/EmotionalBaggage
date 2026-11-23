@@ -10,6 +10,7 @@ import { Showcase } from "@/components/welcome/Showcase";
 import { StageStatus } from "@/components/welcome/StageStatus";
 import { PlanCards, paidPlans } from "@/components/welcome/Pricing";
 import { EarlyAccess } from "@/components/welcome/early/EarlyAccess";
+import { Tracker, TrackSection } from "@/components/welcome/early/track";
 import { publicBuilder } from "@/components/welcome/builder";
 import { publicLevels } from "@/lib/admin/plans";
 import { publicVoiceovers } from "@/lib/voice/voiceovers";
@@ -42,8 +43,9 @@ export const generateMetadata = () => publicPageMetadata({ title: META.title, de
  *  9. close    The same action again, with the fuller form.
  *
  * The form, the count of places left and the visit counting are in src/components/welcome/early (EarlyAccess and
- * its tracking helpers). Every action on this page is a link to the nearest form and carries data-track; every
- * block has a stable id. The plans are read from the catalogue on each request (connection() below), so a change
+ * its tracking helpers; docs/design/early-access.md). Every action on this page is a link to the nearest form
+ * (#early-access-hero, -pricing or -close, the ids EarlyAccess gives itself) and carries data-track; every block
+ * has a stable id and sits in a TrackSection of the same name, so a visit is counted block by block. The plans are read from the catalogue on each request (connection() below), so a change
  * in Admin shows without a deploy. Nothing here says the service costs nothing, runs anywhere else, or is quicker
  * than anything: no customers, counts, logos or time savings appear, because none exist; the worked example is
  * the proof.
@@ -55,7 +57,6 @@ const LEAD = "mt-3 max-w-[64ch] text-[15px] leading-relaxed text-secondary sm:te
 const EYEBROW = "mb-2 font-mono text-xs text-link";
 /** the sticky header is 56 px tall: an anchor stops below it */
 const SECTION = "scroll-mt-14 border-b border-hairline py-9 sm:py-11";
-const FORM_ANCHOR = "scroll-mt-24";
 
 /** The page's one action: a link to the nearest form. `where` names the block for the visit counts. */
 function Action({ href, where, className = "" }: { href: string; where: string; className?: string }) {
@@ -81,6 +82,7 @@ export default async function WelcomePage() {
   };
   return (
     <div className="min-h-[100dvh] bg-canvas text-primary">
+      <Tracker />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:text-primary focus:ring-2 focus:ring-focus">
         Skip to the content
       </a>
@@ -93,7 +95,7 @@ export default async function WelcomePage() {
           </Link>
           <nav aria-label="On this page" className="hidden items-center gap-5 whitespace-nowrap text-[13px] text-secondary lg:flex">
             {NAV.map((n) => (
-              <a key={n.href} href={n.href} data-track={`cta:header-nav-${n.href.slice(1)}`} className="hover:text-primary">{n.label}</a>
+              <a key={n.href} href={n.href} data-track={`cta:nav-${n.href.slice(1)}`} className="hover:text-primary">{n.label}</a>
             ))}
           </nav>
           <div className="flex items-center gap-0.5 whitespace-nowrap sm:gap-1">
@@ -102,7 +104,7 @@ export default async function WelcomePage() {
               Sign in
             </Link>
             <Button asChild size="sm" className="ml-1 h-9 rounded-md px-3.5 text-[13px] font-semibold">
-              <a href="#early" data-track="cta:header">
+              <a href="#early-access-hero" data-track="cta:header">
                 <span className="sm:hidden">{ACTION.short}</span>
                 <span className="hidden sm:inline">{ACTION.label}</span>
               </a>
@@ -113,7 +115,7 @@ export default async function WelcomePage() {
 
       <main id="main">
         {/* 1. Hero: the proposition and the form. Dark in both themes. */}
-        <div className="dark bg-canvas text-primary">
+        <TrackSection id="hero" className="dark bg-canvas text-primary">
           <section id="hero" aria-labelledby="hero-title" className="border-b border-hairline pb-9 pt-8 sm:pb-11 sm:pt-10">
             <div className={`${WRAP} grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:gap-12`}>
               <div>
@@ -122,164 +124,176 @@ export default async function WelcomePage() {
                   {HERO.title}
                 </h1>
                 <p className="mt-4 max-w-[56ch] text-[15px] leading-relaxed text-secondary sm:text-base">{HERO.sub}</p>
-                <div id="early" className={`mt-6 max-w-[420px] ${FORM_ANCHOR}`}>
+                <div className="mt-6 max-w-[440px]">
                   <EarlyAccess placement="hero" />
                 </div>
-                <a href="#proof" data-track="cta:hero-example" className="mt-4 inline-flex h-11 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
+                <a href="#proof" data-track="example:hero" className="mt-4 inline-flex h-11 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
                   {HERO.secondary} <ArrowRight className="h-4 w-4" aria-hidden />
                 </a>
               </div>
               <HeroFlow idea={story.origin.idea} facts={story.hero} />
             </div>
           </section>
-        </div>
+        </TrackSection>
 
         {/* 2. Where it came from: the film, as the hook. It loads only as it nears the window. */}
-        <OriginScenes voice={voice} className="scroll-mt-14" />
+        <TrackSection id="origin">
+          <OriginScenes voice={voice} className="scroll-mt-14" />
+        </TrackSection>
 
         {/* 3. The problem */}
-        <section id="problem" aria-labelledby="problem-title" className={`${SECTION} bg-subtle`}>
-          <div className={WRAP}>
-            <h2 id="problem-title" className={H2}>{PROBLEM.title}</h2>
-            <p className={LEAD}>{PROBLEM.lead}</p>
-            <ul className="mt-6 grid gap-4 md:grid-cols-3">
-              {PROBLEM.shown.map((i) => PROBLEM.pairs[i]!).map((p) => (
-                <li key={p.before} className="rounded-xl border border-hairline bg-surface p-5">
-                  <p className="font-mono text-[11px] text-muted">{PROBLEM.before}</p>
-                  <p className="mt-1 text-sm leading-snug text-secondary">{p.before}</p>
-                  <p className="mt-4 font-mono text-[11px] text-link">{PROBLEM.after}</p>
-                  <p className="mt-1 text-sm font-medium leading-snug text-primary">{p.after}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        <TrackSection id="problem">
+          <section id="problem" aria-labelledby="problem-title" className={`${SECTION} bg-subtle`}>
+            <div className={WRAP}>
+              <h2 id="problem-title" className={H2}>{PROBLEM.title}</h2>
+              <p className={LEAD}>{PROBLEM.lead}</p>
+              <ul className="mt-6 grid gap-4 md:grid-cols-3">
+                {PROBLEM.shown.map((i) => PROBLEM.pairs[i]!).map((p) => (
+                  <li key={p.before} className="rounded-xl border border-hairline bg-surface p-5">
+                    <p className="font-mono text-[11px] text-muted">{PROBLEM.before}</p>
+                    <p className="mt-1 text-sm leading-snug text-secondary">{p.before}</p>
+                    <p className="mt-4 font-mono text-[11px] text-link">{PROBLEM.after}</p>
+                    <p className="mt-1 text-sm font-medium leading-snug text-primary">{p.after}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        </TrackSection>
 
         {/* 4. What you get, and how */}
-        <section id="get" aria-labelledby="get-title" className={SECTION}>
-          <div className={WRAP}>
-            <p className={EYEBROW}>{GET.eyebrow}</p>
-            <h2 id="get-title" className={H2}>{GET.title}</h2>
-            <p className={LEAD}>{GET.lead}</p>
-            <div className="mt-7">
-              <WhatYouGet holds={story.holds} get={story.get} market={story.market} unit={example.unit} parts={example.parts} wires={example.wires} enclosure={example.enclosure} />
-            </div>
-            <p className="mt-4 text-xs leading-relaxed text-muted">{GET.note}</p>
+        <TrackSection id="get">
+          <section id="get" aria-labelledby="get-title" className={SECTION}>
+            <div className={WRAP}>
+              <p className={EYEBROW}>{GET.eyebrow}</p>
+              <h2 id="get-title" className={H2}>{GET.title}</h2>
+              <p className={LEAD}>{GET.lead}</p>
+              <div className="mt-7">
+                <WhatYouGet holds={story.holds} get={story.get} market={story.market} unit={example.unit} parts={example.parts} wires={example.wires} enclosure={example.enclosure} />
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-muted">{GET.note}</p>
 
-            <h3 className="mt-9 max-w-[40ch] text-lg font-semibold leading-snug tracking-tight text-primary">{MECHANISM.title}</h3>
-            <ul className="mt-3 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
-              {MECHANISM.guarantees.map((p) => (
-                <li key={p.title} className="border-t border-hairline py-4">
-                  <h4 className="flex items-start gap-2 text-sm font-semibold text-primary">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-link" aria-hidden />
-                    {p.title}
-                  </h4>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">{p.text}</p>
-                </li>
-              ))}
-            </ul>
-            <Action href="#early" where="get" className="mt-4" />
-          </div>
-        </section>
+              <h3 className="mt-9 max-w-[40ch] text-lg font-semibold leading-snug tracking-tight text-primary">{MECHANISM.title}</h3>
+              <ul className="mt-3 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
+                {MECHANISM.guarantees.map((p) => (
+                  <li key={p.title} className="border-t border-hairline py-4">
+                    <h4 className="flex items-start gap-2 text-sm font-semibold text-primary">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-link" aria-hidden />
+                      {p.title}
+                    </h4>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">{p.text}</p>
+                  </li>
+                ))}
+              </ul>
+              <Action href="#early-access-hero" where="get" className="mt-4" />
+            </div>
+          </section>
+        </TrackSection>
 
         {/* 5. Proof: one showcase of the example, then where it stands */}
-        <section id="proof" aria-labelledby="proof-title" className={`${SECTION} bg-subtle`}>
-          <div className={WRAP}>
-            <p className={EYEBROW}>{PROOF.eyebrow}</p>
-            <h2 id="proof-title" className={H2}>{PROOF.title}</h2>
-            <p className={LEAD}>{PROOF.lead}</p>
-          </div>
-          {/* the stage runs wider than the text column; the showcase lays both out */}
-          <div className="mt-6">
-            <Showcase parts={example.parts} wires={example.wires} enclosure={example.enclosure} market={story.market} />
-          </div>
-          <div className={`${WRAP} mt-9`}>
-            <h3 className="text-lg font-semibold tracking-tight text-primary">{PROOF.status.title}</h3>
-            <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-secondary">{PROOF.status.lead}</p>
-            <div className="mt-4">
-              <StageStatus gates={example.gates} />
+        <TrackSection id="proof">
+          <section id="proof" aria-labelledby="proof-title" className={`${SECTION} bg-subtle`}>
+            <div className={WRAP}>
+              <p className={EYEBROW}>{PROOF.eyebrow}</p>
+              <h2 id="proof-title" className={H2}>{PROOF.title}</h2>
+              <p className={LEAD}>{PROOF.lead}</p>
             </div>
-            <Action href="#early-close" where="proof" className="mt-7" />
-          </div>
-        </section>
+            {/* the stage runs wider than the text column; the showcase lays both out */}
+            <div className="mt-6">
+              <Showcase parts={example.parts} wires={example.wires} enclosure={example.enclosure} market={story.market} />
+            </div>
+            <div className={`${WRAP} mt-9`}>
+              <h3 className="text-lg font-semibold tracking-tight text-primary">{PROOF.status.title}</h3>
+              <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-secondary">{PROOF.status.lead}</p>
+              <div className="mt-4">
+                <StageStatus gates={example.gates} />
+              </div>
+              <Action href="#early-access-close" where="proof" className="mt-7" />
+            </div>
+          </section>
+        </TrackSection>
 
         {/* 6. Pricing: the early-access offer, then the plans that follow it */}
-        <section id="pricing" aria-labelledby="pricing-title" className={SECTION}>
-          <div className={WRAP}>
-            <p className={EYEBROW}>{PRICING.eyebrow}</p>
-            <h2 id="pricing-title" className={H2}>{PRICING.title}</h2>
-            <p className={LEAD}>{PRICING.lead}</p>
-            <div className="mt-7 grid gap-6 rounded-xl border border-dutchOrange bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6 md:grid-cols-2 md:items-center md:gap-10">
-              <div>
-                <h3 className="text-lg font-semibold tracking-tight text-primary">{PRICING.offerTitle}</h3>
-                <p className="mt-2 max-w-[48ch] text-sm leading-relaxed text-secondary">{PRICING.offerText}</p>
-              </div>
-              <div id="early-pricing" className={FORM_ANCHOR}>
+        <TrackSection id="pricing">
+          <section id="pricing" aria-labelledby="pricing-title" className={SECTION}>
+            <div className={WRAP}>
+              <p className={EYEBROW}>{PRICING.eyebrow}</p>
+              <h2 id="pricing-title" className={H2}>{PRICING.title}</h2>
+              <p className={LEAD}>{plans.length ? `${PRICING.lead} ${PRICING.plansLead}` : PRICING.lead}</p>
+              <div className="mt-7 grid gap-6 rounded-xl border border-dutchOrange bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6 md:grid-cols-2 md:items-center md:gap-10">
+                <div>
+                  <h3 className="text-lg font-semibold tracking-tight text-primary">{PRICING.offerTitle}</h3>
+                  <p className="mt-2 max-w-[48ch] text-sm leading-relaxed text-secondary">{PRICING.offerText}</p>
+                </div>
                 <EarlyAccess placement="pricing" />
               </div>
+              {plans.length ? (
+                <>
+                  <h3 className="mt-9 text-lg font-semibold tracking-tight text-primary">{PRICING.plansTitle}</h3>
+                  <PlanCards plans={plans} href="#early-access-pricing" />
+                </>
+              ) : null}
+              <p className="mt-5 flex max-w-[80ch] items-start gap-2 text-sm leading-relaxed text-secondary">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
+                {PRICING.first}
+              </p>
             </div>
-            {plans.length ? (
-              <>
-                <h3 className="mt-9 text-lg font-semibold tracking-tight text-primary">{PRICING.plansTitle}</h3>
-                <PlanCards plans={plans} href="#early-pricing" />
-              </>
-            ) : null}
-            <p className="mt-5 flex max-w-[80ch] items-start gap-2 text-sm leading-relaxed text-secondary">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
-              {PRICING.first}
-            </p>
-          </div>
-        </section>
+          </section>
+        </TrackSection>
 
         {/* 7. Who built it: only when the owner's name and text are saved; a public page carries no placeholder */}
         {builder ? (
-          <section id="builder" aria-labelledby="builder-title" className={`${SECTION} bg-subtle`}>
-            <div className={`${WRAP} grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-10`}>
-              <div className="lg:col-span-4">
-                <h2 id="builder-title" className={H2}>{BUILDER.title}</h2>
+          <TrackSection id="builder">
+            <section id="builder" aria-labelledby="builder-title" className={`${SECTION} bg-subtle`}>
+              <div className={`${WRAP} grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-10`}>
+                <div className="lg:col-span-4">
+                  <h2 id="builder-title" className={H2}>{BUILDER.title}</h2>
+                </div>
+                <div className="lg:col-span-8">
+                  <p className="text-base font-semibold text-primary">{builder.name}</p>
+                  {builder.role ? <p className="mt-0.5 font-mono text-[11px] text-link">{builder.role}</p> : null}
+                  <p className="mt-3 max-w-[64ch] whitespace-pre-line text-[15px] leading-relaxed text-secondary">{builder.text}</p>
+                </div>
               </div>
-              <div className="lg:col-span-8">
-                <p className="text-base font-semibold text-primary">{builder.name}</p>
-                {builder.role ? <p className="mt-0.5 font-mono text-[11px] text-link">{builder.role}</p> : null}
-                <p className="mt-3 max-w-[64ch] whitespace-pre-line text-[15px] leading-relaxed text-secondary">{builder.text}</p>
-              </div>
-            </div>
-          </section>
+            </section>
+          </TrackSection>
         ) : null}
 
         {/* 8. Questions a buyer asks */}
-        <section id="faq" aria-labelledby="faq-title" className={`${SECTION} ${builder ? "" : "bg-subtle"}`}>
-          <div className={`${WRAP} grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-10`}>
-            <div className="lg:col-span-4">
-              <h2 id="faq-title" className={H2}>{PRICING.questionsTitle}</h2>
+        <TrackSection id="faq">
+          <section id="faq" aria-labelledby="faq-title" className={`${SECTION} ${builder ? "" : "bg-subtle"}`}>
+            <div className={`${WRAP} grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-10`}>
+              <div className="lg:col-span-4">
+                <h2 id="faq-title" className={H2}>{PRICING.questionsTitle}</h2>
+              </div>
+              <div className="divide-y divide-[var(--border-hairline)] rounded-xl border border-hairline bg-surface lg:col-span-8">
+                {faq.map((f) => (
+                  <details key={f.q} className="group px-5 py-0.5">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3.5 text-[15px] font-medium text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
+                      {f.q}
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+                    </summary>
+                    <p className="pb-5 text-sm leading-relaxed text-secondary">{f.a}</p>
+                  </details>
+                ))}
+              </div>
             </div>
-            <div className="divide-y divide-[var(--border-hairline)] rounded-xl border border-hairline bg-surface lg:col-span-8">
-              {faq.map((f) => (
-                <details key={f.q} className="group px-5 py-0.5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3.5 text-[15px] font-medium text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
-                    {f.q}
-                    <ArrowRight className="h-4 w-4 shrink-0 text-muted transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
-                  </summary>
-                  <p className="pb-5 text-sm leading-relaxed text-secondary">{f.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
-        </section>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
+          </section>
+        </TrackSection>
 
         {/* 9. Close: the same action the page opened with, and the fuller form */}
-        <section id="close" aria-labelledby="close-title" className="dark scroll-mt-14 bg-canvas py-10 text-primary sm:py-12">
-          <div className={`${WRAP} grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12`}>
-            <div>
-              <h2 id="close-title" className={H2}>{CLOSING.title}</h2>
-              <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-secondary sm:text-base">{CLOSING.text}</p>
-            </div>
-            <div id="early-close" className={FORM_ANCHOR}>
+        <TrackSection id="close">
+          <section id="close" aria-labelledby="close-title" className="dark scroll-mt-14 bg-canvas py-10 text-primary sm:py-12">
+            <div className={`${WRAP} grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12`}>
+              <div>
+                <h2 id="close-title" className={H2}>{CLOSING.title}</h2>
+                <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-secondary sm:text-base">{CLOSING.text}</p>
+              </div>
               <EarlyAccess placement="close" />
             </div>
-          </div>
-        </section>
+          </section>
+        </TrackSection>
       </main>
 
       <footer className="dark border-t border-hairline bg-canvas text-primary">

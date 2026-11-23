@@ -19,7 +19,7 @@ The build machine is at its limit with seven agents (load 10 on 2 processors), s
 | # | Task | Workstream | Model | Starts after |
 |---|---|---|---|---|
 | 1 | Cut-over: turn the new sign-in on; owner creates `admin@oxot.nl` | WS2 | lead, with the owner | accounts integration passes review |
-| 2 | Concepts separated per workspace: `workspace_id` and row-level security on every concept table; a test that walks every route as a second workspace | WS2 slice 3 | Fable-tier, security review | accounts integration merges |
+| 2 | **Hard requirement, before the first early-access workspace opens:** concepts separated per workspace: `workspace_id` and row-level security on every concept table; a test that walks every route as a second workspace. The public page now promises it (ruling of 22 Nov, evening, below), so no early-access workspace may be opened until this slice has shipped and passed its security review | WS2 slice 3 | Fable-tier, security review | accounts integration merges |
 | 3 | Admin screens for users and organizations on the platform-admin functions | WS10 part B | Sonnet to a written specification, lead review | accounts integration merges |
 | 4 | Smaller faults from the handover: enclosure page blocks with no route to the fix; drafts show raw JSON; "Ask the assistant" missing on some rows; first next step is "Add a file"; audit-log flooding from the public form; no way to delete an access request; no upper bound on part quantity; export builds every file in memory; the two forms needing a wording decision | app | Sonnet, lead review | a free place |
 | 5 | Stripe subscriptions from the plan catalogue, plan limits enforced, AI credits ledger, billing page | WS6 | Fable-tier, security review | slice 3 |
@@ -43,6 +43,8 @@ Quoted as given:
 - "limit early access to 50 only, then convert to 20/month and 40 per month"
 - "no you cannot run it yourself, remove it"
 - "focus on the landing page and getting attention and conversion"
+
+Later on 22 Nov (evening), on who can see an idea: "The ideas are kept in your own space and not shared with others". The page's question "Who can see my idea?" answers "Your ideas are kept in your own workspace and are not shared with others." Nothing is said about ownership: none was ruled. Also: the one-page overview (`/welcome/overview`) is removed, under "no you cannot run it yourself, remove it".
 
 These replace the 10:03 prices ($29 and $99) and remove the Free and Self-hosted levels and the "Run it yourself" button.
 

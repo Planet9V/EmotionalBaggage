@@ -27,7 +27,7 @@ Without script the form is a plain POST; the answer is a 303 to `/welcome/early`
 
 ```tsx
 import { EarlyAccess } from "@/components/welcome/early/EarlyAccess";
-import { Tracker, TrackSection, useTrackView, track } from "@/components/welcome/early/track";
+import { Tracker, TrackSection, track } from "@/components/welcome/early/track";
 import { publicLevels } from "@/lib/admin/plans";
 
 <EarlyAccess placement="hero" />      // compact
@@ -47,7 +47,7 @@ All in PostgreSQL (`site_events`: time, event, path, section, detail, anonymous 
 | Event | Sent by | Detail |
 |---|---|---|
 | `page_view` | `<Tracker />` | `referrer` (host only), `utm_source` … `utm_term`, `device` (phone, tablet, desktop), `theme` |
-| `section_view` | `<TrackSection id>` / `useTrackView(id)`, once per visit per section | section = the id (`pricing` counts as "reached pricing") |
+| `section_view` | `<TrackSection id>`, once per visit per section | section = the id (`pricing` counts as "reached pricing") |
 | `cta_click` | `data-track="cta:<which>"` | `cta` |
 | `plan_click` | `data-track="plan:<key>"` | `plan` |
 | `example_open` | `data-track="example:<from>"` | `from` |

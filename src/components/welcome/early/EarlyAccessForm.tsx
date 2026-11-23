@@ -21,8 +21,8 @@ import { track, trackOnce, visitId } from "./track";
 type Errors = Partial<Record<"email" | "building", string>>;
 
 const NEXT_STEP: Record<EarlyAccessOutcome["kind"], string> = {
-  place: "Early access costs nothing and takes no payment. When your workspace opens, the email tells you how to sign in.",
-  waiting: "Early access costs nothing and takes no payment. Places that open go to the waiting list in order.",
+  place: "Early access takes no payment. When your workspace opens, the email tells you how to sign in.",
+  waiting: "Early access takes no payment. Places that open go to the waiting list in order.",
   listed: "Nothing more is needed. If you meant another address, send the form again with it.",
 };
 
@@ -98,7 +98,7 @@ export function EarlyAccessForm({ placement, full, compact }: { placement: Place
         <Button type="submit" size="lg" disabled={sending} data-track={`cta:early-${placement}`}>
           {sending ? "Sending…" : action}
         </Button>
-        {!compact ? <p className="text-xs text-muted">Early access costs nothing and takes no payment.</p> : null}
+        {!compact ? <p className="text-xs text-muted">Early access takes no payment.</p> : null}
       </div>
     </form>
   );

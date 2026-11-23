@@ -1,13 +1,12 @@
 /**
- * The words of the public welcome page (/welcome) and its one-page overview (/welcome/overview), in one place.
- * Every claim here is something the app does today, checked against docs/guide/user.md and docs/guide/admin.md.
- * No figures appear that are not measured in this repository: no user counts, no benchmarks, no time savings.
+ * The words of the public welcome page (/welcome), in one place. Every claim here is something the app does today,
+ * checked against docs/guide/user.md and docs/guide/admin.md. No figures appear that are not measured in this
+ * repository: no user counts, no benchmarks, no time savings.
  *
  * The welcome page is the early-access page (owner, 22 Nov): one action, "Claim an early-access place", nine
  * blocks, and nothing about running the software yourself. Its words are HERO, PROBLEM, GET, MECHANISM, PROOF,
- * PRICING, BUILDER, questions(), CLOSING and FOOTER. FAQ, RUNS_ON and RUN_COMMANDS are the overview page's only.
- * LEVELS is the built-in plan catalogue that src/lib/admin/planSchema.ts reads; the page itself shows the paid
- * plans from the catalogue in force (Pricing.tsx).
+ * PRICING, BUILDER, questions(), CLOSING and FOOTER. The plans and their prices are the plan catalogue's
+ * (src/lib/admin/planSchema.ts), never typed here.
  */
 
 export const PRODUCT = "Concept to Realization";
@@ -140,82 +139,6 @@ export const FEATURES: Feature[] = [
     text: "Chat answers from the concept's own rows and saved research, with numbered sources that open the section holding each one. If nothing recorded covers the question, it says so.",
     note: "Chat needs a model you choose. This screenshot is what a fresh install shows before one is chosen: it says what is missing instead of making an answer up.",
     alt: "The Chat page on a fresh install: notices that no reasoning model and no embedding model are chosen yet, with buttons to Admin, and three suggested questions about the concept.",
-  },
-];
-
-export const PRINCIPLES: { title: string; text: string }[] = [
-  { title: "Nothing goes out without you", text: "Nothing is published, sent or bought until you confirm it in the app. The app never places an order." },
-  { title: "AI drafts wait for you", text: "Every draft is kept with the rows it came from and counts for nothing until you approve it." },
-  { title: "No invented numbers", text: "A missing price is named, not counted as zero. Print time and material come from OrcaSlicer's own output." },
-  { title: "Claims are tied to proof", text: "A marketing line with a number or a superlative needs a linked proof row, or it cannot be approved." },
-  { title: "Every change is recorded", text: "Each concept keeps its activity, and the install keeps an audit log that cannot be edited or deleted." },
-];
-
-export const RUNS_ON: { title: string; text: string }[] = [
-  { title: "Free when self-hosted", text: "Apache 2.0. No account with us and no subscription when you run it yourself. You pay only the services you choose to connect, at their own rates." },
-  { title: "Your machine", text: "Three containers with Docker Compose: the app, PostgreSQL with pgvector, and the planner. Every concept and file is stored in your database." },
-  { title: "Your models", text: "Ollama, LM Studio or OpenRouter, chosen in Admin. Without a model the AI buttons say what is missing and everything else works." },
-  { title: "Your keys", text: "Perplexity for research; X, Instagram and Amazon if you want them. Keys are kept in your own database and never shown again." },
-  { title: "Your printers", text: "Connections for OctoPrint and Klipper (Moonraker) are built in, so far tested against stand-ins. Any printer can take the sliced file by hand." },
-];
-
-export const RUN_COMMANDS = ["git clone https://github.com/Planet9V/EmotionalBaggage", "cd EmotionalBaggage", "docker compose up -d --build --wait"];
-
-/** The objections as the one-page overview answers them (its quick table). The welcome page asks buying questions: questions(), below. */
-export const FAQ: { q: string; a: string; /** the one-line answer on the printed overview */ short: string; where: string }[] = [
-  {
-    q: "What does it cost?",
-    short: "Self-hosted is free under Apache 2.0. The hosted levels are set; their prices are not announced yet.",
-    a: "Running it yourself is free: the code is Apache 2.0 licensed, and you pay only the outside services you choose to connect, such as OpenRouter or Perplexity, at their rates. The hosted service will have a Free level and two paid levels, Maker and Studio. Their prices are not announced yet, and nothing can be bought today.",
-    where: "Your turn, on this page",
-  },
-  {
-    q: "Do I need an AI model to use it?",
-    short: "No. Every section works by hand; the AI buttons say what is missing until you choose a model.",
-    a: "No. Every section works by hand. Drafting, the reviewer, chat and search by meaning need a model you choose in Admin. Until you choose one, those buttons say what is missing and link to the place to set it.",
-    where: "Admin, Models",
-  },
-  {
-    q: "Does my idea leave my machine?",
-    short: "Only to services you connect. With Ollama or LM Studio, drafting stays on your machine.",
-    a: "Only when you use a service you connected: a question sent to Perplexity, a prompt sent to OpenRouter, a post you confirm to X. With a local model through Ollama or LM Studio, drafting stays on your machine.",
-    where: "Integrations page",
-  },
-  {
-    q: "Can I put my real idea in the public demo?",
-    short: "No. The demo account is shared with everyone who visits.",
-    a: "Please do not. The demo account is shared with everyone who visits, so anyone can read or change what you type there. Use it to look around, then run your own copy or request a workspace.",
-    where: "This page",
-  },
-  {
-    q: "Is it only for electronics?",
-    short: "No. Electronics in an enclosure, a printed part, or a product with no electronics.",
-    a: "No. A concept is one of three kinds: electronics in an enclosure, a printed part, or a physical product with no electronics. The sections that do not apply, such as the schematic for a printed part, are hidden.",
-    where: "New concept wizard",
-  },
-  {
-    q: "Can it replace my CAD tool?",
-    short: "No. It places and checks parts and makes a simple enclosure; attach detailed shapes as STL or STEP.",
-    a: "No. It places parts, checks fits and openings, generates a simple printable enclosure and exports STL, 3MF and KiCad files. It does not model curved or detailed shapes; attach those as STL or STEP files.",
-    where: "Design, 3D model and Enclosure",
-  },
-  {
-    q: "What has been run against the real services?",
-    short: "Outside services are built to their documentation and tested against stand-ins; each screen says what is unverified.",
-    a: "Chat, research, posting, Amazon sync and printer control are built to each service's published documentation and tested against stand-ins in the test suite. Each screen says plainly what has not yet been run against the real service.",
-    where: "The user guide, under Documentation",
-  },
-  {
-    q: "Can a team use it?",
-    short: "One account per install today; every change is recorded under that name.",
-    a: "An install has one account today. Several people can share it, but every change is recorded under that one name.",
-    where: "Account page",
-  },
-  {
-    q: "How are my keys stored?",
-    short: "In your own database, not encrypted, and never shown again after saving.",
-    a: "In the install's own PostgreSQL database, not encrypted, and never shown again after you save them. Run it on a machine you control and change the default password first.",
-    where: "Admin, Credentials",
   },
 ];
 
@@ -601,92 +524,21 @@ export const MARKET = {
 };
 
 /**
- * Service levels. The four levels and what each includes are approved (docs/research/saas-pricing-and-platform-design.md,
- * decision S3). Accounts and payment are not built: every paid level's button asks for access.
- *
- * PRICES ARE PROPOSALS AWAITING THE OWNER. He has not confirmed any price point, so SHOW_PRICES is false and the
- * page shows "Price to be announced" on the paid levels. Set SHOW_PRICES to true only when he has confirmed the
- * `price` fields below; nothing else needs to change.
- */
-export const SHOW_PRICES = false;
-
-export type Level = {
-  key: "free" | "maker" | "studio" | "self";
-  name: string;
-  /** PROPOSAL, not confirmed by the owner. Shown only when SHOW_PRICES is true. */
-  price: string;
-  /** what follows the price, such as "a month" */
-  per: string;
-  paid: boolean;
-  who: string;
-  what: string;
-  includes: string[];
-  action: "request" | "run";
-};
-
-export const LEVELS: Level[] = [
-  {
-    key: "free",
-    name: "Free",
-    price: "$0", // proposal awaiting the owner
-    per: "",
-    paid: false,
-    who: "Anyone with one idea",
-    what: "Try the whole workbench on one concept, with your own AI key.",
-    includes: ["1 concept", "1 person", "Your own AI key", "The Baggage Claims example to explore"],
-    action: "request",
-  },
-  {
-    key: "maker",
-    name: "Maker",
-    price: "$29", // proposal awaiting the owner
-    per: "a month",
-    paid: true,
-    who: "Makers and first-time founders",
-    what: "One person taking an idea to a prototype and a launch.",
-    includes: ["Several concepts", "Monthly AI credits, with top-ups", "Slicing for your printer", "Exports", "Channels: Amazon, X, Instagram"],
-    action: "request",
-  },
-  {
-    key: "studio",
-    name: "Studio",
-    price: "$99", // proposal awaiting the owner
-    per: "a month",
-    paid: true,
-    who: "Small product firms",
-    what: "A team with several products in one shared workspace.",
-    includes: ["Team seats", "A shared workspace", "Roles", "Pooled AI credits", "More concepts and storage"],
-    action: "request",
-  },
-  {
-    key: "self",
-    name: "Self-hosted",
-    price: "Free", // proposal awaiting the owner
-    per: "",
-    paid: false,
-    who: "People who run it themselves",
-    what: "The same workbench on your own machine, with your own models.",
-    includes: ["Run it yourself with Docker", "Your own models and keys", "No limits set by us", "Apache-2.0 source"],
-    action: "run",
-  },
-];
-
-/**
  * Pricing on the welcome page (owner, 22 Nov): early access is limited to 50 places, then two paid plans. The
- * cards are the paid plans of the catalogue in force (Pricing.tsx, paidPlans). `prices` is what a card shows while
- * the catalogue keeps its prices hidden or has none for that plan: the working figures for the two plans, until the
- * catalogue carries them. Early access takes no payment. No discount is promised: none was ruled.
+ * cards are the paid plans of the catalogue in force, at its prices (Pricing.tsx, paidPlans); with its prices off
+ * the page there are no cards and `plansLead` is not said. Early access takes no payment. No discount is promised:
+ * none was ruled.
  */
 export const PRICING = {
   eyebrow: "Pricing",
   title: "What does it cost?",
-  lead: "Early access is limited to 50 people and takes no payment. After those places are gone, the workbench is by monthly subscription, on one of the two plans below.",
+  lead: "Early access is limited to 50 people and takes no payment.",
+  plansLead: "After those places are gone, the workbench is by monthly subscription, on one of the plans below.",
   offerTitle: "Early access: 50 places",
   offerText: "Give an email address and one line about what you want to make. The count beside the form is the real number of places left.",
   plansTitle: "After early access",
   includes: "Includes",
   per: "a month",
-  prices: { maker: "$20", studio: "$40" } as Record<string, string>,
   /** shown on a plan's card, by plan key */
   notes: { studio: "Team seats open after early access." } as Record<string, string>,
   first: "Early-access members are asked first when paid plans open.",
@@ -703,8 +555,8 @@ type Question = { q: string; a: string };
 
 /**
  * The buying questions of the welcome page and its FAQPage data. The prices are the ones the pricing cards show,
- * so the two cannot disagree. Who can see a hosted concept and who owns it is not asked here: the hosted terms
- * are not written yet, and the page says nothing it cannot stand behind.
+ * so the two cannot disagree. "Who can see my idea?" is answered in the owner's words of 22 Nov ("The ideas are
+ * kept in your own space and not shared with others"); nothing is said about ownership, which is not ruled.
  */
 export function questions(plans: { name: string; price: string; per: string }[]): Question[] {
   const prices = plans.map((p) => `${p.name} at ${p.price} ${p.per}`).join(" and ");
@@ -715,6 +567,7 @@ export function questions(plans: { name: string; price: string; per: string }[])
       q: "What is early access, and why 50?",
       a: `Early access is a place among the first 50 people to put an idea of their own through the workbench. You claim one with an email address and one line about what you want to make. Fifty is a fixed limit, and the count on this page is the real number of places left.${prices ? " When they are gone, the way in is a paid plan." : ""}`,
     },
+    { q: "Who can see my idea?", a: "Your ideas are kept in your own workspace and are not shared with others." },
     {
       q: "Do I need electronics or CAD skills?",
       a: "No CAD skills: parts are drawn as boxes and cylinders from the sizes you enter, or from an STL or STEP file you attach, and the enclosure is generated around them. Some electronics knowledge helps, because you approve every draft and build the prototype yourself. The electrical checks list what they find, worst first, and the build sheet gives the order to solder in.",
