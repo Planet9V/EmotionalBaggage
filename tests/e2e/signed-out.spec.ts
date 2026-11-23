@@ -27,7 +27,9 @@ test("the welcome page has one action, early access, in reach from the header, a
   // the header's action goes to the form in the hero; the same words are the action of every block
   await page.getByRole("banner").getByRole("link", { name: "Claim an early-access place" }).click();
   await expect(page).toHaveURL(`${baseURL}/welcome#early-access-hero`);
-  await expect(page.getByRole("heading", { level: 1, name: "Your product idea, built and on sale." })).toBeInViewport();
+  // the jump lands on the form itself, clear of the sticky header
+  await expect(page.locator("#early-access-hero").getByLabel(/^Email/)).toBeInViewport();
+  await expect(page.getByRole("heading", { level: 1, name: "Your product idea, built and on sale." })).toHaveCount(1);
   for (const track of ["cta:get", "cta:proof", "plan:maker", "plan:studio"]) await expect(page.locator(`a[data-track="${track}"]`)).toHaveText("Claim an early-access place");
   // every action is a link to a form that is on the page
   for (const href of await page.locator('a[href^="#early-access-"]').evaluateAll((as) => as.map((a) => a.getAttribute("href")!))) await expect(page.locator(href)).toHaveCount(1);
