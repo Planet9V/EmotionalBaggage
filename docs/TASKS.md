@@ -98,3 +98,5 @@ Running from these: WS14 device engineering and firmware (`ws14-device`), WS15 r
 | Status page at `/status` | WS5 |
 | One source for status colours and channel names; 14 forms converted; unused exports 54 to 18 | WS7 |
 | 11 more forms converted by a Sonnet agent, lead-reviewed (hand-wired 26 to 17) | WS7 |
+
+- 23 Nov 13:22, owner: "logo is good, change the email to Shipwright in admin and email". Migration 0046 renames a stored mail sender name that is still the old default; any other sender name stays.
