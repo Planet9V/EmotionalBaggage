@@ -8,7 +8,7 @@ import { gate, param, setupPending } from "../gate";
 import { InviteView } from "./InviteView";
 
 // The token is in this page's address: it must not travel to another site in a Referer header.
-export const metadata: Metadata = { title: "Invitation · Concept to Realization", referrer: "no-referrer" };
+export const metadata: Metadata = { title: "Invitation · Shipwright", referrer: "no-referrer" };
 
 /** An invitation link from an email (or handed over in "no mail" mode): what it is for, and how to accept it. */
 export default async function InvitePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

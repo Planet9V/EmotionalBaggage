@@ -45,7 +45,7 @@ describe("enrolment", () => {
     recovery = res.body.backupCodes;
     const u = new URL(uri);
     expect(u.protocol).toBe("otpauth:");
-    expect(u.searchParams.get("issuer")).toBe("Concept to Realization");
+    expect(u.searchParams.get("issuer")).toBe("Shipwright");
     expect(decodeURIComponent(u.pathname)).toContain(address);
     expect(recovery).toHaveLength(10);
     expect(new Set(recovery).size).toBe(10);

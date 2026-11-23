@@ -7,8 +7,8 @@ import { getMailSender } from "@/lib/admin/mail";
 import { outcomeMessage, type EarlyAccessOutcome } from "./shared";
 
 const SUBJECT: Record<"place" | "waiting", string> = {
-  place: "Your early-access place for Concept to Realization",
-  waiting: "You are on the waiting list for Concept to Realization",
+  place: "Your early-access place for Shipwright",
+  waiting: "You are on the waiting list for Shipwright",
 };
 
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);

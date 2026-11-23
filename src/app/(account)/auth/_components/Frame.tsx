@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, type ReactNode } from "react";
-import { EYEBROW } from "@/components/ui/field";
+import { Wordmark } from "@/components/brand/ShipwrightMark";
 import { prefersDark } from "@/lib/theme";
 
 /**
@@ -22,8 +22,8 @@ export function Frame({ title, lead, children, footer, wide = false }: { title: 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10 text-primary">
       <div className={wide ? "w-full max-w-3xl" : "w-full max-w-sm"}>
-        <p className={EYEBROW}>Concept to realization</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-primary">{title}</h1>
+        <p><Wordmark play size={22} textClassName="text-sm" /></p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-primary">{title}</h1>
         {lead && <p className="mt-1 text-sm text-secondary">{lead}</p>}
         <div className="mt-6 space-y-4 rounded-xl border border-hairline bg-surface p-5">{children}</div>
         {footer && <div className="mt-4 space-y-1 text-sm text-secondary">{footer}</div>}

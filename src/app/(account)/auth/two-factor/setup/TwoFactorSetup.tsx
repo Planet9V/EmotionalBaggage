@@ -56,7 +56,7 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
   };
   const download = () => {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([`Concept to Realization recovery codes. Each works once.\n\n${text}\n`], { type: "text/plain" }));
+    a.href = URL.createObjectURL(new Blob([`Shipwright recovery codes. Each works once.\n\n${text}\n`], { type: "text/plain" }));
     a.download = "recovery-codes.txt";
     a.click();
     URL.revokeObjectURL(a.href);
@@ -139,7 +139,7 @@ function Enrol({ email, required }: { email: string; required: boolean }) {
         {qr ? (
           // A data: address made in this browser; next/image would add nothing here.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={qr} width={192} height={192} alt={`QR code that adds ${email} on Concept to Realization to an authenticator app`} className="rounded-md bg-white p-1" />
+          <img src={qr} width={192} height={192} alt={`QR code that adds ${email} on Shipwright to an authenticator app`} className="rounded-md bg-white p-1" />
         ) : (
           <p role="status" className="text-sm text-secondary">Drawing the QR code…</p>
         )}

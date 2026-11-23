@@ -347,7 +347,7 @@ export function netlistKicad(parts: Part[], wires: Wire[], meta: FileMeta): stri
   out.push("  (design");
   out.push(`    (source ${q(meta.concept)})`);
   out.push(`    (date ${q(fmtFileStamp(meta.generatedAt))})`);
-  out.push(`    (tool ${q("Concept to realization: simple netlist for reference, not a validated KiCad project")}))`);
+  out.push(`    (tool ${q("Shipwright: simple netlist for reference, not a validated KiCad project")}))`);
   out.push("  (components");
   for (const r of refs) {
     const p = byRef.get(r);

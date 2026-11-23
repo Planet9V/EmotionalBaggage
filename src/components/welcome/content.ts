@@ -11,7 +11,9 @@
  * (src/lib/admin/planSchema.ts), never typed here.
  */
 
-export const PRODUCT = "Concept to Realization";
+import { BRAND } from "@/components/brand/name";
+
+export const PRODUCT = BRAND;
 
 /** The one action of the page, worded the same everywhere. `short` is the header's label on a phone. */
 export const ACTION = { label: "Claim an early-access place", short: "Early access" };
@@ -24,7 +26,7 @@ export const HERO = {
 };
 
 export const META = {
-  title: "Concept to Realization: take your product idea to market",
+  title: "Shipwright: take your product idea to market",
   description:
     "Type a product idea in one line. Get a costed parts list, a checked schematic, your margin by sales channel and a launch plan. 50 early-access places, no payment.",
 };

@@ -51,9 +51,9 @@ export async function testMailMessage(to: string, ms: number): Promise<TestResul
   try {
     await setup.sender.send({
       to,
-      subject: "Test message from Concept to Realization",
-      text: "This is a test message sent from Admin, Email. The mail server settings work.\n\nConcept to Realization",
-      html: "<p>This is a test message sent from Admin, Email. The mail server settings work.</p><p>Concept to Realization</p>",
+      subject: "Test message from Shipwright",
+      text: "This is a test message sent from Admin, Email. The mail server settings work.\n\nShipwright",
+      html: "<p>This is a test message sent from Admin, Email. The mail server settings work.</p><p>Shipwright</p>",
     });
     return { ok: true, message: `The mail server accepted a test message to ${to}. Check that inbox, and the spam folder.` };
   } catch (e) {

@@ -1,10 +1,10 @@
 # User guide
 
-This guide describes what the workbench does today. Where something is not built yet, it says so.
+This guide describes what Shipwright does today. Where something is not built yet, it says so.
 
 ## What this is
 
-A workbench that takes a product concept through seven stages, from the first idea to sales. Every concept uses the same stages and the same structure, so anything you learn on one concept applies to the next. The example concept that ships with it is **Baggage Claims MK1**.
+Shipwright is a workbench that takes a product concept through seven stages, from the first idea to sales. Every concept uses the same stages and the same structure, so anything you learn on one concept applies to the next. The example concept that ships with it is **Baggage Claims MK1**.
 
 ```mermaid
 flowchart LR

@@ -1,6 +1,6 @@
 # Admin guide
 
-For the person who installs and looks after the workbench.
+For the person who installs and looks after Shipwright.
 
 > **A public test.** One account with a published default password, and keys stored in the database unencrypted. Change the password after the first sign-in, and read "What sign-in does not protect" below before using it beyond your own machine.
 

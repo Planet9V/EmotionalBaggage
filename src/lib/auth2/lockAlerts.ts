@@ -52,8 +52,8 @@ export async function sendLockAlert(db: Pool, a: LockAlert): Promise<"sent" | "o
     const users = `${base}/admin?tab=users`;
     const audit = `${base}/admin?tab=audit`;
     if (kind === "overflow") {
-      const text = `More accounts are being locked after failed sign-ins on Concept to Realization than one alert an hour each can cover (${MAX_PER_HOUR} alerts sent in the last hour). More locks are happening; see the audit log: ${audit}\n\nNo more alerts are sent until an hour has passed.`;
-      await mail.sender.send({ to, subject: "More sign-in locks are happening on Concept to Realization", text, html: `<p>${escapeHtml(text.split("\n")[0]!)}</p><p><a href="${escapeHtml(audit)}">Open the audit log</a></p><p>No more alerts are sent until an hour has passed.</p>` });
+      const text = `More accounts are being locked after failed sign-ins on Shipwright than one alert an hour each can cover (${MAX_PER_HOUR} alerts sent in the last hour). More locks are happening; see the audit log: ${audit}\n\nNo more alerts are sent until an hour has passed.`;
+      await mail.sender.send({ to, subject: "More sign-in locks are happening on Shipwright", text, html: `<p>${escapeHtml(text.split("\n")[0]!)}</p><p><a href="${escapeHtml(audit)}">Open the audit log</a></p><p>No more alerts are sent until an hour has passed.</p>` });
       return kind;
     }
     const who = a.email ?? "an address with no account";
@@ -64,12 +64,12 @@ export async function sendLockAlert(db: Pool, a: LockAlert): Promise<"sent" | "o
       `Failed sign-ins in a row: ${a.failures}`,
       `Locked ${how}. A password reset by email or Unlock in Admin, Users lifts it at once.`,
     ];
-    const text = [`An address was locked after failed sign-ins on Concept to Realization.`, "", ...lines, "", `Open Admin, Users: ${users}`].join("\n");
+    const text = [`An address was locked after failed sign-ins on Shipwright.`, "", ...lines, "", `Open Admin, Users: ${users}`].join("\n");
     await mail.sender.send({
       to,
       subject: `Sign-in locked: ${who}`,
       text,
-      html: `<p>An address was locked after failed sign-ins on Concept to Realization.</p>${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}<p><a href="${escapeHtml(users)}">Open Admin, Users</a></p>`,
+      html: `<p>An address was locked after failed sign-ins on Shipwright.</p>${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}<p><a href="${escapeHtml(users)}">Open Admin, Users</a></p>`,
     });
     return kind;
   } catch (e) {

@@ -84,9 +84,9 @@ export function viewAs(db: Pool, deps: { mailer: () => Promise<MailSender | null
           await sender
             ?.send({
               to: target.email,
-              subject: "An administrator is viewing your account on Concept to Realization",
-              text: `Hello ${target.name},\n\nA platform administrator of Concept to Realization (${me.user.name || me.user.email}) is viewing your account as you see it, to help with a problem, for at most ${minutes} minutes. Your password and two-step sign-in are not seen or changed.\n\nConcept to Realization`,
-              html: `<p>Hello ${escapeHtml(target.name)},</p><p>A platform administrator of Concept to Realization (${escapeHtml(me.user.name || me.user.email)}) is viewing your account as you see it, to help with a problem, for at most ${minutes} minutes. Your password and two-step sign-in are not seen or changed.</p><p>Concept to Realization</p>`,
+              subject: "An administrator is viewing your account on Shipwright",
+              text: `Hello ${target.name},\n\nA platform administrator of Shipwright (${me.user.name || me.user.email}) is viewing your account as you see it, to help with a problem, for at most ${minutes} minutes. Your password and two-step sign-in are not seen or changed.\n\nShipwright`,
+              html: `<p>Hello ${escapeHtml(target.name)},</p><p>A platform administrator of Shipwright (${escapeHtml(me.user.name || me.user.email)}) is viewing your account as you see it, to help with a problem, for at most ${minutes} minutes. Your password and two-step sign-in are not seen or changed.</p><p>Shipwright</p>`,
             })
             .catch((e) => console.error(`[auth2] the "view as" notice was not sent: ${(e as Error).name}`));
         }

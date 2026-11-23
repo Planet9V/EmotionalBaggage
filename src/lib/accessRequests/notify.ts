@@ -35,8 +35,8 @@ export async function notifySignupRequest(r: SignupRequest): Promise<boolean> {
       ["Outcome", r.outcome],
     ];
     const subject = oneLine(`New request for ${what}: ${r.email}`, 200);
-    const text = [`Someone asked for ${what} on Concept to Realization.`, "", ...rows.map(([k, v]) => `${k}: ${oneLine(v, 2000)}`), "", `Open Admin, Access requests: ${link}`].join("\n");
-    const html = `<p>Someone asked for ${what} on Concept to Realization.</p><table>${rows.map(([k, v]) => `<tr><th align="left">${k}</th><td>${escapeHtml(oneLine(v, 2000))}</td></tr>`).join("")}</table><p><a href="${escapeHtml(link)}">Open Admin, Access requests</a></p>`;
+    const text = [`Someone asked for ${what} on Shipwright.`, "", ...rows.map(([k, v]) => `${k}: ${oneLine(v, 2000)}`), "", `Open Admin, Access requests: ${link}`].join("\n");
+    const html = `<p>Someone asked for ${what} on Shipwright.</p><table>${rows.map(([k, v]) => `<tr><th align="left">${k}</th><td>${escapeHtml(oneLine(v, 2000))}</td></tr>`).join("")}</table><p><a href="${escapeHtml(link)}">Open Admin, Access requests</a></p>`;
     await mail.sender.send({ to, subject, text, html });
     return true;
   } catch (e) {

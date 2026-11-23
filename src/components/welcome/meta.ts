@@ -24,7 +24,7 @@ export async function publicPageMetadata(o: { title: string; description: string
     title: o.title,
     description: o.description,
     alternates: { canonical: o.path },
-    openGraph: { type: "website", title: o.title, description: o.description, url: o.path, siteName: "Concept to Realization", images: [image] },
+    openGraph: { type: "website", title: o.title, description: o.description, url: o.path, siteName: "Shipwright", images: [image] },
     twitter: { card: "summary_large_image", title: o.title, description: o.description, images: [image.url] },
   };
 }

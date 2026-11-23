@@ -1,10 +1,10 @@
 # System context
 
-The workbench, the people who use it, and the outside systems it touches. This is the top level of the C4 model: people and systems, not technologies.
+Shipwright (the workbench), the people who use it, and the outside systems it touches. This is the top level of the C4 model: people and systems, not technologies.
 
 ## Overview
 
-**In one sentence:** a self-hosted workbench that takes a product concept from idea to sales through one uniform set of stages.
+**In one sentence:** Shipwright is a self-hosted workbench that takes a product concept from idea to sales through one uniform set of stages.
 
 **In more detail:** a person records a concept, has it challenged, researches it, designs it (parts, wiring, layout, 3D model), builds a prototype (sourcing, printing, soldering, assembly, tests), and then plans production, marketing and sales. Everything is stored in one database and can be reported. It runs on the owner's own machine in Docker.
 

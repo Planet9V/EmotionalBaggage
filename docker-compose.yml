@@ -1,4 +1,4 @@
-# Concept to realization: web (Next.js) + db (PostgreSQL with pgvector) + planner (NetworkX)
+# Shipwright: web (Next.js) + db (PostgreSQL with pgvector) + planner (NetworkX)
 #   docker compose up -d --build --wait      then open http://localhost:3000
 # No .env file is needed to start: every variable below has a default. Copy .env.example to .env
 # to set keys and the database password.

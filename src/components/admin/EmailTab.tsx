@@ -27,7 +27,7 @@ const PORT_FOR = { starttls: "587", tls: "465", none: "25" } as const;
 const formOf = (m: MailSettings): Form =>
   m.mode === "smtp"
     ? { mode: "smtp", fromName: m.fromName, fromAddress: m.fromAddress, host: m.host, port: String(m.port), security: m.security, username: m.username ?? "" }
-    : { mode: "none", fromName: "Concept to Realization", fromAddress: "", host: "", port: "587", security: "starttls", username: "" };
+    : { mode: "none", fromName: "Shipwright", fromAddress: "", host: "", port: "587", security: "starttls", username: "" };
 
 export function EmailTab() {
   const settings = useAdminSettings();

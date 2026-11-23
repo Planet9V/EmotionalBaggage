@@ -346,7 +346,7 @@ export function kicadSchematic(c: Circuit, meta: KicadMeta): string {
       ["date", qs(meta.date)],
       ["rev", qs(meta.revision)],
       ...(meta.company ? [["company", qs(meta.company)] as SNode] : []),
-      ["comment", "1", qs("Exported from the concept to realization workbench. Symbols are the workbench's own drawings.")],
+      ["comment", "1", qs("Exported from Shipwright. Symbols are the workbench's own drawings.")],
     ],
     ["lib_symbols", ...placed.map(libSymbol)],
     ...byUuid(noConnects),

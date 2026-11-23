@@ -1,5 +1,6 @@
 // Writes the product's icon files and its social card from their drawings in code
-// (src/components/welcome/brandArt.tsx, which draws the tag from the film's own outline):
+// (src/components/welcome/brandArt.tsx, which draws the tag from the film's own outline). The Shipwright mark's own
+// icon set, stored and not wired in, is written by scripts/shipwright-art.mjs.
 //   src/app/icon.svg         the browser's icon, vector: it shows more of the tag the larger it is drawn
 //   src/app/favicon.ico      16, 32 and 48 px, each drawn at its own level of detail
 //   src/app/apple-icon.png   180 px, on the page's dark ground
@@ -30,9 +31,10 @@ await vite.close();
 
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined, args: ["--no-sandbox"] });
 const page = await browser.newPage({ deviceScaleFactor: 1 });
+const markCss = await readFile(path.join(root, "src/components/brand/shipwright.css"), "utf8"); // the Shipwright mark on the social card
 const font = pathToFileURL(path.join(root, "node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2")).href;
 const html = (body, w, h, bg = "transparent") =>
-  `<!doctype html><style>@font-face{font-family:'Inter Variable';src:url(${font});font-weight:100 900}html,body{margin:0;background:${bg}}svg{display:block;width:${w}px;height:${h}px}svg.tag{width:100%;height:auto}</style>${body}`;
+  `<!doctype html><style>@font-face{font-family:'Inter Variable';src:url(${font});font-weight:100 900}html,body{margin:0;background:${bg}}svg{display:block;width:${w}px;height:${h}px}svg.tag{width:100%;height:auto}svg.sw-mark{width:auto;height:auto}${markCss}</style>${body}`;
 async function shot(body, w, h, { clear = true, type = "png" } = {}) {
   await page.setViewportSize({ width: w, height: h });
   await page.setContent(html(body, w, h));
@@ -76,7 +78,7 @@ if (sheetAt) {
   const big = { 16: pngs[0].png, 32: pngs[1].png, 180: await readFile(out("src/app/apple-icon.png")), 512: await shot(art.tile(true), 512, 512) };
   const svg = `data:image/svg+xml;base64,${Buffer.from(art.liveIcon()).toString("base64")}`;
   const bar = (bg, fg, tab) => `<div style="background:${bg};color:${fg};padding:28px 32px;display:flex;gap:36px;align-items:flex-end;font:13px system-ui">
-    <div style="background:${tab};border-radius:10px 10px 0 0;padding:9px 14px;display:flex;gap:8px;align-items:center;width:210px"><img src="${b64(big[16])}" width="16" height="16">Concept to Realization</div>
+    <div style="background:${tab};border-radius:10px 10px 0 0;padding:9px 14px;display:flex;gap:8px;align-items:center;width:210px"><img src="${b64(big[16])}" width="16" height="16">Shipwright</div>
     <div style="background:${tab};border-radius:10px 10px 0 0;padding:9px 14px;display:flex;gap:8px;align-items:center;width:210px"><img src="${svg}" width="16" height="16">icon.svg at 16</div>
     ${[16, 32].map((s) => `<figure style="margin:0;text-align:center"><img src="${b64(big[s])}" width="${s}" height="${s}" style="display:block;margin:0 auto 6px"><img src="${b64(big[s])}" width="${s * 4}" height="${s * 4}" style="display:block;margin:0 auto 6px;image-rendering:pixelated">${s} px (and 4x)</figure>`).join("")}
     <figure style="margin:0;text-align:center"><img src="${svg}" width="32" height="32" style="display:block;margin:0 auto 6px"><img src="${svg}" width="64" height="64" style="display:block;margin:0 auto 6px">icon.svg 32, 64</figure>

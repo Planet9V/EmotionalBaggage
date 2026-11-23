@@ -48,7 +48,7 @@ import { checkNewPassword } from "./newPassword";
 import { readRules } from "./rules";
 import { hashSessionTokens } from "./tokenHash";
 
-const APP_NAME = "Concept to Realization";
+const APP_NAME = "Shipwright";
 const COOKIE_PREFIX = "c2r2";
 const SESSION_DAYS = 30;
 const ABSOLUTE_SESSION_DAYS = 90;

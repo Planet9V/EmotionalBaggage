@@ -6,7 +6,7 @@ import { gate, param, passwordPolicy, setupPending } from "../gate";
 import { JoinView } from "./JoinView";
 
 // The token is in this page's address: it must not travel to another site in a Referer header.
-export const metadata: Metadata = { title: "Your invitation · Concept to Realization", referrer: "no-referrer" };
+export const metadata: Metadata = { title: "Your invitation · Shipwright", referrer: "no-referrer" };
 
 /** The link in an account invitation (src/lib/auth2/accountInvitations.ts): choose a password, or why it cannot be used. */
 export default async function JoinPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

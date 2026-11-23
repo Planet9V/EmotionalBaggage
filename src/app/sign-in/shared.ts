@@ -35,7 +35,7 @@ export function safeNext(next: string | null | undefined): string {
  * The folders in public/ (tests/auth/proxy.test.ts fails while public/ has a folder this list does not name). Only a
  * file inside one of them is static; any other path with a dot in it is a page and is checked (cut-over review N1).
  */
-export const PUBLIC_FOLDERS = ["landing", "vendor"] as const;
+export const PUBLIC_FOLDERS = ["brand", "landing", "vendor"] as const;
 /** Files the app serves at the top level (the icons in src/app: favicon.ico, icon.svg, apple-icon.png; robots.txt and sitemap.xml if they are ever added). */
 const PUBLIC_FILES = new Set(["/favicon.ico", "/icon.svg", "/apple-icon.png", "/robots.txt", "/sitemap.xml"]);
 const FILE_NAME = /^[^/]+\.[A-Za-z0-9]{1,8}$/;

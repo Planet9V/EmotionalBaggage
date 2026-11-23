@@ -8,7 +8,7 @@ import { outcomeByToken } from "@/lib/accessRequests/places";
 import { EARLY_COOKIE, NO_SCRIPT_ERRORS, type NoScriptError } from "@/lib/accessRequests/noScript";
 import { outcomeMessage, type EarlyAccessOutcome } from "@/lib/accessRequests/shared";
 
-export const metadata = { title: "Early access: Concept to Realization", robots: { index: false } };
+export const metadata = { title: "Early access: Shipwright", robots: { index: false } };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";

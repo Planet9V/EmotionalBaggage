@@ -6,7 +6,7 @@ import { ViewAsBanner } from "@/components/ViewAsBanner";
 import { auth2EnabledNow } from "@/lib/auth2/config";
 
 export const metadata: Metadata = {
-  title: "Concept to Realization",
+  title: "Shipwright",
   description: "Take a product from concept through prototype to production and sales.",
 };
 

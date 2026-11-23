@@ -4,7 +4,7 @@ import { ownerPool } from "@/lib/db";
 import { requireAccount } from "../../gate";
 import { TwoFactorSetup } from "./TwoFactorSetup";
 
-export const metadata: Metadata = { title: "Authenticator app · Concept to Realization" };
+export const metadata: Metadata = { title: "Authenticator app · Shipwright" };
 
 export default async function TwoFactorSetupPage() {
   const { user } = await requireAccount("/auth/two-factor/setup", { owedOk: true });
