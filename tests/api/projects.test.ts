@@ -131,7 +131,8 @@ describe("search, plan and the assistants", () => {
       expect(r.status).toBe(200);
       expect(r.body.engine).toBe("networkx");
       expect(r.body.criticalPath).toEqual(["go", "p0", "p1", "p6", "p7", "p8"]);
-      expect([r.body.totalMinutes, r.body.plannedMinutes]).toEqual([430, 430]);
+      // go, p0 15 + p1 210 + p6 20 + p7 30 + p8 10 minutes: the Rev D steps (the 2 x AA design's print took 345 and its fit 30: 430)
+      expect([r.body.totalMinutes, r.body.plannedMinutes]).toEqual([285, 285]);
       expect(r.body.order.length).toBe(r.body.nodes.length);
       expect(r.body.note).toBeUndefined();
     });
