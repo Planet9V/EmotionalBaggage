@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
-import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -23,6 +22,7 @@ import { messageOf } from "@/lib/queries";
 import { moneyOrNull, readMoney } from "@/lib/moneyText";
 import { LIMIT_KEYS, LIMIT_LABEL, planCatalogue, type LimitKey, type PlanCatalogue, type PlanTier } from "@/lib/admin/planSchema";
 import { useAdminAccess, usePlans, useResetPlans, useSavePlans } from "@/lib/admin/client";
+import { EarlyAccessPanel } from "./EarlyAccessPanel";
 
 type TierForm = {
   key: string;
@@ -35,7 +35,7 @@ type TierForm = {
   who: string;
   what: string;
   includes: string;
-  action: "request" | "run";
+  action: "request";
   limits: Record<LimitKey, string>;
   stripePriceMonthly: string;
   stripePriceYearly: string;
@@ -100,6 +100,15 @@ const BLANK: TierForm = {
 };
 
 export function PricingTab() {
+  return (
+    <div className="space-y-4">
+      <EarlyAccessPanel />
+      <Catalogue />
+    </div>
+  );
+}
+
+function Catalogue() {
   const plans = usePlans();
   if (plans.isPending) return <LoadingBlocks rows={3} label="Reading the plan catalogue" />;
   if (plans.isError) return <LoadError what="The plan catalogue" message={messageOf(plans.error)} onRetry={() => void plans.refetch()} />;
@@ -197,12 +206,6 @@ function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: 
               <Field id={id("currency")} label="Currency" required error={e("currency")}>
                 <Input id={id("currency")} maxLength={3} spellCheck={false} {...register(`tiers.${i}.currency`)} {...describe(id("currency"), { error: e("currency") })} />
               </Field>
-              <Field id={id("action")} label="Button">
-                <NativeSelect id={id("action")} {...register(`tiers.${i}.action`)}>
-                  <option value="request">Request access</option>
-                  <option value="run">Run it yourself</option>
-                </NativeSelect>
-              </Field>
               <Field id={id("priceMonthly")} label="Price a month" error={e("priceMonthly")} hint="Blank: no price yet. 0: free.">
                 <MoneyInput id={id("priceMonthly")} currency={currency} {...register(`tiers.${i}.priceMonthly`)} {...describe(id("priceMonthly"), { hint: true, error: e("priceMonthly") })} />
               </Field>
@@ -261,7 +264,7 @@ function Editor({ initial, source, problem }: { initial: PlanCatalogue; source: 
           <ConfirmButton
             label="Reset to built-in"
             title="Go back to the built-in catalogue?"
-            body="The saved catalogue is removed and the four built-in levels apply again, with prices hidden. The change is recorded in the audit log."
+            body="The saved catalogue is removed and the two built-in plans apply again: Maker $20 and Studio $40 a month, prices shown. The change is recorded in the audit log."
             confirmLabel="Reset"
             disabled={reset.isPending || !canWrite}
             onConfirm={() => reset.mutate(undefined, { onError: (e) => toast.error(messageOf(e)) })}

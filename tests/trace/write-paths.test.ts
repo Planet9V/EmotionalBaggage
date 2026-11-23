@@ -35,7 +35,9 @@ const RECORDS = /\b(logEvent|logEventIn|audit|auditIn)\(/;
  */
 const WRITE_PATHS: Record<string, string> = {
   "access-requests/route.ts": "src/lib/accessRequests/store.ts",
+  "access-requests/details/route.ts": "src/lib/accessRequests/places.ts",
   "admin/access-requests/[id]/route.ts": "src/lib/accessRequests/store.ts",
+  "admin/early-access/route.ts": "src/lib/accessRequests/places.ts",
   // the new sign-in (AUTH2): account events go to the audit log from its hooks
   "auth2/[...all]/route.ts": "src/lib/auth2/auth.ts",
   "admin/credentials/[provider]/[field]/route.ts": "src/lib/admin/credentials.ts",

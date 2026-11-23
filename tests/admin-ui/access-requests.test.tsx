@@ -8,7 +8,7 @@ import { AccessRequestsTab } from "@/components/admin/AccessRequestsTab";
 import { AccessRequestForm } from "@/components/welcome/AccessRequestForm";
 import { Levels } from "@/components/welcome/Levels";
 import { builtInCatalogue, levelsOf } from "@/lib/admin/planSchema";
-import { ACCESS_CONFIRMATION, type AccessRequestRow } from "@/lib/accessRequests/shared";
+import { outcomeMessage, type AccessRequestRow } from "@/lib/accessRequests/shared";
 import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
 
 beforeEach(shimBrowser);
@@ -16,6 +16,8 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
+
+const ACCESS_CONFIRMATION = outcomeMessage({ kind: "place", place: 1 });
 
 const row = (o: Partial<AccessRequestRow>): AccessRequestRow => ({
   id: 1,
@@ -27,6 +29,9 @@ const row = (o: Partial<AccessRequestRow>): AccessRequestRow => ({
   level: "",
   status: "new",
   statusChangedAt: null,
+  place: 1,
+  waitingPosition: null,
+  placement: "",
   ...o,
 });
 
@@ -117,9 +122,8 @@ describe("the public request form", () => {
     const { calls } = adminServer([]);
     renderWithClient(<AccessRequestForm />);
     fireEvent.click(screen.getByRole("button", { name: "Request a workspace" }));
-    expect(await screen.findByText("Enter your name.")).toBeTruthy();
-    expect(screen.getByText("Enter an email address so the owner can reply.")).toBeTruthy();
-    expect(screen.getByText("Say in a sentence or two what you want to build.")).toBeTruthy();
+    expect(await screen.findByText("Enter your email address.")).toBeTruthy();
+    expect(screen.getByText("Say in a few words what you want to make.")).toBeTruthy();
     expect(calls).toHaveLength(0);
   });
 
@@ -131,7 +135,7 @@ describe("the public request form", () => {
     fill(/What do you want to build/, "A clip-on plant sensor.");
     fireEvent.click(screen.getByRole("button", { name: "Request a workspace" }));
     expect(await screen.findByText(ACCESS_CONFIRMATION)).toBeTruthy();
-    expect(calls[0]!.body).toEqual({ name: "Ada Tester", email: "ada@example.test", building: "A clip-on plant sensor.", company: "", level: "", website: "" });
+    expect(calls[0]!.body).toEqual({ name: "Ada Tester", email: "ada@example.test", building: "A clip-on plant sensor.", company: "", level: "", placement: "", website: "" });
   });
 
   it("starts on the level it is given, lets the visitor change it, and sends the one shown", async () => {
@@ -140,7 +144,7 @@ describe("the public request form", () => {
     renderWithClient(<AccessRequestForm level="maker" onLevelChange={(l) => changed.push(l)} />);
     const level = screen.getByLabelText(/^Level/) as HTMLSelectElement;
     await waitFor(() => expect(level.value).toBe("maker"));
-    expect([...level.options].map((o) => o.textContent)).toEqual(["Not sure yet", "Free", "Maker", "Studio", "Self-hosted"]);
+    expect([...level.options].map((o) => o.textContent)).toEqual(["Not sure yet", "Maker", "Studio"]);
     fireEvent.change(level, { target: { value: "studio" } });
     expect(changed).toEqual(["studio"]);
     fill(/Your name/, "Ada Tester");
@@ -161,8 +165,10 @@ describe("the public request form", () => {
     await waitFor(() => expect(level.value).toBe("maker"));
     expect(screen.getByRole("heading", { level: 3, name: "Request access: Maker" })).toBeTruthy();
     // changing the field renames the heading too, so the page never names one level and sends another
-    fireEvent.change(level, { target: { value: "free" } });
-    expect(await screen.findByRole("heading", { level: 3, name: "Request access: Free" })).toBeTruthy();
+    fireEvent.change(level, { target: { value: "studio" } });
+    expect(await screen.findByRole("heading", { level: 3, name: "Request access: Studio" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "Request access: Maker" }));
+    await waitFor(() => expect(level.value).toBe("maker"));
     fireEvent.click(screen.getByRole("link", { name: "Request access: Studio" }));
     await waitFor(() => expect(level.value).toBe("studio"));
     fill(/Your name/, "Ada Tester");

@@ -5,8 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pool, q } from "@/lib/db";
 import { createSession, hashPassword } from "@/lib/auth";
 import { SESSION_COOKIE } from "@/app/sign-in/shared";
-import { ACCESS_CONFIRMATION, ACCESS_LEVELS, ACCESS_LEVEL_LABEL } from "@/lib/accessRequests/shared";
-import { LEVELS } from "@/components/welcome/content";
+import { ACCESS_LEVELS, ACCESS_LEVEL_LABEL, outcomeMessage } from "@/lib/accessRequests/shared";
+import { builtInCatalogue } from "@/lib/admin/planSchema";
 import { POST } from "@/app/api/access-requests/route";
 import { GET as LIST } from "@/app/api/admin/access-requests/route";
 import { DELETE, PATCH } from "@/app/api/admin/access-requests/[id]/route";
@@ -18,6 +18,8 @@ const OWNER = "zz-access-owner";
 let ownerCookie = "";
 let address = 0;
 let startedAt = new Date();
+let seq = 0;
+const LISTED = { ok: true, message: outcomeMessage({ kind: "listed" }), outcome: { kind: "listed" } };
 
 /** A signed-out POST from one network address, as the server's start script records it. */
 function visitor(payload: unknown, client = `198.51.100.${++address}`) {
@@ -39,7 +41,7 @@ function asOwner(method: string, url: string, payload?: unknown) {
 
 const good = (over: Record<string, string> = {}) => ({
   name: "Ada Tester",
-  email: "Ada@Example.test",
+  email: `Person${++seq}@Example.test`,
   building: "A clip-on sensor that tells me when the plant needs water.",
   company: "",
   website: "",
@@ -68,9 +70,10 @@ afterAll(async () => {
 
 describe("POST /api/access-requests (open)", () => {
   it("stores a valid request, answers the truthful confirmation and writes an audit line without the person's details", async () => {
-    const res = await read<{ ok: boolean; message: string }>(await POST(visitor(good())));
-    expect(res).toEqual({ status: 201, body: { ok: true, message: ACCESS_CONFIRMATION } });
-    expect(ACCESS_CONFIRMATION).toBe("We have your request. Nothing is sent by email yet; the owner sees it in Admin.");
+    const res = await read<{ ok: boolean; message: string; outcome: unknown; token: string }>(await POST(visitor(good({ email: "Ada@Example.test" }))));
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ ok: true, message: "You have place number 1. We open workspaces in order and write to this address.", outcome: { kind: "place", place: 1 } });
+    expect(res.body.token).toMatch(/^[A-Za-z0-9_-]{32}$/);
     const rows = await q<{ name: string; email: string; status: string; building: string }>("SELECT name, email, status, building FROM access_requests");
     expect(rows).toEqual([{ name: "Ada Tester", email: "ada@example.test", status: "new", building: good().building }]);
     const lines = await auditSince("access.requested");
@@ -86,10 +89,8 @@ describe("POST /api/access-requests (open)", () => {
     expect((await POST(visitor(good({ name: "Level absent" })))).status).toBe(201);
     const rows = await q<{ name: string; level: string }>("SELECT name, level FROM access_requests WHERE name LIKE 'Level %' ORDER BY id");
     expect(rows).toEqual([
-      { name: "Level free", level: "free" },
       { name: "Level maker", level: "maker" },
       { name: "Level studio", level: "studio" },
-      { name: "Level self", level: "self" },
       { name: "Level none", level: "" },
       { name: "Level absent", level: "" },
     ]);
@@ -98,20 +99,21 @@ describe("POST /api/access-requests (open)", () => {
     await q("DELETE FROM access_requests WHERE name LIKE 'Level %'");
   });
 
-  it.each([["enterprise"], ["Maker"], ["maker "], ["free'; DROP TABLE access_requests; --"]])("refuses the unknown level %j with a 400 that says why, and stores nothing", async (level) => {
+  it.each([["enterprise"], ["Maker"], ["maker "], ["free"], ["self"], ["free'; DROP TABLE access_requests; --"]])("refuses the unknown level %j with a 400 that says why, and stores nothing", async (level) => {
     const before = await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests");
     const res = await read<{ error: string }>(await POST(visitor(good({ level }))));
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toContain("Choose one of the listed levels.");
+    expect(JSON.stringify(res.body)).toContain("Choose Maker, Studio or not sure yet.");
     expect((await POST(visitor({ ...good(), level: 3 }))).status).toBe(400);
     const after = await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests");
     expect(after[0]!.n).toBe(before[0]!.n);
   });
 
-  it("the database refuses a level the app does not know, and the form's levels are the welcome page's cards", async () => {
+  it("the database refuses a level the app does not know, and the form's levels are the plan catalogue's tiers", async () => {
     await expect(q("INSERT INTO access_requests (name, email, building, level) VALUES ('X', 'x@y.test', 'Straight into the table', 'gold')")).rejects.toThrow(/access_requests_level_check/);
-    expect(LEVELS.map((l) => l.key)).toEqual([...ACCESS_LEVELS]);
-    expect(LEVELS.map((l) => l.name)).toEqual(ACCESS_LEVELS.map((l) => ACCESS_LEVEL_LABEL[l]));
+    const tiers = builtInCatalogue().tiers;
+    expect(tiers.map((t) => t.key)).toEqual([...ACCESS_LEVELS]);
+    expect(tiers.map((t) => t.name)).toEqual(ACCESS_LEVELS.map((l) => ACCESS_LEVEL_LABEL[l]));
   });
 
   it("needs no session", async () => {
@@ -119,10 +121,9 @@ describe("POST /api/access-requests (open)", () => {
   });
 
   it.each([
-    [{ name: "" }, "Enter your name."],
     [{ email: "not-an-email" }, "That does not look like an email address."],
-    [{ email: "" }, "Enter an email address so the owner can reply."],
-    [{ building: "short" }, "Say in a sentence or two what you want to build."],
+    [{ email: "" }, "Enter your email address."],
+    [{ building: "ab" }, "Say in a few words what you want to make."],
     [{ name: "x".repeat(121) }, "Keep your name under 120 characters."],
     [{ building: "y".repeat(2001) }, "Keep this under 2000 characters."],
     [{ company: "z".repeat(161) }, "Keep the company name under 160 characters."],
@@ -153,7 +154,7 @@ describe("POST /api/access-requests (open)", () => {
   it("answers a filled honeypot like a success, stores nothing and records the drop", async () => {
     const before = await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests");
     const res = await read<{ ok: boolean; message: string }>(await POST(visitor(good({ name: "Bot", website: "https://spam.example" }))));
-    expect(res).toEqual({ status: 200, body: { ok: true, message: ACCESS_CONFIRMATION } });
+    expect(res).toEqual({ status: 200, body: LISTED });
     const after = await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests");
     expect(after[0]!.n).toBe(before[0]!.n);
     const lines = await auditSince("access.refused");
@@ -191,7 +192,7 @@ describe("POST /api/access-requests (open)", () => {
     await q("DELETE FROM access_requests WHERE name LIKE 'Flood %'");
   });
 
-  it("the same request sent again is kept once and answered like the first, and the repeats are counted, not audited each", async () => {
+  it("the same address again gets no second place, is answered only 'you are on the list', and the repeats are counted, not audited each", async () => {
     const client = "203.0.113.91";
     const same = good({ name: "Twice Over", email: "twice@example.test" });
     const first = await POST(visitor(same, client));
@@ -199,8 +200,9 @@ describe("POST /api/access-requests (open)", () => {
     const requested = (await auditSince("access.requested")).length;
     const refused = (await auditSince("access.refused")).length;
     const again = await read<{ ok: boolean; message: string }>(await POST(visitor(same, client)));
-    expect(again.body).toEqual({ ok: true, message: ACCESS_CONFIRMATION });
-    expect((await POST(visitor(same, client))).status).toBe(200);
+    expect(again.body).toEqual(LISTED);
+    // the same address in other letters, with other answers, is the same person
+    expect((await POST(visitor({ ...same, email: "TWICE@example.test", building: "Something else entirely" }, client))).status).toBe(200);
     expect((await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests WHERE email = 'twice@example.test'"))[0]!.n).toBe(1);
     expect((await auditSince("access.requested")).length).toBe(requested);
     const lines = (await auditSince("access.refused")).slice(refused);
@@ -298,9 +300,9 @@ describe("Admin: access requests", () => {
     expect(res.headers.get("content-disposition")).toMatch(/^attachment; filename="access-requests-\d{4}-\d{2}-\d{2}\.csv"$/);
     const text = await res.text();
     const lines = text.trimEnd().split("\r\n");
-    expect(lines[0]).toBe("id,received,status,level,name,email,company,building");
+    expect(lines[0]).toBe("id,received,status,place,waiting,level,name,email,company,building,placement");
     expect(lines[1]).toContain("'=HYPERLINK");
-    expect(lines[1]).toContain(",new,Self-hosted,");
+    expect(lines[1]).toMatch(/,new,,\d+,Self-hosted \(retired\),/);
     const n = (await q<{ n: number }>("SELECT count(*)::int AS n FROM access_requests"))[0]!.n;
     expect(lines).toHaveLength(n + 1);
     const copies = await auditSince("access.exported");
