@@ -17,7 +17,7 @@ async function siteBase(): Promise<URL> {
 
 /** Title, description, canonical address and Open Graph and Twitter cards for one public page. */
 export async function publicPageMetadata(o: { title: string; description: string; path: string }): Promise<Metadata> {
-  const image = { url: "/landing/og.jpg", width: 1200, height: 630, alt: "The schematic page of Concept to Realization in the dark theme, with the product name below it." };
+  const image = { url: "/landing/og.png", width: 1200, height: 630, alt: "A saddle-tan luggage tag, the worked example, hanging on a line that runs from Idea to On sale, beside the words: Your product idea, built and on sale." };
   return {
     metadataBase: await siteBase(),
     title: o.title,

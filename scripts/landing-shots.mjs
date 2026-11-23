@@ -7,12 +7,11 @@
 //   2. node scripts/landing-shots.mjs [base URL, default http://127.0.0.1:3000]
 //
 // It signs in as demo / demo, opens each page in the light and the dark theme at 1440 x 900, captures the
-// content area (the sidebar is left out), and has the browser encode it as WebP. The Open Graph image is a
-// 1200 x 630 JPEG of the dark schematic. Files go to public/landing/. Uses the installed Google Chrome when
-// LANDING_CHROME=system (as E2E_CHROME does for the browser tests).
+// content area (the sidebar is left out), and has the browser encode it as WebP. Files go to public/landing/.
+// Uses the installed Google Chrome when LANDING_CHROME=system (as E2E_CHROME does for the browser tests). The Open
+// Graph image is not a screenshot: scripts/brand-art.mjs draws it (public/landing/og.png).
 //
-// The pages are what a fresh install shows. Nothing is drawn over them except, for the Open Graph image only,
-// the product name and one line, set on a band below the screenshot.
+// The pages are what a fresh install shows. Nothing is drawn over them.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -114,7 +113,6 @@ try {
   await signIn(page);
   mkdirSync(OUT, { recursive: true });
   const sizes = [];
-  let ogSource = null;
   for (const shot of SHOTS) {
     for (const theme of ["light", "dark"]) {
       const png = await capture(page, shot, theme);
@@ -122,31 +120,10 @@ try {
       const file = `${shot.name}-${theme}.webp`;
       writeFileSync(`${OUT}${file}`, webp);
       sizes.push([file, webp.length]);
-      if (shot.name === "schematic" && theme === "dark") ogSource = png;
       console.log(`${file}  ${(webp.length / 1024).toFixed(0)} KB`);
     }
   }
 
-  // The Open Graph image: the dark schematic on the dark canvas, with the name and one line underneath.
-  // It is laid out on a page of the app's own origin, with the app's style sheets, so Inter is the app's copy.
-  const og = await context.newPage();
-  await og.setViewportSize({ width: 1200, height: 630 });
-  await og.goto(`${BASE}/welcome`);
-  const sheets = await og.locator('link[rel="stylesheet"]').evaluateAll((ls) => ls.map((l) => l.getAttribute("href")));
-  await og.setContent(`<!doctype html><html><head>${sheets.map((h) => `<link rel="stylesheet" href="${h}">`).join("")}</head><body style="margin:0;background:#0B0C0E;width:1200px;height:630px;overflow:hidden;font-family:'Inter Variable',Inter,sans-serif">
-    <img src="data:image/png;base64,${ogSource.toString("base64")}" style="display:block;width:1200px;height:440px;object-fit:cover;object-position:top left">
-    <div style="height:3px;width:1200px;background:#22252C"><div style="height:3px;width:240px;background:#E05A10"></div></div>
-    <div style="padding:34px 56px 0">
-      <div style="color:#fff;font-size:52px;font-weight:600;letter-spacing:-0.025em;line-height:1.1">Concept to Realization</div>
-      <div style="color:#D4D4D8;font-size:26px;font-weight:300;margin-top:12px">From a product idea to a tested prototype, a costed parts list and a launch plan.</div>
-    </div>
-  </body></html>`);
-  await og.evaluate(() => document.fonts.ready);
-  const ogPng = await og.screenshot({ clip: { x: 0, y: 0, width: 1200, height: 630 } });
-  const ogJpg = await encode(og, ogPng, { type: "image/jpeg" });
-  writeFileSync(`${OUT}og.jpg`, ogJpg);
-  sizes.push(["og.jpg", ogJpg.length]);
-  console.log(`og.jpg  ${(ogJpg.length / 1024).toFixed(0)} KB`);
   const total = sizes.reduce((s, [, n]) => s + n, 0);
   console.log(`total ${(total / 1024).toFixed(0)} KB in ${sizes.length} files`);
 } finally {
