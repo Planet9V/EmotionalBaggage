@@ -23,6 +23,11 @@ import { auditIn } from "@/lib/db";
 import type { Auth2 } from "./auth";
 import { AUTH2_PAGES, AUTH2_SETTING, resolveAddresses, writeAuth2Setting } from "./config";
 import { resetAndRequireProof } from "./workspaces/twoFactor";
+import * as invitations from "./accountInvitations";
+import type { Delivered, InvitationStatus } from "./accountInvitations";
+import { currentMailSender, render, type MailSender } from "./mail";
+import { unlock } from "./signInWait";
+import { checkStepUp } from "./stepUp";
 import { cleanEmail, cleanName, cleanWorkspaceName } from "./guards";
 import { checkNewPassword } from "./newPassword";
 import { readRules } from "./rules";
@@ -32,6 +37,7 @@ import * as store from "./workspaces/store";
 import { inTx, newId, refuse } from "./workspaces/store";
 
 
+/** One account as the Users tab shows it. */
 export type UserState = {
   id: string;
   email: string;
@@ -43,11 +49,36 @@ export type UserState = {
   disabled: boolean;
   createdAt: string;
   workspaces: number;
+  /** active, invited (a pending invitation and no password yet), or disabled */
+  state: "active" | "invited" | "disabled";
+  hasPassword: boolean;
+  /** an ISO time, "until-unlocked", or null when not locked */
+  lockedUntil: string | "until-unlocked" | null;
+  mustChangePassword: boolean;
+  /** asked for a password reset while no mail is set up (ISO time) */
+  resetRequestedAt: string | null;
+  invitation: { id: string; status: "pending" | "accepted" | "expired" | "revoked"; expiresAt: string; mailed: boolean } | null;
+  sessions: number;
 };
+
+export type UserFilter = { q?: string; role?: "member" | "admin"; state?: "active" | "invited" | "disabled" | "locked" | "reset"; page?: number; pageSize?: number };
+export type UserPage = { users: UserState[]; total: number; page: number; pageSize: number };
+
+/** The SHA-256 name key of ./signInWait.ts, worked out in SQL from an address. */
+const NAME_KEY_SQL = (col: string) => `translate(rtrim(encode(sha256(convert_to(lower(trim(${col})), 'UTF8')), 'base64'), '='), '+/', '-_')`;
 
 /** The owner's pool, the sign-in instance (src/lib/auth2/server.ts auth2()), the acting account, and the base address
  *  links are made with (resolveAuth2Config().baseURL). */
-type Ctx = { db: Pool; auth: Auth2; actorId: string; baseURL: string };
+type Ctx = {
+  db: Pool;
+  auth: Auth2;
+  actorId: string;
+  baseURL: string;
+  /** the acting administrator's own password, typed again for a step-up (./stepUp.ts); used and forgotten */
+  stepUp?: string;
+  /** where mail goes; currentMailSender() (./mail.ts) unless a test gives its own */
+  mailer?: () => Promise<MailSender | null>;
+};
 
 /** A password typed by the administrator: the same rules as any new password (./passwordPolicy.ts). */
 const checkPassword = (db: Pool | PoolClient, p: unknown, who: { email?: string; name?: string }) => checkNewPassword(db, p, who);
@@ -96,42 +127,222 @@ export function adminOps(ctx: Ctx) {
     return fn(c);
   });
   const audit = (c: PoolClient, actor: string, action: string, summary: string, detail: Record<string, unknown>) => auditIn(c, { actor, action: `platform.${action}`, summary, detail });
+  /** Step-up when the change reaches another platform administrator (or `always`, as for granting the role). */
+  const stepUpFor = async (target: { id: string; platformAdmin: boolean }, always = false) => {
+    if (always || (target.platformAdmin && target.id !== ctx.actorId)) await checkStepUp(db, ctx.actorId, ctx.stepUp);
+  };
+  const mailer = ctx.mailer ?? currentMailSender;
+  const deps = { mailer, link: (path: string, token: string) => `${ctx.baseURL.replace(/\/+$/, "")}${AUTH2_PAGES}${path}?token=${encodeURIComponent(token)}` };
+  const actorName = async () => (await db.query<{ name: string; email: string }>('SELECT name, email FROM "user" WHERE id = $1', [ctx.actorId])).rows[0]!;
 
   return {
-    /** Every account with its state, newest first. */
-    async listUsers(): Promise<UserState[]> {
+    /** Accounts with their state, newest first: search by name or address, filter by role and state, in pages. */
+    async listUsers(filter: UserFilter = {}): Promise<UserPage> {
       await admin(ctx);
-      const r = await db.query<{ id: string; email: string; name: string; emailVerified: boolean; twoFactorEnabled: boolean | null; twoFactorRequired: boolean; platformAdmin: boolean; disabledAt: Date | null; createdAt: Date; n: number }>(
-        `SELECT u.id, u.email, u.name, u."emailVerified", u."twoFactorEnabled", u."twoFactorRequired", u."platformAdmin", u."disabledAt", u."createdAt",
-                (SELECT count(*)::int FROM member m WHERE m."userId" = u.id) AS n
-           FROM "user" u ORDER BY u."createdAt" DESC, u.id`
+      const pageSize = Math.min(200, Math.max(1, Math.round(filter.pageSize ?? 50)));
+      const page = Math.max(1, Math.round(filter.page ?? 1));
+      const where: string[] = [];
+      const args: unknown[] = [];
+      const q = typeof filter.q === "string" ? filter.q.trim().slice(0, 200) : "";
+      if (q) {
+        args.push(`%${q.toLowerCase().replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`);
+        where.push(`(lower(u.email) LIKE $${args.length} OR lower(u.name) LIKE $${args.length})`);
+      }
+      if (filter.role === "admin") where.push(`u."platformAdmin"`);
+      if (filter.role === "member") where.push(`NOT u."platformAdmin"`);
+      const invited = `(NOT EXISTS (SELECT 1 FROM account a WHERE a."userId" = u.id AND a."providerId" = 'credential') AND EXISTS (SELECT 1 FROM auth2_account_invitations i WHERE i.user_id = u.id AND i.accepted_at IS NULL AND i.revoked_at IS NULL))`;
+      if (filter.state === "disabled") where.push(`u."disabledAt" IS NOT NULL`);
+      if (filter.state === "invited") where.push(`u."disabledAt" IS NULL AND ${invited}`);
+      if (filter.state === "active") where.push(`u."disabledAt" IS NULL AND NOT ${invited}`);
+      if (filter.state === "locked") where.push(`EXISTS (SELECT 1 FROM auth2_sign_in_waits w WHERE w.client = '' AND w.name_key = ${NAME_KEY_SQL("u.email")} AND w.locked_until > now())`);
+      if (filter.state === "reset") where.push(`u."resetRequestedAt" IS NOT NULL`);
+      const w = where.length ? `WHERE ${where.join(" AND ")}` : "";
+      const total = (await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM "user" u ${w}`, args)).rows[0]!.n;
+      const r = await db.query<{
+        id: string; email: string; name: string; emailVerified: boolean; twoFactorEnabled: boolean | null; twoFactorRequired: boolean; platformAdmin: boolean; disabledAt: Date | null; createdAt: Date; n: number;
+        mustChangePassword: boolean; resetRequestedAt: Date | null; has_password: boolean; sessions: number; locked_until: Date | null; forever: boolean | null;
+        inv_id: string | null; inv_status: "pending" | "accepted" | "expired" | "revoked" | null; inv_expires: Date | null; inv_mailed: boolean | null;
+      }>(
+        `SELECT u.id, u.email, u.name, u."emailVerified", u."twoFactorEnabled", u."twoFactorRequired", u."platformAdmin", u."disabledAt", u."createdAt", u."mustChangePassword", u."resetRequestedAt",
+                (SELECT count(*)::int FROM member m WHERE m."userId" = u.id) AS n,
+                EXISTS (SELECT 1 FROM account a WHERE a."userId" = u.id AND a."providerId" = 'credential') AS has_password,
+                (SELECT count(*)::int FROM "session" s WHERE s."userId" = u.id AND s."expiresAt" > now()) AS sessions,
+                lk.locked_until, lk.locked_until = 'infinity' AS forever,
+                inv.id AS inv_id, inv.status AS inv_status, inv.expires_at AS inv_expires, inv.mailed AS inv_mailed
+           FROM "user" u
+           LEFT JOIN LATERAL (SELECT w.locked_until FROM auth2_sign_in_waits w
+                               WHERE w.client = '' AND w.name_key = ${NAME_KEY_SQL("u.email")} AND w.locked_until > now()) lk ON true
+           LEFT JOIN LATERAL (SELECT i.id, CASE WHEN i.accepted_at IS NOT NULL THEN 'accepted' WHEN i.revoked_at IS NOT NULL THEN 'revoked' WHEN i.expires_at <= now() THEN 'expired' ELSE 'pending' END AS status,
+                                     i.expires_at, i.mailed FROM auth2_account_invitations i WHERE i.user_id = u.id ORDER BY i.created_at DESC LIMIT 1) inv ON true
+           ${w} ORDER BY u."createdAt" DESC, u.id LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`,
+        args
       );
-      return r.rows.map((u) => ({
-        id: u.id, email: u.email, name: u.name, confirmed: u.emailVerified, twoFactor: u.twoFactorEnabled === true, twoFactorRequired: u.twoFactorRequired,
-        platformAdmin: u.platformAdmin, disabled: u.disabledAt !== null, createdAt: new Date(u.createdAt).toISOString(), workspaces: u.n,
-      }));
+      const users = r.rows.map((u): UserState => {
+        const isInvited = !u.has_password && (u.inv_status === "pending" || u.inv_status === "expired");
+        return {
+          id: u.id, email: u.email, name: u.name, confirmed: u.emailVerified, twoFactor: u.twoFactorEnabled === true, twoFactorRequired: u.twoFactorRequired,
+          platformAdmin: u.platformAdmin, disabled: u.disabledAt !== null, createdAt: new Date(u.createdAt).toISOString(), workspaces: u.n,
+          state: u.disabledAt !== null ? "disabled" : isInvited ? "invited" : "active",
+          hasPassword: u.has_password,
+          lockedUntil: u.locked_until === null ? null : u.forever ? "until-unlocked" : new Date(u.locked_until).toISOString(),
+          mustChangePassword: u.mustChangePassword,
+          resetRequestedAt: u.resetRequestedAt ? new Date(u.resetRequestedAt).toISOString() : null,
+          invitation: u.inv_id && u.inv_status && u.inv_expires ? { id: u.inv_id, status: u.inv_status, expiresAt: new Date(u.inv_expires).toISOString(), mailed: u.inv_mailed === true } : null,
+          sessions: u.sessions,
+        };
+      });
+      return { users, total, page, pageSize };
     },
 
     /**
-     * Creates an account, confirmed or not, with a password or without one (it is then set later with setPassword,
-     * or by the person through a reset when mail is on). It gets its own workspace, as every account does.
+     * Creates an account with a workspace of its own, in one of two ways (owner's ruling of 23 Nov):
+     * - `invite`: no password; an invitation link is emailed, or handed back once when no mail is set up
+     *   (./accountInvitations.ts). Following it sets the password and confirms the address.
+     * - with `password`: a temporary password the administrator typed (never made or shown by the app), under the
+     *   password rules; the address is marked confirmed only if `confirmed`; the person must change it at first
+     *   sign-in (no session starts before they do).
+     * `platformAdmin` makes the account a platform administrator (step-up required).
      */
-    async createUser(input: { email: unknown; name: unknown; password?: unknown; confirmed?: boolean }): Promise<{ id: string }> {
+    async createUser(input: { email: unknown; name: unknown; password?: unknown; confirmed?: boolean; platformAdmin?: boolean; invite?: boolean }): Promise<{ id: string; invitation?: Delivered }> {
       const actor = await admin(ctx);
       const email = cleanEmail(input.email);
       const name = cleanName(input.name);
-      const password = input.password === undefined ? null : await checkPassword(db, input.password, { email, name });
+      const makeAdmin = input.platformAdmin === true;
+      if (input.invite && input.password !== undefined) throw refuse("BAD_REQUEST", "INVITE_OR_PASSWORD", "Choose either an invitation or a temporary password, not both.");
+      const password = input.invite || input.password === undefined ? null : await checkPassword(db, input.password, { email, name });
+      if (makeAdmin) await checkStepUp(db, ctx.actorId, ctx.stepUp);
       const hash = password ? await hashPassword(password) : null;
-      return tx(async (c) => {
+      const made = await tx(async (c) => {
         const taken = await c.query('SELECT 1 FROM "user" WHERE lower(email) = $1', [email]);
         if (taken.rowCount) throw refuse("CONFLICT", "USER_EXISTS", "An account with that address exists already.");
         const id = newId();
-        await c.query(`INSERT INTO "user" (id, name, email, "emailVerified", "createdAt", "updatedAt", "twoFactorEnabled") VALUES ($1, $2, $3, $4, now(), now(), false)`, [id, name, email, input.confirmed === true]);
+        await c.query(
+          `INSERT INTO "user" (id, name, email, "emailVerified", "createdAt", "updatedAt", "twoFactorEnabled", "platformAdmin", "mustChangePassword") VALUES ($1, $2, $3, $4, now(), now(), false, $5, $6)`,
+          [id, name, email, !input.invite && input.confirmed === true, makeAdmin, hash !== null]
+        );
         if (hash) await c.query(`INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt") VALUES ($1, $2, 'credential', $2, $3, now(), now())`, [newId(), id, hash]);
         await store.createPersonal(c, { id, name, email });
-        await audit(c, actor, "user_created", `Created the account ${email}${input.confirmed ? ", confirmed" : ""}${password ? ", with a password" : ", without a password"}`, { userId: id });
-        return { id };
+        const inv = input.invite ? await invitations.issue(c, { id, email, platformAdmin: makeAdmin }, actor) : null;
+        const how = input.invite ? `, invited (the link works ${inv!.days} days)` : password ? `, with a temporary password to change at first sign-in${input.confirmed ? ", address marked confirmed without email" : ""}` : `${input.confirmed ? ", confirmed" : ""}, without a password`;
+        await audit(c, actor, "user_created", `Created the account ${email}${makeAdmin ? " as a platform administrator" : ""}${how}`, { userId: id, platformAdmin: makeAdmin, invited: !!input.invite });
+        return { id, inv };
       });
+      if (!made.inv) return { id: made.id };
+      return { id: made.id, invitation: await invitations.send(db, deps, made.inv, { email, name }, (await actorName()).name || actor) };
+    },
+
+    /** A new invitation for an account that has no password yet (the last one expired or was revoked). */
+    async inviteAgain(userId: unknown): Promise<Delivered> {
+      const actor = await admin(ctx);
+      const target = await userRow(db, userId);
+      await stepUpFor(target);
+      const inv = await tx(async (c) => {
+        const u = await userRow(c, userId, true);
+        const has = await c.query(`SELECT 1 FROM account WHERE "userId" = $1 AND "providerId" = 'credential'`, [u.id]);
+        if (has.rowCount) throw refuse("CONFLICT", "HAS_PASSWORD", "This account has a password already. Send a password reset instead.");
+        const inv = await invitations.issue(c, { id: u.id, email: u.email, platformAdmin: u.platformAdmin }, actor);
+        await audit(c, actor, "account_invitation_sent", `Invited ${u.email} again (the link works ${inv.days} days)`, { userId: u.id, invitationId: inv.id });
+        return inv;
+      });
+      return invitations.send(db, deps, inv, target, (await actorName()).name || actor);
+    },
+
+    async listInvitations(status?: InvitationStatus) {
+      await admin(ctx);
+      return invitations.list(db, status);
+    },
+
+    async resendInvitation(invitationId: unknown): Promise<Delivered> {
+      await admin(ctx);
+      return invitations.resend(db, deps, invitationId, await actorName());
+    },
+
+    async revokeInvitation(invitationId: unknown) {
+      const actor = await admin(ctx);
+      await invitations.revoke(db, invitationId, actor);
+    },
+
+    /** Changes a person's name. */
+    async updateName(userId: unknown, rawName: unknown) {
+      const actor = await admin(ctx);
+      const name = cleanName(rawName);
+      await stepUpFor(await userRow(db, userId));
+      await tx(async (c) => {
+        const u = await userRow(c, userId, true);
+        if (u.name === name) return;
+        await c.query('UPDATE "user" SET name = $2, "updatedAt" = now() WHERE id = $1', [u.id, name]);
+        await audit(c, actor, "user_renamed", `Changed the name of ${u.email} from "${u.name}" to "${name}"`, { userId: u.id, before: u.name, after: name });
+      });
+    },
+
+    /**
+     * Changes a person's address. Every session ends and the old address's sign-in counts go. Unless the
+     * administrator ticks `markVerified`, the new address must be confirmed: a confirmation link is sent when mail is
+     * set up; without mail the person cannot sign in until an administrator confirms it.
+     */
+    async changeEmail(userId: unknown, rawEmail: unknown, opts: { markVerified?: boolean } = {}): Promise<{ confirmationSent: boolean }> {
+      const actor = await admin(ctx);
+      const email = cleanEmail(rawEmail);
+      await stepUpFor(await userRow(db, userId));
+      const old = await tx(async (c) => {
+        const u = await userRow(c, userId, true);
+        if (u.email.toLowerCase() === email) throw refuse("BAD_REQUEST", "SAME_EMAIL", "That is the address the account has already.");
+        const taken = await c.query('SELECT 1 FROM "user" WHERE lower(email) = $1', [email]);
+        if (taken.rowCount) throw refuse("CONFLICT", "USER_EXISTS", "An account with that address exists already.");
+        await c.query('UPDATE "user" SET email = $2, "emailVerified" = $3, "updatedAt" = now() WHERE id = $1', [u.id, email, opts.markVerified === true]);
+        await c.query("UPDATE auth2_account_invitations SET email = $2 WHERE user_id = $1 AND accepted_at IS NULL", [u.id, email]);
+        await endSessions(c, u.id);
+        await unlock(c, u.email);
+        await audit(c, actor, "email_changed", `Changed the address of ${u.email} to ${email}${opts.markVerified ? ", marked confirmed without email" : ", to be confirmed"}; sessions ended`, { userId: u.id, before: u.email, after: email, markVerified: opts.markVerified === true });
+        return u;
+      });
+      if (opts.markVerified) return { confirmationSent: false };
+      const sender = await mailer();
+      if (!sender) return { confirmationSent: false };
+      try {
+        const { createEmailVerificationToken } = await import("better-auth/api");
+        const secret = (ctx.auth as unknown as { options: { secret: string } }).options.secret;
+        const token = await createEmailVerificationToken(secret, email, undefined, 24 * 60 * 60);
+        await sender.send(render({ kind: "confirm-email", to: email, name: old.name, link: deps.link("/confirm", token) }));
+        return { confirmationSent: true };
+      } catch (e) {
+        console.error(`[auth2] the confirmation of a changed address was not sent: ${(e as Error).name}`);
+        return { confirmationSent: false };
+      }
+    },
+
+    /** Lifts a lock from failed sign-ins. */
+    async unlock(userId: unknown) {
+      const actor = await admin(ctx);
+      await tx(async (c) => {
+        const u = await userRow(c, userId, true);
+        const was = await unlock(c, u.email);
+        await audit(c, actor, "user_unlocked", `Unlocked ${u.email}${was ? "" : " (it was not locked)"}`, { userId: u.id, wasLocked: was });
+      });
+    },
+
+    /** Signs a person out of every browser. */
+    async endAllSessions(userId: unknown): Promise<{ ended: number }> {
+      const actor = await admin(ctx);
+      await stepUpFor(await userRow(db, userId));
+      return tx(async (c) => {
+        const u = await userRow(c, userId, true);
+        const n = (await c.query('DELETE FROM "session" WHERE "userId" = $1', [u.id])).rowCount ?? 0;
+        await c.query("DELETE FROM verification WHERE value = $1", [u.id]);
+        await audit(c, actor, "sessions_ended", `Signed ${u.email} out of every browser (${n} ${n === 1 ? "session" : "sessions"})`, { userId: u.id, ended: n });
+        return { ended: n };
+      });
+    },
+
+    /** Emails the person a reset link (mail must be set up). The answer says whether it went. */
+    async sendResetLink(userId: unknown): Promise<{ sent: boolean }> {
+      const actor = await admin(ctx);
+      const u = await userRow(db, userId);
+      await stepUpFor(u);
+      if (!(await mailer())) return { sent: false };
+      await ctx.auth.api.requestPasswordReset({ body: { email: u.email, redirectTo: `${AUTH2_PAGES}/reset/new` } });
+      await tx(async (c) => audit(c, actor, "reset_link_sent", `Sent ${u.email} a link to choose a new password`, { userId: u.id }));
+      return { sent: true };
     },
 
     /** Confirms an address without sending anything (for "no mail" mode, or a person who cannot receive mail). */
@@ -144,10 +355,14 @@ export function adminOps(ctx: Ctx) {
       });
     },
 
-    /** Sets a new password (or the first one) and ends every session of that account. */
+    /**
+     * Sets a temporary password the administrator typed (or the first one): every session ends, a lock goes, and the
+     * person must choose their own at the next sign-in (no session starts before they do).
+     */
     async setPassword(userId: unknown, password: unknown) {
       const actor = await admin(ctx);
       const target = await userRow(db, userId);
+      await stepUpFor(target);
       const p = await checkPassword(db, password, target);
       const hash = await hashPassword(p);
       await tx(async (c) => {
@@ -156,14 +371,17 @@ export function adminOps(ctx: Ctx) {
         if (!r.rowCount) {
           await c.query(`INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt") VALUES ($1, $2, 'credential', $2, $3, now(), now())`, [newId(), u.id, hash]);
         }
+        await c.query('UPDATE "user" SET "mustChangePassword" = true, "resetRequestedAt" = NULL, "updatedAt" = now() WHERE id = $1', [u.id]);
         await endSessions(c, u.id);
-        await audit(c, actor, "password_set", `Set a new password for ${u.email}; every session of the account ended`, { userId: u.id });
+        await unlock(c, u.email);
+        await audit(c, actor, "password_set", `Set a temporary password for ${u.email}, to be changed at the next sign-in; every session of the account ended`, { userId: u.id });
       });
     },
 
     /** Requires two-factor of one person, whatever their workspaces say (or stops requiring it at this level). */
     async setTwoFactorRequired(userId: unknown, required: boolean) {
       const actor = await admin(ctx);
+      await stepUpFor(await userRow(db, userId));
       await tx(async (c) => {
         const u = await userRow(c, userId, true);
         await c.query('UPDATE "user" SET "twoFactorRequired" = $2 WHERE id = $1', [u.id, required]);
@@ -178,8 +396,12 @@ export function adminOps(ctx: Ctx) {
      */
     async resetTwoFactor(userId: unknown): Promise<{ code: string }> {
       const actor = await admin(ctx);
+      await stepUpFor(await userRow(db, userId));
       return tx(async (c) => {
+        const n = await lockAdmins(c);
         const u = await userRow(c, userId, true);
+        // The last platform administrator is never left owing a proof to get back in (owner's rule of 23 Nov).
+        if (u.enabledAdmin && n <= 1) throw lastAdmin();
         const code = await resetAndRequireProof(c, u.id, actor, "code");
         await audit(c, actor, "two_factor_reset", `Reset the two-step sign-in of ${u.email}: authenticator app and recovery codes removed, sessions ended, a one-time code handed to the administrator`, { userId: u.id });
         return { code };
@@ -190,6 +412,7 @@ export function adminOps(ctx: Ctx) {
      *  A workspace that requires it will still ask for it at the next sign-in. */
     async disableTwoFactor(userId: unknown) {
       const actor = await admin(ctx);
+      await stepUpFor(await userRow(db, userId));
       await tx(async (c) => {
         const u = await userRow(c, userId, true);
         await clearTwoFactor(c, u.id);
@@ -202,6 +425,8 @@ export function adminOps(ctx: Ctx) {
     /** A disabled account cannot sign in; its sessions end now. The last platform administrator cannot be disabled. */
     async setDisabled(userId: unknown, disabled: boolean) {
       const actor = await admin(ctx);
+      if (disabled && userId === ctx.actorId) throw refuse("FORBIDDEN", "NOT_YOURSELF", "You cannot disable your own account. Another platform administrator can.");
+      await stepUpFor(await userRow(db, userId));
       await inTx(db, async (c) => {
         await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
         // All administrators' rows (in id order), then the actor again.
@@ -218,6 +443,7 @@ export function adminOps(ctx: Ctx) {
     /** Grants or removes the platform administrator flag. The last one can never lose it. */
     async setPlatformAdmin(userId: unknown, on: boolean) {
       const actor = await admin(ctx);
+      await stepUpFor(await userRow(db, userId), on);
       await inTx(db, async (c) => {
         await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
         // All administrators' rows (in id order), then the actor again.
@@ -237,6 +463,8 @@ export function adminOps(ctx: Ctx) {
      */
     async deleteUser(userId: unknown, opts: { transfer?: Record<string, string>; deleteWorkspaces?: boolean } = {}) {
       const actor = await admin(ctx);
+      if (userId === ctx.actorId) throw refuse("FORBIDDEN", "NOT_YOURSELF", "You cannot delete your own account. Another platform administrator can.");
+      await stepUpFor(await userRow(db, userId));
       await inTx(db, async (c) => {
         await c.query("SELECT pg_advisory_xact_lock(hashtext('c2r.platform_admin'))");
         // All administrators' rows (in id order), then the actor again.

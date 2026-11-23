@@ -37,9 +37,10 @@ import { AUTH2_BASE_PATH, AUTH2_PAGES, envBaseURL, envSecret } from "./config";
 import { currentMailSender, render, type MailSender } from "./mail";
 import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims, wellFormed } from "./guards";
 import { workspaces } from "./workspaces/plugin";
+import { accounts } from "./accountsPlugin";
 import { createPersonal } from "./workspaces/store";
 import { proofOwed, proofSpent, requiredFor } from "./workspaces/twoFactor";
-import { claimTry, clearTries, hasTag, KNOWN_DEVICE_COOKIE, waitRefusal, withTag } from "./signInWait";
+import { claimRefusal, claimTry, clearTries, failedTry, hasTag, KNOWN_DEVICE_COOKIE, unlock, withTag } from "./signInWait";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
 import { checkNewPassword } from "./newPassword";
@@ -87,6 +88,9 @@ const THROTTLE = {
   "/workspace/delete": { window: 60, max: 3 },
   "/workspace/member/reset-two-factor": { window: 60, max: 5 },
   "/re-enrol": { window: 60, max: 5 },
+  "/account/first-password": { window: 10, max: 3 },
+  "/account/join": { window: 60, max: 10 },
+  "/account/reset-request": { window: 60, max: 3 },
   // Each of these sends an email (or makes a link): per network address, besides the per-workspace limits.
   "/workspace/invite": { window: 60, max: 10 },
   "/workspace/invitation/resend": { window: 60, max: 5 },
@@ -175,6 +179,12 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       // A sign-up for an address that is not confirmed yet replaces the earlier one (./guards.ts, review B2).
       onExistingUserSignUp: replaceUnconfirmed(db, mail, secret, link, (email) => auditAs(email, "/sign-up/replaced")),
       resetPasswordTokenExpiresIn: 60 * 60,
+      // A password the person chose by an emailed link lifts a lock from failed sign-ins, ends "must change" and a
+      // pending "asked for a reset" (owner's ruling of 23 Nov: the locked person can always get back in this way).
+      onPasswordReset: async ({ user }: { user: { id: string; email: string } }) => {
+        await unlock(db, user.email);
+        await db.query('UPDATE "user" SET "mustChangePassword" = false, "resetRequestedAt" = NULL WHERE id = $1', [user.id]);
+      },
       password: { hash: hashPassword, verify: ({ hash, password }: { hash: string; password: string }) => verifyPassword(password, hash) },
       sendResetPassword: async ({ user, token }: { user: { id: string; email: string; name: string }; token: string }) => {
         // A disabled account gets no reset link; the answer to the request is the same as for any address (N14).
@@ -216,6 +226,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
             if (await proofOwed(db, session.userId)) {
               throw APIError.from("FORBIDDEN", { code: "REENROL_PROOF_REQUIRED", message: "Your two-step sign-in was reset. Use the link we emailed you, or the code from whoever reset it." });
             }
+            // A password an administrator set: the person chooses their own first (./accountsPlugin.ts).
+            const must = await db.query('SELECT 1 FROM "user" WHERE id = $1 AND "mustChangePassword"', [session.userId]);
+            if (must.rowCount && !session.impersonatedBy) {
+              throw APIError.from("FORBIDDEN", { code: "PASSWORD_CHANGE_REQUIRED", message: "An administrator set this password. Choose a password of your own to sign in." });
+            }
             const r = await db.query<{ organizationId: string }>('SELECT "organizationId" FROM member WHERE "userId" = $1 ORDER BY "createdAt", id LIMIT 1', [session.userId]);
             return { data: { ...session, activeOrganizationId: r.rows[0]?.organizationId ?? null } };
           },
@@ -248,8 +263,8 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
           // Per account, before the password is checked (./signInWait.ts, review N4). Better Auth's per-address
           // throttle has already run.
           const knownDevice = hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, body.email);
-          const wait = await claimTry(db, body.email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", new Date(), { knownDevice });
-          if (wait !== null) throw waitRefusal(wait);
+          const refused = claimRefusal(await claimTry(db, body.email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", new Date(), { knownDevice }));
+          if (refused) throw refused;
         }
         if (ctx.path === "/verify-email") await confirmedBefore(db, (ctx.query as { token?: unknown } | undefined)?.token);
         if (ctx.path === "/two-factor/disable") {
@@ -288,9 +303,14 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         if (ctx.path === "/sign-in/email") {
           const r = ctx.context.returned;
           const email = (ctx.body as { email?: unknown } | undefined)?.email;
+          const code = r instanceof APIError ? (r.body as { code?: string } | undefined)?.code : undefined;
+          // A wrong password (the same answer for an unknown address): counted towards the lock (./signInWait.ts).
+          if (typeof email === "string" && code === "INVALID_EMAIL_OR_PASSWORD" && !hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email)) await failedTry(db, email);
+          // The password was right but something else stopped the session (unconfirmed, disabled, a proof owed).
+          if (typeof email === "string" && code && code !== "INVALID_EMAIL_OR_PASSWORD") await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
           if (typeof email === "string" && !(r instanceof Error) && !(r instanceof Response && !r.ok)) {
-            await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", { knownDevice: hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email) });
-            // This browser has now signed in to this account: it skips the name-wide wait next time (review B5).
+            await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
+            // This browser has now signed in to this account: the lock does not hold it next time (review B5).
             ctx.setCookie(KNOWN_DEVICE_COOKIE, withTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email), {
               httpOnly: true, sameSite: "lax", secure: baseURL.startsWith("https://"), path: AUTH2_BASE_PATH, maxAge: 365 * 24 * 60 * 60,
             });
@@ -315,6 +335,7 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       }),
       organization(ORGANIZATION_OPTIONS),
       workspaces(db, { mailer, link }),
+      accounts(db, { mailer }),
     ],
   } satisfies BetterAuthOptions;
   return { options };

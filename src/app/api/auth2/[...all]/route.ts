@@ -19,7 +19,7 @@ import { ownerPool, ready } from "@/lib/db";
 
 const FIRST_RUN = "/api/auth2/first-run/owner";
 /** Ways in that wait until the owner exists (review B3): nobody slips in before the first-run step. */
-const AFTER_SET_UP = new Set(["/sign-up/email", "/request-password-reset", "/reset-password", "/send-verification-email", "/workspace/invitation/accept"].map((p) => `/api/auth2${p}`));
+const AFTER_SET_UP = new Set(["/sign-up/email", "/request-password-reset", "/reset-password", "/send-verification-email", "/workspace/invitation/accept", "/account/join", "/account/reset-request", "/account/first-password"].map((p) => `/api/auth2${p}`));
 const notSetUp = () =>
   NextResponse.json({ code: "SETUP_REQUIRED", error: "This installation is not set up yet: its owner has to be created first, on the first-run page." }, { status: 503 });
 
