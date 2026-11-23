@@ -34,6 +34,9 @@ export const PROBLEM = {
   after: "Here",
   /** the pairs the welcome page shows, by index */
   shown: [0, 2, 3],
+  /** the tools the lead names, as the block's picture shows them */
+  tools: ["Notes app", "Parts spreadsheet", "CAD file", "Schematic tool", "Slicer", "Cost sheet", "Task board", "Ad manager"],
+  art: "Elsewhere: a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager, each on its own. Here: one line from the idea to the sale, with the seven stages on it.",
   lead: "A hardware idea usually lives in a notes app, a parts spreadsheet, a CAD file, a schematic tool, a slicer, a cost sheet, a task board and an ad manager. Change one part and the wiring, the enclosure, the cost and the launch copy go stale without telling you.",
   pairs: [
     {
@@ -312,7 +315,7 @@ export const GET = {
 export const GET_VIEWS = {
   badge: "The example's rows, live",
   loading: "Loading the view",
-  still: "A drawing of the model from its parts list; the live 3D view loads as you reach it.",
+  exploded: (parts: string[]) => `An exploded drawing of the example, from the sizes and places in its parts list: the tag pulled apart, each part numbered. ${parts.join("; ")}. The live 3D view loads as you reach it.`,
   looks: { wireframe: "Wireframe", translucent: "See-through", solid: "Solid" },
   model: {
     path: "/s/design/model",
@@ -441,7 +444,7 @@ export const PROOF = {
     sell: { label: "Sell it", sub: "Seven marketing and sales views, built on the same rows as the engineering." },
   },
   noscript: "Script is off, so the switch cannot change. The Sell it views are set out below.",
-  enclosureNote: "The enclosure in these views is the box the workbench generates around the example's parts. The example's final case is designed by hand.",
+  enclosureNote: "The 3D view draws the enclosure to the outline of the example's own case, which is designed by hand. Enclosure and print shows the box the workbench generates around the same parts.",
   status: {
     title: "Where does the example stand today?",
     lead: "Each stage ends in a gate of checks. These counts are worked out by the workbench's own rules on the example's rows. It is designed and costed, not yet manufactured or sold.",

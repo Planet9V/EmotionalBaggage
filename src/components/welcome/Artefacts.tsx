@@ -12,15 +12,15 @@ export const ARTEFACT_KEYS = ["schematic", "cost", "ad", "listing"] as const;
 export type ArtefactKey = (typeof ARTEFACT_KEYS)[number];
 
 function Pill({ children }: { children: string }) {
-  return <span className={`inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full border px-2 text-[13px] leading-none ${TONE_CLASS[approvalStatusTone(children)]}`}>{children}</span>;
+  return <span className={`inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full border px-1.5 text-[13px] leading-none ${TONE_CLASS[approvalStatusTone(children)]}`}>{children}</span>;
 }
 
 /** One output: what it is, where it stands, the thing itself, and a line under it. */
 function Card({ name, status, foot, children }: { name: string; status?: string; foot: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex h-full flex-col rounded-xl border border-hairline bg-surface/85 p-3.5 text-left shadow-[0_18px_40px_-22px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)] backdrop-blur-[2px]">
-      <p className="flex items-center justify-between gap-2">
-        <span className="text-[13px] font-medium text-secondary">{name}</span>
+    <div className="flex h-full flex-col rounded-xl border border-hairline bg-surface/85 p-3 text-left sm:p-3.5 shadow-[0_18px_40px_-22px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)] backdrop-blur-[2px]">
+      <p className="flex items-center justify-between gap-1.5">
+        <span className="whitespace-nowrap text-[13px] font-medium text-secondary">{name}</span>
         {status ? <Pill>{status}</Pill> : null}
       </p>
       <div className="flex min-h-0 flex-1 flex-col justify-center py-2">{children}</div>

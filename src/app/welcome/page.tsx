@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/welcome/ThemeToggle";
 import { HeroStage } from "@/components/welcome/HeroStage";
+import { ProblemArt } from "@/components/welcome/ProblemArt";
 import { WhatYouGet } from "@/components/welcome/WhatYouGet";
 import { OriginScenes } from "@/components/welcome/scenes/OriginScenes";
 import { Showcase } from "@/components/welcome/Showcase";
@@ -52,11 +53,14 @@ export const generateMetadata = () => publicPageMetadata({ title: META.title, de
  */
 
 const WRAP = "mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8";
-const H2 = "text-2xl font-semibold leading-tight tracking-tight text-primary sm:text-[1.75rem]";
-const LEAD = "mt-3 max-w-[64ch] text-[15px] leading-relaxed text-secondary sm:text-base";
-const EYEBROW = "mb-2 font-mono text-xs text-link";
+// One scale for the page: a section's question, its lead at reading size, a small line above it where the section
+// has one, and the text under a sub-heading. Body text is 16 px or more and the smallest line is 13 px.
+const H2 = "text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.02em] text-primary sm:text-[2.125rem]";
+const H3 = "text-xl font-semibold leading-snug tracking-tight text-primary";
+const LEAD = "mt-3.5 max-w-[62ch] text-base leading-relaxed text-secondary sm:text-[17px]";
+const EYEBROW = "mb-2.5 text-[13px] font-medium text-link";
 /** the sticky header is 56 px tall: an anchor stops below it */
-const SECTION = "scroll-mt-14 border-b border-hairline py-9 sm:py-11";
+const SECTION = "scroll-mt-14 border-b border-hairline py-10 sm:py-14";
 
 /** The page's one action: a link to the nearest form. `where` names the block for the visit counts. */
 function Action({ href, where, className = "" }: { href: string; where: string; className?: string }) {
@@ -93,7 +97,7 @@ export default async function WelcomePage() {
           <Link href="/welcome" className="whitespace-nowrap text-sm font-semibold text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
             {PRODUCT}
           </Link>
-          <nav aria-label="On this page" className="hidden items-center gap-5 whitespace-nowrap text-[13px] text-secondary lg:flex">
+          <nav aria-label="On this page" className="hidden items-center gap-6 whitespace-nowrap text-sm text-secondary lg:flex">
             {NAV.map((n) => (
               <a key={n.href} href={n.href} data-track={`cta:nav-${n.href.slice(1)}`} className="hover:text-primary">{n.label}</a>
             ))}
@@ -116,18 +120,18 @@ export default async function WelcomePage() {
       <main id="main">
         {/* 1. Hero: the proposition and the form. Dark in both themes. */}
         <TrackSection id="hero" className="dark bg-canvas text-primary">
-          <section id="hero" aria-labelledby="hero-title" className="overflow-x-clip border-b border-hairline pb-9 pt-8 sm:pb-11 sm:pt-10">
+          <section id="hero" aria-labelledby="hero-title" className="overflow-x-clip border-b border-hairline pb-10 pt-8 sm:pb-14 sm:pt-11">
             <div className={`${WRAP} grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,600px)] lg:gap-12`}>
               <div>
                 <p className={EYEBROW}>{HERO.eyebrow}</p>
-                <h1 id="hero-title" className="max-w-[16ch] text-[1.9375rem] font-semibold leading-[1.1] tracking-[-0.025em] text-primary sm:text-4xl lg:text-[2.625rem]">
+                <h1 id="hero-title" className="max-w-[14ch] text-[2.25rem] font-semibold leading-[1.05] tracking-[-0.03em] text-primary sm:text-[2.75rem] lg:text-[3.25rem]">
                   {HERO.title}
                 </h1>
-                <p className="mt-4 max-w-[56ch] text-[15px] leading-relaxed text-secondary sm:text-base">{HERO.sub}</p>
+                <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-secondary sm:text-[17px]">{HERO.sub}</p>
                 <div className="mt-6 max-w-[440px]">
                   <EarlyAccess placement="hero" />
                 </div>
-                <a href="#proof" data-track="example:hero" className="mt-4 inline-flex h-11 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
+                <a href="#proof" data-track="example:hero" className="mt-4 inline-flex h-11 items-center gap-1.5 text-[15px] font-medium text-link underline-offset-4 hover:underline">
                   {HERO.secondary} <ArrowRight className="h-4 w-4" aria-hidden />
                 </a>
               </div>
@@ -147,13 +151,23 @@ export default async function WelcomePage() {
             <div className={WRAP}>
               <h2 id="problem-title" className={H2}>{PROBLEM.title}</h2>
               <p className={LEAD}>{PROBLEM.lead}</p>
-              <ul className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className="mt-8">
+                <ProblemArt />
+              </div>
+              <ul className="mt-5 grid gap-4 md:grid-cols-3">
                 {PROBLEM.shown.map((i) => PROBLEM.pairs[i]!).map((p) => (
-                  <li key={p.before} className="rounded-xl border border-hairline bg-surface p-5">
-                    <p className="font-mono text-[11px] text-muted">{PROBLEM.before}</p>
-                    <p className="mt-1 text-sm leading-snug text-secondary">{p.before}</p>
-                    <p className="mt-4 font-mono text-[11px] text-link">{PROBLEM.after}</p>
-                    <p className="mt-1 text-sm font-medium leading-snug text-primary">{p.after}</p>
+                  <li key={p.before} className="flex flex-col overflow-hidden rounded-xl border border-hairline bg-surface">
+                    <div className="border-b border-dashed border-hairline bg-subtle px-5 py-4">
+                      <p className="text-[13px] font-medium text-muted">{PROBLEM.before}</p>
+                      <p className="mt-1 text-base leading-snug text-secondary">{p.before}</p>
+                    </div>
+                    <div className="flex-1 px-5 py-4">
+                      <p className="flex items-center gap-1.5 text-[13px] font-medium text-link">
+                        <Check className="h-3.5 w-3.5" aria-hidden />
+                        {PROBLEM.after}
+                      </p>
+                      <p className="mt-1 text-base font-medium leading-snug text-primary">{p.after}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -171,21 +185,21 @@ export default async function WelcomePage() {
               <div className="mt-7">
                 <WhatYouGet holds={story.holds} get={story.get} market={story.market} unit={example.unit} parts={example.parts} wires={example.wires} enclosure={example.enclosure} />
               </div>
-              <p className="mt-4 text-xs leading-relaxed text-muted">{GET.note}</p>
+              <p className="mt-4 text-[13px] leading-relaxed text-muted">{GET.note}</p>
 
-              <h3 className="mt-9 max-w-[40ch] text-lg font-semibold leading-snug tracking-tight text-primary">{MECHANISM.title}</h3>
-              <ul className="mt-3 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
+              <h3 className={`mt-12 max-w-[36ch] ${H3}`}>{MECHANISM.title}</h3>
+              <ul className="mt-4 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
                 {MECHANISM.guarantees.map((p) => (
                   <li key={p.title} className="border-t border-hairline py-4">
-                    <h4 className="flex items-start gap-2 text-sm font-semibold text-primary">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-link" aria-hidden />
+                    <h4 className="flex items-start gap-2 text-base font-semibold leading-snug text-primary">
+                      <Check className="mt-[3px] h-4 w-4 shrink-0 text-link" aria-hidden />
                       {p.title}
                     </h4>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">{p.text}</p>
+                    <p className="mt-1.5 text-[15px] leading-relaxed text-secondary">{p.text}</p>
                   </li>
                 ))}
               </ul>
-              <Action href="#early-access-hero" where="get" className="mt-4" />
+              <Action href="#early-access-hero" where="get" className="mt-5" />
             </div>
           </section>
         </TrackSection>
@@ -199,13 +213,13 @@ export default async function WelcomePage() {
               <p className={LEAD}>{PROOF.lead}</p>
             </div>
             {/* the stage runs wider than the text column; the showcase lays both out */}
-            <div className="mt-6">
+            <div className="mt-8">
               <Showcase parts={example.parts} wires={example.wires} enclosure={example.enclosure} market={story.market} />
             </div>
-            <div className={`${WRAP} mt-9`}>
-              <h3 className="text-lg font-semibold tracking-tight text-primary">{PROOF.status.title}</h3>
-              <p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-secondary">{PROOF.status.lead}</p>
-              <div className="mt-4">
+            <div className={`${WRAP} mt-12`}>
+              <h3 className={H3}>{PROOF.status.title}</h3>
+              <p className="mt-2 max-w-[68ch] text-base leading-relaxed text-secondary">{PROOF.status.lead}</p>
+              <div className="mt-5">
                 <StageStatus gates={example.gates} />
               </div>
               <Action href="#early-access-close" where="proof" className="mt-7" />
@@ -220,21 +234,23 @@ export default async function WelcomePage() {
               <p className={EYEBROW}>{PRICING.eyebrow}</p>
               <h2 id="pricing-title" className={H2}>{PRICING.title}</h2>
               <p className={LEAD}>{plans.length ? `${PRICING.lead} ${PRICING.plansLead}` : PRICING.lead}</p>
-              <div className="mt-7 grid gap-6 rounded-xl border border-dutchOrange bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6 md:grid-cols-2 md:items-center md:gap-10">
+              <div className="relative mt-8 grid gap-6 overflow-hidden rounded-2xl border border-hairline bg-surface p-6 shadow-[var(--shadow-card)] sm:p-8 md:grid-cols-2 md:items-center md:gap-12">
+                {/* the one offer open today: the accent marks it, once */}
+                <span className="absolute inset-y-0 left-0 w-1 bg-dutchOrange" aria-hidden />
                 <div>
-                  <h3 className="text-lg font-semibold tracking-tight text-primary">{PRICING.offerTitle}</h3>
-                  <p className="mt-2 max-w-[48ch] text-sm leading-relaxed text-secondary">{PRICING.offerText}</p>
+                  <h3 className={H3}>{PRICING.offerTitle}</h3>
+                  <p className="mt-2 max-w-[46ch] text-base leading-relaxed text-secondary">{PRICING.offerText}</p>
                 </div>
                 <EarlyAccess placement="pricing" />
               </div>
               {plans.length ? (
                 <>
-                  <h3 className="mt-9 text-lg font-semibold tracking-tight text-primary">{PRICING.plansTitle}</h3>
+                  <h3 className={`mt-12 ${H3}`}>{PRICING.plansTitle}</h3>
                   <PlanCards plans={plans} href="#early-access-pricing" />
                 </>
               ) : null}
-              <p className="mt-5 flex max-w-[80ch] items-start gap-2 text-sm leading-relaxed text-secondary">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
+              <p className="mt-6 flex max-w-[80ch] items-start gap-2.5 text-[15px] leading-relaxed text-secondary">
+                <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-dutchOrange" aria-hidden />
                 {PRICING.first}
               </p>
             </div>
@@ -250,9 +266,9 @@ export default async function WelcomePage() {
                   <h2 id="builder-title" className={H2}>{BUILDER.title}</h2>
                 </div>
                 <div className="lg:col-span-8">
-                  <p className="text-base font-semibold text-primary">{builder.name}</p>
-                  {builder.role ? <p className="mt-0.5 font-mono text-[11px] text-link">{builder.role}</p> : null}
-                  <p className="mt-3 max-w-[64ch] whitespace-pre-line text-[15px] leading-relaxed text-secondary">{builder.text}</p>
+                  <p className="text-lg font-semibold text-primary">{builder.name}</p>
+                  {builder.role ? <p className="mt-0.5 text-[13px] font-medium text-link">{builder.role}</p> : null}
+                  <p className="mt-3 max-w-[64ch] whitespace-pre-line text-base leading-relaxed text-secondary">{builder.text}</p>
                 </div>
               </div>
             </section>
@@ -266,14 +282,14 @@ export default async function WelcomePage() {
               <div className="lg:col-span-4">
                 <h2 id="faq-title" className={H2}>{PRICING.questionsTitle}</h2>
               </div>
-              <div className="divide-y divide-[var(--border-hairline)] rounded-xl border border-hairline bg-surface lg:col-span-8">
+              <div className="divide-y divide-[var(--border-hairline)] overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[var(--shadow-card)] lg:col-span-8">
                 {faq.map((f) => (
-                  <details key={f.q} className="group px-5 py-0.5">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3.5 text-[15px] font-medium text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
+                  <details key={f.q} className="group px-5 sm:px-6">
+                    <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3.5 text-base font-medium text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus sm:text-[17px] [&::-webkit-details-marker]:hidden">
                       {f.q}
-                      <ArrowRight className="h-4 w-4 shrink-0 text-muted transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+                      <Plus className="h-[18px] w-[18px] shrink-0 text-link transition-transform duration-200 group-open:rotate-45 motion-reduce:transition-none" aria-hidden />
                     </summary>
-                    <p className="pb-5 text-sm leading-relaxed text-secondary">{f.a}</p>
+                    <p className="max-w-[68ch] pb-5 text-base leading-relaxed text-secondary">{f.a}</p>
                   </details>
                 ))}
               </div>
@@ -297,7 +313,7 @@ export default async function WelcomePage() {
       </main>
 
       <footer className="dark border-t border-hairline bg-canvas text-primary">
-        <div className={`${WRAP} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-8 text-sm text-muted`}>
+        <div className={`${WRAP} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-8 text-[15px] text-muted`}>
           <p className="font-medium text-secondary">{PRODUCT}</p>
           <p className="max-w-[60ch]">{FOOTER.privacy}</p>
           <Link href="/sign-in" data-track="cta:footer-signin" className="text-secondary hover:text-primary">Sign in</Link>

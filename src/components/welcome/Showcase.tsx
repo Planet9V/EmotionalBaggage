@@ -24,7 +24,7 @@ export function Showcase({ parts, wires, enclosure, market }: { parts: Item[]; w
   return (
     <div>
       <div className={`${TEXT} flex flex-wrap items-center gap-x-5 gap-y-3`}>
-        <div role="group" aria-label={PROOF.switch} className="inline-flex rounded-lg border border-hairline bg-surface p-1">
+        <div role="group" aria-label={PROOF.switch} className="inline-flex rounded-lg border border-hairline bg-surface p-1 shadow-[var(--shadow-card)]">
           {GROUPS.map((g) => (
             <button
               key={g}
@@ -32,20 +32,20 @@ export function Showcase({ parts, wires, enclosure, market }: { parts: Item[]; w
               aria-pressed={group === g}
               data-track={`cta:proof-${g}`}
               onClick={() => setGroup(g)}
-              className={`h-9 rounded-md px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus motion-reduce:transition-none ${group === g ? "bg-action text-white" : "text-secondary hover:text-primary"}`}
+              className={`h-10 rounded-md px-5 text-[15px] font-semibold transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus motion-reduce:transition-none ${group === g ? "bg-action text-white" : "text-secondary hover:text-primary"}`}
             >
               {PROOF.groups[g].label}
             </button>
           ))}
         </div>
-        <p className="min-w-0 text-sm leading-relaxed text-secondary" aria-live="polite">{PROOF.groups[group].sub}</p>
+        <p className="min-w-0 text-base leading-relaxed text-secondary" aria-live="polite">{PROOF.groups[group].sub}</p>
       </div>
 
-      <div className={`${WIDE} mt-4`}>
+      <div className={`${WIDE} mt-5`}>
         {group === "make" ? <Engineering parts={parts} wires={wires} enclosure={enclosure} /> : <Market data={market} />}
       </div>
       <div className={TEXT}>
-        <p className="mt-3 max-w-[80ch] text-[13px] leading-relaxed text-muted">{group === "make" ? `${PROOF.enclosureNote} ${ENGINEERING.note}` : MARKET.note}</p>
+        <p className="mt-4 max-w-[80ch] text-[13px] leading-relaxed text-muted">{group === "make" ? `${PROOF.enclosureNote} ${ENGINEERING.note}` : MARKET.note}</p>
       </div>
 
       <noscript>
