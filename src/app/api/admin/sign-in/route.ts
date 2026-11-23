@@ -26,6 +26,7 @@ const change = z
           .strict()
           .optional(),
         notifySignupRequestsTo: z.string().max(254).optional(),
+        notifyLockAlertsTo: z.string().max(254).optional(),
         signUpOpen: z.boolean().optional(),
         viewAsMinutes: z.number().optional(),
         viewAsNotifyUser: z.boolean().optional(),

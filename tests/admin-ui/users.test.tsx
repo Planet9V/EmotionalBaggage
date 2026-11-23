@@ -32,7 +32,7 @@ function serve(calls: Call[] = []) {
   return adminServer([
     on("GET", "/api/admin/access", () => ({ body: ADMIN })),
     on("GET", "/api/admin/sign-in", () => ({ body: SIGNIN })),
-    on("GET", "/api/admin/users", () => ({ body: { users: USERS, total: USERS.length, page: 1, pageSize: 25, me: "me" } }), true),
+    on("GET", "/api/admin/users", () => ({ body: { users: USERS, total: USERS.length, page: 1, pageSize: 25, me: "me", locked: 1 } }), true),
     on("GET", "/api/admin/invitations?status=pending", () => ({ body: { invitations: [] } })),
     on("POST", "/api/admin/users", (c) => {
       calls.push(c);
@@ -56,6 +56,8 @@ describe("Admin, Users", () => {
     expect(row("u3").getByText("Locked until unlocked")).toBeTruthy();
     expect(row("u3").getByText(/^Asked for a reset/)).toBeTruthy();
     expect(screen.getByText("4 accounts, page 1 of 1")).toBeTruthy();
+    expect(screen.getByTestId("locked-count").textContent).toMatch(/^1 account is locked after failed sign-ins/);
+    expect(screen.getByRole("button", { name: "Show locked accounts" })).toBeTruthy();
     expect(await axeViolations(container)).toEqual([]);
   });
 

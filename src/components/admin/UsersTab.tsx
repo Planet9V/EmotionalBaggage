@@ -68,6 +68,12 @@ export function UsersTab() {
         description="Every account on this installation. A platform administrator can do everything here, without any email being sent. Changes to another platform administrator ask for your own password again."
         actions={<Button size="sm" onClick={() => setAdding(true)}>Add a person</Button>}
       >
+        {list.data && list.data.locked > 0 ? (
+          <p role="note" className="mb-3 flex flex-wrap items-center gap-2 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger" data-testid="locked-count">
+            {list.data.locked} {list.data.locked === 1 ? "account is" : "accounts are"} locked after failed sign-ins.
+            {state !== "locked" ? <Button size="sm" variant="outline" onClick={() => { setState("locked"); setPage(1); }}>Show locked accounts</Button> : null}
+          </p>
+        ) : null}
         <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
           <Field id="users-q" label="Search by name or address">
             <Input id="users-q" type="search" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />

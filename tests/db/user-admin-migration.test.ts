@@ -49,3 +49,25 @@ describe("migration 0044, account rules", () => {
     expect(cols.sort()).toEqual(["auth2_sign_in_waits.locked_until", "session.impersonatedBy", "session.impersonationEndsAt", "user.mustChangePassword", "user.resetRequestedAt"]);
   });
 });
+
+describe("migration 0045, lock alerts", () => {
+  const file45 = readdirSync(join(process.cwd(), "migrations")).find((f) => f.endsWith("_lock_alerts.sql"))!;
+  const UP45 = readFileSync(join(process.cwd(), "migrations", file45), "utf8").split("-- Down Migration")[0]!;
+  const ONLY_UPDATE = UP45.slice(UP45.indexOf("UPDATE auth2_settings"), UP45.indexOf("-- Alerts sent"));
+  it("a stored 30 (the old default) becomes 15; any other stored value stays", async () => {
+    const db = ownerPool();
+    const put = (v: number) => db.query(`INSERT INTO auth2_settings (key, value) VALUES ('signIn.lockMinutes', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [JSON.stringify(v)]);
+    const get = async () => (await db.query<{ value: number }>("SELECT value FROM auth2_settings WHERE key = 'signIn.lockMinutes'")).rows[0]?.value;
+    try {
+      await put(30);
+      await db.query(ONLY_UPDATE);
+      expect(await get()).toBe(15);
+      await put(45);
+      await db.query(ONLY_UPDATE);
+      expect(await get()).toBe(45);
+      await db.query(`INSERT INTO auth2_settings (key, value) VALUES ('notify.lockAlertsTo', '""') ON CONFLICT (key) DO NOTHING`);
+    } finally {
+      await db.query("DELETE FROM auth2_settings WHERE key IN ('signIn.lockMinutes', 'notify.lockAlertsTo')");
+    }
+  });
+});

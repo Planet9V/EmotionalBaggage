@@ -63,7 +63,7 @@ function SignupNotify({ mail }: { mail: boolean }) {
   const status = useSignInStatus();
   const admin = useAdminAccess().platformAdmin;
   if (!status.data || !("rules" in status.data)) return null;
-  return <NotifyPanel to={status.data.rules.notifySignupRequestsTo} mail={mail} canWrite={admin} />;
+  return <NotifyPanel to={status.data.rules.notifySignupRequestsTo} lockTo={status.data.rules.notifyLockAlertsTo} mail={mail} canWrite={admin} />;
 }
 
 function ServerForm({ saved }: { saved: MailSettings }) {

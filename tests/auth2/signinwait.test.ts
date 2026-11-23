@@ -79,9 +79,9 @@ describe("the lock: 7 failed sign-ins in a row (owner's ruling of 23 Nov)", () =
     expect([res.status, res.body.code, (res.body as { message?: string }).message]).toEqual([429, "SIGN_IN_LOCKED", LOCKED]);
     expect(res.headers.get("retry-after")).toBeNull();
     const row = await db.query<{ failures: number; mins: number }>("SELECT failures, round(extract(epoch FROM locked_until - now()) / 60)::int AS mins FROM auth2_sign_in_waits WHERE name_key = $1 AND client = ''", [nameKey(a.email)]);
-    expect(row.rows[0]).toMatchObject({ failures: 7, mins: 30 });
+    expect(row.rows[0]).toMatchObject({ failures: 7, mins: 15 });
     const line = await db.query<{ action: string; summary: string }>("SELECT action, summary FROM audit_log WHERE actor = $1 AND action = 'account.locked'", [a.email]);
-    expect(line.rows[0]?.summary).toMatch(/7 failed sign-ins in a row \(for 30 minutes\)/);
+    expect(line.rows[0]?.summary).toBe(`Account locked after 7 failed sign-ins: ${a.email} (for 15 minutes)`);
   });
 
   it("6 wrong then a right password: the count goes back to 0, so 7 more are needed", async () => {
@@ -100,8 +100,11 @@ describe("the lock: 7 failed sign-ins in a row (owner's ruling of 23 Nov)", () =
     const all = JSON.stringify((await db.query("SELECT * FROM auth2_sign_in_waits")).rows);
     expect(all).not.toContain("@zz-auth2.test");
     expect(all).toContain(nameKey(nobody));
-    // and no audit line names an address that has no account
+    // the lock is in the audit log, without the address or its hash
     expect((await db.query("SELECT 1 FROM audit_log WHERE actor = $1", [nobody])).rowCount).toBe(0);
+    const unknownLine = await db.query<{ summary: string; detail: unknown }>("SELECT summary, detail FROM audit_log WHERE action = 'account.locked_unknown' ORDER BY id DESC LIMIT 1");
+    expect(unknownLine.rows[0]?.summary).toBe("An address with no account was locked after 7 failed sign-ins (for 15 minutes)");
+    expect(JSON.stringify(unknownLine.rows)).not.toContain(nameKey(nobody));
   });
 
   it("a lock that has run out starts again from 0; 'until unlocked' holds until an administrator unlocks, audited", async () => {
@@ -121,10 +124,10 @@ describe("the lock: 7 failed sign-ins in a row (owner's ruling of 23 Nov)", () =
       await ops.unlock(a.userId);
       expect((await tryIn("198.18.9.1", a.email, PASSWORD)).status).toBe(200);
       expect((await db.query("SELECT 1 FROM audit_log WHERE actor = $1 AND action = 'platform.user_unlocked'", [adm.email])).rowCount).toBe(1);
-      // A platform administrator is never locked for good: 30 minutes at most.
+      // A platform administrator is never locked for good: 15 minutes at most.
       await sevenWrong(adm.email, "198.18.10");
       const m = await db.query<{ mins: number }>("SELECT round(extract(epoch FROM locked_until - now()) / 60)::int AS mins FROM auth2_sign_in_waits WHERE name_key = $1 AND client = ''", [nameKey(adm.email)]);
-      expect(m.rows[0]?.mins).toBe(30);
+      expect(m.rows[0]?.mins).toBe(15);
     } finally {
       await db.query("DELETE FROM auth2_settings WHERE key = 'signIn.lockMinutes'");
     }
