@@ -81,6 +81,7 @@ export function HeroStage({ idea, facts }: { idea: string; facts: HeroFacts }) {
     if (!el) return;
     const measure = () => setBoxPx(el.clientHeight);
     measure();
+    if (typeof ResizeObserver === "undefined") return;
     const seenSize = new ResizeObserver(measure);
     seenSize.observe(el);
     return () => seenSize.disconnect();
