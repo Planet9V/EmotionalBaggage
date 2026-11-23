@@ -1,0 +1,157 @@
+{
+  "batch": "2026-11-23-revD-3",
+  "about": "The rows the two Rev D batches left describing the Rev A and 2 x AA device as current: the story's pitch (a palm-sized puck) and its reason why (alkaline cells), the brief's claimed moats and battery risk, the two FAQ answers on TSA and checked bags, the legal pages, the launch step for the compliance mark and the battery statement, and the bench tools and troubleshooting rows (DFPlayer, microSD, battery plus USB). Each is changed only while it still reads as the seed and the batches before this one left it. The airline and security rows state only what the Rev D engineering note's cited rules support (IATA Dangerous Goods Regulations, Table 2.3.A; FAA PackSafe), say that airline and security staff make the final call, and wait for the owner's approval: draft where the section has a draft status, and marked so in the text where it does not.",
+  "from": "the Rev D slim tag (BaggageClaims_Tag_RevD_Engineering.md and _Design.md in Files)",
+  "rows": [
+    {
+      "op": "enrich",
+      "proposal": "D301",
+      "sourceFile": "docs/design/baggage-claims-revD.md",
+      "sourceLocation": "The decision; what changed in the example",
+      "section": "concept/story",
+      "match": {
+        "title": "The pitch"
+      },
+      "setBody": "Baggage Claims MK1 is a slim leather-look tag (62 by 92 by 12.8 mm) that straps to any suitcase handle and heckles the trip. A motion sensor reads what the bag is going through: the lift onto the check-in scale, the toss onto the belt, the free-fall into a container, the conveyor's rumble, the carousel's laps, and hours of dark silence in the hold. A small speaker answers each moment with the complaint that fits.\n\nIt is a gag gift at about $25, with no app, no pairing and no Wi-Fi, one button and a side off switch, and a pocket for the buyer's own tracker. The first proposal called it \"the Furby of luggage\". The PRD puts it this way: \"the Bluetooth speaker's funnier, cheaper cousin - a gift people buy because it made them laugh before they bought it.\""
+    },
+    {
+      "op": "enrich",
+      "proposal": "D302",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules R1, R3 and R4, and what follows, points 2 and 5",
+      "section": "concept/story",
+      "match": {
+        "title": "Why it should work"
+      },
+      "setBody": "The bet is that the joke sells itself on sight. The PRD puts the reasoning in one line: \"Every row converts a recognizable shared misery into a punchline - that conversion IS the product.\" The moments are ones every traveller recognises, the reaction is immediate, and the product's demonstration is the same thing as its marketing: a fifteen-second clip of a suitcase complaining at a baggage handler. In the first proposal's words, \"This video is the business plan.\"\n\nThe economics are meant to work at gift prices: parts that are cheap in volume, a price in the gag-gift band, and voice packs that cost almost nothing to make and sell for $7.99. The power is chosen inside the airline rules: one CR2032 coin cell, 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage. Airline and security staff make the final call, and the tag has a physical off switch. Draft: needs the owner's approval before it is used.\n\nNothing has been built or measured yet. Every claim below is either stated in a source document (and not yet checked) or an assumption the first test has to settle.",
+      "setStatus": "draft"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D303",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, what follows, points 1, 2 and 5",
+      "section": "concept/brief",
+      "match": {
+        "title": "Claimed moats"
+      },
+      "setBody": "Trigger classifier tuned on real baggage telemetry; voice brand and talent; a tag that may stay on in checked baggage; trademark and design patent on the form factor. The PRD's detail: (1) the trigger-pattern classifier is \"hard to copy well without flying duffel bags around\"; (3) the PRD rested the checked-bag point on alkaline AA cells, which the Rev D tag replaces with one CR2032 coin cell, 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage. Airline and security staff make the final call, and the tag has a physical off switch. From the risk table: the classifier is treated as a trade secret, alongside a design patent and trademark. Draft: needs the owner's approval before it is used."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D304",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules R1 to R5, and what follows, point 5",
+      "section": "concept/brief",
+      "match": {
+        "title": "Risk: batteries in checked bags, as it looks to others (High)"
+      },
+      "setBody": "Mitigation: one CR2032 coin cell, 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage; a side slide off switch that disconnects the cell, in case the airport asks; a carry-on use in the marketing. FAA PackSafe also tells passengers to check with the airline: airlines may set stricter rules, airline and security staff make the final call, and no rule found names a device that talks. Draft: needs the owner's approval before it is used."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D305",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules R1, R3 and R4, and what follows, point 5",
+      "section": "concept/faq",
+      "match": {
+        "title": "Will TSA confiscate it?"
+      },
+      "setBody": "We cannot promise that it will not be: airline and security staff make the final call. What we can say: the tag runs on one CR2032 coin cell with 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage, and it has a physical off switch on its side if anyone asks you to turn it off.",
+      "setStatus": "draft"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D306",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules R1, R3 and R4, and what follows, point 5",
+      "section": "concept/faq",
+      "match": {
+        "title": "Can it ride in a checked bag?"
+      },
+      "setBody": "The rules we read allow it: the tag runs on one CR2032 coin cell with 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage. Airlines may set stricter rules, and FAA PackSafe says to check with the airline before you travel; airline and security staff make the final call. The side off switch disconnects the cell if anyone asks.",
+      "setStatus": "draft"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D307",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules; section 2.3, the off switch S1 and no USB port",
+      "section": "marketing/landing",
+      "match": {
+        "title": "Legal pages"
+      },
+      "setBody": "Privacy, terms, the battery and safety page, and the voice release. The safety page states that the tag runs on one CR2032 coin cell, 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage; that airline and security staff make the final call; that the tag has a physical side off switch that disconnects the cell; and that it has no USB port and no rechargeable cell. Draft: needs the owner's approval before it is used.",
+      "setStatus": "draft"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D308",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules and what follows; section 2.3, the off switch S1",
+      "section": "marketing/launch",
+      "match": {
+        "title": "The compliance mark, the battery statement and a barcode"
+      },
+      "setBody": "A listing for an electronic gadget is asked for them.\n\nHow: Engineering's compliance rows say which mark the first market needs (no mark is held yet); buy a barcode; state the cell as one CR2032 coin cell, 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage, with a physical off switch, and say that airline and security staff make the final call. Draft: needs the owner's approval before it is used.",
+      "setData": {
+        "how": "Engineering's compliance rows say which mark the first market needs (no mark is held yet); buy a barcode; state the cell as one CR2032 coin cell, 0.07 g of lithium metal, under the 0.3 g limit that IATA (Dangerous Goods Regulations, Table 2.3.A) and the FAA (PackSafe, Baggage Equipped with Lithium Batteries) set for devices in checked baggage, with a physical off switch, and say that airline and security staff make the final call. Draft: needs the owner's approval before it is used."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D309",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "After printing; the Rev D leftovers batch, Phase 0",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Tools and materials on the bench"
+      },
+      "setBody": "For the Rev D tag, as Phase 0 lists them: tweezers, a multimeter, a coin for the two doors, a Tag-Connect TC2030 cable and an SWD programmer, and a PC for the firmware tools. No soldering iron, no USB cable and no glue: the board arrives assembled and the printed parts click together. The Rev A list (soldering iron, hot glue, USB-C cable, Arduino IDE 2.x) was for the 2 x AA design."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D310",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, the off switch S1 and the reverse-cell FET Q1; section 3, point 7",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Troubleshooting: boot loop"
+      },
+      "setBody": "Rev D has no USB port, so the Rev A cause (battery and USB both connected) cannot happen. A tag that restarts over and over: meter the cell rail with the switch on (2.0 to 3.2 V; a new cell about 3.0 V), and check the cell is the right way up (the reverse-cell FET Q1 keeps a reversed cell off the rail). Nothing is built yet, so no Rev D fault has been seen."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D311",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.5, clip storage; section 3, points 5 and 7",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Troubleshooting: no gags, but the log shows events"
+      },
+      "setBody": "Rev D has no microSD card: the clips are in the board's 8 MB flash, in the flash image. Check that the image holds the clips under the names of Phase 5 (/p1/impact_1.wav and the rest), and the capacitor: at 1.9 V or under on V_SC a clip is skipped and logged as busy. Where the debug log comes out on Rev D is not yet decided."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D312",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, points 3 and 5",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Troubleshooting: gags at random"
+      },
+      "setBody": "Rev D has no DFPlayer and no serial line to it: the amplifier is fed over I2S and switched on (AMP_SD) only for a clip. Clips at random point to the detector's rules or the sensor's set-up: check the axis setting (upX, upY, upZ), which is done again for the board's orientation in the tag (+Y toward the strap)."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D313",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, the buffer's leakage; section 3, point 4; Phase 7's pass mark",
+      "section": "prototype/assembly",
+      "match": {
+        "title": "Troubleshooting: high sleep current"
+      },
+      "setBody": "Rev D has no DFPlayer BUSY line. The pass mark is 25 uA or less asleep. Check that the boost converter (BOOST_EN) and the amplifier (AMP_SD) are off between clips, and allow for the supercapacitor's leakage, about 10 uA while it is kept full (estimate); the gyro can stay off until the accelerometer sees handling."
+    }
+  ]
+}

@@ -11,14 +11,16 @@ afterAll(async () => {
 });
 
 const revD2 = CONTENT_BATCHES.find((b) => b.batch === "2026-11-22-revD-2")!;
-const before = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, -1));
-const after = applyBatches(seededRows());
+const at = CONTENT_BATCHES.indexOf(revD2);
+const before = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, at));
+// the rows as this batch leaves them (the Rev D wording batch after it is tested in revD3.test.ts)
+const after = applyBatches(seededRows(), CONTENT_BATCHES.slice(0, at + 1));
 const row = (section: string, title: string) => after.find((x) => x.section === section && x.title === title)!;
 const text = (r: { title: string; body: string; data: Record<string, unknown> }) => `${r.title} ${r.body} ${JSON.stringify(r.data.options ?? "")}`;
 
 describe("the Rev D leftovers batch", () => {
   it("is applied after the Rev D batch, adds no row and removes none: it only brings rows up to Rev D", () => {
-    expect(CONTENT_BATCHES.at(-1)).toBe(revD2);
+    expect(CONTENT_BATCHES[at - 1]!.batch).toBe("2026-11-22-revD");
     expect(revD2.rows.every((r) => r.op === "enrich")).toBe(true);
     expect(after).toHaveLength(before.length);
     // every row names the Rev D document it comes from, and passes the checks a row typed in the app passes
