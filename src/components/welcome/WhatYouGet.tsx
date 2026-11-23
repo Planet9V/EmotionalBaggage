@@ -25,11 +25,13 @@ import type { UnitCost } from "@/lib/economics/compute";
 import type { GetData, MarketData } from "./storyData";
 import type { ExampleEnclosure } from "./exampleData";
 import { useAnimated, useHydrated } from "./useAnimated";
-import { GET, GET_VIEWS } from "./content";
+import { GET, GET_STAGE_EVENT, GET_VIEWS } from "./content";
 import { StageFoot, Waiting } from "./StageParts";
 import { GetAd, GetBrief, GetChannel, GetClaim, GetCost } from "./get/GetDocs";
 import { ExplodedStill, ModelStill } from "./get/ModelStill";
 import { Segmented } from "./get/ViewControls";
+import { ProductViewer } from "./product/ProductViewer";
+import type { Product } from "./product/model";
 
 const loading = () => <Waiting label={GET_VIEWS.loading} />;
 const GetModel = dynamic(() => import("./get/GetModel"), { ssr: false, loading });
@@ -51,8 +53,10 @@ export type GetProps = {
   parts: Item[];
   wires: Item[];
   enclosure: ExampleEnclosure | null;
+  /** the example as a product, part by part (product/model.ts) */
+  product: Product;
 };
-type Sub = "model" | "schematic";
+type Sub = "product" | "model" | "schematic";
 
 function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a canvas may be mounted */ live: boolean; active: boolean; sub: Sub }) {
   const shaped = p.parts.filter((x) => (x.data as { geometry?: unknown }).geometry).length;
@@ -73,6 +77,13 @@ function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a can
       );
     case "03":
       if (sub === "schematic") return live ? <EngSchematic parts={p.parts} wires={p.wires} /> : <Waiting label={GET_VIEWS.loading} />;
+      if (sub === "product")
+        return (
+          <>
+            <ProductViewer product={p.product} still={p.get.still} wires={p.wires.length} live={live} seen={active} />
+            <StageFoot hint={GET_VIEWS.product.hint}>{GET_VIEWS.product.counts(p.product.parts.length, p.wires.length)}</StageFoot>
+          </>
+        );
       return (
         <>
           {live ? (
@@ -167,7 +178,7 @@ export function WhatYouGet(props: GetProps) {
   const near = useInView(stage, { margin: "150px 0px" });
   const [at, setAt] = useState(0);
   const [chosen, setChosen] = useState(false);
-  const [sub, setSub] = useState<Sub>("model");
+  const [sub, setSub] = useState<Sub>("product");
   const walking = animated && seen && !chosen;
   const now = ITEMS[at]!;
 
@@ -181,6 +192,18 @@ export function WhatYouGet(props: GetProps) {
     setChosen(true);
     setAt(i);
   };
+  // another part of the page can open a stage (the hero's "Look inside" opens the product)
+  useEffect(() => {
+    const open = (e: Event) => {
+      const i = ITEMS.findIndex((x) => x.n === (e as CustomEvent<string>).detail);
+      if (i < 0) return;
+      setChosen(true);
+      setAt(i);
+      setSub("product");
+    };
+    window.addEventListener(GET_STAGE_EVENT, open);
+    return () => window.removeEventListener(GET_STAGE_EVENT, open);
+  }, []);
   const onKey = (e: KeyboardEvent) => {
     const to = e.key === "ArrowRight" || e.key === "ArrowDown" ? (at + 1) % ITEMS.length : e.key === "ArrowLeft" || e.key === "ArrowUp" ? (at + ITEMS.length - 1) % ITEMS.length : e.key === "Home" ? 0 : e.key === "End" ? ITEMS.length - 1 : -1;
     if (to < 0) return;
@@ -240,7 +263,7 @@ export function WhatYouGet(props: GetProps) {
                 {GET_VIEWS.badge}
               </p>
             </div>
-            <div id="get-panel" role="region" aria-label={`${now.stage}: ${now.get}`} className={`flex flex-col ${tall ? "h-[640px] sm:h-[620px]" : "h-[680px] sm:h-[620px]"} lg:h-[620px]`}>
+            <div id="get-panel" role="region" aria-label={`${now.stage}: ${now.get}`} onPointerDownCapture={() => setChosen(true)} onKeyDownCapture={() => setChosen(true)} className={`flex flex-col ${tall ? "h-[640px] sm:h-[620px]" : "h-[680px] sm:h-[620px]"} lg:h-[620px]`}>
               <Output key={now.n} n={now.n} p={props} live={live} active={seen} sub={sub} />
             </div>
           </div>
@@ -253,7 +276,7 @@ export function WhatYouGet(props: GetProps) {
                 {it.get}
               </p>
               <div className="flex flex-col">
-                <Output n={it.n} p={props} live={false} active={false} sub="model" />
+                <Output n={it.n} p={props} live={false} active={false} sub="product" />
               </div>
             </div>
           ))}

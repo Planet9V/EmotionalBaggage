@@ -183,7 +183,7 @@ export default async function WelcomePage() {
               <h2 id="get-title" className={H2}>{GET.title}</h2>
               <p className={LEAD}>{GET.lead}</p>
               <div className="mt-7">
-                <WhatYouGet holds={story.holds} get={story.get} market={story.market} unit={example.unit} parts={example.parts} wires={example.wires} enclosure={example.enclosure} />
+                <WhatYouGet holds={story.holds} get={story.get} market={story.market} unit={example.unit} parts={example.parts} wires={example.wires} enclosure={example.enclosure} product={story.product} />
               </div>
               <p className="mt-4 text-[13px] leading-relaxed text-muted">{GET.note}</p>
 

@@ -72,6 +72,7 @@ class Turner {
   camera: THREE.Camera | null = null;
   hovered: string | null = null;
   readonly labels = new Map<string, HTMLElement>();
+  readonly leads = new Map<string, SVGLineElement>();
 
   see(camera: THREE.Camera | null) {
     this.camera = camera;
@@ -133,10 +134,33 @@ class Turner {
     this.tracker = nearer(this.tracker, p.open === "tracker" ? 1 : 0, step * 5);
     return ++this.drawn;
   }
-  /** Sets each name where its part is on the screen. */
-  place(ref: string, x: number, y: number) {
-    const el = this.labels.get(ref);
-    if (el) el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+  /**
+   * Sets the names round the picture, each joined to its part by a line: from left to right they are dealt onto
+   * four rows, two above the picture and two below, and spread along each row, so neighbours do not sit on one
+   * another.
+   */
+  place(at: { ref: string; x: number; y: number }[], width: number, height: number) {
+    at.sort((a, b) => a.x - b.x);
+    const perRow = Math.ceil(at.length / 4);
+    at.forEach((p, i) => {
+      const el = this.labels.get(p.ref);
+      if (!el) return;
+      const row = i % 4;
+      const above = row % 2 === 0;
+      const y = above ? 15 + (row >> 1) * 30 : height - 15 - (row >> 1) * 30;
+      const x = ((Math.floor(i / 4) + 0.5 + (row >> 1) * 0.5 - 0.25) / perRow) * (width - 40) + 20;
+      el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+      const line = this.leads.get(p.ref);
+      if (!line) return;
+      line.setAttribute("x1", String(x));
+      line.setAttribute("y1", String(y + (above ? 11 : -11)));
+      line.setAttribute("x2", String(p.x));
+      line.setAttribute("y2", String(p.y));
+    });
+  }
+  lead(ref: string, el: SVGLineElement | null) {
+    if (el) this.leads.set(ref, el);
+    else this.leads.delete(ref);
   }
 }
 
@@ -210,21 +234,23 @@ function Drive({ scene, hand, p }: { scene: ProductScene; hand: Turner; p: Produ
     } else {
       // whole, with room to turn; pulled apart it is deeper than it is wide
       const loop = (p.strapUp ?? STRAP_FREE) * (1 - h.explode * 0.4);
-      const tall = ((TAG_MM.h + loop) / 2 + 9 + 22 * h.explode) * MM;
-      const wide = (TAG_MM.w / 2 + 12 + 66 * h.explode) * MM;
+      const tall = ((TAG_MM.h + loop) / 2 + 9 + 26 * h.explode) * MM;
+      const wide = (TAG_MM.w / 2 + 12 + 30 * h.explode) * MM;
       const half = Math.max(tall, wide / Math.max(0.2, size.width / size.height));
       placeCamera(camera, (loop / 2) * MM, half / Math.tan((FOV * Math.PI) / 360));
     }
     if (shadow.current) castShadow(shadow.current, h.yaw, 0, h.explode);
 
     if (h.labels.size && turn.current) {
+      const on: { ref: string; x: number; y: number }[] = [];
       for (const ref of h.labels.keys()) {
         const mid = scene.middle(ref, at);
         if (!mid) continue;
         mid.y -= pivot;
         turn.current.localToWorld(mid).project(camera);
-        h.place(ref, ((mid.x + 1) / 2) * size.width, ((1 - mid.y) / 2) * size.height);
+        on.push({ ref, x: ((mid.x + 1) / 2) * size.width, y: ((1 - mid.y) / 2) * size.height });
       }
+      h.place(on, size.width, size.height);
     }
     // by the third frame two have been drawn, the first of them with the shaders' compile: the drawing may give way
     if (drawn === 3) p.onReady();
@@ -329,6 +355,13 @@ export default function ProductCanvas(p: ProductCanvasProps) {
         </Environment>
         <Drive scene={scene} hand={hand} p={p} />
       </Canvas>
+      {p.labels ? (
+        <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+          {p.labels.map((l) => (
+            <line key={l.ref} ref={(el) => hand.lead(l.ref, el)} stroke={chosen === l.ref ? "#ff8a3d" : "#ffffff"} strokeOpacity={chosen === l.ref ? 0.95 : 0.45} strokeWidth={1} />
+          ))}
+        </svg>
+      ) : null}
       {p.labels?.map((l) => (
         <button
           key={l.ref}
@@ -336,7 +369,7 @@ export default function ProductCanvas(p: ProductCanvasProps) {
           ref={(el) => hand.label(l.ref, el)}
           onClick={() => p.onChoose?.(l.ref)}
           aria-pressed={chosen === l.ref}
-          className={`absolute left-0 top-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[13px] leading-tight shadow-[0_2px_10px_rgba(0,0,0,0.5)] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ${chosen === l.ref ? "border-transparent bg-action text-white" : "border-white/25 bg-black/70 text-white hover:border-dutchOrange"}`}
+          className={`absolute left-0 top-0 max-w-[150px] truncate rounded-full border px-2 py-0.5 text-[13px] leading-tight shadow-[0_2px_10px_rgba(0,0,0,0.5)] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ${chosen === l.ref ? "border-transparent bg-action text-white" : "border-white/25 bg-black/75 text-white hover:border-dutchOrange"}`}
         >
           {l.text}
         </button>

@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import type { ShowcaseNudge } from "@/components/three/canvasShowcase";
 
 const ITEM =
-  "h-8 min-w-0 flex-none border border-hairline px-2.5 font-mono text-[11px] font-normal text-secondary hover:bg-white/5 hover:text-primary data-[state=on]:border-transparent data-[state=on]:bg-action data-[state=on]:text-white focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-0 sm:px-3";
-const LABEL = "font-mono text-[10px] uppercase tracking-[0.08em] text-muted";
+  "h-8 min-w-0 flex-none border border-hairline px-2.5 text-[13px] font-normal text-secondary hover:bg-white/5 hover:text-primary data-[state=on]:border-transparent data-[state=on]:bg-action data-[state=on]:text-white focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-0 sm:px-3";
+const LABEL = "text-[13px] text-muted";
 
 /** A named group of controls in the bar. */
 export function ControlGroup({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
@@ -85,7 +85,7 @@ export function Range({ label, value, min, max, step = 1, onChange, onTouch, rea
         thumbValueText={valueText}
         className="min-w-[7rem] flex-1 py-2 [&_[data-slot=slider-range]]:bg-dutchOrange [&_[data-slot=slider-thumb]]:border-dutchOrange [&_[data-slot=slider-thumb]]:focus-visible:ring-focus [&_[data-slot=slider-track]]:bg-white/12"
       />
-      <span className="shrink-0 font-mono text-[11px] tabular-nums text-primary">{readout}</span>
+      <span className="shrink-0 text-[13px] tabular-nums text-primary">{readout}</span>
     </div>
   );
 }
