@@ -39,9 +39,14 @@ test("the welcome page has one action, early access, in reach from the header, a
   await expect(pricing.getByRole("heading", { level: 4 })).toHaveText(["Maker", "Studio"]);
   await expect(pricing.getByText("Team seats open after early access.")).toBeVisible();
   await expect(pricing.getByText("Price to be announced")).toHaveCount(0);
-  // nothing on the page says it costs nothing, points at the source, or offers the shared demo
-  const text = (await page.locator("body").innerText()).toLowerCase();
-  for (const word of ["free", "github", "self-host", "docker", "try the live demo", "request access"]) expect(text, word).not.toContain(word);
+  // nothing the page says of the service claims it costs nothing, points at the source, or offers the shared demo
+  // (the example's own rows, shown in "What you get" and the proof, are its data and are not read here)
+  for (const where of ["header", "section#hero", "section#problem", "section#pricing", "section#faq", "section#close", "footer"]) {
+    const text = (await page.locator(where).innerText()).toLowerCase();
+    for (const word of ["free", "github", "self-host", "docker", "demo", "request access"]) expect(text, `${where}: ${word}`).not.toContain(word);
+  }
+  const all = (await page.locator("body").innerText()).toLowerCase();
+  for (const word of ["github", "self-host", "docker", "try the live demo", "request access", "run it yourself"]) expect(all, word).not.toContain(word);
   await expect(page.getByRole("contentinfo")).toContainText("Visits to this page are counted on our own server. Nothing is sent to anyone else.");
   await page.getByRole("contentinfo").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(`${baseURL}/sign-in`);
