@@ -6,9 +6,6 @@
 import type { ShellOutline } from "@/components/three/canvasTypes";
 import { SLOT, TAG_MM, rounded, tagOutline, type P2 } from "../scenes/film/tagShape";
 
-/** The printed tag's colour in the views: Bambu PETG HF Peanut Brown, as the film and the hero show it. */
-export const TAG_TONE = "#b0703f";
-
 const flat = (pts: P2[]): [number, number][] => pts.map(([x, y]) => [-x, -y]);
 const slotY = TAG_MM.h / 2 - SLOT.down;
 const SLOT_HOLE = rounded(

@@ -6,6 +6,9 @@ import Link from "next/link";
 import { ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { authoredOf } from "@/lib/enclosure/authored";
+import { ENCLOSURE_STORE } from "@/lib/process/computed";
+import { shellOutlineFor } from "@/components/welcome/get/tagShell";
 import { api, useItems } from "@/lib/client";
 import { keys } from "@/lib/queries";
 import { STORE, NET_COLOR, toPart, type NetClass, type Part } from "@/lib/domain";
@@ -48,8 +51,14 @@ const NO_WIRES = "No wires yet. Add them in Schematic to draw them here, pull on
 export function ModelView({ project }: ViewProps) {
   const { items, loading, error, writeError, patch } = useItems(project.id, BOM_STORE);
   const dark = useDark();
+  // A concept whose enclosure is an authored design (kept as files, not generated here) is not the box of its
+  // size. Where the app knows the design's outline (today: the example's tag, by its size), the shell is drawn to
+  // it; any other authored design, and every generated one, is drawn as the shell of its envelope, as before.
+  const { items: enclosureRows } = useItems(project.id, ENCLOSURE_STORE);
+  const authored = useMemo(() => authoredOf(enclosureRows[0]?.data), [enclosureRows]);
 
   const parts = useMemo(() => [...items].sort((a, b) => a.sort - b.sort || a.id - b.id).map(toPart), [items]);
+  const shellOutline = useMemo(() => (authored ? shellOutlineFor(parts.find((p) => p.geometry?.shape === "shell")?.geometry?.size) : undefined), [authored, parts]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [hidden, setHidden] = useState<Set<number>>(() => new Set());
   const [explodePct, setExplodePct] = useState(0);
@@ -289,6 +298,7 @@ export function ModelView({ project }: ViewProps) {
                 labels={labels}
                 shellView={shellView}
                 shellParams={params}
+                shellOutline={shellOutline}
                 resetToken={resetToken}
                 dark={dark}
                 uploaded={uploadedForCanvas}

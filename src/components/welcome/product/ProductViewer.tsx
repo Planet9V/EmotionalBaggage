@@ -14,7 +14,6 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { List, RotateCw } from "lucide-react";
-import type { Still } from "../get/projection";
 import { Range, Segmented, Switch } from "../get/ViewControls";
 import { canDraw3d } from "./capable";
 import { filmMode, paceVerdict } from "../scenes/pace";
@@ -60,7 +59,7 @@ function caption(view: View, product: Product): string {
   }
 }
 
-export function ProductViewer({ product, still, wires, live, seen }: { product: Product; still: Still; wires: number; /** the canvas may be mounted */ live: boolean; /** the stage is on screen */ seen: boolean }) {
+export function ProductViewer({ product, wires, live, seen }: { product: Product; wires: number; /** the canvas may be mounted */ live: boolean; /** the stage is on screen */ seen: boolean }) {
   const hydrated = useHydrated();
   const animated = useAnimated();
   const [view, setView] = useState<View>(VIEWS[1]!);
@@ -122,8 +121,8 @@ export function ProductViewer({ product, still, wires, live, seen }: { product: 
         {/* the product */}
         <div className="relative min-w-0 flex-1 bg-[radial-gradient(ellipse_62%_58%_at_50%_46%,#2a211b_0%,#15120f_45%,#0b0c0e_82%)]">
           <div className={`absolute inset-x-0 bottom-[92px] top-[88px] flex items-center md:top-11 justify-center p-3 transition-opacity duration-500 motion-reduce:transition-none ${canvas && ready ? "opacity-0" : "opacity-100"}`} aria-hidden={canvas && ready ? true : undefined}>
-            <div className={view.render ? "h-full w-full overflow-hidden rounded-xl" : "aspect-[70/105] h-full max-h-[420px]"}>
-              <ViewArt view={view} product={product} still={still} big label={`${EXAMPLE.name}: ${C.views[view.key]}. ${text}`} />
+            <div className={view.render || view.key === "exploded" ? "h-full w-full overflow-hidden rounded-xl" : "aspect-[70/105] h-full max-h-[420px]"}>
+              <ViewArt view={view} product={product} big label={`${EXAMPLE.name}: ${C.views[view.key]}. ${text}`} />
             </div>
           </div>
           {canvas ? (

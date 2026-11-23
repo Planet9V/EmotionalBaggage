@@ -395,13 +395,9 @@ html.light main {
   /* "What you get": a staged reveal, bars that grow to their value, and the hero's drawings assembling */
   .wl-in { animation: wl-in 480ms var(--ease-out-soft) both; }
   .wl-bar { transform-origin: 0 50%; animation: wl-bar 900ms var(--ease-out-soft) both; }
-  .wl-asm { animation: wl-asm var(--asm-lap, 7s) var(--ease-out-soft) infinite both; }
 }
 @keyframes wl-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes wl-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-/* a part of the hero's model: out at its exploded place, into place (each part later by its step, set as its delay),
-   held, and out again */
-@keyframes wl-asm { 0% { transform: translate(var(--asm-dx, 0), var(--asm-dy, 0)); opacity: 0; } 14%, 86% { transform: none; opacity: 1; } 100% { transform: translate(var(--asm-dx, 0), var(--asm-dy, 0)); opacity: 0; } }
 @keyframes wl-current { to { stroke-dashoffset: -32; } }
 @keyframes wl-sheen { from { transform: translateX(-50px); } to { transform: translateX(116px); } }
 @keyframes wl-float { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(-5px); } }

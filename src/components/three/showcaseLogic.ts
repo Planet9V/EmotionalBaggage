@@ -6,8 +6,7 @@
  */
 
 /** The layers a visitor can switch on and off. Wiring is the wires themselves; the rest group parts by kind. */
-export const LAYERS = ["enclosure", "electronics", "power", "wiring", "fasteners"] as const;
-export type Layer = (typeof LAYERS)[number];
+export type Layer = "enclosure" | "electronics" | "power" | "wiring" | "fasteners";
 
 const POWER_KINDS = new Set(["battery", "switch", "power", "regulator", "charger"]);
 const FASTENER_KINDS = new Set(["mechanical", "fastener", "hardware", "strap", "mount", "screw"]);

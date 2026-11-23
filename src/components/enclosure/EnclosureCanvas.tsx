@@ -10,7 +10,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
 import type { GeneratedMesh } from "@/lib/enclosure/types";
 
-export type PreviewMesh = { id: string; mesh: GeneratedMesh; kind: "base" | "lid" };
+export type PreviewMesh = { id: string; mesh: GeneratedMesh; kind: "base" | "lid"; /** this piece's own colour (its filament's), in place of the kind's or the tint */ color?: string };
 export type PreviewProps = {
   meshes: PreviewMesh[];
   /** Lift the lid straight up by this many mm. */
@@ -25,7 +25,7 @@ export type PreviewProps = {
   wheelZoom?: boolean;
   /**
    * Presentation extras for the welcome page, each off unless given:
-   *  - `look`: see-through (with edges drawn) or wireframe instead of solid;
+   *  - `look`: see-through (with edges drawn) or wireframe (the pieces' feature edges, not every triangle) instead of solid;
    *  - `clipY`: everything above this height is cut away, as a print stands part way up; the cut face is filled
    *    in `cutColor` and, with `ghost`, what is still to print shows as a faint outline above it;
    *  - `tint`: one colour for every piece (the print material's) in place of base grey and lid orange.
@@ -60,7 +60,7 @@ function Part({ mesh, kind, lift, dark, look = "solid", clipY = null, cutColor =
     setConstant(plane, clipY ?? 1e6);
     invalidate();
   }, [plane, clipY, invalidate]);
-  const edges = useMemo(() => (plain || look === "wireframe" ? null : new THREE.EdgesGeometry(g, 28)), [g, plain, look]);
+  const edges = useMemo(() => (plain ? null : new THREE.EdgesGeometry(g, 28)), [g, plain]);
   useEffect(() => () => edges?.dispose(), [edges]);
   const y = kind === "lid" ? lift : 0;
   if (plain) {
@@ -71,11 +71,12 @@ function Part({ mesh, kind, lift, dark, look = "solid", clipY = null, cutColor =
     );
   }
   const clear = look === "translucent";
+  const wire = look === "wireframe";
   const planes = clipping(plane, clipY !== null);
   return (
     <group position={[0, y, 0]}>
       <mesh geometry={g} renderOrder={clear ? 2 : 0}>
-        <meshStandardMaterial color={color} metalness={0.05} roughness={0.62} side={THREE.FrontSide} transparent={clear} opacity={clear ? 0.38 : 1} depthWrite={!clear} wireframe={look === "wireframe"} clippingPlanes={planes} />
+        <meshStandardMaterial color={color} metalness={0.05} roughness={0.62} side={THREE.FrontSide} transparent={clear || wire} opacity={clear ? 0.38 : wire ? 0.07 : 1} depthWrite={!clear && !wire} clippingPlanes={planes} />
       </mesh>
       {/* the inside faces, seen through the cut, read as the filled cross-section of the layer being laid */}
       {clipY !== null && look !== "wireframe" ? (
@@ -85,7 +86,7 @@ function Part({ mesh, kind, lift, dark, look = "solid", clipY = null, cutColor =
       ) : null}
       {edges ? (
         <lineSegments geometry={edges}>
-          <lineBasicMaterial color={dark ? "#d5dae1" : "#3d3a35"} transparent opacity={clear ? 0.75 : 0.45} clippingPlanes={planes} />
+          <lineBasicMaterial color={wire ? color : dark ? "#d5dae1" : "#3d3a35"} transparent opacity={wire ? 1 : clear ? 0.75 : 0.45} clippingPlanes={planes} />
         </lineSegments>
       ) : null}
       {ghost && clipY !== null && edges ? (
@@ -150,7 +151,7 @@ export default function EnclosureCanvas({ meshes, lift, dark, label, floorY, chi
         <directionalLight position={[-100, 60, -80]} intensity={0.6} />
         <Fit meshes={meshes} />
         {meshes.map((m) => (
-          <Part key={m.id} mesh={m.mesh} kind={m.kind} lift={m.kind === "lid" ? lift : 0} dark={dark} {...extras} />
+          <Part key={m.id} mesh={m.mesh} kind={m.kind} lift={m.kind === "lid" ? lift : 0} dark={dark} {...extras} tint={m.color ?? extras.tint} />
         ))}
         {extras.clipY !== undefined && extras.clipY !== null ? <LocalClipping /> : null}
         <Grid args={[400, 400]} cellSize={10} sectionSize={50} cellColor={dark ? "#2A2F37" : "#D8D3CC"} sectionColor={dark ? "#3A414B" : "#B9B2A8"} fadeDistance={500} infiniteGrid position={[0, floorY - 0.05, 0]} />

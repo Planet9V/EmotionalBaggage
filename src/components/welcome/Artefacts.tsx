@@ -1,12 +1,13 @@
 // Four outputs of the worked example, as the hero shows them beside the product: the schematic, the unit cost, an
 // ad and the marketplace listing. Each is drawn in markup or vector SVG from the example's seeded rows (HeroFacts,
 // storyData.ts): the words and numbers are the example's own, and the schematic is its real netlist, so nothing
-// here is typed in and everything is sharp at any pixel density. No script.
+// here is typed in and everything is sharp at any pixel density. Drawn by the server; the only script is the
+// schematic card's way in to the proof block's Schematic tab.
 import type { ReactNode } from "react";
 import { TONE_CLASS, approvalStatusTone } from "@/lib/statusTones";
 import type { HeroFacts } from "./storyData";
-import type { NetClassName, Wheel } from "./get/heroArt";
-import { HERO_STAGE } from "./content";
+import type { NetClassName, SchematicCrop } from "./get/heroArt";
+import { HERO_STAGE, PROOF_TAB_EVENT } from "./content";
 
 export const ARTEFACT_KEYS = ["schematic", "cost", "ad", "listing"] as const;
 export type ArtefactKey = (typeof ARTEFACT_KEYS)[number];
@@ -29,29 +30,44 @@ function Card({ name, status, foot, children }: { name: string; status?: string;
   );
 }
 
-const NET_STYLE: Record<NetClassName, { stroke: string; width: number; dash?: string }> = {
-  power: { stroke: "var(--net-power)", width: 1.6 },
-  ground: { stroke: "var(--net-ground)", width: 1.1, dash: "3 2" },
-  signal: { stroke: "var(--net-signal)", width: 1 },
-  audio: { stroke: "var(--net-audio)", width: 1.1, dash: "1 2" },
-};
+const NET_STROKE: Record<NetClassName, string> = { power: "var(--net-power)", ground: "var(--net-ground)", signal: "var(--net-signal)", audio: "var(--net-audio)" };
+const INK = "var(--text-primary, #fff)";
 
-/** The netlist as a wheel: every wire of the example, the hub part in the middle, by net class (colour and line). */
-function NetWheel({ wheel }: { wheel: Wheel }) {
+/**
+ * A crop of the product's real schematic (get/heroArt.ts): the app's own symbols for the controller, the chip
+ * beside it, the amplifier and the speaker, their pin stubs, and each net between them in its class's colour.
+ */
+function Schematic({ crop }: { crop: SchematicCrop }) {
+  const [x, y, w, h] = crop.box;
   return (
-    <svg viewBox={`4 4 ${wheel.size - 8} ${wheel.size - 8}`} className="mx-auto h-auto w-full max-w-[168px]" role="img" aria-label={`The example's ${wheel.links.length} wires, part to part, by net class.`}>
-      {wheel.links.map((l, i) => {
-        const st = NET_STYLE[l.netClass] ?? NET_STYLE.signal;
-        return <path key={i} d={l.d} fill="none" stroke={st.stroke} strokeWidth={st.width} strokeDasharray={st.dash} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9} />;
-      })}
-      {wheel.nodes.map((n) => (
-        <g key={n.ref}>
-          <rect x={n.x - (n.hub ? 12 : 9.5)} y={n.y - 5.5} width={n.hub ? 24 : 19} height={11} rx={2.5} fill="var(--bg-surface, #131519)" stroke={n.hub ? "var(--accent-orange)" : "currentColor"} className="text-muted" strokeWidth={n.hub ? 1.4 : 0.8} vectorEffect="non-scaling-stroke" />
-          <text x={n.x} y={n.y + 2.5} textAnchor="middle" fontSize="6.6" fontWeight="600" fontFamily="var(--font-mono, monospace)" className="fill-current text-primary">
-            {n.ref}
+    <svg viewBox={`${x} ${y} ${w} ${h}`} className="mx-auto h-auto w-full" role="img" aria-label={HERO_STAGE.cards.schematicAlt(crop.symbols.map((s) => `${s.ref}, ${s.title}`), crop.nets, crop.of)}>
+      {crop.routes.map((r) => (
+        <path key={r.net} d={r.d} fill="none" stroke={NET_STROKE[r.netClass]} strokeWidth={1.3} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      ))}
+      {crop.symbols.map((s) => (
+        <g key={s.ref}>
+          {s.stubs.map((p, i) => (
+            <path key={i} d={`M${p.line[0]} ${p.line[1]}L${p.line[2]} ${p.line[3]}`} stroke={p.netClass ? NET_STROKE[p.netClass] : "var(--text-muted)"} strokeWidth={1.3} vectorEffect="non-scaling-stroke" />
+          ))}
+          {s.rect ? <rect x={s.rect[0]} y={s.rect[1]} width={s.rect[2]} height={s.rect[3]} fill="var(--bg-surface, #131519)" stroke={INK} strokeWidth={1.4} vectorEffect="non-scaling-stroke" /> : null}
+          {s.strokes.map((k, i) => (
+            <path key={i} d={k.d} fill={k.fill ? INK : "none"} stroke={INK} strokeWidth={1.4} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+          ))}
+          {s.circles.map((k, i) => (
+            <circle key={i} cx={k[0]} cy={k[1]} r={Math.max(0.5, k[2])} fill={k[3] ? INK : "none"} stroke={INK} strokeWidth={1.4} vectorEffect="non-scaling-stroke" />
+          ))}
+          <text x={s.label[0]} y={s.label[1]} fontSize="5.6" fontWeight="700" fontFamily="var(--font-mono, monospace)" fill="var(--accent-orange)">
+            {s.ref}
           </text>
         </g>
       ))}
+      {crop.routes.map((r) =>
+        r.name ? (
+          <text key={r.net} x={r.name[0]} y={r.name[1] - 1.2} textAnchor="middle" fontSize="3.9" fontFamily="var(--font-mono, monospace)" fill="var(--text-secondary, #d4d4d8)" stroke="var(--bg-surface, #131519)" strokeWidth="1.6" paintOrder="stroke">
+            {r.net}
+          </text>
+        ) : null,
+      )}
     </svg>
   );
 }
@@ -85,9 +101,13 @@ export function Artefact({ kind, facts: f }: { kind: ArtefactKey; facts: HeroFac
   switch (kind) {
     case "schematic":
       return (
-        <Card name={c.schematic} foot={c.wires(f.wires)}>
-          <NetWheel wheel={f.wheel} />
-        </Card>
+        // the card is the way in to the whole schematic: the proof block, on its Schematic tab
+        <a href="#proof" data-track="example:hero-schematic" onClick={() => window.dispatchEvent(new CustomEvent(PROOF_TAB_EVENT, { detail: "schematic" }))} className="block h-full rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
+          <Card name={c.schematic} foot={c.wires(f.wires)}>
+            {f.schematic ? <Schematic crop={f.schematic} /> : null}
+          </Card>
+          <span className="sr-only">{c.schematicOpen}</span>
+        </a>
       );
     case "cost": {
       const [first, then] = f.cost.rows;

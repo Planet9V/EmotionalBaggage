@@ -7,7 +7,7 @@
 //   02 Research   every claim with its source, and the proof check it feeds            (GetClaim, React Flow)
 //   03 Design     the 3D model from the parts list: looks, layers, tags, exploded view and the assembly in the
 //                 build sheet's order (GetModel, the shared ModelCanvas); or the schematic (EngSchematic)
-//   04 Prototype  the enclosure on the print bed, cut at any layer (GetPrint, the shared EnclosureCanvas)
+//   04 Prototype  the printed pieces on the print bed, plate by plate, cut at any layer (GetPrint)
 //   05 Production the unit cost built up line by line, its fall with volume, each channel against it (GetCost)
 //   06 Marketing  the ad drafts as a stack, each against every channel's limit           (GetAd)
 //   07 Sales      the listing's fields against the marketplace's limits, and the channels (GetChannel)
@@ -23,18 +23,17 @@ import { useInView } from "motion/react";
 import type { Item } from "@/lib/types";
 import type { UnitCost } from "@/lib/economics/compute";
 import type { GetData, MarketData } from "./storyData";
-import type { ExampleEnclosure } from "./exampleData";
 import { useAnimated, useHydrated } from "./useAnimated";
 import { GET, GET_STAGE_EVENT, GET_VIEWS } from "./content";
 import { StageFoot, Waiting } from "./StageParts";
 import { GetAd, GetBrief, GetChannel, GetClaim, GetCost } from "./get/GetDocs";
-import { ExplodedStill, ModelStill } from "./get/ModelStill";
+import { TagArt } from "./TagArt";
 import { Segmented } from "./get/ViewControls";
 import { ProductViewer } from "./product/ProductViewer";
 import type { Product } from "./product/model";
+import type { Printed } from "./product/printed";
 
 const loading = () => <Waiting label={GET_VIEWS.loading} />;
-const GetModel = dynamic(() => import("./get/GetModel"), { ssr: false, loading });
 const GetPrint = dynamic(() => import("./get/GetPrint"), { ssr: false, loading });
 const EngSchematic = dynamic(() => import("./EngSchematic"), { ssr: false, loading });
 
@@ -52,14 +51,14 @@ export type GetProps = {
   unit: UnitCost;
   parts: Item[];
   wires: Item[];
-  enclosure: ExampleEnclosure | null;
+  /** the example's enclosure as the app holds it: its printed pieces and print jobs (product/printed.ts) */
+  printed: Printed | null;
   /** the example as a product, part by part (product/model.ts) */
   product: Product;
 };
-type Sub = "product" | "model" | "schematic";
+type Sub = "product" | "schematic";
 
 function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a canvas may be mounted */ live: boolean; active: boolean; sub: Sub }) {
-  const shaped = p.parts.filter((x) => (x.data as { geometry?: unknown }).geometry).length;
   switch (n) {
     case "01":
       return (
@@ -77,49 +76,28 @@ function Output({ n, p, live, active, sub }: { n: string; p: GetProps; /** a can
       );
     case "03":
       if (sub === "schematic") return live ? <EngSchematic parts={p.parts} wires={p.wires} /> : <Waiting label={GET_VIEWS.loading} />;
-      if (sub === "product")
-        return (
-          <>
-            <ProductViewer product={p.product} still={p.get.still} wires={p.wires.length} live={live} seen={active} />
-            <StageFoot hint={GET_VIEWS.product.hint}>{GET_VIEWS.product.counts(p.product.parts.length, p.wires.length)}</StageFoot>
-          </>
-        );
       return (
         <>
-          {live ? (
-            <GetModel parts={p.parts} wires={p.wires} get={p.get} />
-          ) : (
-            <div className="relative flex min-h-[340px] flex-1 flex-col items-center justify-center gap-5 bg-[radial-gradient(ellipse_at_50%_45%,#1a1e25_0%,#0b0c0e_70%)] p-5 md:flex-row md:gap-8 md:p-8">
-              {/* the example pulled apart, drawn from its parts list, with the key to its numbers */}
-              <ExplodedStill still={p.get.still} label={GET_VIEWS.exploded(p.get.still.parts.map((x) => x.title))} className="max-h-[420px] min-h-0 max-w-[420px] flex-1" />
-              <ol className="grid shrink-0 gap-x-6 gap-y-1.5 text-[13px] leading-snug text-secondary max-md:grid-cols-2 md:max-w-[240px]">
-                {p.get.still.parts.map((x, i) => (
-                  <li key={x.id} className="flex gap-2">
-                    <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white/80 text-[11px] font-bold leading-none text-primary" aria-hidden>{i + 1}</span>
-                    <span><span className="sr-only">{i + 1}: </span>{x.title}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-          <StageFoot hint={GET_VIEWS.model.hint}>{GET_VIEWS.model.counts(shaped, p.parts.length, p.wires.length, p.get.steps)}</StageFoot>
+          <ProductViewer product={p.product} wires={p.wires.length} live={live} seen={active} />
+          <StageFoot hint={GET_VIEWS.product.hint}>{GET_VIEWS.product.counts(p.product.parts.length, p.wires.length)}</StageFoot>
         </>
       );
     case "04":
       return (
         <>
-          {!p.enclosure ? (
+          {!p.printed ? (
             <div className="relative flex-1">
               <Waiting label={GET_VIEWS.loading} />
             </div>
           ) : live ? (
-            <GetPrint enclosure={p.enclosure} get={p.get} />
+            <GetPrint printed={p.printed} get={p.get} />
           ) : (
-            <div className="relative flex min-h-[340px] flex-1 items-center justify-center bg-[radial-gradient(ellipse_at_50%_45%,#1a1e25_0%,#0b0c0e_70%)] p-6">
-              <ModelStill still={{ ...p.get.still, faces: p.get.still.faces.filter((f) => f.shell) }} label={GET_VIEWS.print.label} className="max-h-full max-w-[520px]" />
+            <div className="relative flex min-h-[340px] flex-1 items-center justify-center bg-[radial-gradient(ellipse_62%_58%_at_50%_46%,#2a211b_0%,#15120f_45%,#0b0c0e_82%)] p-6">
+              {/* until the print view is mounted: the tag, drawn */}
+              <TagArt strap={0} margin={4} label={GET_VIEWS.print.label} className="h-full max-h-[420px] w-auto" />
             </div>
           )}
-          <StageFoot hint={GET_VIEWS.print.hint}>{p.enclosure ? GET_VIEWS.print.counts(p.enclosure.checks.filter((c) => c.ok).length, p.enclosure.checks.length, p.enclosure.version) : ""}</StageFoot>
+          <StageFoot hint={GET_VIEWS.print.hint}>{p.printed ? GET_VIEWS.print.counts(p.printed.pieces.length, p.printed.jobs.length, p.printed.checks.filter((c) => c.ok).length, p.printed.checks.length) : ""}</StageFoot>
         </>
       );
     case "05":

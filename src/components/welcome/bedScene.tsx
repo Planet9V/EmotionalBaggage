@@ -1,28 +1,9 @@
 "use client";
 
-// What the enclosure views of the welcome page share (the Engineering stage's Enclosure tab and the print view of
-// "What you get"): moving the generator's plain meshes onto the print bed, measuring them, and framing them.
+// Framing the pieces on the print bed, for the print view of "What you get".
 import { useEffect } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
-import type { GeneratedMesh } from "@/lib/enclosure/types";
-import type { PlainMesh } from "./exampleData";
-
-/** The mesh moved by `f`, as the typed arrays the preview takes. */
-export function mesh(m: PlainMesh, f: (x: number, y: number, z: number) => [number, number, number]): GeneratedMesh {
-  const positions = new Float32Array(m.positions.length);
-  for (let i = 0; i < m.positions.length; i += 3) positions.set(f(m.positions[i]!, m.positions[i + 1]!, m.positions[i + 2]!), i);
-  return { positions, indices: Uint32Array.from(m.indices) };
-}
-export const span = (m: PlainMesh, k: 0 | 1 | 2) => {
-  let lo = Infinity;
-  let hi = -Infinity;
-  for (let i = k; i < m.positions.length; i += 3) {
-    lo = Math.min(lo, m.positions[i]!);
-    hi = Math.max(hi, m.positions[i]!);
-  }
-  return [lo, hi] as const;
-};
 
 const VIEW_FROM = new THREE.Vector3(0.55, 0.62, 0.86).normalize();
 
