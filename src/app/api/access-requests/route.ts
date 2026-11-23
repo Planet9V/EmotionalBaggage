@@ -6,6 +6,7 @@ import { auditRefusedRequest } from "@/lib/accessRequests/store";
 import { claimEarlyAccess } from "@/lib/accessRequests/places";
 import { sendEarlyAccessConfirmation } from "@/lib/accessRequests/confirmMail";
 import { backToPage, errorCode, isFormPost, readEither } from "@/lib/accessRequests/noScript";
+import { recordServerEvent } from "@/lib/events/store";
 
 /**
  * The sign-in throttle's free count for this form. The try that goes past it is still let through but sets the
@@ -51,6 +52,8 @@ export const POST = route.open(
       const fields = { email: v.email, building: v.building, name: v.name, company: v.company, level: v.level, placement: v.placement };
       const claim = await claimEarlyAccess(fields);
       if (claim.outcome.kind === "listed") await auditRefusedRequest("duplicate", client);
+      // counted in the funnel here, not by the page, so a form sent without script is counted too
+      await recordServerEvent(req, { event: "form_submit", section: fields.placement, visit: v.visit, detail: { placement: fields.placement || "page", outcome: claim.outcome.kind, script: !plain } });
       // after the answer is decided; a slow or absent mail server never holds it up
       if (claim.outcome.kind !== "listed") void sendEarlyAccessConfirmation(fields.email, claim.outcome);
       if (plain) return backToPage(req, claim.token ? { token: claim.token } : { query: { r: "listed" } });
