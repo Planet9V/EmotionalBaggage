@@ -934,7 +934,30 @@
           "S2",
           "BT1",
           "J1"
-        ]
+        ],
+        "mountingHoles": [
+          {
+            "x": -6,
+            "z": -14,
+            "diameter": 2.2
+          },
+          {
+            "x": -6,
+            "z": 14,
+            "diameter": 2.2
+          },
+          {
+            "x": 6,
+            "z": -14,
+            "diameter": 2.2
+          },
+          {
+            "x": 6,
+            "z": 14,
+            "diameter": 2.2
+          }
+        ],
+        "mountingHolesBasis": "Placed for the app's generator, clear of the side switches: the Rev D note clamps the board on four printed posts but gives no positions."
       },
       "status": "to buy"
     },
@@ -3733,6 +3756,227 @@
         "U3"
       ],
       "because": "The firmware has to be ported to the nRF52832 and the external flash before it builds."
+    },
+    {
+      "op": "add",
+      "proposal": "D201",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 9, check results; section 10, files per direction",
+      "section": "design/enclosure",
+      "title": "Enclosure settings",
+      "body": "The concept's enclosure is an authored design: Rev D, direction A Heritage, colourway A1 Saddle (Decisions, \"Which enclosure design ships?\"). Its files are in Files, folder Design and build. The parameters below are the ones to run the app's own generator on the same parts with, for comparison: Rev D's 3.0 mm rim, 2.4 mm back plate (the floor), 1.6 mm front skin (the lid) and 0.3 mm clearance.",
+      "data": {
+        "enclosureSource": "authored",
+        "authored": {
+          "name": "Rev D, direction A Heritage, colourway A1 Saddle",
+          "size": [
+            62,
+            92,
+            12.8
+          ],
+          "decision": "Which enclosure design ships?",
+          "model": "BaggageClaims_Tag_RevD_A_assembly.3mf",
+          "printFiles": [
+            "BaggageClaims_Tag_RevD_A_print_plate_PETG.3mf",
+            "BaggageClaims_Tag_RevD_A_print_plate_TPU.3mf"
+          ],
+          "renders": [
+            {
+              "file": "BaggageClaims_Tag_RevD_A1_hero.jpg",
+              "label": "A1 Saddle, the front"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A1_back.jpg",
+              "label": "A1 Saddle, the back: the name card and the tracker door"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A1_on_handle.jpg",
+              "label": "A1 Saddle on a suitcase handle"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A_exploded.jpg",
+              "label": "Direction A exploded, with the parts named"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A_dimensioned.jpg",
+              "label": "Direction A, dimensioned sheet"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_comparison_sheet.jpg",
+              "label": "The six options compared, with the size table"
+            }
+          ],
+          "documents": [
+            "BaggageClaims_Tag_RevD_Design.md",
+            "BaggageClaims_Tag_RevD_Engineering.md",
+            "BaggageClaims_Tag_RevD_envelope.json"
+          ],
+          "checks": [
+            {
+              "label": "Every body is a closed solid",
+              "ok": true
+            },
+            {
+              "label": "Body, plate and each door are one piece each",
+              "ok": true
+            },
+            {
+              "label": "No body runs into another",
+              "ok": true
+            },
+            {
+              "label": "Overall size 62.00 x 92.00 x 12.80 mm",
+              "ok": true
+            },
+            {
+              "label": "Inlays flush, 0.6 deep, backed by 1.0 of shell or more",
+              "ok": true
+            },
+            {
+              "label": "Inlay strokes 0.8 mm or more, blind deboss 0.6 mm or more",
+              "ok": true
+            },
+            {
+              "label": "Lettering size: name capitals 4.0 mm or more, nothing under 3.0 mm",
+              "ok": true
+            },
+            {
+              "label": "Every bought part fits, 0.3 mm or more to the shell",
+              "ok": true
+            },
+            {
+              "label": "Thickness stack through the tracker adds up to 12.8 mm",
+              "ok": true
+            },
+            {
+              "label": "Tracker pocket fits 31.9 x 8.0",
+              "ok": true
+            },
+            {
+              "label": "Card 50 x 32 x 0.5 in the back pocket",
+              "ok": true
+            },
+            {
+              "label": "Speaker grille and sealed back chamber",
+              "ok": true
+            },
+            {
+              "label": "Coin cell cup and door",
+              "ok": true
+            },
+            {
+              "label": "Bayonet doors free, locked by a 60 degree turn",
+              "ok": true
+            },
+            {
+              "label": "Back plate snap hooks under 2 % strain",
+              "ok": true
+            },
+            {
+              "label": "Strap slot web 4 mm or more",
+              "ok": true
+            },
+            {
+              "label": "Walls: rim 2.9 mm or more",
+              "ok": true
+            },
+            {
+              "label": "Prints flat without supports",
+              "ok": true
+            },
+            {
+              "label": "At most four materials; lettering in the rigid print",
+              "ok": true
+            },
+            {
+              "label": "Off switch and button behind the edge",
+              "ok": true
+            }
+          ],
+          "checkedBy": "the design's own generator (tagd_gen.py on manifold3d), 22 Nov 2026; not measured by this app",
+          "designedBy": "an authored design, made outside this app's enclosure generators"
+        },
+        "params": {
+          "wallThickness": 3,
+          "floorThickness": 2.4,
+          "lidThickness": 1.6,
+          "cornerRadius": 4,
+          "clearance": 0.3,
+          "openingMargin": 0.3,
+          "lidType": "snap",
+          "screwSize": "M2"
+        }
+      },
+      "status": "open"
+    },
+    {
+      "op": "retire",
+      "proposal": "D202",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3, one construction",
+      "section": "prototype/printing",
+      "match": {
+        "title": "Hinge clearance coupon"
+      },
+      "why": "the Rev D tag has no hinge: its doors are bayonets and its back plate snaps on"
+    },
+    {
+      "op": "retire",
+      "proposal": "D203",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3, one construction",
+      "section": "prototype/printing",
+      "match": {
+        "title": "Print-in-place clamshell"
+      },
+      "why": "the Rev D tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the print-in-place clamshell"
+    },
+    {
+      "op": "add",
+      "proposal": "D204",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "prototype/printing",
+      "title": "Rev D tag, job 1: PETG in two colours",
+      "body": "Body, back plate, tracker door and coin door on one 256 mm bed (171 x 92 mm used), all outside face down, every colour change in the first three layers. Colours (A1 Saddle): Bambu Lab PETG HF Peanut Brown for the parts, Bambu Lab PETG HF Cream for the stitches and the lettering. PETG at 230 to 235 C, 0.2 mm layers, no supports; any printer with an automatic material system (Bambu Lab A1 class). Estimate, not sliced: about 37 g of PETG (34.1 g in the parts and 3.2 g of purge for eight colour changes), about 2.5 hours. Print a coupon of the card pocket's 32.6 mm bridge first.",
+      "data": {
+        "fileName": "BaggageClaims_Tag_RevD_A_print_plate_PETG.3mf",
+        "part": "ENC1",
+        "material": "PETG",
+        "layerHeight": 0.2,
+        "supports": false,
+        "colours": [
+          "Bambu Lab PETG HF Peanut Brown",
+          "Bambu Lab PETG HF Cream"
+        ],
+        "estimate": "about 37 g, about 2.5 h (estimate, not sliced)",
+        "grams": 37.3,
+        "minutes": 150
+      },
+      "status": "queued"
+    },
+    {
+      "op": "add",
+      "proposal": "D205",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "prototype/printing",
+      "title": "Rev D tag, job 2: TPU strap",
+      "body": "The strap, 14 x 2.0 mm and 190 mm long as printed, in Bambu Lab TPU for AMS Black (the name as in Rev C, not confirmed on a page), fed from the material system. Estimate, not sliced: about 6.3 g of TPU, about 1 hour.",
+      "data": {
+        "fileName": "BaggageClaims_Tag_RevD_A_print_plate_TPU.3mf",
+        "part": "STR1",
+        "material": "TPU",
+        "layerHeight": 0.2,
+        "supports": false,
+        "colours": [
+          "Bambu Lab TPU for AMS Black"
+        ],
+        "estimate": "about 6.3 g, about 1 h (estimate, not sliced)",
+        "grams": 6.3,
+        "minutes": 60
+      },
+      "status": "queued"
     }
   ]
 }

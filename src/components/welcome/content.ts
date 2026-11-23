@@ -358,7 +358,7 @@ export type JourneyStage = {
 export const ENGINEERING = {
   eyebrow: "The engineering, live",
   title: "Is the engineering real?",
-  tagNote: "A handle-tag enclosure is being designed; this is the first enclosure, generated from the same parts.",
+  tagNote: "The tag that ships is an authored design (Rev D, chosen 22 Nov); this enclosure is the app's own generator run on the same parts, for comparison.",
   lead: `Six of the workbench's own views, running here on ${EXAMPLE.name}'s rows. Turn the model, pan the schematic, watch the case print. Nothing on this page can be saved; in the workbench every one of them is yours to edit.`,
   tabs: { model: "3D", schematic: "Schematic", layout: "Physical layout", enclosure: "Enclosure and print", bom: "Parts list", build: "Build sheet" },
   loading: "Loading the view",
@@ -384,12 +384,12 @@ export const ENGINEERING = {
   },
   layout: {
     scale: "Top, front and side, to scale in mm.",
-    straps: "STR1, outside the case outline, is the pair of mounting straps under it.",
+    straps: "STR1, outside the case outline, is the printed strap above the slot, drawn straight.",
     hint: "Drag to pan. Press a part to name it. Ctrl or Cmd + wheel, or the buttons, to zoom.",
   },
   enclosure: {
     modes: { printing: "As it prints", assembled: "Assembled" },
-    label: "The generated enclosure of the example: a base and a lid.",
+    label: "The app's generated enclosure around the example's parts: a base and a lid.",
     /** the plane climbs to the taller of the two pieces as they lie on the bed; the assembled height is the base plus the lid's thickness */
     layer: "Layer height",
     of: (top: string) => `of ${top} mm`,

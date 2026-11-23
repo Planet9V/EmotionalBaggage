@@ -11,12 +11,16 @@ import { enclosureCheck } from "@/lib/process/computed";
 
 type Err = { error: string };
 type Ok = { results: { key: string; ok: boolean; checks?: { key: string; ok: boolean }[]; error?: string }[]; openings: number };
-const params = { wallThickness: 2, floorThickness: 2, lidThickness: 2, cornerRadius: 2, clearance: 0.5, openingMargin: 0.5, lidType: "snap", screwSize: "M2" };
+// the example's own enclosure settings since the Rev D tag (its 3.0 rim, 2.4 back plate, 1.6 front skin, 0.3 clearance):
+// the app's defaults leave the slim tag's parts touching the lid
+const params = { wallThickness: 3, floorThickness: 2.4, lidThickness: 1.6, cornerRadius: 4, clearance: 0.3, openingMargin: 0.3, lidType: "snap", screwSize: "M2" };
 
 let emptyId = "";
 beforeAll(async () => {
   const r = await read<{ project: { id: string } }>(await addProject(json("POST", { name: "ZZ Enclosure Empty", items: [{ section: "concept/brief", title: "What it is" }] })));
   emptyId = r.body.project.id;
+  // the example's own enclosure row (the authored Rev D tag) is set aside: these tests start with no choice saved
+  await q("DELETE FROM items WHERE project_id=$1 AND section='design/enclosure'", [SEEDED]);
 });
 afterAll(async () => {
   await q("DELETE FROM items WHERE project_id=$1 AND section='design/enclosure'", [SEEDED]);
@@ -46,7 +50,7 @@ describe("POST /enclosure/generate", () => {
     expect(ev[0].data.itemId).toBe(saved.id);
     expect(Object.keys(ev[0].data.after)).toEqual(expect.arrayContaining([expect.stringMatching(/^data\./)]));
     // the saved settings change: the checks no longer describe them
-    await q("UPDATE items SET data = jsonb_set(data, '{params,wallThickness}', '3') WHERE id=$1", [saved.id]);
+    await q("UPDATE items SET data = jsonb_set(data, '{params,wallThickness}', '3.2') WHERE id=$1", [saved.id]);
     expect(enclosureCheck(await rows())).toMatchObject({ met: false, action: "Generate the enclosure again" });
   });
 

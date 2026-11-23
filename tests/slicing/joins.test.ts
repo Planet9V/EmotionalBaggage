@@ -44,7 +44,7 @@ describe("Send to printing from the Enclosure page", () => {
     await q("DELETE FROM items WHERE project_id=$1 AND section='design/enclosure'", [SEEDED]);
     const none = await read<{ error: string }>(await toPrint(json("POST"), ctx(SEEDED)));
     expect(none.status).toBe(409);
-    await q("INSERT INTO items (project_id, section, title, data) VALUES ($1,'design/enclosure','Enclosure settings',$2)", [SEEDED, JSON.stringify({ enclosureGenerator: "casemaker", params: {} })]);
+    await q("INSERT INTO items (project_id, section, title, data) VALUES ($1,'design/enclosure','Enclosure settings',$2)", [SEEDED, JSON.stringify({ enclosureGenerator: "casemaker", params: { wallThickness: 3, floorThickness: 2.4, lidThickness: 1.6, cornerRadius: 4, clearance: 0.3, openingMargin: 0.3 } })]);
     const r = await read<{ files: { id: number; name: string }[]; generator: string }>(await toPrint(json("POST"), ctx(SEEDED)));
     expect(r.status).toBe(201);
     const names = r.body.files.map((f) => f.name);
@@ -62,10 +62,10 @@ describe("Send to printing from the Enclosure page", () => {
       minY = Math.min(minY, m.positions[i + 1]); maxY = Math.max(maxY, m.positions[i + 1]);
       minZ = Math.min(minZ, m.positions[i + 2]); maxZ = Math.max(maxZ, m.positions[i + 2]);
     }
-    // the example shell is 80 x 42 x 60 (x, height, depth): Z up, the base stands on z = 0 and its depth runs along y
+    // the example shell is the Rev D tag, 62 x 12.8 x 92 (x, height, depth): Z up, the base stands on z = 0 and its depth runs along y
     expect(Math.round(minZ)).toBe(0);
-    expect(maxZ).toBeLessThanOrEqual(42.01);
-    expect(Math.round(maxY - minY)).toBe(60);
+    expect(maxZ).toBeLessThanOrEqual(12.81);
+    expect(Math.round(maxY - minY)).toBe(92);
     const ev = await q("SELECT 1 FROM events WHERE project_id=$1 AND kind='file.stored' AND (data->>'fileId')::bigint = $2", [SEEDED, r.body.files[1].id]);
     expect(ev).toHaveLength(1);
     // the checks of this build are kept on the saved choice, where the Design gate reads them

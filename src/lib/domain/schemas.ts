@@ -8,6 +8,7 @@ import { MARKET_SCHEMAS } from "@/lib/market/schemas";
 import { PART_KIND_IDS } from "@/lib/parts/kinds";
 import { libraryEntryById } from "@/lib/parts/library";
 import { printJobData } from "@/lib/slicing/jobState";
+import { authoredEnclosure, ENCLOSURE_SOURCES } from "@/lib/enclosure/authored";
 import { sourcingData } from "@/lib/sourcing/schemas";
 import { CONTENT_SCHEMAS } from "@/lib/content/schemas";
 import { CAMPAIGN_SCHEMAS } from "@/lib/campaigns/schemas";
@@ -206,6 +207,9 @@ const buildData = z.looseObject({
 /** The chosen enclosure generator and its parameters (plan 5.9). One row per concept; the numbers are range-checked again by the generator route. */
 const enclosureData = z.looseObject({
   enclosureGenerator: z.enum(["casemaker", "yapp"]).optional(),
+  /** "authored": the enclosure is a design made outside the generators, held as files (src/lib/enclosure/authored.ts) */
+  enclosureSource: z.enum(ENCLOSURE_SOURCES).optional(),
+  authored: authoredEnclosure.optional(),
   params: z.looseObject({
     wallThickness: numeric.optional(),
     floorThickness: numeric.optional(),

@@ -6,7 +6,8 @@
 //
 // Nothing here is a stored picture or a typed figure:
 //  - the enclosure is built by the app's own generator (CaseMaker on Manifold, the one the Enclosure page runs)
-//    from the seeded parts, and measured by the app's own checks;
+//    from the seeded parts, with the settings of the example's enclosure row, and measured by the app's own checks
+//    (the example's chosen enclosure is an authored design; this is the generator's box around the same parts);
 //  - each stage's gate is worked out by the app's own gate rules (evaluateGate) on these rows, so the journey
 //    shows every check as it truly stands for the example;
 //  - the unit cost is the app's own build-up (referenceUnitCost).
@@ -20,6 +21,9 @@ import { STORE } from "@/lib/domain";
 import { buildSpec, validateSpec } from "@/lib/enclosure/spec";
 import { generateCaseMaker } from "@/lib/enclosure/casemaker";
 import { computeChecks } from "@/lib/enclosure/checks";
+import { withDefaults } from "@/lib/enclosure/validate";
+import type { EnclosureParams } from "@/lib/enclosure/types";
+import { ENCLOSURE_STORE } from "@/lib/process/computed";
 import { processFor } from "@/lib/process/definitions";
 import { evaluateGate } from "@/lib/process/evaluate";
 import { buildCircuit } from "@/lib/parts/circuit";
@@ -62,9 +66,11 @@ export type ExampleEnclosure = {
 
 const plain = (m: { positions: Float32Array; indices: Uint32Array }): PlainMesh => ({ positions: Array.from(m.positions, (v) => Math.round(v * 1000) / 1000), indices: Array.from(m.indices) });
 
-async function generateEnclosure(parts: Item[]): Promise<ExampleEnclosure | null> {
+async function generateEnclosure(parts: Item[], saved: Item | undefined): Promise<ExampleEnclosure | null> {
   try {
-    const spec = buildSpec({ items: parts });
+    // with the settings the concept's enclosure row keeps (for an authored design: the ones to compare it with)
+    const params = withDefaults((saved?.data as { params?: Partial<EnclosureParams> } | undefined)?.params);
+    const spec = buildSpec({ items: parts, params });
     if (validateSpec(spec).some((i) => i.severity === "error")) return null;
     const out = await generateCaseMaker(spec, SEED_PROJECT.name);
     const checks = await computeChecks(spec, out);
@@ -138,7 +144,7 @@ export async function exampleData(): Promise<ExampleData> {
   const all = seedRows(new Set(((await readManifest()) ?? []).map((e) => e.title)));
   const of = (section: string) => all.filter((r) => r.section === section);
   const parts = of(STORE.parts);
-  enclosure ??= generateEnclosure(parts);
+  enclosure ??= generateEnclosure(parts, of(ENCLOSURE_STORE)[0]);
   return {
     parts,
     wires: of(STORE.wiring),

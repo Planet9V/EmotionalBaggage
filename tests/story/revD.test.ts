@@ -185,7 +185,8 @@ describe("the Rev D batch: requirements and tests", () => {
     expect(req("Loudness limit").body).toContain("about 70 dB at 1 m");
     expect(req("Off switch is a true disconnect").body).toContain("side-actuated slide switch");
     expect(req("Clips from the capacitor buffer").body).toMatch(/about 2\.5 full-level clips.*every about 154 s/);
-    expect(req("Lithium within the checked-baggage limit").body).toMatch(/0\.07 g.*0\.3 g|0\.3 g.*0\.07 g/s);
+    expect(req("Lithium within the checked-baggage limit").body).toContain("0.07 g");
+    expect(req("Lithium within the checked-baggage limit").body).toContain("0.3 g of lithium metal");
     for (const t of ["Power", "Battery life", "Loudness limit", "Off switch is a true disconnect", "Low battery", "Clips from the capacitor buffer", "Lithium within the checked-baggage limit", "Firmware changes for Rev D", "Firmware sketch compiles"]) expect(req(t).status, t).toBe("open");
     for (const t of ["Power", "Battery life", "Loudness limit", "Clips from the capacitor buffer"]) expect(req(t).body, t).toMatch(/estimate|calculated/i);
   });
@@ -205,4 +206,41 @@ describe("the Rev D batch: requirements and tests", () => {
     expect(String(test("Clip recharge from the capacitor").data.pass)).toContain("154 s");
     for (const t of ["Sleep current", "Awake current", "Loudness at 1 m", "Off switch disconnect", "Clip recharge from the capacitor", "Lithium on paper", "Low battery behaviour"]) expect(test(t).status, t).toBe("not run");
   });
+});
+
+describe("the Rev D batch: the enclosure and its print jobs", () => {
+  it("records the authored design as the concept's enclosure, with the settings to compare the generator's box", async () => {
+    const { authoredOf } = await import("@/lib/enclosure/authored");
+    const saved = after.filter((r) => r.section === "design/enclosure");
+    expect(saved).toHaveLength(1);
+    const a = authoredOf(saved[0].data)!;
+    expect(a.model).toBe("BaggageClaims_Tag_RevD_A_assembly.3mf");
+    expect(a.printFiles).toEqual(["BaggageClaims_Tag_RevD_A_print_plate_PETG.3mf", "BaggageClaims_Tag_RevD_A_print_plate_TPU.3mf"]);
+    expect(a.checks.filter((c) => c.ok)).toHaveLength(20);
+    expect(a.checkedBy).toContain("not measured by this app");
+    expect(saved[0].data.enclosureGenerator).toBeUndefined();
+  });
+
+  it("replaces the clamshell's print jobs with Rev D's two: PETG in the A1 colours and the TPU strap, queued, with estimates", () => {
+    const jobs = after.filter((r) => r.section === "prototype/printing");
+    expect(jobs.map((j) => j.title)).toEqual(["Rev D tag, job 1: PETG in two colours", "Rev D tag, job 2: TPU strap"]);
+    const [petg, tpu] = jobs;
+    expect(petg.data).toMatchObject({ material: "PETG", fileName: "BaggageClaims_Tag_RevD_A_print_plate_PETG.3mf", colours: ["Bambu Lab PETG HF Peanut Brown", "Bambu Lab PETG HF Cream"] });
+    expect(tpu.data).toMatchObject({ material: "TPU", fileName: "BaggageClaims_Tag_RevD_A_print_plate_TPU.3mf", colours: ["Bambu Lab TPU for AMS Black"] });
+    for (const j of jobs) {
+      expect(j.status).toBe("queued");
+      expect(String(j.data.estimate)).toContain("not sliced");
+      expect(typeof j.data.grams).toBe("number");
+      expect(typeof j.data.minutes).toBe("number");
+    }
+  });
+
+  it("lets the app's own generator build its box around the same parts on the welcome page, every check met", async () => {
+    const { exampleData } = await import("@/components/welcome/exampleData");
+    const d = await exampleData();
+    expect(d.enclosure?.outer).toEqual([62, 12.8, 92]);
+    expect(d.enclosure?.checks.filter((c) => !c.ok).map((c) => c.detail)).toEqual([]);
+    // the Design gate reads the authored design's own checks
+    expect(d.gates.design.checks.find((c) => c.id === "design.enclosure")?.met).toBe(true);
+  }, 60_000);
 });

@@ -11,6 +11,7 @@ import { buildSpec, enclosureOffered } from "@/lib/enclosure/spec";
 import { withDefaults } from "@/lib/enclosure/validate";
 import { ENCLOSURE_HREF, GENERATE_ANCHOR, GENERATOR_ANCHOR, LAYOUT_HREF } from "@/lib/enclosure/fixes";
 import { specFingerprint } from "@/lib/enclosure/fingerprint";
+import { authoredOf } from "@/lib/enclosure/authored";
 import { evaluate, type ProofRow } from "@/lib/content/claims";
 import { claimFields } from "@/lib/content/schemas";
 import { positioningFingerprint } from "@/lib/market/critique";
@@ -60,6 +61,21 @@ export function enclosureCheck(rows: Item[]): Computed {
   const bom = rows.filter((r) => r.section === "design/bom");
   if (!enclosureOffered(bom)) return { met: false, detail: "No part has a box, so there is no enclosure to check.", action: "Place the parts in Physical layout", href: LAYOUT_HREF };
   const saved = rows.find((r) => r.section === ENCLOSURE_STORE);
+  // an authored design: its own maker measured its checks, and the detail says so
+  const authored = authoredOf(saved?.data);
+  if (authored) {
+    const failed = authored.checks.filter((c) => !c.ok);
+    return {
+      met: authored.checks.length > 0 && failed.length === 0,
+      detail: !authored.checks.length
+        ? `The authored design (${authored.name}) has no checks recorded.`
+        : failed.length
+          ? `${failed.length} of ${plural(authored.checks.length, "check")} of the authored design (${authored.name}) failed: ${failed.map((c) => c.label).join("; ")}.`
+          : `The authored design (${authored.name}): all ${plural(authored.checks.length, "check")} pass, as ${authored.checkedBy || "its maker"} measured them.`,
+      action: "Record the authored design's checks",
+      href,
+    };
+  }
   const d = (saved?.data ?? {}) as { enclosureGenerator?: string; params?: Record<string, unknown>; checked?: Record<string, EnclosureChecked> };
   if (!saved || !d.enclosureGenerator) return { met: false, detail: "No enclosure generator is chosen.", action: "Choose an enclosure generator", href: `${href}#${GENERATOR_ANCHOR}` };
   const record = d.checked?.[d.enclosureGenerator];
