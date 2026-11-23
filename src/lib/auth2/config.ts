@@ -34,8 +34,15 @@ export const AUTH2_SETTING = {
   enabled: "auth2.enabled",
   baseUrl: "auth2.baseUrl",
   trustedOrigins: "auth2.trustedOrigins",
-  /** The address the first-run page offers for the platform administrator (migration 0034 seeds admin@oxot.nl). */
+  /** The address the first-run page offers; empty unless stored (migration 0044 cleared the old seeded suggestion). */
   platformAdminAddress: "auth2.platformAdminAddress",
+  // The account rules of 23 Nov (./rules.ts reads and checks them; defaults there).
+  inviteExpiryDays: "invites.expiryDays",
+  maxFailures: "signIn.maxFailures",
+  lockMinutes: "signIn.lockMinutes",
+  passwordPolicy: "password.policy",
+  notifySignupRequestsTo: "notify.signupRequestsTo",
+  signUpOpen: "signUp.open",
 } as const;
 
 const isProduction = () => process.env.NODE_ENV === "production";

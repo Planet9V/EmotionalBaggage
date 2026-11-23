@@ -5,7 +5,7 @@ import { exampleData } from "@/components/welcome/exampleData";
 import { storyData } from "@/components/welcome/storyData";
 import { firstRunForm, firstRunOpen } from "@/lib/auth2/firstRun";
 import { ownerPool } from "@/lib/db";
-import { gate } from "../gate";
+import { gate, passwordPolicy } from "../gate";
 import { FirstRun } from "./FirstRun";
 
 export const metadata: Metadata = { title: "Create the owner · Concept to Realization" };
@@ -24,5 +24,5 @@ export default async function FirstRunPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto")?.split(",")[0].trim() || (host.startsWith("localhost") ? "http" : "https");
   const story = storyData(await exampleData());
-  return <FirstRun email={form.email} address={form.needsAddress ? `${proto}://${host}` : null} idea={story.origin.idea} facts={story.hero} />;
+  return <FirstRun email={form.email} address={form.needsAddress ? `${proto}://${host}` : null} idea={story.origin.idea} facts={story.hero} policy={await passwordPolicy()} />;
 }

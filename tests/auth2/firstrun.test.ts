@@ -129,7 +129,7 @@ describe("with no owner yet", () => {
   });
 
   it("refuses a short password or a bad address, and stays open", async () => {
-    expect((await owner(browser(route), { password: "short" })).body.code).toBe("PASSWORD_TOO_SHORT");
+    expect((await owner(browser(route), { password: "short" })).body.code).toBe("PASSWORD_RULE");
     expect((await owner(browser(route), { email: "nope" })).body.code).toBe("INVALID_EMAIL");
     expect(await firstRunOpen(db)).toBe(true);
   });

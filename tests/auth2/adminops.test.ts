@@ -53,8 +53,8 @@ describe("accounts", () => {
   it("creates an account with a password (can sign in) or without one, confirmed or not; lists it with its state", async () => {
     const adm = await anAdmin("ops-create");
     const withPw = email("made-pw");
-    const { id } = await adm.ops.createUser({ email: withPw, name: "Made Pw", password: "made password 1", confirmed: true });
-    expect((await signIn(withPw, "made password 1")).status).toBe(200);
+    const { id } = await adm.ops.createUser({ email: withPw, name: "Made Pw", password: "Made password 1!", confirmed: true });
+    expect((await signIn(withPw, "Made password 1!")).status).toBe(200);
     const without = email("made-nopw");
     const r2 = await adm.ops.createUser({ email: without, name: "No Pw" });
     expect((await signIn(without, "anything at all")).status).toBe(401);
@@ -64,7 +64,7 @@ describe("accounts", () => {
     expect(list.find((u) => u.id === r2.id)?.confirmed).toBe(false);
     const line = (await auditOf(db, adm.email)).find((l) => l.action === "platform.user_created");
     expect(line?.summary).toContain(withPw);
-    expect(JSON.stringify(await db.query("SELECT * FROM audit_log WHERE actor = $1", [adm.email]))).not.toContain("made password 1");
+    expect(JSON.stringify(await db.query("SELECT * FROM audit_log WHERE actor = $1", [adm.email]))).not.toContain("Made password 1!");
   });
 
   it("confirms an address without sending mail", async () => {

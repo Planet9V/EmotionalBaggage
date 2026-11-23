@@ -80,6 +80,9 @@ const SENTENCES: Record<string, string> = {
 /** The sentence for an answer that was not ok. */
 export function plainError(status: number, body: unknown): string {
   const code = body && typeof body === "object" && typeof (body as { code?: unknown }).code === "string" ? (body as { code: string }).code : "";
+  // The password rules are the administrator's setting: the server's own sentence names the rule broken.
+  const message = body && typeof body === "object" ? (body as { message?: unknown }).message : undefined;
+  if (code === "PASSWORD_RULE" && typeof message === "string" && message) return message;
   if (code && SENTENCES[code]) return SENTENCES[code];
   if (status === 429) return "Too many tries in a short time. Wait a minute, then try again.";
   if (status === 403) return "This request was refused. Reload the page and try again.";

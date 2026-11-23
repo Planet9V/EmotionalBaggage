@@ -60,8 +60,11 @@ type Template = { subject: string; lines: string[]; action: string; after: strin
 export type MailRequest =
   | { kind: "confirm-email"; to: string; name?: string; link: string }
   | { kind: "reset-password"; to: string; name?: string; link: string }
-  | { kind: "invitation"; to: string; link: string; workspace: string; inviter: string }
+  | { kind: "invitation"; to: string; link: string; workspace: string; inviter: string; days?: number }
+  | { kind: "account-invitation"; to: string; name?: string; link: string; inviter: string; days: number }
   | { kind: "two-factor-reset"; to: string; name?: string; link: string; workspace: string; by: string };
+
+const daysText = (d: number) => (d === 1 ? "1 day" : `${d} days`);
 
 function template(r: MailRequest): Template {
   switch (r.kind) {
@@ -97,7 +100,14 @@ function template(r: MailRequest): Template {
         subject: `${r.inviter} invited you to ${r.workspace} on ${PRODUCT}`,
         lines: [`${r.inviter} invited you to work in ${r.workspace} on ${PRODUCT}.`],
         action: "Join the workspace",
-        after: ["The invitation works for 48 hours and only for this email address.", "If you were not expecting it, ignore this email."],
+        after: [`The invitation works for ${daysText(r.days ?? 7)} and only for this email address.`, "If you were not expecting it, ignore this email."],
+      };
+    case "account-invitation":
+      return {
+        subject: `${r.inviter} invited you to ${PRODUCT}`,
+        lines: [`${r.inviter} made an account for you on ${PRODUCT} with this address. Follow the link to choose your password and sign in.`],
+        action: "Choose my password",
+        after: [`The link works once, for ${daysText(r.days)}. After that, ask ${r.inviter} for a new one.`, "If you were not expecting it, ignore this email: nothing happens until the link is followed."],
       };
   }
 }

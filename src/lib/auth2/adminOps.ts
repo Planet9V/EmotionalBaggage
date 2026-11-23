@@ -18,19 +18,19 @@
  */
 import { createHash, randomBytes } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
-import { hashPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
 import { auditIn } from "@/lib/db";
 import type { Auth2 } from "./auth";
 import { AUTH2_PAGES, AUTH2_SETTING, resolveAddresses, writeAuth2Setting } from "./config";
 import { resetAndRequireProof } from "./workspaces/twoFactor";
 import { cleanEmail, cleanName, cleanWorkspaceName } from "./guards";
+import { checkNewPassword } from "./newPassword";
+import { readRules } from "./rules";
 import { isPlatformAdmin } from "./platformAdmin";
 import { MAX_SEATS, asRole, isRole } from "./workspaces/permissions";
 import * as store from "./workspaces/store";
 import { inTx, newId, refuse } from "./workspaces/store";
 
-const MAX_PASSWORD = 128;
-const INVITATION_HOURS = 48;
 
 export type UserState = {
   id: string;
@@ -49,11 +49,8 @@ export type UserState = {
  *  links are made with (resolveAuth2Config().baseURL). */
 type Ctx = { db: Pool; auth: Auth2; actorId: string; baseURL: string };
 
-function checkPassword(p: unknown): string {
-  if (typeof p !== "string" || p.length < MIN_PASSWORD_LENGTH) throw refuse("BAD_REQUEST", "PASSWORD_TOO_SHORT", `The password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
-  if (p.length > MAX_PASSWORD) throw refuse("BAD_REQUEST", "PASSWORD_TOO_LONG", `The password must be at most ${MAX_PASSWORD} characters.`);
-  return p;
-}
+/** A password typed by the administrator: the same rules as any new password (./passwordPolicy.ts). */
+const checkPassword = (db: Pool | PoolClient, p: unknown, who: { email?: string; name?: string }) => checkNewPassword(db, p, who);
 
 /** The administrator's address, after checking they are one. Every operation starts here. */
 async function admin(ctx: Ctx): Promise<string> {
@@ -123,7 +120,7 @@ export function adminOps(ctx: Ctx) {
       const actor = await admin(ctx);
       const email = cleanEmail(input.email);
       const name = cleanName(input.name);
-      const password = input.password === undefined ? null : checkPassword(input.password);
+      const password = input.password === undefined ? null : await checkPassword(db, input.password, { email, name });
       const hash = password ? await hashPassword(password) : null;
       return tx(async (c) => {
         const taken = await c.query('SELECT 1 FROM "user" WHERE lower(email) = $1', [email]);
@@ -150,7 +147,8 @@ export function adminOps(ctx: Ctx) {
     /** Sets a new password (or the first one) and ends every session of that account. */
     async setPassword(userId: unknown, password: unknown) {
       const actor = await admin(ctx);
-      const p = checkPassword(password);
+      const target = await userRow(db, userId);
+      const p = await checkPassword(db, password, target);
       const hash = await hashPassword(p);
       await tx(async (c) => {
         const u = await userRow(c, userId, true);
@@ -433,8 +431,8 @@ export function adminOps(ctx: Ctx) {
         await c.query(`UPDATE invitation SET status = 'canceled' WHERE "organizationId" = $1 AND lower(email) = $2 AND status = 'pending'`, [workspaceId, to]);
         const id = newId();
         await c.query(
-          `INSERT INTO invitation (id, "organizationId", email, role, status, "expiresAt", "createdAt", "inviterId") VALUES ($1, $2, $3, $4, 'pending', now() + make_interval(hours => $5), now(), $6)`,
-          [id, workspaceId, to, asRole(role), INVITATION_HOURS, ctx.actorId]
+          `INSERT INTO invitation (id, "organizationId", email, role, status, "expiresAt", "createdAt", "inviterId") VALUES ($1, $2, $3, $4, 'pending', now() + make_interval(days => $5), now(), $6)`,
+          [id, workspaceId, to, asRole(role), (await readRules(c)).inviteExpiryDays, ctx.actorId]
         );
         await c.query("INSERT INTO auth2_invitation_tokens (invitation_id, token_hash, by_platform_admin) VALUES ($1, $2, true)", [id, createHash("sha256").update(token, "utf8").digest("base64url")]);
         await audit(c, actor, "invitation_created", `Made an invitation for ${to} to "${name}" as ${role}; the link was handed to the administrator`, { workspaceId, invitationId: id });

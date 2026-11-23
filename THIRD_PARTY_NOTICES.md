@@ -1,6 +1,6 @@
 # Third-party notices
 
-Generated from package-lock.json at commit a339311 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit a29233c by `npm run notices`; do not edit by hand.
 
 Every third-party component this repository uses: the npm packages of the web app's production dependency tree (direct and transitive), the Python packages the planner installs, and the material no package manager knows about (container images, fonts, copied source). The page shown in the app, with how each direct component is used and the attestation, is `docs/guide/code-use.md`.
 
@@ -3410,6 +3410,17 @@ Listed by hand in `docs/third-party.manual.json`.
 - Source: https://github.com/tscircuit/schematic-symbols
 - Licence evidence: node_modules/schematic-symbols/LICENSE (0.0.251): 'MIT License. Copyright (c) 2024 tscircuit'. The package is also a dev dependency, listed with the npm packages.
 - Notes: Only drawings are used. tscircuit's layout engine, renderer and viewer are not used (docs/trials/tscircuit). No symbol from KiCad's library is bundled; the KiCad export embeds these drawings and boxes drawn by src/lib/parts/symbols.ts.
+
+### SecLists common password list (xato-net-10-million-passwords-100000)
+
+- Version or tag: master branch, fetched 2026-11-23; the first 3,000 entries of 8 to 64 characters, lower-cased
+- Licence: MIT
+- How it is used: copied source
+- Origin: https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt
+- Referenced in: `src/lib/auth2/commonPasswords.ts`
+- Source: https://github.com/danielmiessler/SecLists
+- Licence evidence: https://raw.githubusercontent.com/danielmiessler/SecLists/master/LICENSE, read 23 November 2026: 'MIT License. Copyright (c) 2018 Daniel Miessler'.
+- Notes: Data only: new passwords are refused when they are on this list (src/lib/auth2/passwordPolicy.ts). No network call is made.
 
 ### shadcn/ui Calendar and Chart
 

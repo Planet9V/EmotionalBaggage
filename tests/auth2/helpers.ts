@@ -6,7 +6,7 @@ import type { Pool } from "pg";
 import type { MailMessage } from "@/lib/auth2/mail";
 
 const BASE = "http://localhost:3322";
-export const PASSWORD = "correct horse battery";
+export const PASSWORD = "Correct horse battery 7!";
 
 /** Switches AUTH2 on for this file, with a fresh secret, and puts an instance with a capturing mailer in place. */
 export async function useAuth2(opts: { rateLimit?: boolean } = {}) {

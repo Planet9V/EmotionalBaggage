@@ -164,7 +164,7 @@ export const useSignInStatus = () => useQuery<SignInStatus | SignInSummary>({ qu
 export function useSaveSignIn() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (change: { enabled?: boolean; baseURL?: string | null; trustedOrigins?: string[] }) =>
+    mutationFn: (change: { enabled?: boolean; baseURL?: string | null; trustedOrigins?: string[]; rules?: Record<string, unknown> }) =>
       api<SignInStatus>("/api/admin/sign-in", { method: "PUT", body: JSON.stringify(change) }),
     onSuccess: (s) => qc.setQueryData(["admin", "sign-in"], s),
   });

@@ -15,6 +15,21 @@ const change = z
     enabled: z.boolean().optional(),
     baseURL: z.string().max(2000).nullable().optional(),
     trustedOrigins: z.array(z.string().max(2000)).max(20).optional(),
+    /** the account rules (src/lib/auth2/rules.ts), each checked against its bounds there */
+    rules: z
+      .object({
+        inviteExpiryDays: z.number().optional(),
+        maxFailures: z.number().optional(),
+        lockMinutes: z.number().optional(),
+        password: z
+          .object({ minLength: z.number().optional(), upper: z.boolean().optional(), lower: z.boolean().optional(), digit: z.boolean().optional(), symbol: z.boolean().optional(), notEmailOrName: z.boolean().optional(), notCommon: z.boolean().optional() })
+          .strict()
+          .optional(),
+        notifySignupRequestsTo: z.string().max(254).optional(),
+        signUpOpen: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: "nothing to change" });
@@ -42,6 +57,13 @@ export const PUT = adminRoute(
       // The request's own Origin: a new address must be it, and it must stay trusted (cut-over review F2).
       const ops = adminOps({ db: ownerPool(), auth: await auth2(), actorId: String(s.userId), baseURL: config.baseURL ?? "" });
       await refusalAsHttp(() => ops.setAddresses({ baseURL: b.baseURL, trustedOrigins: b.trustedOrigins, requestOrigin: req.headers.get("origin") ?? "" }));
+    }
+    if (b.rules) {
+      const rules = b.rules;
+      const { writeRules } = await import("@/lib/auth2/rules");
+      await refusalAsHttp(async () => {
+        await ownerTx((c) => writeRules(c, rules, s.username));
+      });
     }
     if (b.enabled !== undefined) {
       const enabled = b.enabled;

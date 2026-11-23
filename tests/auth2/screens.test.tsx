@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // The new sign-in's screens: with AUTH2 off none exists (404); with it on, the forms check before sending, show the
 // server's refusals as plain sentences that take the focus, and move on to the right next screen.
+import { DEFAULT_PASSWORD_POLICY } from "@/lib/auth2/passwordPolicy";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { plainError } from "@/lib/auth2/errors";
@@ -85,7 +86,7 @@ describe("with AUTH2 on", () => {
 
   it("sign-up checks the fields before sending, with each problem tied to its field", async () => {
     const { SignUpForm } = await import("@/app/(account)/auth/sign-up/SignUpForm");
-    render(<SignUpForm />);
+    render(<SignUpForm policy={DEFAULT_PASSWORD_POLICY} />);
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByText("Enter your name.")).toBeTruthy();
     const email = screen.getByLabelText("Email address");
@@ -96,11 +97,11 @@ describe("with AUTH2 on", () => {
 
   it("sign-up sends and moves to 'check your email'", async () => {
     const { SignUpForm } = await import("@/app/(account)/auth/sign-up/SignUpForm");
-    render(<SignUpForm />);
+    render(<SignUpForm policy={DEFAULT_PASSWORD_POLICY} />);
     fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Ada" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "ada@example.test" } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long enough" } });
-    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "long enough" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Long enough 1!" } });
+    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "Long enough 1!" } });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/auth/check-email?email=ada%40example.test"));
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth2/sign-up/email");
@@ -160,30 +161,30 @@ describe("with AUTH2 on", () => {
 
   it("a used reset link says so in plain words", async () => {
     const { NewPassword } = await import("@/app/(account)/auth/reset/new/NewPassword");
-    render(<NewPassword token="t0k3n" />);
+    render(<NewPassword token="t0k3n" policy={DEFAULT_PASSWORD_POLICY} />);
     replies.push({ status: 400, body: { code: "INVALID_TOKEN", message: "Invalid token" } });
-    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "new password 1" } });
-    fireEvent.change(screen.getByLabelText("New password again"), { target: { value: "new password 1" } });
+    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "New password 1!" } });
+    fireEvent.change(screen.getByLabelText("New password again"), { target: { value: "New password 1!" } });
     fireEvent.click(screen.getByRole("button", { name: "Save the new password" }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/^This link is not valid/);
   });
 
   it("change password puts a wrong current password on that field", async () => {
     const { ChangePassword } = await import("@/app/(account)/auth/password/ChangePassword");
-    render(<ChangePassword />);
+    render(<ChangePassword policy={DEFAULT_PASSWORD_POLICY} who={{ email: "me@example.test", name: "Me" }} />);
     replies.push({ status: 400, body: { code: "INVALID_PASSWORD" } });
     fireEvent.change(screen.getByLabelText("Current password"), { target: { value: "wrong one" } });
-    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "new password 1" } });
-    fireEvent.change(screen.getByLabelText("New password again"), { target: { value: "new password 1" } });
+    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "New password 1!" } });
+    fireEvent.change(screen.getByLabelText("New password again"), { target: { value: "New password 1!" } });
     fireEvent.click(screen.getByRole("button", { name: "Change password" }));
     expect(await screen.findByText("That is not your current password.")).toBeTruthy();
     expect(screen.getByLabelText("Current password").getAttribute("aria-invalid")).toBe("true");
-    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ currentPassword: "wrong one", newPassword: "new password 1", revokeOtherSessions: true });
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ currentPassword: "wrong one", newPassword: "New password 1!", revokeOtherSessions: true });
   });
 
   it("in 'no mail' mode, sign-up says an administrator confirms the account, and reset says whom to ask", async () => {
     const { SignUpForm } = await import("@/app/(account)/auth/sign-up/SignUpForm");
-    render(<SignUpForm mail={false} />);
+    render(<SignUpForm mail={false} policy={DEFAULT_PASSWORD_POLICY} />);
     expect(screen.getByText(/An administrator confirms new accounts/)).toBeTruthy();
     cleanup();
     const { CheckEmail } = await import("@/app/(account)/auth/check-email/CheckEmail");
@@ -199,11 +200,11 @@ describe("with AUTH2 on", () => {
 
   it("sign-up from an invitation fills the address and comes back to the invitation", async () => {
     const { SignUpForm } = await import("@/app/(account)/auth/sign-up/SignUpForm");
-    render(<SignUpForm email="inv@example.test" next="/auth/invite?token=abc" />);
+    render(<SignUpForm email="inv@example.test" next="/auth/invite?token=abc" policy={DEFAULT_PASSWORD_POLICY} />);
     expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("inv@example.test");
     fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Ivy" } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long enough" } });
-    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "long enough" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Long enough 1!" } });
+    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "Long enough 1!" } });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/auth/check-email?email=inv%40example.test&next=%2Fauth%2Finvite%3Ftoken%3Dabc"));
   });
@@ -283,15 +284,15 @@ describe("with AUTH2 on", () => {
     const { storyData } = await import("@/components/welcome/storyData");
     const { exampleData } = await import("@/components/welcome/exampleData");
     const story = storyData(await exampleData());
-    render(<FirstRun email="admin@oxot.nl" address={null} idea={story.origin.idea} facts={story.hero} />);
+    render(<FirstRun email="admin@oxot.nl" address={null} idea={story.origin.idea} facts={story.hero} policy={DEFAULT_PASSWORD_POLICY} />);
     expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("admin@oxot.nl");
     expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
     expect(screen.queryByLabelText("Address of this installation")).toBeNull();
     expect(screen.getByRole("heading", { name: "Welcome to your own installation" })).toBeTruthy();
     replies.push({ status: 200, body: {} });
     fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Olive" } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long enough" } });
-    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "long enough" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Long enough 1!" } });
+    fireEvent.change(screen.getByLabelText("Password again"), { target: { value: "Long enough 1!" } });
     fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
     // The set-up code is asked for, and where to find it is said.
     expect(await screen.findByText("Enter the set-up code from the server log.")).toBeTruthy();
@@ -299,9 +300,9 @@ describe("with AUTH2 on", () => {
     fireEvent.change(screen.getByLabelText("Set-up code"), { target: { value: "ABCD-EFGH-JKLM-NPQR" } });
     fireEvent.click(screen.getByRole("button", { name: "Create the owner" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/account"));
-    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "Olive", email: "admin@oxot.nl", password: "long enough", setupCode: "ABCD-EFGH-JKLM-NPQR" });
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "Olive", email: "admin@oxot.nl", password: "Long enough 1!", setupCode: "ABCD-EFGH-JKLM-NPQR" });
     cleanup();
-    render(<FirstRun email="admin@oxot.nl" address="https://app.example.test" idea={story.origin.idea} facts={story.hero} />);
+    render(<FirstRun email="admin@oxot.nl" address="https://app.example.test" idea={story.origin.idea} facts={story.hero} policy={DEFAULT_PASSWORD_POLICY} />);
     expect((screen.getByLabelText("Address of this installation") as HTMLInputElement).value).toBe("https://app.example.test");
   });
 

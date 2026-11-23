@@ -29,7 +29,8 @@ describe("mail", () => {
   it("builds the invitation email naming who invited and to which workspace", () => {
     const m = render({ kind: "invitation", to: "b@example.test", link: LINK, workspace: "Bag Lab", inviter: "Ada" });
     expect(m.subject).toBe("Ada invited you to Bag Lab on Concept to Realization");
-    expect(m.text).toContain("48 hours");
+    expect(m.text).toContain("works for 7 days");
+    expect(render({ kind: "invitation", to: "b@example.test", link: LINK, workspace: "Bag Lab", inviter: "Ada", days: 3 }).text).toContain("works for 3 days");
   });
 
   it("escapes names and links in the HTML", () => {

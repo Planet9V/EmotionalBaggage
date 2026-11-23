@@ -1,25 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, describe } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { call } from "@/lib/auth2/client";
+import type { PasswordOwner, PasswordPolicy } from "@/lib/auth2/passwordPolicy";
 import { Frame, TextLink } from "../_components/Frame";
 import { Message } from "../_components/Message";
 import { NewPasswordFields } from "../_components/NewPasswordFields";
-import { newPasswordPair, passwordField } from "../_components/rules";
+import { passwordField, policyPasswordPair } from "../_components/rules";
 
-const schema = z.object({ current: passwordField }).and(newPasswordPair);
-type Values = z.infer<typeof schema>;
+type Values = { current: string; password: string; confirm: string };
 
 /** Change the password with the current one; every other browser signed in to the account is signed out. */
-export function ChangePassword() {
+export function ChangePassword({ policy, who }: { policy: PasswordPolicy; who: PasswordOwner }) {
   const [done, setDone] = useState(false);
-  const { register, handleSubmit, setError, reset, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { current: "", password: "", confirm: "" } });
+  const schema = useMemo(() => z.object({ current: passwordField }).and(policyPasswordPair(policy, () => who)), [policy, who]);
+  const { register, handleSubmit, setError, reset, control, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { current: "", password: "", confirm: "" } });
+  const pw = useWatch({ control, name: "password" });
 
   const submit = handleSubmit(async (v) => {
     setDone(false);
@@ -42,7 +44,7 @@ export function ChangePassword() {
         <Field id="current" label="Current password" error={errors.current?.message}>
           <Input id="current" type="password" autoComplete="current-password" autoFocus {...register("current")} {...describe("current", { error: errors.current?.message })} />
         </Field>
-        <NewPasswordFields register={register} errors={errors} />
+        <NewPasswordFields register={register} errors={errors} policy={policy} value={pw} who={who} />
         <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? "Changing…" : "Change password"}</Button>
       </form>
     </Frame>

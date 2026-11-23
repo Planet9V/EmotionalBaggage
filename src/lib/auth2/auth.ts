@@ -42,6 +42,7 @@ import { proofOwed, proofSpent, requiredFor } from "./workspaces/twoFactor";
 import { claimTry, clearTries, hasTag, KNOWN_DEVICE_COOKIE, waitRefusal, withTag } from "./signInWait";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
+import { checkNewPassword } from "./newPassword";
 import { hashSessionTokens } from "./tokenHash";
 
 const APP_NAME = "Concept to Realization";
@@ -226,6 +227,18 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         const body = (ctx.body ?? {}) as Record<string, unknown>;
         // No lone surrogates in any text field (review B1): PostgreSQL would refuse them halfway through the work.
         if (!Object.values(body).every(wellFormed)) throw APIError.from("BAD_REQUEST", { code: "INVALID_TEXT", message: "A field holds characters that are not valid text." });
+        // The password rules (./passwordPolicy.ts), before Better Auth's own length check.
+        if (ctx.path === "/sign-up/email") await checkNewPassword(db, body.password, { email: String(body.email ?? ""), name: String(body.name ?? "") });
+        if (ctx.path === "/change-password") {
+          const s = await getSessionFromCtx(ctx);
+          if (s) await checkNewPassword(db, body.newPassword, { email: s.user.email, name: s.user.name });
+        }
+        if (ctx.path === "/reset-password") {
+          const token = typeof body.token === "string" ? body.token : (ctx.query as { token?: unknown } | undefined)?.token;
+          const v = typeof token === "string" && token ? await ctx.context.internalAdapter.findVerificationValue(`reset-password:${token}`) : null;
+          const who = v ? (await db.query<{ email: string; name: string }>('SELECT email, name FROM "user" WHERE id = $1', [v.value])).rows[0] : undefined;
+          await checkNewPassword(db, body.newPassword, who ?? {});
+        }
         if (ctx.path === "/sign-up/email" || ctx.path === "/update-user") {
           checkImage(body.image);
           if (ctx.path === "/sign-up/email" || "name" in body) return { context: { body: { ...body, name: cleanName(body.name) } } };

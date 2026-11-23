@@ -4,7 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { SignInTab } from "@/components/admin/SignInTab";
-import { adminServer, on, renderWithClient, shimBrowser } from "./harness";
+import { DEFAULT_RULES } from "@/lib/auth2/rules";
+import { adminServer, axeViolations, on, renderWithClient, shimBrowser } from "./harness";
 
 const ADMIN = { platformAdmin: true, capabilities: { plans: true, payments: true, email: true, voice: true }, notice: null };
 const NOT_ADMIN = { platformAdmin: false, capabilities: { plans: false, payments: false, email: false, voice: false }, notice: "x" };
@@ -31,7 +32,7 @@ describe("Admin, Sign-in", () => {
 
   it("on, for the platform administrator: the warning, the addresses, mail, saving and turning off", async () => {
     const puts: unknown[] = [];
-    const status = { on: true, switchFrom: "database", detail: { baseURL: "http://app.example.test", trustedOrigins: [], platformAdminAddress: "admin@oxot.nl", warnings: ["The sign-in address is http://app.example.test, not https: sign-in cookies are sent unencrypted."], mail: true }, sharedConcepts: SHARED };
+    const status = { on: true, switchFrom: "database", detail: { baseURL: "http://app.example.test", trustedOrigins: [], platformAdminAddress: "admin@oxot.nl", warnings: ["The sign-in address is http://app.example.test, not https: sign-in cookies are sent unencrypted."], mail: true }, sharedConcepts: SHARED, rules: DEFAULT_RULES };
     adminServer([
       on("GET", "/api/admin/access", () => ({ body: ADMIN })),
       on("GET", "/api/admin/sign-in", () => ({ body: status })),
@@ -49,6 +50,32 @@ describe("Admin, Sign-in", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Save the addresses" }));
     await waitFor(() => expect(puts).toEqual([{ baseURL: "https://app.example.test", trustedOrigins: ["https://other.example.test"] }]));
     expect(screen.getByRole("button", { name: "Turn the new sign-in off" })).toBeTruthy();
+  });
+
+  it("the account rules: defaults shown, saved as numbers and flags, 'until unlocked' sends 0, and the panel passes axe", async () => {
+    const puts: unknown[] = [];
+    const status = { on: true, switchFrom: "database", detail: { baseURL: "https://app.example.test", trustedOrigins: [], platformAdminAddress: null, warnings: [], mail: false }, sharedConcepts: SHARED, rules: DEFAULT_RULES };
+    adminServer([
+      on("GET", "/api/admin/access", () => ({ body: ADMIN })),
+      on("GET", "/api/admin/sign-in", () => ({ body: status })),
+      on("PUT", "/api/admin/sign-in", (r) => {
+        puts.push(r.body);
+        return { body: status };
+      }),
+    ]);
+    const { container } = renderWithClient(<SignInTab />);
+    expect(((await screen.findByLabelText("Days an invitation works")) as HTMLInputElement).value).toBe("7");
+    expect((screen.getByLabelText("Failed sign-ins in a row before the lock") as HTMLInputElement).value).toBe("7");
+    expect((screen.getByLabelText("Minutes the lock lasts") as HTMLInputElement).value).toBe("30");
+    expect((screen.getByLabelText("Shortest password") as HTMLInputElement).value).toBe("12");
+    expect((screen.getByLabelText("Anyone may create an account themselves") as HTMLInputElement).checked).toBe(false);
+    expect(await axeViolations(container)).toEqual([]);
+    fireEvent.change(screen.getByLabelText("Days an invitation works"), { target: { value: "10" } });
+    fireEvent.click(screen.getByLabelText(/Until an administrator unlocks it/));
+    fireEvent.click(screen.getByLabelText("A symbol"));
+    fireEvent.click(screen.getByRole("button", { name: "Save the account rules" }));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect(puts[0]).toEqual({ rules: { inviteExpiryDays: 10, maxFailures: 7, lockMinutes: 0, password: { minLength: 12, upper: true, lower: true, digit: true, symbol: false, notEmailOrName: true, notCommon: true }, signUpOpen: false } });
   });
 
   it("on, for anyone else: only that it is on", async () => {
