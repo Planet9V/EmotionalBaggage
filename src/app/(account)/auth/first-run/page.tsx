@@ -8,7 +8,7 @@ import { ownerPool } from "@/lib/db";
 import { gate, passwordPolicy } from "../gate";
 import { FirstRun } from "./FirstRun";
 
-export const metadata: Metadata = { title: "Create the owner · Concept to Realization" };
+export const metadata: Metadata = { title: "Create the owner · Shipwright" };
 
 /**
  * "Create the owner", for a self-hosted install with no account yet (src/lib/auth2/firstRun.ts). Not found once any

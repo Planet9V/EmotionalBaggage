@@ -4,8 +4,9 @@ import { useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Wordmark } from "@/components/brand/ShipwrightMark";
 import { Button } from "@/components/ui/button";
-import { EYEBROW, Field, describe } from "@/components/ui/field";
+import { Field, describe } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { HeroStage } from "@/components/welcome/HeroStage";
 import type { HeroFacts } from "@/components/welcome/storyData";
@@ -58,7 +59,7 @@ export function FirstRun({ email, address, idea, facts, product, policy }: { ema
     <main className="min-h-dvh bg-canvas px-4 py-10 text-primary">
       <div className="mx-auto grid w-full max-w-6xl items-start gap-10 lg:grid-cols-[1fr_24rem]">
         <section aria-labelledby="intro-h" className="min-w-0 space-y-4">
-          <p className={EYEBROW}>Concept to realization</p>
+          <p><Wordmark play size={22} textClassName="text-sm" /></p>
           <h1 id="intro-h" className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">Welcome to your own installation</h1>
           <p className="max-w-[60ch] text-[15px] leading-relaxed text-secondary">
             It takes a product from a one-line idea to something on sale: AI drafts each stage from the last, and you decide at every step.

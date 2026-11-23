@@ -6,7 +6,7 @@ import { requireWorkspace } from "../gate";
 import { Frame, TextLink } from "../_components/Frame";
 import { AccountActions } from "./AccountActions";
 
-export const metadata: Metadata = { title: "Your account · Concept to Realization" };
+export const metadata: Metadata = { title: "Your account · Shipwright" };
 
 export default async function AccountPage() {
   const { user, active, all } = await requireWorkspace("/auth/account");

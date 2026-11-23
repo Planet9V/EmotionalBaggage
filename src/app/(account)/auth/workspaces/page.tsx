@@ -3,7 +3,7 @@ import { requireWorkspace } from "../gate";
 import { Frame, TextLink } from "../_components/Frame";
 import { WorkspaceList } from "./WorkspaceList";
 
-export const metadata: Metadata = { title: "Workspaces · Concept to Realization" };
+export const metadata: Metadata = { title: "Workspaces · Shipwright" };
 
 /** The workspace switcher: every workspace of this account, which one is open, and a new one. */
 export default async function WorkspacesPage() {

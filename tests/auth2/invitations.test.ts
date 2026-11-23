@@ -35,7 +35,7 @@ describe("an invitation link", () => {
     expect(res.body.link).toBeUndefined();
     const m = lastMail("invitation", to);
     expect(m.link).toMatch(/^http:\/\/localhost:3322\/auth\/invite\?token=/);
-    expect(m.subject).toBe(`inv-owner invited you to inv-owner's workspace on Concept to Realization`);
+    expect(m.subject).toBe(`inv-owner invited you to inv-owner's workspace on Shipwright`);
     const stored = await db.query<{ token_hash: string; invitation_id: string }>("SELECT token_hash, invitation_id FROM auth2_invitation_tokens WHERE invitation_id = $1", [res.body.invitationId]);
     expect(stored.rows[0].token_hash).toBe(hash(m.token));
     expect(stored.rows[0].token_hash).not.toContain(m.token);

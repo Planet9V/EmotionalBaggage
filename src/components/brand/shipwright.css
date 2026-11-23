@@ -1,0 +1,57 @@
+/* The Shipwright mark (src/components/brand/ShipwrightMark.tsx): a caulking mallet that is also a boat.
+   The mallet knocks once, a spark flies, the pennant runs up the handle and the water rolls in under it.
+   Every rule moves transform, opacity or stroke-dashoffset only, and every animation sits inside
+   "no preference": a reader who asks for reduced motion gets the finished still. */
+.sw-mark { display: inline-block; flex: none; overflow: visible; vertical-align: middle; color: inherit; }
+/* the accent is the brand orange itself, one step lighter on the dark ground (3.5:1 and 6.9:1 on the two canvases) */
+.sw-accent { color: var(--sw-accent, #e05a10); }
+.dark .sw-accent { color: var(--sw-accent, #f07b37); }
+.sw-boat, .sw-knock { transform-box: view-box; transform-origin: 16px 24px; }
+.sw-sail { transform-box: view-box; transform-origin: 19.5px 14.8px; }
+.sw-spark { transform-box: view-box; transform-origin: 16px 22px; opacity: 0; }
+.sw-wave { stroke-dasharray: 1; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sw-play .sw-knock { animation: sw-knock 1.6s both; }
+  .sw-play .sw-sail { animation: sw-sail 1.6s both; }
+  .sw-play .sw-spark { animation: sw-spark 1.6s both; }
+  .sw-play .sw-wave { animation: sw-wave 1.6s both; }
+  /* the idle beat: one small rock on the water every twelve seconds */
+  .sw-idle .sw-boat { animation: sw-rock 12s 12s infinite; }
+}
+
+@keyframes sw-knock {
+  0% { transform: translate(-1px, -6px) rotate(-28deg); animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1); }
+  20% { transform: translate(-1.5px, -7.5px) rotate(-46deg); animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4); }
+  36% { transform: translate(0, 0.8px) rotate(0deg) scale(1.07, 0.84); animation-timing-function: cubic-bezier(0.2, 0.8, 0.4, 1); }
+  48% { transform: translate(0, -2.6px) rotate(6deg) scale(0.96, 1.06); animation-timing-function: ease-in; }
+  60% { transform: translate(0, 0.3px) rotate(-3deg) scale(1.03, 0.96); animation-timing-function: ease-out; }
+  74% { transform: translate(0, -0.6px) rotate(1.5deg); }
+  88% { transform: rotate(-0.6deg); }
+  100% { transform: none; }
+}
+@keyframes sw-spark {
+  0%, 34% { opacity: 0; transform: scale(0.3); }
+  38% { opacity: 1; transform: scale(0.9); animation-timing-function: ease-out; }
+  58% { opacity: 0; transform: scale(1.45); }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+@keyframes sw-sail {
+  0%, 44% { transform: scale(0); animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1); }
+  62% { transform: scale(1.18, 1.1); }
+  74% { transform: scale(0.94, 0.97); }
+  86% { transform: scale(1.03); }
+  100% { transform: none; }
+}
+@keyframes sw-wave {
+  0%, 36% { stroke-dashoffset: 1; opacity: 0; }
+  38% { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(0.3, 0.7, 0.3, 1); }
+  90%, 100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes sw-rock {
+  0%, 94% { transform: none; }
+  95.6% { transform: translateY(-0.7px) rotate(-5deg); }
+  97.4% { transform: translateY(0.2px) rotate(3.5deg); }
+  99% { transform: rotate(-1.2deg); }
+  100% { transform: none; }
+}

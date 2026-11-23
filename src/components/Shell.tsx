@@ -1,5 +1,7 @@
 "use client";
 
+import { BRAND } from "@/components/brand/name";
+import { BrandLink } from "@/components/brand/ShipwrightMark";
 import { prefersDark } from "@/lib/theme";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -181,10 +183,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const sidebar = (cid: string) => (
     <>
           <div className="border-b border-hairline px-4 py-4 [@media(max-height:800px)]:py-2.5">
-            <Link href="/" className="block">
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept to realization</p>
-              <p className="mt-1 text-sm font-semibold tracking-tight">Product workbench</p>
-            </Link>
+            <BrandLink href="/" size={26} textClassName="text-base" />
             <label className="mt-4 [@media(max-height:800px)]:mt-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-muted" htmlFor={cid}>
               Concept
             </label>
@@ -323,7 +322,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Menu className="h-4 w-4" aria-hidden /> Menu
             </button>
-            <span className="truncate text-sm font-medium text-secondary">{project?.name ?? "Product workbench"}</span>
+            <span className="truncate text-sm font-medium text-secondary">{project?.name ?? BRAND}</span>
           </div>
           {error ? (
             <div className="m-8 rounded-xl border border-hairline bg-danger-soft p-5 text-sm text-danger" role="alert">

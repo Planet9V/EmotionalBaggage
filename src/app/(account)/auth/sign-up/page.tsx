@@ -7,7 +7,7 @@ import { readRules } from "@/lib/auth2/rules";
 import { invitationByToken } from "@/lib/auth2/workspaces/invitations";
 import { ownerPool } from "@/lib/db";
 
-export const metadata: Metadata = { title: "Create an account · Concept to Realization" };
+export const metadata: Metadata = { title: "Create an account · Shipwright" };
 
 /** `email` and `next` come from an invitation page: the address is filled in and the person comes back to it. */
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

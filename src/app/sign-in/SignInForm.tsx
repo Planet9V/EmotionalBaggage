@@ -4,6 +4,7 @@ import { prefersDark } from "@/lib/theme";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft } from "lucide-react";
+import { Wordmark } from "@/components/brand/ShipwrightMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -62,9 +63,8 @@ export function SignInForm({ next, showDefault }: { next: string; showDefault: b
   return (
     <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10 text-primary">
       <div className="w-full max-w-sm">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-link">Concept to realization</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-primary">Sign in</h1>
-        <p className="mt-1 text-sm text-secondary">Product workbench</p>
+        <p><Wordmark play size={22} textClassName="text-sm" /></p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-primary">Sign in</h1>
 
         {/* method="post": if the script has not loaded, a native submit must not put the password in the address. */}
         <form method="post" onSubmit={submit} noValidate className="mt-6 space-y-4 rounded-xl border border-hairline bg-surface p-5" aria-describedby={showDefault ? "sign-in-default" : undefined}>

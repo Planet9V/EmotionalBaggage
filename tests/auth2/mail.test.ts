@@ -11,7 +11,7 @@ describe("mail", () => {
   it("builds the confirmation email with the link, how long it works, and what to do if unasked", () => {
     const m = render({ kind: "confirm-email", to: "ada@example.test", name: "Ada", link: LINK });
     expect(m.to).toBe("ada@example.test");
-    expect(m.subject).toBe("Confirm your email address for Concept to Realization");
+    expect(m.subject).toBe("Confirm your email address for Shipwright");
     expect(m.text).toContain("Hello Ada,");
     expect(m.text).toContain(`Confirm my address: ${LINK}`);
     expect(m.text).toContain("24 hours");
@@ -20,7 +20,7 @@ describe("mail", () => {
 
   it("builds the reset email: once, one hour, signs out everywhere", () => {
     const m = render({ kind: "reset-password", to: "a@example.test", link: LINK });
-    expect(m.subject).toBe("Choose a new password for Concept to Realization");
+    expect(m.subject).toBe("Choose a new password for Shipwright");
     expect(m.text).toContain("Hello,");
     expect(m.text).toContain("works once, for one hour");
     expect(m.text).toContain("signs this account out everywhere");
@@ -28,7 +28,7 @@ describe("mail", () => {
 
   it("builds the invitation email naming who invited and to which workspace", () => {
     const m = render({ kind: "invitation", to: "b@example.test", link: LINK, workspace: "Bag Lab", inviter: "Ada" });
-    expect(m.subject).toBe("Ada invited you to Bag Lab on Concept to Realization");
+    expect(m.subject).toBe("Ada invited you to Bag Lab on Shipwright");
     expect(m.text).toContain("works for 7 days");
     expect(render({ kind: "invitation", to: "b@example.test", link: LINK, workspace: "Bag Lab", inviter: "Ada", days: 3 }).text).toContain("works for 3 days");
   });

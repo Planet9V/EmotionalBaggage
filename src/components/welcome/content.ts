@@ -11,7 +11,9 @@
  * (src/lib/admin/planSchema.ts), never typed here.
  */
 
-export const PRODUCT = "Concept to Realization";
+import { BRAND } from "@/components/brand/name";
+
+export const PRODUCT = BRAND;
 
 /** The one action of the page, worded the same everywhere. `short` is the header's label on a phone. */
 export const ACTION = { label: "Claim an early-access place", short: "Early access" };
@@ -24,7 +26,7 @@ export const HERO = {
 };
 
 export const META = {
-  title: "Concept to Realization: take your product idea to market",
+  title: "Shipwright: take your product idea to market",
   description:
     "Type a product idea in one line. Get a costed parts list, a checked schematic, your margin by sales channel and a launch plan. 50 early-access places, no payment.",
 };
@@ -212,10 +214,11 @@ export const ENGINEERING = {
   note: "As the app says of this example, the internal layout is illustrative, and sizes marked typical are common sizes for that kind of part, not measured.",
   model: {
     modes: { translucent: "Translucent", solid: "Solid", wireframe: "Wireframe", exploded: "Exploded" },
-    wiresHidden: "The finished tag is closed, so the wires and the names of the parts inside are not drawn.",
+    parts: "Parts",
+    wiresHint: "Select a part to see what it connects to.",
     label: (name: string) => `${name} in 3D. Drag to turn it, or use the arrow keys or the buttons.`,
     still: (name: string) => `${name}: the front of the tag, drawn.`,
-    hint: "Drag to turn. The buttons turn, tilt and zoom.",
+    hint: "Drag to turn. Press a part, or pick it under Parts, to see what it does and what it connects to.",
     counts: (placed: number, parts: number, joins: number, wires: number) => `${placed} of ${parts} parts have a place and are drawn; the ${wires} wires join ${joins} pairs of them`,
   },
   schematic: {
@@ -229,14 +232,24 @@ export const ENGINEERING = {
     hint: "Drag to pan. Press a part to name it. Ctrl or Cmd + wheel, or the buttons, to zoom.",
   },
   enclosure: {
-    modes: { printing: "As it prints", assembled: "Assembled" },
-    label: "The app's generated enclosure around the example's parts: a base and a lid.",
-    /** the plane climbs to the taller of the two pieces as they lie on the bed; the assembled height is the base plus the lid's thickness */
-    layer: "Layer height",
-    of: (top: string) => `of ${top} mm`,
-    sizes: (base: string, lid: string, assembled: string) => `On the bed the base is ${base} mm tall and the lid, turned over, ${lid} mm. Closed, the case is ${assembled} mm.`,
-    checksTitle: "The app's checks, measured on these meshes",
-    missing: "The enclosure generator did not run on this server, so there is nothing to show here.",
+    held: "The app holds this enclosure as",
+    plates: "Print plates",
+    plate: (n: number) => `Plate ${n}`,
+    platesLabel: (n: number) => `The printed pieces as they lie on their ${n} print plates. Pick a piece for its mass and cost.`,
+    mass: "Mass",
+    cost: "Filament cost",
+    estimate: "estimate",
+    filament: "Printed in",
+    allPieces: "All the pieces",
+    checks: (ok: number, total: number) => `${ok} of ${total} design checks pass.`,
+    checkedBy: (by: string) => `Checked by ${by}.`,
+    jobsTitle: "Print jobs",
+    rendersTitle: "Renders kept in Files",
+    renderNote: "Renders from the design's CAD, not photographs: no tag has been built.",
+    generator: "The app can also generate a box around any set of parts, with checks it measures itself.",
+    hint: "Pick a piece on the plate, or a render.",
+    counts: (pieces: number, grams: string, jobs: number) => `${pieces} printed pieces, ${grams} g, ${jobs} print jobs`,
+    missing: "This example has no authored enclosure on this server, so there is nothing to show here.",
   },
   bom: {
     caption: "The example's parts list",
@@ -517,7 +530,7 @@ export const PROOF = {
     sell: { label: "Sell it", sub: "Seven marketing and sales views, built on the same rows as the engineering." },
   },
   noscript: "Script is off, so the switch cannot change. The Sell it views are set out below.",
-  enclosureNote: "3D is the app's view of the example: its own case design, and each part at the size and place its row gives; the board's chips have no layout rows yet and are set out for illustration. Enclosure and print shows the box the app generates around the same parts.",
+  enclosureNote: "3D is the app's view of the example: its own case design, and each part at the size and place its row gives; the board's chips have no layout rows yet and are set out for illustration. Enclosure and print shows that design as the app holds it: its printed pieces, its maker's checks, the print jobs and the renders.",
   status: {
     title: "What did it tell us?",
     lead: `What we did not want to hear, before we spent a dollar. At prototype cost, ${EXAMPLE.badNews.costAtOne} a unit, all five channels lose money. At 100 units our own site leaves about ${EXAMPLE.badNews.ownSiteLeaves} a unit and wholesale still loses. So the tag is designed and costed, not yet built or sold. Here are its checks, stage by stage.`,

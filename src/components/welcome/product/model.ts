@@ -27,6 +27,11 @@ export type PartBody = { shape: "box" | "cylinder" | "design"; /** box: x, y, z;
 export type ProductPart = {
   ref: string;
   title: string;
+  /** the title's first phrase, for a tag on the part ("Coin cell CR2032"), and the rest of it, a few words ("4 ohm, 3 W") */
+  name: string;
+  note: string;
+  /** a printed piece: its mass in grams */
+  grams: number | null;
   group: PartGroup;
   look: PartLook;
   /** the first sentence of the row's own text */
@@ -188,6 +193,9 @@ export function productOf(partItems: Item[], wireItems: Item[]): Product {
     return {
       ref: p.ref,
       title: p.title,
+      name: nameOf(p.title),
+      note: p.title.slice(nameOf(p.title).length).replace(/^[\s,]+/, "").replace(/^\((.*)\)$/, "$1"),
+      grams: typeof p.item.data.printGrams === "number" ? p.item.data.printGrams : null,
       group: groupOf(look, kind, nets),
       look,
       does: (p.spec.split(/(?<=[.!?])\s+(?=[A-Z"])/)[0] ?? "").trim(),
@@ -218,4 +226,16 @@ function groupOf(look: PartLook, kind: string, nets: ProductPart["nets"]): PartG
 export function joinedPairs(product: Product): number {
   const drawn = new Set(product.parts.filter((p) => p.body).map((p) => p.ref));
   return new Set(product.parts.filter((p) => p.body).flatMap((p) => p.nets.flatMap((n) => n.to.filter((to) => drawn.has(to)).map((to) => [p.ref, to].sort().join("|"))))).size;
+}
+
+/** A part's name without its particulars: the title up to its first comma or bracket. */
+function nameOf(title: string): string {
+  return title.split(",")[0]!.replace(/\s*\(.*$/, "").trim();
+}
+
+/** Which parts are named first when there is not room to name them all: the body, the board, the cell, the speaker and so on down. */
+const TAG_ORDER: PartLook[] = ["shell", "board", "cell", "speaker", "supercap", "tracker", "strap", "switch", "button"];
+export function byTagOrder(parts: ProductPart[]): ProductPart[] {
+  const rank = (p: ProductPart) => (TAG_ORDER.indexOf(p.look) + 1 || TAG_ORDER.length + 1);
+  return [...parts].sort((a, b) => rank(a) - rank(b));
 }

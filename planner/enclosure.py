@@ -168,7 +168,7 @@ def scad_text(spec: BoxSpec, which: Literal["base", "lid", "both"] = "both") -> 
     inner_x, inner_y = X - 2 * w, Y - 2 * w
     L: list[str] = []
     add = L.append
-    add("// Written by concept to realization for the YAPP_Box generator (MIT, Willem Aandewiel).")
+    add("// Written by Shipwright for the YAPP_Box generator (MIT, Willem Aandewiel).")
     add("// Put YAPPgenerator_v3.scad beside this file, open it in OpenSCAD and render (F6).")
     add("include <./YAPPgenerator_v3.scad>")
     add(f"printBaseShell = {'true' if which in ('base', 'both') else 'false'};")

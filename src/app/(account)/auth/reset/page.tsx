@@ -3,7 +3,7 @@ import { NotSetUp } from "../_components/NotSetUp";
 import { gate, mailOn, setupPending } from "../gate";
 import { ResetRequest } from "./ResetRequest";
 
-export const metadata: Metadata = { title: "Reset your password · Concept to Realization" };
+export const metadata: Metadata = { title: "Reset your password · Shipwright" };
 
 export default async function ResetPage() {
   await gate();

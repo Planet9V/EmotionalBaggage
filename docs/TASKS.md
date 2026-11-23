@@ -27,6 +27,10 @@ The build machine is at its limit with seven agents (load 10 on 2 processors), s
 | 7 | Voice clips and scenes ready for the owner's review | WS12, WS13 | lead | those agents finishing |
 | 8 | Slack steps 2 to 5 | WS11 | phase 2, by the owner's ruling | after the above |
 
+## Owner ruling on the name, 23 Nov (12:19)
+
+- **The service is called Shipwright.** Owner: "change the top left title to 'Shipwright' and make a groovy little animated icon of a builder, a hammer or anvil or something clever to put there and use as our logo". Every place the interface, a message or a guide named the product ("Concept to Realization", "Product workbench") now says Shipwright, with the mark from `src/components/brand/ShipwrightMark.tsx` (a mallet that is also a boat; the name is in `src/components/brand/name.ts`). Not renamed: the repository, the package, database and environment names, route paths, "concept" for a product idea, the example (Baggage Claims MK1), and the research and plan documents. The browser icon stays the luggage tag (owner, 23 Nov, morning); the mark's own icon set is stored in `public/brand/` (`node scripts/shipwright-art.mjs`), not wired in, for the owner to choose.
+
 ## Owner rulings on accounts, 23 Nov
 
 Quoted as given: "add a CRUD operation for adding admin users, for admins that includes editing names, email addresses, enabling/disabling MFA, deleting, resetting passwords, sending invitations, expiring after 7 days, password lockouts after 7 tries, minimum complexity password requirements, self-password reset, request to sign up goes to jim@eigenia.nl". Later (09:03): "I need jim@eigenia.nl to be the admin and be able to add and edit etc administrator the entire application including setting up (CRUD) users and workspaces ... the admin must be able to 'emulate' what another user sees, basically co-opting their workspace, to see what they see and edit like that user in the organisation to help troubleshoot". And: "is jim@eigenia.nl a user or an admin?" (he could not tell). The platform administrator is whoever is created on the first-run page (`jim@eigenia.nl`), not `admin@oxot.nl`.

@@ -4,6 +4,7 @@
 // drawings by scripts/brand-art.mjs, which is run again whenever the drawings change.
 import { SLOT, STRAP, TAG_MM, tagPath } from "./scenes/film/tagShape";
 import { TagArt } from "./TagArt";
+import { ShipwrightMark } from "@/components/brand/ShipwrightMark";
 import { HERO, PRODUCT, HERO_STAGE, EXAMPLE } from "./content";
 
 const { h: H } = TAG_MM;
@@ -95,7 +96,10 @@ export function SocialCard() {
         <span style={{ background: "#c64405", borderRadius: 999, padding: "6px 18px" }}>{HERO_STAGE.to}</span>
       </div>
       <div style={{ position: "absolute", left: 72, top: 204, width: 660 }}>
-        <div style={{ fontSize: 26, fontWeight: 600, color: "#ffa370" }}>{PRODUCT}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 30, fontWeight: 600, letterSpacing: "-0.01em", color: "#fff", ["--sw-accent" as string]: "#ffa370" }}>
+          <ShipwrightMark size={46} />
+          {PRODUCT}
+        </div>
         <div style={{ marginTop: 18, fontSize: 70, fontWeight: 600, lineHeight: 1.06, letterSpacing: "-0.03em" }}>{HERO.title}</div>
         <div style={{ marginTop: 30, fontSize: 25, lineHeight: 1.4, color: "#a1a1aa" }}>{`A costed parts list, a checked schematic and a launch plan. Shown: ${EXAMPLE.name}, designed and costed, not yet built or sold.`}</div>
       </div>

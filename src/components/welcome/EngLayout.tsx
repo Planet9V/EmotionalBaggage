@@ -10,6 +10,7 @@ import { insideOfOf } from "@/lib/geometry/overlap";
 import { ThreeView } from "@/components/layout/ThreeView";
 import { floorLevel, fmtMm, VIEW_DEFS, VIEW_ORDER, type LayoutPart } from "@/components/layout/geom";
 import { TapToExplore } from "./TapToExplore";
+import { shellOutlineFor } from "./get/tagShell";
 import { ENGINEERING } from "./content";
 import { StageBar, StageFoot, StageView } from "./StageParts";
 
@@ -30,6 +31,8 @@ export default function EngLayout({ parts: partItems }: { parts: Item[] }) {
   }, [partItems]);
   const shells = useMemo(() => placed.filter((p) => p.geometry.shape === "shell"), [placed]);
   const bodies = useMemo(() => placed.filter((p) => p.geometry.shape !== "shell"), [placed]);
+  // the example's shell is the tag: seen from above it is drawn to the tag's own outline, not the box of its size
+  const outlines = useMemo(() => new Map(shells.flatMap((sh) => { const o = shellOutlineFor(sh.geometry.size); return o ? [[sh.id, o] as const] : []; })), [shells]);
   const floor = floorLevel(shells[0]?.geometry ?? null, WALL);
   const picked = placed.find((p) => p.id === selectedId);
   const pickedPart = picked ? partItems.find((i) => i.id === picked.id) : null;
@@ -49,6 +52,7 @@ export default function EngLayout({ parts: partItems }: { parts: Item[] }) {
               view={VIEW_DEFS[k]}
               parts={bodies}
               shells={shells}
+              shellOutlines={outlines}
               markers={[]}
               wall={WALL}
               floor={floor}

@@ -27,7 +27,7 @@ export function caseMakerProject(b: BoxSpec, name: string) {
     board: {
       id: "c2r-cavity",
       name: "Concept cavity",
-      manufacturer: "concept to realization",
+      manufacturer: "Shipwright",
       pcb: { size: { x: cavityX, y: cavityY, z: pcbZ } },
       mountingHoles: holes,
       components: [],

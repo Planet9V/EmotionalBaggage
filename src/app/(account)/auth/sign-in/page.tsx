@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { gate, nextOf, param, setupPending } from "../gate";
 import { SignInForm } from "./SignInForm";
 
-export const metadata: Metadata = { title: "Sign in · Concept to Realization" };
+export const metadata: Metadata = { title: "Sign in · Shipwright" };
 
 export default async function SignInPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await gate();

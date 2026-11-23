@@ -6,7 +6,7 @@ import { ownerPool } from "@/lib/db";
 import { requireWorkspace } from "../gate";
 import { MembersScreen } from "./MembersScreen";
 
-export const metadata: Metadata = { title: "Workspace members · Concept to Realization" };
+export const metadata: Metadata = { title: "Workspace members · Shipwright" };
 
 /** The open workspace: its members, invitations and settings (owners and admins), or the member list (members). */
 export default async function WorkspacePage() {

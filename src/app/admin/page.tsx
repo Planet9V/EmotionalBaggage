@@ -8,7 +8,7 @@ import { LoadingBlocks } from "@/components/ui/states";
 import { ADMIN_AREA_NOTICE } from "@/lib/admin/guard";
 import { adminPageOpen } from "@/lib/admin/pageGate";
 
-export const metadata: Metadata = { title: "Admin · Concept to Realization" };
+export const metadata: Metadata = { title: "Admin · Shipwright" };
 
 // Decided per request: with the new sign-in on, the admin area is the platform administrator's (src/lib/admin/pageGate.ts).
 // The tab comes from ?tab= through useSearchParams, so the view sits inside a Suspense boundary.

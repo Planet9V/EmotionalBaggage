@@ -13,7 +13,7 @@
  */
 import { esc } from "@/lib/html";
 
-const PRODUCT = "Concept to Realization";
+const PRODUCT = "Shipwright";
 
 export type MailMessage = { to: string; subject: string; text: string; html: string };
 

@@ -18,7 +18,8 @@ import { publicVoiceovers } from "@/lib/voice/voiceovers";
 import { exampleData } from "@/components/welcome/exampleData";
 import { storyData } from "@/components/welcome/storyData";
 import { publicPageMetadata } from "@/components/welcome/meta";
-import { ACTION, BUILDER, CLOSING, FOOTER, GET, HERO, MECHANISM, META, NAV, PRICING, PROBLEM, PRODUCT, PROOF, questions } from "@/components/welcome/content";
+import { BrandLink, Wordmark } from "@/components/brand/ShipwrightMark";
+import { ACTION, BUILDER, CLOSING, FOOTER, GET, HERO, MECHANISM, META, NAV, PRICING, PROBLEM, PROOF, questions } from "@/components/welcome/content";
 
 export const generateMetadata = () => publicPageMetadata({ title: META.title, description: META.description, path: "/welcome" });
 
@@ -94,9 +95,7 @@ export default async function WelcomePage() {
       {/* 0. Header: dark in both themes, like the hero under it, and always in reach. */}
       <header className="dark sticky top-0 z-40 border-b border-hairline bg-canvas text-primary">
         <div className={`${WRAP} flex h-14 items-center justify-between gap-3`}>
-          <Link href="/welcome" className="whitespace-nowrap text-sm font-semibold text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus">
-            {PRODUCT}
-          </Link>
+          <BrandLink href="/welcome" size={26} textClassName="text-base" />
           <nav aria-label="On this page" className="hidden items-center gap-6 whitespace-nowrap text-sm text-secondary lg:flex">
             {NAV.map((n) => (
               <a key={n.href} href={n.href} data-track={`cta:nav-${n.href.slice(1)}`} className="hover:text-primary">{n.label}</a>
@@ -214,7 +213,7 @@ export default async function WelcomePage() {
             </div>
             {/* the stage runs wider than the text column; the showcase lays both out */}
             <div className="mt-8">
-              <Showcase parts={example.parts} wires={example.wires} enclosure={example.enclosure} market={story.market} product={story.product} />
+              <Showcase parts={example.parts} wires={example.wires} market={story.market} product={story.product} printed={story.printed} />
             </div>
             <div className={`${WRAP} mt-12`}>
               <h3 className={H3}>{PROOF.status.title}</h3>
@@ -314,7 +313,7 @@ export default async function WelcomePage() {
 
       <footer className="dark border-t border-hairline bg-canvas text-primary">
         <div className={`${WRAP} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-8 text-[15px] text-muted`}>
-          <p className="font-medium text-secondary">{PRODUCT}</p>
+          <p className="text-secondary"><Wordmark size={20} textClassName="text-[15px] font-medium" /></p>
           <p className="max-w-[60ch]">{FOOTER.privacy}</p>
           <Link href="/sign-in" data-track="cta:footer-signin" className="text-secondary hover:text-primary">Sign in</Link>
         </div>

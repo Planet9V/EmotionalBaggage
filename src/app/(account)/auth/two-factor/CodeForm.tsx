@@ -41,7 +41,7 @@ export function CodeForm({ next }: { next: string }) {
   return (
     <Frame
       title={recovery ? "Use a recovery code" : "Enter your code"}
-      lead={recovery ? "Each of the recovery codes you saved works once." : "Open your authenticator app and enter the six digits it shows for Concept to Realization."}
+      lead={recovery ? "Each of the recovery codes you saved works once." : "Open your authenticator app and enter the six digits it shows for Shipwright."}
       footer={<p><TextLink href="/auth/sign-in">Start again</TextLink></p>}
     >
       <form method="post" onSubmit={(e) => void submit(e)} noValidate className="space-y-4">

@@ -412,7 +412,7 @@ describe("Email", () => {
     expect(v.body).toMatchObject({ ok: true });
     const m = await read<{ ok: boolean; message: string }>(await call(testPost, "POST", "/api/admin/test", { kind: "mail-message", to: "ada@example.test" }));
     expect(m.body.ok).toBe(true);
-    expect(smtp.messages.at(-1)).toMatch(/Subject: Test message from Concept to Realization/);
+    expect(smtp.messages.at(-1)).toMatch(/Subject: Test message from Shipwright/);
     expect(JSON.stringify([v.body, m.body])).not.toContain(PW);
     const o = await read<{ services: { key: string; state: string; lastCheck: { ok: boolean } | null }[] }>(await get(overviewGet, "/api/admin/overview"));
     expect(o.body.services.find((x) => x.key === "email")).toMatchObject({ state: "configured", lastCheck: { ok: true } });

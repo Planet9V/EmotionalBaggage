@@ -4,7 +4,7 @@ import { defaultPasswordInUse } from "@/lib/auth";
 import { safeNext } from "./shared";
 import { SignInForm } from "./SignInForm";
 
-export const metadata: Metadata = { title: "Sign in · Concept to Realization" };
+export const metadata: Metadata = { title: "Sign in · Shipwright" };
 
 /**
  * The sign-in page. It renders without the app shell (see src/components/Shell.tsx), reads on the
