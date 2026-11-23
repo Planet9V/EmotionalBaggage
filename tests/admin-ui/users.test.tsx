@@ -71,7 +71,7 @@ describe("Admin, Users", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Send the invitation" }));
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]!.body).toEqual({ name: "Dee", email: "dee@example.test", platformAdmin: false, how: "invite" });
-    expect((await screen.findByLabelText("Invitation link")).textContent).toBe("https://app.example.test/auth/join?token=tok");
+    expect(((await screen.findByLabelText("Invitation link")) as HTMLInputElement).value).toBe("https://app.example.test/auth/join?token=tok");
     expect(screen.getByText(/No email was sent: mail is not set up/)).toBeTruthy();
   });
 

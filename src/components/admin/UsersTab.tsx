@@ -160,10 +160,12 @@ function StateBadges({ u }: { u: UserState }) {
 
 /** A link or code shown once, with a copy button and the plain note. */
 function ShownOnce({ label, value, note }: { label: string; value: string; note: string }) {
+  const id = `shown-${label.toLowerCase().replace(/\W+/g, "-")}`;
   return (
     <div role="status" className="space-y-2 rounded-md border border-hairline bg-canvas p-3">
       <p className="text-sm text-primary">{note}</p>
-      <p className="break-all font-mono text-xs text-primary" aria-label={label}>{value}</p>
+      <label htmlFor={id} className="block text-xs font-medium text-secondary">{label}</label>
+      <Input id={id} readOnly value={value} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
       <Button size="sm" variant="outline" onClick={() => void navigator.clipboard?.writeText(value).then(() => toast.success("Copied."))}>
         <Copy className="h-3.5 w-3.5" aria-hidden /> Copy {label.toLowerCase()}
       </Button>
