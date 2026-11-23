@@ -1,7 +1,7 @@
 // How loud a line is at a moment, 0 to 1, from the same timing the subtitles are typed with: each syllable is a
 // pulse that rises and falls while its letters are typed, spaces and punctuation are silence, and a word in capitals
-// is shouted. The tag's grille and lamp and the people's mouths are all driven from this one function, so a
-// recorded voice can later drive them instead (replace `speechLevel` with the recording's envelope).
+// is shouted. The light in the tag's perforated panel and the people's mouths are all driven from this one function,
+// so a recorded voice can later drive them instead (replace `speechLevel` with the recording's envelope).
 import type { Line, Scene, Who } from "./scenes";
 
 /** Letters per second a person speaks at, for the people's lines (their subtitles appear whole, not typed). */
@@ -104,7 +104,7 @@ export function presence(scene: Scene, who: Who, t: number): number {
   return v;
 }
 
-/** The bag's voice at `t`: how loud it is this instant, and how present (for the lamp and the lean). */
+/** The bag's voice at `t`: how loud it is this instant, and how present (for the glow and the lean). */
 export function bagVoice(scene: Scene, t: number): { level: number; on: number } {
   return { level: voiceOf(scene, "bag", t), on: presence(scene, "bag", t) };
 }

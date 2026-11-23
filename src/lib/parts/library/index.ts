@@ -3,12 +3,13 @@
 // the entry, or is left out.
 import { libraryEntry, type LibraryEntry } from "../schema";
 import { BOARDS } from "./boards";
+import { CHIPS } from "./chips";
 import { DISPLAYS, MODULES, SENSORS } from "./devices";
 import { DISCRETE } from "./discrete";
 import { POWER } from "./power";
 
 /** The raw entries, before parsing. Tests validate these. */
-export const RAW_LIBRARY = [...BOARDS, ...SENSORS, ...DISPLAYS, ...MODULES, ...POWER, ...DISCRETE];
+export const RAW_LIBRARY = [...BOARDS, ...SENSORS, ...DISPLAYS, ...MODULES, ...POWER, ...DISCRETE, ...CHIPS];
 
 export const LIBRARY: readonly LibraryEntry[] = RAW_LIBRARY.map((e) => libraryEntry.parse(e));
 

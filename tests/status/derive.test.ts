@@ -152,8 +152,9 @@ describe("Baggage Claims MK1 as seeded", () => {
 
   it("shows the figures the app works out, each linked to its page", () => {
     const f = Object.fromEntries(keyFigures(rows, "USD").map((x) => [x.key, x]));
-    // the 2 x AA design: 16 parts of the documents, less the series resistor and the card, plus seven
-    expect(f.parts).toMatchObject({ value: "21", href: "/s/design/bom" });
+    // the Rev D tag (22 Nov 2026): the 2 x AA design's 21 parts retired, 34 in their place (the board, the chips and
+    // passives on it, the speaker, the cell and the printed parts)
+    expect(f.parts).toMatchObject({ value: "34", href: "/s/design/bom" });
     // 9 claims of the first seed, 30 entered from the documents on 22 Nov and 20 more with the owner's rulings of that
     // day (seed/concepts/baggage-claims/content); every one is still unverified
     expect(f.claims).toMatchObject({ value: "0 / 59", detail: "59 unverified" });

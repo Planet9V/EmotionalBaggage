@@ -44,13 +44,14 @@ describe("the seeded example's links", () => {
     );
   });
 
-  it("parts are needed where the requirement's text names them; two parts stay unneeded", async () => {
+  it("parts are needed where the requirement's text names them; the board's support parts stay unneeded", async () => {
     const t = traceOf(await rows());
-    // (R1, the DFPlayer's series resistor, was the third until the 2 x AA design retired it)
-    expect(t.unusedParts.map((p) => p.data.ref).sort()).toEqual(["PCB1", "W1"]);
+    // the Rev D batch retired the 2 x AA design's parts and their links; its own parts are linked with its requirements
+    // what is left unneeded is the board's support: crystals, inductors, the other passives and the assembly
+    expect(t.unusedParts.map((p) => p.data.ref).sort()).toEqual(["L1", "L3", "PAS", "PCBA", "Y1"]);
     const needs = (ref: string) => t.requirements.filter((r) => t.linksOf(r).parts.includes(String(ref).toLowerCase())).map((r) => r.title);
     expect(needs("S2")).toEqual(["Controls"]);
-    expect(needs("BAT")).toEqual(["Power", "Battery life"]);
+    expect(needs("BAT").sort()).toEqual(["Battery life", "Lithium within the checked-baggage limit", "Power"]);
   });
 
   it("the links are written at both ends: tests and parts name their requirements too", async () => {

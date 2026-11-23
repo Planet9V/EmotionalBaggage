@@ -1,5 +1,7 @@
 # Baggage Claims MK1: the device, 2 x AA design (Rev B)
 
+> **Superseded by Rev D (22 Nov 2026, 19:00).** The owner chose the Rev D slim leather-look tag, direction A Heritage in colourway A1 Saddle ("yes this is perfect, a perfect design"): one CR2032 with a 1 F supercapacitor and an nRF52832 on a custom board, in a 62 x 92 x 12.8 mm tag, replace the two AA cells, the breakout boards and the 80 x 60 x 42 mm box described here. The example's rows follow Rev D since the batch `seed/concepts/baggage-claims/content/2026-11-22-revD.json`; the decision, the power design and what changed are in [baggage-claims-revD.md](baggage-claims-revD.md). This note is kept as the record of the 2 x AA design, and its detection rules and firmware still stand, with the changes Rev D lists.
+
 22 November 2026. Device engineering for the seeded example, after the owner's rulings of that day: two AA alkaline cells, a physical off switch, the Adafruit MPU-6050 breakout as the sensor, detection rules "as a real engineer would set them", an Arduino sketch, and the prototype costs added up.
 
 **Nothing here has been built or measured.** Every figure carries one of these marks:

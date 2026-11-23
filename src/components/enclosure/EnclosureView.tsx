@@ -19,6 +19,8 @@ import { fromDraft, ParamsForm, toDraft, type Draft } from "./ParamsForm";
 import { ResultPanel } from "./ResultPanel";
 import { SendToPrinting } from "./SendToPrinting";
 import { PartOpeningEditor } from "./PartOpeningEditor";
+import { AuthoredView } from "./AuthoredView";
+import { authoredOf, authoredEnclosure } from "@/lib/enclosure/authored";
 import { NativeSelect } from "@/components/ui/native-select";
 import { EmptyState, ErrorLine, LoadError, LoadingBlocks, NotSetUp } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
@@ -83,7 +85,7 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
     async (g: GeneratorKey, p: EnclosureParams) => {
       setSaveState("saving");
       try {
-        const data = { enclosureGenerator: g, params: p };
+        const data = { enclosureGenerator: g, params: p, ...(row?.data.enclosureSource === "authored" ? { enclosureSource: "generated" } : {}) };
         // only the choice: the server merges it, so the checks it keeps on the row (data.checked) are never written back stale
         if (row) await patch(row.id, { data });
         else await add({ section: SAVE_STORE, title: "Enclosure settings", data });
@@ -149,6 +151,14 @@ function Editor({ project, bom, saved }: { project: ViewProps["project"]; bom: I
           </span>
         }
       >
+        {row && authoredEnclosure.safeParse(row.data.authored).success ? (
+          <p className="mb-2 text-sm text-secondary">
+            This concept also has an authored design.{" "}
+            <button type="button" className="text-link underline" onClick={() => void patch(row.id, { data: { enclosureSource: "authored" } })}>
+              Use the authored design
+            </button>
+          </p>
+        ) : null}
         {!chosen ? <p className="mb-2 text-sm text-secondary" data-testid="generator-not-saved">No generator is chosen: not saved yet. Choose one, or generate with one, and it is saved.</p> : null}
         <div id={GENERATOR_ANCHOR} role="radiogroup" aria-label="Enclosure generator" className="grid gap-3 md:grid-cols-2">
           {options.map((o) => {
@@ -370,6 +380,13 @@ export function EnclosureView({ project }: ViewProps) {
         A product with no parts that have boxes (a service, a software product) gets no enclosure option.
       </EmptyState>
     );
+  }
+
+  // An authored design is the concept's enclosure: show it, not the generators (they would build another one).
+  const savedRow = saved.items[0];
+  const authored = authoredOf(savedRow?.data);
+  if (savedRow && authored) {
+    return <AuthoredView projectId={project.id} design={authored} onUseGenerator={() => saved.patch(savedRow.id, { data: { enclosureSource: "generated" } }).then(() => undefined)} />;
   }
 
   return (

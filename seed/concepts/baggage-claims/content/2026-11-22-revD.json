@@ -1,0 +1,3982 @@
+{
+  "batch": "2026-11-22-revD",
+  "from": "the Rev D slim tag (BaggageClaims_Tag_RevD_Engineering.md and _Design.md in Files)",
+  "about": "The Rev D slim leather-look tag the owner approved on 22 Nov 2026 at 19:00 (\"yes this is perfect, a perfect design\"): direction A Heritage, colourway A1 Saddle, one CR2032 with a 1 F supercapacitor, an nRF52832 on a custom board. The 2 x AA design's parts and wires are retired only while they still read as seeded; requirements and tests tied to two AA cells are brought to Rev D's figures, each an estimate where it is one. Every row names the Rev D document and section it comes from.",
+  "rows": [
+    {
+      "op": "add",
+      "proposal": "D001",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 1, what you are choosing; section 4, direction A",
+      "section": "concept/decisions",
+      "title": "Which enclosure design ships?",
+      "body": "Rev D, the slim leather-look tag, offered in three directions and two colourways each, every one 62 x 92 x 12.8 mm with the same inside and passing the same 20 of 20 checks of its own generator. Chosen: direction A, Heritage (square shoulders cut at 45 degrees, saddle stitching in the thread colour, a blind-stamped oval maker's mark, a perforated panel across the top), colourway A1, Saddle: Bambu Lab PETG HF Peanut Brown body, Bambu Lab PETG HF Cream thread and lettering, Bambu Lab TPU for AMS Black strap. Renders, the assembly and the two print plates are in Files, folder Design and build.",
+      "data": {
+        "key": "enclosure-design",
+        "parent": "enclosure",
+        "options": [
+          {
+            "id": "A1",
+            "label": "A1 Heritage, Saddle",
+            "outcome": "Tan body, cream thread, black strap: the archetype. About $1.00 of filament (estimate)."
+          },
+          {
+            "id": "A2",
+            "label": "A2 Heritage, Black",
+            "outcome": "Black body, beige thread: the business-class version."
+          },
+          {
+            "id": "B1",
+            "label": "B1 Edge, Navy",
+            "outcome": "Square-cut slab with a black TPU edge bumper; about $1.14 of filament (estimate)."
+          },
+          {
+            "id": "B2",
+            "label": "B2 Edge, Espresso",
+            "outcome": "As B1 in dark brown with beige lettering."
+          },
+          {
+            "id": "C1",
+            "label": "C1 Envelope, Oxblood",
+            "outcome": "Clipped corners and a stitched welt, inlaid name; about $1.02 of filament (estimate)."
+          },
+          {
+            "id": "C2",
+            "label": "C2 Envelope, Cognac",
+            "outcome": "As C1 in brown with beige thread."
+          }
+        ],
+        "chosen": "A1",
+        "dependsOn": [
+          "enclosure"
+        ],
+        "unlocks": [
+          "design/enclosure",
+          "prototype/printing"
+        ],
+        "source": "Rev D design, sections 1 and 4"
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, 19:00, of Rev D direction A Heritage in colourway A1 Saddle: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "add",
+      "proposal": "D002",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 0, summary; section 5, mechanical consequences",
+      "section": "concept/decisions",
+      "title": "Which form factor ships?",
+      "body": "A slim leather-look luggage tag, 62 x 92 x 12.8 mm, about 62 to 64 g with the tracker (estimate), hanging about 10 mm under the handle on a TPU strap, with a pocket for an AirTag-style tracker behind a bayonet door and a name card in the back. It replaces the 80 x 60 x 42 mm box and the 2 x AA design (Rev B, and Rev C's box): about a third of the box's volume and 30 % of its thickness. The tracker's 8.0 mm sets the thickness.",
+      "data": {
+        "key": "form-factor",
+        "parent": "enclosure",
+        "options": [
+          {
+            "id": "box-2xaa",
+            "label": "80 x 60 x 42 mm box on two AA cells (Rev B, Rev C)",
+            "outcome": "About 80 dB at 1 m and about 6 months on a pair of cells; a large object dangling from the handle."
+          },
+          {
+            "id": "slim-tag",
+            "label": "Slim tag, 62 x 92 x 12.8 mm, on one CR2032 (Rev D)",
+            "outcome": "About 70 dB at 1 m and about 9 months on a cell (estimates); a custom circuit board replaces the breakout boards."
+          }
+        ],
+        "chosen": "slim-tag",
+        "dependsOn": [],
+        "unlocks": [
+          "design/bom",
+          "design/enclosure"
+        ],
+        "source": "Rev D engineering, sections 0 and 5; Rev D design, section 2"
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, in his direction for Rev D: \"more like a leather-looking, high-quality baggage tag ... change the double-A batteries to a watch battery to make it smaller ... We cannot have a large dangling object. It must have a pocket to fit an AirTag and be a little larger\"; and at 19:00, of the Rev D tag: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "add",
+      "proposal": "D003",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 1, name and tagline",
+      "section": "concept/decisions",
+      "title": "Which lines go on the tag?",
+      "body": "As rendered and approved with the design: on the front, BAGGAGE CLAIMS / MK1 in the stamp and the tagline \"Your luggage finally talks back.\" (the launch video script's line under the title card, 0:06); on the tracker door in the back, \"FRAGILE — and emotionally unstable.\" (the owner's line, word for word). Lettering Montserrat Bold, an open-licence placeholder until a brand kit exists. No third-party name or logo anywhere.",
+      "data": {
+        "key": "tag-lines",
+        "parent": "enclosure-design",
+        "options": [
+          {
+            "id": "talks-back",
+            "label": "Front: \"Your luggage finally talks back.\"; back: \"FRAGILE — and emotionally unstable.\"",
+            "outcome": "As on the Rev D renders."
+          },
+          {
+            "id": "name-only",
+            "label": "The name and MK1 only",
+            "outcome": "No tagline on the tag."
+          }
+        ],
+        "chosen": "talks-back",
+        "dependsOn": [
+          "enclosure-design"
+        ],
+        "unlocks": [
+          "marketing/brand"
+        ],
+        "source": "Rev D design, section 1, name and tagline"
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, 19:00, of Rev D as rendered, with these lines on it: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "add",
+      "proposal": "D004",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules; section 2.1, options compared",
+      "section": "concept/decisions",
+      "title": "Which cell powers the tag?",
+      "body": "One CR2032 lithium coin cell with a 1 F, 2.7 V supercapacitor that carries the speaker's bursts: the cell never drives the speaker; it refills the capacitor at up to 2.6 mA through 470 ohm, inside its 3 mA continuous rating, and the capacitor gives the 1 W peaks through a boost converter. 0.07 g of lithium metal, under the 0.3 g under which a device may stay on in checked baggage. No port, no charger; the user changes one CR2032 about every nine months (estimate).",
+      "data": {
+        "key": "power",
+        "parent": "form-factor",
+        "options": [
+          {
+            "id": "2xaa",
+            "label": "Two AA alkaline cells, 3.3 V boost (Rev B)",
+            "outcome": "Not lithium; needs a 2 x 46 mm battery bay and the 20 mm deep speaker: the box."
+          },
+          {
+            "id": "cr2032",
+            "label": "One CR2032 straight to the amplifier",
+            "outcome": "About 53 dB at 1 m: inaudible in a terminal."
+          },
+          {
+            "id": "cr2032-supercap",
+            "label": "One CR2032 and a 1 F supercapacitor buffer",
+            "outcome": "About 70 dB at 1 m, about 9 months (estimates); 0.07 g lithium."
+          },
+          {
+            "id": "cr2450-supercap",
+            "label": "One CR2450 and the same buffer",
+            "outcome": "About 26 months, about 0.19 g lithium (estimate); the 24.5 mm cell does not fit beside the speaker without a wider tag."
+          },
+          {
+            "id": "lir2450",
+            "label": "LIR2450 rechargeable and USB-C",
+            "outcome": "0.43 Wh; a charging port in the face, a charger and a protection chip, and no louder."
+          },
+          {
+            "id": "lipo",
+            "label": "Flat 150 mAh LiPo and USB-C",
+            "outcome": "0.56 Wh; a pouch cell in a bag that is thrown and crushed."
+          }
+        ],
+        "chosen": "cr2032-supercap",
+        "dependsOn": [
+          "form-factor"
+        ],
+        "unlocks": [
+          "design/bom",
+          "design/wiring"
+        ],
+        "source": "Rev D engineering, sections 1 and 2",
+        "note": "The airline rules, as read on 22 Nov 2026 (Rev D engineering, section 1). IATA Dangerous Goods Regulations, 66th edition, Table 2.3.A (https://www.iata.org/contentassets/6fea26dd84d24b26a7a1fd5788561d6e/dgr-66-en-2.3.a.pdf): baggage with installed lithium batteries may go as checked baggage only if the batteries \"contain no more than 0.3 g lithium metal or for lithium ion must not exceed 2.7 Wh\"; portable electronic devices: \"Devices in checked baggage must be completely switched off and must be protected from damage\". IATA Guidance Document for Passengers Travelling with Lithium Batteries 2026 (https://www.iata.org/contentassets/6fea26dd84d24b26a7a1fd5788561d6e/passengers_travelling_with_lithium_batteries.pdf): in checked baggage \"the device must be completely switched off (not in sleep or hibernation mode)\", with a footnote exempting devices of 0.3 g or less of lithium metal, or 2.7 Wh or less. FAA PackSafe, Baggage Equipped with Lithium Batteries (https://www.faa.gov/hazmat/packsafe/baggage-with-lithium-batteries): \"lithium content not exceeding 0.3 grams\" or \"a Watt-hour rating not exceeding 2.7 Wh\"; \"If you choose to equip a checked bag with a baggage tracking device, then it must meet the size limits above\"; \"Check with the airline before traveling with these devices\". FAA PackSafe, Portable Electronic Devices Containing Batteries (https://www.faa.gov/hazmat/packsafe/portable-electronic-devices-with-batteries): devices in checked bags \"must be completely powered off and protected to prevent unintentional activation or damage\"; spare lithium batteries \"are always prohibited in checked baggage\". FAA PackSafe, Lithium Batteries (https://www.faa.gov/hazmat/packsafe/lithium-batteries): lithium metal \"limited to 2 grams of lithium content per battery\". The CR2032's 0.07 g: the Duracell CR2032 sheet (https://www.duracell.com/wp-content/uploads/2021/06/CR2032CH_225mAh.pdf). The IATA documents were read through a web reader. Still to watch: airlines may set stricter rules, and no rule names a device that talks."
+      },
+      "status": "decided",
+      "ruling": "Owner, 22 Nov 2026, in his direction for Rev D: \"change the double-A batteries to a watch battery to make it smaller\"; and at 19:00, of Rev D with its CR2032 and supercapacitor: \"yes this is perfect, a perfect design\".",
+      "ruledOn": "2026-11-22"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D005",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3, one construction for all three directions",
+      "section": "concept/decisions",
+      "match": {
+        "title": "Which enclosure build?"
+      },
+      "appendList": {
+        "options": [
+          {
+            "id": "rev-d-tag",
+            "label": "Rev D slim tag: one two-colour PETG print and a TPU strap",
+            "outcome": "Body, back plate, tracker door and coin door in one PETG job, the strap in TPU; no screws, no glue, no paint, about 15 minutes to assemble."
+          }
+        ]
+      },
+      "appendBody": "Decided on 22 Nov 2026 with the Rev D tag: the three Rev A builds are superseded by Rev D's one construction (Decisions, \"Which form factor ships?\" and \"Which enclosure design ships?\").",
+      "decide": {
+        "ruling": "Owner, 22 Nov 2026, 19:00, of the Rev D tag: \"yes this is perfect, a perfect design\".",
+        "on": "2026-11-22",
+        "chosen": "rev-d-tag"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D006",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, options compared",
+      "section": "concept/questions",
+      "match": {
+        "title": "Batteries: two AA alkaline cells"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): one CR2032 coin cell with a 1 F supercapacitor buffer (Decisions, \"Which cell powers the tag?\")."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D007",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected",
+      "section": "concept/questions",
+      "match": {
+        "title": "Motion sensor: the Adafruit MPU6050 breakout"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): an LSM6DSO-class sensor on the tag's own circuit board; the breakout is a third of the tag's inside and needs more than a coin cell gives. The owner's MPU-6050 stays the reference on the bench: the detection logic does not depend on the chip."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D008",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, what follows for this product",
+      "section": "concept/questions",
+      "match": {
+        "title": "In the hold: it performs, and an off switch exists"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): Rev D runs on a CR2032, which is lithium: 0.07 g of lithium metal, under the 0.3 g under which IATA and the FAA let a device stay on in checked baggage. The off switch stays."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D009",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 2, size",
+      "section": "concept/questions",
+      "match": {
+        "title": "Enclosure: 80 x 60 x 42 mm, a tag on the handle"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): a slim tag of 62 x 92 x 12.8 mm, still with the name card and the tracker pocket (Decisions, \"Which form factor ships?\")."
+    },
+    {
+      "op": "retire",
+      "proposal": "D010",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery positive to switch"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D011",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery negative to ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D012",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Sensor power"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D013",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Sensor ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D014",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2C clock"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D015",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2C data"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D016",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Motion interrupt"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D017",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Audio module power"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D018",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Audio module ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D019",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Speaker lead 1"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D020",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Speaker lead 2"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D021",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Mode button to GPIO"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D022",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Mode button to ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D023",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Pull-up from 3V3"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D024",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Pull-up to the mode GPIO"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D025",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Switch to the reverse-battery MOSFET"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D026",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "MOSFET to the regulator input"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D027",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "MOSFET gate to ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D028",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Regulator ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D029",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Regulator output to the controller"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D030",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2S bit clock"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D031",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2S word select"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D032",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "I2S data"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D033",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Amplifier enable"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D034",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Amplifier enable to its pull-down"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D035",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Amplifier pull-down to ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D036",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery sense from the regulator input"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D037",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery sense midpoint"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D038",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery sense lower resistor"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D039",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery sense lower resistor to ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D040",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery sense capacitor"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D041",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Battery sense capacitor to ground"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D042",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Bulk capacitor positive"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D043",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 4, the board",
+      "section": "design/wiring",
+      "match": {
+        "title": "Bulk capacitor negative"
+      },
+      "why": "the Rev D slim tag replaces the 2 x AA design's hand-soldered wiring with the nets of its own circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D044",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "U1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D045",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "U2"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D046",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "U3"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D047",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "SPK1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D048",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "BT1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D049",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "BAT"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D050",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "S1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D051",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "S2"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D052",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "R2"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D053",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "W1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D054",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "PCB1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D055",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "HW1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D056",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "ENC1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D057",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "STR1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D058",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "U4"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D059",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "Q1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D060",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "C1"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D061",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "C2"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D062",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "R3"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D063",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "R4"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "retire",
+      "proposal": "D064",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, electronics re-selected; section 2.6, bill of materials",
+      "section": "design/bom",
+      "match": {
+        "ref": "R5"
+      },
+      "why": "the Rev D slim tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the 2 x AA design's parts with one CR2032, a supercapacitor and a custom circuit board"
+    },
+    {
+      "op": "add",
+      "proposal": "D065",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Custom circuit board, 24 x 35 mm",
+      "body": "Two layers, 0.8 mm FR-4, ENIG (pads for the cell springs), corners R 1.5. It carries everything but the speaker, the supercapacitor and the tracker: U1, U2, U3, U4, U5, Q1, Q2, R1, R2, R3, R4, R5, R6, C1, C2, PAS, Y1, L1, L3, S1, S2, BT1, and the programming pads J1 (a Tag-Connect TC2030 footprint, no part fitted). Components on the back side up to 1.2 mm high, the two cell springs on the front side, both switches on its right-hand edge. Clamped between four printed posts and four pads on the back plate. Price per board of a 5-board prototype order; it needs a design and a layout first (about $20 for the first five plus a stencil, estimate). Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "PCB1",
+        "qty": 1,
+        "source": "A prototype board house",
+        "search": "2 layer PCB 0.8 mm ENIG",
+        "asin": "",
+        "unit": 4.0,
+        "line": 4.0,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 2.0
+          },
+          {
+            "qty": 100,
+            "unit": 0.45
+          }
+        ],
+        "kind": "circuit board",
+        "geometry": {
+          "shape": "box",
+          "size": [
+            24.0,
+            0.8,
+            35.0
+          ],
+          "pos": [
+            -15.6,
+            6.0,
+            -14.1
+          ],
+          "explode": [
+            0,
+            -12,
+            0
+          ],
+          "basis": "doc",
+          "basisSource": "24 x 35 x 0.8 mm: the Rev D design (engineering, section 4)"
+        },
+        "components": [
+          "U1",
+          "U2",
+          "U3",
+          "U4",
+          "U5",
+          "Q1",
+          "Q2",
+          "R1",
+          "R2",
+          "R3",
+          "R4",
+          "R5",
+          "R6",
+          "C1",
+          "C2",
+          "PAS",
+          "Y1",
+          "L1",
+          "L3",
+          "S1",
+          "S2",
+          "BT1",
+          "J1"
+        ],
+        "mountingHoles": [
+          {
+            "x": -6,
+            "z": -14,
+            "diameter": 2.2
+          },
+          {
+            "x": -6,
+            "z": 14,
+            "diameter": 2.2
+          },
+          {
+            "x": 6,
+            "z": -14,
+            "diameter": 2.2
+          },
+          {
+            "x": 6,
+            "z": 14,
+            "diameter": 2.2
+          }
+        ],
+        "mountingHolesBasis": "Placed for the app's generator, clear of the side switches: the Rev D note clamps the board on four printed posts but gives no positions."
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D066",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Board assembly",
+      "body": "Stencil and reflow by hand at one to five boards (own labour not costed, so $0), turnkey assembly at a hundred. 0.4 mm-pitch parts: not perfboard work. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "PCBA",
+        "qty": 1,
+        "source": "Own bench; an assembly house at 100",
+        "search": "PCB assembly service",
+        "asin": "",
+        "unit": 0.0,
+        "line": 0.0,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.0
+          },
+          {
+            "qty": 100,
+            "unit": 1.8
+          }
+        ],
+        "kind": "generic",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D067",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Controller chip, nRF52832",
+      "body": "nRF52832-QFAA, QFN-48 6 x 6 mm, run from the cell directly; its radio is never started and no antenna is fitted. 512 kB flash of its own; the clips are in U3. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "U1",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "nRF52832-QFAA",
+        "asin": "",
+        "unit": 3.4,
+        "line": 3.4,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 3.4
+          },
+          {
+            "qty": 100,
+            "unit": 2.6
+          }
+        ],
+        "kind": "microcontroller",
+        "library": "nrf52832-qfn48",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D068",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Crystals Y1 and Y2, 32 MHz and 32.768 kHz",
+      "body": "2016 and 2012 packages, for U1. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "Y1",
+        "qty": 2,
+        "source": "Any distributor",
+        "search": "32 MHz crystal 2016; 32.768 kHz crystal 2012",
+        "asin": "",
+        "unit": 0.35,
+        "line": 0.7,
+        "priceBreaks": [
+          {
+            "qty": 10,
+            "unit": 0.35
+          },
+          {
+            "qty": 200,
+            "unit": 0.15
+          }
+        ],
+        "kind": "generic",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D069",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "DC/DC inductors L1 and L2, 10 uH and 15 nH",
+      "body": "For U1's own DC/DC converter. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "L1",
+        "qty": 2,
+        "source": "Any distributor",
+        "search": "10uH 15nH inductor 0603",
+        "asin": "",
+        "unit": 0.12,
+        "line": 0.24,
+        "priceBreaks": [
+          {
+            "qty": 10,
+            "unit": 0.12
+          },
+          {
+            "qty": 200,
+            "unit": 0.05
+          }
+        ],
+        "kind": "generic",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D070",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Motion sensor chip, LSM6DSO class",
+      "body": "6-axis accelerometer and gyro, LGA-14 2.5 x 3 x 0.83 mm, +/-16 g and +/-2000 degrees a second, FIFO and wake-up interrupt, on SPI. Replaces the Adafruit MPU-6050 breakout, which is a third of the tag's inside and draws more than a coin cell gives with its gyro on. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "U2",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "LSM6DSO",
+        "asin": "",
+        "unit": 3.2,
+        "line": 3.2,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 3.2
+          },
+          {
+            "qty": 100,
+            "unit": 2.0
+          }
+        ],
+        "kind": "sensor",
+        "library": "lsm6dso-class-imu",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D071",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Clip flash, 8 MB SPI NOR",
+      "body": "MX25R6435F class, wide supply: about 245 s of 16 kHz PCM or about 980 s as 4-bit ADPCM (calculated). Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "U3",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "MX25R6435F",
+        "asin": "",
+        "unit": 1.4,
+        "line": 1.4,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 1.4
+          },
+          {
+            "qty": 100,
+            "unit": 0.9
+          }
+        ],
+        "kind": "module",
+        "library": "spi-nor-flash-wide",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D072",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Amplifier chip, MAX98357A",
+      "body": "The I2S class-D amplifier of the 2 x AA design as a chip (TQFN-16 3 x 3) on the board; fed from the boosted 3.3 V only while a clip plays. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "U4",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "MAX98357AETE",
+        "asin": "",
+        "unit": 2.1,
+        "line": 2.1,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 2.1
+          },
+          {
+            "qty": 100,
+            "unit": 1.3
+          }
+        ],
+        "kind": "module",
+        "library": "max98357a-tqfn16",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D073",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Boost converter, 3.3 V, TPS61023 class",
+      "body": "Starts from 0.5 V, switch of 3 A or more (recalled), 3.3 V out; raises the supercapacitor for the amplifier and is enabled only for a clip. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "U5",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "TPS61023",
+        "asin": "",
+        "unit": 0.9,
+        "line": 0.9,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.9
+          },
+          {
+            "qty": 100,
+            "unit": 0.45
+          }
+        ],
+        "kind": "regulator",
+        "library": "boost-0v5-3v3-class",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D074",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Boost inductor, 1 uH 3 A",
+      "body": "2520 package, for U5. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "L3",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "1uH 3A inductor 2520",
+        "asin": "",
+        "unit": 0.3,
+        "line": 0.3,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.3
+          },
+          {
+            "qty": 100,
+            "unit": 0.12
+          }
+        ],
+        "kind": "generic",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D075",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Reverse-cell P-MOSFET",
+      "body": "SOT-23, in the cell's lead after the off switch, gate to ground: a cell fitted the wrong way does no harm. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "Q1",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "P-channel MOSFET SOT-23 logic level",
+        "asin": "",
+        "unit": 0.25,
+        "line": 0.25,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.25
+          },
+          {
+            "qty": 100,
+            "unit": 0.06
+          }
+        ],
+        "kind": "generic",
+        "library": "p-mosfet-sot23",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D076",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Charge switch P-MOSFET",
+      "body": "SOT-23, switched by the controller (CHG_EN): it lets the cell refill the supercapacitor through R1 and stops at 2.6 V. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "Q2",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "P-channel MOSFET SOT-23 logic level",
+        "asin": "",
+        "unit": 0.25,
+        "line": 0.25,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.25
+          },
+          {
+            "qty": 100,
+            "unit": 0.06
+          }
+        ],
+        "kind": "generic",
+        "library": "p-mosfet-sot23",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D077",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Charge resistor, 470 ohm",
+      "body": "From the charge switch to the supercapacitor: 2.6 mA at 1.8 V on the capacitor, 0.85 mA at 2.6 V (calculated), inside the CR2032's 3 mA continuous. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "R1",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "470 ohm resistor 0402",
+        "asin": "",
+        "unit": 0.03,
+        "line": 0.03,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.03
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "resistor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D078",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Capacitor sense resistor, upper",
+      "body": "Divider from the supercapacitor to the controller's ADC (V_SC). Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "R2",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "1M resistor 0402",
+        "asin": "",
+        "unit": 0.03,
+        "line": 0.03,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.03
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "resistor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D079",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Capacitor sense resistor, lower",
+      "body": "Lower half of the V_SC divider, to ground. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "R3",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "1M resistor 0402",
+        "asin": "",
+        "unit": 0.03,
+        "line": 0.03,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.03
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "resistor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D080",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Cell sense resistor, upper",
+      "body": "Divider from the cell rail to the controller's ADC (V_CELL), read under the 2 mA charge load so a tired cell shows. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "R4",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "1M resistor 0402",
+        "asin": "",
+        "unit": 0.03,
+        "line": 0.03,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.03
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "resistor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D081",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Cell sense resistor, lower",
+      "body": "Lower half of the V_CELL divider, to ground. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "R5",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "1M resistor 0402",
+        "asin": "",
+        "unit": 0.03,
+        "line": 0.03,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.03
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "resistor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D082",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Boost enable pull-down",
+      "body": "Holds the boost converter off while the controller is unpowered or asleep, so a charged capacitor cannot drive the amplifier with the off switch off. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "R6",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "100k resistor 0402",
+        "asin": "",
+        "unit": 0.03,
+        "line": 0.03,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.03
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "resistor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D083",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Cell rail capacitor, 100 uF",
+      "body": "Carries the controller's bursts (about 10 mA for milliseconds) off the cell. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "C1",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "100uF 6.3V capacitor 1206",
+        "asin": "",
+        "unit": 0.12,
+        "line": 0.12,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.12
+          },
+          {
+            "qty": 100,
+            "unit": 0.03
+          }
+        ],
+        "kind": "capacitor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D084",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Cell rail capacitor, 10 uF",
+      "body": "Beside C1 at the controller. Price: a share of the passives line (estimate).",
+      "data": {
+        "ref": "C2",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "10uF 6.3V capacitor 0603",
+        "asin": "",
+        "unit": 0.05,
+        "line": 0.05,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.05
+          },
+          {
+            "qty": 100,
+            "unit": 0.01
+          }
+        ],
+        "kind": "capacitor",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D085",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Other passives",
+      "body": "Decoupling and the DC/DC parts, about eight: the rest of the Rev D note's passives line ($0.80, $0.80 and $0.20 in all with R1 to R6, C1 and C2). Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "PAS",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "0402 passives",
+        "asin": "",
+        "unit": 0.45,
+        "line": 0.45,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.45
+          },
+          {
+            "qty": 100,
+            "unit": 0.1
+          }
+        ],
+        "kind": "generic",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D086",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Supercapacitor 1 F, 2.7 V",
+      "body": "Eaton HV0810-2R7105-R: 1 F, 2.7 V, 0.2 ohm, 10 uA leakage, 8.5 x 13.5 mm (the maker's page, read 22 Nov 2026). Between 2.6 and 1.8 V it holds 1.76 J, about 2.5 clips at full level (calculated). Lies in two printed saddles beside the tracker, leads through a notch to the board. Price: an estimate.",
+      "data": {
+        "ref": "SC1",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "Eaton HV0810-2R7105-R",
+        "asin": "",
+        "unit": 1.6,
+        "line": 1.6,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 1.6
+          },
+          {
+            "qty": 100,
+            "unit": 0.95
+          }
+        ],
+        "kind": "capacitor",
+        "library": "supercap-1f-2v7",
+        "geometry": {
+          "shape": "cylinder",
+          "size": [
+            8.5,
+            13.5
+          ],
+          "pos": [
+            -18.65,
+            6.65,
+            17.25
+          ],
+          "explode": [
+            0,
+            0,
+            14
+          ],
+          "basis": "doc",
+          "axis": "z",
+          "basisSource": "8.5 x 13.5 mm: the maker's page (Eaton HV0810-2R7105-R), read 22 Nov 2026"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D087",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Speaker 28 mm, 4 ohm, 3 W",
+      "body": "PUI Audio AS02804PR-N50-R: 28 mm, 7.5 mm seated, 4 ohm, 3 W, 76.5 dBA at 3 W and 1 m, $7.33 one, $4.38 a hundred (DigiKey, read 22 Nov 2026). About 70 dB at 1 m at full level in the tag (estimate). On a 0.5 mm foam gasket under the perforated panel, three printed fingers hold it, in a sealed 5.6 cm3 chamber.",
+      "data": {
+        "ref": "SPK1",
+        "qty": 1,
+        "source": "DigiKey",
+        "search": "PUI Audio AS02804PR-N50-R",
+        "asin": "",
+        "unit": 7.33,
+        "line": 7.33,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 7.33
+          },
+          {
+            "qty": 100,
+            "unit": 4.38
+          }
+        ],
+        "kind": "speaker",
+        "library": "speaker-small",
+        "geometry": {
+          "shape": "cylinder",
+          "size": [
+            28.0,
+            7.5
+          ],
+          "pos": [
+            13.2,
+            6.95,
+            -14.4
+          ],
+          "explode": [
+            0,
+            14,
+            0
+          ],
+          "basis": "doc",
+          "axis": "y",
+          "basisSource": "28 mm diameter, 7.5 mm seated: the reseller's page (DigiKey), read 22 Nov 2026"
+        },
+        "opening": {
+          "face": "top"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D088",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Off switch, side-actuated slide",
+      "body": "SPDT slide switch on the board's right-hand edge (C&K PCM12 class), in the cell's lead before everything: off, the cell is disconnected. Its lever sits 0.5 mm under the edge surface in a slot, so a knock cannot move it. Price: an estimate.",
+      "data": {
+        "ref": "S1",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "C&K PCM12 right angle slide switch",
+        "asin": "",
+        "unit": 0.7,
+        "line": 0.7,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.7
+          },
+          {
+            "qty": 100,
+            "unit": 0.35
+          }
+        ],
+        "kind": "switch",
+        "library": "slide-switch-spdt",
+        "geometry": {
+          "shape": "box",
+          "size": [
+            5.5,
+            1.4,
+            6.7
+          ],
+          "pos": [
+            -27.75,
+            4.9,
+            -4.2
+          ],
+          "explode": [
+            -14,
+            0,
+            0
+          ],
+          "basis": "typical",
+          "basisSource": "Typical of the C&K PCM12 class (Rev D engineering, section 4), unverified"
+        },
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D089",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Mode button, side-actuated tactile",
+      "body": "3.5 x 2.9 mm side-actuated tactile switch (SKRT class) on the board's right-hand edge, plunger 0.5 mm under the edge surface: tap for volume, hold for the voice pack, 10 s to reset. Price: an estimate.",
+      "data": {
+        "ref": "S2",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "side actuated tactile switch SKRT",
+        "asin": "",
+        "unit": 0.35,
+        "line": 0.35,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.35
+          },
+          {
+            "qty": 100,
+            "unit": 0.15
+          }
+        ],
+        "kind": "button",
+        "geometry": {
+          "shape": "box",
+          "size": [
+            5.8,
+            1.6,
+            3.5
+          ],
+          "pos": [
+            -27.6,
+            4.8,
+            -22.0
+          ],
+          "explode": [
+            -14,
+            0,
+            0
+          ],
+          "basis": "typical",
+          "basisSource": "Typical of the SKRT class (Rev D engineering, section 4), unverified"
+        },
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D090",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Cell contacts, rim and centre springs",
+      "body": "Two springs soldered to the board's front side press the cell onto its door: the rim spring is +, the centre spring -. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "BT1",
+        "qty": 2,
+        "source": "Any distributor",
+        "search": "CR2032 PCB contact spring",
+        "asin": "",
+        "unit": 0.3,
+        "line": 0.6,
+        "priceBreaks": [
+          {
+            "qty": 10,
+            "unit": 0.3
+          },
+          {
+            "qty": 200,
+            "unit": 0.1
+          }
+        ],
+        "kind": "battery",
+        "library": "coin-cell-contacts-2032",
+        "insideOf": "PCB1"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D091",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Coin cell CR2032",
+      "body": "One CR2032 lithium coin cell, 20.0 x 3.2 mm (Murata), 0.07 g of lithium metal (Duracell's sheet, read 22 Nov 2026): under the 0.3 g under which a device may stay on in checked baggage. In a printed cup under a bayonet coin door in the front. About 9 months at four travel days a month (estimate). Price: an estimate.",
+      "data": {
+        "ref": "BAT",
+        "qty": 1,
+        "source": "Any shop",
+        "search": "CR2032",
+        "asin": "",
+        "unit": 0.6,
+        "line": 0.6,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.6
+          },
+          {
+            "qty": 100,
+            "unit": 0.25
+          }
+        ],
+        "geometry": {
+          "shape": "cylinder",
+          "size": [
+            20.0,
+            3.2
+          ],
+          "pos": [
+            -14.6,
+            9.15,
+            -14.0
+          ],
+          "explode": [
+            0,
+            22,
+            0
+          ],
+          "basis": "doc",
+          "axis": "y",
+          "basisSource": "20.0 x 3.2 mm: the Murata CR2032 data sheet, read 22 Nov 2026"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D092",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Speaker gasket and chamber foam",
+      "body": "Gasket ring 28 OD / 23 ID in 0.5 mm closed-cell foam, and foam tape for the chamber's seal. Prices at 1, 5 and 100 units are estimates (Rev D engineering, section 2.6), not quotes.",
+      "data": {
+        "ref": "GSK",
+        "qty": 1,
+        "source": "Any distributor",
+        "search": "0.5 mm closed cell foam sheet adhesive",
+        "asin": "",
+        "unit": 0.3,
+        "line": 0.3,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.3
+          },
+          {
+            "qty": 100,
+            "unit": 0.06
+          }
+        ],
+        "kind": "mechanical"
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D093",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "design/bom",
+      "title": "Tracker, AirTag-style (the buyer's own)",
+      "body": "Not part of the product and not costed: the buyer drops their own tracker (31.9 mm across, 8.0 mm thick, domed both sides) into the pocket behind the bayonet door in the back. One is needed to try the pocket on the prototype. It is its own device with its own cell, which does not count against the tag's lithium.",
+      "data": {
+        "ref": "TRK",
+        "qty": 1,
+        "source": "The buyer's own",
+        "search": "Tracker, AirTag-style (the buyer's own)",
+        "asin": "",
+        "unit": 0.0,
+        "line": 0.0,
+        "priceBreaks": [
+          {
+            "qty": 5,
+            "unit": 0.0
+          },
+          {
+            "qty": 100,
+            "unit": 0.0
+          }
+        ],
+        "kind": "mechanical",
+        "geometry": {
+          "shape": "cylinder",
+          "size": [
+            31.9,
+            8.0
+          ],
+          "pos": [
+            6.0,
+            6.8,
+            23.0
+          ],
+          "explode": [
+            0,
+            -14,
+            0
+          ],
+          "basis": "typical",
+          "axis": "y",
+          "basisSource": "31.9 x 8.0 mm: the owner's brief; the domed profile is assumed"
+        }
+      },
+      "status": "to buy"
+    },
+    {
+      "op": "add",
+      "proposal": "D094",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "design/bom",
+      "title": "Tag body, printed (PETG, two colours)",
+      "body": "Direction A Heritage, colourway A1 Saddle: Bambu Lab PETG HF Peanut Brown with the stitches, the stamp's rules and the lettering inlaid 0.6 mm in Bambu Lab PETG HF Cream. 62 x 92 x 12.8 mm outside; rim 3.0 mm, front skin 1.6 mm with the perforated panel (61 holes through over the speaker) and the coin-cell cup; pebble grain modelled into the face. Printed front down in job 1. Estimate, not sliced: 25.4 g of PETG in the body and its front inlay, plus 3.2 g of purge for the job's eight colour changes, at $20 a kg: $0.57.",
+      "data": {
+        "ref": "ENC1",
+        "qty": 1,
+        "source": "Own printer",
+        "search": "",
+        "asin": "",
+        "line": 0.57,
+        "printPricePerKg": 20,
+        "printGrams": 28.6,
+        "kind": "enclosure",
+        "geometry": {
+          "shape": "shell",
+          "size": [
+            62,
+            12.8,
+            92
+          ],
+          "pos": [
+            0,
+            6.4,
+            0
+          ],
+          "explode": [
+            0,
+            0,
+            0
+          ],
+          "basis": "doc",
+          "basisSource": "62 x 92 x 12.8 mm: the Rev D design (section 2) and its own size check",
+          "print": true
+        }
+      },
+      "status": "to print"
+    },
+    {
+      "op": "add",
+      "proposal": "D095",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "design/bom",
+      "title": "Back plate, printed (PETG)",
+      "body": "Drops into the body's rim and is held by eight printed snap hooks; carries the name-card pocket (50 x 32 card under 1.5 mm lips) and the tracker door's seat; stitching inlaid in cream. Estimate, not sliced: 6.2 g of PETG at $20 a kg: $0.12.",
+      "data": {
+        "ref": "ENC2",
+        "qty": 1,
+        "source": "Own printer",
+        "search": "",
+        "asin": "",
+        "line": 0.12,
+        "printPricePerKg": 20,
+        "printGrams": 6.2,
+        "kind": "printed part"
+      },
+      "status": "to print"
+    },
+    {
+      "op": "add",
+      "proposal": "D096",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "design/bom",
+      "title": "Tracker door, printed (PETG)",
+      "body": "Bayonet door in the back plate (opening 32.9 mm), turned 60 degrees with a coin; carries \"FRAGILE — and emotionally unstable.\" inlaid in cream. Estimate, not sliced: 1.9 g of PETG at $20 a kg: $0.04.",
+      "data": {
+        "ref": "ENC3",
+        "qty": 1,
+        "source": "Own printer",
+        "search": "",
+        "asin": "",
+        "line": 0.04,
+        "printPricePerKg": 20,
+        "printGrams": 1.9,
+        "kind": "printed part"
+      },
+      "status": "to print"
+    },
+    {
+      "op": "add",
+      "proposal": "D097",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "design/bom",
+      "title": "Coin-cell door, printed (PETG)",
+      "body": "Bayonet door in the front (opening 20.8 mm) over the CR2032, its perforations continuing the panel's lattice. Estimate, not sliced: 0.7 g of PETG at $20 a kg: $0.01.",
+      "data": {
+        "ref": "ENC4",
+        "qty": 1,
+        "source": "Own printer",
+        "search": "",
+        "asin": "",
+        "line": 0.01,
+        "printPricePerKg": 20,
+        "printGrams": 0.7,
+        "kind": "printed part"
+      },
+      "status": "to print"
+    },
+    {
+      "op": "add",
+      "proposal": "D098",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "design/bom",
+      "title": "Strap, printed (TPU)",
+      "body": "14 x 2.0 mm TPU strap in Bambu Lab TPU for AMS Black, through the 18 x 3.2 mm slot, round the handle, a stud pressed through a hole; it holds the tag about 10 mm under the handle. Printed in job 2. Estimate, not sliced: 6.3 g of TPU at $40 a kg (a round figure): $0.25.",
+      "data": {
+        "ref": "STR1",
+        "qty": 1,
+        "source": "Own printer",
+        "search": "",
+        "asin": "",
+        "line": 0.25,
+        "printPricePerKg": 40,
+        "printGrams": 6.3,
+        "kind": "printed part",
+        "geometry": {
+          "shape": "box",
+          "size": [
+            14,
+            2,
+            40
+          ],
+          "pos": [
+            0,
+            6.4,
+            -66
+          ],
+          "explode": [
+            0,
+            0,
+            -20
+          ],
+          "basis": "doc",
+          "basisSource": "14 x 2.0 mm strap (the Rev D design, check 16); its loop above the slot drawn straight, 40 mm"
+        }
+      },
+      "status": "to print"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D099",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "production/economics",
+      "match": {
+        "title": "Prototype"
+      },
+      "appendBody": "Rev D (the slim tag, 22 Nov 2026): the electronics come to $29.02 for one unit, $27.02 a unit for five and $16.68 a unit for a hundred (estimates), and the printed parts to about $0.99 of filament (estimate, not sliced); the tracker is the buyer's own and not counted."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D100",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "production/economics",
+      "match": {
+        "title": "Enclosure print, one tag"
+      },
+      "appendBody": "Rev D replaces this estimate: 34.1 g of PETG in the parts, 3.2 g of purge and 6.3 g of TPU, about $1.00 of filament a tag (PETG at $20 a kg, TPU at $40), not sliced.",
+      "setData": {
+        "cogs": "about $1.00"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D101",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.6, bill of materials",
+      "section": "concept/questions",
+      "match": {
+        "title": "Prototype parts: about $65 for one unit (estimate, added up)"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): the electronics come to $29.02 for one unit (estimate) and the printed parts to about $1.00; a custom board replaces the kit lines, and the first five boards cost about $20 plus a stencil (estimate)."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D102",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "concept/questions",
+      "match": {
+        "title": "Enclosure print: about 75 g of PETG, about $1.50 of filament (estimate)"
+      },
+      "appendBody": "Superseded on 22 Nov 2026 by the Rev D tag the owner approved at 19:00 (\"yes this is perfect, a perfect design\"): about 37 g of PETG with the purge and 6.3 g of TPU, about $1.00 of filament (estimate, not sliced)."
+    },
+    {
+      "op": "add",
+      "proposal": "D103",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell to the off switch",
+      "body": "",
+      "data": {
+        "from": "BT1",
+        "fromPin": "+",
+        "to": "S1",
+        "toPin": "2",
+        "net": "CELL",
+        "netClass": "power",
+        "order": 1
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D104",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Off switch to the reverse-cell MOSFET",
+      "body": "",
+      "data": {
+        "from": "S1",
+        "fromPin": "1",
+        "to": "Q1",
+        "toPin": "D",
+        "net": "CELL_SW",
+        "netClass": "power",
+        "order": 2
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D105",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Reverse-cell MOSFET to the cell rail",
+      "body": "",
+      "data": {
+        "from": "Q1",
+        "fromPin": "S",
+        "to": "U1",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 3
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D106",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Reverse-cell MOSFET gate to ground",
+      "body": "",
+      "data": {
+        "from": "Q1",
+        "fromPin": "G",
+        "to": "BT1",
+        "toPin": "-",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 4
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D107",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Controller ground",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "GND",
+        "to": "BT1",
+        "toPin": "-",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 5
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D108",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "U2",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 6
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D109",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the motion sensor's I/O supply",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "VDD",
+        "to": "U2",
+        "toPin": "VDDIO",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 7
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D110",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Motion sensor ground",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 8
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D111",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the flash",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "U3",
+        "toPin": "VCC",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 9
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D112",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Flash ground",
+      "body": "",
+      "data": {
+        "from": "U3",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 10
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D113",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail capacitor C1",
+      "body": "",
+      "data": {
+        "from": "C1",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 11
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D114",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "C1 to ground",
+      "body": "",
+      "data": {
+        "from": "C1",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 12
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D115",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail capacitor C2",
+      "body": "",
+      "data": {
+        "from": "C2",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "VDD",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 13
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D116",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "C2 to ground",
+      "body": "",
+      "data": {
+        "from": "C2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 14
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D117",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI clock to the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "IMU_SCK",
+        "to": "U2",
+        "toPin": "SPC",
+        "net": "IMU_SCK",
+        "netClass": "signal",
+        "order": 15
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D118",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data out to the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "IMU_MOSI",
+        "to": "U2",
+        "toPin": "SDI",
+        "net": "IMU_MOSI",
+        "netClass": "signal",
+        "order": 16
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D119",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data in from the motion sensor",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "SDO",
+        "to": "U1",
+        "toPin": "IMU_MISO",
+        "net": "IMU_MISO",
+        "netClass": "signal",
+        "order": 17
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D120",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI clock to the flash",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "FLASH_SCK",
+        "to": "U3",
+        "toPin": "SCLK",
+        "net": "FLASH_SCK",
+        "netClass": "signal",
+        "order": 18
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D121",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data out to the flash",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "FLASH_MOSI",
+        "to": "U3",
+        "toPin": "SI",
+        "net": "FLASH_MOSI",
+        "netClass": "signal",
+        "order": 19
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D122",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "SPI data in from the flash",
+      "body": "",
+      "data": {
+        "from": "U3",
+        "fromPin": "SO",
+        "to": "U1",
+        "toPin": "FLASH_MISO",
+        "net": "FLASH_MISO",
+        "netClass": "signal",
+        "order": 20
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D123",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Motion sensor select",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "IMU_CS",
+        "to": "U2",
+        "toPin": "CS",
+        "net": "IMU_CS",
+        "netClass": "signal",
+        "order": 21
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D124",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Flash select",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "FLASH_CS",
+        "to": "U3",
+        "toPin": "CS",
+        "net": "FLASH_CS",
+        "netClass": "signal",
+        "order": 22
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D125",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Wake-up interrupt",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "INT1",
+        "to": "U1",
+        "toPin": "IMU_INT1",
+        "net": "IMU_INT1",
+        "netClass": "signal",
+        "order": 23
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D126",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "FIFO interrupt",
+      "body": "",
+      "data": {
+        "from": "U2",
+        "fromPin": "INT2",
+        "to": "U1",
+        "toPin": "IMU_INT2",
+        "net": "IMU_INT2",
+        "netClass": "signal",
+        "order": 24
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D127",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell rail to the charge switch",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "Q2",
+        "toPin": "S",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 25
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D128",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Charge switch to the charge resistor",
+      "body": "",
+      "data": {
+        "from": "Q2",
+        "fromPin": "D",
+        "to": "R1",
+        "toPin": "1",
+        "net": "VCHG",
+        "netClass": "power",
+        "order": 26
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D129",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Charge switch gate",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "CHG_EN",
+        "to": "Q2",
+        "toPin": "G",
+        "net": "CHG_EN",
+        "netClass": "signal",
+        "order": 27
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D130",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Charge resistor to the supercapacitor",
+      "body": "",
+      "data": {
+        "from": "R1",
+        "fromPin": "2",
+        "to": "SC1",
+        "toPin": "+",
+        "net": "V_SC",
+        "netClass": "power",
+        "order": 28
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D131",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Supercapacitor ground",
+      "body": "",
+      "data": {
+        "from": "SC1",
+        "fromPin": "-",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 29
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D132",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Supercapacitor to the boost input",
+      "body": "",
+      "data": {
+        "from": "SC1",
+        "fromPin": "+",
+        "to": "U5",
+        "toPin": "VIN",
+        "net": "V_SC",
+        "netClass": "power",
+        "order": 30
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D133",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost ground",
+      "body": "",
+      "data": {
+        "from": "U5",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 31
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D134",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost enable",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "BOOST_EN",
+        "to": "U5",
+        "toPin": "EN",
+        "net": "BOOST_EN",
+        "netClass": "signal",
+        "order": 32
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D135",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost enable to its pull-down",
+      "body": "",
+      "data": {
+        "from": "U5",
+        "fromPin": "EN",
+        "to": "R6",
+        "toPin": "1",
+        "net": "BOOST_EN",
+        "netClass": "signal",
+        "order": 33
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D136",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost pull-down to ground",
+      "body": "",
+      "data": {
+        "from": "R6",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 34
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D137",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Boost output to the amplifier",
+      "body": "",
+      "data": {
+        "from": "U5",
+        "fromPin": "VOUT",
+        "to": "U4",
+        "toPin": "VDD",
+        "net": "3V3A",
+        "netClass": "power",
+        "order": 35
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D138",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Amplifier ground",
+      "body": "",
+      "data": {
+        "from": "U4",
+        "fromPin": "GND",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 36
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D139",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "I2S bit clock",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "I2S_SCK",
+        "to": "U4",
+        "toPin": "BCLK",
+        "net": "I2S_BCLK",
+        "netClass": "signal",
+        "order": 37
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D140",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "I2S word select",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "I2S_LRCK",
+        "to": "U4",
+        "toPin": "LRCLK",
+        "net": "I2S_LRCK",
+        "netClass": "signal",
+        "order": 38
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D141",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "I2S data",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "I2S_SDOUT",
+        "to": "U4",
+        "toPin": "DIN",
+        "net": "I2S_DIN",
+        "netClass": "signal",
+        "order": 39
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D142",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Amplifier enable",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "AMP_SD",
+        "to": "U4",
+        "toPin": "SD_MODE",
+        "net": "AMP_SD",
+        "netClass": "signal",
+        "order": 40
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D143",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Speaker lead +",
+      "body": "",
+      "data": {
+        "from": "U4",
+        "fromPin": "OUTP",
+        "to": "SPK1",
+        "toPin": "+",
+        "net": "SPK_P",
+        "netClass": "audio",
+        "order": 41
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D144",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Speaker lead -",
+      "body": "",
+      "data": {
+        "from": "U4",
+        "fromPin": "OUTN",
+        "to": "SPK1",
+        "toPin": "-",
+        "net": "SPK_N",
+        "netClass": "audio",
+        "order": 42
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D145",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense, upper",
+      "body": "",
+      "data": {
+        "from": "SC1",
+        "fromPin": "+",
+        "to": "R2",
+        "toPin": "1",
+        "net": "V_SC",
+        "netClass": "power",
+        "order": 43
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D146",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense midpoint",
+      "body": "",
+      "data": {
+        "from": "R2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "ADC_VSC",
+        "net": "V_SC_SENSE",
+        "netClass": "signal",
+        "order": 44
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D147",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense, lower",
+      "body": "",
+      "data": {
+        "from": "R3",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "ADC_VSC",
+        "net": "V_SC_SENSE",
+        "netClass": "signal",
+        "order": 45
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D148",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Capacitor sense lower to ground",
+      "body": "",
+      "data": {
+        "from": "R3",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 46
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D149",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense, upper",
+      "body": "",
+      "data": {
+        "from": "U1",
+        "fromPin": "VDD",
+        "to": "R4",
+        "toPin": "1",
+        "net": "VCELL",
+        "netClass": "power",
+        "order": 47
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D150",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense midpoint",
+      "body": "",
+      "data": {
+        "from": "R4",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "ADC_VCELL",
+        "net": "V_CELL_SENSE",
+        "netClass": "signal",
+        "order": 48
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D151",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense, lower",
+      "body": "",
+      "data": {
+        "from": "R5",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "ADC_VCELL",
+        "net": "V_CELL_SENSE",
+        "netClass": "signal",
+        "order": 49
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D152",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Cell sense lower to ground",
+      "body": "",
+      "data": {
+        "from": "R5",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 50
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D153",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Mode button to the controller",
+      "body": "",
+      "data": {
+        "from": "S2",
+        "fromPin": "1",
+        "to": "U1",
+        "toPin": "MODE",
+        "net": "MODE",
+        "netClass": "signal",
+        "order": 51
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "add",
+      "proposal": "D154",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 3, pins",
+      "section": "design/wiring",
+      "title": "Mode button to ground",
+      "body": "",
+      "data": {
+        "from": "S2",
+        "fromPin": "2",
+        "to": "U1",
+        "toPin": "GND",
+        "net": "GND",
+        "netClass": "ground",
+        "order": 52
+      },
+      "status": "to solder"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D155",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer; section 2.4, current budget",
+      "section": "design/requirements",
+      "match": {
+        "title": "Power"
+      },
+      "setBody": "One CR2032 lithium coin cell (the owner's \"watch battery\", 22 Nov 2026) with a 1 F, 2.7 V supercapacitor that carries the speaker's bursts. The cell runs the controller, the motion sensor and the flash directly (2.0 to 3.2 V) and refills the capacitor through 470 ohm at up to 2.6 mA, inside its 3 mA continuous rating; a boost converter, enabled only for a clip, raises the capacitor to 3.3 V for the amplifier. Asleep: about 12.5 uA at the cell (22.5 uA while the capacitor is kept full, the first 2 h after motion); awake about 0.74 mA. These are estimates from recalled data-sheet figures, not measured. The 2 x AA design (two AA cells and a 3.3 V boost for everything, about 0.25 mA asleep) is superseded.",
+      "setData": {
+        "response": "Sleep with the RAM kept; wake on the motion sensor's interrupt or the button"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D156",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget and battery life",
+      "section": "design/requirements",
+      "match": {
+        "title": "Battery life"
+      },
+      "setBody": "Estimate, for the 2 x AA design's travel day (3 h awake, six clips of 3 s, 21 h asleep): about 3.0 mAh a travel day and 0.30 mAh a day at home switched on. With 180 mAh usable from a CR2032 down to 2.0 V, allowing for cold (225 mAh nominal on the maker's sheet): about 9 months at four travel days a month, about 6 at eight, about 20 switched on and never moved, and about 4 if the carousel keeps it awake 8 h more each travel day. The cell's self-discharge is not counted. The motion sensor's awake current is three quarters of the budget; keeping the gyro off until the accelerometer sees handling would take the four-day figure over a year (estimate). The 2 x AA design's figure was about 6 months."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D157",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, loudness, honestly",
+      "section": "design/requirements",
+      "match": {
+        "title": "Loudness limit"
+      },
+      "setBody": "No more than 85 dBA at 1 m, \"to stay a novelty, not a nuisance\" (the documents). Rev D: about 70 dB at 1 m at full level (67 to 73), 65 dB one step down: calculated from the speaker maker's 76.5 dBA at 3 W and 1 m, less 1.5 dB for a small sealed box and a perforated skin (estimate), with 1 W peaks into 4 ohm. That is 10 dB quieter than the 2 x AA design's 80 dB, about half as loud to the ear: a clear voice at arm's length (about 79 dB at 0.35 m) and at the carousel, not across a busy hall. The loss is the 28 mm speaker, not the cell. Not measured."
+    },
+    {
+      "op": "add",
+      "proposal": "D158",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer, designed",
+      "section": "design/requirements",
+      "title": "Clips from the capacitor buffer",
+      "body": "The speaker's bursts come from the supercapacitor, so loud clips are rationed by its refill. From a full capacitor (2.6 V) about 2.5 full-level clips play back to back (two or three); after that one full-level clip every about 154 s, or one 5 dB down every about 49 s; empty to full takes about 8.5 minutes. Before a clip the firmware reads the capacitor: under 2.2 V it plays 5 dB down, at 1.9 V or under it skips the clip and logs it as busy. All figures are calculated (0.69 J a clip: 1 W peaks, 6 to 1 peak to average, 3 s, 72 % through the boost and the amplifier), not measured.",
+      "data": {
+        "trigger": "A gag allowed by the governor",
+        "response": "Play at full level, 5 dB down under 2.2 V, or skip at 1.9 V"
+      },
+      "status": "open"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D159",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, S1; section 1, what follows",
+      "section": "design/requirements",
+      "match": {
+        "title": "Off switch is a true disconnect"
+      },
+      "setBody": "The owner's ruling of 22 Nov: a physical OFF switch, in case the airport asks. Rev D: a side-actuated slide switch on the board's right-hand edge, its lever 0.5 mm under the edge surface in a slot so a knock cannot move it, in the cell's lead before everything: off, the cell is disconnected and the tag is completely switched off in the sense of IATA's portable-device row and FAA PackSafe. The supercapacitor keeps its charge, but nothing can draw it: the boost converter's enable comes from the unpowered controller and has a pull-down. With 0.07 g of lithium the tag may stay on in the hold; the switch is for when it is asked to be off."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D160",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 6; section 2.2, refill time",
+      "section": "design/requirements",
+      "match": {
+        "title": "Low battery"
+      },
+      "setBody": "The cell is read through a switched divider under the 2 mA charge load, so a tired cell shows. Thresholds about 2.7, 2.5 and 2.3 V (estimates, to be set on the bench), in place of the 2 x AA design's 2.4, 2.2 and 2.0 V: below the first clips are quieter, below the second the low-battery line plays once, below the third no clips, sleep only. The capacitor is read before each clip (Clips from the capacitor buffer). The brown-out counter of the 2 x AA design goes.",
+      "setData": {
+        "trigger": "Cell under about 2.7 / 2.5 / 2.3 V under load"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D161",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, brown-out; section 2.3",
+      "section": "design/requirements",
+      "match": {
+        "title": "Reverse battery and brown-out"
+      },
+      "setBody": "A coin cell fitted the wrong way must do no harm: the P-channel MOSFET Q1 in the cell's lead blocks it. No brown-out is expected: the controller runs from the cell and the audio from the supercapacitor, and 100 uF and 10 uF on the cell rail carry the controller's bursts. The capacitor-voltage gate replaces the 2 x AA design's brown-out count.",
+      "setData": {
+        "trigger": "Cell reversed",
+        "response": "No damage; works when the cell is put in the right way"
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D162",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 3; section 2.3, U2",
+      "section": "design/requirements",
+      "match": {
+        "title": "Sensor configuration"
+      },
+      "setBody": "An LSM6DSO-class sensor on the board at 104 samples a second (not 100: the windows counted in samples scale by 1.04, or the driver resamples), +/-16 g and +/-2000 degrees a second, read in batches from its FIFO on a watermark interrupt (INT2). Asleep: the accelerometer alone in low-power mode at 12.5 Hz with its wake-up interrupt (INT1). The axes are set again for the board's orientation (the board flat in the tag, +Y toward the strap). The owner's MPU-6050 stays the reference for the bench prototype; the detection rules take g and degrees a second and do not depend on the chip. The gyro's zero offset is learnt at rest and never from a steady turn."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D163",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 8, drop survival",
+      "section": "design/requirements",
+      "match": {
+        "title": "Drop survival"
+      },
+      "setBody": "The tag on a suitcase handle must still work after the case is dropped 1.0 m onto concrete, six times, one on each face (an estimate of rough handling; the documents say shocks to 40 g survival). Rev D: rim 3.0 mm all round, outside corners R 4 or more, a 1.6 mm front skin and a 2.4 mm back plate that sits inside the body's rim (a knock on the edge reaches the body, not the joint) on eight snap hooks; the tracker, the cell and the capacitor held through their own centres; the board clamped between posts and pads; both doors bayonets bearing on a lip; nothing hinged; the strap TPU. Not tested."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D164",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 2, size; section 3, one construction",
+      "section": "design/requirements",
+      "match": {
+        "title": "Enclosure"
+      },
+      "setBody": "Rev D, direction A Heritage, colourway A1 Saddle: a slim tag, 62 x 92 x 12.8 mm, PETG in two colours with a TPU strap, a strap slot, the perforated speaker panel, a tracker pocket behind a bayonet door and a name-card pocket in the back. The motion sensor is on the board, which is clamped rigidly between printed posts and pads, never foam mounted. The 80 x 60 x 42 mm box is superseded."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D165",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 4, the board",
+      "section": "design/requirements",
+      "match": {
+        "title": "Rigid sensor mount"
+      },
+      "appendBody": "Rev D: the motion sensor is soldered on the custom board, and the board is clamped between four printed posts and four pads on the back plate; the breakout and its screws are gone."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D166",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.5, clip storage; section 3, firmware item 5",
+      "section": "design/requirements",
+      "match": {
+        "title": "Audio command interface"
+      },
+      "appendBody": "Rev D: the clips are in an 8 MB SPI flash (U3) as 16 kHz PCM (about 245 s) or 4-bit IMA-ADPCM (about 980 s), decoded by the controller and sent over I2S at 16 kHz; the boost converter and the amplifier are enabled only for the clip."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D167",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 7",
+      "section": "design/requirements",
+      "match": {
+        "title": "Content ships independently of firmware"
+      },
+      "appendBody": "Rev D has no USB port: a pack goes in as a flash image through the programming pads at the maker, or through a later variant with USB (nRF52840). The USB-drive idea is not possible on Rev D."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D168",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, USB-C",
+      "section": "design/requirements",
+      "match": {
+        "title": "Service and debug port"
+      },
+      "appendBody": "Rev D has no USB-C: firmware and clips go in through SWD pads (a Tag-Connect TC2030 footprint). Where the debug log comes out on Rev D is not yet decided."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D169",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, U1",
+      "section": "design/requirements",
+      "match": {
+        "title": "Radios off"
+      },
+      "appendBody": "Rev D: the nRF52832's radio is never started and no antenna is fitted."
+    },
+    {
+      "op": "enrich",
+      "proposal": "D170",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware: what changes",
+      "section": "design/requirements",
+      "match": {
+        "title": "Firmware sketch compiles"
+      },
+      "appendBody": "Rev D: this sketch is for the XIAO ESP32S3, which Rev D does not have; it needs the changes in \"Firmware changes for Rev D\" before it can build for the nRF52832 board. Not proved for Rev D."
+    },
+    {
+      "op": "add",
+      "proposal": "D171",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules",
+      "section": "design/requirements",
+      "title": "Lithium within the checked-baggage limit",
+      "body": "The tag's own lithium is at most 0.3 g of lithium metal (or 2.7 Wh of lithium ion), so it may stay on in checked baggage: IATA Dangerous Goods Regulations, 66th edition, Table 2.3.A, and FAA PackSafe, Baggage Equipped with Lithium Batteries (both read 22 Nov 2026). Rev D's CR2032 holds 0.07 g (Duracell's sheet). A CR2477 (about 0.31 g, estimate) would be over. The tracker in the pocket is its own device with its own cell. FAA PackSafe also says to check with the airline; airlines may set stricter rules.",
+      "data": {
+        "trigger": "-",
+        "response": "-"
+      },
+      "status": "open"
+    },
+    {
+      "op": "add",
+      "proposal": "D172",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware: what changes",
+      "section": "design/requirements",
+      "title": "Firmware changes for Rev D",
+      "body": "The firmware for the 2 x AA design (BaggageClaims_MK1_RevB.ino with bc_detect.h and bc_detect.cpp) is not rewritten; Rev D needs these changes to it (Rev D engineering, section 3): (1) Board and core: the nRF52832 (Arduino nRF5 or Adafruit nRF52 core, or Zephyr), not the ESP32 core. Preferences becomes the nRF's own flash store; LittleFS goes on the external SPI flash. (2) Pins: a new pin map on the custom board, fixed with the layout: SPI to the motion sensor and to the flash (a bus each on the schematic), the sensor's INT1 (wake-up) and INT2 (FIFO mark), I2S (SCK, LRCK, SDOUT) to the amplifier, AMP_SD, BOOST_EN, CHG_EN, two ADC inputs (V_CELL, V_SC), MODE, SWD. (3) Sensor driver: the MPU-6050 register code is replaced by the LSM6DSO class at 104 Hz, +/-16 g, +/-2000 degrees a second, FIFO with a watermark interrupt and a wake-up interrupt with its own threshold units; new scale factors; the up axis set again for the board. (4) Sleep: System ON idle with the clock and a pin sense on INT1 (no deep-sleep restart; state stays in RAM); the two-hour dark wake is a clock compare. Optional: gyro off until the accelerometer sees handling. (5) Audio path: read V_SC before a clip; at 1.9 V or under skip it (logged busy), under 2.2 V play 5 dB down; enable the boost, wait about 2 ms, enable the amplifier, stream from the flash through an ADPCM or PCM decoder to I2S at 16 kHz; then amplifier off, boost off, charging on until 2.6 V. The full level keeps peaks at 1 W into 4 ohm. (6) Battery policy: the cell thresholds (about 2.7, 2.5, 2.3 V under the 2 mA charge load, set on the bench) replace the AA thresholds; the brown-out counter goes and the capacitor gate replaces it. (7) Loading clips: through SWD at the maker as a flash image, or a later USB variant (nRF52840); no USB drive. (8) Unchanged: the event rules, the governor, the picker, the clip naming, the counts and the button meanings. None is made yet.",
+      "data": {
+        "trigger": "-",
+        "response": "-",
+        "changes": [
+          "Board and core: the nRF52832 (Arduino nRF5 or Adafruit nRF52 core, or Zephyr), not the ESP32 core. Preferences becomes the nRF's own flash store; LittleFS goes on the external SPI flash.",
+          "Pins: a new pin map on the custom board, fixed with the layout: SPI to the motion sensor and to the flash (a bus each on the schematic), the sensor's INT1 (wake-up) and INT2 (FIFO mark), I2S (SCK, LRCK, SDOUT) to the amplifier, AMP_SD, BOOST_EN, CHG_EN, two ADC inputs (V_CELL, V_SC), MODE, SWD.",
+          "Sensor driver: the MPU-6050 register code is replaced by the LSM6DSO class at 104 Hz, +/-16 g, +/-2000 degrees a second, FIFO with a watermark interrupt and a wake-up interrupt with its own threshold units; new scale factors; the up axis set again for the board.",
+          "Sleep: System ON idle with the clock and a pin sense on INT1 (no deep-sleep restart; state stays in RAM); the two-hour dark wake is a clock compare. Optional: gyro off until the accelerometer sees handling.",
+          "Audio path: read V_SC before a clip; at 1.9 V or under skip it (logged busy), under 2.2 V play 5 dB down; enable the boost, wait about 2 ms, enable the amplifier, stream from the flash through an ADPCM or PCM decoder to I2S at 16 kHz; then amplifier off, boost off, charging on until 2.6 V. The full level keeps peaks at 1 W into 4 ohm.",
+          "Battery policy: the cell thresholds (about 2.7, 2.5, 2.3 V under the 2 mA charge load, set on the bench) replace the AA thresholds; the brown-out counter goes and the capacitor gate replaces it.",
+          "Loading clips: through SWD at the maker as a flash image, or a later USB variant (nRF52840); no USB drive.",
+          "Unchanged: the event rules, the governor, the picker, the clip naming, the counts and the button meanings."
+        ]
+      },
+      "status": "open"
+    },
+    {
+      "op": "enrich",
+      "proposal": "D173",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Sleep current"
+      },
+      "setData": {
+        "pass": "Rev D: meter in series with the cell, 2 h after the last motion (the capacitor no longer kept full): at or under 25 uA, against an estimate of about 12.5 uA. In the first 2 h the estimate is about 22.5 uA. The documents' 200 uA and the 2 x AA design's 0.25 mA are superseded."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D174",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4, current budget",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Awake current"
+      },
+      "setData": {
+        "pass": "Rev D: awake and being moved, no clip, the capacitor full: under 1.5 mA at the cell, averaged over 10 s (estimate about 0.74 mA). The 2 x AA design's 15 mA is superseded."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D175",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Power rail voltage"
+      },
+      "setData": {
+        "pass": "Rev D: with a CR2032 in and the switch on, the cell rail (VCELL) reads 2.0 to 3.2 V (a new cell about 3.0 V); switch off, 0 V. The supercapacitor charges to about 2.6 V and stops."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D176",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "prototype/tests",
+      "match": {
+        "title": "3.3 V rail"
+      },
+      "setData": {
+        "pass": "Rev D: the 3.3 V rail (3V3A) feeds the amplifier only: about 3.3 V while a clip plays, 0 V between clips with the boost converter off."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D177",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, off switch S1",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Off switch disconnect"
+      },
+      "setData": {
+        "pass": "Rev D: switch off, meter in series with the cell on its most sensitive range: 0 uA (under the meter's resolution), the cell rail at 0 V, and no clip can play with the capacitor charged."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D178",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1, loudness, honestly",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Loudness at 1 m"
+      },
+      "setData": {
+        "pass": "Rev D: loudest clip at full level with the capacitor full (2.6 V), sound level meter (A-weighted, fast) at 1 m on the perforated panel's axis: record the peak. Pass under 85 dBA; record it against the estimate of about 70 dB (67 to 73)."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D179",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware item 6",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Low battery behaviour"
+      },
+      "setData": {
+        "pass": "Rev D: on a bench supply in place of the cell, set the thresholds (about 2.7, 2.5 and 2.3 V under the 2 mA charge load, estimates): below the first clips are quieter, below the second the low-battery line plays once, below the third no clip plays; no reset loop from 3.2 V down to 1.8 V."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D180",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, Q1",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Reverse battery"
+      },
+      "setData": {
+        "pass": "Rev D: a CR2032 fitted upside down in its cup for one minute, then correctly: no current over 1 mA while reversed, and the tag works afterwards."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D181",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 8, drop survival",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Drop survival"
+      },
+      "setData": {
+        "pass": "Rev D: tag on a packed case, dropped 1.0 m onto concrete, once on each of six faces: the back plate stays on its hooks, both doors stay locked, nothing rattles, and it still passes the Drop and Weigh-in tests."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D182",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 4, the board",
+      "section": "prototype/tests",
+      "match": {
+        "title": "First power-on: no heat"
+      },
+      "setData": {
+        "pass": "Rev D: with a CR2032 in and the switch on, no hot spot by touch after 30 s, and the controller answers on the programming pads (SWD)."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D183",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "prototype/tests",
+      "match": {
+        "title": "No shorts on the rails"
+      },
+      "setData": {
+        "pass": "Rev D: with the cell out, VCELL, V_SC and 3V3A each read open to ground; continuity on every net matches the schematic."
+      }
+    },
+    {
+      "op": "enrich",
+      "proposal": "D184",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, firmware: what changes",
+      "section": "prototype/tests",
+      "match": {
+        "title": "Sketch builds for the board"
+      },
+      "appendBody": "Rev D: this test is for the 2 x AA design's board. The nRF52832 build waits for the firmware changes (requirement \"Firmware changes for Rev D\")."
+    },
+    {
+      "op": "add",
+      "proposal": "D185",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, refill time",
+      "section": "prototype/tests",
+      "title": "Clip recharge from the capacitor",
+      "body": "",
+      "data": {
+        "pass": "Rev D: from a full capacitor, play full-level clips back to back: two or three play (estimate 2.5), then the next plays 5 dB down or is skipped and logged busy; about 154 s later one full-level clip plays again (estimate). Log V_SC before each clip."
+      },
+      "status": "not run"
+    },
+    {
+      "op": "add",
+      "proposal": "D186",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules",
+      "section": "prototype/tests",
+      "title": "Lithium on paper",
+      "body": "",
+      "data": {
+        "pass": "The fitted cell's own data sheet states 0.3 g of lithium metal or less (a CR2032: 0.07 g on Duracell's sheet), and no second lithium cell is fitted in the tag."
+      },
+      "status": "not run"
+    },
+    {
+      "op": "link",
+      "proposal": "D187",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "design/requirements",
+      "requirement": "Clips from the capacitor buffer",
+      "tests": [
+        "Clip recharge from the capacitor",
+        "Loudness at 1 m"
+      ],
+      "parts": [
+        "SC1",
+        "U5",
+        "R1",
+        "Q2",
+        "SPK1"
+      ],
+      "because": "The Rev D design gives the clips to the supercapacitor; the recharge test measures how many and how often, and the loudness test the level."
+    },
+    {
+      "op": "link",
+      "proposal": "D188",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 1, airline rules",
+      "section": "design/requirements",
+      "requirement": "Lithium within the checked-baggage limit",
+      "tests": [
+        "Lithium on paper"
+      ],
+      "parts": [
+        "BAT"
+      ],
+      "because": "The lithium limit is met by the cell chosen; the test reads its data sheet."
+    },
+    {
+      "op": "link",
+      "proposal": "D189",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, off switch S1",
+      "section": "design/requirements",
+      "requirement": "Off switch is a true disconnect",
+      "tests": [],
+      "parts": [
+        "S1",
+        "R6"
+      ],
+      "because": "Rev D's off switch is S1 in the cell's lead; R6 keeps the boost off with the controller unpowered."
+    },
+    {
+      "op": "link",
+      "proposal": "D190",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.2, the buffer",
+      "section": "design/requirements",
+      "requirement": "Power",
+      "tests": [],
+      "parts": [
+        "BAT",
+        "BT1",
+        "Q1",
+        "SC1",
+        "U5"
+      ],
+      "because": "Rev D's supply: the cell, its contacts, the reverse-cell MOSFET, the supercapacitor and the boost converter."
+    },
+    {
+      "op": "link",
+      "proposal": "D191",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.4",
+      "section": "design/requirements",
+      "requirement": "Battery life",
+      "tests": [],
+      "parts": [
+        "BAT"
+      ],
+      "because": "The life is the CR2032's."
+    },
+    {
+      "op": "link",
+      "proposal": "D192",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.1",
+      "section": "design/requirements",
+      "requirement": "Loudness limit",
+      "tests": [],
+      "parts": [
+        "SPK1",
+        "U4",
+        "GSK"
+      ],
+      "because": "The level is set by the 28 mm speaker, the amplifier and the gasket that seals its chamber."
+    },
+    {
+      "op": "link",
+      "proposal": "D193",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, S2",
+      "section": "design/requirements",
+      "requirement": "Controls",
+      "tests": [],
+      "parts": [
+        "S2"
+      ],
+      "because": "Rev D's mode button."
+    },
+    {
+      "op": "link",
+      "proposal": "D194",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3",
+      "section": "design/requirements",
+      "requirement": "Enclosure",
+      "tests": [],
+      "parts": [
+        "ENC1",
+        "TRK"
+      ],
+      "because": "The printed body is the enclosure; its pocket is sized to the tracker."
+    },
+    {
+      "op": "link",
+      "proposal": "D195",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 4, the board",
+      "section": "design/requirements",
+      "requirement": "Rigid sensor mount",
+      "tests": [],
+      "parts": [
+        "PCB1",
+        "U2"
+      ],
+      "because": "The sensor is soldered to the board, which is clamped in the body."
+    },
+    {
+      "op": "link",
+      "proposal": "D196",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3, item 6",
+      "section": "design/requirements",
+      "requirement": "Low battery",
+      "tests": [],
+      "parts": [
+        "R4",
+        "R5",
+        "R2",
+        "R3"
+      ],
+      "because": "The cell and the capacitor are read through these dividers."
+    },
+    {
+      "op": "link",
+      "proposal": "D197",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3",
+      "section": "design/requirements",
+      "requirement": "Reverse battery and brown-out",
+      "tests": [],
+      "parts": [
+        "Q1",
+        "C1",
+        "C2"
+      ],
+      "because": "Q1 blocks a reversed cell; C1 and C2 carry the controller's bursts."
+    },
+    {
+      "op": "link",
+      "proposal": "D198",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 2.3, U2",
+      "section": "design/requirements",
+      "requirement": "Sensor configuration",
+      "tests": [],
+      "parts": [
+        "U2"
+      ],
+      "because": "Rev D's motion sensor."
+    },
+    {
+      "op": "link",
+      "proposal": "D199",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 8",
+      "section": "design/requirements",
+      "requirement": "Drop survival",
+      "tests": [],
+      "parts": [
+        "ENC1",
+        "ENC2",
+        "ENC3",
+        "ENC4",
+        "STR1"
+      ],
+      "because": "The printed parts carry the drop."
+    },
+    {
+      "op": "link",
+      "proposal": "D200",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Engineering.md",
+      "sourceLocation": "section 3",
+      "section": "design/requirements",
+      "requirement": "Firmware changes for Rev D",
+      "tests": [
+        "Sketch builds for the board"
+      ],
+      "parts": [
+        "U1",
+        "U3"
+      ],
+      "because": "The firmware has to be ported to the nRF52832 and the external flash before it builds."
+    },
+    {
+      "op": "add",
+      "proposal": "D201",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 9, check results; section 10, files per direction",
+      "section": "design/enclosure",
+      "title": "Enclosure settings",
+      "body": "The concept's enclosure is an authored design: Rev D, direction A Heritage, colourway A1 Saddle (Decisions, \"Which enclosure design ships?\"). Its files are in Files, folder Design and build. The parameters below are the ones to run the app's own generator on the same parts with, for comparison: Rev D's 3.0 mm rim, 2.4 mm back plate (the floor), 1.6 mm front skin (the lid) and 0.3 mm clearance.",
+      "data": {
+        "enclosureSource": "authored",
+        "authored": {
+          "name": "Rev D, direction A Heritage, colourway A1 Saddle",
+          "size": [
+            62,
+            92,
+            12.8
+          ],
+          "decision": "Which enclosure design ships?",
+          "model": "BaggageClaims_Tag_RevD_A_assembly.3mf",
+          "printFiles": [
+            "BaggageClaims_Tag_RevD_A_print_plate_PETG.3mf",
+            "BaggageClaims_Tag_RevD_A_print_plate_TPU.3mf"
+          ],
+          "renders": [
+            {
+              "file": "BaggageClaims_Tag_RevD_A1_hero.jpg",
+              "label": "A1 Saddle, the front"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A1_back.jpg",
+              "label": "A1 Saddle, the back: the name card and the tracker door"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A1_on_handle.jpg",
+              "label": "A1 Saddle on a suitcase handle"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A_exploded.jpg",
+              "label": "Direction A exploded, with the parts named"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_A_dimensioned.jpg",
+              "label": "Direction A, dimensioned sheet"
+            },
+            {
+              "file": "BaggageClaims_Tag_RevD_comparison_sheet.jpg",
+              "label": "The six options compared, with the size table"
+            }
+          ],
+          "documents": [
+            "BaggageClaims_Tag_RevD_Design.md",
+            "BaggageClaims_Tag_RevD_Engineering.md",
+            "BaggageClaims_Tag_RevD_envelope.json"
+          ],
+          "checks": [
+            {
+              "label": "Every body is a closed solid",
+              "ok": true
+            },
+            {
+              "label": "Body, plate and each door are one piece each",
+              "ok": true
+            },
+            {
+              "label": "No body runs into another",
+              "ok": true
+            },
+            {
+              "label": "Overall size 62.00 x 92.00 x 12.80 mm",
+              "ok": true
+            },
+            {
+              "label": "Inlays flush, 0.6 deep, backed by 1.0 of shell or more",
+              "ok": true
+            },
+            {
+              "label": "Inlay strokes 0.8 mm or more, blind deboss 0.6 mm or more",
+              "ok": true
+            },
+            {
+              "label": "Lettering size: name capitals 4.0 mm or more, nothing under 3.0 mm",
+              "ok": true
+            },
+            {
+              "label": "Every bought part fits, 0.3 mm or more to the shell",
+              "ok": true
+            },
+            {
+              "label": "Thickness stack through the tracker adds up to 12.8 mm",
+              "ok": true
+            },
+            {
+              "label": "Tracker pocket fits 31.9 x 8.0",
+              "ok": true
+            },
+            {
+              "label": "Card 50 x 32 x 0.5 in the back pocket",
+              "ok": true
+            },
+            {
+              "label": "Speaker grille and sealed back chamber",
+              "ok": true
+            },
+            {
+              "label": "Coin cell cup and door",
+              "ok": true
+            },
+            {
+              "label": "Bayonet doors free, locked by a 60 degree turn",
+              "ok": true
+            },
+            {
+              "label": "Back plate snap hooks under 2 % strain",
+              "ok": true
+            },
+            {
+              "label": "Strap slot web 4 mm or more",
+              "ok": true
+            },
+            {
+              "label": "Walls: rim 2.9 mm or more",
+              "ok": true
+            },
+            {
+              "label": "Prints flat without supports",
+              "ok": true
+            },
+            {
+              "label": "At most four materials; lettering in the rigid print",
+              "ok": true
+            },
+            {
+              "label": "Off switch and button behind the edge",
+              "ok": true
+            }
+          ],
+          "checkedBy": "the design's own generator (tagd_gen.py on manifold3d), 22 Nov 2026; not measured by this app",
+          "designedBy": "an authored design, made outside this app's enclosure generators"
+        },
+        "params": {
+          "wallThickness": 3,
+          "floorThickness": 2.4,
+          "lidThickness": 1.6,
+          "cornerRadius": 4,
+          "clearance": 0.3,
+          "openingMargin": 0.3,
+          "lidType": "snap",
+          "screwSize": "M2"
+        }
+      },
+      "status": "open"
+    },
+    {
+      "op": "retire",
+      "proposal": "D202",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3, one construction",
+      "section": "prototype/printing",
+      "match": {
+        "title": "Hinge clearance coupon"
+      },
+      "why": "the Rev D tag has no hinge: its doors are bayonets and its back plate snaps on"
+    },
+    {
+      "op": "retire",
+      "proposal": "D203",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 3, one construction",
+      "section": "prototype/printing",
+      "match": {
+        "title": "Print-in-place clamshell"
+      },
+      "why": "the Rev D tag (owner, 22 Nov 2026, 19:00: \"yes this is perfect, a perfect design\") replaces the print-in-place clamshell"
+    },
+    {
+      "op": "add",
+      "proposal": "D204",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "prototype/printing",
+      "title": "Rev D tag, job 1: PETG in two colours",
+      "body": "Body, back plate, tracker door and coin door on one 256 mm bed (171 x 92 mm used), all outside face down, every colour change in the first three layers. Colours (A1 Saddle): Bambu Lab PETG HF Peanut Brown for the parts, Bambu Lab PETG HF Cream for the stitches and the lettering. PETG at 230 to 235 C, 0.2 mm layers, no supports; any printer with an automatic material system (Bambu Lab A1 class). Estimate, not sliced: about 37 g of PETG (34.1 g in the parts and 3.2 g of purge for eight colour changes), about 2.5 hours. Print a coupon of the card pocket's 32.6 mm bridge first.",
+      "data": {
+        "fileName": "BaggageClaims_Tag_RevD_A_print_plate_PETG.3mf",
+        "part": "ENC1",
+        "material": "PETG",
+        "layerHeight": 0.2,
+        "supports": false,
+        "colours": [
+          "Bambu Lab PETG HF Peanut Brown",
+          "Bambu Lab PETG HF Cream"
+        ],
+        "estimate": "about 37 g, about 2.5 h (estimate, not sliced)",
+        "grams": 37.3,
+        "minutes": 150
+      },
+      "status": "queued"
+    },
+    {
+      "op": "add",
+      "proposal": "D205",
+      "sourceFile": "seed/concepts/baggage-claims/files/BaggageClaims_Tag_RevD_Design.md",
+      "sourceLocation": "section 10, printing and estimates",
+      "section": "prototype/printing",
+      "title": "Rev D tag, job 2: TPU strap",
+      "body": "The strap, 14 x 2.0 mm and 190 mm long as printed, in Bambu Lab TPU for AMS Black (the name as in Rev C, not confirmed on a page), fed from the material system. Estimate, not sliced: about 6.3 g of TPU, about 1 hour.",
+      "data": {
+        "fileName": "BaggageClaims_Tag_RevD_A_print_plate_TPU.3mf",
+        "part": "STR1",
+        "material": "TPU",
+        "layerHeight": 0.2,
+        "supports": false,
+        "colours": [
+          "Bambu Lab TPU for AMS Black"
+        ],
+        "estimate": "about 6.3 g, about 1 h (estimate, not sliced)",
+        "grams": 6.3,
+        "minutes": 60
+      },
+      "status": "queued"
+    }
+  ]
+}

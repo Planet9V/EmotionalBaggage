@@ -13,12 +13,14 @@ import { bagVoice } from "../speech";
 import { E, bump, clamp01, kf, mix } from "./ease";
 import { buttonCast, scaleCast } from "./castScale";
 import { hallExtras } from "./extras";
-import { A, BAG_TOP, Bag, Built, C, Contact, Sign, Stage, useClock, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
+import { A, BAG_TOP, Bag, Built, C, Contact, Sign, Stage, useClock, stampAt, tagAt, type BagPose, type Kit, type Look, type Shot, type Staged, type V3 } from "./kit";
 import { Figure } from "./people";
 
 const PLATE = 0.1;
 const BAG_Z = 0.05;
 const SET_DOWN = 1500;
+/** How long the button scene opens close on the tag, before the cut to the bag looking up at the number. */
+const TAG_CLOSE_MS = 1800;
 const POUNDS = 62;
 const MONO = "'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace";
 const SIGNAL = "#2f6fed";
@@ -339,24 +341,26 @@ function Souvenirs() {
   );
 }
 
+/** The bag in the button scene: it stares up at the number, recoils, turns to us; crouches, and springs up proud. */
+function buttonBag(t: number): BagPose {
+  const read = kf(t, [[200, 0], [800, 1], [1700, 1], [2700, 0]]);
+  const recoil = bump(t, 900, 1500);
+  const crouch = bump(t, 3500, POP);
+  const proud = kf(t, [[POP - 20, 0], [POP + 250, 1, "back"], [6800, 1], [7500, 0.7]]);
+  return {
+    p: [0, PLATE + 0.12 * bump(t, POP - 20, POP + 260), BAG_Z],
+    yaw: 0.55 * read,
+    pitch: -0.12 * read + 0.06 * recoil,
+    roll: -0.08 * recoil + 0.05 * proud * Math.sin(t / 380) * kf(t, [[4600, 0], [5000, 1]]),
+    sx: 1 + 0.08 * crouch - 0.06 * bump(t, POP - 20, POP + 260) + 0.04 * proud,
+    sy: 1 - 0.1 * crouch + 0.12 * bump(t, POP - 20, POP + 260) + 0.03 * proud - 0.04 * bump(t, 2100, 2600),
+  };
+}
+
 function ScaleSet({ button }: { button: boolean }) {
   const scene = sceneOf(button ? "button" : "scale");
   const bag = (t: number): BagPose => {
-    if (button) {
-      // it stares up at the number, recoils, turns to us; crouches, and springs up proud as its souvenirs pop out
-      const read = kf(t, [[200, 0], [800, 1], [1700, 1], [2700, 0]]);
-      const recoil = bump(t, 900, 1500);
-      const crouch = bump(t, 3500, POP);
-      const proud = kf(t, [[POP - 20, 0], [POP + 250, 1, "back"], [6800, 1], [7500, 0.7]]);
-      return {
-        p: [0, PLATE + 0.12 * bump(t, POP - 20, POP + 260), BAG_Z],
-        yaw: 0.55 * read,
-        pitch: -0.12 * read + 0.06 * recoil,
-        roll: -0.08 * recoil + 0.05 * proud * Math.sin(t / 380) * kf(t, [[4600, 0], [5000, 1]]),
-        sx: 1 + 0.08 * crouch - 0.06 * bump(t, POP - 20, POP + 260) + 0.04 * proud,
-        sy: 1 - 0.1 * crouch + 0.12 * bump(t, POP - 20, POP + 260) + 0.03 * proud - 0.04 * bump(t, 2100, 2600),
-      };
-    }
+    if (button) return buttonBag(t);
     const carried = 1 - kf(t, [[SET_DOWN - 150, 0], [SET_DOWN, 1]]);
     // the anticipation (it draws in a breath), then the slow, offended lean away from the display, swelled up
     const huff = kf(t, [[7250, 0], [7480, -0.2], [8150, 1, "back"]]);
@@ -418,9 +422,26 @@ export const ScaleScene: Staged = { Set: () => <ScaleSet button={false} />, shot
   { at: 8500, pos: [[0.6, 1.35, 8.6], [0.6, 1.33, 8.1]], look: [0.6, 1.05, 0], rise: 0.15, ease: "soft" },
 ] satisfies Shot[] };
 
+/**
+ * The close-up that opens the button scene: square on to the tag's face, on a long lens, framed on the stamp and
+ * the tagline so both read on a phone. The tag is at true scale; the camera comes to it. It keeps the stamp where
+ * the swing really has it (stampAt), and looks along the face as the bag holds it, so the tag still swings in frame.
+ */
+const CLOSE = 0.48;
+const STAMP_DOWN = 0.022 * 1.25;
+const LIFT = 0.004;
+function onTheTag(t: number): { pos: V3; look: V3 } {
+  const { mid, face, up } = tagAt(buttonBag(t));
+  const at: V3 = stampAt(t) ?? [mid[0] - up[0] * STAMP_DOWN, mid[1] - up[1] * STAMP_DOWN, mid[2] - up[2] * STAMP_DOWN];
+  // the stamp a little above the middle of the frame, clear of the subtitles
+  return { pos: [at[0] + face[0] * CLOSE, at[1] - LIFT + face[1] * CLOSE, at[2] + face[2] * CLOSE], look: [at[0], at[1] - LIFT, at[2]] };
+}
+
 export const ButtonScene: Staged = { Set: () => <ScaleSet button />, shots: [
+  // close on the tag: who is talking, its name and its line, readable
+  { at: 0, to: TAG_CLOSE_MS, pos: [0, 0, 0], look: [0, 0, 0], fov: 13, rise: 0, follow: onTheTag },
   // low, from the bag's side: it looks up at the number looming over it
-  { at: 0, to: 2700, pos: [[-1.0, 0.5, 2.55], [-0.88, 0.55, 2.3]], look: [0.4, 0.95, 0], fov: 34, rise: 0.17, ease: "soft" },
+  { at: TAG_CLOSE_MS, to: 2700, pos: [[-1.0, 0.5, 2.55], [-0.88, 0.55, 2.3]], look: [0.4, 0.95, 0], fov: 34, rise: 0.17, ease: "soft" },
   // square on and close, for the line and the pop
   { at: 2700, to: 5300, pos: [[0.3, 0.9, 3.75], [0.3, 0.9, 3.4]], look: [0.32, 1.0, 0], rise: 0.13, ease: "soft" },
   // from the left: the bag, the display and its owner, who has something to tell us
