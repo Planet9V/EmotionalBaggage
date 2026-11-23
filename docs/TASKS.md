@@ -30,10 +30,29 @@ The build machine is at its limit with seven agents (load 10 on 2 processors), s
 ## Owner decisions, 22 Nov (10:03)
 
 - Sign-in cut-over: approved, once accounts slice 2 passes its second review. The owner creates `admin@oxot.nl` on the first-run page.
-- Prices: Maker $29 and Studio $99 a month accepted. Tier limits come from the approved pricing design and are shown to the owner in Admin before prices go public.
+- Prices: Maker $29 and Studio $99 a month accepted (replaced later on 22 Nov: $20 and $40, see below). Tier limits come from the approved pricing design and are shown to the owner in Admin before prices go public.
 - Workspace rules accepted: 5 owned workspaces per person, 50 people per workspace, 20 invitations an hour; members see the member list; an invited person keeps a workspace of their own.
 - Tag: 80 x 60 x 42 mm from the documentation. Rev C in design: three directions with colourways, name and tagline as multi-material inlays in one print; the owner chooses.
 - Voice: an option set in Admin; voice-overs generated through Kokoro or OpenRouter with a choice of model and voice.
+
+## Owner rulings on early access and the page, 22 Nov
+
+Quoted as given:
+
+- "nothing free, but we could do a signup for early access"
+- "limit early access to 50 only, then convert to 20/month and 40 per month"
+- "no you cannot run it yourself, remove it"
+- "focus on the landing page and getting attention and conversion"
+
+These replace the 10:03 prices ($29 and $99) and remove the Free and Self-hosted levels and the "Run it yourself" button.
+
+Working assumptions (not rulings; for the owner to confirm or correct):
+
+- Early access itself costs nothing and takes no payment (Stripe is not built).
+- Maker is $20 a month and Studio $40 a month (the ruling gives the two numbers, not which plan is which).
+- Studio's team seats open after early access.
+
+Built on `ws22a-early` (server side, `docs/design/early-access.md`): early-access places on the access-request mechanism (limit 50 in Admin, Pricing and tiers; waiting list after it), the two-plan catalogue, first-party funnel counting and Admin, Funnel. The page (`ws22b-page`) mounts `EarlyAccess`, `Tracker` and `TrackSection`.
 
 ## Owner rulings on Baggage Claims, 22 Nov (11:15)
 
