@@ -58,6 +58,12 @@ export async function mailOn() {
   return (await currentMailSender()) !== null;
 }
 
+/** The password rules in force, for a form's live checklist (the server checks them again: src/lib/auth2/newPassword.ts). */
+export async function passwordPolicy() {
+  const { readRules } = await import("@/lib/auth2/rules");
+  return (await readRules(ownerPool())).password;
+}
+
 /** Whether the install still waits for its first-run owner (src/lib/auth2/firstRun.ts): sign-up, reset and invitations wait too. */
 export async function setupPending() {
   const { firstRunOpen } = await import("@/lib/auth2/firstRun");

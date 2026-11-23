@@ -40,7 +40,7 @@ function HandOver({ link, code, onDone }: { link?: string; code?: string; onDone
     <div role="status" className="space-y-2 rounded-md border border-hairline bg-canvas p-3">
       <p className="text-sm text-primary">
         {link
-          ? "No email was sent. Give this link to the person you invited; it works once, for 48 hours, and is shown only now."
+          ? "No email was sent. Give this link to the person you invited; it works once, until it expires, and is shown only now."
           : "No email was sent. Give this code to the person, in person or by phone: with their password it lets them set up two-step sign-in again, at /auth/re-enrol. It works once, for 24 hours, and is shown only now."}
       </p>
       <p className="break-all font-mono text-xs text-primary" data-invite-link={link ? "" : undefined} data-reenrol-code={code ? "" : undefined}>{value}</p>
@@ -59,7 +59,8 @@ const renameSchema = z.object({ name: z.string().trim().min(1, "Enter a name for
  * The members screen. Every change is checked again by the server (src/lib/auth2/workspaces/permissions.ts); the
  * screen only leaves out what the viewer's role cannot do. After a change the page is read again from the server.
  */
-export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean }) {
+export function MembersScreen({ view, mail, days = 7 }: { view: MembersView; mail: boolean; days?: number }) {
+  const life = days === 1 ? "1 day" : `${days} days`;
   useStoredTheme();
   const router = useRouter();
   const ws = view.workspace;
@@ -194,7 +195,7 @@ export function MembersScreen({ view, mail }: { view: MembersView; mail: boolean
         </Panel>
 
         {admin && (
-          <Panel title="Invite someone" description={mail ? "We email them a link. It works once, for 48 hours, and only for that address." : "This installation sends no email: you get a link to hand over. It works once, for 48 hours, and only for that address."}>
+          <Panel title="Invite someone" description={mail ? `We email them a link. It works once, for ${life}, and only for that address.` : `This installation sends no email: you get a link to hand over. It works once, for ${life}, and only for that address.`}>
             <form method="post" onSubmit={(e) => void sendInvite(e)} noValidate className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
               <div className="sm:col-span-3"><Message id="invite-message" error={invite.formState.errors.root?.message} /></div>
               <Field id="invite-email" label="Email address" error={invite.formState.errors.email?.message}>

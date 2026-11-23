@@ -24,7 +24,7 @@ Every agent starts from the owner's documents (`docs/PLAN.md` decisions D1 to D1
 
 ## 1a. Deployment rule (owner, 22 Nov)
 
-Docker first. The app runs with `docker compose up` and nothing else, and equally on Railway. The only configuration outside PostgreSQL is the database connection, which the compose file supplies. Every key, secret, address and switch, including the switch for the new sign-in, is entered in the admin area and stored in PostgreSQL. No step tells anyone to set a platform variable. The platform administrator is `admin@oxot.nl`.
+Docker first. The app runs with `docker compose up` and nothing else, and equally on Railway. The only configuration outside PostgreSQL is the database connection, which the compose file supplies. Every key, secret, address and switch, including the switch for the new sign-in, is entered in the admin area and stored in PostgreSQL. No step tells anyone to set a platform variable. The platform administrator is `admin@oxot.nl`. *(Note of 23 Nov: the platform administrator is whoever is created on the first-run page, currently `jim@eigenia.nl`; `admin@oxot.nl` was only the suggestion the page offered, and migration 0044 removed it.)*
 
 ## 2. Workstreams
 

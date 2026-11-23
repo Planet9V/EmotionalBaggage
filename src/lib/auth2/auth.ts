@@ -37,11 +37,15 @@ import { AUTH2_BASE_PATH, AUTH2_PAGES, envBaseURL, envSecret } from "./config";
 import { currentMailSender, render, type MailSender } from "./mail";
 import { checkImage, cleanName, confirmedBefore, replaceUnconfirmed, tokenClaims, wellFormed } from "./guards";
 import { workspaces } from "./workspaces/plugin";
+import { accounts } from "./accountsPlugin";
+import { blockedWhileViewing, viewAs, viewedBy, viewingRefusal } from "./viewAs";
 import { createPersonal } from "./workspaces/store";
 import { proofOwed, proofSpent, requiredFor } from "./workspaces/twoFactor";
-import { claimTry, clearTries, hasTag, KNOWN_DEVICE_COOKIE, waitRefusal, withTag } from "./signInWait";
+import { claimRefusal, claimTry, clearTries, failedTry, hasTag, KNOWN_DEVICE_COOKIE, unlock, withTag } from "./signInWait";
 import { guardTotp, TOTP_PATH } from "./replayGuard";
 import { capSessionLife } from "./sessionLife";
+import { checkNewPassword } from "./newPassword";
+import { readRules } from "./rules";
 import { hashSessionTokens } from "./tokenHash";
 
 const APP_NAME = "Concept to Realization";
@@ -86,6 +90,10 @@ const THROTTLE = {
   "/workspace/delete": { window: 60, max: 3 },
   "/workspace/member/reset-two-factor": { window: 60, max: 5 },
   "/re-enrol": { window: 60, max: 5 },
+  "/account/first-password": { window: 10, max: 3 },
+  "/account/join": { window: 60, max: 10 },
+  "/account/reset-request": { window: 60, max: 3 },
+  "/view-as/start": { window: 60, max: 5 },
   // Each of these sends an email (or makes a link): per network address, besides the per-workspace limits.
   "/workspace/invite": { window: 60, max: 10 },
   "/workspace/invitation/resend": { window: 60, max: 5 },
@@ -162,6 +170,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
     session: {
       expiresIn: SESSION_DAYS * 24 * 60 * 60,
       updateAge: 24 * 60 * 60,
+      // "View as" (./viewAs.ts): who started the session and when it ends; never set from a request.
+      additionalFields: {
+        impersonatedBy: { type: "string", required: false, input: false },
+        impersonationEndsAt: { type: "date", required: false, input: false },
+      },
     },
     verification: { storeIdentifier: "hashed" },
     emailAndPassword: {
@@ -174,6 +187,14 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       // A sign-up for an address that is not confirmed yet replaces the earlier one (./guards.ts, review B2).
       onExistingUserSignUp: replaceUnconfirmed(db, mail, secret, link, (email) => auditAs(email, "/sign-up/replaced")),
       resetPasswordTokenExpiresIn: 60 * 60,
+      // A password the person chose by an emailed link lifts a lock from failed sign-ins, ends "must change" and a
+      // pending "asked for a reset" (owner's ruling of 23 Nov: the locked person can always get back in this way).
+      onPasswordReset: async ({ user }: { user: { id: string; email: string } }) => {
+        await unlock(db, user.email);
+        await db.query('UPDATE "user" SET "mustChangePassword" = false, "resetRequestedAt" = NULL WHERE id = $1', [user.id]);
+        // Recorded under the account's own address (the request has no session to name it).
+        await auditAs(user.email, "/reset-password");
+      },
       password: { hash: hashPassword, verify: ({ hash, password }: { hash: string; password: string }) => verifyPassword(password, hash) },
       sendResetPassword: async ({ user, token }: { user: { id: string; email: string; name: string }; token: string }) => {
         // A disabled account gets no reset link; the answer to the request is the same as for any address (N14).
@@ -215,6 +236,11 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
             if (await proofOwed(db, session.userId)) {
               throw APIError.from("FORBIDDEN", { code: "REENROL_PROOF_REQUIRED", message: "Your two-step sign-in was reset. Use the link we emailed you, or the code from whoever reset it." });
             }
+            // A password an administrator set: the person chooses their own first (./accountsPlugin.ts).
+            const must = await db.query('SELECT 1 FROM "user" WHERE id = $1 AND "mustChangePassword"', [session.userId]);
+            if (must.rowCount && !session.impersonatedBy) {
+              throw APIError.from("FORBIDDEN", { code: "PASSWORD_CHANGE_REQUIRED", message: "An administrator set this password. Choose a password of your own to sign in." });
+            }
             const r = await db.query<{ organizationId: string }>('SELECT "organizationId" FROM member WHERE "userId" = $1 ORDER BY "createdAt", id LIMIT 1', [session.userId]);
             return { data: { ...session, activeOrganizationId: r.rows[0]?.organizationId ?? null } };
           },
@@ -224,8 +250,32 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         const body = (ctx.body ?? {}) as Record<string, unknown>;
+        // A "view as" session may not touch the person's password, address, two-step sign-in or sessions.
+        if (blockedWhileViewing(ctx.path)) {
+          const s = await getSessionFromCtx(ctx);
+          if (s && viewedBy(s.session)) throw viewingRefusal();
+        }
         // No lone surrogates in any text field (review B1): PostgreSQL would refuse them halfway through the work.
         if (!Object.values(body).every(wellFormed)) throw APIError.from("BAD_REQUEST", { code: "INVALID_TEXT", message: "A field holds characters that are not valid text." });
+        // Self sign-up is closed unless Admin, Sign-in opens it (signUp.open, default closed during early access):
+        // only an address with a workspace invitation waiting may create its account here. Everyone else asks for
+        // one on the sign-up page, which files an access request for the owner (src/lib/accessRequests/notify.ts).
+        if (ctx.path === "/sign-up/email" && !(await readRules(db)).signUpOpen) {
+          const invited = typeof body.email === "string" && (await db.query(`SELECT 1 FROM invitation WHERE lower(email) = $1 AND status = 'pending' AND "expiresAt" > now() LIMIT 1`, [body.email.trim().toLowerCase()])).rowCount;
+          if (!invited) throw APIError.from("FORBIDDEN", { code: "SIGN_UP_CLOSED", message: "Accounts are made by invitation on this installation. Ask for one on the sign-up page." });
+        }
+        // The password rules (./passwordPolicy.ts), before Better Auth's own length check.
+        if (ctx.path === "/sign-up/email") await checkNewPassword(db, body.password, { email: String(body.email ?? ""), name: String(body.name ?? "") });
+        if (ctx.path === "/change-password") {
+          const s = await getSessionFromCtx(ctx);
+          if (s) await checkNewPassword(db, body.newPassword, { email: s.user.email, name: s.user.name });
+        }
+        if (ctx.path === "/reset-password") {
+          const token = typeof body.token === "string" ? body.token : (ctx.query as { token?: unknown } | undefined)?.token;
+          const v = typeof token === "string" && token ? await ctx.context.internalAdapter.findVerificationValue(`reset-password:${token}`) : null;
+          const who = v ? (await db.query<{ email: string; name: string }>('SELECT email, name FROM "user" WHERE id = $1', [v.value])).rows[0] : undefined;
+          await checkNewPassword(db, body.newPassword, who ?? {});
+        }
         if (ctx.path === "/sign-up/email" || ctx.path === "/update-user") {
           checkImage(body.image);
           if (ctx.path === "/sign-up/email" || "name" in body) return { context: { body: { ...body, name: cleanName(body.name) } } };
@@ -235,8 +285,8 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
           // Per account, before the password is checked (./signInWait.ts, review N4). Better Auth's per-address
           // throttle has already run.
           const knownDevice = hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, body.email);
-          const wait = await claimTry(db, body.email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", new Date(), { knownDevice });
-          if (wait !== null) throw waitRefusal(wait);
+          const refused = claimRefusal(await claimTry(db, body.email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", new Date(), { knownDevice }));
+          if (refused) throw refused;
         }
         if (ctx.path === "/verify-email") await confirmedBefore(db, (ctx.query as { token?: unknown } | undefined)?.token);
         if (ctx.path === "/two-factor/disable") {
@@ -275,16 +325,21 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
         if (ctx.path === "/sign-in/email") {
           const r = ctx.context.returned;
           const email = (ctx.body as { email?: unknown } | undefined)?.email;
+          const code = r instanceof APIError ? (r.body as { code?: string } | undefined)?.code : undefined;
+          // A wrong password (the same answer for an unknown address): counted towards the lock (./signInWait.ts).
+          if (typeof email === "string" && code === "INVALID_EMAIL_OR_PASSWORD" && !hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email)) await failedTry(db, email);
+          // The password was right but something else stopped the session (unconfirmed, disabled, a proof owed).
+          if (typeof email === "string" && code && code !== "INVALID_EMAIL_OR_PASSWORD") await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
           if (typeof email === "string" && !(r instanceof Error) && !(r instanceof Response && !r.ok)) {
-            await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "", { knownDevice: hasTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email) });
-            // This browser has now signed in to this account: it skips the name-wide wait next time (review B5).
+            await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
+            // This browser has now signed in to this account: the lock does not hold it next time (review B5).
             ctx.setCookie(KNOWN_DEVICE_COOKIE, withTag(ctx.getCookie(KNOWN_DEVICE_COOKIE), secret, email), {
               httpOnly: true, sameSite: "lax", secure: baseURL.startsWith("https://"), path: AUTH2_BASE_PATH, maxAge: 365 * 24 * 60 * 60,
             });
           }
         }
-        // Sign-up is recorded by the user-created database hook instead (review F2).
-        if (!AUDITED[ctx.path] || ctx.path === "/sign-up/email") return;
+        // Sign-up is recorded by the user-created database hook instead (review F2), a reset by onPasswordReset.
+        if (!AUDITED[ctx.path] || ctx.path === "/sign-up/email" || ctx.path === "/reset-password") return;
         const returned = ctx.context.returned;
         if (returned instanceof Error || (returned instanceof Response && !returned.ok)) return;
         // The actor is the account the request acted on, never an address taken from the request body.
@@ -302,6 +357,8 @@ export function auth2Options(db: Pool, opts: Auth2Options = {}) {
       }),
       organization(ORGANIZATION_OPTIONS),
       workspaces(db, { mailer, link }),
+      accounts(db, { mailer }),
+      viewAs(db, { mailer }),
     ],
   } satisfies BetterAuthOptions;
   return { options };

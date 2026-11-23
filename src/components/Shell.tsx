@@ -14,6 +14,7 @@ import type { Project } from "@/lib/types";
 import { SessionControls } from "@/app/account/SessionControls";
 import { ConceptFromUrl } from "@/components/concepts/ConceptFromUrl";
 import { NativeSelect } from "@/components/ui/native-select";
+import { useAdminAccess } from "@/lib/admin/client";
 
 const KEY = "c2r.project";
 /** which sidebar groups the person opened or closed by hand; a group not listed follows its default */
@@ -55,6 +56,23 @@ function NavGroup({ id, open, onToggle, label, prefix, sub, children }: { id: st
   );
 }
 const NO_PROJECTS: Project[] = [];
+
+/**
+ * For the platform administrator (owner, 23 Nov: "is jim@eigenia.nl a user or an admin?"): the role said in words at
+ * the top of the sidebar, with Admin one click away rather than folded into Workbench. Nothing for anyone else.
+ */
+function PlatformAdminEntry({ active }: { active: boolean }) {
+  const access = useAdminAccess();
+  if (!access.platformAdmin) return null;
+  return (
+    <div className="mb-3 rounded-lg border border-hairline bg-info-soft px-2.5 py-2" data-testid="platform-admin-entry">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-info">Platform administrator</p>
+      <Link href="/admin" aria-current={active ? "page" : undefined} className="mt-1 flex items-center gap-1.5 text-sm font-medium text-link hover:underline">
+        <Settings className="h-3.5 w-3.5" aria-hidden /> Admin: users, workspaces, settings
+      </Link>
+    </div>
+  );
+}
 
 // The sign-in page renders bare: no sidebar, and none of the shell's API calls (they would answer 401).
 export function Shell({ children, auth2 = false }: { children: React.ReactNode; auth2?: boolean }) {
@@ -201,6 +219,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* One scrolling region for everything that can grow; only the theme and the session stay pinned. */}
           <div className="scroll-shadow min-h-0 flex-1 overflow-y-auto px-2 py-3">
+            <PlatformAdminEntry active={pathname === "/admin"} />
             <nav aria-label="Whole concept" className="mb-2">
               <NavGroup {...group(cid, "whole", true)} label="Whole concept">
                 <Link href="/status" className={link("/status", pathname === "/status")}><ChartNoAxesGantt className="h-3.5 w-3.5" aria-hidden /> Status</Link>

@@ -50,6 +50,11 @@ const WRITE_PATHS: Record<string, string> = {
   "admin/settings/route.ts": "src/lib/admin/settings.ts",
   // the switch is recorded in the route; the addresses in src/lib/auth2/adminOps.ts setAddresses
   "admin/sign-in/route.ts": "self",
+  "admin/users/route.ts": "src/lib/auth2/adminOps.ts",
+  "admin/users/[id]/route.ts": "src/lib/auth2/adminOps.ts",
+  "admin/invitations/[id]/route.ts": "src/lib/auth2/accountInvitations.ts",
+  "admin/workspaces/route.ts": "src/lib/auth2/adminOps.ts",
+  "admin/workspaces/[id]/route.ts": "src/lib/auth2/adminOps.ts",
   "admin/voice/options/route.ts": "none: lists the voices and models a speech server offers; nothing is saved",
   "admin/voiceovers/route.ts": "src/lib/voice/takes.ts",
   "admin/test/route.ts": "src/lib/admin/connection.ts",

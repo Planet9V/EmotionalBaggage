@@ -13,3 +13,18 @@ export function asActor<T>(actor: string, fn: () => T): T {
 export function currentActor(): string {
   return store.getStore() ?? "";
 }
+
+const viewer = new AsyncLocalStorage<string>();
+
+/**
+ * Runs `fn` as a "view as" request (src/lib/auth2/viewAs.ts): every audit line written inside names the
+ * administrator as well, "admin as person", whatever actor the line was given.
+ */
+export function asViewer<T>(admin: string, fn: () => T): T {
+  return viewer.run(admin, fn);
+}
+
+/** The administrator viewing as someone in this request, or "". */
+export function currentViewer(): string {
+  return viewer.getStore() ?? "";
+}

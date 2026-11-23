@@ -1,6 +1,6 @@
 # Code use
 
-Generated from package-lock.json at commit a339311 by `npm run notices`; do not edit by hand.
+Generated from package-lock.json at commit a29233c by `npm run notices`; do not edit by hand.
 
 ## What this page is
 
@@ -167,6 +167,7 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 | PostgreSQL | 19 (inside pgvector/pgvector:0.8.7-pg19-trixie) | PostgreSQL | separate process | https://www.postgresql.org |
 | Python (official Docker image python) | 3.13-slim | PSF-2.0 (Python); image build files unverified; the image also contains Debian packages under their own licences | container image | https://hub.docker.com/_/python |
 | schematic-symbols drawings | 0.0.251 | MIT | copied source | https://github.com/tscircuit/schematic-symbols |
+| SecLists common password list (xato-net-10-million-passwords-100000) | master branch, fetched 2026-11-23; the first 3,000 entries of 8 to 64 characters, lower-cased | MIT | copied source | https://github.com/danielmiessler/SecLists |
 | shadcn/ui Calendar and Chart | shadcn/ui registry, new-york-v4 style, compared with the files in this repository on 21 November 2026 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | shadcn/ui components added by its CLI | as fetched by `npx shadcn@latest add` on 2026-11-20 | MIT | copied source | https://github.com/shadcn-ui/ui |
 | shadcn/ui Slider, Toggle and Toggle Group | shadcn/ui registry, new-york-v4 style, written 22 November 2026 | MIT | copied source | https://github.com/shadcn-ui/ui |
@@ -188,6 +189,8 @@ From `planner/requirements.txt`, at the versions installed where this page was g
 **Popover, Modal, ConfirmButton and NativeSelect (components written in this repository on shadcn/ui and Radix)**: origin Written in this repository (git author 'Claude') on top of shadcn/ui's structure and Radix primitives. Not attributed to the owner's Eigenia project: no statement covers these files.. Not applicable: not copied unchanged from a published file. popover.tsx is a reduced rewrite of the shadcn/ui Popover; the other three are this project's wrappers.
 
 **schematic-symbols drawings**: origin the symbol drawings (lines, circles and pin points only) of resistor_right, capacitor_polarized_right, diode_right, led_right, spst_switch_right, push_button_normally_open_momentary_horz, battery_horz, speaker_right, ground_down and vcc_up, copied by scripts/extract-symbols.mjs from schematic-symbols 0.0.251 (https://github.com/tscircuit/schematic-symbols). Each one's history was read in the repository on 21 November 2026: resistor added in 419e439 (#272, Inkscape SVG); capacitor_polarized in d89e83a (#212) and refined in #384; diode and led split in 8c4f2af from the combined Inkscape symbols.svg first committed in 85f3d35 by the package's author; spst_switch in 9962748 (#254); push_button_normally_open_momentary in 495c76e; battery in 4a4c906 (#174); speaker in 8c4e6fc (#444, hand-written SVG by the package's author); ground in e130627; vcc reworked in 7a0855e. None of these commits or files names KiCad or another symbol set as a source; most SVGs carry an Inkscape mark. That is evidence they were drawn by contributors, not proof. Not used: the package's capacitor and boxresistor, whose dimensions were matched to KiCad's Device:C and Device:R in 993737d (#434) and 2592db4 (#435); the capacitor and motor symbols are this project's own drawings instead.. Coordinates rounded to four decimals; text placeholders dropped; orientation fixed to the listed variant. Scaled and placed on a 2.54 mm grid at run time by src/lib/parts/symbols.ts.
+
+**SecLists common password list (xato-net-10-million-passwords-100000)**: origin https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt.
 
 **shadcn/ui Calendar and Chart**: origin https://ui.shadcn.com registry (calendar and chart). calendar.tsx first appears in 6206f41 (21 November 2026) and chart.tsx in 141cf7e (20 November 2026).. chart.tsx: the cn import points at @/lib/utils instead of the package 'cn' (the only difference from the registry file). calendar.tsx: the same import change, the Button import points at @/components/ui/button, and a labels prop gives each day button an accessible name that starts with the day number.
 

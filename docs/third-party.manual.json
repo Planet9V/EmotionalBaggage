@@ -382,6 +382,19 @@
       ],
       "source": "https://pypi.org/project/fastapi/",
       "notes": "The HTTP wrapper of the slicer service only; not part of the web app."
+    },
+    {
+      "name": "SecLists common password list (xato-net-10-million-passwords-100000)",
+      "version": "master branch, fetched 2026-11-23; the first 3,000 entries of 8 to 64 characters, lower-cased",
+      "license": "MIT",
+      "licenseEvidence": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/LICENSE, read 23 November 2026: 'MIT License. Copyright (c) 2018 Daniel Miessler'.",
+      "use": "copied source",
+      "origin": "https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt",
+      "referencedIn": [
+        "src/lib/auth2/commonPasswords.ts"
+      ],
+      "source": "https://github.com/danielmiessler/SecLists",
+      "notes": "Data only: new passwords are refused when they are on this list (src/lib/auth2/passwordPolicy.ts). No network call is made."
     }
   ],
   "useOverrides": {

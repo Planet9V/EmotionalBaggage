@@ -57,15 +57,16 @@ describe("sign-up and confirmation", () => {
 
   it("a second sign-up for the same address does not say the address is taken and makes no second account", async () => {
     const a = await newAccount(route, "cal");
-    const again = await browser(route).post("/sign-up/email", { name: "Someone", email: a.email, password: "another password" });
+    const again = await browser(route).post("/sign-up/email", { name: "Someone", email: a.email, password: "Another password 5!" });
     expect(again.status).toBe(200);
     expect((await db.query('SELECT 1 FROM "user" WHERE email=$1', [a.email])).rowCount).toBe(1);
   });
 
-  it("refuses a password under eight characters", async () => {
+  it("refuses a password shorter than the rules allow (12 by default)", async () => {
     const res = await browser(route).post<{ code: string }>("/sign-up/email", { name: "Short", email: email("short"), password: "demo" });
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe("PASSWORD_TOO_SHORT");
+    expect(res.body.code).toBe("PASSWORD_RULE");
+    expect((res.body as { message?: string }).message).toBe("The password must be at least 12 characters.");
   });
 
   it("gives every new account a workspace it owns, and starts each session in it", async () => {
@@ -144,13 +145,13 @@ describe("password change and reset", () => {
     await other.post("/sign-in/email", { email: a.email, password: PASSWORD });
     expect((await other.get("/get-session")).body).not.toBeNull();
 
-    const wrong = await a.b.post("/change-password", { currentPassword: "not it at all", newPassword: "a new password", revokeOtherSessions: true });
+    const wrong = await a.b.post("/change-password", { currentPassword: "not it at all", newPassword: "A new password 2!", revokeOtherSessions: true });
     expect(wrong.status).toBe(400);
-    const ok = await a.b.post("/change-password", { currentPassword: PASSWORD, newPassword: "a new password", revokeOtherSessions: true });
+    const ok = await a.b.post("/change-password", { currentPassword: PASSWORD, newPassword: "A new password 2!", revokeOtherSessions: true });
     expect(ok.status).toBe(200);
     expect((await a.b.get("/get-session")).body).not.toBeNull();
     expect((await other.get("/get-session")).body).toBeNull();
-    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "a new password" })).status).toBe(200);
+    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "A new password 2!" })).status).toBe(200);
   });
 
   it("signing out the other browsers keeps this one", async () => {
@@ -168,13 +169,13 @@ describe("password change and reset", () => {
     expect((await asker.post("/request-password-reset", { email: a.email })).status).toBe(200);
     const token = lastMail("reset-password", a.email).token;
     expect(lastMail("reset-password", a.email).link).toBe(`http://localhost:3322/auth/reset/new?token=${encodeURIComponent(token)}`);
-    const first = await asker.post("/reset-password", { token, newPassword: "reset password one" });
+    const first = await asker.post("/reset-password", { token, newPassword: "Reset password one 1!" });
     expect(first.status).toBe(200);
     expect((await a.b.get("/get-session")).body).toBeNull();
-    const second = await asker.post("/reset-password", { token, newPassword: "reset password two" });
+    const second = await asker.post("/reset-password", { token, newPassword: "Reset password two 2!" });
     expect(second.status).toBe(400);
-    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "reset password one" })).status).toBe(200);
-    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "reset password two" })).status).toBe(401);
+    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "Reset password one 1!" })).status).toBe(200);
+    expect((await browser(route).post("/sign-in/email", { email: a.email, password: "Reset password two 2!" })).status).toBe(401);
   });
 
   it("asking a reset for an address nobody has answers the same and sends nothing", async () => {

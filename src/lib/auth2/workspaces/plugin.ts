@@ -14,7 +14,7 @@ import { z } from "zod";
 import { cleanWorkspaceName } from "../guards";
 import type { MailSender } from "../mail";
 import { CLIENT_ADDRESS_HEADER, hashPassword, verifyPassword } from "@/lib/auth";
-import { claimTry, clearTries, waitRefusal } from "../signInWait";
+import { claimRefusal, claimTry, clearTries, failedTry } from "../signInWait";
 import { isRole, manages, may, mayGrant } from "./permissions";
 import * as invitations from "./invitations";
 import * as store from "./store";
@@ -176,8 +176,8 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
         { method: "POST", body: z.object({ email: z.string().max(320), password: z.string().max(200), proof: z.string().max(200) }) },
         async (ctx) => {
           const email = ctx.body.email.trim().toLowerCase();
-          const wait = await claimTry(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
-          if (wait !== null) throw waitRefusal(wait);
+          const refused = claimRefusal(await claimTry(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? ""));
+          if (refused) throw refused;
           const u = await db.query<{ id: string; password: string | null }>(
             `SELECT u.id, a.password FROM "user" u LEFT JOIN account a ON a."userId" = u.id AND a."providerId" = 'credential' WHERE lower(u.email) = $1`,
             [email]
@@ -186,6 +186,7 @@ export function workspaces(db: Pool, deps: WorkspaceDeps) {
           // The same work whether or not the account exists.
           const pwOk = await verifyPassword(ctx.body.password, row?.password ?? (await dummy()));
           const ok = !!row && pwOk && (await twoFactor.giveProof(db, row.id, ctx.body.proof));
+          if (!pwOk) await failedTry(db, email);
           if (!ok) throw store.refuse("BAD_REQUEST", "REENROL_INVALID", "That address, password and code or link do not match. Check them, or ask for a new reset.");
           await clearTries(db, email, ctx.headers?.get(CLIENT_ADDRESS_HEADER) ?? "");
           return ctx.json({ proved: true });

@@ -3,7 +3,7 @@
  *
  * The link in an invitation carries a random token of 32 bytes. Only its SHA-256 is stored
  * (auth2_invitation_tokens), so a copy of the database holds no link that works. A token works once, until the
- * invitation expires (48 hours, as the email says), and only for the account with the invited address once that
+ * invitation expires (`invites.expiryDays` after it was last sent, 7 by default, as the email says: ../rules.ts), and only for the account with the invited address once that
  * address is confirmed. Sending it again makes a new token: the old link stops working. Revoking ends it.
  *
  * Mail goes through currentMailSender() (../mail.ts). In "no mail" mode, or when sending fails, the link is
@@ -18,11 +18,11 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { auditIn } from "@/lib/db";
 import { cleanEmail } from "../guards";
+import { readRules } from "../rules";
 import { render, type MailSender } from "../mail";
 import { INVITATIONS_PER_HOUR, MAX_SEATS, MAX_SENDS, asRole, mayGrant, type Role } from "./permissions";
 import { forRole, inTx, lockWorkspace, newId, refuse, type Membership } from "./store";
 
-const INVITATION_HOURS = 48;
 const RESEND_AFTER_S = 60;
 
 const hashOf = (token: string) => createHash("sha256").update(token, "utf8").digest("base64url");
@@ -34,12 +34,12 @@ type Actor = { id: string; email: string; name: string };
 
 
 /** Sends the invitation, or hands its link back when there is no mail service or sending failed. */
-async function deliver(deps: Deps, to: string, token: string, workspace: string, inviter: string): Promise<{ mailed: boolean; link?: string }> {
+async function deliver(deps: Deps, to: string, token: string, workspace: string, inviter: string, days: number): Promise<{ mailed: boolean; link?: string }> {
   const link = deps.link("/invite", token);
   const sender = await deps.mailer();
   if (!sender) return { mailed: false, link };
   try {
-    await sender.send(render({ kind: "invitation", to, link, workspace, inviter }));
+    await sender.send(render({ kind: "invitation", to, link, workspace, inviter, days }));
     return { mailed: true };
   } catch (e) {
     console.error(`[auth2] an invitation email could not be sent: ${(e as Error).message}`);
@@ -73,14 +73,14 @@ export async function invite(db: Pool, deps: Deps, actor: Actor, m: Membership, 
     if (recent.rows[0].n >= INVITATIONS_PER_HOUR) throw refuse("TOO_MANY_REQUESTS", "TOO_MANY_INVITATIONS", `This workspace has sent ${INVITATIONS_PER_HOUR} invitations in the last hour, the most it may. Try again later.`);
     const id = newId();
     await c.query(
-      `INSERT INTO invitation (id, "organizationId", email, role, status, "expiresAt", "createdAt", "inviterId") VALUES ($1, $2, $3, $4, 'pending', now() + make_interval(hours => $5), now(), $6)`,
-      [id, m.workspaceId, email, role, INVITATION_HOURS, actor.id]
+      `INSERT INTO invitation (id, "organizationId", email, role, status, "expiresAt", "createdAt", "inviterId") VALUES ($1, $2, $3, $4, 'pending', now() + make_interval(days => $5), now(), $6)`,
+      [id, m.workspaceId, email, role, (await readRules(c)).inviteExpiryDays, actor.id]
     );
     await c.query("INSERT INTO auth2_invitation_tokens (invitation_id, token_hash) VALUES ($1, $2)", [id, hashOf(token)]);
     await auditIn(c, { actor: actor.email, action: "workspace.invited", summary: `Invited ${email} to "${name}" as ${role}`, detail: { workspaceId: m.workspaceId, invitationId: id, role } });
     return { id, name };
   });
-  const d = await deliver(deps, email, token, name, actor.name || actor.email);
+  const d = await deliver(deps, email, token, name, actor.name || actor.email, (await readRules(db)).inviteExpiryDays);
   return { invitationId: id, email, role, ...d };
 }
 
@@ -100,7 +100,7 @@ async function pendingOf(c: PoolClient, workspaceId: string, invitationId: unkno
   return row;
 }
 
-/** Sends an invitation again with a new link (the old one stops working) and a fresh 48 hours. */
+/** Sends an invitation again with a new link (the old one stops working) and a fresh expiry (`invites.expiryDays`). */
 export async function resend(db: Pool, deps: Deps, actor: Actor, m: Membership, invitationId: unknown): Promise<Sent> {
   const token = newToken();
   const { row, name } = await inTx(db, async (c) => {
@@ -117,11 +117,11 @@ export async function resend(db: Pool, deps: Deps, actor: Actor, m: Membership, 
        ON CONFLICT (invitation_id) DO UPDATE SET token_hash = EXCLUDED.token_hash, sent_at = now(), send_count = auth2_invitation_tokens.send_count + 1, used_at = NULL`,
       [row.id, hashOf(token)]
     );
-    await c.query(`UPDATE invitation SET "expiresAt" = now() + make_interval(hours => $2) WHERE id = $1`, [row.id, INVITATION_HOURS]);
+    await c.query(`UPDATE invitation SET "expiresAt" = now() + make_interval(days => $2) WHERE id = $1`, [row.id, (await readRules(c)).inviteExpiryDays]);
     await auditIn(c, { actor: actor.email, action: "workspace.invitation_resent", summary: `Sent the invitation for ${row.email} to "${name}" again`, detail: { workspaceId: m.workspaceId, invitationId: row.id } });
     return { row, name };
   });
-  const d = await deliver(deps, row.email, token, name, actor.name || actor.email);
+  const d = await deliver(deps, row.email, token, name, actor.name || actor.email, (await readRules(db)).inviteExpiryDays);
   return { invitationId: row.id, email: row.email, role: asRole(row.role), ...d };
 }
 

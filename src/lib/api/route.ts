@@ -231,7 +231,7 @@ function sameOrigin(req: Request): boolean {
  */
 export type AppSession =
   | (Session & { kind: "old" })
-  | { kind: "auth2"; sessionId: string; userId: string; username: string; usingDefaultPassword: false };
+  | { kind: "auth2"; sessionId: string; userId: string; username: string; usingDefaultPassword: false; viewedBy?: string };
 
 const TWO_FACTOR_FIRST = "A workspace you belong to requires two-step sign-in. Set up an authenticator app first, at /auth/two-factor/setup.";
 
@@ -247,6 +247,12 @@ async function resolveSession(req: Request): Promise<AppSession | null> {
   const { ownerPool } = await import("@/lib/db");
   const { owed } = await import("@/lib/auth2/workspaces/twoFactor");
   if (await owed(ownerPool(), s.user.id)) throw new HttpError(403, TWO_FACTOR_FIRST);
+  // A "view as" session (src/lib/auth2/viewAs.ts): every audit line of this request names both, "admin as person".
+  const by = (s.session as { impersonatedBy?: string | null }).impersonatedBy;
+  if (by) {
+    const admin = (await ownerPool().query<{ email: string }>('SELECT email FROM "user" WHERE id = $1', [by])).rows[0]?.email ?? by;
+    return { kind: "auth2", sessionId: s.session.id, userId: s.user.id, username: `${admin} as ${s.user.email}`, usingDefaultPassword: false, viewedBy: admin };
+  }
   return { kind: "auth2", sessionId: s.session.id, userId: s.user.id, username: s.user.email, usingDefaultPassword: false };
 }
 

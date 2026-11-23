@@ -22,7 +22,10 @@
  */
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import type { Pool } from "pg";
-import { hashPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
+import { newPasswordProblem } from "./newPassword";
+import { PASSWORD_RULE } from "./passwordPolicy";
+import { readRules } from "./rules";
 import { auditIn } from "@/lib/db";
 import { AUTH2_PAGES, AUTH2_SETTING, readAuth2Setting, resolveAuth2Config, writeAuth2Setting } from "./config";
 import { cleanEmail, cleanName } from "./guards";
@@ -121,8 +124,9 @@ export async function createOwner(db: Pool, req: Request, deps: { build: () => P
     return bad(err.body?.code ?? "INVALID_BODY", err.body?.message ?? "Check the name and email address.");
   }
   const password = body.password;
-  if (typeof password !== "string" || !password.isWellFormed() || password.length < MIN_PASSWORD_LENGTH) return bad("PASSWORD_TOO_SHORT", `The password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
-  if (password.length > 128) return bad("PASSWORD_TOO_LONG", "The password must be at most 128 characters.");
+  // The same password rules as everywhere else (./passwordPolicy.ts).
+  const problem = newPasswordProblem((await readRules(db)).password, password, { email, name });
+  if (problem || typeof password !== "string") return bad(PASSWORD_RULE, problem ?? "Choose a password.");
   const code = typeof body.setupCode === "string" && body.setupCode.isWellFormed() ? body.setupCode : "";
   if (!code || code.length > 40) return bad("SETUP_CODE_WRONG", "Enter the set-up code from the server log.");
 

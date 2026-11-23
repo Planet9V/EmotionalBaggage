@@ -27,6 +27,14 @@ The build machine is at its limit with seven agents (load 10 on 2 processors), s
 | 7 | Voice clips and scenes ready for the owner's review | WS12, WS13 | lead | those agents finishing |
 | 8 | Slack steps 2 to 5 | WS11 | phase 2, by the owner's ruling | after the above |
 
+## Owner rulings on accounts, 23 Nov
+
+Quoted as given: "add a CRUD operation for adding admin users, for admins that includes editing names, email addresses, enabling/disabling MFA, deleting, resetting passwords, sending invitations, expiring after 7 days, password lockouts after 7 tries, minimum complexity password requirements, self-password reset, request to sign up goes to jim@eigenia.nl". Later (09:03): "I need jim@eigenia.nl to be the admin and be able to add and edit etc administrator the entire application including setting up (CRUD) users and workspaces ... the admin must be able to 'emulate' what another user sees, basically co-opting their workspace, to see what they see and edit like that user in the organisation to help troubleshoot". And: "is jim@eigenia.nl a user or an admin?" (he could not tell). The platform administrator is whoever is created on the first-run page (`jim@eigenia.nl`), not `admin@oxot.nl`.
+
+Built on `ws25-users` (docs/guide/admin.md: "Admin, Users", "Failed sign-ins: the one rule", "Password rules", "Forgotten password", "View as this user"). The owner's numbers: invitations 7 days, lock after 7 failed sign-ins, notifications to jim@eigenia.nl. **Defaults chosen by the engineer (not rulings; all changeable in Admin, Sign-in or Email):** the lock lasts 30 minutes (option: until an administrator unlocks; a platform administrator at most 30 minutes); the failure count is forgotten after 24 hours without a try; passwords 12 to 128 characters with an upper-case letter, a lower-case letter, a digit and a symbol, not the address or name, not among the 3,000 most common; reset links 60 minutes (as before); "view as" 60 minutes, no email to the person; self sign-up closed during early access.
+
+For the owner: say in the terms of service that platform administrators may view an account to help with a problem.
+
 ## Owner decisions, 22 Nov (10:03)
 
 - Sign-in cut-over: approved, once accounts slice 2 passes its second review. The owner creates `admin@oxot.nl` on the first-run page.

@@ -50,3 +50,10 @@ export function shimBrowser() {
     disconnect() {}
   };
 }
+
+/** axe-core over a rendered screen (contrast is off: jsdom computes no colours). Answers the violations' ids. */
+export async function axeViolations(container: Element): Promise<string[]> {
+  const { default: axe } = await import("axe-core");
+  const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+  return r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`);
+}

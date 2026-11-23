@@ -21,7 +21,8 @@ export function ResetRequest({ mail = true }: { mail?: boolean }) {
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<{ email: string }>({ resolver: zodResolver(schema), defaultValues: { email: "" } });
 
   const submit = handleSubmit(async (v) => {
-    const r = await call("/request-password-reset", { email: v.email });
+    // Without mail no link can be sent: the request is noted for the platform administrator instead.
+    const r = await call(mail ? "/request-password-reset" : "/account/reset-request", { email: v.email });
     if (!r.ok) return setError("root", { message: r.error });
     setSentTo(v.email);
   });
@@ -29,7 +30,18 @@ export function ResetRequest({ mail = true }: { mail?: boolean }) {
   if (!mail) {
     return (
       <Frame title="Reset your password" footer={<p><TextLink href="/auth/sign-in">Back to sign in</TextLink></p>}>
-        <p className="text-sm text-primary">This installation sends no email, so a reset link cannot be sent. Ask an administrator of this installation to set a new password for you.</p>
+        <p role="note" className="text-sm text-primary">Reset by email is not available on this installation yet: no mail is set up. Ask the administrator of this installation to set a temporary password for you.</p>
+        {sentTo ? (
+          <Message id="reset-done" done={`Noted. If ${sentTo} has an account here, the administrator sees that you asked for a reset.`} />
+        ) : (
+          <form method="post" onSubmit={(e) => void submit(e)} noValidate className="space-y-4">
+            <Message id="reset-message" error={errors.root?.message} />
+            <Field id="email" label="Email address" hint="To let the administrator know you asked." error={errors.email?.message}>
+              <Input id="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} autoFocus {...register("email")} {...describe("email", { hint: true, error: errors.email?.message })} />
+            </Field>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? "Sending…" : "Tell the administrator"}</Button>
+          </form>
+        )}
       </Frame>
     );
   }
