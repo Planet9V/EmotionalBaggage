@@ -5,7 +5,8 @@
  * posts to /api/access-requests, so it works without script (the answer is then the page /welcome/early). With
  * script it is checked here with the server's own schema, sent as JSON, and the answer replaces the form: the
  * place number or the waiting-list position, what happens next, and the optional details (name, company, plan),
- * sent with the token from that answer. Every field id is unique, so the form can appear several times on a page.
+ * sent with the token from that answer. Every field id is unique, so the form can appear several times on a page; once
+ * one of them has an answer, the others show it in one line (./places.ts).
  */
 import { useId, useRef, useState, type FormEvent } from "react";
 import { CheckCircle2 } from "lucide-react";
@@ -15,7 +16,8 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Field, describe } from "@/components/ui/field";
 import { SaveError } from "@/components/ui/states";
 import { cn } from "@/lib/utils";
-import { ACCESS_LEVELS, ACCESS_LEVEL_LABEL, ACCESS_LIMITS, AccessRequestDetails, AccessRequestForm, ACTION_LABEL, MAKING_MAX, type AccessRequestAnswer, type EarlyAccessOutcome, type Placement } from "@/lib/accessRequests/shared";
+import { ACCESS_LEVELS, ACCESS_LEVEL_LABEL, ACCESS_LIMITS, AccessRequestDetails, AccessRequestForm, ACTION_LABEL, claimedLine, MAKING_MAX, type AccessRequestAnswer, type EarlyAccessOutcome, type Placement } from "@/lib/accessRequests/shared";
+import { answered, forgetMine, useMine, usePlaces } from "./places";
 import { track, trackOnce, visitId } from "./track";
 
 type Errors = Partial<Record<"email" | "building", string>>;
@@ -42,7 +44,9 @@ export function EarlyAccessForm({ placement, full, compact }: { placement: Place
   const [answer, setAnswer] = useState<AccessRequestAnswer | null>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const makingRef = useRef<HTMLInputElement>(null);
-  const action = full ? ACTION_LABEL.wait : ACTION_LABEL.claim;
+  const mine = useMine();
+  // the latest count on the page: once the places run out, every form offers the waiting list
+  const action = (usePlaces(null)?.full ?? full) ? ACTION_LABEL.wait : ACTION_LABEL.claim;
 
   const started = () => trackOnce(`form:${placement}`, "form_start", { placement }, placement);
 
@@ -66,7 +70,9 @@ export function EarlyAccessForm({ placement, full, compact }: { placement: Place
     setErrors({});
     setSending(true);
     try {
-      setAnswer(await postJson<AccessRequestAnswer>("/api/access-requests", values));
+      const got = await postJson<AccessRequestAnswer>("/api/access-requests", values);
+      setAnswer(got);
+      answered(got.outcome);
     } catch (err) {
       setFailure((err as Error).message);
       track("form_error", { placement, field: "server" }, placement);
@@ -76,6 +82,8 @@ export function EarlyAccessForm({ placement, full, compact }: { placement: Place
   };
 
   if (answer) return <Answer answer={answer} placement={placement} />;
+  // another form on the page (or this tab before a reload) already has the answer
+  if (mine) return <Claimed outcome={mine} />;
 
   return (
     <form action="/api/access-requests" method="post" onSubmit={(e) => void submit(e)} noValidate className="relative grid gap-3" data-early-form={placement}>
@@ -101,6 +109,21 @@ export function EarlyAccessForm({ placement, full, compact }: { placement: Place
         {!compact ? <p className="text-xs text-muted">Early access takes no payment.</p> : null}
       </div>
     </form>
+  );
+}
+
+/** The compact line a form shows instead of itself once another form on the page has its answer. */
+function Claimed({ outcome }: { outcome: EarlyAccessOutcome }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-early-mine={outcome.kind}>
+      <p className="flex items-center gap-2 text-base font-semibold text-primary">
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-success" aria-hidden />
+        {claimedLine(outcome)}
+      </p>
+      <Button type="button" variant="link" size="sm" className="px-1" onClick={forgetMine}>
+        Use another address
+      </Button>
+    </div>
   );
 }
 

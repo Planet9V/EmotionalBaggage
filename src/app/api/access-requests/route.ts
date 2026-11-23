@@ -4,6 +4,7 @@ import { clientAddress, throttleOpenForm } from "@/lib/auth";
 import { AccessRequestForm, outcomeMessage, type AccessRequestAnswer, type EarlyAccessOutcome } from "@/lib/accessRequests/shared";
 import { auditRefusedRequest } from "@/lib/accessRequests/store";
 import { claimEarlyAccess } from "@/lib/accessRequests/places";
+import { forgetCachedPlaces } from "@/lib/accessRequests/publicCount";
 import { sendEarlyAccessConfirmation } from "@/lib/accessRequests/confirmMail";
 import { backToPage, errorCode, isFormPost, readEither } from "@/lib/accessRequests/noScript";
 import { recordServerEvent } from "@/lib/events/store";
@@ -52,6 +53,8 @@ export const POST = route.open(
       const fields = { email: v.email, building: v.building, name: v.name, company: v.company, level: v.level, placement: v.placement };
       const claim = await claimEarlyAccess(fields);
       if (claim.outcome.kind === "listed") await auditRefusedRequest("duplicate", client);
+      // the page asks for the count again after an answer; it must not get the reading from before this claim
+      else forgetCachedPlaces();
       // counted in the funnel here, not by the page, so a form sent without script is counted too
       await recordServerEvent(req, { event: "form_submit", section: fields.placement, visit: v.visit, detail: { placement: fields.placement || "page", outcome: claim.outcome.kind, script: !plain } });
       // after the answer is decided; a slow or absent mail server never holds it up
